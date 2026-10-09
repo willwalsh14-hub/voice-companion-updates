@@ -161,6 +161,7 @@ class CompanionWindow:
             def navigation(event):
                 if event.widget.winfo_toplevel() != root: return
                 if event.keysym == 'Escape':
+                    flush_pending_edit()
                     self.commands.put(('keyboard','Escape')); return 'break'
                 if event.keysym=='Return' and isinstance(event.widget,tk.Button):
                     event.widget.invoke(); return 'break'
@@ -179,6 +180,7 @@ class CompanionWindow:
                 root.bind_all('<'+key+'>',navigation)
             root.bind_all('<Return>',navigation,add='+')
             def settings_shortcut(event):
+                flush_pending_edit()
                 self.commands.put(('keyboard','settings')); return 'break'
             root.bind_all('<Control-comma>',settings_shortcut)
             tk.Button(root,text='Settings (Ctrl+Comma)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
@@ -216,6 +218,9 @@ class CompanionWindow:
                 editor.edit_modified(False)
                 if not local['applying']:send_text_position()
             editor.bind('<<Modified>>',changed)
+            def flush_pending_edit():
+                if self.context.get('source') and not self.context.get('readonly') and editor.get('1.0','end-1c')!=local['text']:
+                    editor.edit_modified(False);send_text_position()
             def edit_key(event):
                 cancel_phonetic()
                 if event.keysym=='Escape':return navigation(event)

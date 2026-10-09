@@ -184,6 +184,17 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))
         self.wait(lambda:not self.window.commands.empty())
         self.assertGreater(self.window.commands.get()[1]['seq'],first)
+    def test_last_edit_is_queued_before_escape_or_settings_transition(self):
+        for event,command in (('<Escape>','Escape'),('<Control-comma>','settings')):
+            with self.subTest(event=event):
+                self.window.set_context(dict(mode='awake',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
+                self.context()
+                self.call(lambda ev=event:(self.window.editor.insert('insert','z'),self.window.editor.event_generate(ev)))
+                self.wait(lambda:self.window.commands.qsize()>=2)
+                first=self.window.commands.get();second=self.window.commands.get()
+                self.assertEqual(first[0],'text_edit');self.assertEqual(first[1]['after'],'zabc def')
+                self.assertEqual(second,('keyboard',command))
+                while not self.window.commands.empty():self.window.commands.get()
     def test_keyboard_typing_emits_literal_edit_and_immediate_echo(self):
         self.context()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='z'))
