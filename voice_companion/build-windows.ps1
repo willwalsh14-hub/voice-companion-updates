@@ -220,7 +220,7 @@ Copy-Item (Join-Path $PSScriptRoot 'README.txt') (Join-Path $PSScriptRoot 'dist\
 Copy-Item (Join-Path $PSScriptRoot 'EMAIL SETUP - Helper.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\EMAIL SETUP - Helper.txt') -Force
 $googleRegistration = Join-Path $PSScriptRoot 'google-client.json'
 if (Test-Path $googleRegistration) {
-  & $python -c "import json,sys; c=json.load(open(sys.argv[1],encoding='utf-8')); assert c['installed']['client_id'] and c['installed']['client_secret'] and c['installed']['auth_uri'] and c['installed']['token_uri']" $googleRegistration
+  & $python -c "import json,sys; c=json.load(open(sys.argv[1],encoding='utf-8')); allowed={'client_id','project_id','auth_uri','token_uri','auth_provider_x509_cert_url','client_secret','redirect_uris'}; assert set(c)=={'installed'} and set(c['installed']) <= allowed, 'Only a public Google Desktop OAuth registration may be packaged; user tokens and server credentials are forbidden'; assert all(isinstance(v,str) for k,v in c['installed'].items() if k!='redirect_uris'); assert c['installed']['client_id'] and c['installed']['client_secret'] and c['installed']['auth_uri'] and c['installed']['token_uri']" $googleRegistration
   if ($LASTEXITCODE -ne 0) { throw 'The supplied Google Desktop app registration is invalid.' }
   Copy-Item $googleRegistration (Join-Path $PSScriptRoot 'dist\VoiceCompanion\google-client.json') -Force
 }
@@ -274,12 +274,12 @@ if (Test-Path $googleRegistration) {
   }
 }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.81-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.82-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.81-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.82-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -306,7 +306,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.81-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.82-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing
