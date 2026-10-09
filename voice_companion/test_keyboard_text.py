@@ -1,4 +1,5 @@
 import copy
+import json
 from pathlib import Path
 import queue
 import sys
@@ -57,6 +58,11 @@ class KeyboardTextTests(unittest.TestCase):
         self.assertEqual(typing_feedback('test','test ',5,'characters and words'),'space. test')
         self.assertIsNone(typing_feedback('tes','test',4,'none'))
         self.assertEqual(typing_feedback('cat','bat',1,'characters'),'b')
+    def test_keyboard_voice_preferences_persist_without_reconfiguring_accounts_or_engines(self):
+        with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'KEYBOARD_DIRTY',{}),patch.object(companion,'PREFERENCES',dict(DEFAULTS)),patch.object(companion,'speak'),patch.object(companion,'apply_settings',side_effect=AssertionError('Unrelated engines must not be reconfigured')):
+            for command,key,value in [('typing echo words','typing_echo','words'),('phonetics off','phonetic_enabled',False),('phonetic delay 1 second','phonetic_delay','1')]:
+                self.assertEqual(companion.handle(command,'awake'),'awake')
+                self.assertEqual(json.loads((Path(folder)/'preferences.json').read_text())[key],value)
     def test_punctuation_echo_and_phonetics_are_in_verbosity(self):
         self.assertNotIn('Punctuation',CATEGORIES)
         keys={f.key for f in fields('Verbosity',{})}

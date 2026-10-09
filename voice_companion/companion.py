@@ -802,6 +802,16 @@ def _handle(text, mode, typed=False):
         speak('Verbosity '+VERBOSITY+'.')
         return mode
     update_command = normalized_command(text)
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay)\b.+',update_command):
+        session=SettingsSession(PREFERENCES,{})
+        request=session.voice_setting(text)
+        if request and request[0] in ('typing_echo','phonetic_enabled','phonetic_delay'):
+            try:
+                message=session.set(*request)
+                PREFERENCES[request[0]]=session.values[request[0]]
+                save_preferences();speak(message+'.')
+            except (ValueError,OSError) as exc:speak(str(exc))
+            return mode
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
