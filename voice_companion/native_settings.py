@@ -185,7 +185,7 @@ class NativeSettings:
                 continue
             if not u.IsDialogMessageW(self.hwnd,c.byref(message)):
                 u.TranslateMessage(c.byref(message));u.DispatchMessageW(c.byref(message))
-                target=message.hwnd
+                target=message.hWnd
                 control_handle=target if target in controls else parent(target)
                 field=controls.get(control_handle)
                 if field and field.kind in ('text','password','combo'):
