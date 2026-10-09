@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -71,8 +72,13 @@ def publish(setup, gh='gh', root=ROOT):
     # Workflow installation tokens may omit the permissions object. GitHub
     # still enforces write authorization when creating or uploading the draft.
     permissions = metadata.get('permissions')
-    if metadata.get('private') is not False or (permissions is not None and not permissions.get('push')):
-        raise ValueError('Publishing requires a public repository and write permission.')
+    workflow_token = os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == repo
+    if metadata.get('private') is not False:
+        raise ValueError('Publishing requires a public repository.')
+    if not workflow_token and permissions is not None and not permissions.get('push'):
+        raise ValueError('Publishing requires repository write permission.')
+    if workflow_token:
+        progress('Using the repository workflow token. GitHub will enforce release write permission on the draft upload.')
     latest = gh_call(gh, 'api', f'repos/{repo}/releases/latest', missing_ok=True)
     if latest:
         latest_tag = json.loads(latest)['tag_name']

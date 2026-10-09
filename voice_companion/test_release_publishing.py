@@ -48,6 +48,12 @@ class PublishingTests(unittest.TestCase):
         self.metadata={'private':False}
         self.assertTrue(self.run_publish().endswith('v1.2.3-test'))
         self.assertTrue(any(c[:2]==('release','create') for c in self.commands))
+    def test_repository_workflow_token_can_have_false_push_metadata(self):
+        self.metadata={'private':False,'permissions':{'push':False}}
+        with patch.dict('os.environ',{'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':'owner/repository'}):
+            self.assertTrue(self.run_publish().endswith('v1.2.3-test'))
+        with patch.dict('os.environ',{'GITHUB_ACTIONS':'true','GITHUB_REPOSITORY':'other/repository'}):
+            with self.assertRaises(ValueError):self.run_publish()
     def test_private_or_explicit_read_only_repository_is_rejected(self):
         for metadata in ({'private':True},{'private':False,'permissions':{'push':False}},{}):
             self.metadata=metadata;self.commands=[]
