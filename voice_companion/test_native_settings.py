@@ -67,7 +67,7 @@ class NativeSettingsTests(unittest.TestCase):
 
     def test_text_entry_is_self_voicing_and_password_is_hidden(self):
         hwnd=self.open_panel();self.panel.command('documents')
-        self.wait(lambda:self.session.category==6)
+        self.wait(lambda:self.session.category==5)
         self.panel.command('next setting')
         self.wait(lambda:any('Font for new documents, Calibri' in message for message in self.notices))
         entry=self.u.GetDlgItem(hwnd,200)
@@ -86,7 +86,7 @@ class NativeSettingsTests(unittest.TestCase):
 
     def test_every_category_tabs_without_invalid_value_and_escape_closes(self):
         hwnd=self.open_panel()
-        for name in ('Speech','Synthesizer','Punctuation','Input','Email','Documents','Web browsing','Radio','Podcasts','Updates','Verbosity'):
+        for name in ('Speech','Synthesizer','Input','Email','Documents','Web browsing','Radio','Podcasts','Updates','Verbosity'):
             self.panel.command(name)
             self.wait(lambda:self.session.category_name()==name)
             self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)

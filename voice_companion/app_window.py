@@ -6,6 +6,7 @@ Closing the window requests a clean shutdown of the microphone loop.
 import queue
 import threading
 from field_selection import FieldSelection
+from keyboard_text import caret_feedback,typing_feedback,phonetic
 
 
 def entry_feedback(before, after, old_caret, caret, key, character=""):
@@ -13,7 +14,7 @@ def entry_feedback(before, after, old_caret, caret, key, character=""):
     names = {'@':'at sign', '.':'dot', '-':'hyphen', '_':'underscore', ' ':'space'}
     def say(char): return names.get(char, char)
     if key == 'Left': return say(after[caret]) if caret < len(after) else 'End of field'
-    if key == 'Right': return say(after[caret-1]) if caret else 'Start of field'
+    if key == 'Right': return say(after[caret]) if caret < len(after) else 'End of field'
     if key == 'Home': return 'Start of field'
     if key == 'End': return 'End of field'
     if key in ('BackSpace','Delete') and len(after) < len(before):
@@ -40,6 +41,8 @@ class CompanionWindow:
         self.last_email_request = None
         self.email_selection_edit = None
         self.problem = None
+        self.context = {'mode':'awake','source':None,'text':'','echo':'characters','phonetic':True,'delay':0.5,'ack':0}
+        self.keyboard_output = None
         self.thread = threading.Thread(target=self._run, name='Voice Companion window', daemon=True)
 
     def start(self):
@@ -51,6 +54,14 @@ class CompanionWindow:
     def show(self, message):
         if not self.closed.is_set():
             self.messages.put(str(message))
+
+    def set_context(self,context):
+        if not self.closed.is_set():self.ui_actions.put(('context',context))
+
+    def feedback(self,text):
+        if text:
+            if getattr(self,'keyboard_output',None) and not self.keyboard_output.problem:self.keyboard_output.speak(text)
+            else:self.key_feedback.put(text)
 
     def focus_email_field(self, field, value=''):
         """Give typed entry focus on the UI thread when email needs input."""
@@ -87,9 +98,9 @@ class CompanionWindow:
         return False
 
     def report_entry_key(self, before, after, old_caret, caret, key, character=""):
-        if getattr(self, 'email_field', None):
-            notice = entry_feedback(before, after, old_caret, caret, key, character)
-            if notice: self.key_feedback.put(notice)
+        echo=getattr(self,'context',{}).get('echo','characters')
+        notice=typing_feedback(before,after,caret,echo) if before!=after else entry_feedback(before,after,old_caret,caret,key)
+        self.feedback(notice)
 
     def setup_ai_voice(self):
         if not self.closed.is_set():
@@ -100,6 +111,7 @@ class CompanionWindow:
             import tkinter as tk
             from tkinter import scrolledtext
             root = tk.Tk()
+            self.root=root
             root.title('Voice Companion ' + self.version)
             root.geometry('660x430')
             root.minsize(470, 300)
@@ -112,18 +124,26 @@ class CompanionWindow:
                                    font=('Segoe UI', 11))
             entry_label.pack(anchor='w', padx=18, pady=(8, 0))
             typed = tk.Entry(root, font=('Segoe UI', 12))
+            self.typed=typed
             typed.pack(fill='x', padx=18)
             self.email_field = None
             previous = ['', 0]
             field_selection = FieldSelection()
             def before_key(event):
                 previous[:] = [typed.get(), typed.index('insert')]
+                cancel_phonetic()
+                before=typed.get();old_caret=typed.index('insert')
+                def after_entry():
+                    caret=typed.index('insert');value=typed.get()
+                    self.report_entry_key(before,value,old_caret,caret,event.keysym,event.char)
+                    if event.keysym in ('Left','Right') and not event.state&4 and caret<len(value) and self.context.get('phonetic') and phonetic(value[caret]):
+                        local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(value[caret])))
+                root.after_idle(after_entry)
             def after_key(event):
                 self.report_entry_key(previous[0], typed.get(), previous[1], typed.index('insert'), event.keysym, event.char)
             typed.bind('<KeyPress>', before_key)
-            typed.bind('<KeyRelease>', after_key)
             root.bind_all('<Alt-t>', lambda event: typed.focus_set())
-            root.after(100, typed.focus_set)
+            root.after_idle(lambda:typed.focus_set() if self.context.get('source') is None and self.context.get('mode')!='settings' else None)
             def submit_typed(event=None):
                 if self.submit_entry(typed.get()):
                     typed.delete(0, 'end')
@@ -134,10 +154,14 @@ class CompanionWindow:
                     self.commands.put(('keyboard','Escape')); return 'break'
                 if event.keysym=='Return' and isinstance(event.widget,tk.Button):
                     event.widget.invoke(); return 'break'
-                if self.email_field or (event.widget == typed and typed.get()): return
-                if event.widget == typed or event.widget == history or event.widget == root:
+                if event.widget==editor:return
+                if event.widget==typed and (self.email_field or typed.get()):return
+                if event.widget == typed or event.widget == history or event.widget == root or isinstance(event.widget,tk.Button):
                     self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
             def enter(event):
+                if self.context.get('mode')=='document_name':
+                    if not typed.get().strip():self.feedback('Enter a document name.');return 'break'
+                    return submit_typed(event)
                 if self.email_field or typed.get(): return submit_typed(event)
                 return navigation(event)
             typed.bind('<Return>', enter)
@@ -155,6 +179,64 @@ class CompanionWindow:
                      wraplength=600, justify='left').pack(anchor='w', padx=18, pady=14)
             history = scrolledtext.ScrolledText(root, wrap='word', font=('Segoe UI', 11), state='disabled')
             history.pack(fill='both', expand=True, padx=18, pady=(0, 18))
+            editor=tk.Text(root,wrap='word',font=('Segoe UI',12),undo=True,exportselection=False)
+            self.editor=editor
+            local={'text':'','seq':0,'applying':False,'phonetic':None}
+            def offset(index='insert'):return len(editor.get('1.0',index))
+            def selection():
+                try:return (offset('sel.first'),offset('sel.last'))
+                except tk.TclError:return None
+            def cancel_phonetic():
+                if local['phonetic'] is not None:
+                    root.after_cancel(local['phonetic']);local['phonetic']=None
+            def read_caret(key,control=False):
+                text=editor.get('1.0','end-1c');caret=offset()
+                notice,char=caret_feedback(text,caret,key,control,selection())
+                if not selection() and key in ('Up','Down') and not control:
+                    notice=editor.get('insert display linestart','insert display lineend') or 'Blank line.'
+                self.feedback(notice);cancel_phonetic()
+                if char and self.context.get('phonetic') and phonetic(char):
+                    local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(char)))
+            def send_text_position(before=None):
+                text=editor.get('1.0','end-1c');local['seq']+=1
+                self.commands.put(('text_edit',{'source':self.context.get('source'),'before':local['text'] if before is None else before,'after':text,'caret':offset(),'selection':selection(),'seq':local['seq'],'readonly':self.context.get('readonly',False)}))
+                local['text']=text
+            def changed(event=None):
+                if not editor.edit_modified():return
+                editor.edit_modified(False)
+                if not local['applying']:send_text_position()
+            editor.bind('<<Modified>>',changed)
+            def edit_key(event):
+                cancel_phonetic()
+                if event.keysym=='Escape':return navigation(event)
+                if event.keysym=='comma' and event.state&4:return settings_shortcut(event)
+                if event.keysym=='a' and event.state&4:
+                    editor.tag_add('sel','1.0','end-1c');read_caret('Right');send_text_position();return 'break'
+                nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')
+                if self.context.get('readonly') and not nav and event.keysym not in ('Shift_L','Shift_R','Control_L','Control_R','Tab'):
+                    if event.state&4 and event.keysym.lower()=='c':return
+                    return 'break'
+                if event.state&4 and event.keysym in ('Up','Down'):
+                    old_index=editor.index('insert');row=int(old_index.split('.')[0])
+                    target=f'{row}.0' if event.keysym=='Up' and int(old_index.split('.')[1]) else f'{max(1,row-1) if event.keysym=="Up" else row+1}.0'
+                    editor.mark_set('insert',target)
+                    if event.state&1:
+                        anchor=editor.index('anchor') if editor.tag_ranges('sel') else old_index
+                        editor.mark_set('anchor',anchor);editor.tag_remove('sel','1.0','end')
+                        a,b=sorted((anchor,editor.index('insert')),key=lambda i:tuple(map(int,i.split('.'))))
+                        editor.tag_add('sel',a,b)
+                    else:editor.tag_remove('sel','1.0','end')
+                    editor.see('insert');read_caret(event.keysym,True);send_text_position();return 'break'
+                before=editor.get('1.0','end-1c')
+                def after():
+                    if local['applying']:return
+                    if nav:read_caret(event.keysym,bool(event.state&4));send_text_position()
+                    else:self.feedback(typing_feedback(before,editor.get('1.0','end-1c'),offset(),self.context.get('echo','characters')))
+                root.after_idle(after)
+            editor.bind('<KeyPress>',edit_key)
+            editor.bind('<<Paste>>',lambda event:'break' if self.context.get('readonly') else None)
+            editor.bind('<<Cut>>',lambda event:'break' if self.context.get('readonly') else None)
+            editor.bind('<FocusOut>',lambda event:cancel_phonetic())
 
             settings_dialog = [None]
             def open_ai_setup():
@@ -221,6 +303,39 @@ class CompanionWindow:
                 while True:
                     try: action, field = self.ui_actions.get_nowait()
                     except queue.Empty: break
+                    if action=='ui_call':
+                        field();continue
+                    if action=='context':
+                        old=self.context;self.context=field
+                        mode=field['mode'];source=field.get('source')
+                        transition=old.get('mode')!=mode or old.get('source')!=source or field.get('focus',False)
+                        try:root.attributes('-disabled',mode=='settings')
+                        except tk.TclError:pass
+                        if mode=='settings':continue
+                        text_mode=source is not None and mode in ('document','email_draft','mailbox')
+                        if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
+                        if text_mode:
+                            history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
+                            if old.get('source')!=source or field.get('ack',0)>=local['seq']:
+                                local['applying']=True
+                                if editor.get('1.0','end-1c')!=field.get('text',''):
+                                    editor.delete('1.0','end');editor.insert('1.0',field.get('text',''));editor.edit_reset()
+                                editor.edit_modified(False);local['text']=field.get('text','')
+                                caret=field.get('caret',len(local['text']));editor.mark_set('insert','1.0 + '+str(caret)+' chars')
+                                editor.tag_remove('sel','1.0','end')
+                                if field.get('selection'):editor.tag_add('sel',*('1.0 + '+str(i)+' chars' for i in field['selection']))
+                                editor.see('insert');local['applying']=False
+                            self.email_field=None
+                            if transition:typed.delete(0,'end');self.last_email_request=None
+                            if transition:editor.focus_force()
+                        else:
+                            editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18))
+                            if mode!='email_draft' or not self.email_field:
+                                self.email_field=None;self.last_email_request=None
+                                if transition:typed.delete(0,'end')
+                            if mode!='email_draft':entry_label.configure(text='Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
+                            if transition:typed.focus_force()
+                        continue
                     if action == 'email_select' and not field['canceled'].is_set():
                         try:
                             if not self.email_field:
@@ -275,10 +390,10 @@ class CompanionWindow:
                         history.delete('1.0', '30.0')
                     history.see('end')
                     history.configure(state='disabled')
-                if not self.closed.is_set(): root.after(100, poll)
+                if not self.closed.is_set(): root.after(15, poll)
 
             self.ready.set()
-            root.after(100, poll)
+            root.after(15, poll)
             root.mainloop()
         except Exception as exc:
             self.problem = exc

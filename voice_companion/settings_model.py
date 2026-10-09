@@ -10,16 +10,15 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Punctuation', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates')
-DEFAULTS = {'verbosity':'high','duck_audio':True,'check_updates':True,'document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates')
+DEFAULTS = {'verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
     definitions = {
-        'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low'))],
+        'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2'))],
         'Speech':[Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('windows',)))),Field('windows_voice','Windows voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
-        'Punctuation':[Field('punctuation','Spoken punctuation','choice',('none','some','most','all'))],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation'))],
         'Email':[Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('add_account','Add an email account','action')],
         'Documents':[Field('document_font','Font for new documents','text'),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify')),Field('open_documents','Open Documents folder','action')],
@@ -41,6 +40,9 @@ class SettingsSession:
     def category_name(self): return CATEGORIES[self.category]
     def current_fields(self): return fields(self.category_name(),self.context)
     def set(self,key,value):
+        if key=='phonetic_delay':
+            value=str(value).lower().replace(' seconds','').replace(' second','').strip()
+            value={'half':'0.5','half a':'0.5','point five':'0.5','one':'1','two':'2','.5':'0.5'}.get(value,value)
         field=next((f for category in CATEGORIES for f in fields(category,self.context) if f.key==key),None)
         if field is None or field.kind=='action': raise ValueError('Unknown setting.')
         if field.kind=='check':
@@ -62,7 +64,7 @@ class SettingsSession:
         return field.label + (' hidden' if field.kind=='password' else ' '+('on' if value is True else 'off' if value is False else value))
     def voice_setting(self,command):
         command=command.strip().rstrip('.!?')
-        aliases={'audio ducking':'duck audio','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
+        aliases={'phonetic pronunciation':'phonetic enabled','phonetics':'phonetic enabled','audio ducking':'duck audio','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
         for alias,name in aliases.items():command=re.sub(r'^(?:set )?'+re.escape(alias)+r'\b',name,command,flags=re.I)
         engine=re.fullmatch(r'(?:use|select|choose) (?:synthesizer )?(windows|windows speech|microsoft|espeak|espeak ng|ai voice)',command,re.I)
         if engine:return 'engine',{'windows speech':'windows','microsoft':'windows','espeak ng':'espeak','ai voice':'ai'}.get(engine[1].lower(),engine[1].lower())

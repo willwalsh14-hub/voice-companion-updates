@@ -37,11 +37,12 @@ from dictation_text import clean_dictation
 from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
 from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_request
+from keyboard_text import document_text,replace_keyboard_text,absolute
 
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.87-test'
+APP_VERSION = '0.2.88-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -144,11 +145,75 @@ def media():
 def focus_email_entry():
     if APP_WINDOW is not None and email_draft is not None:
         field = email_draft.compose_step or 'body'
+        if field=='body':return
         value = email_draft.recipient if field == 'recipient' else email_draft.subject if field == 'subject' else ''
         APP_WINDOW.focus_email_field(field, value)
 resampler = None
 input_channels = 1
 APP_WINDOW = None
+KEYBOARD_SPEECH = None
+EDIT_ACK = {}
+KEYBOARD_DIRTY = {}
+UI_CONTEXT_CACHE = None
+
+def app_context(mode):
+    logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
+    context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
+    editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
+    if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
+        return context
+    if editor is not None:
+        source=str(id(editor));context.update(source=source,text=document_text(editor),readonly=False,ack=EDIT_ACK.get(source,0))
+        position=editor.navigation_position or editor.insertion_position or (editor.cursor,len(editor.paragraphs[editor.cursor].text) if editor.paragraphs else 0)
+        context['caret']=absolute(editor,position)
+        if editor.selection:
+            s=editor.selection;context['selection']=(absolute(editor,(s.first_paragraph,s.first_offset)),absolute(editor,(s.last_paragraph,s.last_offset)))
+    elif logical=='mailbox' and mail_session and mail_session.view=='message':
+        source='mail:'+str(id(mail_session))+':'+str(mail_session.current)
+        context.update(source=source,text=mail_session.body_text,readonly=True,caret=mail_session.reading.position,ack=EDIT_ACK.get(source,0))
+    return context
+
+def sync_app_context(mode,focus=False):
+    global UI_CONTEXT_CACHE
+    if APP_WINDOW is None:return
+    context=app_context(mode)
+    if KEYBOARD_SPEECH and not TEXT_MODE:
+        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH)
+    if focus or context!=UI_CONTEXT_CACHE:
+        UI_CONTEXT_CACHE=dict(context);context['focus']=focus;APP_WINDOW.set_context(context)
+
+def apply_keyboard_edit(payload,mode):
+    context=app_context(mode)
+    if payload['source']!=context['source']:return False
+    if payload.get('readonly'):
+        if payload['after']!=context['text']:return False
+        mail_session.reading.position=payload['caret'];mail_session.reading.continuation=payload['caret']
+    else:
+        logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
+        editor=document if logical=='document' else email_draft
+        replace_keyboard_text(editor,payload['before'],payload['after'],payload['caret'],payload.get('selection'))
+        if payload['before']!=payload['after']:KEYBOARD_DIRTY[id(editor)]=(editor,time.monotonic())
+    EDIT_ACK[payload['source']]=payload['seq']
+    sync_app_context(mode)
+    return True
+
+def flush_keyboard_edits(force=False):
+    for key,(editor,when) in list(KEYBOARD_DIRTY.items()):
+        if force or time.monotonic()-when>.4:
+            try:editor.save()
+            except OSError:
+                KEYBOARD_DIRTY[key]=(editor,time.monotonic()+30)
+                raise
+            KEYBOARD_DIRTY.pop(key,None)
+
+def handle_keyboard(text,mode):
+    global SLEEP_RETURN_MODE
+    if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
+        SLEEP_RETURN_MODE=handle(text,SLEEP_RETURN_MODE,typed=True)
+        if SLEEP_RETURN_MODE=='exit':return 'exit'
+        sync_app_context('sleep',True)
+        return 'sleep'
+    return handle(text,mode,typed=True)
 SLEEP_RETURN_MODE = 'awake'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
@@ -170,9 +235,11 @@ def resume_from_sleep():
     if mode == 'awake':
         MAIN_MENU_INDEX = None
         announce_main_menu()
+        sync_app_context(mode,True)
         return mode
     speak('I am listening. Returning to ' + {'awake':'the main menu', 'mailbox':'your email folder', 'email_draft':'your email draft', 'document':'your document'}.get(mode, mode.replace('_', ' ')) + '.')
     if mode == 'email_draft': focus_email_entry()
+    sync_app_context(mode,True)
     return mode
 
 
@@ -206,6 +273,8 @@ def settings_action(key,mode):
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
 
 def navigation_key(key,mode):
+    if mode=='document_name' and key=='Escape':return 'cancel naming'
+    if mode=='mailbox' and key=='Escape' and mail_session is not None and mail_session.view=='message':return 'go back'
     if mode=='settings':
         return 'cancel settings' if key=='Escape' else None
     if key=='Enter' and mode=='mailbox' and mail_session is not None and not (getattr(mail_session,'folder_picker',None) or getattr(mail_session,'folder_choice',None) or getattr(mail_session,'pending',None)):
@@ -704,6 +773,15 @@ def _handle(text, mode, typed=False):
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY
+    if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('settings','open settings'):
+        if normalized_command(text) in ('cancel','cancel naming','go back'):
+            speak('Naming canceled. Your document is still open.');return 'document'
+        title=re.sub(r'^(?:name document|save document as|save as)\s+','',text.strip(),flags=re.I)
+        result=document.process('name document '+title)
+        speak(result)
+        if result.startswith('Document named '):
+            return 'awake'
+        return 'document_name'
     if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
         control=speech_control(text)
         if control:
@@ -727,7 +805,7 @@ def _handle(text, mode, typed=False):
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
-    if re.match(r'^(?:set )?(?:audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email list size|sending account|station database|podcast limit)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email list size|sending account|station database|podcast limit)\b.+',update_command):
         from app_settings import snapshot
         values,context=snapshot(sys.modules[__name__])
         session=SettingsSession(values,context)
@@ -1496,10 +1574,13 @@ def _handle(text, mode, typed=False):
             speak_prompt('Commands only is on. Say normal mode or dictation mode to write.')
             return mode
         if command in ('leave document', 'close document', 'back to main menu',
-                       'go back', 'back', 'exit', 'exit document', 'main menu'):
+                       'go back', 'back', 'exit', 'exit document', 'exit document mode', 'close', 'main menu'):
             document.pending_spacing = False
             document.pending_spacing_candidate = None
             document.save()
+            if re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):
+                speak('Name this document. Say or type its name, then press Enter. Say cancel to keep editing.')
+                return 'document_name'
             speak('Document saved.')
             return 'awake'
         result = document.process(text)
@@ -1740,11 +1821,13 @@ def handle(text, mode, typed=False):
     global _HANDLE_DEPTH
     _HANDLE_DEPTH += 1
     try:
+        if _HANDLE_DEPTH==1:flush_keyboard_edits(True)
         result = _handle(text, mode, typed)
     finally:
         _HANDLE_DEPTH -= 1
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         announce_main_menu()
+    if _HANDLE_DEPTH==0:sync_app_context(result,result!=mode)
     return result
 
 
@@ -1790,7 +1873,7 @@ def poll_app_updates(mode):
 
 
 def main():
-    global AI_SPEECH, UPDATES, SETTINGS_PANEL
+    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE
     if '--check-update-environment' in sys.argv:
         from app_updates import check_update_environment
         return check_update_environment()
@@ -1953,10 +2036,17 @@ def main():
         settings_quiet_until=0
         settings_audio_blocked=False
         while True:
+            if KEYBOARD_SPEECH and KEYBOARD_SPEECH.narration_interrupt.is_set():
+                KEYBOARD_SPEECH.narration_interrupt.clear()
+                voice.Speak('',3)
+                if AI_SPEECH is not None:AI_SPEECH.interrupt()
+            try:flush_keyboard_edits()
+            except OSError:speak('Keyboard text could not be saved. Keep the document open and try save again.')
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
             update_audio_ducking()
             if APP_WINDOW is not None and APP_WINDOW.closed.is_set():
+                flush_keyboard_edits(True)
                 speak('Voice Companion closed. Goodbye.')
                 return 0
             while True:
@@ -1978,8 +2068,12 @@ def main():
                     elif kind=='action':
                         mode=settings_action(values,SETTINGS_RETURN_MODE)
                     settings_result=None
+                if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='sleep' and SLEEP_RETURN_MODE=='settings':
+                    SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
+                    sync_app_context(mode,True)
                 if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='settings':
                     mode=SETTINGS_RETURN_MODE
+                    sync_app_context(mode,True)
                 settings_notices=[]
                 while not APP_WINDOW.settings_notices.empty():settings_notices.append(APP_WINDOW.settings_notices.get_nowait())
                 if settings_notices:
@@ -2009,22 +2103,21 @@ def main():
                 except queue.Empty: typed_command = None
                 if typed_command:
                     if isinstance(typed_command,tuple):
+                        if typed_command[0]=='text_edit':
+                            try:apply_keyboard_edit(typed_command[1],mode)
+                            except (ValueError,OSError) as exc:speak(str(exc))
+                            continue
                         key=typed_command[1]
-                        typed_command='open settings' if key=='settings' else navigation_key(key,mode)
+                        typed_command='open settings' if key=='settings' else navigation_key(key,SLEEP_RETURN_MODE if mode=='sleep' else mode)
                         if typed_command is None:continue
-                    if typed_command=='open settings':
-                        mode=handle(typed_command,mode,typed=True)
-                    elif mode == 'sleep':
-                        if typed_command.lower() in ('wake up','wake companion'):
-                            mode = resume_from_sleep()
-                        else:
-                            speak('Say or type wake up first.')
+                    if mode=='sleep' and typed_command.lower() in ('wake up','wake companion'):
+                        mode=resume_from_sleep()
                     else:
-                        mode = handle(typed_command, mode, typed=True)
+                        mode = handle_keyboard(typed_command,mode)
                     if mode == 'exit': return 0
                     continue
             try:
-                audio = AUDIO.get(timeout=0.1)
+                audio = AUDIO.get(timeout=0.02)
             except queue.Empty:
                 if mode == 'web' and web_session and not speech_busy():
                     notice = web_session.focus_notice()
@@ -2041,12 +2134,12 @@ def main():
                     cloud_failed = True
                 recover_audio_overflow(recognizer, utterance)
                 continue
-            if mode=='settings':
+            if mode=='settings' or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()) or settings_audio_blocked:
                 # Settings readback must not become another settings command.
                 # Keep local silence/sleep/exit controls available during feedback.
                 if cloud:
                     cloud.stop();cloud=None
-                if speech_busy():settings_quiet_until=time.monotonic()+0.35
+                if (mode=='settings' and speech_busy()) or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()):settings_quiet_until=time.monotonic()+0.2
                 if time.monotonic()<settings_quiet_until:
                     settings_audio_blocked=True
                     utterance.clear()
@@ -2279,6 +2372,8 @@ if __name__ == '__main__':
             ('--check-update-environment', '--check-speech-file', '--check-speech', '--check-speech-control', '--check-runtime', '--check-model', '--check-audio', '--record-test', '--version')):
         try:
             APP_WINDOW = CompanionWindow(APP_VERSION, APP)
+            from keyboard_speech import KeyboardSpeech
+            KEYBOARD_SPEECH=KeyboardSpeech();APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
             APP_WINDOW.start()
         except Exception:
             APP_WINDOW = None

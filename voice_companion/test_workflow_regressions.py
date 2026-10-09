@@ -57,7 +57,9 @@ class WorkflowRegressions(unittest.TestCase):
                     self.assertEqual((field, value), ('recipient', 'old@example.com'))
                     window.email_field = field
                     companion.focus_email_entry()
-                    self.assertEqual(window.ui_actions.get_nowait(), ('email_focus', None), 'Repeated prompts must restore focus without replacing typed text')
+                    actions=[]
+                    while not window.ui_actions.empty():actions.append(window.ui_actions.get_nowait())
+                    self.assertIn(('email_focus', None),actions,'Repeated prompts must restore focus without replacing typed text')
                     window.report_entry_key('new', 'new@', 3, 4, 'at')
                     self.assertEqual(window.key_feedback.get_nowait(), 'at sign')
                     self.assertTrue(window.submit_entry('new@example.com'))
@@ -90,3 +92,4 @@ class WorkflowRegressions(unittest.TestCase):
             with patch.object(companion, 'email_draft', draft), patch.object(companion, 'mail_session', session), patch.object(companion, 'pending_send', (draft.send_hash(), 'gmail', 'me@example.com')), patch.object(companion, 'account_token', return_value=('me@example.com','token')), patch.object(companion, 'submit', side_effect=lambda *a, **k:events.append('send')), patch.object(companion, 'speak', side_effect=lambda text:events.append(text)), patch.object(companion, 'finish_mail_announcement', side_effect=lambda:events.append('announcement finished')), patch.object(session, 'list_messages', side_effect=refresh):
                 self.assertEqual(companion.handle('yes', 'email_draft'), 'mailbox')
             self.assertEqual(events[:4], ['send','Email sent successfully.','announcement finished',('refresh','page2','projects')])
+
