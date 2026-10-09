@@ -79,6 +79,62 @@ def download_release(release, folder, canceled, progress=None):
         temporary.unlink(missing_ok=True)
 
 
+_EXTERNAL_PROCESS_LOCK = threading.Lock()
+
+
+def launch_update_process(arguments, working_folder):
+    """Start Windows tools without inheriting the frozen app's DLL search path."""
+    import ctypes
+    import ntpath
+    roots = [str(Path(sys.executable).parent), str(getattr(sys, '_MEIPASS', Path(sys.executable).parent))]
+    def bundled(entry):
+        entry = ntpath.normcase(ntpath.abspath(entry.strip('"')))
+        return any(entry == ntpath.normcase(root) or entry.startswith(ntpath.normcase(root).rstrip('\\') + '\\') for root in roots)
+    environment = dict(os.environ)
+    environment['PATH'] = ';'.join(entry for entry in environment.get('PATH', '').split(';') if entry and not bundled(entry))
+    for key in list(environment):
+        if key.startswith('_PYI_') or key == '_MEIPASS2': environment.pop(key)
+    environment['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
+    kernel = ctypes.windll.kernel32
+    with _EXTERNAL_PROCESS_LOCK:
+        length = kernel.GetDllDirectoryW(0, None)
+        buffer = ctypes.create_unicode_buffer(length + 1)
+        if length: kernel.GetDllDirectoryW(len(buffer), buffer)
+        if not kernel.SetDllDirectoryW(None): raise OSError('Could not reset updater DLL search path')
+        try:
+            return subprocess.Popen(arguments, cwd=str(working_folder), env=environment, close_fds=True,
+                                    creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        finally:
+            if not kernel.SetDllDirectoryW(buffer.value if length else None):
+                raise OSError('Could not restore application DLL search path')
+
+
+def check_update_environment():
+    """Exercise the real subprocess launch from the packaged Windows EXE."""
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='vc-update-check-') as folder:
+        folder = Path(folder)
+        probe = folder/'probe.ps1'; result = folder/'result.json'
+        probe.write_text("""param([string]$BundleRoot,[string]$ResultFile)
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Speech
+$voice = New-Object -ComObject SAPI.SpVoice
+$blocked = @((Get-Process -Id $PID).Modules | Where-Object { $_.FileName.StartsWith($BundleRoot.TrimEnd('\\') + '\\', [StringComparison]::OrdinalIgnoreCase) })
+@{ clean = ($blocked.Count -eq 0); working_directory = [Environment]::CurrentDirectory } | ConvertTo-Json | Set-Content $ResultFile -Encoding UTF8
+[Runtime.InteropServices.Marshal]::FinalReleaseComObject($voice) | Out-Null
+if ($blocked.Count) { exit 1 }
+""", encoding='utf-8')
+        powershell = Path(os.environ['SystemRoot'])/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe'
+        process = launch_update_process([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(probe),
+                                        '-BundleRoot', str(getattr(sys, '_MEIPASS', Path(sys.executable).parent)), '-ResultFile', str(result)], folder)
+        if process.wait(timeout=45) != 0: raise RuntimeError('Updater loaded files from the application bundle')
+        state = json.loads(result.read_text(encoding='utf-8-sig'))
+        if not state['clean'] or Path(state['working_directory']).resolve() != folder.resolve():
+            raise RuntimeError('Updater environment or working directory is not isolated')
+        print('Packaged updater launch uses system libraries and an external working directory.', flush=True)
+        return 0
+
+
 class AppUpdates:
     def __init__(self, data_folder, current, resource_folder=None):
         self.folder = Path(data_folder); self.current = current
@@ -145,10 +201,11 @@ class AppUpdates:
         shutil.copyfile(self.resources/'apply-update.ps1',helper)
         ready = path.parent/'update-ready.json'
         ready.unlink(missing_ok=True)
-        process = subprocess.Popen(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(helper),
+        powershell = Path(os.environ.get('SystemRoot', r'C:\Windows'))/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe'
+        process = launch_update_process([str(powershell),'-NoProfile','-ExecutionPolicy','Bypass','-File',str(helper),
                           '-InstallerPath',str(path),'-AppPath',str(installed),'-PreviousProcessId',str(os.getpid()),
                           '-ExpectedHash',release['sha256'],'-DataFolder',str(self.folder),'-ReadyFile',str(ready)],
-                         creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                         working_folder=path.parent)
 
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
@@ -161,3 +218,4 @@ class AppUpdates:
             time.sleep(0.1)
         process.terminate()
         raise RuntimeError('Update helper did not acknowledge the handoff')
+

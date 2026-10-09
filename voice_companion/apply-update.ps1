@@ -2,7 +2,10 @@ param([string]$InstallerPath,[string]$AppPath,[int]$PreviousProcessId,[string]$E
 $ErrorActionPreference = 'Stop'
 $result = Join-Path $DataFolder 'update-result.json'
 $log = Join-Path $DataFolder 'update-install-log.txt'
-$progressFile = Join-Path (Split-Path $InstallerPath) 'install-percent.txt'
+$updateFolder = Split-Path $InstallerPath
+Set-Location -LiteralPath $updateFolder
+[Environment]::CurrentDirectory = $updateFolder
+$progressFile = Join-Path $updateFolder 'install-percent.txt'
 $voice = $null
 $recognizer = $null
 $setup = $null
@@ -52,7 +55,7 @@ try {
   }
   '0' | Set-Content -LiteralPath $progressFile -Encoding ASCII
   $arguments = '/VERYSILENT /SUPPRESSMSGBOXES /SP- /NORESTART /RESTARTEXITCODE=3010 /CLOSEAPPLICATIONS /NORESTARTAPPLICATIONS /LOG="' + $log + '" /UPDATESTATUSFILE="' + $progressFile + '"'
-  $setup = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -PassThru
+  $setup = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -WorkingDirectory $updateFolder -PassThru
   # Retain the native process handle before a fast Setup exit (Windows PowerShell 5.1).
   $setupHandle = $setup.Handle
   $percent = 0; $announced = -5
@@ -95,4 +98,5 @@ try {
   Close-UpdateAudio
   if ($voice) { try { [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($voice) | Out-Null } catch {} }
 }
+
 

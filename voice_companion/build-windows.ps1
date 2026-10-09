@@ -166,6 +166,8 @@ Copy-Item $diagnosticSource $diagnosticTarget -Force
 $exe = Join-Path $PSScriptRoot 'dist\VoiceCompanion\VoiceCompanion.exe'
 & $diagnosticTarget --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'A packaged runtime dependency is missing.' }
+& $exe --check-update-environment
+if ($LASTEXITCODE -ne 0) { throw 'The packaged updater inherited application files or its working directory.' }
 & $exe --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The quiet application is missing a runtime dependency.' }
 $modelCheck = & $diagnosticTarget --check-model
@@ -274,12 +276,12 @@ if (Test-Path $googleRegistration) {
   }
 }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.82-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.83-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.82-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.83-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -306,7 +308,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.82-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.83-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing
@@ -322,3 +324,4 @@ if (-not $NoPublish) {
   Write-Output 'Local build only. Publishing was skipped.'
 }
 Stop-Transcript | Out-Null
+

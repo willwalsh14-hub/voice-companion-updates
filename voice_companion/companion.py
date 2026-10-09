@@ -40,7 +40,7 @@ from speech_controls import request as speech_setting_request
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.82-test'
+APP_VERSION = '0.2.83-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -1663,12 +1663,15 @@ def poll_app_updates(mode):
 
 def main():
     global AI_SPEECH, UPDATES
+    if '--check-update-environment' in sys.argv:
+        from app_updates import check_update_environment
+        return check_update_environment()
     if '--version' in sys.argv:
         print('Voice Companion ' + APP_VERSION, flush=True)
         return 0
     if (getattr(sys, 'frozen', False) and Path(sys.executable).name.casefold() == 'voicecompanion.exe'
             and not any(flag in sys.argv for flag in
-                        ('--check-speech-file', '--check-speech', '--check-runtime', '--check-model', '--check-audio', '--record-test', '--text-mode'))):
+                        ('--check-update-environment', '--check-speech-file', '--check-speech', '--check-runtime', '--check-model', '--check-audio', '--record-test', '--text-mode'))):
         installed = Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs' / 'Voice Companion'
         if Path(sys.executable).parent.resolve() != installed.resolve():
             speak('This is a build file, not an installation. Run VoiceCompanion Setup to install the app.')
@@ -2097,7 +2100,7 @@ if __name__ == '__main__':
             startup_alert('Voice Companion could not start speech. Ask your trainer to run the setup check.')
             raise SystemExit(2)
     if windowed and not TEXT_MODE and not any(flag in sys.argv for flag in
-            ('--check-speech-file', '--check-speech', '--check-speech-control', '--check-runtime', '--check-model', '--check-audio', '--record-test', '--version')):
+            ('--check-update-environment', '--check-speech-file', '--check-speech', '--check-speech-control', '--check-runtime', '--check-model', '--check-audio', '--record-test', '--version')):
         try:
             APP_WINDOW = CompanionWindow(APP_VERSION, APP)
             APP_WINDOW.start()
@@ -2126,3 +2129,4 @@ if __name__ == '__main__':
                 pass
             startup_alert('Voice Companion stopped because of a problem. Ask your trainer to run the setup check.')
         raise SystemExit(2)
+

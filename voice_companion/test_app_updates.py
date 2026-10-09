@@ -63,7 +63,7 @@ class UpdateTests(unittest.TestCase):
             with patch('app_updates.fetch_release',side_effect=OSError('offline')):
                 service.check(True);self.assertEqual(service.events.get(timeout=2),('check_failed',True))
     def test_source_mode_cannot_launch_an_installer(self):
-        with tempfile.TemporaryDirectory() as folder,patch('app_updates.subprocess.Popen') as launch:
+        with tempfile.TemporaryDirectory() as folder,patch('app_updates.launch_update_process') as launch:
             service=AppUpdates(folder,'1.2.2-test');self.assertFalse(service.can_install())
             with self.assertRaises(ValueError):service.launch(Path(folder)/'Setup.exe',self.release())
             launch.assert_not_called()
@@ -101,7 +101,7 @@ class UpdateHandoffTests(unittest.TestCase):
             service=AppUpdates(root,'1.2.2-test')
             fake_os=types.SimpleNamespace(name='nt',environ={'LOCALAPPDATA':str(root)},getpid=lambda:123)
             fake_sys=types.SimpleNamespace(frozen=True,executable=str(app))
-            with patch('app_updates.os',fake_os),patch('app_updates.sys',fake_sys),patch('app_updates.subprocess.Popen') as launch:
+            with patch('app_updates.os',fake_os),patch('app_updates.sys',fake_sys),patch('app_updates.launch_update_process') as launch:
                 def acknowledge(*args, **kwargs):
                     (download/'update-ready.json').write_text('{"ready":true}')
                     return Mock()
@@ -140,3 +140,32 @@ class ConfiguredReleaseFeedTests(unittest.TestCase):
                 self.assertTrue(service.check())
                 self.assertEqual(service.events.get(timeout=2),('current',False))
                 fetch.assert_called_once_with(expected,'1.2.2-test')
+
+
+
+class ExternalUpdaterEnvironmentTests(unittest.TestCase):
+    def test_external_launch_cleans_environment_and_restores_dll_directory(self):
+        import ctypes
+        import types
+        from app_updates import launch_update_process
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)/'bundle'; root.mkdir()
+            def directory(size, buffer):
+                if buffer is not None: buffer.value = str(root)
+                return len(str(root))
+            kernel = Mock(); kernel.GetDllDirectoryW.side_effect = directory; kernel.SetDllDirectoryW.return_value = 1
+            environment = {'PATH':str(root)+';'+str(root/'bin')+';C:\\Windows\\System32', '_PYI_APPLICATION_HOME_DIR':str(root),'_MEIPASS2':str(root)}
+            fake_sys = types.SimpleNamespace(executable=str(root/'App.exe'), _MEIPASS=str(root))
+            with patch.object(ctypes,'windll',types.SimpleNamespace(kernel32=kernel),create=True), patch('app_updates.sys',fake_sys), patch.dict('app_updates.os.environ',environment,clear=True), patch('app_updates.subprocess.Popen') as start:
+                launch_update_process(['powershell.exe'],folder)
+                kwargs=start.call_args.kwargs
+                self.assertEqual(kwargs['cwd'],folder)
+                self.assertEqual(kwargs['env']['PATH'],r'C:\Windows\System32')
+                self.assertNotIn('_PYI_APPLICATION_HOME_DIR',kwargs['env'])
+                self.assertNotIn('_MEIPASS2',kwargs['env'])
+                self.assertEqual(kwargs['env']['PYINSTALLER_RESET_ENVIRONMENT'],'1')
+                self.assertTrue(kwargs['close_fds'])
+                self.assertEqual(kernel.SetDllDirectoryW.call_args_list, [unittest.mock.call(None),unittest.mock.call(str(root))])
+                start.side_effect=OSError('launch failed')
+                with self.assertRaises(OSError):launch_update_process(['powershell.exe'],folder)
+                self.assertEqual(kernel.SetDllDirectoryW.call_args_list[-1],unittest.mock.call(str(root)))
