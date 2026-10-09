@@ -36,11 +36,12 @@ from reading_navigation import ReadingCursor, reading_request
 from dictation_text import clean_dictation
 from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
+from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_request
 
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.85-test'
+APP_VERSION = '0.2.86-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -96,6 +97,13 @@ VOICE_PICK_ENGINE = None
 SPEECH_RATE = -1
 SPEECH_VOLUME = 100
 PUNCTUATION_LEVEL = 'some'
+VERBOSITY = 'high'
+SETTINGS_PANEL = None
+SETTINGS_RETURN_MODE = 'awake'
+try:
+    PREFERENCES = DEFAULTS | json.loads((APP/'preferences.json').read_text(encoding='utf-8'))
+except (OSError,ValueError,TypeError): PREFERENCES = dict(DEFAULTS)
+VERBOSITY = PREFERENCES.get('verbosity','high')
 INPUT_MODE = 'mixed'
 VOICE_PICK_INDEX = None
 VOICE_PICK_ORIGINAL = None
@@ -147,7 +155,7 @@ MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous t
 def announce_main_menu():
     global MAIN_MENU_INDEX
     MAIN_MENU_INDEX = None
-    speak(MAIN_MENU_PROMPT)
+    speak_prompt(MAIN_MENU_PROMPT)
 
 def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to get started and launch the main menu. Say help for the user guide.'
@@ -174,6 +182,46 @@ def finish_mail_announcement():
         if APP_WINDOW is not None and APP_WINDOW.closed.is_set(): break
         time.sleep(0.05)
 
+
+SETTINGS_ACTIONS = __import__('app_settings').ACTIONS
+
+def save_preferences():
+    from app_settings import save_preferences as save
+    save(sys.modules[__name__])
+
+def open_settings(mode):
+    from app_settings import open_settings as show
+    return show(sys.modules[__name__],mode)
+
+def settings_action(key,mode):
+    global MEDIA_SECTION,web_session
+    if key in ('radio_presets','radio_recordings','podcast_subscriptions'):
+        MEDIA_SECTION='podcast' if key=='podcast_subscriptions' else 'radio'
+        speak(media().command(SETTINGS_ACTIONS[key],section=MEDIA_SECTION))
+        return 'media'
+    if key=='web_favorites':
+        web_session=web_session or WebSession(APP)
+        speak(web_session.command('list favorites'))
+        return 'web'
+    return handle(SETTINGS_ACTIONS[key],mode,typed=True)
+
+def navigation_key(key,mode):
+    editor=document if mode=='document' else email_draft if mode=='email_draft' else None
+    if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
+        if key=='Enter':return 'ok'
+        if key=='Escape':return 'cancel replacement' if getattr(editor,'replacement_candidates',[]) else 'cancel selection' if getattr(editor,'selection_candidates',[]) else 'cancel'
+        if key in ('Up','Left'):return 'previous'
+        if key in ('Down','Right'):return 'next'
+    if mode=='awake' and key=='Escape':return 'main menu'
+    return keyboard_request(key,mode)
+
+def apply_settings(values):
+    from app_settings import apply_settings as apply
+    return apply(sys.modules[__name__],values)
+
+def apply_document_defaults(document):
+    from app_settings import apply_document_defaults as apply
+    apply(sys.modules[__name__],document)
 
 def microphone_settings(sd):
     device = sd.query_devices(kind='input')
@@ -225,6 +273,9 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 
 def fast_command_request(command, mode):
+    if mode == 'settings': return True
+    if command in ('settings','open settings','show settings','preferences','open preferences'):return True
+    if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
     if mode in ('update_offer','update_download') and command in ('yes','yes please','no','no thanks','okay','ok','install it','install update','cancel','cancel update','stop update','not now','later','status','update status'): return True
     setting = speech_setting_request(command)
     # Let the dictation model refine an unparsed number before rejecting it.
@@ -300,6 +351,8 @@ def punctuation_for_speech(text):
              '(': ' open parenthesis ', ')': ' close parenthesis ',
              '"': ' quotation mark ', '@': ' at sign ', '#': ' hash ',
              '/': ' slash ', '-': ' dash '}
+    if PUNCTUATION_LEVEL == 'most':
+        return re.sub(r'[:,;?!()\"@#/-]',lambda match:names[match[0]],text)
     if PUNCTUATION_LEVEL == 'none':
         return re.sub(r'[,.:;?!()"#]', ' ', text)
     return re.sub(r'[,.:;?!()"@#/-]', lambda match: names[match[0]], text)
@@ -332,7 +385,7 @@ def update_audio_ducking(active=None):
         return
     player = MEDIA_HUB.player
     try:
-        player.set_ducked((not SPEECH_PAUSED and speech_busy()) if active is None else active)
+        player.set_ducked(PREFERENCES.get('duck_audio',True) and ((not SPEECH_PAUSED and speech_busy()) if active is None else active))
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
@@ -340,7 +393,7 @@ def update_audio_ducking(active=None):
 def save_speech_settings():
     APP.mkdir(parents=True, exist_ok=True)
     (APP / 'speech-settings.json').write_text(
-        json.dumps({'rate': SPEECH_RATE, 'volume': SPEECH_VOLUME, 'punctuation': PUNCTUATION_LEVEL,
+        json.dumps({'rate': SPEECH_RATE, 'volume': SPEECH_VOLUME, 'punctuation': PUNCTUATION_LEVEL, 'verbosity':VERBOSITY, 'input_mode':INPUT_MODE,
                     'ai_enabled': bool(AI_SPEECH and AI_SPEECH.enabled), 'ai_voice': AI_VOICE_NAME,
                     'espeak_enabled': bool(ESPEAK_SPEECH and ESPEAK_SPEECH.enabled), 'espeak_voice': ESPEAK_VOICE_NAME,
                     'voice': voice.Voice.GetDescription() if not TEXT_MODE else ''}), encoding='utf-8')
@@ -542,6 +595,10 @@ def configure_ai_speech():
     return True
 
 
+def speak_prompt(text):
+    speak(prompt_text(text,VERBOSITY))
+
+
 def speak(text):
     print('Companion:', text, flush=True)
     if APP_WINDOW is not None:
@@ -642,8 +699,42 @@ def _handle(text, mode, typed=False):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
-    global UPDATE_MANUAL, UPDATE_LAST_PERCENT
+    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY
+    if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
+        control=speech_control(text)
+        if control:
+            control_speech(control);return mode
+        if spoken_control(text) in ('exit','sleep'):
+            SETTINGS_PANEL.cancel()
+            return handle(text,SETTINGS_RETURN_MODE,typed)
+        SETTINGS_PANEL.command(text)
+        return mode
+    if normalized_command(text) in ('settings','open settings','show settings','preferences','open preferences'):
+        SETTINGS_RETURN_MODE = mode
+        return open_settings(mode)
+    verbosity_request = re.fullmatch(r'(?:set )?verbosity(?: to)? (high|medium|low)',normalized_command(text))
+    if verbosity_request:
+        VERBOSITY = verbosity_request[1]
+        PREFERENCES['verbosity'] = VERBOSITY
+        save_preferences(); save_speech_settings()
+        speak('Verbosity '+VERBOSITY+'.')
+        return mode
     update_command = normalized_command(text)
+    if mode=='awake' and update_command in ('main menu','back to main menu'):
+        announce_main_menu()
+        return mode
+    if re.match(r'^(?:set )?(?:audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email list size|sending account|station database|podcast limit)\b.+',update_command):
+        from app_settings import snapshot
+        values,context=snapshot(sys.modules[__name__])
+        session=SettingsSession(values,context)
+        request=session.voice_setting(text)
+        if request:
+            try:
+                message=session.set(*request)
+                apply_settings(session.values)
+                speak(message+'.')
+            except (ValueError,OSError) as exc:speak(str(exc))
+            return mode
     if update_command in ('check for updates', 'check updates', 'update voice companion'):
         if UPDATES is None:
             speak('Update checking is available in the installed app.')
@@ -776,7 +867,7 @@ def _handle(text, mode, typed=False):
                 return 'awake'
             return handle('main menu', returning)
         if help_session is None:
-            speak('The user guide could not open. Say help to try again.')
+            speak_prompt('The user guide could not open. Say help to try again.')
             return help_return_mode
         result = help_session.process('back to topics' if command in (
             'help', 'user guide', 'open user guide', 'manual', 'open manual') else text)
@@ -812,9 +903,9 @@ def _handle(text, mode, typed=False):
                 VOICE_PICK_CONFIRM = False
                 save_speech_settings()
                 speak('Using ' + chosen + '.')
-            else: speak('Voice name was not unique. Say list voices and try the full name.')
+            else: speak_prompt('Voice name was not unique. Say list voices and try the full name.')
         return mode
-    punctuation = re.fullmatch(r'(?:punctuation|set punctuation to) (none|some|all)', command)
+    punctuation = re.fullmatch(r'(?:punctuation|set punctuation to) (none|some|most|all)', command)
     if punctuation:
         PUNCTUATION_LEVEL = punctuation[1]
         save_speech_settings()
@@ -880,6 +971,7 @@ def _handle(text, mode, typed=False):
     }.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
+        save_speech_settings()
         if document is not None: document.dictating = requested_mode != 'commands'
         if email_draft is not None:
             email_draft.dictating = requested_mode != 'commands'
@@ -1010,7 +1102,7 @@ def _handle(text, mode, typed=False):
             return mode
         if mode == 'email_draft' and email_draft is not None:
             if (email_draft.compose_step or 'body') == 'body': speak(email_draft.process(text))
-            else: speak('This email field is single-line. Say go to body to insert a new line in the message.')
+            else: speak_prompt('This email field is single-line. Say go to body to insert a new line in the message.')
             return mode
     if mode == 'document' and document is not None and document_control_request(text):
         speak(document.process(text))
@@ -1062,7 +1154,7 @@ def _handle(text, mode, typed=False):
         elif mode == 'web' and web_session:
             speak(web_session.dictate_to_focus(text))
         else:
-            speak('No text field is active. Say normal mode to choose a task.')
+            speak_prompt('No text field is active. Say normal mode to choose a task.')
         return mode
     store = ProtectedStore(APP)
     direct_connection = re.fullmatch(
@@ -1099,7 +1191,7 @@ def _handle(text, mode, typed=False):
     if command in ('list email accounts', 'which email account', 'what email account', 'my email accounts'):
         accounts = store.accounts()
         selected = store.selected()
-        if not accounts: speak('No email account is connected. Say add account.')
+        if not accounts: speak_prompt('No email account is connected. Say add account.')
         else:
             speak('Connected accounts: ' + '; '.join(p.capitalize() + ' ' + a +
                   (' selected' if selected == (p,a) else '') for p,a in accounts) +
@@ -1151,7 +1243,7 @@ def _handle(text, mode, typed=False):
         if '@' in choice or ' at ' in choice:
             try: choice = normalize_recipient(choice)
             except ValueError:
-                speak('I did not understand that email address. Say list email accounts and try again.')
+                speak_prompt('I did not understand that email address. Say list email accounts and try again.')
                 return mode
             matches = [(p,a) for p,a in accounts if a.casefold() == choice.casefold()]
         else:
@@ -1178,7 +1270,7 @@ def _handle(text, mode, typed=False):
     if command in ('email', 'my email', 'open email'):
         selected = store.selected()
         if not selected:
-            speak('No email account is selected. Say add account, or list email accounts.')
+            speak_prompt('No email account is selected. Say add account, or list email accounts.')
             return mode
         mail_session = MailSession(selected[0], APP, progress=mail_progress)
         speak('Opening ' + selected[1] + '. ' + mail_session.process('open inbox'))
@@ -1225,12 +1317,13 @@ def _handle(text, mode, typed=False):
             return 'email_draft'
         if document_request:
             document = VoiceDocument(documents_folder())
+            apply_document_defaults(document)
             document.dictating = INPUT_MODE != 'commands'
-            speak('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
+            speak_prompt('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
             return 'document'
         note_buffer.clear()
         note_selection.text = None
-        speak('Dictation started. Speak naturally. Say save note when finished.')
+        speak_prompt('Dictation started. Speak naturally. Say save note when finished.')
         return 'note'
     if pending_website is not None:
         address, host = pending_website
@@ -1241,7 +1334,7 @@ def _handle(text, mode, typed=False):
             speak(result)
             return 'web' if web_session.snapshot else mode
         else:
-            speak('Website request canceled. Say open website followed by the address to try again.')
+            speak_prompt('Website request canceled. Say open website followed by the address to try again.')
         return mode
     if mode == 'web':
         web_session.input_mode = INPUT_MODE
@@ -1376,12 +1469,12 @@ def _handle(text, mode, typed=False):
                 else:
                     speak('Back to ' + mail_session.folder_name + '. ' + result)
             except Exception:
-                speak('Your message was accepted, but the folder could not refresh. Say list messages to try again.')
+                speak_prompt('Your message was accepted, but the folder could not refresh. Say list messages to try again.')
             return 'mailbox'
         if pending_send is not None:
             pending_send = None
         if INPUT_MODE == 'commands' and command in ('start dictation', 'dictate', 'continue writing'):
-            speak('Commands only is on. Say normal mode or dictation mode to write.')
+            speak_prompt('Commands only is on. Say normal mode or dictation mode to write.')
             return mode
         if command in ('leave email', 'close email', 'back to main menu',
                        'go back', 'back', 'exit', 'exit email', 'main menu'):
@@ -1396,7 +1489,7 @@ def _handle(text, mode, typed=False):
         return 'email_draft'
     if mode == 'document':
         if INPUT_MODE == 'commands' and command in ('start dictation', 'dictate', 'continue writing'):
-            speak('Commands only is on. Say normal mode or dictation mode to write.')
+            speak_prompt('Commands only is on. Say normal mode or dictation mode to write.')
             return mode
         if command in ('leave document', 'close document', 'back to main menu',
                        'go back', 'back', 'exit', 'exit document', 'main menu'):
@@ -1431,7 +1524,7 @@ def _handle(text, mode, typed=False):
                 speak('The note was empty.')
             return 'awake'
         if INPUT_MODE == 'commands':
-            speak('Commands only is on. Say normal mode or dictation mode to add to the note.')
+            speak_prompt('Commands only is on. Say normal mode or dictation mode to add to the note.')
             return mode
         cleaned = clean_dictation(text)
         if cleaned: note_buffer.append(cleaned)
@@ -1447,7 +1540,7 @@ def _handle(text, mode, typed=False):
         try:
             document = VoiceDocument.open_existing(documents_folder(), title)
         except FileNotFoundError:
-            speak('I could not find that document. Say list documents to hear the names.')
+            speak_prompt('I could not find that document. Say list documents to hear the names.')
             return mode
         except (ValueError, OSError, KeyError, zipfile.BadZipFile, ET.ParseError):
             speak('I could not safely open that document in this test editor.')
@@ -1462,7 +1555,7 @@ def _handle(text, mode, typed=False):
         if command in ('check email', 'read my email'):
             selected = store.selected()
             if not selected:
-                speak('No email account is selected. Say add account, or list email accounts.')
+                speak_prompt('No email account is selected. Say add account, or list email accounts.')
                 return mode
             provider = selected[0]
         else:
@@ -1485,7 +1578,7 @@ def _handle(text, mode, typed=False):
         try:
             email_draft = VoiceEmail.open_existing(APP / 'Email Drafts', text[len('open email draft '):])
         except (FileNotFoundError, ValueError, OSError, KeyError, TypeError):
-            speak('I could not open that draft. Say list email drafts to hear the names.')
+            speak_prompt('I could not open that draft. Say list email drafts to hear the names.')
             return mode
         email_draft.dictating = INPUT_MODE != 'commands'
         email_draft.automatic_dictation = INPUT_MODE != 'commands'
@@ -1507,25 +1600,26 @@ def _handle(text, mode, typed=False):
         return 'web' if web_session.snapshot else 'awake'
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
-            speak('There is no document open. Say create a document.')
+            speak_prompt('There is no document open. Say create a document.')
             return 'awake'
         speak('Continuing ' + document.title + '. Say read paragraph to hear your place.')
         return 'document'
     if command in ('resume email', 'continue email', 'resume draft'):
         if email_draft is None:
-            speak('There is no email open. Say write an email.')
+            speak_prompt('There is no email open. Say write an email.')
             return 'awake'
         speak('Continuing email draft ' + email_draft.title + '. Say read paragraph to hear the body.')
         return 'email_draft'
     if re.search(r'\b(document|word file|word document)\b', command):
         document = VoiceDocument(documents_folder())
+        apply_document_defaults(document)
         document.dictating = INPUT_MODE != 'commands'
-        speak('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
+        speak_prompt('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
         return 'document'
     if re.search(r'\b(note|dictate)\b', command):
         note_buffer.clear()
         note_selection.text = None
-        speak('Dictation started. Speak naturally. Say save note when finished.')
+        speak_prompt('Dictation started. Speak naturally. Say save note when finished.')
         return 'note'
     provider_websites = {'gmail': 'https://mail.google.com/',
                          'outlook': 'https://outlook.live.com/mail/',
@@ -1553,16 +1647,16 @@ def _handle(text, mode, typed=False):
         speak(web_session.command(text))
         return 'web' if web_session.snapshot else 'awake'
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):
-        speak('Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft.')
+        speak_prompt('Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft.')
         return 'awake'
     if command in ('radio','internet radio'):
         MEDIA_SECTION = 'radio'
-        speak('Radio is ready. Say search followed by a station name, browse genre jazz, or choose station database.')
+        speak_prompt('Radio is ready. Say search followed by a station name, browse genre jazz, or choose station database.')
         return 'media'
     if command in ('podcasts','listen to podcasts'):
         MEDIA_SECTION = 'podcast'
         media().awaiting_radio_search = False
-        speak('Podcasts are ready. Say search followed by a name, browse podcasts category science, or list subscriptions.')
+        speak_prompt('Podcasts are ready. Say search followed by a name, browse podcasts category science, or list subscriptions.')
         return 'media'
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',
@@ -1596,7 +1690,7 @@ def _handle(text, mode, typed=False):
             return 'web' if web_session.snapshot else 'awake'
         speak('What would you like to search for?')
         return 'search'
-    speak('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
+    speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 
 
@@ -1621,7 +1715,7 @@ def startup_update_mode():
     """Check before readiness; the input stream is already open for yes/no."""
     global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE
     STARTUP_UPDATE_PENDING = False
-    if UPDATES.check():
+    if PREFERENCES.get('check_updates',True) and UPDATES.check():
         try:
             event, payload = UPDATES.events.get(timeout=10)
         except queue.Empty:
@@ -1692,7 +1786,7 @@ def poll_app_updates(mode):
 
 
 def main():
-    global AI_SPEECH, UPDATES
+    global AI_SPEECH, UPDATES, SETTINGS_PANEL
     if '--check-update-environment' in sys.argv:
         from app_updates import check_update_environment
         return check_update_environment()
@@ -1866,6 +1960,25 @@ def main():
             if APP_WINDOW is not None:
                 try: settings_result = APP_WINDOW.settings_results.get_nowait()
                 except queue.Empty: settings_result = None
+                if isinstance(settings_result,tuple):
+                    kind,values=settings_result
+                    if kind=='general':
+                        try:
+                            apply_settings(values)
+                            SETTINGS_PANEL.accepted()
+                            speak('Settings saved.')
+                        except Exception as exc:
+                            SETTINGS_PANEL.failed('Settings were not saved: '+str(exc))
+                    elif kind=='action':
+                        mode=settings_action(values,SETTINGS_RETURN_MODE)
+                    settings_result=None
+                if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='settings':
+                    mode=SETTINGS_RETURN_MODE
+                settings_notices=[]
+                while not APP_WINDOW.settings_notices.empty():settings_notices.append(APP_WINDOW.settings_notices.get_nowait())
+                if settings_notices:
+                    interrupt_speech()
+                    for settings_notice in settings_notices:speak_keyboard_feedback(settings_notice)
                 if settings_result:
                     interrupt_speech()
                     if AI_SPEECH is not None: AI_SPEECH.enabled = False
@@ -1889,7 +2002,13 @@ def main():
                 try: typed_command = APP_WINDOW.commands.get_nowait()
                 except queue.Empty: typed_command = None
                 if typed_command:
-                    if mode == 'sleep':
+                    if isinstance(typed_command,tuple):
+                        key=typed_command[1]
+                        typed_command='open settings' if key=='settings' else navigation_key(key,mode)
+                        if typed_command is None:continue
+                    if typed_command=='open settings':
+                        mode=handle(typed_command,mode,typed=True)
+                    elif mode == 'sleep':
                         if typed_command.lower() in ('wake up','wake companion'):
                             mode = resume_from_sleep()
                         else:
@@ -2089,7 +2208,11 @@ if __name__ == '__main__':
                 SPEECH_RATE = max(-10, min(10, int(settings.get('rate', -1))))
                 SPEECH_VOLUME = max(0, min(100, int(settings.get('volume', 100))))
                 PUNCTUATION_LEVEL = settings.get('punctuation', 'some')
-                if PUNCTUATION_LEVEL not in ('none', 'some', 'all'): PUNCTUATION_LEVEL = 'some'
+                VERBOSITY = settings.get('verbosity',PREFERENCES.get('verbosity','high'))
+                if VERBOSITY not in ('high','medium','low'): VERBOSITY='high'
+                INPUT_MODE = settings.get('input_mode','mixed')
+                if INPUT_MODE not in ('mixed','commands','dictation'): INPUT_MODE='mixed'
+                if PUNCTUATION_LEVEL not in ('none', 'some', 'most', 'all'): PUNCTUATION_LEVEL = 'some'
                 voices = voice.GetVoices()
                 named = [voices.Item(i) for i in range(voices.Count)
                          if voices.Item(i).GetDescription() == settings.get('voice')]
@@ -2158,5 +2281,6 @@ if __name__ == '__main__':
                 pass
             startup_alert('Voice Companion stopped because of a problem. Ask your trainer to run the setup check.')
         raise SystemExit(2)
+
 
 

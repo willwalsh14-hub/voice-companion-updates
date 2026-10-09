@@ -90,6 +90,7 @@ class HelpSession:
                    'commands': 'commands and modes', 'input modes': 'voice input modes',
                    'contacts': 'write an email draft', 'folders': 'read and organize email',
                    'presets': 'save and play radio presets', 'radio presets': 'save and play radio presets',
+                   'settings': 'self-voicing settings', 'verbosity': 'self-voicing settings', 'keyboard': 'keyboard navigation',
                    'email lists': 'email list size and pages', 'station database': 'choose a radio station source'}
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)
@@ -165,3 +166,4 @@ class HelpSession:
             name, paragraphs = self._subtopics()[self.subtopic_index]
             return self._open_article(paragraphs, name)
         return self._item()
+

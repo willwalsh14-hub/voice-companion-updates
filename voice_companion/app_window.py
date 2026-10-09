@@ -30,6 +30,7 @@ class CompanionWindow:
         self.version = version
         self.data_folder = data_folder
         self.settings_results = queue.Queue()
+        self.settings_notices = queue.Queue()
         self.messages = queue.Queue()
         self.commands = queue.Queue()
         self.ui_actions = queue.Queue()
@@ -127,7 +128,26 @@ class CompanionWindow:
                 if self.submit_entry(typed.get()):
                     typed.delete(0, 'end')
                 return 'break'
-            typed.bind('<Return>', submit_typed)
+            def navigation(event):
+                if event.widget.winfo_toplevel() != root: return
+                if event.keysym == 'Escape':
+                    self.commands.put(('keyboard','Escape')); return 'break'
+                if event.keysym=='Return' and isinstance(event.widget,tk.Button):
+                    event.widget.invoke(); return 'break'
+                if self.email_field or (event.widget == typed and typed.get()): return
+                if event.widget == typed or event.widget == history or event.widget == root:
+                    self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
+            def enter(event):
+                if self.email_field or typed.get(): return submit_typed(event)
+                return navigation(event)
+            typed.bind('<Return>', enter)
+            for key in ('Up','Down','Left','Right','Escape'):
+                root.bind_all('<'+key+'>',navigation)
+            root.bind_all('<Return>',navigation,add='+')
+            def settings_shortcut(event):
+                self.commands.put(('keyboard','settings')); return 'break'
+            root.bind_all('<Control-comma>',settings_shortcut)
+            tk.Button(root,text='Settings (Ctrl+Comma)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
             self.current = tk.StringVar(value='Starting speech and microphone...')
@@ -264,3 +284,4 @@ class CompanionWindow:
             self.problem = exc
             self.ready.set()
             self.closed.set()
+

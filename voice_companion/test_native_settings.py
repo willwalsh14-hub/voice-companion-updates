@@ -1,0 +1,73 @@
+"""Windows integration checks for the real category dialog and message loop."""
+import ctypes as c
+from ctypes import wintypes as w
+import sys
+import threading
+import time
+import unittest
+from native_settings import NativeSettings
+from settings_model import SettingsSession,DEFAULTS
+
+@unittest.skipUnless(sys.platform=='win32','Native Windows controls require Windows')
+class NativeSettingsTests(unittest.TestCase):
+    def open_panel(self):
+        self.saved=[];self.notices=[]
+        context={'engines':('windows',),'windows_voices':('Test voice',),'espeak_voices':(),'ai_voices':('coral',),'accounts':(),'podcasts':(),'podcast_limits':{}}
+        values=DEFAULTS|{'rate':'0','volume':'100','punctuation':'some','input_mode':'mixed','engine':'windows','windows_voice':'Test voice','ai_voice':'coral','email_list_size':'10','browser':'firefox','radio_source':'all','podcast_limit':'manual','ai_consent':False,'remove_ai':False,'api_key':''}
+        self.session=SettingsSession(values,context)
+        def save(values):self.saved.append(values);self.panel.accepted()
+        self.panel=NativeSettings(self.session,self.notices.append,save,lambda key:None).start()
+        self.assertTrue(self.panel.ready.wait(8));self.assertFalse(self.panel.closed.is_set(),self.notices)
+        self.u=c.WinDLL('user32',use_last_error=True)
+        self.u.GetDlgItem.restype=w.HWND;self.u.GetDlgItem.argtypes=[w.HWND,c.c_int]
+        self.u.SendMessageW.restype=c.c_ssize_t;self.u.SendMessageW.argtypes=[w.HWND,w.UINT,w.WPARAM,w.LPARAM]
+        self.u.PostMessageW.restype=w.BOOL;self.u.PostMessageW.argtypes=[w.HWND,w.UINT,w.WPARAM,w.LPARAM]
+        return self.panel.hwnd
+    def wait(self,condition):
+        until=time.monotonic()+5
+        while not condition() and time.monotonic()<until:time.sleep(.02)
+        self.assertTrue(condition(),self.notices)
+    def tearDown(self):
+        if hasattr(self,'panel') and not self.panel.closed.is_set():self.panel.cancel();self.panel.closed.wait(3)
+    def test_category_arrows_immediately_change_options_and_enter_saves(self):
+        hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
+        self.u.SendMessageW(categories,0x100,0x28,0) # Down arrow, no Enter.
+        self.wait(lambda:self.session.category==1)
+        checkbox=self.u.GetDlgItem(hwnd,202)
+        for _ in range(3):self.panel.command('next setting')
+        self.wait(lambda:any('Lower media volume while Companion speaks' in message for message in self.notices))
+        before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
+        self.u.SendMessageW(checkbox,0x100,0x20,0);self.u.SendMessageW(checkbox,0x101,0x20,0)
+        self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before)
+        self.u.PostMessageW(checkbox,0x100,0x0D,0)
+        self.assertTrue(self.panel.closed.wait(5),self.notices)
+        self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
+    def test_escape_discards_changes_and_voice_settings_are_staged(self):
+        hwnd=self.open_panel();self.panel.command('verbosity low')
+        self.wait(lambda:self.session.values['verbosity']=='low')
+        self.assertFalse(self.saved)
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0)
+        self.assertTrue(self.panel.closed.wait(5))
+        self.assertFalse(self.saved);self.assertEqual(self.session.values['verbosity'],'high')
+    def test_tab_moves_from_categories_to_setting_and_reads_focus(self):
+        hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
+        self.u.PostMessageW(categories,0x100,9,0)
+        self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
+        self.assertTrue(any('Verbosity' in message for message in self.notices))
+
+    def test_text_entry_is_self_voicing_and_password_is_hidden(self):
+        hwnd=self.open_panel();self.panel.command('documents')
+        self.wait(lambda:self.session.category==6)
+        entry=self.u.GetDlgItem(hwnd,200)
+        self.u.PostMessageW(entry,0x102,ord('Z'),0)
+        self.wait(lambda:'Z' in self.notices)
+        self.panel.command('synthesizer')
+        self.wait(lambda:self.session.category==2)
+        password=self.u.GetDlgItem(hwnd,204)
+        self.assertTrue(password)
+        before=len(self.notices)
+        self.u.PostMessageW(password,0x102,ord('Q'),0)
+        self.wait(lambda:'Hidden character.' in self.notices[before:])
+        self.assertNotIn('Q',self.notices[before:])
+
+if __name__=='__main__':unittest.main()
