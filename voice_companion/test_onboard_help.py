@@ -50,7 +50,7 @@ class OnboardHelpTests(unittest.TestCase):
     def test_main_menu_from_help_saves_underlying_document(self):
         import companion
         from unittest.mock import Mock
-        document = Mock()
+        document = Mock(title="Saved report")
         document.pending_spacing = True
         with patch.object(companion, 'speak') as spoken, patch.object(companion, 'GUIDE', GUIDE), \
              patch.object(companion, 'document', document):
@@ -130,3 +130,4 @@ class OnboardHelpTests(unittest.TestCase):
             self.assertIn(' of ', spoken.call_args.args[0])
             self.assertEqual(companion.handle('help', 'help'), 'help')
             self.assertEqual(companion.handle('close help', 'help'), 'awake')
+

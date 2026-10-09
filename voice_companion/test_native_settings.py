@@ -44,9 +44,9 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
     def test_escape_discards_changes_and_voice_settings_are_staged(self):
         hwnd=self.open_panel();self.panel.command('verbosity low')
-        self.wait(lambda:self.session.values['verbosity']=='low')
+        self.wait(lambda:self.session.values['verbosity']=='low' and 'Verbosity low' in self.notices)
         self.assertFalse(self.saved)
-        self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0)
+        self.assertTrue(self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0))
         self.assertTrue(self.panel.closed.wait(5))
         self.assertFalse(self.saved);self.assertEqual(self.session.values['verbosity'],'high')
     def test_combo_arrow_changes_value_and_enter_saves(self):
@@ -92,7 +92,7 @@ class NativeSettingsTests(unittest.TestCase):
             self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)
             time.sleep(.15)
             self.assertFalse(any('Choose one of' in n or 'Settings:' in n for n in self.notices),self.notices)
-        self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0)
+        self.assertTrue(self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0))
         self.assertTrue(self.panel.closed.wait(5),self.notices)
         self.assertFalse(self.saved)
 
