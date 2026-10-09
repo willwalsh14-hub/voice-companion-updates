@@ -16,6 +16,22 @@ from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typ
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
+    def test_pause_resume_and_stop_control_the_keyboard_voice_on_its_owner_thread(self):
+        worker=KeyboardSpeech.__new__(KeyboardSpeech);worker.settings=('',0,100,None);worker.problem=None;worker.paused=False;worker.active=True;worker.quiet_until=0
+        worker.queue=Mock(get=Mock(side_effect=['Read this.',('pause',),('resume',),('interrupt',),None]))
+        voice=Mock()
+        with patch.dict(sys.modules,{'pythoncom':Mock(),'win32com':Mock(),'win32com.client':Mock(Dispatch=Mock(return_value=voice))}):worker.run()
+        self.assertEqual([call[0] for call in voice.mock_calls],['Speak','Pause','Resume','Speak'])
+        self.assertEqual(voice.Speak.call_args.args,('',3));self.assertFalse(worker.active)
+        with patch.object(companion,'KEYBOARD_SPEECH',Mock()) as output,patch.object(companion,'TEXT_MODE',True),patch.object(companion,'SPEECH_PAUSED',False):
+            companion.control_speech('pause');companion.control_speech('resume');companion.interrupt_speech()
+            self.assertEqual([call.args for call in output.control.call_args_list],[('pause',),('resume',)])
+            output.interrupt.assert_called_once()
+    def test_stop_discards_pending_keyboard_readback(self):
+        worker=KeyboardSpeech.__new__(KeyboardSpeech);worker.queue=queue.Queue()
+        worker.queue.put('Old paragraph.');worker.queue.put('Old character.')
+        worker.interrupt()
+        self.assertEqual(worker.queue.get_nowait(),('interrupt',));self.assertTrue(worker.queue.empty())
     def test_fast_espeak_review_discards_obsolete_feedback_before_speaking(self):
         worker=KeyboardSpeech.__new__(KeyboardSpeech)
         engine=Mock(enabled=True);worker.settings=('',2,75,engine);worker.problem=None
@@ -124,6 +140,12 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(self.window.key_feedback.get(),'b');self.assertLess(time.monotonic()-started,.4)
         time.sleep(.2);self.assertTrue(self.window.key_feedback.empty())
         self.wait(lambda:not self.window.key_feedback.empty());self.assertEqual(self.window.key_feedback.get(),'Bravo')
+    def test_pending_phonetic_is_canceled_when_speech_is_silenced(self):
+        self.context()
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))
+        self.wait(lambda:not self.window.key_feedback.empty());self.assertEqual(self.window.key_feedback.get(),'b')
+        self.call(lambda:self.window.ui_actions.put(('cancel_phonetic',None)))
+        time.sleep(.65);self.assertTrue(self.window.key_feedback.empty())
     def test_return_to_menu_clears_stale_field_and_restores_arrow_navigation(self):
         self.context();self.window.email_field='recipient'
         self.window.set_context(dict(mode='awake',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))

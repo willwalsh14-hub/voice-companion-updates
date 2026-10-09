@@ -311,6 +311,7 @@ class CompanionWindow:
                 while True:
                     try: action, field = self.ui_actions.get_nowait()
                     except queue.Empty: break
+                    if action=='cancel_phonetic':cancel_phonetic();continue
                     if action=='ui_call':
                         field();continue
                     if action=='context':

@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.89-test'
+APP_VERSION = '0.2.90-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -386,6 +386,8 @@ def fast_offline_silence(recognizer, utterance):
 
 def interrupt_speech():
     global SPEECH_PAUSED
+    if APP_WINDOW is not None:APP_WINDOW.ui_actions.put(('cancel_phonetic',None))
+    if KEYBOARD_SPEECH is not None:KEYBOARD_SPEECH.interrupt()
     if ESPEAK_SPEECH is not None:
         ESPEAK_SPEECH.interrupt()
     if AI_SPEECH is not None:
@@ -401,6 +403,8 @@ def interrupt_speech():
 
 def control_speech(action):
     global SPEECH_PAUSED
+    if action=='pause' and APP_WINDOW is not None:APP_WINDOW.ui_actions.put(('cancel_phonetic',None))
+    if KEYBOARD_SPEECH is not None:KEYBOARD_SPEECH.control(action)
     if ESPEAK_SPEECH is not None:
         (ESPEAK_SPEECH.pause if action == 'pause' else ESPEAK_SPEECH.resume)()
     if AI_SPEECH is not None:
@@ -434,6 +438,8 @@ def punctuation_for_speech(text):
 def speech_busy():
     if TEXT_MODE or SPEECH_PAUSED:
         return SPEECH_PAUSED
+    if KEYBOARD_SPEECH is not None and KEYBOARD_SPEECH.busy():
+        return True
     if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.busy():
         return True
     if AI_SPEECH is not None and AI_SPEECH.busy():

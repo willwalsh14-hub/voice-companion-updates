@@ -53,7 +53,9 @@ class WorkflowRegressions(unittest.TestCase):
                 window = CompanionWindow('test')
                 with patch.object(companion, 'email_draft', draft), patch.object(companion, 'APP_WINDOW', window), patch.object(companion, 'INPUT_MODE', 'mixed'), patch.object(companion, 'speak'):
                     companion.handle('go to to', 'email_draft')
-                    field, value = window.ui_actions.get_nowait()[1]
+                    initial_actions=[]
+                    while not window.ui_actions.empty():initial_actions.append(window.ui_actions.get_nowait())
+                    field, value = next(payload for name,payload in initial_actions if name=='email_field')
                     self.assertEqual((field, value), ('recipient', 'old@example.com'))
                     window.email_field = field
                     companion.focus_email_entry()
