@@ -40,7 +40,7 @@ from speech_controls import request as speech_setting_request
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.78-test'
+APP_VERSION = '0.2.79-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -225,7 +225,7 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 
 def fast_command_request(command, mode):
-    if mode in ('update_offer','update_download') and command in ('yes','yes please','no','no thanks','okay','ok','install it','install update','cancel','cancel update','stop update','not now','later'): return True
+    if mode in ('update_offer','update_download') and command in ('yes','yes please','no','no thanks','okay','ok','install it','install update','cancel','cancel update','stop update','not now','later','status','update status'): return True
     setting = speech_setting_request(command)
     # Let the dictation model refine an unparsed number before rejecting it.
     if setting is not None and setting[2] is not None: return True
@@ -642,7 +642,7 @@ def _handle(text, mode, typed=False):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
-    global UPDATE_MANUAL
+    global UPDATE_MANUAL, UPDATE_LAST_PERCENT
     update_command = normalized_command(text)
     if update_command in ('check for updates', 'check updates', 'update voice companion'):
         if UPDATES is None:
@@ -652,6 +652,9 @@ def _handle(text, mode, typed=False):
         else:
             UPDATE_MANUAL = True
             if UPDATES.check(manual=True): speak('Checking for updates.')
+        return mode
+    if update_command in ('status', 'update status') and mode == 'update_download':
+        speak(str(UPDATES.percent) + '%')
         return mode
     if mode == 'update_offer':
         if update_command in ('no', 'no thanks', 'not now', 'later', 'cancel'):
@@ -668,6 +671,7 @@ def _handle(text, mode, typed=False):
             except (OSError, ValueError):
                 speak('I could not save your work. The update will wait.')
                 return UPDATE_RETURN_MODE
+            UPDATE_LAST_PERCENT = 0
             if UPDATES.download():
                 speak('Downloading the update. Say cancel update to stop.')
                 return 'update_download'
@@ -1600,6 +1604,7 @@ UPDATES = None
 UPDATE_RETURN_MODE = 'awake'
 UPDATE_OFFER = False
 UPDATE_MANUAL = False
+UPDATE_LAST_PERCENT = 0
 
 
 _HANDLE_DEPTH = 0
@@ -1617,7 +1622,7 @@ def handle(text, mode, typed=False):
 
 
 def poll_app_updates(mode):
-    global UPDATE_OFFER, UPDATE_RETURN_MODE
+    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT
     if UPDATES is None: return mode
     while not UPDATES.events.empty():
         event, payload = UPDATES.events.get_nowait()
@@ -1634,6 +1639,10 @@ def poll_app_updates(mode):
             if mode == 'update_download':
                 speak('Update canceled.' if event == 'canceled' else 'The update could not be downloaded or verified. Your current app remains installed.')
                 mode = UPDATE_RETURN_MODE
+        elif event == 'progress' and mode == 'update_download':
+            if payload == 100 or payload // 5 > UPDATE_LAST_PERCENT // 5:
+                UPDATE_LAST_PERCENT = payload
+                speak(str(payload) + '%')
         elif event == 'downloaded' and mode == 'update_download' and not UPDATES.canceled.is_set():
             path, release = payload
             try:

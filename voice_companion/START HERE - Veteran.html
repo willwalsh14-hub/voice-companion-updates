@@ -30,7 +30,8 @@
 <li><a href="#section-25">Installation Troubleshooting</a></li>
 <li><a href="#section-26">User Guide Files</a></li>
 <li><a href="#section-27">App Updates</a></li>
-<li><a href="#section-28">Menu Prompts And List Navigation</a></li></ol></nav>
+<li><a href="#section-28">Menu Prompts And List Navigation</a></li>
+<li><a href="#section-29">Update Progress And Silent Installation</a></li></ol></nav>
 <main><p>This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, &quot;Open Voice Companion now&quot; is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud and listens through the computer&#x27;s microphone. You do not need Microsoft Word to make a document.</p>
 <section aria-labelledby="section-1"><h2 id="section-1">Start</h2>
 <ol>
@@ -210,4 +211,7 @@
 </section>
 <section aria-labelledby="section-28"><h2 id="section-28">Menu Prompts And List Navigation</h2>
 <p>At startup, Companion says Voice Companion followed by the version is ready, Say wake up to get started and launch the main menu, and Say help for the user guide. On waking at the main menu, and when returning there from another area, it says Main menu, What would you like to do, Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open. Direct requests such as Write a document, Email, or Radio still work. Sleeping within a task still keeps that task. Menu and list browsing announces the item name before its position, for example Radio, 4 of 7. Completed menu confirmations skip the additional dictation recognition pass in the main menu, media, web, mailbox, and help. This reduces extra processing without running partial navigation commands. Actual microphone and voice timing still depends on the computer and speech engine.</p>
+</section>
+<section aria-labelledby="section-29"><h2 id="section-29">Update Progress And Silent Installation</h2>
+<p>After accepting an update, download progress is spoken as percentages. Say Status or Update status for the current download percentage. After download verification, a checked helper takes over and Setup runs silently without needing Install or Finish buttons. Installation progress is spoken as percentages, and Status or Update status requests the current installation percentage through Windows speech recognition. The helper uses the default microphone and a Windows English speech recognizer; if Windows cannot provide it, automatic percentage announcements continue and the helper reports that voice status is unavailable. Voice Companion reopens after successful installation. If the helper cannot start, Voice Companion stays open. If Setup fails after handoff, the helper logs the failure and attempts to reopen the current app. Install version 0.2.79 manually once to repair the older update handoff. Future updates use the repaired helper.</p>
 </section></main></body></html>

@@ -274,12 +274,29 @@ if (Test-Path $googleRegistration) {
   }
 }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.78-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.79-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.78-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.79-test is installed. Use the desktop icon or Start menu.'
+if ($Unattended) {
+  Write-Output 'BUILD STAGE: Testing the updater helper with a silent installation.'
+  $updateCheck = Join-Path $PSScriptRoot '.update-helper-check'
+  New-Item -ItemType Directory -Path $updateCheck -Force | Out-Null
+  try {
+    & (Join-Path $PSScriptRoot 'apply-update.ps1') -InstallerPath $portableSetup -AppPath $installedApp -PreviousProcessId -1 -ExpectedHash (Get-FileHash $portableSetup -Algorithm SHA256).Hash -DataFolder $updateCheck -ReadyFile (Join-Path $updateCheck 'ready.json') -NoSpeech -NoRestart
+    $updateResult = Get-Content (Join-Path $updateCheck 'update-result.json') -Raw | ConvertFrom-Json
+    if (-not $updateResult.succeeded) { throw 'The updater helper did not install successfully.' }
+    $installPercent = Get-Content (Join-Path $PSScriptRoot 'install-percent.txt') -Raw
+    if ([int]$installPercent -lt 1) { throw 'Setup did not report installation progress.' }
+    Write-Output 'Updater helper silent installation and progress checks passed.'
+  } finally {
+    Remove-Item $updateCheck -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $PSScriptRoot 'install-percent.txt') -Force -ErrorAction SilentlyContinue
+  }
+}
+
 foreach ($staging in @('dist\VoiceCompanion', 'dist\VoiceCompanion-Diagnostics')) {
   Remove-Item (Join-Path $PSScriptRoot $staging) -Recurse -Force
 }
@@ -287,7 +304,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.78-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.79-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing

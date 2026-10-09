@@ -51,7 +51,7 @@ def fetch_release(url, current):
     return validate_release(data, current)
 
 
-def download_release(release, folder, canceled):
+def download_release(release, folder, canceled, progress=None):
     folder = Path(folder); folder.mkdir(parents=True, exist_ok=True)
     target = folder / 'VoiceCompanion-Setup.exe'
     temporary = target.with_suffix('.part')
@@ -67,11 +67,13 @@ def download_release(release, folder, canceled):
                 size += len(block)
                 if size > release['size']: raise ValueError('Installer size mismatch')
                 digest.update(block); output.write(block)
+                if progress: progress(min(99, size * 100 // release['size']))
         if canceled.is_set(): raise InterruptedError('Canceled')
         if size != release['size'] or digest.hexdigest() != release['sha256'].lower(): raise ValueError('Installer checksum mismatch')
         with temporary.open('rb') as source:
             if source.read(2) != b'MZ': raise ValueError('Not a Windows installer')
         os.replace(temporary, target)
+        if progress: progress(100)
         return target
     finally:
         temporary.unlink(missing_ok=True)
@@ -83,6 +85,8 @@ class AppUpdates:
         self.resources = Path(resource_folder or Path(__file__).parent)
         self.events = queue.Queue(); self.busy = False; self.release = None
         self.canceled = threading.Event()
+        self.percent = 0
+        self.phase = 'idle'
         self.manifest_url = ''
         for config in (self.folder/'update-settings.json', self.resources/'update-settings.json'):
             if config.exists():
@@ -109,12 +113,16 @@ class AppUpdates:
 
     def download(self):
         if self.busy or not self.release: return False
-        self.busy = True; self.canceled.clear()
+        self.busy = True; self.canceled.clear(); self.percent = 0; self.phase = 'downloading'
         release = dict(self.release)
         def work():
             try:
                 folder = self.folder/'Updates'/str(uuid.uuid4())
-                path = download_release(release,folder,self.canceled)
+                def report(percent):
+                    if percent != self.percent:
+                        self.percent = percent
+                        self.events.put(('progress', percent))
+                path = download_release(release,folder,self.canceled, report)
                 self.events.put(('downloaded',(path,release)))
             except InterruptedError: self.events.put(('canceled',None))
             except Exception: self.events.put(('download_failed',None))
@@ -135,7 +143,21 @@ class AppUpdates:
             if hashlib.file_digest(source,'sha256').hexdigest() != release['sha256'].lower(): raise ValueError('Installer changed')
         helper = path.parent/'apply-update.ps1'
         shutil.copyfile(self.resources/'apply-update.ps1',helper)
-        subprocess.Popen(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(helper),
+        ready = path.parent/'update-ready.json'
+        ready.unlink(missing_ok=True)
+        process = subprocess.Popen(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(helper),
                           '-InstallerPath',str(path),'-AppPath',str(installed),'-PreviousProcessId',str(os.getpid()),
-                          '-ExpectedHash',release['sha256'],'-DataFolder',str(self.folder)],
+                          '-ExpectedHash',release['sha256'],'-DataFolder',str(self.folder),'-ReadyFile',str(ready)],
                          creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            if ready.is_file():
+                state = json.loads(ready.read_text(encoding='utf-8-sig'))
+                if not state.get('ready'): raise RuntimeError('Update helper could not initialize')
+                self.phase = 'installing'
+                return
+            if process.poll() is not None: raise RuntimeError('Update helper exited before handoff')
+            time.sleep(0.1)
+        process.terminate()
+        raise RuntimeError('Update helper did not acknowledge the handoff')

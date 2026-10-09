@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.78-test"
+#define AppVersion "0.2.79-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}
@@ -46,6 +46,19 @@ Name: "{userdesktop}\Voice Companion User Guides"; Filename: "{userdocs}\Voice C
 Filename: "{app}\VoiceCompanion.exe"; Description: "Open Voice Companion now"; Flags: postinstall nowait skipifsilent
 
 [Code]
+procedure CurInstallProgressChanged(CurProgress, MaxProgress: Integer);
+var
+  ProgressPath: String;
+  Percent: Integer;
+begin
+  ProgressPath := ExpandConstant('{param:UPDATESTATUSFILE|}');
+  if (ProgressPath <> '') and (MaxProgress > 0) then
+  begin
+    Percent := Round((CurProgress * 1.0 / MaxProgress) * 99);
+    SaveStringToFile(ProgressPath, IntToStr(Percent), False);
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;

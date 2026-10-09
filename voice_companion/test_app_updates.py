@@ -34,6 +34,23 @@ class UpdateTests(unittest.TestCase):
             event.set()
             with patch('app_updates.urllib.request.urlopen',return_value=Response(b'MZinstaller')),self.assertRaises(InterruptedError):download_release(self.release(),folder,event)
             self.assertFalse((Path(folder)/'VoiceCompanion-Setup.part').exists())
+    def test_download_progress_only_reaches_100_after_verification(self):
+        with tempfile.TemporaryDirectory() as folder:
+            event=threading.Event();body=b'MZinstaller';progress=[]
+            with patch('app_updates.urllib.request.urlopen',return_value=Response(body)):
+                download_release(self.release(),folder,event,progress.append)
+            self.assertEqual(progress[-1],100)
+            progress.clear()
+            with patch('app_updates.urllib.request.urlopen',return_value=Response(b'MZwrong')),self.assertRaises(ValueError):
+                download_release(self.release(),folder,event,progress.append)
+            self.assertNotIn(100,progress)
+    def test_status_announces_only_percentage(self):
+        service=Mock();service.percent=37
+        with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as speech:
+            for phrase in ('status','update status'):
+                self.assertEqual(companion.handle(phrase,'update_download'),'update_download')
+                speech.assert_called_with('37%')
+                self.assertTrue(companion.fast_command_request(phrase,'update_download'))
     def test_fetch_rejects_oversize_and_insecure_redirect(self):
         for response in (Response(b'x'*65537),Response(b'{}','http://example.org/x')):
             with patch('app_updates.urllib.request.urlopen',return_value=response),self.assertRaises(ValueError):fetch_release('https://example.org/feed','1.2.2-test')
@@ -85,6 +102,10 @@ class UpdateHandoffTests(unittest.TestCase):
             fake_os=types.SimpleNamespace(name='nt',environ={'LOCALAPPDATA':str(root)},getpid=lambda:123)
             fake_sys=types.SimpleNamespace(frozen=True,executable=str(app))
             with patch('app_updates.os',fake_os),patch('app_updates.sys',fake_sys),patch('app_updates.subprocess.Popen') as launch:
+                def acknowledge(*args, **kwargs):
+                    (download/'update-ready.json').write_text('{"ready":true}')
+                    return Mock()
+                launch.side_effect = acknowledge
                 service.launch(setup,self.release())
                 args=launch.call_args.args[0]
                 self.assertIn('apply-update.ps1',Path(args[args.index('-File')+1]).name)
