@@ -17,10 +17,11 @@ class PublishingTests(unittest.TestCase):
         (self.root/'espeak').mkdir()
         for name in ('espeak-ng-1.52.0-source.tar.gz','COPYING'): (self.root/'espeak'/name).write_bytes(b'source or license')
         self.commands=[];self.existing=None;self.latest=None;self.corrupt=False;self.fail_upload=False
+        self.metadata={'private':False,'permissions':{'push':True}}
     def gh(self, executable, *args, **kwargs):
         self.commands.append(args)
         if args[0]=='api':
-            if args[1]=='repos/owner/repository':return json.dumps({'private':False,'permissions':{'push':True}})
+            if args[1]=='repos/owner/repository':return json.dumps(self.metadata)
             if 'tags/' in args[1]:return json.dumps(self.existing) if self.existing else None
             if any(cmd[:2]==('release','edit') for cmd in self.commands):return json.dumps({'tag_name':'v1.2.3-test','draft':False,'prerelease':False,'html_url':'https://github.com/owner/repository/releases/tag/v1.2.3-test'})
             return json.dumps(self.latest) if self.latest else None
@@ -43,6 +44,15 @@ class PublishingTests(unittest.TestCase):
         self.assertIn('--latest',self.commands[edit])
         manifest=json.loads((self.root/'release-upload'/'voice-companion-update.json').read_text())
         self.assertEqual(manifest['sha256'],hashlib.sha256(self.setup.read_bytes()).hexdigest())
+    def test_workflow_token_without_permission_metadata_uses_authorized_writes(self):
+        self.metadata={'private':False}
+        self.assertTrue(self.run_publish().endswith('v1.2.3-test'))
+        self.assertTrue(any(c[:2]==('release','create') for c in self.commands))
+    def test_private_or_explicit_read_only_repository_is_rejected(self):
+        for metadata in ({'private':True},{'private':False,'permissions':{'push':False}},{}):
+            self.metadata=metadata;self.commands=[]
+            with self.assertRaises(ValueError):self.run_publish()
+            self.assertFalse(any(c[0]=='release' for c in self.commands))
     def test_failed_or_corrupt_upload_never_publishes(self):
         for failure in ('corrupt','fail_upload'):
             setattr(self,failure,True);self.commands=[]

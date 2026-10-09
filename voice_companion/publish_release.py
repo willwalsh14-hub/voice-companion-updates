@@ -68,7 +68,10 @@ def publish(setup, gh='gh', root=ROOT):
     if receipt != {'version':version, 'sha256':manifest['sha256'], 'size':manifest['size']}:
         raise ValueError('This installer does not match the successful Windows build checks. Rebuild it before publishing.')
     metadata = json.loads(gh_call(gh, 'api', f'repos/{repo}'))
-    if metadata.get('private') or not metadata.get('permissions', {}).get('push'):
+    # Workflow installation tokens may omit the permissions object. GitHub
+    # still enforces write authorization when creating or uploading the draft.
+    permissions = metadata.get('permissions')
+    if metadata.get('private') is not False or (permissions is not None and not permissions.get('push')):
         raise ValueError('Publishing requires a public repository and write permission.')
     latest = gh_call(gh, 'api', f'repos/{repo}/releases/latest', missing_ok=True)
     if latest:
