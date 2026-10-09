@@ -179,6 +179,24 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.event_generate('<Control-KeyPress-Down>'))
         self.wait(lambda:not self.window.key_feedback.empty())
         self.assertEqual(self.window.key_feedback.get(),'Second paragraph.')
+    def test_all_menu_arrows_dispatch_without_spurious_empty_field_echo(self):
+        self.window.set_context(dict(mode='awake',source=None,text='',echo='characters',phonetic=True,delay=.5,ack=0,focus=True))
+        self.call(lambda:self.window.typed.focus_force())
+        for key in ('Up','Down','Left','Right'):
+            self.call(lambda k=key:self.window.typed.event_generate('<KeyPress>',keysym=k))
+            self.wait(lambda:not self.window.commands.empty())
+            self.assertEqual(self.window.commands.get(),('keyboard',key))
+        self.assertTrue(self.window.key_feedback.empty())
+    def test_empty_naming_field_arrows_cannot_become_filenames(self):
+        self.window.set_context(dict(mode='document_name',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
+        self.call(lambda:self.window.typed.focus_force())
+        for key in ('Up','Down','Left','Right'):self.call(lambda k=key:self.window.typed.event_generate('<KeyPress>',keysym=k))
+        self.assertTrue(self.window.commands.empty())
+    def test_tab_does_not_insert_into_received_mail(self):
+        self.context('mailbox',True)
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
+        values=[];self.call(lambda:values.append(self.window.editor.get('1.0','end-1c')))
+        self.assertEqual(values,['abc def'])
     def test_readonly_message_moves_cursor_but_does_not_accept_typing(self):
         self.context('mailbox',True)
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))

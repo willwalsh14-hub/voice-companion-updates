@@ -140,6 +140,7 @@ class CompanionWindow:
             def before_key(event):
                 previous[:] = [typed.get(), typed.index('insert')]
                 cancel_phonetic()
+                if event.keysym in ('Up','Down','Left','Right') and not typed.get() and not self.email_field and self.context.get('mode')!='document_name':return
                 before=typed.get();old_caret=typed.index('insert')
                 def after_entry():
                     caret=typed.index('insert');value=typed.get()
@@ -163,7 +164,7 @@ class CompanionWindow:
                 if event.keysym=='Return' and isinstance(event.widget,tk.Button):
                     event.widget.invoke(); return 'break'
                 if event.widget==editor:return
-                if event.widget==typed and (self.email_field or typed.get()):return
+                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode')=='document_name'):return
                 if event.widget == typed or event.widget == history or event.widget == root or isinstance(event.widget,tk.Button):
                     self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
             def enter(event):
@@ -221,6 +222,10 @@ class CompanionWindow:
                 if event.keysym=='a' and event.state&4:
                     editor.tag_add('sel','1.0','end-1c');read_caret('Right');send_text_position();return 'break'
                 nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')
+                if self.context.get('readonly') and event.keysym=='Tab':
+                    target=editor.tk_focusPrev() if event.state&1 else editor.tk_focusNext()
+                    if target:target.focus_set()
+                    return 'break'
                 if self.context.get('readonly') and not nav and event.keysym not in ('Shift_L','Shift_R','Control_L','Control_R','Tab'):
                     if event.state&4 and event.keysym.lower()=='c':return
                     return 'break'
