@@ -110,7 +110,7 @@ class NativeSettings:
                 focus(u.GetNextDlgTabItem(self.hwnd,get_focus(),cmd.startswith('previous')));return
             if cmd in ('next','previous','next category','previous category'):
                 delta=-1 if cmd.startswith('previous') else 1
-                hwnd=get_focus();field=controls.get(hwnd)
+                hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if hwnd==category[0] or cmd.endswith('category'):select_category(self.session.category+delta)
                 elif field and field.choices:
                     index=int(send(hwnd,0x147,0,0));index=max(0,min(len(field.choices)-1,index+delta));send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(describe(hwnd))
@@ -122,7 +122,7 @@ class NativeSettings:
                 self.session.category=next(i for i,name in enumerate(CATEGORIES) if any(f.key==key for f in __import__('settings_model').fields(name,self.session.context)))
                 send(category[0],0x186,self.session.category,0);render(key);self.announce(message);last_focus[0]=get_focus();return
             if cmd in ('on','off','toggle'):
-                hwnd=get_focus();field=controls.get(hwnd)
+                hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if field and field.kind=='check':
                     value=not raw(hwnd,field) if cmd=='toggle' else cmd=='on';send(hwnd,0xF1,int(value),0);self.session.set(field.key,value);self.announce(describe(hwnd));return
             field=controls.get(get_focus())
@@ -185,19 +185,19 @@ class NativeSettings:
                 continue
             if not u.IsDialogMessageW(self.hwnd,c.byref(message)):
                 u.TranslateMessage(c.byref(message));u.DispatchMessageW(c.byref(message))
-                target=message.hWnd
-                control_handle=target if target in controls else parent(target)
-                field=controls.get(control_handle)
-                if field and field.kind in ('text','password','combo'):
-                    if message.message==0x102 and message.wParam>=32:
-                        self.announce('Hidden character.' if field.kind=='password' else chr(message.wParam))
-                    elif message.message==0x100 and message.wParam in (8,46):
-                        self.announce('Deleted.' if field.kind=='password' else describe(control_handle))
-                    elif message.message==0x100 and message.wParam in (0x25,0x27,0x24,0x23):
-                        if field.kind=='password':self.announce('Hidden.')
-                        else:
-                            start=c.c_uint();end=c.c_uint()
-                            send(target,0xB0,c.addressof(start),c.addressof(end))
-                            value=text(target)
-                            self.announce(value[start.value:end.value] if start.value!=end.value else value[start.value:start.value+1] or 'End of field.')
+            target=message.hWnd
+            control_handle=target if target in controls else parent(target)
+            field=controls.get(control_handle)
+            if field and field.kind in ('text','password','combo'):
+                if message.message==0x102 and message.wParam>=32:
+                    self.announce('Hidden character.' if field.kind=='password' else chr(message.wParam))
+                elif message.message==0x100 and message.wParam in (8,46):
+                    self.announce('Deleted.' if field.kind=='password' else describe(control_handle))
+                elif message.message==0x100 and message.wParam in (0x25,0x27,0x24,0x23):
+                    if field.kind=='password':self.announce('Hidden.')
+                    else:
+                        start=c.c_uint();end=c.c_uint()
+                        send(target,0xB0,c.addressof(start),c.addressof(end))
+                        value=text(target)
+                        self.announce(value[start.value:end.value] if start.value!=end.value else value[start.value:start.value+1] or 'End of field.')
         self.closed.set()
