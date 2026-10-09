@@ -21,7 +21,7 @@ class KeyboardSpeech:
             while True:
                 try:text=self.queue.get(timeout=.02)
                 except queue.Empty:
-                    self.active=not bool(voice.WaitUntilDone(0)) or bool(self.settings[3] and self.settings[3].busy())
+                    self.active=self.active and (not bool(voice.WaitUntilDone(0)) or bool(self.settings[3] and self.settings[3].enabled and self.settings[3].busy()))
                     if self.active:self.quiet_until=time.monotonic()+.15
                     continue
                 if text is None:return

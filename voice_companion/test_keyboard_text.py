@@ -10,10 +10,20 @@ from unittest.mock import Mock,patch
 import companion
 from app_window import CompanionWindow
 from document_editor import VoiceDocument,Paragraph,TextRun
+from keyboard_speech import KeyboardSpeech
 from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typing_feedback,phonetic
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
+    def test_espeak_narration_does_not_mark_keyboard_feedback_busy(self):
+        worker=KeyboardSpeech.__new__(KeyboardSpeech)
+        worker.active=False;worker.quiet_until=0;worker.problem=None
+        worker.settings=('',0,100,Mock(enabled=True,busy=Mock(return_value=True)))
+        worker.queue=Mock(get=Mock(side_effect=[queue.Empty(),None]))
+        sapi=Mock(WaitUntilDone=Mock(return_value=True))
+        with patch.dict(sys.modules,{'pythoncom':Mock(),'win32com':Mock(),'win32com.client':Mock(Dispatch=Mock(return_value=sapi))}):
+            worker.run()
+        self.assertFalse(worker.busy())
     def test_literal_edit_preserves_punctuation_and_surrounding_formatting(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('Hello, world.',kind='Heading1',font='Arial',size=32,runs=[TextRun('Hello, ',bold=True),TextRun('world.',italic=True)]),Paragraph('Keep this.',alignment='right')]
@@ -77,6 +87,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window=CompanionWindow('keyboard test');self.window.start()
     def tearDown(self):
         self.window.closed.set();self.call(lambda:self.window.root.destroy())
+        self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
     def call(self,function):
         done=threading.Event();errors=[]
         def run():

@@ -43,7 +43,15 @@ class CompanionWindow:
         self.problem = None
         self.context = {'mode':'awake','source':None,'text':'','echo':'characters','phonetic':True,'delay':0.5,'ack':0}
         self.keyboard_output = None
-        self.thread = threading.Thread(target=self._run, name='Voice Companion window', daemon=True)
+        self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
+
+    def _thread_main(self):
+        try:self._run()
+        finally:
+            # Tcl interpreters and widget cycles must be released on their owner thread.
+            self.root=self.typed=self.editor=self.current=None
+            import gc
+            gc.collect()
 
     def start(self):
         self.thread.start()
