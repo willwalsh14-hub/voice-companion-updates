@@ -44,11 +44,22 @@ jobs:
           $source = './voice_companion/espeak/espeak-ng-1.52.0-source.tar.gz'
           Invoke-WebRequest 'https://github.com/willwalsh14-hub/voice-companion-updates/releases/download/v0.2.77-test/espeak-ng-1.52.0-source.tar.gz' -OutFile $source
           if ((Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'bb4338102ff3b49a81423da8a1a158b420124b055b60fa76cfb4b18677130a23') { throw 'The eSpeak source checksum differs from the verified source.' }
+          if (-not (Test-Path './voice_companion/espeak/COPYING')) { throw 'The eSpeak distribution license is missing.' }
       - name: Build and test complete installer
         shell: powershell
         run: |
           $env:VOICE_COMPANION_BUILD_PYTHON = (Get-Command python.exe).Source
           & ./voice_companion/build-windows.ps1 -Parakeet -NoPublish -Unattended
+      - name: Preserve checked installer before publishing
+        uses: actions/upload-artifact@v6
+        with:
+          name: checked-windows-installer
+          path: |
+            voice_companion/VoiceCompanion-Setup.exe
+            voice_companion/VoiceCompanion-Build-Passed.json
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
       - name: Publish verified installer and update feed
         shell: pwsh
         run: |
