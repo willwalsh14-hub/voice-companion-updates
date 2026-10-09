@@ -108,6 +108,18 @@ class KeyboardTextTests(unittest.TestCase):
         with patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'handle',return_value='awake') as handle,patch.object(companion,'APP_WINDOW',None):
             self.assertEqual(companion.handle_keyboard('next','sleep'),'sleep')
             handle.assert_called_once_with('next','awake',typed=True)
+    def test_spoken_document_name_waits_for_enter_or_voice_confirmation(self):
+        for confirmation in ('typed enter','okay'):
+            with tempfile.TemporaryDirectory() as folder:
+                doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('Separate body.')]
+                with patch.object(companion,'document',doc),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'KEYBOARD_DIRTY',{}),patch.object(companion,'PENDING_DOCUMENT_NAME',None),patch.object(companion,'speak'),patch.object(companion,'INPUT_MODE','mixed'):
+                    mode=companion.handle('leave document','document')
+                    self.assertEqual(companion.handle('Spoken report',mode),'document_name')
+                    self.assertFalse((Path(folder)/'Spoken report.docx').exists())
+                    self.assertEqual(companion.app_context('document_name')['naming_request'][1],'Spoken report')
+                    result=companion.handle('Spoken report' if confirmation=='typed enter' else 'okay','document_name',typed=confirmation=='typed enter')
+                    self.assertEqual(result,'awake');self.assertTrue((Path(folder)/'Spoken report.docx').exists())
+                    self.assertEqual(document_text(doc),'Separate body.')
     def test_untitled_exit_prompts_and_name_is_not_document_text(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('Body stays separate.')]
@@ -195,6 +207,15 @@ class WindowKeyboardTests(unittest.TestCase):
             self.wait(lambda:not self.window.commands.empty())
             self.assertEqual(self.window.commands.get(),('keyboard',key))
         self.assertTrue(self.window.key_feedback.empty())
+    def test_spoken_name_is_prefilled_and_edits_survive_settings_before_enter(self):
+        naming=dict(mode='document_name',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0,naming_request=(1,'Spoken report'))
+        self.window.set_context(naming)
+        values=[];self.call(lambda:values.append(self.window.typed.get()));self.assertEqual(values,['Spoken report'])
+        self.call(lambda:(self.window.typed.delete(0,'end'),self.window.typed.insert(0,'Edited report')))
+        self.window.set_context(dict(mode='settings',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
+        self.call(lambda:None);self.window.set_context(naming)
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Return'))
+        self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),'Edited report')
     def test_empty_naming_field_arrows_cannot_become_filenames(self):
         self.window.set_context(dict(mode='document_name',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
         self.call(lambda:self.window.typed.focus_force())

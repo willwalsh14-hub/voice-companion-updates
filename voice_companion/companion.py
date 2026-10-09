@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.91-test'
+APP_VERSION = '0.2.92-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -155,10 +155,12 @@ KEYBOARD_SPEECH = None
 EDIT_ACK = {}
 KEYBOARD_DIRTY = {}
 UI_CONTEXT_CACHE = None
+PENDING_DOCUMENT_NAME = None
 
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
+    if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
         return context
@@ -778,14 +780,23 @@ def _handle(text, mode, typed=False):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
-    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY
+    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME
     if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('settings','open settings'):
         if normalized_command(text) in ('cancel','cancel naming','go back'):
+            PENDING_DOCUMENT_NAME=None
             speak('Naming canceled. Your document is still open.');return 'document'
+        confirm=not typed and normalized_command(text) in ('ok','okay','confirm','confirm that','that one')
+        if confirm and PENDING_DOCUMENT_NAME is None:
+            speak('Say or type a document name first.');return 'document_name'
         title=re.sub(r'^(?:name document|save document as|save as)\s+','',text.strip(),flags=re.I)
+        if confirm:title=PENDING_DOCUMENT_NAME[1]
+        elif not typed:
+            PENDING_DOCUMENT_NAME=(time.monotonic_ns(),title)
+            speak(title+'. Press Enter or say okay to save the name.');return 'document_name'
         result=document.process('name document '+title)
         speak(result)
         if result.startswith('Document named '):
+            PENDING_DOCUMENT_NAME=None
             return 'awake'
         return 'document_name'
     if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
@@ -1595,6 +1606,7 @@ def _handle(text, mode, typed=False):
             document.pending_spacing_candidate = None
             document.save()
             if re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):
+                PENDING_DOCUMENT_NAME=None
                 speak('Name this document. Say or type its name, then press Enter. Say cancel to keep editing.')
                 return 'document_name'
             speak('Document saved.')

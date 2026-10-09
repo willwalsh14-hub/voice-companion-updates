@@ -43,6 +43,7 @@ class CompanionWindow:
         self.problem = None
         self.context = {'mode':'awake','source':None,'text':'','echo':'characters','phonetic':True,'delay':0.5,'ack':0}
         self.keyboard_output = None
+        self.last_name_request = None
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
     def _thread_main(self):
@@ -346,7 +347,10 @@ class CompanionWindow:
                             editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18))
                             if mode!='email_draft' or not self.email_field:
                                 self.email_field=None;self.last_email_request=None
-                                if transition:typed.delete(0,'end')
+                                if transition and not (mode=='document_name' and old.get('mode')=='settings'):typed.delete(0,'end')
+                            request=field.get('naming_request')
+                            if mode=='document_name' and request and request!=self.last_name_request:
+                                typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
                             if mode!='email_draft':entry_label.configure(text='Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
                             if transition:typed.focus_force()
                         continue
