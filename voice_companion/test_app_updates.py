@@ -169,3 +169,40 @@ class ExternalUpdaterEnvironmentTests(unittest.TestCase):
                 start.side_effect=OSError('launch failed')
                 with self.assertRaises(OSError):launch_update_process(['powershell.exe'],folder)
                 self.assertEqual(kernel.SetDllDirectoryW.call_args_list[-1],unittest.mock.call(str(root)))
+
+
+
+class StartupUpdatePromptTests(unittest.TestCase):
+    def test_startup_offer_precedes_readiness(self):
+        service=Mock(); service.check.return_value=True; service.events=queue.Queue(); release={'version':'0.2.86-test'}; service.events.put(('available',release))
+        with patch.object(companion,'UPDATES',service),patch.object(companion,'STARTUP_UPDATE_PENDING',False),patch.object(companion,'UPDATE_RETURN_MODE','awake'),patch.object(companion,'speak') as say:
+            self.assertEqual(companion.startup_update_mode(),'update_offer')
+            self.assertTrue(companion.STARTUP_UPDATE_PENDING)
+            self.assertEqual(service.release,release)
+            say.assert_called_once_with('A new update is available. Would you like to install it now? Say yes or no.')
+            say.reset_mock()
+            self.assertEqual(companion.handle('no','update_offer'),'sleep')
+            say.assert_called_once_with(companion.startup_prompt())
+    def test_no_update_and_check_failure_announce_readiness(self):
+        for event in ('current','check_failed'):
+            service=Mock();service.check.return_value=True;service.events=queue.Queue();service.events.put((event,False))
+            with patch.object(companion,'UPDATES',service),patch.object(companion,'STARTUP_UPDATE_PENDING',False),patch.object(companion,'speak') as say:
+                self.assertEqual(companion.startup_update_mode(),'sleep')
+                say.assert_called_once_with(companion.startup_prompt())
+    def test_startup_timeout_and_unconfigured_server_still_allow_wake(self):
+        service=Mock();service.check.return_value=True;service.events.get.side_effect=queue.Empty
+        with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as say:
+            self.assertEqual(companion.startup_update_mode(),'sleep')
+            say.assert_called_once_with(companion.startup_prompt())
+        service.check.return_value=False
+        with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as say:
+            self.assertEqual(companion.startup_update_mode(),'sleep')
+            say.assert_called_once_with(companion.startup_prompt())
+    def test_download_reminder_is_not_repeated_and_progress_uses_five_percent_steps(self):
+        service=Mock();service.events=queue.Queue()
+        with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_LAST_PERCENT',0),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'speak') as say:
+            self.assertEqual(companion.handle('random background words','update_download'),'update_download')
+            say.assert_not_called()
+            for percentage in (1,4,5,7,10,12,15,99,100):service.events.put(('progress',percentage))
+            companion.poll_app_updates('update_download')
+            self.assertEqual([c.args[0] for c in say.call_args_list],['5%','10%','15%','95%','100%'])

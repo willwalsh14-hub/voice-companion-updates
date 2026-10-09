@@ -355,7 +355,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(sys, 'argv', ['companion.py', '--version']), contextlib.redirect_stdout(output):
             self.assertEqual(companion.main(), 0)
-        self.assertEqual(output.getvalue().strip(), 'Voice Companion 0.2.84-test')
+        self.assertEqual(output.getvalue().strip(), 'Voice Companion 0.2.85-test')
 
     def test_packaged_model_check_never_requires_speech_output(self):
         model = self.root / 'model'
@@ -734,4 +734,5 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 

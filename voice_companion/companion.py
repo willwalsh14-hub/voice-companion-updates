@@ -40,7 +40,7 @@ from speech_controls import request as speech_setting_request
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.84-test'
+APP_VERSION = '0.2.85-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -658,25 +658,25 @@ def _handle(text, mode, typed=False):
         return mode
     if mode == 'update_offer':
         if update_command in ('no', 'no thanks', 'not now', 'later', 'cancel'):
-            speak('Okay. You can keep using this version.')
-            return UPDATE_RETURN_MODE
+            if not STARTUP_UPDATE_PENDING: speak('Okay. You can keep using this version.')
+            return return_from_update()
         if update_command in ('yes', 'yes please', 'install it', 'install update', 'okay', 'ok'):
             if not UPDATES.can_install():
                 speak('Automatic installation works in the installed app. Quick Test can check for updates but cannot replace an installation.')
-                return UPDATE_RETURN_MODE
+                return return_from_update()
             try:
                 if document is not None: document.save()
                 if email_draft is not None: email_draft.save()
                 flush_note(UPDATE_RETURN_MODE)
             except (OSError, ValueError):
                 speak('I could not save your work. The update will wait.')
-                return UPDATE_RETURN_MODE
+                return return_from_update()
             UPDATE_LAST_PERCENT = 0
             if UPDATES.download():
                 speak('Downloading the update. Say cancel update to stop.')
                 return 'update_download'
             speak('The updater is busy. Please try again shortly.')
-            return UPDATE_RETURN_MODE
+            return return_from_update()
         if spoken_control(update_command) != 'exit':
             speak('Say yes to install the update, or no to continue.')
             return mode
@@ -684,8 +684,8 @@ def _handle(text, mode, typed=False):
         if update_command in ('cancel', 'cancel update', 'stop update', 'no'):
             UPDATES.canceled.set()
             speak('Update canceled. You can keep using the app.')
-            return UPDATE_RETURN_MODE
-        else: speak('The update is downloading. Say cancel update to stop.')
+            return return_from_update()
+        else: pass  # The cancel reminder is announced once when downloading begins.
         return mode
     if normalized_command(text) in ('set up ai voice', 'setup ai voice', 'ai voice setup'):
         if APP_WINDOW is not None:
@@ -1605,6 +1605,35 @@ UPDATE_RETURN_MODE = 'awake'
 UPDATE_OFFER = False
 UPDATE_MANUAL = False
 UPDATE_LAST_PERCENT = 0
+STARTUP_UPDATE_PENDING = False
+
+
+def return_from_update():
+    global STARTUP_UPDATE_PENDING
+    if STARTUP_UPDATE_PENDING:
+        STARTUP_UPDATE_PENDING = False
+        speak(startup_prompt())
+        return 'sleep'
+    return UPDATE_RETURN_MODE
+
+
+def startup_update_mode():
+    """Check before readiness; the input stream is already open for yes/no."""
+    global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE
+    STARTUP_UPDATE_PENDING = False
+    if UPDATES.check():
+        try:
+            event, payload = UPDATES.events.get(timeout=10)
+        except queue.Empty:
+            event, payload = 'check_failed', False
+        if event == 'available':
+            UPDATES.release = payload
+            STARTUP_UPDATE_PENDING = True
+            UPDATE_RETURN_MODE = 'sleep'
+            speak('A new update is available. Would you like to install it now? Say yes or no.')
+            return 'update_offer'
+    speak(startup_prompt())
+    return 'sleep'
 
 
 _HANDLE_DEPTH = 0
@@ -1638,11 +1667,12 @@ def poll_app_updates(mode):
         elif event in ('download_failed', 'canceled'):
             if mode == 'update_download':
                 speak('Update canceled.' if event == 'canceled' else 'The update could not be downloaded or verified. Your current app remains installed.')
-                mode = UPDATE_RETURN_MODE
+                mode = return_from_update()
         elif event == 'progress' and mode == 'update_download':
-            if payload == 100 or payload // 5 > UPDATE_LAST_PERCENT // 5:
-                UPDATE_LAST_PERCENT = payload
-                speak(str(payload) + '%')
+            percentage = min(100, payload // 5 * 5)
+            if percentage > UPDATE_LAST_PERCENT:
+                UPDATE_LAST_PERCENT = percentage
+                speak(str(percentage) + '%')
         elif event == 'downloaded' and mode == 'update_download' and not UPDATES.canceled.is_set():
             path, release = payload
             try:
@@ -1652,7 +1682,7 @@ def poll_app_updates(mode):
                 return 'exit'
             except Exception:
                 speak('The update could not start. Your current app remains available.')
-                mode = UPDATE_RETURN_MODE
+                mode = return_from_update()
     if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
         UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
         UPDATE_OFFER = False
@@ -1804,7 +1834,9 @@ def main():
     last_focus_check = 0.0
     with sd.RawInputStream(samplerate=input_rate, blocksize=max(1, input_rate // 20),
                            dtype='int16', channels=channels, callback=callback):
-        speak(startup_prompt())
+        from app_updates import AppUpdates
+        UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
+        mode = startup_update_mode()
         # Do not allow the start announcement to activate the microphone itself.
         wait_for_speech(15000)
         while not AUDIO.empty():
@@ -1812,8 +1844,6 @@ def main():
             except queue.Empty: break
         recognizer.Reset()
         resampler.reset()
-        from app_updates import AppUpdates
-        UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         result_file = APP / 'update-result.json'
         if result_file.exists():
             try:
@@ -1822,7 +1852,6 @@ def main():
             except (OSError, ValueError): pass
             try: result_file.unlink(missing_ok=True)
             except OSError: pass
-        UPDATES.check()
         while True:
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
@@ -2129,4 +2158,5 @@ if __name__ == '__main__':
                 pass
             startup_alert('Voice Companion stopped because of a problem. Ask your trainer to run the setup check.')
         raise SystemExit(2)
+
 

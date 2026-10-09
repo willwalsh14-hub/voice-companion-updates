@@ -14,7 +14,7 @@ Speaker or headset: __________________________
 Write PASS, FAIL, or NOT TESTED beside each item. Write the exact words heard
 or an error message when a check fails.
 
-____ 1. Install only VoiceCompanion-Setup.exe on this test PC. Confirm the desktop shortcut opens the visible Voice Companion window without a command console, and hear its own voice with JAWS and NVDA off. Say "What version?" and hear 0.2.84-test; reject an older or console-only EXE. Turn JAWS off for the speech test. Run check-setup.cmd. The packaged runtime check and both bundled
+____ 1. Install only VoiceCompanion-Setup.exe on this test PC. Confirm the desktop shortcut opens the visible Voice Companion window without a command console, and hear its own voice with JAWS and NVDA off. Say "What version?" and hear 0.2.85-test; reject an older or console-only EXE. Turn JAWS off for the speech test. Run check-setup.cmd. The packaged runtime check and both bundled
         models load, and Voice Companion itself speaks the speaker test.
         Hearing words read from the command window by JAWS does not count.
         Result or error: __________________________
@@ -173,4 +173,5 @@ Confirm only six eSpeak choices appear: US English, UK English, US English Male,
 Check v0.2.72: Replace cat with dog with recognizer-style terminal punctuation, verify existing punctuation remains, and test deliberately spoken period. Repeat Select phrase, Select phrase through phrase, Insert before phrase, and Insert after phrase with multiple occurrences across document and email paragraphs. Browse Next/Previous and Read sentence; confirm and cancel. Check selection ranges and Undo after inserted text.
 
 Update check: Configure a real release feed, install this updater-enabled build once, then test a newer hosted Setup on Windows. Verify spoken Yes/No, cancellation, offline use, preserved work/accounts, reopening, current version, and refreshed guides. No simulated test is proof of a working Windows upgrade.
+
 
