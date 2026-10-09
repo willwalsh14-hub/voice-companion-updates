@@ -41,7 +41,7 @@ from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_requ
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.86-test'
+APP_VERSION = '0.2.87-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -206,6 +206,10 @@ def settings_action(key,mode):
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
 
 def navigation_key(key,mode):
+    if mode=='settings':
+        return 'cancel settings' if key=='Escape' else None
+    if mode=='mailbox' and key=='Enter' and mail_session is not None and not mail_session.folder_picker and not mail_session.pending:
+        return 'open current message'
     editor=document if mode=='document' else email_draft if mode=='email_draft' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
         if key=='Enter':return 'ok'
@@ -1273,7 +1277,7 @@ def _handle(text, mode, typed=False):
             speak_prompt('No email account is selected. Say add account, or list email accounts.')
             return mode
         mail_session = MailSession(selected[0], APP, progress=mail_progress)
-        speak('Opening ' + selected[1] + '. ' + mail_session.process('open inbox'))
+        speak(mail_session.process('open inbox'))
         return 'mailbox'
     email_request = (command in ('write an email', 'write email', 'compose email', 'new email', 'create email',
                                  'write a message', 'compose a message', 'new message', 'send a message',
@@ -2281,6 +2285,7 @@ if __name__ == '__main__':
                 pass
             startup_alert('Voice Companion stopped because of a problem. Ask your trainer to run the setup check.')
         raise SystemExit(2)
+
 
 
 

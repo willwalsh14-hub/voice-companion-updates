@@ -74,4 +74,27 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:'Hidden character.' in self.notices[before:])
         self.assertNotIn('Q',self.notices[before:])
 
+    def test_every_category_tabs_without_invalid_value_and_escape_closes(self):
+        hwnd=self.open_panel()
+        for name in ('Speech','Synthesizer','Punctuation','Input','Email','Documents','Web browsing','Radio','Podcasts','Updates','Verbosity'):
+            self.panel.command(name)
+            self.wait(lambda:self.session.category_name()==name)
+            self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)
+            time.sleep(.15)
+            self.assertFalse(any('Choose one of' in n or 'Settings:' in n for n in self.notices),self.notices)
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0)
+        self.assertTrue(self.panel.closed.wait(5),self.notices)
+        self.assertFalse(self.saved)
+
+    def test_enter_activates_action_without_saving(self):
+        hwnd=self.open_panel();actions=[]
+        self.panel.action_callback=actions.append
+        self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email')
+        for _ in range(2):self.panel.command('next setting')
+        self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,202),0x100,0x0D,0)
+        self.assertTrue(self.panel.closed.wait(5),self.notices)
+        self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)
+
 if __name__=='__main__':unittest.main()
+

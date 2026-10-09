@@ -35,6 +35,7 @@ class NativeSettings:
         default=api('DefWindowProcW',result,[w.HWND,w.UINT,w.WPARAM,w.LPARAM])
         api('RegisterClassW',w.ATOM,[c.POINTER(WC)]);api('SetWindowTextW',w.BOOL,[w.HWND,w.LPCWSTR]);api('GetWindowTextW',c.c_int,[w.HWND,w.LPWSTR,c.c_int])
         api('ShowWindow',w.BOOL,[w.HWND,c.c_int]);api('SetForegroundWindow',w.BOOL,[w.HWND]);api('EnableWindow',w.BOOL,[w.HWND,w.BOOL]);api('IsWindow',w.BOOL,[w.HWND]);api('GetNextDlgTabItem',w.HWND,[w.HWND,w.HWND,w.BOOL])
+        api('GetKeyState',c.c_short,[c.c_int])
         api('GetMessageW',w.BOOL,[c.POINTER(w.MSG),w.HWND,w.UINT,w.UINT]);api('IsDialogMessageW',w.BOOL,[w.HWND,c.POINTER(w.MSG)]);api('TranslateMessage',w.BOOL,[c.POINTER(w.MSG)]);api('DispatchMessageW',result,[c.POINTER(w.MSG)])
         api('SetTimer',c.c_size_t,[w.HWND,c.c_size_t,w.UINT,c.c_void_p]);api('PostQuitMessage',None,[c.c_int])
         k.GetModuleHandleW.restype=w.HMODULE;k.GetModuleHandleW.argtypes=[w.LPCWSTR];instance=k.GetModuleHandleW(None)
@@ -46,7 +47,11 @@ class NativeSettings:
         def text(hwnd):
             buf=c.create_unicode_buffer(4096);u.GetWindowTextW(hwnd,buf,len(buf));return buf.value
         def raw(hwnd,field):
-            return bool(send(hwnd,0xF0,0,0)) if field.kind=='check' else text(hwnd)
+            if field.kind=='check':return bool(send(hwnd,0xF0,0,0))
+            if field.kind=='choice':
+                index=int(send(hwnd,0x147,0,0))
+                return field.choices[index] if 0<=index<len(field.choices) else self.session.values.get(field.key,'')
+            return text(hwnd)
         def collect():
             for hwnd,field in controls.items():
                 if field.kind=='action' or (field.kind=='choice' and not field.choices):continue
@@ -174,13 +179,21 @@ class NativeSettings:
         send(category[0],0x186,self.session.category,0);render();u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
-            if message.message==0x100 and message.wParam==0x1B:self.announce('Settings canceled.');close();continue
+            if message.message==0x100 and message.wParam==0x1B:
+                target=get_focus();combo=target if target in controls else parent(target)
+                if combo in controls and controls[combo].kind in ('choice','combo') and send(combo,0x157,0,0):
+                    send(combo,0x14F,0,0);self.announce(describe(combo));continue
+                self.announce('Settings canceled.');close();continue
+            if message.message==0x100 and message.wParam==9:
+                # Handle Tab explicitly: this is a custom window, not a dialog resource.
+                backwards=bool(u.GetKeyState(0x10)&0x8000)
+                focus(u.GetNextDlgTabItem(self.hwnd,get_focus(),backwards));continue
             if message.message==0x100 and message.wParam==0x0D:
                 target=get_focus()
                 combo=target if target in controls else parent(target)
-                if combo in controls and controls[combo].kind in ('choice','combo') and send(combo,0x157,0,0):
-                    send(combo,0x14F,0,0);self.announce(describe(combo));continue
-                if get_focus() in buttons and buttons[get_focus()].startswith('Cancel'):self.announce('Settings canceled.');close()
+                if target in controls and controls[target].kind=='action':
+                    self.action_callback(controls[target].key);close()
+                elif get_focus() in buttons and buttons[get_focus()].startswith('Cancel'):self.announce('Settings canceled.');close()
                 else:save()
                 continue
             if not u.IsDialogMessageW(self.hwnd,c.byref(message)):
@@ -201,3 +214,4 @@ class NativeSettings:
                         value=text(target)
                         self.announce(value[start.value:end.value] if start.value!=end.value else value[start.value:start.value+1] or 'End of field.')
         self.closed.set()
+

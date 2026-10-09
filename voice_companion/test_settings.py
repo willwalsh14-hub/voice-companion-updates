@@ -76,8 +76,18 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(keyboard_request('Escape','update_download'),'cancel update')
         self.assertEqual(keyboard_request('Escape','document'),'leave document')
         self.assertEqual(keyboard_request('Enter','sleep'),'wake up')
+    def test_keyboard_enter_opens_highlighted_mail_in_both_views(self):
+        mailbox=Mock(folder_picker=None,pending=None)
+        with patch.object(companion,'mail_session',mailbox):
+            for view in ('folder','message'):
+                mailbox.view=view
+                self.assertEqual(companion.navigation_key('Enter','mailbox'),'open current message')
+        self.assertIsNone(companion.navigation_key('Down','settings'))
+        self.assertEqual(companion.navigation_key('Escape','settings'),'cancel settings')
+
     def test_all_categories_have_settings_or_actions(self):
         self.assertIn('Email',CATEGORIES);self.assertIn('Documents',CATEGORIES);self.assertIn('Radio',CATEGORIES)
         for category in CATEGORIES:self.assertTrue(fields(category,self.context))
 
 if __name__=='__main__':unittest.main()
+
