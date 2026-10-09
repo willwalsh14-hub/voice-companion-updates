@@ -27,7 +27,7 @@ class KeyboardSpeech:
                 if text is None:return
                 voice_id,rate,volume,espeak=self.settings
                 try:
-                    if espeak and espeak.enabled:espeak.speak(text,rate,volume);continue
+                    if espeak and espeak.enabled:espeak.interrupt();espeak.speak(text,rate,volume);continue
                     if voice_id and voice_id!=chosen:
                         voices=voice.GetVoices()
                         token=next((voices.Item(i) for i in range(voices.Count) if voices.Item(i).Id==voice_id),None)

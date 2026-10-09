@@ -16,6 +16,13 @@ from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typ
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
+    def test_fast_espeak_review_discards_obsolete_feedback_before_speaking(self):
+        worker=KeyboardSpeech.__new__(KeyboardSpeech)
+        engine=Mock(enabled=True);worker.settings=('',2,75,engine);worker.problem=None
+        worker.queue=Mock(get=Mock(side_effect=['b','c',None]))
+        with patch.dict(sys.modules,{'pythoncom':Mock(),'win32com':Mock(),'win32com.client':Mock(Dispatch=Mock(return_value=Mock()))}):worker.run()
+        self.assertEqual([call[0] for call in engine.mock_calls],['interrupt','speak','interrupt','speak'])
+        self.assertEqual(engine.speak.call_args.args,('c',2,75))
     def test_espeak_narration_does_not_mark_keyboard_feedback_busy(self):
         worker=KeyboardSpeech.__new__(KeyboardSpeech)
         worker.active=False;worker.quiet_until=0;worker.problem=None
