@@ -6,8 +6,8 @@ On GitHub, open the repository, then Actions, then Build and publish Windows ins
 
 The run must be in the updates repository because the existing update feed points there. Source uploaded to a different repository needs separate permission to publish to the updates repository.
 
-A failed run does not announce a successful update. Its build and publishing logs remain available in the Actions run for seven days. The workflow starts only when requested with Run workflow. It does not publish automatically every time a file changes.
+A failed run does not announce a successful update. Its build and publishing logs remain available in the Actions run for seven days. Updates committed to the source folder or the Windows build workflow on main automatically start a build. Run workflow remains available for manual retries. Only a passing build is published.
 
 Do not upload your personal app settings, email tokens, passwords, AI API key, local user data, or build logs with the source. The distributor's Microsoft desktop registration is a public client ID. If Gmail requires a distributor registration, provide the intended Desktop OAuth registration through a repository secret rather than committing a personal credentials file.
 
-The new workflow has been prepared and reviewed locally. The first GitHub run still needs to establish that its Windows environment passes the same speech and installation checks as your computer. The local installer builder continues to work normally; its Unattended option is for the automated Windows build.
+GitHub has no speaker playback device. Unattended builds generate and validate Windows speech audio in a WAV file and exercise pause, resume, and purge calls. Audible speaker playback and microphone timing still require testing on a local Windows computer. Local builds retain the speaker playback and speech interruption checks. The local installer builder continues to work normally; its Unattended option is for the automated Windows build.

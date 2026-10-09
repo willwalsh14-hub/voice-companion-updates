@@ -79,7 +79,7 @@ $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
 $releaseErrors = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Errors.txt'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
   -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox',
-    'test_web_assistant','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts') `
+    'test_web_assistant','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check') `
   -RedirectStandardOutput $releaseOutput -RedirectStandardError $releaseErrors
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
 if ($releaseTests.ExitCode -ne 0) {
@@ -177,12 +177,19 @@ if ($Parakeet -and -not (($modelCheck -join ' ') -match 'Parakeet model loaded a
   $modelCheck | Out-Host
   throw 'The packaged Parakeet model did not complete an inference check.'
 }
-& $diagnosticTarget --check-speech
-if ($LASTEXITCODE -ne 0) { throw 'The packaged Windows SAPI voice could not start.' }
-& $exe --check-speech
-if ($LASTEXITCODE -ne 0) { throw 'The quiet Windows application could not start speech.' }
-& $diagnosticTarget --check-speech-control
-if ($LASTEXITCODE -ne 0) { throw 'The speech pause, resume, or interruption check failed.' }
+if ($Unattended) {
+  & $diagnosticTarget --check-speech-file
+  if ($LASTEXITCODE -ne 0) { throw 'The packaged Windows voice did not generate valid speech audio.' }
+  & $exe --check-speech-file
+  if ($LASTEXITCODE -ne 0) { throw 'The quiet Windows application did not generate valid speech audio.' }
+} else {
+  & $diagnosticTarget --check-speech
+  if ($LASTEXITCODE -ne 0) { throw 'The packaged Windows SAPI voice could not start.' }
+  & $exe --check-speech
+  if ($LASTEXITCODE -ne 0) { throw 'The quiet Windows application could not start speech.' }
+  & $diagnosticTarget --check-speech-control
+  if ($LASTEXITCODE -ne 0) { throw 'The speech pause, resume, or interruption check failed.' }
+}
 $testData = Join-Path $PSScriptRoot '.build-smoke-data'
 if (Test-Path $testData) { Remove-Item $testData -Recurse -Force }
 try {
