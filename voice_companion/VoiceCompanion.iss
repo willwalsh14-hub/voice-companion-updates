@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.86-test"
+#define AppVersion "0.2.87-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}

@@ -49,6 +49,16 @@ class NativeSettingsTests(unittest.TestCase):
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x100,0x1B,0)
         self.assertTrue(self.panel.closed.wait(5))
         self.assertFalse(self.saved);self.assertEqual(self.session.values['verbosity'],'high')
+    def test_combo_arrow_changes_value_and_enter_saves(self):
+        hwnd=self.open_panel()
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)
+        self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
+        combo=self.u.GetDlgItem(hwnd,200)
+        self.u.PostMessageW(combo,0x100,0x28,0)
+        self.wait(lambda:self.session.values['verbosity']=='medium')
+        self.u.PostMessageW(combo,0x100,0x0D,0)
+        self.assertTrue(self.panel.closed.wait(5),self.notices)
+        self.assertEqual(self.saved[0]['verbosity'],'medium')
     def test_tab_moves_from_categories_to_setting_and_reads_focus(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,9,0)
@@ -97,4 +107,5 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)
 
 if __name__=='__main__':unittest.main()
+
 

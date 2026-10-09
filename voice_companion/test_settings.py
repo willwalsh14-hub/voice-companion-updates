@@ -45,6 +45,10 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(companion.navigation_key('Enter','document'),'ok')
             self.assertEqual(companion.navigation_key('Escape','document'),'cancel selection')
             self.assertEqual(companion.navigation_key('Down','document'),'next')
+    def test_mail_enter_opens_selected_message_instead_of_continuing_old_reading(self):
+        mail=Mock(folder_picker=None,folder_choice=None,pending=None)
+        with patch.object(companion,'mail_session',mail):
+            self.assertEqual(companion.navigation_key('Enter','mailbox'),'open current message')
     def test_settings_actions_dispatch_without_dictating_into_a_document(self):
         hub=Mock()
         with patch.object(companion,'media',return_value=hub),patch.object(companion,'speak'),patch.object(companion,'MEDIA_SECTION','radio'):
@@ -77,7 +81,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(keyboard_request('Escape','document'),'leave document')
         self.assertEqual(keyboard_request('Enter','sleep'),'wake up')
     def test_keyboard_enter_opens_highlighted_mail_in_both_views(self):
-        mailbox=Mock(folder_picker=None,pending=None)
+        mailbox=Mock(folder_picker=None,folder_choice=None,pending=None)
         with patch.object(companion,'mail_session',mailbox):
             for view in ('folder','message'):
                 mailbox.view=view
@@ -90,4 +94,5 @@ class SettingsTests(unittest.TestCase):
         for category in CATEGORIES:self.assertTrue(fields(category,self.context))
 
 if __name__=='__main__':unittest.main()
+
 

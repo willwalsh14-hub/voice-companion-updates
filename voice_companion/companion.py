@@ -208,7 +208,7 @@ def settings_action(key,mode):
 def navigation_key(key,mode):
     if mode=='settings':
         return 'cancel settings' if key=='Escape' else None
-    if mode=='mailbox' and key=='Enter' and mail_session is not None and not mail_session.folder_picker and not mail_session.pending:
+    if key=='Enter' and mode=='mailbox' and mail_session is not None and not (getattr(mail_session,'folder_picker',None) or getattr(mail_session,'folder_choice',None) or getattr(mail_session,'pending',None)):
         return 'open current message'
     editor=document if mode=='document' else email_draft if mode=='email_draft' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
@@ -1950,6 +1950,8 @@ def main():
             except (OSError, ValueError): pass
             try: result_file.unlink(missing_ok=True)
             except OSError: pass
+        settings_quiet_until=0
+        settings_audio_blocked=False
         while True:
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
@@ -2039,6 +2041,24 @@ def main():
                     cloud_failed = True
                 recover_audio_overflow(recognizer, utterance)
                 continue
+            if mode=='settings':
+                # Settings readback must not become another settings command.
+                # Keep local silence/sleep/exit controls available during feedback.
+                if cloud:
+                    cloud.stop();cloud=None
+                if speech_busy():settings_quiet_until=time.monotonic()+0.35
+                if time.monotonic()<settings_quiet_until:
+                    settings_audio_blocked=True
+                    utterance.clear()
+                    if recognizer.AcceptWaveform(audio):
+                        control=json.loads(recognizer.Result()).get('text','').lower()
+                        if spoken_control(control):
+                            mode=handle(control,mode)
+                            if mode=='exit':return 0
+                    continue
+                if settings_audio_blocked:
+                    recognizer.Reset();utterance.clear();settings_audio_blocked=False
+                    continue
             if cloud and cloud.active:
                 cloud.write(audio)
                 if recognizer.AcceptWaveform(audio):
@@ -2285,6 +2305,7 @@ if __name__ == '__main__':
                 pass
             startup_alert('Voice Companion stopped because of a problem. Ask your trainer to run the setup check.')
         raise SystemExit(2)
+
 
 
 

@@ -38,6 +38,7 @@ class NativeSettings:
         api('GetKeyState',c.c_short,[c.c_int])
         api('GetMessageW',w.BOOL,[c.POINTER(w.MSG),w.HWND,w.UINT,w.UINT]);api('IsDialogMessageW',w.BOOL,[w.HWND,c.POINTER(w.MSG)]);api('TranslateMessage',w.BOOL,[c.POINTER(w.MSG)]);api('DispatchMessageW',result,[c.POINTER(w.MSG)])
         api('SetTimer',c.c_size_t,[w.HWND,c.c_size_t,w.UINT,c.c_void_p]);api('PostQuitMessage',None,[c.c_int])
+        api('GetKeyState',c.c_short,[c.c_int])
         k.GetModuleHandleW.restype=w.HMODULE;k.GetModuleHandleW.argtypes=[w.LPCWSTR];instance=k.GetModuleHandleW(None)
         controls={};children=[];last_focus=[None];category=[None];buttons={};alive=[True]
         def control(cls,label,style,x,y,width,height,identifier,extended=0):
@@ -179,21 +180,17 @@ class NativeSettings:
         send(category[0],0x186,self.session.category,0);render();u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
-            if message.message==0x100 and message.wParam==0x1B:
-                target=get_focus();combo=target if target in controls else parent(target)
-                if combo in controls and controls[combo].kind in ('choice','combo') and send(combo,0x157,0,0):
-                    send(combo,0x14F,0,0);self.announce(describe(combo));continue
-                self.announce('Settings canceled.');close();continue
+            if message.message==0x100 and message.wParam==0x1B:self.announce('Settings canceled.');close();continue
             if message.message==0x100 and message.wParam==9:
-                # Handle Tab explicitly: this is a custom window, not a dialog resource.
-                backwards=bool(u.GetKeyState(0x10)&0x8000)
-                focus(u.GetNextDlgTabItem(self.hwnd,get_focus(),backwards));continue
+                current=get_focus()
+                if parent(current) in controls:current=parent(current)
+                target=u.GetNextDlgTabItem(self.hwnd,current,bool(u.GetKeyState(0x10)&0x8000))
+                focus(target);last_focus[0]=target
+                self.announce(describe(target));continue
             if message.message==0x100 and message.wParam==0x0D:
                 target=get_focus()
-                combo=target if target in controls else parent(target)
-                if target in controls and controls[target].kind=='action':
-                    self.action_callback(controls[target].key);close()
-                elif get_focus() in buttons and buttons[get_focus()].startswith('Cancel'):self.announce('Settings canceled.');close()
+                if get_focus() in buttons and buttons[get_focus()].startswith('Cancel'):self.announce('Settings canceled.');close()
+                elif target in controls and controls[target].kind=='action':self.action_callback(controls[target].key);close()
                 else:save()
                 continue
             if not u.IsDialogMessageW(self.hwnd,c.byref(message)):
@@ -214,4 +211,5 @@ class NativeSettings:
                         value=text(target)
                         self.announce(value[start.value:end.value] if start.value!=end.value else value[start.value:start.value+1] or 'End of field.')
         self.closed.set()
+
 
