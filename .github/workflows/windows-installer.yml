@@ -1,0 +1,62 @@
+name: Build and publish Windows installer
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: voice-companion-release
+  cancel-in-progress: false
+jobs:
+  installer:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install installer compiler
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+      - name: Restore distributor Gmail registration
+        shell: pwsh
+        env:
+          GOOGLE_CLIENT_JSON: ${{ secrets.GOOGLE_CLIENT_JSON }}
+        run: |
+          if (-not $env:GOOGLE_CLIENT_JSON) { throw 'Add the distributor Desktop OAuth registration as the GOOGLE_CLIENT_JSON repository secret before building.' }
+          $registration = $env:GOOGLE_CLIENT_JSON | ConvertFrom-Json
+          if (-not $registration.installed.client_id -or -not $registration.installed.client_secret) { throw 'The Gmail Desktop OAuth registration is invalid.' }
+          [System.IO.File]::WriteAllText((Join-Path $PWD 'voice_companion/google-client.json'), $env:GOOGLE_CLIENT_JSON)
+      - name: Restore pinned eSpeak runtime and corresponding source
+        shell: pwsh
+        run: |
+          python ./voice_companion/prepare_espeak.py ./voice_companion/espeak
+          if ($LASTEXITCODE -ne 0) { throw 'eSpeak preparation failed.' }
+          $source = './voice_companion/espeak/espeak-ng-1.52.0-source.tar.gz'
+          Invoke-WebRequest 'https://github.com/willwalsh14-hub/voice-companion-updates/releases/download/v0.2.77-test/espeak-ng-1.52.0-source.tar.gz' -OutFile $source
+          if ((Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'bb4338102ff3b49a81423da8a1a158b420124b055b60fa76cfb4b18677130a23') { throw 'The eSpeak source checksum differs from the verified source.' }
+      - name: Build and test complete installer
+        shell: powershell
+        run: |
+          $env:VOICE_COMPANION_BUILD_PYTHON = (Get-Command python.exe).Source
+          & ./voice_companion/build-windows.ps1 -Parakeet -NoPublish -Unattended
+      - name: Publish verified installer and update feed
+        shell: pwsh
+        run: |
+          & python -u ./voice_companion/publish_release.py --setup ./voice_companion/VoiceCompanion-Setup.exe --gh gh
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. Read the progress log.' }
+      - name: Save build and publishing logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-build-logs
+          path: |
+            voice_companion/VoiceCompanion-*.txt
+            voice_companion/VoiceCompanion-Build-Passed.json
+            voice_companion/VoiceCompanion-Published.json
+          retention-days: 7
+          if-no-files-found: warn

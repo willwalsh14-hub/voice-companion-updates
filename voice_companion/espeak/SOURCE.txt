@@ -1,0 +1,6 @@
+eSpeak NG 1.52.0
+Source: https://github.com/espeak-ng/espeak-ng/tree/1.52.0
+Full corresponding source is in espeak-ng-1.52.0-source.tar.gz.
+License: GNU General Public License version 3 or later; see COPYING.
+Windows runtime extracted without modification from the official 1.52.0 MSI.
+MSI SHA256: 7f673c709ea5dd579d3b5ebb98688cc575328a6ab7438d2bc405b88cedaeafb9

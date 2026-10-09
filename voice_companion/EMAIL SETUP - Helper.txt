@@ -1,0 +1,94 @@
+VOICE COMPANION - EMAIL ACCOUNT SETUP FOR A HELPER
+
+This setup is for an AT specialist or trusted helper at the client's Windows
+computer. The client should not have to dictate a password, a one-time code,
+or a long web address. The account owner must authorize access in the normal
+browser. Do not tell the client email works until you complete a real test.
+
+CURRENT STATUS
+
+This source build has spoken Add account, account selection, and a two-step send flow for Gmail, Microsoft, and
+Yahoo accounts. The Windows installer was built and installed successfully on
+September 26, 2026, but Gmail and other providers have not passed a live
+sign-in or send test. On-premises Exchange and other providers are not connected.
+More than one account per provider can be stored; switch using the full email
+address when names are ambiguous. These paths still need live testing.
+Until a provider is configured and signed in, Send email keeps a local draft.
+
+BEFORE ACCOUNT SIGN-IN
+
+The distributor must register Voice Companion as a desktop/public app with
+Google and Microsoft. This cannot be done by guessing an account password.
+For Google: enable Gmail API, configure the OAuth consent screen and its
+test users or publishing/verification, create a Desktop app OAuth client,
+and download its client JSON. Grant gmail.send, gmail.modify, and email
+identity scopes. Reconnect an account previously authorized only to send.
+For Microsoft: register a public desktop app supporting the intended personal
+and/or organizational accounts, add http://localhost redirect, and delegated
+Mail.Send, Mail.ReadWrite, and User.Read permissions. A work tenant may require
+admin approval. Reconnect an account previously authorized only to send.
+This source archive includes the Google Desktop app registration supplied by the distributor. Microsoft desktop registration is also included, supporting personal Microsoft and Microsoft 365 work/school accounts when organizational policy permits. No client-side registration file editing is needed for either provider. Live Microsoft sign-in, inbox and send testing is still required.
+
+For a distributor build, place the downloaded Google Desktop client JSON beside
+BUILD INSTALLER - Double click.cmd and name it google-client.json. The builder
+will validate and include it in Setup. The client does not edit any files.
+
+For a manual test configuration, place the Google desktop client JSON in the
+client's %LOCALAPPDATA%\VoiceCompanion folder as google-client.json. In the same
+folder, create mail-registration.json with this content, replacing the Microsoft ID:
+
+{
+  "google_credentials_file": "google-client.json",
+  "microsoft_client_id": "PASTE-YOUR-REGISTERED-PUBLIC-CLIENT-ID-HERE"
+}
+
+Google's filename is interpreted relative to this data folder. Never put a
+user password or refresh token in this file. Voice Companion encrypts the
+account connection with Windows DPAPI for the signed-in Windows user.
+
+On the client's computer, open Voice Companion and say Add account. Choose
+Gmail or Outlook/Microsoft 365 Exchange when prompted. Assist with the normal browser sign-in,
+verify the account address spoken on success, and close the setup window.
+The signed-in Windows user must be the same user who runs Voice Companion.
+If setup fails, check the registered app, API and permissions, consent/test
+user status, redirect URI, internet access, and Windows default browser.
+
+YAHOO
+
+In Yahoo Account Security, the account owner creates a separate app password
+for Voice Companion under External connections. On the client's computer,
+say Add account and choose Yahoo. Enter the full Yahoo email
+address and app password in the private keyboard entry window. It is stored with Windows
+DPAPI for that Windows user. Do not enter the normal Yahoo account password.
+Yahoo uses encrypted SMTP to smtp.mail.yahoo.com on port 465 and encrypted
+IMAP to imap.mail.yahoo.com on port 993. Folder moves need IMAP MOVE support.
+A sent copy is
+not guaranteed in Yahoo's Sent folder by SMTP; verify arrival at a test
+recipient. Revoke the app password in Yahoo Account Security to disconnect
+the service fully.
+
+TEST BEFORE CLIENT USE
+
+Use a test recipient that you control for each provider. Dictate a short message, review the
+spoken sender, recipient, subject, and body, then say Confirm send email.
+Check the provider's Sent Mail when available and the receiving inbox. Repeat with cancel,
+an invalid recipient, offline network, and a restart. A provider accepting
+a request does not prove delivery. If the outcome is uncertain, check Sent
+Mail before trying again so the recipient does not get duplicates.
+
+Use throwaway mail and folders to test every command in START HERE - Veteran.txt
+on each provider. Check nested folder reading, next/previous message, the
+two-step back path, reply, reply all, forward, one and several selected
+messages, and each folder confirmation. Check the provider's web interface
+after each operation. Try deleting a nonempty folder and confirm it refuses.
+Do not use important client mail for these tests.
+
+To disconnect, run VoiceCompanion-Diagnostics.exe --disconnect-gmail or
+VoiceCompanion-Diagnostics.exe --disconnect-outlook, or VoiceCompanion-Diagnostics.exe --disconnect-yahoo
+while signed in to the same Windows
+account. This deletes the currently selected account of that provider. If several are present, select the desired address in the app first. The other accounts remain connected. For full revocation, also remove
+Voice Companion's access in the provider's account security page.
+
+GOOGLE CONTACTS (OPTIONAL)
+
+In the same Google Cloud project used for Gmail, enable the People API. In Google Auth Platform, add the contacts permission (https://www.googleapis.com/auth/contacts) to Data Access and complete any required publishing or verification for other users. An existing Gmail connection is retained. With the correct Gmail account selected, say "Connect Google Contacts"; Google asks separately for permission. Confirm the same account is used. Say "Sync Google Contacts" again after adding contacts manually or changing contacts on the web. Local contact names and addresses are saved for offline use. Sync imports Google contacts and adds new local contacts to Google; it does not delete Google contacts. Test with a spare contact first. If Google denies the scope, mail remains connected and the local address book continues to work.

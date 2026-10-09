@@ -1,0 +1,25 @@
+FREEDOMBOX DESIGN REFERENCE - SEPTEMBER 2026
+
+This is a design reference, not a claim that Voice Companion already matches FreedomBox.
+
+What historical sources establish:
+- Serotek's original FreedomBox aimed at people who wanted email and the Internet without learning a complex screen reader. Mike Calvo described the first product as mainly voice-command driven and designed with limited dexterity in mind.
+- A 2006 American Foundation for the Blind review describes a self-speaking desktop and Assistant, short numbered choices, a spoken heading when a new area opens, a way back, search, bookmarks, and extensive Help. The user could listen to choices and press Enter, or move through a list at their own pace.
+- Its web forms did not require a separate forms mode; users moved to a field and entered text when told it was editable. Community Supported Access to the Web (CSAW) let users label otherwise inaccessible graphics for others.
+- A later statement from FreedomBox's creators dates the self-voicing browser in FreedomBox 2.0 to 2004 and describes the goal as affordable, easy, portable, enjoyable Internet access.
+
+Sources:
+https://www.afb.org/aw/7/3/14499
+https://afb.org/aw/8/5/14312
+https://pneumasolutions.com/ja/the-future-of-system-access/
+
+Implications for David and Voice Companion:
+1. Give a short spoken orientation on each new page: title, site, useful choices, and what he can say next. Keep the voice consistent and let him interrupt or request another chunk.
+2. Let him state a goal in ordinary language. Offer a few relevant choices, describe each in human terms, and never require memorizing web element commands.
+3. Keep an easy way back, favorites by simple names, and local help prompts. Explain every uncertain result and do not silently click a guessed target.
+4. Ask one form question at a time, repeat the answer, and require a review before consequential actions. Do not speak passwords or codes. Banking and applications require site-by-site live validation.
+5. Preserve a supported browser engine. A generic page-text extractor can miss unlabeled controls, dynamic pages, CAPTCHA, embedded frames, and rich forms; the app must admit that limitation and hand off to a helper.
+
+Current implementation in this source: separate Edge session, controlled page readback, conversational link suggestions with yes/no, contextual spoken help, short-name favorites, simple guided text fields, guarded action confirmation, page-text excerpts with site attribution. These have mock-backed tests, not live Windows evidence. Natural language understanding is rule-based; no general AI service or model is configured. It cannot promise universal form completion, accurate research synthesis, or safe banking transactions.
+
+Next engineering gates: Windows packaging of Playwright; live Edge launch; navigation, speech, and form tests across representative sites; handling frames and dynamic page changes; better answer grounding; a deliberately reviewed path for transactions and submission; a spoken in-app help experience; trials with David's speech and microphone.

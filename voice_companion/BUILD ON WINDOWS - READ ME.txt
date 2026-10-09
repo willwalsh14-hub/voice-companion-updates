@@ -1,0 +1,52 @@
+VOICE COMPANION - MAKE THE WINDOWS INSTALLER
+
+For Will or a trainer. This is a one-time build, not the veteran's use guide.
+
+QUICK TEST WITHOUT BUILDING SETUP
+
+If Voice Companion is already installed on this computer, extract the new ZIP,
+close the installed app, and double-click "QUICK TEST - Double click.cmd" in
+the extracted voice_companion folder. It runs the newest source using the
+installed speech models and the same accounts and documents. The first quick
+run may prepare Python packages; later runs reuse them. A command window stays
+open while the test runs. This does not update the desktop shortcut or install
+an EXE. To permanently update the app or another computer, build Setup below.
+
+1. Extract the entire Voice Companion prototype ZIP to a folder. Do not run
+   the builder from inside the ZIP preview.
+2. In the extracted folder, double-click "BUILD INSTALLER - Double click.cmd".
+   If Windows hides file extensions, the name may appear as "BUILD INSTALLER - Double click".
+3. Keep the window open. The builder may install Python 3.12 through Windows
+   Package Manager, download the offline speech files, and assemble the app.
+   Internet and several gigabytes of free disk space are required for this
+   one-time build. A failed check leaves an error in the window; do not use
+   that build. Share the error with the developer.
+4. The builder deletes older build output, creates a new installer, opens Setup, and waits for Finish. Setup installs the packaged program without asking for a destination or separate dependencies. It creates Start menu and desktop shortcuts. The final page has "Open Voice Companion now" checked by default. Leave it checked to launch the app; an AT specialist can uncheck it and select Finish. The builder then checks the installed program and should say "INSTALL PASSED. Voice Companion 0.2.78-test is installed."
+5. For another computer, copy ONLY VoiceCompanion-Setup.exe from the same folder as the builder and double-click it there. The builder removes temporary runnable EXEs after successful installation. The source ZIP is not the client installer. The installed app is at %LOCALAPPDATA%\Programs\Voice Companion, and its desktop shortcut opens the windowed EXE without a command window. Say "What version?" The current test build answers "0.2.78-test."
+
+UPDATING AN OLDER INSTALLATION
+
+Run the new VoiceCompanion-Setup.exe normally. You do not uninstall the old version. Versions 0.2.0 through 0.2.54 use the same installer identity, install folder, Start menu group, and desktop shortcut. Setup replaces the program files and updates the existing installation. Your account sign-in remains in Windows user data. Documents are in your Windows Documents\Voice Companion folder; older documents are copied there when opened in the updated app. After Setup, open the desktop icon and say "What version?" It must answer 0.2.78-test. The builder also checks the installed EXE hashes and version after Setup finishes.
+
+The separate VoiceCompanion-Diagnostics.exe is for trainer checks. The veteran does not need Python, pip, Inno Setup, or Word. These are build-computer tools; Setup includes the Python runtime, dependencies, both speech models, and guided Firefox. Other browsers need their own installation.
+
+BEFORE GIVING IT TO THE VETERAN
+
+On a separate Windows 11 computer that has never had the development tools installed, install only VoiceCompanion-Setup.exe. Do not run the builder or install Python there. Then a trainer runs check-setup.cmd and test-microphone.cmd
+from the installed Voice Companion folder, then
+follows TRAINER TEST CHECKLIST.txt. The packaged-runtime check detects missing modules and model files. A build passing on the build computer does not prove that the microphone, speech output, browser, or sign-in works on another computer.
+
+The app is experimental. Connected email and guided web browsing require live testing before client use.
+This builder includes a Google Desktop OAuth registration for Gmail testing. It does not include an email account or grant access by itself. Google sign-in is still required, and only accounts added to the project's test users can authorize while the Google app remains in Testing. Production use requires Google's review of the requested Gmail permissions.
+The separate START HERE - Veteran.txt explains what the app can do today.
+
+If packaging fails, the builder prints the final PyInstaller errors in its transcript. In the builder folder, send VoiceCompanion-Build-Log.txt and both VoiceCompanion-Diagnostics-PyInstaller-Output.txt and VoiceCompanion-Diagnostics-PyInstaller-Errors.txt (or the Application equivalents if that step failed). Tests may pass even if packaging fails. Do not run a leftover Setup file from a failed attempt.
+
+Quick Test on Windows: The temporary dependencies now go under %LOCALAPPDATA%\VCQuick\py312, keeping Playwright paths short. Unzip the new package and double-click QUICK TEST - Double click.cmd. The old .quick-env folder in the previous extraction can be ignored.
+
+Guide maintenance for every release: Update START HERE - Veteran.txt whenever a command, prompt, workflow, or limitation changes. Update onboard_help.py subsection boundaries when adding or rearranging guide paragraphs. Run build_user_guides.py to regenerate TXT-derived HTML, Word, EPUB, and DAISY files. The installer builder runs that generator and the onboard help checks before packaging; a missing or misplaced guide paragraph must fail the release checks. Verify the spoken Help menu and its Back commands on Windows during testing.
+
+Version 0.2.54 uses a Python packaging launcher so filenames with spaces remain intact. All --add-data options use SOURCE:DEST. Build tests no longer open File Explorer on a temporary Documents folder. Extract the complete updated ZIP to a new folder and run the same double-click builder used previously.
+
+AUTOMATIC UPDATE DISTRIBUTION
+Read UPDATES - Trainer.txt. Configure your real GitHub repository with SET UP UPDATES - Double click.cmd before building the client installer. After building and testing, use the helper to prepare the finished Setup and manifest for the matching latest release. This ZIP is configured for willwalsh14-hub/voice-companion-updates. Build and test Setup, then prepare and publish the matching release files; configuration alone does not publish a release.

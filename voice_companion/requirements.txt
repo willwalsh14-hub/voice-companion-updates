@@ -1,0 +1,7 @@
+vosk==0.3.45
+sounddevice==0.5.6
+pywin32>=306
+google-auth-oauthlib==1.4.1
+msal==1.39.0
+playwright==1.63.0
+python-docx==1.2.0

@@ -1,0 +1,24 @@
+AI voice test build 0.2.54
+
+This build adds optional AI-generated speech throughout the app, including the practice tutorial. Windows speech remains the default.
+
+Trainer setup on Windows:
+1. Open the AI voice setup (trainer) button, or say "Set up AI voice".
+2. Paste your OpenAI API key into the hidden key field.
+3. Choose a voice. Confirm permission to send narration text, including email and documents, to OpenAI.
+4. Select Save AI voice settings. The key is protected by your Windows user account and is not stored in the shared program folder.
+5. Say "List voices". Use "Next" or "Previous" to choose the AI voice synthesizer, then say "Okay". Use "Next voice" or "Previous voice" to preview its voices, then say "Okay" again to keep your choice. Say "Cancel voice" to restore the previous choice. The selection is saved for the next launch.
+
+Use Remove saved AI settings to delete the saved credential and return to Windows speech. Cancel or Escape closes setup without saving. Removing the saved credential does not delete a separately configured Windows environment variable; remove that variable separately if you previously used it.
+
+The default AI voice is coral. A trainer can set VOICE_COMPANION_AI_VOICE to another supported OpenAI voice before launching Companion.
+
+AI speech sends the text being read, including any email or document text, to OpenAI for narration. It requires internet access and separately billed API usage. ChatGPT subscriptions do not supply this app's API access. Audio is held in memory, not saved as a recording.
+
+"Be quiet" pauses; "Resume speaking" continues. A new action cancels old narration, including audio that arrives late from the network. Speech rate, volume and punctuation settings apply. Network failures attempt Windows speech for the same text. Generation can take several seconds. AI voices appear in List voices after setup. Each is identified as an AI voice. Selecting a Windows voice automatically switches back to Windows speech.
+
+Validation: automated local checks use simulated network and audio. Live AI output, microphone interaction, fallback, playback devices, and installer behavior still require Windows testing. This package contains source and the existing Windows setup builder, not a newly compiled installer.
+
+Shared speech controls: Faster, Slower, Louder, Quieter and Softer apply to the selected AI voice too. Speed 2 or Rate 2 sets speech rate; Volume 50 sets speech volume to fifty percent. Rate is minus ten through ten; volume is zero through one hundred percent. These commands work in help and the tutorial as well as the main app. Changes apply to new narration and retain the selected voice.
+
+Local eSpeak troubleshooting: Quick Test uses the bundled engine and does not require a new installer build for eSpeak. It checks the Microsoft Visual C++ x64 runtime and speech generation for US and UK English. A missing runtime can trigger a Windows administrator approval prompt. Voice list now includes the bundled variants for both accents. If eSpeak fails, keep eSpeak-Setup-Log.txt beside the source files and espeak-error.txt in the app settings folder for diagnosis.

@@ -1,0 +1,13 @@
+GITHUB AUTOMATED INSTALLER BUILDS
+
+The source folder voice_companion and the .github folder must both be placed at the root of willwalsh14-hub/voice-companion-updates. Keep .github/workflows/windows-installer.yml in that exact location. GitHub does not run a workflow stored only inside a ZIP or a release attachment.
+
+On GitHub, open the repository, then Actions, then Build and publish Windows installer, then Run workflow. The Windows build installs its tools, generates every manual, runs the release tests, packages the models and speech engines, creates Setup, and silently installs and checks it on the GitHub computer. Only after those checks pass does it publish the installer and update feed. It uses GitHub's temporary repository token, so no browser sign-in or personal access token is needed during a build.
+
+The run must be in the updates repository because the existing update feed points there. Source uploaded to a different repository needs separate permission to publish to the updates repository.
+
+A failed run does not announce a successful update. Its build and publishing logs remain available in the Actions run for seven days. The workflow starts only when requested with Run workflow. It does not publish automatically every time a file changes.
+
+Do not upload your personal app settings, email tokens, passwords, AI API key, local user data, or build logs with the source. The distributor's Microsoft desktop registration is a public client ID. If Gmail requires a distributor registration, provide the intended Desktop OAuth registration through a repository secret rather than committing a personal credentials file.
+
+The new workflow has been prepared and reviewed locally. The first GitHub run still needs to establish that its Windows environment passes the same speech and installation checks as your computer. The local installer builder continues to work normally; its Unattended option is for the automated Windows build.

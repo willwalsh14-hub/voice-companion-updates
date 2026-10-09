@@ -1,0 +1,37 @@
+VOICE COMPANION UPDATE HOSTING
+
+The updater is configured for willwalsh14-hub/voice-companion-updates. No finished installer or update manifest has been published by this package. It will not claim an update is available without a valid newer published manifest. The normal app still opens when the server is unavailable.
+
+Recommended hosting: a public GitHub repository used for Releases. Recipients do not need a GitHub account. Each installer must be smaller than 2 GiB. Use a repository you control; protect its publishing account because its releases authorize executable updates. This is a full installer update, not a patch.
+
+AUTOMATIC BUILD AND PUBLISH
+This v0.2.75 package is configured for willwalsh14-hub/voice-companion-updates.
+1. Extract the package and open BUILD INSTALLER - Double click.cmd. Complete the usual Setup installation when it opens. The builder checks the packaged app and the installed copy before publishing.
+2. Before the long build starts, GitHub CLI is installed if needed and sign-in is checked. Windows may ask permission to install it. Follow the one-time code and browser sign-in instructions in the build window. Sign in with the account that can write to the repository. Keep the window open until publishing finishes. Do not put passwords or tokens in the source folder.
+3. The builder creates a draft release with the exact version tag, uploads the checked installer and matching update information, plus the bundled eSpeak source and license. It downloads and checks every uploaded file before publishing the release as latest. A failed upload or verification leaves the release as a draft, so clients do not see a partial update.
+4. Look for PUBLISHED AND VERIFIED followed by the release address. GitHub sign-in is needed only when the saved session is missing or expired. It is not included in the app, installer, source ZIP, or build transcript.
+5. If publishing fails after a successful build, the local Setup file remains usable. Run the installer builder again to retry the complete process. The optional PUBLISH UPDATE - Double click.cmd can retry only publishing without rebuilding. It checks the successful-build record against the exact installer. A changed installer must be rebuilt and checked again.
+6. A published version is never overwritten, and an older build cannot replace a newer latest release. Increase the app version for each new build. Retrying an unfinished draft is supported.
+7. Install this first update-enabled Setup normally on existing computers once. Older apps without an updater cannot discover it automatically.
+
+For a local build without publishing, a trainer can run build-windows.ps1 with -NoPublish. Quick Test and running Setup on a recipient's computer never publish releases. If Windows Package Manager cannot install GitHub CLI, install it from https://cli.github.com then retry the publishing helper.
+The existing SET UP UPDATES helper remains available to configure a different repository or prepare files for manual publishing. Automatic publishing supports GitHub release feeds. Only release assets are uploaded; personal app data and GitHub credentials are not attached.
+
+EVERY LATER RELEASE
+Keep the same repository setting, increase the app version, and run the installer builder. After its checks pass, it publishes the new release automatically. No manual asset upload is needed. Updates download the full installer rather than a patch.
+
+The fixed feed address is https://github.com/OWNER/REPOSITORY/releases/latest/download/voice-companion-update.json. The helper fills OWNER and REPOSITORY from the repository you enter. This build already configures https://github.com/willwalsh14-hub/voice-companion-updates/releases/latest/download/voice-companion-update.json. A custom HTTPS server can instead serve the same manifest; configure its real manifest_url in update-settings.json before building.
+
+CLIENT EXPERIENCE
+After the microphone is ready, update checking runs in the background. If a newer update is available, the app says: A new update is available. Would you like to install it now? Say yes or no. If the user is already working, an automatic offer waits until the main menu or sleep; an explicitly requested check can offer from the current task.
+Yes saves documents, drafts, and the current note, downloads the installer, and verifies its declared size and SHA-256 checksum. Cancel update stops the download. No keeps the current version. Say Check for updates to check again. If saving, downloading, verification, or handoff fails, installation does not start and the app reports the problem.
+After verification, the app announces installation and closes. A separate helper waits for it to exit, runs Setup without its wizard, and reopens the app when finished. Windows security policy, SmartScreen, endpoint protection, or organizational restrictions can still require a trainer's intervention. No computer restart is forced. If Setup needs a restart, the app announces that on return.
+The same installer updates program files, guide copies in Documents\Voice Companion\User Guides, and shortcuts. Account data remains in the existing user-data folder. Quick Test may check a configured feed but cannot install an update over the installed app.
+The installer helper records success/failure in the local update-result.json file and Setup writes its normal installation log. Downloaded installers are kept under the app user-data Updates folder for troubleshooting; remove old completed folders if disk space is needed.
+
+TEST BEFORE PUBLIC DISTRIBUTION
+Verify startup Yes/No, disconnected internet, Check for updates, cancellation, upgrade to a higher version, bad checksum, saving active work, automatic reopening, settings/account preservation, and all five refreshed guide formats on Windows. Automated tests use fake downloads and processes; no real Windows upgrade or live hosted release has been exercised here.
+
+Version 0.2.76 fixes the Windows PowerShell 5.1 signed-out error. Normal GitHub login guidance no longer aborts the script. The builder prepares sign-in before the long build, then builds, checks, and publishes automatically. Each new build computer needs a GitHub account with repository write permission; recipients who only run Setup do not need GitHub sign-in.
+
+Version 0.2.77 adds publishing stage messages for repository checks, individual uploads, verification downloads, checksum checks, and making the release latest. During long GitHub transfers, a waiting message appears every 20 seconds with elapsed time. These are activity messages, not percentage estimates. Keep the window open; the full installer is uploaded and then downloaded again for verification. Progress is saved in VoiceCompanion-Publish-Log.txt. Both the installer builder and optional publishing helper use this same publisher. The builder resumes its build transcript even if sign-in or publishing fails, and requires a publication confirmation matching the checked installer before announcing build-and-publish success. No separate publishing command is required for a successful normal build.

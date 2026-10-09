@@ -1,0 +1,175 @@
+VOICE COMPANION - WINDOWS 11 TRAINER TEST
+
+Use the complete built VoiceCompanion folder on each test computer. This is a
+record of actual tests, not a certificate that the app is ready. Do not mark
+an item passed until you observe it on that computer.
+
+Computer and Windows version: __________________________
+Clean test PC with no Python/build tools installed: YES / NO
+Date: __________________________
+Trainer: __________________________
+Default microphone (built-in or USB): __________________________
+Speaker or headset: __________________________
+
+Write PASS, FAIL, or NOT TESTED beside each item. Write the exact words heard
+or an error message when a check fails.
+
+____ 1. Install only VoiceCompanion-Setup.exe on this test PC. Confirm the desktop shortcut opens the visible Voice Companion window without a command console, and hear its own voice with JAWS and NVDA off. Say "What version?" and hear 0.2.78-test; reject an older or console-only EXE. Turn JAWS off for the speech test. Run check-setup.cmd. The packaged runtime check and both bundled
+        models load, and Voice Companion itself speaks the speaker test.
+        Hearing words read from the command window by JAWS does not count.
+        Result or error: __________________________
+
+____ 2. Run test-microphone.cmd. Say "Wake up. Create a document."
+        The command reports a pass only when Vosk hears the wake phrase and,
+        in a Parakeet build, Parakeet hears "document."
+        Recognized words: __________________________
+
+____ 3. With JAWS off, start Voice Companion from the desktop icon.
+        Confirm no command window appears. Wait for "Voice Companion
+        is ready." Say "Wake up" and hear "I am listening." Say "create a
+        document" and hear the result from Voice Companion.
+        Result or error: __________________________
+
+____ 3A. Open an inbox with several test messages. Confirm only the first
+         sender, subject, and date are read. While it speaks, say "Be quiet."
+         Confirm silence with no spoken acknowledgement. Say "Keep going"
+         and confirm speech continues. Try "Shut the fuck up," then say
+         "Next message" while another summary is being read. Confirm the
+         old summary stops and the next one begins. Repeat in a document and
+         web reading session with a wired headset and with speakers. Record
+         missed commands or echo from the speakers:
+         Result or error: __________________________
+
+____ 3B. Say "Faster," "Slower," "List voices," and "Punctuation all."
+         Choose one listed voice by its full name. Close and reopen the app;
+         confirm the voice, speed, and punctuation choices persist.
+         Result or error: __________________________
+
+____ 4. Say "Create a document," "Name document Test Letter," and
+        "Start dictation." Speak two sentences. Pause dictation and ask it
+        to read them. Close the app, reopen it, say "Wake up," then
+        "Open document Test Letter." Confirm both sentences are still there.
+        Result or error: __________________________
+
+____ 5. Without a connected account, say "Write an email," give a test
+        recipient and subject, dictate a sentence, and say "Send email."
+        Confirm the email was saved locally and was NOT sent. Say "Leave email," "List email drafts,"
+        and "Open email draft" followed by its spoken name. Read its contents.
+        Use a test address you control.
+        Result or error: __________________________
+
+____ 5a. Only after helper account setup, use connected Gmail, Microsoft,
+         and Yahoo test accounts separately. Say "Send email" and
+         check the full spoken review. Say "Cancel send" and verify no mail
+         went out. Review again, say "Confirm send email," and check the
+         receiving inbox (and Sent Mail when available). Test a restart and
+         a failed network request. Check before any retry if the result is uncertain.
+         Gmail result: __________________________
+         Microsoft result: __________________________
+         Yahoo result: __________________________
+
+____ 5b. For each connected provider, test Inbox, "Go to Important," "Go to folder Receipts," and a nested folder using "Go to 2026":
+         "Read message 1," "Next message," "Previous message," "Open current message," "Go back"
+         to the folder, and "Back to inbox." Check the spoken sender and
+         body against the provider website. Test reply, reply all, and
+         forward with controlled addresses. Check recipients and delivery.
+         Result or error: __________________________
+
+____ 5c. Say "Go to folder" and use "Next folder," "Move down," "Previous folder,"
+         "Move up," "Okay," and "Cancel." Test two folders named 2026, one
+         at the top level and one inside Projects; choose each by spoken name.
+         Then select one message and several.
+         Say "Move selected to folder" and choose the destination. Move and delete only
+         after hearing the count and confirming. Create a nested test folder,
+         rename and move it using the spoken folder chooser, then delete it while empty. Attempt to delete a
+         nonempty folder and confirm the app refuses. Check every result in
+         the provider's web interface; stop if anything differs.
+         Result or error: __________________________
+
+____ 5c2. In the normal app, say "Add account," choose Gmail, Outlook/Exchange, and Yahoo in separate trials. Test private entry with Yahoo; never dictate a password. Add a second account of the same type and verify "List email accounts," "Switch to" plus the full address, "Email," "Check email," and "Write an email" use the correct address. Review the From address aloud before any test send. Confirm a reply cannot be moved to another sender account. Registration must be completed before OAuth sign-in.
+         Result or error: __________________________
+
+____ 5d. Repeat guided website testing in Edge, Chrome, Brave, and Firefox on Windows. Confirm the app speaks with a screen reader off. Open a harmless HTTPS test form. Tab and Shift+Tab among fields; edit text with arrows and Ctrl+arrows; change a checkbox, radio group, and menu with the keyboard. Check spoken focus and "Where am I?" Fill other fields by voice. Say "Review and submit form" and hear every current value, including keyboard changes, then submit a harmless form by voice. Change one value after review and confirm submission is canceled. Test a seven-field form and "Continue review." Do not use a real financial form for this check. Record the exact browser and website for any failure.
+         Result or error: __________________________
+
+____ 6. Say "Go to sleep." Try "Create a document" and confirm it ignores
+        the request. Say "Wake up" and confirm it wakes. Then say
+        "Shut down Companion" and confirm the program exits. It cannot
+        restart itself by voice after shutdown.
+        Result or error: __________________________
+
+____ 7. Turn off Wi-Fi briefly. Restart the app and repeat wake, one spoken
+        document sentence, sleep, and shutdown. Restore Wi-Fi afterward.
+        Offline result or error: __________________________
+
+____ 8. Restart Windows and repeat items 1 through 3. Repeat with a second
+        Windows 11 computer or a different default microphone when available.
+        Result or error: __________________________
+
+Do not hand this build to the veteran for essential communication if any
+startup, wake, dictation, sleep, shutdown, or save check fails. Keep the
+failed output and report the computer, microphone, step, and exact failure
+to the developer. Do not rely on email sending until live provider testing
+passes. Do not rely on the guided browser for banking, applications, or other essential web tasks until live site tests pass.
+
+VOICE AND WEB REGRESSION CHECK: While mail speech is still talking, say "Voice list" and confirm the available voices are spoken. In a folder, say "Open message" and "Open that"; say "New message," "Start dictation," "Stop dictation," then "Go back" and confirm the same folder remains open. On a Google results page, say "List links," "Next links," and "Open link 1"; confirm the destination before saying "Yes."
+
+LINK DETECTION: On a page with a delayed result and a link in an embedded frame, say "List links" and verify both results are announced. Confirm "Open link 1" still requires Yes and the link opens.
+
+NATURAL EMAIL TEST: In a connected Gmail draft, say the recipient and subject, then speak a body without "Start dictation." Verify it saves. Say "Send it tomorrow" and verify those words remain in the draft. Say "Send that" and verify it reads sender, recipient, subject, body, and sends nothing. Say "Cancel send" and verify "Yes" does not send. Review again and say "Yes" only for a safe test address. Repeat with reply and forward.
+
+INPUT MODES: Without saying start dictation, create a document and speak a sentence. Switch to Commands only; speak another sentence and verify it was not added. Switch to Dictation only; say "read document" and verify those words were added instead of invoking the command. Switch to Normal mode and verify Read document works. Repeat in a mail draft and focused ordinary web text field. Confirm password fields reject speech and dictation only cannot send.
+
+READING AND VOICE PICKER: Open a message and verify it reads body first; "Message details" reads sender, subject, date. In document, draft, web page, note, and message, try next/previous character, word, line, sentence, paragraph, start reading, and continue reading. Preview next/previous voices, cancel to restore the old voice, then choose "That one" and verify it survives restart. After a successful new send, verify Inbox focus; after a reply, verify the original message. Do not repeat a real send to test uncertain delivery.
+
+DICTATION CLEANUP: In a new email, say "Same here, Bob, period. Uh" and review the saved body. It should read "Same here, Bob." Confirm a separate "uh" adds nothing. "The period of history" must remain words, and "type literally uh period" must preserve both words. Do not send until the whole review is correct.
+
+SEARCH VERIFICATION: Search the web and confirm results are read from Brave Search, with spoken links. Try an explicit Google search. On a human verification page (including an iframe), confirm Companion says verification is required rather than claiming there is no content, and that the fallback search is announced. If every engine is blocked, it must say so without claiming to have results.
+
+DOCUMENT FORMATTING CHECK: Create a document and try heading level two, bold, italic, underline, font and size, bulleted and numbered lists, and a two-by-two table. Fill and navigate cells, add a row and column, save, close, reopen, and verify the Word file and spoken table review. Try Undo after deleting a table. Test on a real Windows build before client use.
+
+LINE SPACING CHECK: Dictate two paragraphs. Say line spacing 1.75 on one and line spacing exactly 18 points on the other. Save, reopen, and hear each value with read line spacing. Say set document line spacing to 1.25, verify both changed, then undo.
+
+SHORT SPACING PHRASES: Test single space, double space, custom spacing, a valid spoken number, an invalid number followed by a correction, and cancel. Confirm the value is not dictated into the paragraph and still reads correctly after reopening.
+
+CUSTOM SPACING CONFIRMATION: Start custom spacing, speak a value, and verify the DOCX has not changed. Say change it, speak another value, then confirm that; verify the second value is saved. Repeat with cancel and verify no change. Test this in the normal window with a Windows voice, since confirm that also confirms voice choices when the voice picker is open.
+
+TEXT SELECTION: Dictate repeated words. Say select cat, choose second match, then bold that. Select cat through dog; highlight that. Try selection start at cat and selection end at dog. Find, copy, cut, paste, delete a quoted sentence, delete current word, delete line, delete paragraph, scratch that, and undo. Repeat in an email draft. Reopen the saved Word document and draft to check formatting.
+YES/NO: For custom spacing, email send, mail move/delete, folder actions, website opening, and final web form submission, hear the action repeated and answer no to cancel. Repeat and answer yes only after the readback matches. Verify no action occurred on no.
+VOICE PICKER: Say list voices. Choose the synthesizer with next/previous and confirm that. Choose its voice with next/previous and confirm that; verify the voice saves immediately. Test eSpeak US English and UK English, cancellation at both layers, and persistence after restart. Repeat with okay and that one.
+
+GUIDED EMAIL AND CONTACTS: New email asks for recipient, subject, then body. Type a complete address in the main window and press Enter; add CC and BCC by voice or typing. Review all addresses before send. Save and reopen the draft. Send throwaway Gmail, Microsoft, and Yahoo messages with CC and BCC to verify delivery and privacy. Add a contact, use its name for To and CC, switch accounts and check contacts do not mix. Enable People API, grant Contacts scope, connect Google Contacts for the correct account, sync a test contact both directions, then disconnect network and resolve the saved name locally.
+WEB PAGE AND LINKS: On blindmast.com, read the home page and several inner pages to the end using Continue reading. Compare each section with the browser page. List links, next link, previous link, open link number two, then confirm that; verify the named destination. Check that No does not open the page.
+
+RADIO AND PODCASTS: On a Windows test computer, choose All, Radio Browser, and IPRD in turn, restart, and check that the choice persists. Search a known station by name, genre, and country. Confirm a failing stream is skipped on the next search. Import a RadioSure .rsd file and check its entries. Play, record, stop recording, schedule a short future recording while the app remains open, and inspect the resulting audio file. Search a podcast, open a feed, subscribe, download an episode, close network access, and play the download. Note any browser audio controls that need a trainer.
+
+CONTROLLED AUDIO: With JAWS off, play a direct radio stream in the Voice Companion Audio window. Say pause radio, play radio, and stop radio while Companion is speaking. Confirm each interrupts speech and actually changes audio. Repeat with a podcast and a saved recording. Fast forward 15 seconds, 30 minutes, and one hour; rewind 15 seconds; confirm the position against the player. Test next/previous episode and a feed with Podcasting 2.0 chapter markers. A live radio stream should say it cannot seek. Close Companion and confirm the player closes; put it to sleep and confirm playback pauses. Repeat in a clean Windows install.
+
+PODCAST AUTO DOWNLOADS: Subscribe to a test feed with several known episodes. Verify manual is the default. Set auto download 1, then 5, then 205 and all on a controlled feed; verify the saved episode count, actual file content, and notifications. Add a new item to the test feed and refresh subscriptions; check that it downloads without a new app version. Verify only old automatic files beyond the selected limit are removed, manually downloaded files survive, and a failed feed check keeps the prior list. Switch to manual and confirm existing files remain and later episodes do not auto download. Test after an app restart and a temporary network outage. Check available disk space before using all.
+
+RADIO AND EMAIL CORRECTIONS: With screen readers off, enter Radio and confirm the opening prompt does not mention subscriptions. Say Search radio, wait for its question, then answer with a known station name; check actual results. Enter Podcasts and say List podcasts. In a new email, reach the body, then say Go to To, type an address in the main window without Alt+T (address, Enter), and check Read recipient. Repeat Go to Subject, Go to CC, Go to BCC, and Go to Body by voice; review all fields before sending. Try these in normal and dictation-only modes. Send only to a test account you control, verify receipt, and confirm the app says Email sent successfully without a provider reference or code.
+
+AUTO FOCUS: From a browser or another window, say Write an email and type a test To address without clicking or pressing a shortcut. While dictating the body, say Go to CC and type an address without a shortcut; repeat for BCC and Subject. Verify the typed text lands in the selected field and the app speaks its value. If Windows blocks the window coming forward, record the exact foreground app and state.
+
+ESPEAK AND RESPONSE TIME: Test Quick Test preparation and an installer on a separate Windows computer. With each synthesizer reading a long passage, say shut up, shut the hell up, and shut the fuck up. Verify silence does not speak a confirmation, Resume speaking continues at the paused position, and a new action interrupts old narration. Test email, documents, web, help, tutorial and radio. Compare observed delays with the previous build using the same microphone; do not promise fixed timing based on automated checks. Verify ordinary dictation is not split or changed.
+
+SPEECH SETTINGS: With Windows, eSpeak US/UK and configured AI speech, test Faster, Slower, Louder, Quieter and Softer in documents, email, web, radio, help and tutorial. Softer and Quieter should reduce speech volume by the same ten percentage points. Test Speed 1, Speed two, Rate minus two, Volume 5, Set volume to fifty, and restart persistence. Volume 5 is five percent. Reject rate 11, volume 101 and non-whole numbers without changing settings. Verify font-size commands still change document formatting.
+
+ESPEAK RUNTIME AND VOICE VARIANTS
+Run Quick Test from the complete extracted folder. Confirm that both eSpeak audio-generation checks pass before choosing it. If Windows asks for administrator approval for the signed Microsoft Visual C++ runtime, approve it. Select eSpeak from Voice list and preview several named variants in both accents. Confirm a named voice, restart, and verify it is remembered. Check Faster, Slower, Louder, Quieter, Softer, Speed 2, Rate minus two, and Volume 50. If it falls back to Windows speech, retain eSpeak-Setup-Log.txt beside the source and espeak-error.txt in the app settings folder. Do not mark live playback passed solely because automated checks passed.
+
+SPEECH SETTING NUMBER RECOGNITION
+Test Rate four, Speed four, Rate minus four, Volume four, Volume forty four percent, and Volume one hundred. Confirm the spoken result and the actual rate or volume on each synthesizer. Test Rate eleven and Volume one hundred one; the previous value must remain. If the recognized phrase differs, retain the Heard line so the actual transcription can be checked.
+
+INSTALLED USER GUIDES
+Install the finished Setup file on a test Windows account. Verify Documents\Voice Companion\User Guides contains TXT, HTML, DOCX, EPUB and DAISY 3 ZIP. Check the desktop and Start menu guide-folder shortcuts. From a document, email draft, help, and tutorial, say Open user guides and confirm your app task stays in place. Update the app and confirm the guides match the new build. Test a redirected or OneDrive Documents folder. Distribute only the finished Setup executable.
+
+WINDOWS BUILD TEST ISOLATION
+Confirm the release tests complete without opening the Microsoft runtime installer. Actual eSpeak preparation follows the tests and may require administrator approval. Use the current complete extracted source package; do not mix test files from older builds.
+
+COMPACT ESPEAK CHOICES
+Confirm only six eSpeak choices appear: US English, UK English, US English Male, UK English Male, US English Female, UK English Female. Cycle Next and Previous through the entire list. Check selecting and canceling while a previously saved named variant is active. Compare the six voices by listening on Windows; automated tests do not judge perceived voice quality.
+
+Check v0.2.72: Replace cat with dog with recognizer-style terminal punctuation, verify existing punctuation remains, and test deliberately spoken period. Repeat Select phrase, Select phrase through phrase, Insert before phrase, and Insert after phrase with multiple occurrences across document and email paragraphs. Browse Next/Previous and Read sentence; confirm and cancel. Check selection ranges and Undo after inserted text.
+
+Update check: Configure a real release feed, install this updater-enabled build once, then test a newer hosted Setup on Windows. Verify spoken Yes/No, cancellation, offline use, preserved work/accounts, reopening, current version, and refreshed guides. No simulated test is proof of a working Windows upgrade.
