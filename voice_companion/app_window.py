@@ -6,13 +6,13 @@ Closing the window requests a clean shutdown of the microphone loop.
 import queue
 import threading
 from field_selection import FieldSelection
-from keyboard_text import caret_feedback,typing_feedback,phonetic
+from keyboard_text import caret_feedback,typing_feedback,phonetic,character as spoken_character
 
 
 def entry_feedback(before, after, old_caret, caret, key, character=""):
     """Short spoken feedback for a standard editable email entry."""
     names = {'@':'at sign', '.':'dot', '-':'hyphen', '_':'underscore', ' ':'space'}
-    def say(char): return names.get(char, char)
+    def say(char): return names[char] if char in names else spoken_character(char)
     if key == 'Left': return say(after[caret]) if caret < len(after) else 'End of field'
     if key == 'Right': return say(after[caret]) if caret < len(after) else 'End of field'
     if key == 'Home': return 'Start of field'

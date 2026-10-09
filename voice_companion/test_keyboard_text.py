@@ -2,6 +2,7 @@ import copy
 import json
 from pathlib import Path
 import queue
+import string
 import sys
 import tempfile
 import threading
@@ -12,7 +13,7 @@ import companion
 from app_window import CompanionWindow
 from document_editor import VoiceDocument,Paragraph,TextRun
 from keyboard_speech import KeyboardSpeech
-from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typing_feedback,phonetic
+from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typing_feedback,phonetic,character
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
@@ -74,6 +75,13 @@ class KeyboardTextTests(unittest.TestCase):
         self.assertEqual(caret_feedback('First\nSecond',8,'Down'),('Second',''))
         self.assertEqual(caret_feedback('One two',3,'Right',False,(0,3)),('Selected One',''))
         self.assertEqual(phonetic('B'),'Bravo')
+    def test_character_review_names_punctuation_instead_of_sending_silent_symbols_to_espeak(self):
+        from app_window import entry_feedback
+        for symbol in string.punctuation:
+            self.assertNotEqual(character(symbol),symbol)
+            self.assertNotEqual(entry_feedback(symbol,symbol,1,0,'Left'),symbol)
+        self.assertEqual(character('/'),'forward slash')
+        self.assertEqual(character('\u00a0'),'no-break space')
     def test_all_typing_echo_options_and_replacement(self):
         self.assertEqual(typing_feedback('tes','test',4,'characters'),'t')
         self.assertIsNone(typing_feedback('tes','test',4,'words'))

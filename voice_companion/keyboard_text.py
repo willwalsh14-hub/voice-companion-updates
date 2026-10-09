@@ -1,12 +1,19 @@
 """Literal keyboard edits and concise spoken caret/typing feedback."""
 import copy
 import re
+import unicodedata
 from document_editor import Paragraph,TextRun,TextSelection
 
 PHONETICS=dict(zip('abcdefghijklmnopqrstuvwxyz',('Alpha','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliett','Kilo','Lima','Mike','November','Oscar','Papa','Quebec','Romeo','Sierra','Tango','Uniform','Victor','Whiskey','X-ray','Yankee','Zulu')))
 NAMES={' ':'space','\n':'new line','\t':'tab','@':'at sign','.':'period',',':'comma','!':'exclamation mark','?':'question mark','-':'hyphen','_':'underscore',':':'colon',';':'semicolon','(':'left parenthesis',')':'right parenthesis'}
 
-def character(value):return NAMES.get(value,value) if value else 'End of text.'
+NAMES.update({'#':'hash sign','$':'dollar sign','%':'percent sign','&':'ampersand','*':'asterisk','+':'plus','=':'equals','/':'forward slash','\\':'backslash',"'":'apostrophe','"':'quotation mark','[':'left bracket',']':'right bracket','{':'left brace','}':'right brace','<':'less than','>':'greater than','^':'caret','|':'vertical bar','~':'tilde','`':'grave accent','\r':'carriage return'})
+
+def character(value):
+    if not value:return 'End of text.'
+    if value in NAMES:return NAMES[value]
+    if value.isalnum() or len(value)!=1:return value
+    return unicodedata.name(value,'character '+str(ord(value))).lower()
 def phonetic(value):return PHONETICS.get(value.lower(),'')
 def document_text(doc):return '\n'.join(p.text for p in doc.paragraphs)
 def absolute(doc,position):return sum(len(p.text)+1 for p in doc.paragraphs[:position[0]])+position[1]
