@@ -137,10 +137,13 @@ class YahooMailbox:
             if len(raw) > 5 * 1024 * 1024:
                 raise MailboxError('This message is too large to read aloud.')
             msg = BytesParser(policy=policy.default).parsebytes(raw)
-            part = msg.get_body(preferencelist=('plain', 'html'))
+            part = msg.get_body(preferencelist=('html', 'plain'))
             if part is None: return ''
             content = part.get_content()
-            return html_text(content) if part.get_content_type() == 'text/html' else str(content)
+            body=html_text(content) if part.get_content_type() == 'text/html' else __import__('email_reader').plain_body(content)
+            plain=msg.get_body(preferencelist=('plain',))
+            if plain is not None:body.plain=str(__import__('email_reader').plain_body(plain.get_content()))
+            return body
         return self._with(operation)
 
     def response_context(self, message_id, action, own_address, folder_id='INBOX'):
@@ -161,7 +164,7 @@ class YahooMailbox:
             subject = msg.get('Subject', '(no subject)')
             prefix = 'Fwd: ' if action == 'forward' else 'Re: '
             if subject.casefold().startswith(prefix.casefold()): prefix = ''
-            part = msg.get_body(preferencelist=('plain', 'html'))
+            part = msg.get_body(preferencelist=('html', 'plain'))
             original = '' if part is None else str(part.get_content())
             if part and part.get_content_type() == 'text/html': original = html_text(original)
             return {'action': action, 'source_id': message_id, 'message_id': msg.get('Message-ID', ''),

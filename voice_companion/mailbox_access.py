@@ -40,31 +40,11 @@ class _NoRedirect(request.HTTPRedirectHandler):
         raise MailboxError('The mail service redirected unexpectedly. No account token was sent to the new address.')
 
 
-class _Text(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.parts = []
-        self.hidden = 0
-
-    def handle_starttag(self, tag, attrs):
-        if tag in ('script', 'style'):
-            self.hidden += 1
-        if tag in ('p', 'br', 'div', 'li', 'h1', 'h2', 'h3'):
-            self.parts.append('\n')
-
-    def handle_endtag(self, tag):
-        if tag in ('script', 'style') and self.hidden:
-            self.hidden -= 1
-
-    def handle_data(self, data):
-        if not self.hidden:
-            self.parts.append(data)
+from email_reader import render_html, plain_body
 
 
 def html_text(source):
-    parser = _Text()
-    parser.feed(source)
-    return '\n'.join(line.strip() for line in ''.join(parser.parts).splitlines() if line.strip())
+    return render_html(source)
 
 
 def gmail_body(raw):
@@ -73,11 +53,14 @@ def gmail_body(raw):
         if len(payload) > 5 * 1024 * 1024:
             raise MailboxError('This message is too large to read aloud.')
         msg = BytesParser(policy=policy.default).parsebytes(payload)
-        part = msg.get_body(preferencelist=('plain', 'html'))
+        part = msg.get_body(preferencelist=('html', 'plain'))
         if part is None:
             return ''
         content = part.get_content()
-        return html_text(content) if part.get_content_type() == 'text/html' else str(content)
+        body=html_text(content) if part.get_content_type() == 'text/html' else plain_body(content)
+        plain=msg.get_body(preferencelist=('plain',))
+        if plain is not None:body.plain=str(plain_body(plain.get_content()))
+        return body
     except (ValueError, TypeError, UnicodeError, LookupError) as exc:
         raise MailboxError('This message could not be read.') from exc
 
@@ -204,12 +187,12 @@ class MailboxClient:
                 raise MailboxError('That message is no longer available. Say list messages to refresh.')
             return gmail_body(data['raw'])
         data = self._call('/messages/' + ident + '?$select=id,body',
-                          headers={'Prefer': 'outlook.body-content-type="text"'})
+                          headers={'Prefer': 'outlook.body-content-type="html"'})
         if data.get('id', message_id) != message_id or 'body' not in data:
             raise MailboxError('That message is no longer available. Say list messages to refresh.')
         body = data.get('body', {})
         content = body.get('content', '')
-        return html_text(content) if body.get('contentType', '').lower() == 'html' else content
+        return html_text(content) if body.get('contentType', '').lower() == 'html' else plain_body(content)
 
     def response_context(self, message_id, action, own_address, folder_id=None):
         if action not in ('reply', 'reply_all', 'forward'):

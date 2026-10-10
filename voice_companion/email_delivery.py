@@ -16,7 +16,8 @@ from email_formatting import formatted_body
 
 
 class DeliveryError(Exception):
-    pass
+    def __init__(self,message,uncertain=True):
+        super().__init__(message);self.uncertain=uncertain
 
 
 def message_parts(draft):
@@ -147,7 +148,8 @@ def submit(provider, draft, access_token, opener=request.urlopen, sender=''):
     except error.HTTPError as exc:
         if exc.code >= 500:
             raise DeliveryError('The result is uncertain. Keep the draft and check Sent Mail before trying again.') from exc
-        raise DeliveryError('The provider rejected the message. Keep the draft and check the account connection.') from exc
+        reason={400:'The provider rejected the message format or recipient.',401:'Email sign-in expired. Reconnect the sending account.',403:'The account does not have permission to send email. Reconnect it and allow sending permission.',429:'The email provider is limiting requests. Wait before reviewing the draft again.'}.get(exc.code,'The provider rejected the message. Check the account connection.')
+        raise DeliveryError(reason,uncertain=False) from exc
     except (error.URLError, TimeoutError, OSError) as exc:
         raise DeliveryError('The result is uncertain. Keep the draft and check Sent Items before trying again.') from exc
     if provider == 'gmail':

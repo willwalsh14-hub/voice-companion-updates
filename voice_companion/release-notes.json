@@ -1,18 +1,31 @@
 {
-  "version": "0.2.103-test",
+  "version": "0.2.104-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.102-test",
-  "scope": "Repairs keyboard reading and speech cancellation, rapid navigation backlog, and slow or verbose text-unit reading. This is a beta testing build.",
+  "baseline": "0.2.103-test",
+  "scope": "Email send diagnostics, Alt+S sending review, and selectable HTML or plain-text message reading. This is a beta testing build.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Concise reading at a shared position",
+          "title": "HTML and plain-text email reading",
           "details": [
-            "Next, previous, read, current, and read current character, word, line, sentence, and paragraph commands speak the text without announcing the unit number or total first. Character navigation includes spoken spaces and new lines. Explicit Where am I document location reporting remains available.",
-            "Keyboard caret movement and spoken text-unit movement share the reading position, including crossing paragraph boundaries. Reading-unit spans are cached so repeated movement through long text does not rebuild the entire unit list every time."
+            "Options, Email, Email format offers HTML and plain text. HTML is the default, including for existing installations without a saved format choice. Say email format HTML or email format plain text to change it.",
+            "HTML message reading preserves safe clickable links, headings, bold, italic, underline, numbered lists and bullet points. Tab and Shift+Tab move among links, and Enter opens the focused link. Say list links and open link followed by its number. Normal arrow reading and Escape remain available. HTML is rendered passively: scripts and remote images are not loaded. This is basic email formatting, not a full browser layout.",
+            "Plain text uses the original plain-text MIME part when available, otherwise the readable HTML text. Changing the format of an open message returns its reading position to the beginning."
+          ]
+        },
+        {
+          "title": "Alt+S send shortcut",
+          "details": [
+            "Alt+S and Ctrl+Enter start the same review as send it. They commit the current editable header before reviewing. A yes confirmation is still required before sending."
+          ]
+        },
+        {
+          "title": "Keyboard update and email send confirmations",
+          "details": [
+            "Update installation and email send review prompts support Y or N immediately, arrows or Tab/Shift+Tab to change the spoken Yes/No choice, Enter to activate it, and Escape to cancel. Confirmation keys take priority over any text remaining in an email header field. Voice yes and no still work."
           ]
         }
       ]
@@ -21,24 +34,17 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Keyboard reading remains audible",
+          "title": "Specific sending errors and safe retries",
           "details": [
-            "Fixed cursor acknowledgment processing that interrupted newly generated keyboard speech. Cursor-only updates now preserve line, word, and character feedback in documents, received email, Help, and What’s new.",
-            "Repeated keyboard reading callbacks are replaced by the latest callback. Windows integration checks cover Up/Down, Left/Right, Ctrl+arrows, Home/End, and Ctrl+Home/End across editable and read-only text, and verify that processing cursor updates does not stop speech."
+            "The draft remains saved, but the spoken error now explains invalid recipient data, expired sign-in, missing sending permission, or provider rejection instead of hiding the reason. Account renewal failures before submission do not count as an attempted send. Explicit provider rejection releases the attempted-send block so the corrected draft can be reviewed again.",
+            "Timeouts, network failures during submission, unclear acceptance and provider server errors remain protected against duplicate sends. Check Sent Mail before trying again. No automatic retry or real test email is sent by these checks. Actual sending with the affected account still needs testing on the user\u2019s computer."
           ]
         },
         {
-          "title": "Rapid navigation without replaying skipped items",
+          "title": "Cleaner message spacing",
           "details": [
-            "Queued keyboard actions are applied in order while intermediate speech is suppressed. Only the final navigation result is announced. Cursor updates and editable field changes are preserved, and Control discards pending feedback.",
-            "Batches are bounded to keep microphone processing responsive. Regression tests verify that six rapid arrows move through all six items but announce only the destination. Native Options controls retain immediate feedback replacement."
-          ]
-        },
-        {
-          "title": "Faster spoken text navigation",
-          "details": [
-            "Complete text-unit reading commands in email, Help, web reading, and notes join documents in the fast recognition path, skipping the slower second dictation-model pass. Natural move/go-to next/previous aliases and read current unit commands use the shared parser.",
-            "Short spoken text navigation uses local feedback even with AI narration selected, avoiding online speech-generation delays. Full narration remains available through the selected synthesizer. Explicit document/email dictation mode keeps literal dictation handling. Live microphone latency and acoustic output still require beta testing on the user’s Windows machine."
+            "Plain-text messages normalize Windows line endings and collapse repeated empty lines to one blank line. HTML source indentation and nested layout containers do not create extra reading lines. Consecutive HTML breaks retain at most one blank line. An intentional blank line is still spoken as Blank line by keyboard reading.",
+            "Automated checks cover MIME selection, safe links, lists, formatting, blank-line cleanup, default/voice format selection, send review shortcuts, last-field commits, expired sign-in and rejected permission responses. Windows checks exercise Tab, Shift+Tab, Enter link activation and Alt+S."
           ]
         }
       ]

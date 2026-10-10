@@ -151,7 +151,7 @@ class CompanionWindow:
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
-                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N') and not (event.widget==self.typed and self.typed.get().strip() and key in ('Return','space')):
+                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
                 elif mode=='document' and key=='F2':request='F2'
@@ -171,7 +171,10 @@ class CompanionWindow:
                         self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':backward}))
                     else:self.commands.put(('keyboard','ShiftTab' if backward else 'Tab'))
                     return 'break'
-                elif mode=='email_draft' and control and key=='Return':request='Ctrl+Enter'
+                elif mode=='email_draft' and ((control and key=='Return') or (key.lower()=='s' and event.state&(8|0x20000))):
+                    if self.email_field:
+                        self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'send':True}));return 'break'
+                    request='Ctrl+Enter' if control else 'Alt+S'
                 elif self.context.get('menu_letters') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
                 if request:
@@ -180,6 +183,8 @@ class CompanionWindow:
             root.bind_all('<Alt-F4>',shortcut)
             root.bind_all('<Alt-o>',shortcut)
             root.bind_all('<Alt-O>',shortcut)
+            root.bind_all('<Alt-s>',shortcut)
+            root.bind_all('<Alt-S>',shortcut)
             root.bind_all('<Tab>',shortcut)
             root.bind_all('<Shift-Tab>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')
@@ -244,7 +249,19 @@ class CompanionWindow:
             history.pack(fill='both', expand=True, padx=18, pady=(0, 18))
             editor=tk.Text(root,wrap='word',font=('Segoe UI',12),undo=True,exportselection=False)
             self.editor=editor
-            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None}
+            editor.tag_configure('bold',font=('Segoe UI',12,'bold'))
+            editor.tag_configure('italic',font=('Segoe UI',12,'italic'))
+            editor.tag_configure('underline',underline=True)
+            editor.tag_configure('heading',font=('Segoe UI',16,'bold'))
+            def open_link(url):
+                from email_reader import safe_link
+                if safe_link(url):
+                    import webbrowser
+                    webbrowser.open(url)
+            def link_at_caret():
+                caret=offset()
+                return next((span for span in self.context.get('rich_spans',[]) if span[2]=='link' and span[0]<=caret<span[1]),None)
+            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None}
             def offset(index='insert'):return len(editor.get('1.0',index))
             def selection():
                 try:return (offset('sel.first'),offset('sel.last'))
@@ -253,10 +270,14 @@ class CompanionWindow:
                 if local['phonetic'] is not None:
                     root.after_cancel(local['phonetic']);local['phonetic']=None
             def read_caret(key,control=False):
+                local['link']=None
                 text=editor.get('1.0','end-1c');caret=offset()
                 notice,char=caret_feedback(text,caret,key,control,selection())
                 if not selection() and key in ('Up','Down') and not control:
                     notice=editor.get('insert display linestart','insert display lineend') or 'Blank line.'
+                    if self.context.get('rich_spans'):
+                        if notice.lstrip().startswith('• '):notice='Bullet '+notice.lstrip()[2:]
+                        if any(a<=caret<b and style=='heading' for a,b,style,url in self.context['rich_spans']):notice='Heading. '+notice
                 self.feedback(notice);cancel_phonetic()
                 if char and self.context.get('phonetic') and phonetic(char):
                     local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(char)))
@@ -279,7 +300,16 @@ class CompanionWindow:
                 if event.keysym=='a' and event.state&4:
                     editor.tag_add('sel','1.0','end-1c');read_caret('Right');send_text_position();return 'break'
                 nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')
+                if self.context.get('readonly') and event.keysym=='Return' and link_at_caret():
+                    open_link(link_at_caret()[3]);return 'break'
                 if self.context.get('readonly') and event.keysym=='Tab':
+                    links=[span for span in self.context.get('rich_spans',[]) if span[2]=='link']
+                    caret=offset();backward=bool(event.state&1)
+                    candidates=[span for span in links if span[0]<caret] if backward else [span for span in links if span[0]>caret or caret==0 and span[0]==0 and local['link']!=0]
+                    if candidates:
+                        span=candidates[-1] if backward else candidates[0];local['link']=span[0]
+                        editor.mark_set('insert','1.0 + '+str(span[0])+' chars');editor.tag_remove('sel','1.0','end');editor.tag_add('sel','1.0 + '+str(span[0])+' chars','1.0 + '+str(span[1])+' chars');editor.see('insert')
+                        self.feedback(editor.get('sel.first','sel.last')+', link. Enter to open.');send_text_position();return 'break'
                     target=editor.tk_focusPrev() if event.state&1 else editor.tk_focusNext()
                     if target:target.focus_set()
                     return 'break'
@@ -403,6 +433,14 @@ class CompanionWindow:
                                 editor.tag_remove('sel','1.0','end')
                                 if field.get('selection'):editor.tag_add('sel',*('1.0 + '+str(i)+' chars' for i in field['selection']))
                                 editor.see('insert');local['applying']=False
+                            for tag in editor.tag_names():
+                                if tag in ('bold','italic','underline','heading') or tag.startswith('mail_link_'):editor.tag_remove(tag,'1.0','end')
+                            for i,(start,end,style,url) in enumerate(field.get('rich_spans',[])):
+                                tag='mail_link_'+str(i) if style=='link' else style
+                                if style=='link':
+                                    editor.tag_configure(tag,foreground='blue',underline=True)
+                                    editor.tag_bind(tag,'<Button-1>',lambda event,u=url:open_link(u))
+                                editor.tag_add(tag,'1.0 + '+str(start)+' chars','1.0 + '+str(end)+' chars')
                             self.email_field=None
                             if transition:typed.delete(0,'end');self.last_email_request=None
                             if transition:editor.focus_force()

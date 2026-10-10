@@ -203,3 +203,12 @@ Check mail Control+Y folders, Control+R reply, Control+Shift+R reply all, Contro
 - Rapid arrows, first-letter navigation, and Tab must apply every movement and announce only the final destination without replaying skipped items.
 - Next/previous/read/current character, word, line, sentence, paragraph: read only content, including named spaces/newlines for character movement. Test crossing paragraph boundaries and switching between keyboard and voice.
 - Test voice navigation with AI selected: short navigation feedback stays local and prompt. Full narration remains available in the selected engine. Keep explicit dictation mode behavior unchanged.
+
+0.2.104-test EMAIL CHECKS
+- Confirm HTML is the default; change to plain text using keyboard and voice, save, reopen Options and verify the choice.
+- Open Gmail, Microsoft and Yahoo MIME messages; verify lists, headings, safe links and arrow reading. Tab/Shift+Tab through links; Enter opens the selected link. Escape returns to the folder.
+- Confirm messages with source indentation or many empty lines do not create unnecessary blanks; intentional blanks speak Blank line.
+- Compose a harmless test message on the affected account. Test Ctrl+Enter, Alt+S and Send it, followed by No first, then a separate reviewed send with Yes. Verify the actual Sent folder and recipient receipt.
+- Verify expired sign-in and missing send permissions speak a useful error and retain the draft. Verify uncertain submission remains protected against duplicates.
+
+Update installation and email send confirmation: press Y or N immediately; arrows or Tab/Shift+Tab choose Yes or No, Enter activates the spoken choice, and Escape cancels. Voice Yes and No still work. Test this with text left in an email header field.

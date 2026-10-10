@@ -242,6 +242,37 @@ class WindowKeyboardTests(unittest.TestCase):
             expected='Control' if key=='Control_L' else key
             self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.typed.get(),''))
+    def test_update_and_email_confirmation_override_nonempty_header(self):
+        for mode in ('update_offer','email_draft'):
+            self.window.set_context(dict(mode=mode,source=None,confirmation='yes',text='',caret=0,ack=0))
+            self.wait(lambda:self.window.context.get('mode')==mode)
+            def prepare():
+                self.window.typed.delete(0,'end');self.window.typed.insert(0,'Existing header text');self.window.typed.focus_force()
+            self.call(prepare)
+            for key,expected in (('Tab','Tab'),('Return','Enter'),('y','y'),('n','n'),('Escape','Escape')):
+                self.call(lambda key=key:self.window.typed.event_generate('<KeyPress>',keysym=key))
+                self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
+            while not self.window.commands.empty():self.window.commands.get_nowait()
+    def test_html_links_tab_enter_and_alt_s(self):
+        from email_reader import render_html
+        body=render_html('<p>Hello <a href="https://example.com">Visit</a> and <a href="https://example.org">More</a></p>')
+        self.window.set_context(dict(mode='mailbox',source='html-test',text=body,rich_spans=body.spans,caret=0,readonly=True,ack=0))
+        self.wait(lambda:self.window.context.get('source')=='html-test')
+        self.call(lambda:self.window.editor.focus_force())
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
+        self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'Visit'))
+        with patch('webbrowser.open') as browser:
+            self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Return'))
+            browser.assert_called_once_with('https://example.com')
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
+        self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'More'))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))
+        self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'Visit'))
+        self.window.set_context(dict(mode='email_draft',source='draft-send',text='Hello',caret=0,readonly=False,ack=0))
+        self.wait(lambda:self.window.context.get('mode')=='email_draft')
+        self.call(lambda:self.window.editor.focus_force())
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='s',state=8))
+        self.wait(lambda:('keyboard','Alt+S') in self.window.commands.queue)
     def test_reading_keys_speak_and_cursor_acknowledgment_preserves_feedback(self):
         output=Mock(problem=None);self.window.keyboard_output=output
         for mode in ('document','mailbox','help'):

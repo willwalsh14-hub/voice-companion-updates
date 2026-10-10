@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.103-test'
+APP_VERSION = '0.2.104-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -192,7 +192,7 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=menu_state(logical) is not None
-    if logical in ('document_save','power_confirm','exit_confirm') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
+    if logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
@@ -208,8 +208,9 @@ def app_context(mode):
         source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
         context.update(source=source,text=help_session.reading.text,readonly=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
     elif logical=='mailbox' and mail_session and mail_session.view=='message':
+        mail_session.set_format(PREFERENCES.get('email_format','html'))
         source='mail:'+str(id(mail_session))+':'+str(mail_session.current)
-        context.update(source=source,text=mail_session.body_text,readonly=True,caret=mail_session.reading.position,ack=EDIT_ACK.get(source,0))
+        context.update(source=source,text=mail_session.body_text,rich_spans=getattr(mail_session.body_text,'spans',[]) if PREFERENCES.get('email_format','html')=='html' else [],readonly=True,caret=mail_session.reading.position,ack=EDIT_ACK.get(source,0))
     return context
 
 def sync_app_context(mode,focus=False):
@@ -363,7 +364,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state(['Gmail','Outlook or Exchange','Yahoo'],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','power_confirm','exit_confirm') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None:
         return None
     if SYNTH_PICK_INDEX is not None:
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
@@ -423,7 +424,7 @@ def commit_email_field_tab(payload,mode):
             email_draft.subject=value
         email_draft.save()
     except (ValueError,OSError) as exc:speak(str(exc));return None
-    return navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
+    return 'send email' if payload.get('send') else navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
 
 def navigation_key(key,mode):
     global KEYBOARD_NAVIGATION
@@ -435,7 +436,7 @@ def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
     if key=='Control':return None
-    confirming=mode in ('document_save','power_confirm','exit_confirm') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
+    confirming=mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
     if confirming:
         if key.lower() in ('y','n'):return 'yes' if key.lower()=='y' else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -472,7 +473,7 @@ def _navigation_key(key,mode):
             return 'delete folder '+picker['folders'][picker['index']][0]
         request={'Ctrl+Shift+V':'move','Ctrl+Shift+E':'create folder','Ctrl+Y':'go to folder','Ctrl+R':'reply','Ctrl+Shift+R':'reply all','Ctrl+F':'forward','Ctrl+N':'new email','Ctrl+Shift+C':'copy sender address','Ctrl+Shift+N':'new email to sender','Delete':'delete','Space':'toggle message selection','ShiftUp':'extend selection previous','ShiftDown':'extend selection next','Ctrl+A':'select all messages','F2':'rename folder','Ctrl+Shift+D':'delete folder','F5':'list messages'}.get(key)
         if request:return request
-    if mode=='email_draft' and key=='Ctrl+Enter':return 'send email'
+    if mode=='email_draft' and key in ('Ctrl+Enter','Alt+S'):return 'send email'
     if key=='Alt+F4':return 'exit companion'
     if mode=='document_name' and key=='Escape':return 'cancel naming'
     if mode=='mailbox' and key=='Escape' and mail_session is not None and mail_session.view=='message':return 'go back'
@@ -1099,7 +1100,7 @@ def _handle(text, mode, typed=False):
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
         from app_settings import snapshot
         values,context=snapshot(sys.modules[__name__])
         session=SettingsSession(values,context)
@@ -1844,9 +1845,10 @@ def _handle(text, mode, typed=False):
                                if context else '')
                 speak('Review before sending. From ' + address + '. To ' + recipient +
                       copied + '. Subject ' + subject + '. Message: ' + body + source_note +
-                      '. Is that right? Say yes to send, or no to keep the draft.')
-            except (AccountError, DeliveryError, ValueError, KeyError):
-                speak('This email is saved locally but is not ready to send. Check the recipient, subject, body, and account connection. It has not been sent.')
+                      '. Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
+            except (AccountError, DeliveryError, ValueError, KeyError) as exc:
+                reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
+                speak(reason+' The draft is saved locally. It has not been sent.')
             return mode
         if command in ('confirm send email', 'yes send email', 'yes send it', 'yes send that',
                        'yes', 'yes please', 'confirm send'):
@@ -1865,8 +1867,12 @@ def _handle(text, mode, typed=False):
                 submit(provider, email_draft, token, sender=address)
                 email_draft.last_accepted_hash = fingerprint
                 email_draft.save()
-            except (AccountError, DeliveryError, ValueError, OSError, KeyError):
-                speak('I could not confirm delivery. The draft is saved. Check with the recipient and your mail account before trying again; do not send a duplicate.')
+            except (AccountError, DeliveryError, ValueError, OSError, KeyError) as exc:
+                uncertain=email_draft.last_attempt_hash==fingerprint and (not isinstance(exc,DeliveryError) or exc.uncertain)
+                if not uncertain:
+                    email_draft.last_attempt_hash='';email_draft.save()
+                reason=str(exc) if isinstance(exc,(AccountError,DeliveryError,ValueError)) else 'The email connection could not complete the request.'
+                speak(reason+' The draft is saved locally.'+(' Check Sent Mail before trying again; do not send a duplicate.' if uncertain else ' It has not been sent. Correct the problem and review the draft again.'))
                 return mode
             speak('Email sent successfully.')
             finish_mail_announcement()
@@ -2128,7 +2134,7 @@ def return_from_update():
 
 def startup_update_mode():
     """Check before readiness; the input stream is already open for yes/no."""
-    global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE
+    global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE, CONFIRM_CHOICE
     STARTUP_UPDATE_PENDING = False
     if PREFERENCES.get('check_updates',True) and UPDATES.check():
         try:
@@ -2139,7 +2145,8 @@ def startup_update_mode():
             UPDATES.release = payload
             STARTUP_UPDATE_PENDING = True
             UPDATE_RETURN_MODE = 'sleep'
-            speak('A new update is available. Would you like to install it now? Say yes or no.')
+            CONFIRM_CHOICE='yes'
+            speak('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
             return 'update_offer'
     speak(startup_prompt())
     return 'sleep'
@@ -2169,7 +2176,7 @@ def handle(text, mode, typed=False):
 
 
 def poll_app_updates(mode):
-    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT
+    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT, CONFIRM_CHOICE
     if UPDATES is None: return mode
     while not UPDATES.events.empty():
         event, payload = UPDATES.events.get_nowait()
@@ -2204,7 +2211,8 @@ def poll_app_updates(mode):
     if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
         UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
         UPDATE_OFFER = False
-        speak('A new update is available. Would you like to install it now? Say yes or no.')
+        CONFIRM_CHOICE='yes'
+        speak('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
         return 'update_offer'
     return mode
 

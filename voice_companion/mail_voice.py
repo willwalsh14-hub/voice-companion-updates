@@ -316,10 +316,21 @@ class MailSession:
         body = self.client().read_message(row['id'], self.folder_id)
         self.current = number
         self.view = 'message'
-        self.body_text = body or ''
+        self.body_content=body or ''
+        self.body_format=None
+        import json
+        try:format=json.loads((Path(self.folder)/'preferences.json').read_text()).get('email_format','html')
+        except (OSError,ValueError):format='html'
+        self.set_format(format)
         self.body_offset = 0
         self.reading.set_text(self.body_text, reset=True)
         return self._next_body()
+
+    def set_format(self,format):
+        if getattr(self,'body_format',None)==format or not hasattr(self,'body_content'):return
+        self.body_format=format
+        self.body_text=self.body_content if format=='html' else getattr(self.body_content,'plain',str(self.body_content))
+        self.reading.set_text(self.body_text,reset=True)
 
     def _next_body(self):
         if not self.body_text:
@@ -470,6 +481,19 @@ class MailSession:
                            'read message', 'open message', 'open that', 'read that',
                            'open it', 'read email', 'open email'):
                 return self._read(self.current) if self.current else 'Say read message followed by a number first.'
+            if command in ('list links','read links') or re.fullmatch(r'(?:open|activate) link (\d+)',command):
+                import json
+                try:format=json.loads((Path(self.folder)/'preferences.json').read_text()).get('email_format','html')
+                except (OSError,ValueError):format='html'
+                if self.view!='message':return 'Open a message first.'
+                if format!='html':return 'Choose HTML under Options, Email, Email format to navigate links.'
+                links=[span for span in getattr(self.body_text,'spans',[]) if span[2]=='link']
+                if command in ('list links','read links'):
+                    return '. '.join(str(i+1)+'. '+self.body_text[a:b] for i,(a,b,_,url) in enumerate(links)) or 'No links in this message.'
+                number=int(command.split()[-1])
+                if not 1<=number<=len(links):return 'That link number is not in this message.'
+                import webbrowser
+                webbrowser.open(links[number-1][3]);return 'Opening link '+str(number)+'.'
             if command in ('continue reading', 'read more', 'continue message'):
                 return self._next_body() if self.view == 'message' else 'Open a message first.'
             if command in ('read from beginning', 'start message over'):
