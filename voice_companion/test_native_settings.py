@@ -121,9 +121,10 @@ class NativeSettingsTests(unittest.TestCase):
         hwnd=self.open_panel();actions=[]
         self.panel.action_callback=actions.append
         self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email')
-        self.panel.command('next setting')
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,204)))
+        for _ in range(3):self.panel.command('next setting')
         self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
-        self.u.PostMessageW(self.u.GetDlgItem(hwnd,202),0x100,0x0D,0)
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,204),0x100,0x0D,0)
         self.assertTrue(self.panel.closed.wait(5),self.notices)
         self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)
 

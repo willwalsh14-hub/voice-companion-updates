@@ -711,7 +711,8 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         self.assertIn('Remember my appointment.', (self.root / 'notes.txt').read_text())
         mode = companion.handle('write a note', 'awake')
         companion.handle('Call my friend.', mode)
-        self.assertEqual(companion.handle('shut down companion', mode), 'exit')
+        self.assertEqual(companion.handle('shut down companion', mode), 'exit_confirm')
+        self.assertEqual(companion.handle('yes', 'exit_confirm'), 'exit')
         self.assertIn('Call my friend.', (self.root / 'notes.txt').read_text())
 
     def test_recovery_copies_keep_previous_saved_text(self):
