@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.94-test'
+APP_VERSION = '0.2.95-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -835,6 +835,7 @@ def _handle(text, mode, typed=False):
             try:discard_document_changes()
             except OSError:
                 speak('Could not discard changes safely. Your document is still open.');return 'document'
+            document=None
             speak('Changes discarded.')
             return handle('exit companion','awake',typed) if DOCUMENT_CLOSE_TARGET=='exit' else 'awake'
         speak('Save this document? Yes or no.');return mode

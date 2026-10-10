@@ -14,7 +14,7 @@ Speaker or headset: __________________________
 Write PASS, FAIL, or NOT TESTED beside each item. Write the exact words heard
 or an error message when a check fails.
 
-____ 1. Install only VoiceCompanion-Setup.exe on this test PC. Confirm the desktop shortcut opens the visible Voice Companion window without a command console, and hear its own voice with JAWS and NVDA off. Say "What version?" and hear 0.2.94-test; reject an older or console-only EXE. Turn JAWS off for the speech test. Run check-setup.cmd. The packaged runtime check and both bundled
+____ 1. Install only VoiceCompanion-Setup.exe on this test PC. Confirm the desktop shortcut opens the visible Voice Companion window without a command console, and hear its own voice with JAWS and NVDA off. Say "What version?" and hear 0.2.95-test; reject an older or console-only EXE. Turn JAWS off for the speech test. Run check-setup.cmd. The packaged runtime check and both bundled
         models load, and Voice Companion itself speaks the speaker test.
         Hearing words read from the command window by JAWS does not count.
         Result or error: __________________________
@@ -177,9 +177,9 @@ Update check: Configure a real release feed, install this updater-enabled build 
 
 
 
-Settings and keyboard check for 0.2.94-test: with the screen reader off, open Control+Comma, navigate every category and control, confirm spoken values and hidden API-key feedback, test Enter to save and Escape to discard, then test menu arrows and email address-field editing. The builder runs native Windows dialog integration tests before packaging.
+Settings and keyboard check for 0.2.95-test: with the screen reader off, open Control+Comma, navigate every category and control, confirm spoken values and hidden API-key feedback, test Enter to save and Escape to discard, then test menu arrows and email address-field editing. The builder runs native Windows dialog integration tests before packaging.
 
-Keyboard regression checks for 0.2.94-test: enter and leave Documents, Email, Settings, Radio, Podcasts and Help repeatedly; after Escape confirm menu arrows and Enter still work. Test new, reply and forward draft typing, with the microphone awake and asleep. Check received-message Right Arrow character echo, Control+Right word echo, Up/Down line echo, Control+Down paragraph echo, Shift selection and Escape back to the folder. Verify letters get a phonetic name after 0.5 seconds, rapid movement cancels old phonetics, and all four typing-echo settings persist after restart. Check punctuation is in Verbosity. Leave an unnamed document, type its name and Enter, reopen it and confirm its filename and body remain separate. Read High/Medium/Low documentation and compare the main-menu speech for each preset.
+Keyboard regression checks for 0.2.95-test: enter and leave Documents, Email, Settings, Radio, Podcasts and Help repeatedly; after Escape confirm menu arrows and Enter still work. Test new, reply and forward draft typing, with the microphone awake and asleep. Check received-message Right Arrow character echo, Control+Right word echo, Up/Down line echo, Control+Down paragraph echo, Shift selection and Escape back to the folder. Verify letters get a phonetic name after 0.5 seconds, rapid movement cancels old phonetics, and all four typing-echo settings persist after restart. Check punctuation is in Verbosity. Leave an unnamed document, type its name and Enter, reopen it and confirm its filename and body remain separate. Read High/Medium/Low documentation and compare the main-menu speech for each preset.
 
 
 SAVE QUESTION, F2, EXIT, AND MAIL KEYS

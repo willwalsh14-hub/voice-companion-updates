@@ -41,6 +41,7 @@ class KeyboardTextTests(unittest.TestCase):
                 self.assertEqual(companion.handle('main menu','document'),'document_save')
                 self.assertEqual(companion.handle('no','document_save'),'awake')
                 self.assertEqual(doc.path.read_bytes(),original)
+                self.assertIsNone(companion.document)
                 fresh=VoiceDocument(Path(folder))
                 companion.document=fresh;companion.checkpoint_document();fresh.append_text('Discard me.')
                 self.assertEqual(companion.handle('leave document','document'),'document_save')
