@@ -80,6 +80,18 @@ class PublishingTests(unittest.TestCase):
             self.existing=existing;self.latest=latest;self.commands=[]
             with self.assertRaises(ValueError):self.run_publish()
             self.assertFalse(any(c[0]=='release' for c in self.commands))
+    def test_publishing_help_does_not_require_document_authoring_dependencies(self):
+        import subprocess,sys
+        result=subprocess.run([sys.executable,'-S',str(Path(__file__).parent/'publish_release.py'),'--help'],capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_release_document_asset_names_are_portable(self):
+        self.run_publish()
+        uploads=[Path(c[3]).name for c in self.commands if c[:2]==('release','upload')]
+        self.assertIn('Voice-Companion-Release-Notes.brf',uploads)
+        self.assertIn('START-HERE-Veteran.brf',uploads)
+        self.assertFalse(any(' ' in name for name in uploads))
+
     def test_missing_or_mismatched_documentation_is_not_uploaded(self):
         (self.root/'Voice Companion Release Notes.brf').unlink()
         with self.assertRaises(OSError):self.run_publish()

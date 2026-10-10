@@ -111,7 +111,8 @@ def publish(setup, gh='gh', root=ROOT):
         gh_call(gh, 'release', 'edit', tag, '--repo', repo, '--notes-file', str(notes))
     assets = [installer, manifest_path, source, license_path]
     for document in documentation:
-        copy = output/document.name
+        safe_name = re.sub('-+', '-', re.sub(r'[^A-Za-z0-9._-]+', '-', document.name))
+        copy = output/safe_name
         shutil.copy2(document, copy)
         assets.append(copy)
     for asset in assets:

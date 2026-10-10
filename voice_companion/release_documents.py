@@ -11,11 +11,6 @@ import re
 import uuid
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile, ZIP_DEFLATED
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-import build_user_guides as guides
 from braille_documents import build_brf
 
 class Verbatim(str):
@@ -82,6 +77,10 @@ def markup(items):
 
 
 def word(root, title, notes):
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
     doc = Document()
     section = doc.sections[0]
     section.top_margin = section.bottom_margin = Inches(.75)
@@ -151,6 +150,7 @@ def daisy(root, title, notes, uid):
 
 
 def build(root):
+    import build_user_guides as guides
     root=Path(root);notes=load_notes(root)
     title=Verbatim('Release Notes for Voice Companion '+notes['version'])
     items=blocks(notes)
@@ -173,14 +173,21 @@ def build(root):
 def validate(root,notes=None):
     root=Path(root);notes=notes or load_notes(root)
     expected=[s['title'] for s in notes['sections']]
-    doc=Document(root/(STEM+'.docx'))
-    if [p.text for p in doc.paragraphs if p.style.name=='Heading 2']!=expected:raise ValueError('Word release outline differs.')
+    with ZipFile(root/(STEM+'.docx')) as z:
+        document=ET.fromstring(z.read('word/document.xml'))
+    wn={'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+    paragraphs=document.findall('.//w:body/w:p',wn)
+    texts=[''.join(e.text or '' for e in p.findall('.//w:t',wn)) for p in paragraphs]
+    headings=[text for p,text in zip(paragraphs,texts)
+              if p.find('w:pPr/w:pStyle',wn) is not None and
+              p.find('w:pPr/w:pStyle',wn).get('{'+wn['w']+'}val')=='Heading2']
+    if headings!=expected:raise ValueError('Word release outline differs.')
     page=(root/(STEM+'.html')).read_text(encoding='utf-8')
     if re.findall(r'<h2 id="section-\d+">([^<]+)</h2>',page)!=expected:
         raise ValueError('HTML release outline differs.')
     expected_text=[t['title'] for s in notes['sections'] for t in s['topics']]
     expected_details=[d for s in notes['sections'] for t in s['topics'] for d in t['details']]
-    actual=[p.text for p in doc.paragraphs]
+    actual=texts
     if any(t not in actual for t in expected_text+expected_details):raise ValueError('Word release content is incomplete.')
     with ZipFile(root/(STEM+'.epub')) as z:
         page=ET.fromstring(z.read('OEBPS/content.xhtml'));ns={'x':'http://www.w3.org/1999/xhtml'}
