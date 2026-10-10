@@ -107,3 +107,12 @@ class MenuKeyboardTests(unittest.TestCase):
         with patch.object(client,'_call',return_value={'value':[{'id':'a','singleValueExtendedProperties':[{'id':'Integer 0x0E08','value':'4096'}]}]}) as call:
             rows,_=client.list_messages('inbox');self.assertEqual(rows[0]['size'],4096)
             self.assertIn('0x0E08',call.call_args.args[0])
+
+    def test_yahoo_size_after_header_literal(self):
+        from yahoo_mailbox import YahooMailbox
+        client=YahooMailbox('test@example.com','test')
+        conn=Mock();conn.select.return_value=('OK',[b'1'])
+        conn.uid.side_effect=[('OK',[b'1']),('OK',[(b'1 (BODY[HEADER.FIELDS] {24}',b'From: Sam\nSubject: Hello\n\n'),b' RFC822.SIZE 2048 FLAGS (\\Seen))'])]
+        with patch.object(client,'_with',side_effect=lambda operation:operation(conn)):
+            rows,_=client.list_messages('INBOX')
+            self.assertEqual(rows[0]['size'],2048);self.assertFalse(rows[0]['unread'])
