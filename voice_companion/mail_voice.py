@@ -270,8 +270,20 @@ class MailSession:
 
     def _summary(self, number):
         row = self.rows[number - 1]
-        return (row['from'] + '. ' + row['subject'] +
-                '. ' + row.get('date', 'unavailable') + '. ' + str(number) + ' of ' + str(len(self.rows)) + '.')
+        import json
+        try:preferences=json.loads((Path(getattr(self,'folder',''))/'preferences.json').read_text(encoding='utf-8'))
+        except (OSError,ValueError,TypeError):preferences={}
+        order=preferences.get('email_header_order','from, subject, date').split(',')
+        parts=[]
+        for header in order:
+            header=header.strip().lower()
+            if header not in ('from','subject','date','size'):continue
+            value=row.get(header,'unavailable')
+            if header=='size':
+                value=(str(value)+' bytes') if isinstance(value,(int,float)) else str(value)
+            parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))
+        return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
+
 
     def _focus(self, number):
         self.current = self._number(number)

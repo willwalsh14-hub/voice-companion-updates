@@ -104,7 +104,7 @@ class NativeSettings:
             self.closed.set();alive[0]=False;destroy(self.hwnd)
         def show_menu(discard=False):
             if discard:self.session.values=copy.deepcopy(baseline[0])
-            editing[0]=False;self.pending=False;render();self.announce('Settings menu. '+describe(category[0]));last_focus[0]=category[0]
+            editing[0]=False;self.pending=False;render();self.announce('Options menu. '+describe(category[0]));last_focus[0]=category[0]
         def cancel_category():
             if editing[0]:self.announce('Changes canceled.');show_menu(True)
             else:self.announce('Settings closed.');close()
@@ -200,12 +200,12 @@ class NativeSettings:
         category[0]=control('LISTBOX','',0x10000|0x200000|0x800000|1,15,45,185,475,100)
         for name in CATEGORIES:
             buf=c.create_unicode_buffer(menu_label(name));send(category[0],0x180,0,c.cast(buf,c.c_void_p).value)
-        send(category[0],0x186,self.session.category,0);render();self.announce('Settings menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
+        send(category[0],0x186,self.session.category,0);render();self.announce('Options menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
             if message.message==0x104 and message.wParam==ord('O'):
                 if editing[0]:cancel_category()
-                else:focus(category[0]);self.announce('Settings menu. '+describe(category[0]))
+                else:focus(category[0]);self.announce('Options menu. '+describe(category[0]))
                 continue
             if message.message==0x100 and 65<=message.wParam<=90 and get_focus()==category[0] and not editing[0]:
                 index=next_match(CATEGORIES,self.session.category,chr(message.wParam))

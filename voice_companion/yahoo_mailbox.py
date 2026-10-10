@@ -110,7 +110,7 @@ class YahooMailbox:
             page = list(reversed(uids))[offset:offset + limit]
             rows = []
             for uid in page:
-                status, items = conn.uid('FETCH', uid, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] FLAGS INTERNALDATE)')
+                status, items = conn.uid('FETCH', uid, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] FLAGS INTERNALDATE RFC822.SIZE)')
                 self._check(status)
                 header = next((v[1] for v in items if isinstance(v, tuple)), b'')
                 msg = BytesParser(policy=policy.default).parsebytes(header)
@@ -120,6 +120,7 @@ class YahooMailbox:
                              'from': str(make_header(decode_header(msg.get('From', 'Unknown sender')))),
                              'subject': str(make_header(decode_header(msg.get('Subject', '(no subject)')))),
                              'date': message_date(delivery.group(1).decode('ascii') if delivery else msg.get('Date')),
+                             'size': int(re.search(rb'RFC822.SIZE\s+(\d+)',flags,re.I)[1]) if re.search(rb'RFC822.SIZE\s+(\d+)',flags,re.I) else 'unavailable',
                              'unread': b'\\Seen' not in flags})
             return rows, str(offset + limit) if len(uids) > offset + limit else None
         return self._with(operation)

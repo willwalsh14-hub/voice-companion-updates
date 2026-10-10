@@ -182,14 +182,16 @@ class MailboxClient:
                 rows.append({'id': item['id'], 'from': headers.get('from', 'Unknown sender'),
                              'subject': headers.get('subject', '(no subject)'),
                              'date': message_date(info.get('internalDate') or headers.get('date')),
+                             'size': info.get('sizeEstimate','unavailable'),
                              'unread': 'UNREAD' in info.get('labelIds', [])})
             return rows, data.get('nextPageToken')
         path = (cursor or '/mailFolders/' + parse.quote(folder_id, safe='') +
-                '/messages?$top=' + str(limit) + '&$select=id,subject,from,isRead,receivedDateTime&$orderby=receivedDateTime%20desc')
+                '/messages?$top=' + str(limit) + '&$select=id,subject,from,isRead,receivedDateTime&$orderby=receivedDateTime%20desc&$expand=singleValueExtendedProperties($filter=id%20eq%20%27Integer%200x0E08%27)')
         data = self._call(path)
         rows = [{'id': m['id'], 'from': m.get('from', {}).get('emailAddress', {}).get('address', 'Unknown sender'),
                  'subject': m.get('subject') or '(no subject)',
                  'date': message_date(m.get('receivedDateTime')),
+                 'size': next((int(p['value']) for p in m.get('singleValueExtendedProperties',[]) if p.get('id')=='Integer 0x0E08' and str(p.get('value','')).isdigit()),'unavailable'),
                  'unread': not m.get('isRead', True)}
                 for m in data.get('value', [])]
         return rows, data.get('@odata.nextLink')

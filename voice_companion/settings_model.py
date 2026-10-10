@@ -10,8 +10,8 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates', 'Startup options')
-DEFAULTS = {'verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates', 'Startup and exit options')
+DEFAULTS = {'verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
@@ -20,20 +20,20 @@ def fields(category, context):
         'Speech':[Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('windows',)))),Field('windows_voice','Windows voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation'))],
-        'Email':[Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('add_account','Add an email account','action')],
+        'Email':[Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken headers in order; include from, subject, date, size; omit unwanted headers','text'),Field('add_account','Add an email account','action')],
         'Documents':[Field('document_font','Font for new documents','text'),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify')),Field('open_documents','Open Documents folder','action')],
         'Web browsing':[Field('browser','Guided browser','choice',('edge','chrome','brave','firefox')),Field('web_favorites','List website favorites','action')],
         'Radio':[Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],
         'Podcasts':[Field('podcast_feed','Podcast subscription','choice',tuple(context.get('podcasts',()))),Field('podcast_limit','Automatic downloads for this subscription','combo',('manual','all','1','2','3','5','10','20','50','100','1000')),Field('podcast_subscriptions','List subscriptions','action')],
-        'Startup options':[Field('start_with_windows','Start with Windows','check')],
+        'Startup and exit options':[Field('start_with_windows','Start with Windows','check'),Field('ask_before_exit','Ask before exiting Voice Companion','check'),Field('ask_before_shutdown','Ask before shutting down the computer','check'),Field('ask_before_restart','Ask before restarting the computer','check')],
         'Updates':[Field('check_updates','Check automatically at startup','check'),Field('check_now','Check for updates now','action')],
     }
     return definitions[category]
 
 class SettingsSession:
     def __init__(self, values, context):
-        self.original = copy.deepcopy(values)
-        self.values = copy.deepcopy(values)
+        self.original = copy.deepcopy(DEFAULTS | values)
+        self.values = copy.deepcopy(DEFAULTS | values)
         self.context = context
         self.values.setdefault('podcast_limits',copy.deepcopy(context.get('podcast_limits',{})))
         self.category = 0
@@ -58,6 +58,10 @@ class SettingsSession:
                 if found is None: raise ValueError('Choose one of the available '+field.label+' options.')
                 value=found
             if key=='podcast_limit' and value not in ('manual','all') and not (value.isdigit() and 1<=int(value)<=10000): raise ValueError('Choose manual, all, or a number from 1 to 10000.')
+            if key=='email_header_order':
+                headers=[x.strip().lower() for x in value.split(',') if x.strip()]
+                if not headers or len(headers)!=len(set(headers)) or any(x not in ('from','subject','date','size') for x in headers):raise ValueError('Enter unique headers separated by commas: from, subject, date, size. Include at least one.')
+                value=', '.join(headers)
             if key=='document_font' and (not value or len(value)>100): raise ValueError('Enter a font name.')
         self.values[key]=value
         if key=='podcast_feed': self.values['podcast_limit']=str(self.values.get('podcast_limits',{}).get(value,'manual'))

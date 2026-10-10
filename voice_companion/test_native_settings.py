@@ -54,7 +54,7 @@ class NativeSettingsTests(unittest.TestCase):
         for expected in (1,2,10):
             self.u.PostMessageW(categories,0x100,ord('S'),0)
             self.wait(lambda:self.session.category==expected)
-        self.assertTrue(any('Startup options (S)' in text for text in self.notices))
+        self.assertTrue(any('Startup and exit options (S)' in text for text in self.notices))
         self.u.PostMessageW(categories,0x100,0x0D,0)
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x104,ord('O'),0)

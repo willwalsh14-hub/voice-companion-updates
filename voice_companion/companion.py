@@ -43,7 +43,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.99-test'
+APP_VERSION = '0.2.100-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -168,6 +168,7 @@ DOCUMENT_BASELINE = None
 CONFIRM_CHOICE = "yes"
 POWER_ACTION = None
 POWER_RETURN_MODE = "awake"
+EXIT_RETURN_MODE = "awake"
 
 def checkpoint_document():
     global DOCUMENT_BASELINE
@@ -189,7 +190,7 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=menu_state(logical) is not None
-    if logical in ('document_save','power_confirm') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
+    if logical in ('document_save','power_confirm','exit_confirm') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
@@ -314,7 +315,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state(['Gmail','Outlook or Exchange','Yahoo'],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','power_confirm') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','power_confirm','exit_confirm') or mode=='email_draft' and pending_send is not None:
         return None
     if SYNTH_PICK_INDEX is not None:
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
@@ -378,7 +379,7 @@ def commit_email_field_tab(payload,mode):
 
 def navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
-    confirming=mode in ('document_save','power_confirm') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
+    confirming=mode in ('document_save','power_confirm','exit_confirm') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
     if confirming:
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             CONFIRM_CHOICE='no' if CONFIRM_CHOICE=='yes' else 'yes'
@@ -420,7 +421,7 @@ def navigation_key(key,mode):
         if key=='Escape':return 'cancel replacement' if getattr(editor,'replacement_candidates',[]) else 'cancel selection' if getattr(editor,'selection_candidates',[]) else 'cancel'
         if key in ('Up','Left'):return 'previous'
         if key in ('Down','Right'):return 'next'
-    if mode=='awake' and key=='Escape':return 'main menu'
+    if mode=='awake' and key=='Escape':return 'exit companion'
     return keyboard_request(key,mode)
 
 def apply_settings(values):
@@ -482,7 +483,7 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 def fast_command_request(command, mode):
     if command in POWER_COMMANDS:return True
-    if mode in ('settings','power_confirm'): return True
+    if mode in ('settings','power_confirm','exit_confirm'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
@@ -911,13 +912,29 @@ def podcast_search(topic):
     return 'awake'
 
 
+def finish_exit(mode):
+    global help_session, account_setup, pending_send, mail_session
+    if email_draft is not None:email_draft.save()
+    help_session=None;account_setup=False;pending_send=None;mail_session=None
+    flush_note(mode)
+    if MEDIA_HUB is not None:MEDIA_HUB.player.close()
+    speak('Shutting down. Goodbye.')
+    return 'exit'
+
+
 def _handle(text, mode, typed=False):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
-    global POWER_ACTION, POWER_RETURN_MODE
+    global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     command=normalized_command(text)
+    if mode=='exit_confirm':
+        if command in ('no','no thanks','cancel','main menu','back'):
+            speak('Canceled.');return EXIT_RETURN_MODE
+        if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
+            return finish_exit(EXIT_RETURN_MODE)
+        speak('Exit Voice Companion? Are you sure? Yes or no.');return mode
     if mode=='power_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
             POWER_ACTION=None;speak('Canceled.');return POWER_RETURN_MODE
@@ -1009,7 +1026,7 @@ def _handle(text, mode, typed=False):
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email list size|sending account|station database|podcast limit)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
         from app_settings import snapshot
         values,context=snapshot(sys.modules[__name__])
         session=SettingsSession(values,context)
@@ -1150,6 +1167,7 @@ def _handle(text, mode, typed=False):
             speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
             return 'document_save'
         POWER_ACTION=action;POWER_RETURN_MODE=mode;CONFIRM_CHOICE='no'
+        if not PREFERENCES.get('ask_before_'+action,True):return _handle('yes','power_confirm',typed)
         speak(('Restart the computer?' if action=='restart' else 'Shut down the computer?')+' Yes or no. Use arrows to choose, then Enter. Escape cancels.')
         return 'power_confirm'
     if command in ("what's new",'what is new','whats new','release notes','open release notes'):
@@ -1221,14 +1239,11 @@ def _handle(text, mode, typed=False):
             DOCUMENT_CLOSE_TARGET='exit';CONFIRM_CHOICE='yes'
             speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
             return 'document_save'
-        help_session = None
-        account_setup = False
-        pending_send = None
-        mail_session = None
-        flush_note(mode)
-        if MEDIA_HUB is not None: MEDIA_HUB.player.close()
-        speak('Shutting down. Goodbye.')
-        return 'exit'
+        if PREFERENCES.get('ask_before_exit',True):
+            EXIT_RETURN_MODE=mode;CONFIRM_CHOICE='no'
+            speak('Exit Voice Companion? Are you sure? Yes or no. Use arrows or Tab to choose, then Enter. Escape cancels.')
+            return 'exit_confirm'
+        return finish_exit(mode)
     if spoken_control(command) == 'sleep':
         SLEEP_RETURN_MODE = mode
         pending_send = None

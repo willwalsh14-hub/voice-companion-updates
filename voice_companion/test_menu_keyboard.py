@@ -67,3 +67,43 @@ class MenuKeyboardTests(unittest.TestCase):
         self.assertEqual(session._summary(1),'Sam. Hello. Today. 1 of 1.')
     def test_unmatched_letter_keeps_current_item(self):
         self.assertIsNone(next_match(['Email','Exit'],0,'z'))
+
+    def test_main_escape_confirms_and_second_escape_cancels(self):
+        with patch.object(app,'PREFERENCES',{'ask_before_exit':True}),patch.object(app,'document',None),patch.object(app,'speak'),patch.object(app,'finish_exit') as finish:
+            self.assertEqual(app.navigation_key('Escape','awake'),'exit companion')
+            mode=app._handle('exit companion','awake')
+            self.assertEqual(mode,'exit_confirm');self.assertEqual(app.CONFIRM_CHOICE,'no')
+            self.assertEqual(app._handle(app.navigation_key('Escape',mode),mode),'awake')
+            finish.assert_not_called()
+            self.assertIsNone(app.navigation_key('Tab',mode));self.assertEqual(app.CONFIRM_CHOICE,'yes')
+            app._handle(app.navigation_key('Enter',mode),mode);finish.assert_called_once_with('awake')
+    def test_disabled_exit_and_power_confirmation(self):
+        with patch.object(app,'PREFERENCES',{'ask_before_exit':False,'ask_before_restart':False,'ask_before_shutdown':False}),patch.object(app,'document',None),patch.object(app,'email_draft',None),patch.object(app,'speak'),patch.object(app,'finish_exit',return_value='exit') as finish,patch.object(app,'flush_note'),patch('windows_actions.request_power') as power:
+            self.assertEqual(app._handle('exit companion','awake'),'exit');finish.assert_called_once()
+            for phrase,action in [('restart computer','restart'),('shut down computer','shutdown')]:
+                self.assertEqual(app._handle(phrase,'awake'),'exit');power.assert_called_with(action)
+    def test_configurable_header_order_names_and_size(self):
+        import json
+        with tempfile.TemporaryDirectory() as folder:
+            session=MailSession.__new__(MailSession);session.folder=folder
+            session.rows=[{'from':'Sam','subject':'Hello','date':'Today','size':2048}]
+            Path(folder,'preferences.json').write_text(json.dumps({'email_header_order':'subject, size, from','email_header_names':True}))
+            self.assertEqual(session._summary(1),'Subject Hello. Size 2048 bytes. From Sam. 1 of 1.')
+            Path(folder,'preferences.json').write_text(json.dumps({'email_header_order':'from','email_header_names':False}))
+            self.assertEqual(session._summary(1),'Sam. 1 of 1.')
+    def test_header_settings_validation_and_defaults(self):
+        from settings_model import SettingsSession,DEFAULTS
+        session=SettingsSession({}, {})
+        self.assertTrue(all(DEFAULTS[k] for k in ('ask_before_exit','ask_before_restart','ask_before_shutdown')))
+        self.assertFalse(DEFAULTS['email_header_names']);self.assertNotIn('size',DEFAULTS['email_header_order'])
+        session.set('email_header_order','subject, from, size')
+        for value in ('from, from','unknown',''):
+            with self.assertRaises(ValueError):session.set('email_header_order',value)
+        self.assertEqual(session.voice_setting('set ask before exiting Voice Companion off'),('ask_before_exit','off'))
+        session.cancel();self.assertEqual(session.values['email_header_order'],'from, subject, date')
+    def test_outlook_size_metadata(self):
+        from mailbox_access import MailboxClient
+        client=MailboxClient('outlook','test')
+        with patch.object(client,'_call',return_value={'value':[{'id':'a','singleValueExtendedProperties':[{'id':'Integer 0x0E08','value':'4096'}]}]}) as call:
+            rows,_=client.list_messages('inbox');self.assertEqual(rows[0]['size'],4096)
+            self.assertIn('0x0E08',call.call_args.args[0])

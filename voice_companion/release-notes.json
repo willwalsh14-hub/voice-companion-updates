@@ -1,62 +1,27 @@
 {
-  "version": "0.2.99-test",
+  "version": "0.2.100-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.98-test",
-  "scope": "This beta adds Alt+O Options, first-letter menu navigation, keyboard draft-field traversal, additional confirmed computer commands, and shorter email-list announcements. It is not designated a stable release.",
+  "baseline": "0.2.99-test",
+  "scope": "Accessible exit confirmations, Startup and exit options, and configurable email list speech. This is a beta testing build.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Alt+O opens Options from any app activity.",
+          "title": "Startup and exit options and accessible exit confirmation",
           "details": [
-            "Alt+O replaces Control+Comma. It works in documents, email, the main menu, and built-in help. Settings, Open settings, and Preferences still work by voice.",
-            "Options opens the categorized settings menu. Arrow keys or a category letter select an item, Enter opens it, and Tab or Shift+Tab navigates its standard Windows controls. Each category keeps OK and Cancel. In an open settings category, Alt+O cancels unsaved changes and returns to the category menu."
+            "Startup options is renamed Startup and exit options. Start with Windows remains off by default. Ask before exiting Voice Companion, shutting down the computer, and restarting the computer are independently checked by default. Category OK saves; Cancel discards.",
+            "Escape at the main menu invokes Exit Voice Companion. The prompt asks whether you are sure and defaults to No. Arrows or Tab switch Yes and No; Enter activates. Voice yes, no, and cancel work. Escape again cancels and returns to the previous activity. When disabled, the corresponding exit or computer action proceeds without this prompt. Existing document-save protection and Windows unsaved-application handling remain.",
+            "Alt+O now announces Options menu when opening or returning to the category menu."
           ]
         },
         {
-          "title": "First-letter navigation and spoken menu keys.",
+          "title": "Customize email headers and their order",
           "details": [
-            "Menu announcements now include the letter in parentheses, such as Email (E) and Settings (S). Press a letter to highlight a matching item, then Enter to open it. Repeating a letter cycles matching names; for example, E cycles Email and Exit Voice Companion in the main menu. A missing match keeps the current selection.",
-            "This applies to the main menu, settings categories, help topics and subtopics, synthesizer and voice lists, radio stations and presets, podcasts and episodes, email folder choices, and guided web favorites, links, and field lists. Standard settings combo boxes retain their native first-letter selection.",
-            "First-letter navigation is scoped to active menus and pickers with an empty command box. It does not intercept text in an email header, document, email body, web form answer, or email message list. Menu selection does not itself send email, open a folder, or confirm a computer action. Arrow and voice navigation remain available."
-          ]
-        },
-        {
-          "title": "Tab and Shift+Tab move through draft fields.",
-          "details": [
-            "Tab cycles To, CC, BCC, Subject, Body, then To; Shift+Tab reverses that order. This works while editing headers or the body of new, replied, and forwarded drafts. Go to field voice commands remain available.",
-            "Leaving a header commits its current text before moving focus. CC and BCC accept comma-separated or semicolon-separated addresses; blank optional fields stay empty. Invalid addresses keep the current field and its previous saved value. Body edits are committed before switching fields.",
-            "Original response subjects remain protected from changes, but are available for review during field navigation. Ctrl+Enter retains the send-review flow. Tab within a send confirmation changes the Yes/No choice rather than switching draft fields."
-          ]
-        },
-        {
-          "title": "Additional natural computer-power phrases.",
-          "details": [
-            "Shutdown accepts Shut off the computer, Turn the computer off, Shut down the computer, Shut the computer down, and their existing shorter alternatives. Restart accepts Restart the computer, Reboot the computer, Reboot, Restart, Reboot the damn thing, and Restart the damn thing.",
-            "Every phrase uses the existing document save decision and separate computer confirmation, initially No. Only a confirmed Yes requests a Windows restart or shutdown. Existing cancellation, draft saving, and unsaved-work protections remain in place."
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Fixes and Enhancements",
-      "topics": [
-        {
-          "title": "Email lists read sender, subject, and date without header labels.",
-          "details": [
-            "Inbox and all other folder lists now announce sender, subject, date, and message position without saying From, Subject, or Date. For example: Sam. Meeting tomorrow. Today. 2 of 10.",
-            "The same presentation applies to next/previous navigation and list refreshes. Message data, folder contents, selection behavior, and message-reading commands are unchanged. The email message list remains excluded from first-letter navigation."
-          ]
-        },
-        {
-          "title": "Documentation and focused beta checks.",
-          "details": [
-            "The built-in manual documents the new shortcut, menu letters, field order, power phrases, and mail-list wording. What's new reads these complete release notes. The six release-note filenames include 0.2.99-test.",
-            "Regression checks cover repeated-letter cycling without activation, folder selection without touching messages, draft-field traversal and address validation, protected reply subjects, additional power phrases retaining confirmation, and the exact unlabeled message-list announcement. Windows checks exercise actual settings category selection with letters, Enter activation, and Alt+O return.",
-            "After installing, test Alt+O from an email header and body, use S repeatedly in the settings menu, and press Enter to open a category. Test both OK and Cancel. In a draft, type To and multiple CC addresses, move with Tab, then use Shift+Tab to verify saved text. Navigate Inbox and Sent and confirm that header labels are no longer spoken.",
-            "Test first-letter selection in a folder list, help topics, and media lists; duplicate letters should cycle and Enter should activate. Verify that letters still type normally in document and email editors. Test cancellation of each power phrase before confirming any actual computer action. This build still requires user testing with the microphone and local speakers."
+            "Email settings restores Announce email header names, off by default. Spoken headers in order is a text field containing from, subject, date by default. Rearrange these names to change order, omit unwanted headers, or include size. At least one unique supported header is required. Changes apply across all email folders; OK saves and Cancel discards.",
+            "Size is disabled by default. Gmail reports an estimated byte size, Yahoo reports RFC822.SIZE, and Outlook reports its stored message size when available. Missing size metadata is announced as unavailable. No guessed size is spoken.",
+            "Keyboard and voice settings use the same validation. Example: set email header order subject, from, date. Header-name speech can be enabled separately without altering which values are spoken."
           ]
         }
       ]
