@@ -24,7 +24,7 @@ class KeyboardTextTests(unittest.TestCase):
         commands=line.split('"',2)[1].replace('`n','\n')
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
-            with patch.object(companion,'APP',root),patch.object(companion,'TEXT_MODE',True),patch.object(companion.sys,'stdin',io.StringIO(commands)),patch.object(companion.sys,'argv',['companion.py','--text-mode']),patch.object(companion,'speak') as speech:
+            with patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'document',None),patch.object(companion,'email_draft',None),patch.object(companion,'mail_session',None),patch.object(companion,'KEYBOARD_DIRTY',{}),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'INPUT_MODE','mixed'),patch.object(companion,'APP',root),patch.object(companion,'TEXT_MODE',True),patch.object(companion.sys,'stdin',io.StringIO(commands)),patch.object(companion.sys,'argv',['companion.py','--text-mode']),patch.object(companion,'speak') as speech:
                 self.assertEqual(companion.main(),0)
                 spoken=' '.join(call.args[0] for call in speech.call_args_list)
                 self.assertIn('Save this document?',spoken)
