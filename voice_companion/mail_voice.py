@@ -375,6 +375,9 @@ class MailSession:
             if self.folder_choice:
                 action, name, ident = self.folder_choice
                 self.folder_choice = None
+                if action=='create':
+                    if command in ('cancel','go back','back'):return 'Folder creation canceled.'
+                    return self.process(spoken if command.startswith('create folder ') else 'create folder '+spoken)
                 match = re.fullmatch(r'rename to (.+)', spoken, flags=re.I)
                 if action == 'rename' and match:
                     self.folders = self.client().folders()
@@ -467,6 +470,22 @@ class MailSession:
                     self.list_messages(self.previous_cursors.pop())
                     return self._focus(len(self.rows)) if self.rows else 'No previous messages were returned.'
                 return self._focus(self.current + delta)
+            if command in ('extend selection next','extend selection previous'):
+                if not self.rows:return 'No messages to select.'
+                self._mark(self.current)
+                response=self.process('next message' if command.endswith('next') else 'previous message')
+                self._mark(self.current)
+                return response+' '+str(len(self.marked_ids))+' selected.'
+            if command=='toggle message selection':
+                if not self.rows:return 'No messages to select.'
+                if self.current in self.selected:
+                    self._unmark(self.current)
+                    return 'Unmarked message '+str(self.current)+'.'
+                self._mark(self.current)
+                return 'Marked message '+str(self.current)+'.'
+            if command=='select all messages':
+                for number in range(1,len(self.rows)+1):self._mark(number)
+                return str(len(self.rows))+' messages on this page selected.'
             if command in ('select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message'):
                 self._current_ids()
                 self._mark(self.current)
@@ -501,6 +520,9 @@ class MailSession:
             if command in ('move message', 'move this message', 'move message to folder'):
                 return self._choose_folder('move_current', self._current_ids())
             if command == 'delete folder': return self._choose_folder('delete')
+            if command == 'create folder':
+                self.folder_choice=('create','','')
+                return 'New folder name. Say or type create folder followed by its name, then press Enter.'
             if command == 'rename folder': return self._choose_folder('rename')
             if command == 'move folder': return self._choose_folder('move_source')
             match = re.fullmatch(r'create folder (.+?) inside', spoken, flags=re.I)
@@ -703,3 +725,4 @@ class MailSession:
             return self.list_messages()
         parts = [self._summary(i) for i in range(1, len(self.rows) + 1)]
         return 'Back to ' + self.folder_name + '. ' + ' '.join(parts)
+

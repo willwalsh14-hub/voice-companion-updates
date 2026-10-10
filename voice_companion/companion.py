@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.93-test'
+APP_VERSION = '0.2.94-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -83,7 +83,7 @@ MODEL = Path(os.getenv('VOICE_COMPANION_MODEL', str(BUNDLED_MODEL if BUNDLED_MOD
 GUIDE = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'START HERE - Veteran.txt'
 WAKE = ('wake up',)
 SLEEP = ('go to sleep', 'stop listening', 'sleep companion')
-EXIT = ('shut down companion', 'exit companion', 'quit companion')
+EXIT = ('shut down companion', 'exit companion', 'quit companion', 'close companion', 'return to windows', 'exit voice companion', 'close voice companion')
 AUDIO = queue.Queue(maxsize=400)  # About 20 seconds of 50 ms microphone blocks.
 AUDIO_OVERFLOW = False
 SPEAKING = False
@@ -156,10 +156,32 @@ EDIT_ACK = {}
 KEYBOARD_DIRTY = {}
 UI_CONTEXT_CACHE = None
 PENDING_DOCUMENT_NAME = None
+DOCUMENT_NAME_RETURN = "awake"
+DOCUMENT_CLOSE_TARGET = "awake"
+DOCUMENT_BASELINE = None
+CONFIRM_CHOICE = "yes"
+
+def checkpoint_document():
+    global DOCUMENT_BASELINE
+    path=document.path
+    DOCUMENT_BASELINE=(id(document),path,path.read_bytes() if path.exists() else None)
+
+def discard_document_changes():
+    if DOCUMENT_BASELINE and DOCUMENT_BASELINE[0]==id(document):
+        _,path,data=DOCUMENT_BASELINE
+        if data is None:path.unlink(missing_ok=True)
+        else:
+            temporary=path.with_suffix('.restore.docx')
+            temporary.write_bytes(data);temporary.replace(path)
+        if document.path!=path:document.path.unlink(missing_ok=True)
+    elif re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):document.path.unlink(missing_ok=True)
+    KEYBOARD_DIRTY.pop(id(document),None)
 
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
+    if logical=='document_save':context['confirmation']=CONFIRM_CHOICE
+    if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
@@ -211,10 +233,12 @@ def flush_keyboard_edits(force=False):
 def handle_keyboard(text,mode):
     global SLEEP_RETURN_MODE
     if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
-        SLEEP_RETURN_MODE=handle(text,SLEEP_RETURN_MODE,typed=True)
+        SLEEP_RETURN_MODE=handle_keyboard(text,SLEEP_RETURN_MODE)
         if SLEEP_RETURN_MODE=='exit':return 'exit'
         sync_app_context('sleep',True)
         return 'sleep'
+    if mode=='mailbox' and mail_session and mail_session.folder_choice and mail_session.folder_choice[0]=='rename' and not text.startswith('rename to ') and text not in ('cancel','go back'):
+        text='rename to '+text
     return handle(text,mode,typed=True)
 SLEEP_RETURN_MODE = 'awake'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
@@ -228,7 +252,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to get started and launch the main menu. Say help for the user guide.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'))
+MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -275,6 +299,23 @@ def settings_action(key,mode):
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
 
 def navigation_key(key,mode):
+    global CONFIRM_CHOICE
+    confirming=mode=='document_save' or (mode=='mailbox' and mail_session and mail_session.pending)
+    if confirming:
+        if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
+            CONFIRM_CHOICE='no' if CONFIRM_CHOICE=='yes' else 'yes'
+            speak(CONFIRM_CHOICE.capitalize()+'.');return None
+        if key=='Enter':return CONFIRM_CHOICE
+        if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if mode=='document' and key=='F2':return 'name document'
+    if mode=='mailbox':
+        if key=='Delete' and mail_session and mail_session.folder_picker:
+            picker=mail_session.folder_picker
+            return 'delete folder '+picker['folders'][picker['index']][0]
+        request={'Ctrl+Shift+V':'move','Ctrl+Shift+E':'create folder','Ctrl+Y':'go to folder','Ctrl+R':'reply','Ctrl+Shift+R':'reply all','Ctrl+F':'forward','Ctrl+N':'new email','Delete':'delete','Space':'toggle message selection','ShiftUp':'extend selection previous','ShiftDown':'extend selection next','Ctrl+A':'select all messages','F2':'rename folder','Ctrl+Shift+D':'delete folder','F5':'list messages'}.get(key)
+        if request:return request
+    if mode=='email_draft' and key=='Ctrl+Enter':return 'send email'
+    if key=='Alt+F4':return 'exit companion'
     if mode=='document_name' and key=='Escape':return 'cancel naming'
     if mode=='mailbox' and key=='Escape' and mail_session is not None and mail_session.view=='message':return 'go back'
     if mode=='settings':
@@ -780,7 +821,23 @@ def _handle(text, mode, typed=False):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
-    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME
+    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
+    command=normalized_command(text)
+    if mode=='document_save' and not spoken_control(command) and command not in ('settings','open settings'):
+        if command in ('cancel','go back','back'):
+            speak('Your document is still open.');return 'document'
+        if command in ('yes','yes please','ok','okay','confirm','confirm that','that one'):
+            DOCUMENT_NAME_RETURN=DOCUMENT_CLOSE_TARGET
+            PENDING_DOCUMENT_NAME=None
+            speak('Name this document. Say or type its name, then press Enter. Say cancel to keep editing.')
+            return 'document_name'
+        if command in ('no','no thanks'):
+            try:discard_document_changes()
+            except OSError:
+                speak('Could not discard changes safely. Your document is still open.');return 'document'
+            speak('Changes discarded.')
+            return handle('exit companion','awake',typed) if DOCUMENT_CLOSE_TARGET=='exit' else 'awake'
+        speak('Save this document? Yes or no.');return mode
     if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('settings','open settings'):
         if normalized_command(text) in ('cancel','cancel naming','go back'):
             PENDING_DOCUMENT_NAME=None
@@ -797,7 +854,8 @@ def _handle(text, mode, typed=False):
         speak(result)
         if result.startswith('Document named '):
             PENDING_DOCUMENT_NAME=None
-            return 'awake'
+            checkpoint_document()
+            return handle('exit companion','awake',typed) if DOCUMENT_NAME_RETURN=='exit' else DOCUMENT_NAME_RETURN
         return 'document_name'
     if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
         control=speech_control(text)
@@ -1024,6 +1082,10 @@ def _handle(text, mode, typed=False):
         speak('Voice Companion version ' + APP_VERSION + '. This is the self-voicing email and web test build.')
         return mode
     if spoken_control(command) == 'exit':
+        if mode in ('document','document_name','document_save') and document is not None:
+            DOCUMENT_CLOSE_TARGET='exit';CONFIRM_CHOICE='yes'
+            speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
+            return 'document_save'
         help_session = None
         account_setup = False
         pending_send = None
@@ -1213,8 +1275,13 @@ def _handle(text, mode, typed=False):
             if (email_draft.compose_step or 'body') == 'body': speak(email_draft.process(text))
             else: speak_prompt('This email field is single-line. Say go to body to insert a new line in the message.')
             return mode
+    if mode=='document' and command in ('name document','rename document','save as','save document as'):
+        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=None
+        speak('Name this document. Say or type its name, then press Enter.');return 'document_name'
     if mode == 'document' and document is not None and document_control_request(text):
-        speak(document.process(text))
+        result=document.process(text)
+        if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
+        speak(result)
         return mode
     if selection_command(text):
         if mode == 'email_draft' and email_draft is not None:
@@ -1426,6 +1493,7 @@ def _handle(text, mode, typed=False):
             return 'email_draft'
         if document_request:
             document = VoiceDocument(documents_folder())
+            checkpoint_document()
             apply_document_defaults(document)
             document.dictating = INPUT_MODE != 'commands'
             speak_prompt('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
@@ -1604,17 +1672,14 @@ def _handle(text, mode, typed=False):
                        'go back', 'back', 'exit', 'exit document', 'exit document mode', 'close', 'main menu'):
             document.pending_spacing = False
             document.pending_spacing_candidate = None
-            document.save()
-            if re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):
-                PENDING_DOCUMENT_NAME=None
-                speak('Name this document. Say or type its name, then press Enter. Say cancel to keep editing.')
-                return 'document_name'
-            speak('Document saved.')
-            return 'awake'
+            DOCUMENT_CLOSE_TARGET='awake';CONFIRM_CHOICE='yes'
+            speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
+            return 'document_save'
         result = document.process(text)
         if INPUT_MODE == 'mixed' and result.startswith('I did not recognize that document request.'):
             document.dictating = True
             result = document.append_text(text)
+        if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
         speak(result)
         return 'document'
     if mode == 'note':
@@ -1652,6 +1717,7 @@ def _handle(text, mode, typed=False):
         title = text[len('open document '):].strip()
         try:
             document = VoiceDocument.open_existing(documents_folder(), title)
+            checkpoint_document()
         except FileNotFoundError:
             speak_prompt('I could not find that document. Say list documents to hear the names.')
             return mode
@@ -1725,6 +1791,7 @@ def _handle(text, mode, typed=False):
         return 'email_draft'
     if re.search(r'\b(document|word file|word document)\b', command):
         document = VoiceDocument(documents_folder())
+        checkpoint_document()
         apply_document_defaults(document)
         document.dictating = INPUT_MODE != 'commands'
         speak_prompt('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
@@ -1846,11 +1913,13 @@ def startup_update_mode():
 _HANDLE_DEPTH = 0
 
 def handle(text, mode, typed=False):
-    global _HANDLE_DEPTH
+    global _HANDLE_DEPTH, CONFIRM_CHOICE
+    old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
     _HANDLE_DEPTH += 1
     try:
         if _HANDLE_DEPTH==1:flush_keyboard_edits(True)
         result = _handle(text, mode, typed)
+        if mail_session and not old_mail_pending and getattr(mail_session,"pending",None):CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:

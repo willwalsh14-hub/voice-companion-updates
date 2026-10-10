@@ -124,7 +124,7 @@ class CompanionWindow:
             root.title('Voice Companion ' + self.version)
             root.geometry('660x430')
             root.minsize(470, 300)
-            root.protocol('WM_DELETE_WINDOW', lambda: (self.closed.set(), root.destroy()))
+            root.protocol('WM_DELETE_WINDOW', lambda: (flush_pending_edit(), self.commands.put(('keyboard','Alt+F4'))))
             heading = tk.Label(root, text='Voice Companion', font=('Segoe UI', 20, 'bold'))
             heading.pack(anchor='w', padx=18, pady=(16, 4))
             tk.Label(root, text='Say “Wake up” to begin. Say “What version?” to check this build.',
@@ -138,7 +138,32 @@ class CompanionWindow:
             self.email_field = None
             previous = ['', 0]
             field_selection = FieldSelection()
+            def shortcut(event):
+                mode=self.context.get('mode');key=event.keysym
+                control=bool(event.state&4);shift=bool(event.state&1)
+                request=None
+                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space'):
+                    request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
+                elif key=='F4' and event.state&8:request='Alt+F4'
+                elif mode=='document' and key=='F2':request='F2'
+                elif mode=='mailbox':
+                    if shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
+                    elif key=='F2':request='F2'
+                    elif key=='F5':request='F5'
+                    elif key=='Delete' and not self.context.get('source') and not self.typed.get():request='Delete'
+                    elif key=='space' and not self.context.get('source') and not self.typed.get():request='Space'
+                    elif control:
+                        code=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper()
+                        if code in ('Ctrl+Y','Ctrl+R','Ctrl+Shift+R','Ctrl+F','Ctrl+N','Ctrl+Shift+V','Ctrl+Shift+E','Ctrl+Shift+D') or code=='Ctrl+A' and not self.context.get('source'):request=code
+                elif mode=='email_draft' and control and key=='Return':request='Ctrl+Enter'
+                if request:
+                    flush_pending_edit();cancel_phonetic()
+                    self.commands.put(('keyboard',request));return 'break'
+            root.bind_all('<Alt-F4>',shortcut)
+            for sequence in ('<F2>','<F5>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
+                root.bind_all(sequence,shortcut)
             def before_key(event):
+                if shortcut(event)=='break':return 'break'
                 previous[:] = [typed.get(), typed.index('insert')]
                 cancel_phonetic()
                 if event.keysym in ('Up','Down','Left','Right') and not typed.get() and not self.email_field and self.context.get('mode')!='document_name':return
@@ -159,6 +184,7 @@ class CompanionWindow:
                     typed.delete(0, 'end')
                 return 'break'
             def navigation(event):
+                if shortcut(event)=='break':return 'break'
                 if event.widget.winfo_toplevel() != root: return
                 if event.keysym == 'Escape':
                     flush_pending_edit()
@@ -170,6 +196,7 @@ class CompanionWindow:
                 if event.widget == typed or event.widget == history or event.widget == root or isinstance(event.widget,tk.Button):
                     self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
             def enter(event):
+                if shortcut(event)=='break':return 'break'
                 if self.context.get('mode')=='document_name':
                     if not typed.get().strip():self.feedback('Enter a document name.');return 'break'
                     return submit_typed(event)
@@ -222,6 +249,7 @@ class CompanionWindow:
                 if self.context.get('source') and not self.context.get('readonly') and editor.get('1.0','end-1c')!=local['text']:
                     editor.edit_modified(False);send_text_position()
             def edit_key(event):
+                if shortcut(event)=='break':return 'break'
                 cancel_phonetic()
                 if event.keysym=='Escape':return navigation(event)
                 if event.keysym=='comma' and event.state&4:return settings_shortcut(event)
@@ -422,4 +450,5 @@ class CompanionWindow:
             self.problem = exc
             self.ready.set()
             self.closed.set()
+
 

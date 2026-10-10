@@ -56,11 +56,11 @@ class OnboardHelpTests(unittest.TestCase):
              patch.object(companion, 'document', document):
             self.assertEqual(companion.handle('help with presets', 'document'), 'help')
             self.assertEqual(companion.handle('that one', 'help'), 'help')
-            self.assertEqual(companion.handle('main menu', 'help'), 'awake')
-            document.save.assert_called_once()
+            self.assertEqual(companion.handle('main menu', 'help'), 'document_save')
+            document.save.assert_not_called()
             self.assertFalse(document.pending_spacing)
             self.assertIsNone(companion.help_session)
-            self.assertTrue(any('Document saved' in c.args[0] for c in spoken.call_args_list))
+            self.assertTrue(any('Save this document?' in c.args[0] for c in spoken.call_args_list))
 
     def test_web_help_opens_dedicated_topic_and_form_subsections(self):
         session = HelpSession(GUIDE)

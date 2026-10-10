@@ -35,7 +35,8 @@
 <li><a href="#section-30">Self-Voicing Settings</a></li>
 <li><a href="#section-31">Keyboard Navigation</a></li>
 <li><a href="#section-32">Typing Echo And Phonetics</a></li>
-<li><a href="#section-33">Keyboard Email Reading And Document Naming</a></li></ol></nav>
+<li><a href="#section-33">Keyboard Email Reading And Document Naming</a></li>
+<li><a href="#section-34">Keyboard Mail And Exit</a></li></ol></nav>
 <main><p>This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, &quot;Open Voice Companion now&quot; is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud and listens through the computer&#x27;s microphone. You do not need Microsoft Word to make a document.</p>
 <section aria-labelledby="section-1"><h2 id="section-1">Start</h2>
 <ol>
@@ -237,5 +238,13 @@
 </section>
 <section aria-labelledby="section-33"><h2 id="section-33">Keyboard Email Reading And Document Naming</h2>
 <p>Opening a message reads its body and focuses a read-only text view. Use the same character, word, line, paragraph, and selection keys as in a document to review the received message. Copying selected text is allowed; typing cannot change received mail. Escape returns to the folder list, where arrow keys move through messages again.</p>
-<p>When you leave an untitled document using Escape, main menu, close, or leave document, Companion asks for its name. Say the name to fill the name field, then press Enter or say Okay to confirm. You can correct the filled name before pressing Enter. Alternatively, type the name and press Enter. The name becomes the filename and is never inserted into the body. Escape or Cancel naming returns to the document. A document that already has a name saves and returns to the menu without this prompt.</p>
+<p>When you leave a document using Escape, main menu, close, or leave document, Companion asks whether to save it. Say Yes or No, or use arrow keys to choose Yes or No and press Enter. Yes starts the document name field, including for an already named document. Say the name to fill the field, then press Enter or say Okay; alternatively type the name and press Enter. The name is the filename, never body text. No discards changes since opening or your last explicit save or naming command; an existing file is restored, and a new unsaved file is removed. Escape at the save question or name field keeps editing. Press F2 while writing to name or rename the file; type or say the name and press Enter. F2 naming keeps you in the document afterward.</p>
+</section>
+<section aria-labelledby="section-34"><h2 id="section-34">Keyboard Mail And Exit</h2>
+<p>The main menu includes Exit Voice Companion. Say close companion, exit companion, or return to Windows to close the app. Alt+F4 does the same. If a document is open, the save question appears first.</p>
+<p>In email, Control+N starts a new message; Control+R replies; Control+Shift+R replies to all; Control+F forwards; Control+Y chooses a folder; F5 refreshes the list. Arrows move through folder and message lists and Enter opens the choice.</p>
+<p>In the message list, Space toggles the current message selection; Shift+Up and Shift+Down extend selection while moving; Control+A selects messages on the current loaded page. Delete deletes the current or selected messages after confirmation. Control+Shift+V chooses a destination to move them, then asks for confirmation. Use arrows to choose Yes or No and Enter to answer; Escape cancels. Inside a received message, Control+A selects its text for copying instead of selecting messages.</p>
+<p>F2 in email starts Rename folder: choose the folder with arrows and Enter, then type the new name and press Enter or say rename to followed by the new name. Control+Shift+D starts Delete folder. Only empty user-created folders without children can be deleted; standard provider folders remain protected. Folder changes require Yes or No confirmation. Control+Shift+E starts Create folder; type create folder followed by its name and press Enter. Voice commands create folder, rename folder, and delete folder remain available.</p>
+<p>In a draft, Control+Enter requests sending; the usual confirmation still applies. Escape cancels the draft. Editing text keeps the standard character, word, line, paragraph, selection, copy, and paste shortcuts.</p>
+<p>Across areas, arrows, Enter, Escape, and Control+Comma provide navigation and settings. You may also type any available voice command in the command field and press Enter; Alt+T focuses that field, so every app command has a keyboard path.</p>
 </section></main></body></html>

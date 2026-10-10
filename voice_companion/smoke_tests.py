@@ -355,7 +355,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(sys, 'argv', ['companion.py', '--version']), contextlib.redirect_stdout(output):
             self.assertEqual(companion.main(), 0)
-        self.assertEqual(output.getvalue().strip(), 'Voice Companion 0.2.93-test')
+        self.assertEqual(output.getvalue().strip(), 'Voice Companion 0.2.94-test')
 
     def test_packaged_model_check_never_requires_speech_output(self):
         model = self.root / 'model'
@@ -477,7 +477,8 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         self.assertEqual(mode, 'document')
         mode = companion.handle('Start dictation.', mode)
         mode = companion.handle('A saved sentence.', mode)
-        self.assertEqual(companion.handle('Go back.', mode), 'document_name')
+        self.assertEqual(companion.handle('Go back.', mode), 'document_save')
+        self.assertEqual(companion.handle('yes', 'document_save'), 'document_name')
         self.assertEqual(companion.handle('Keyboard report', 'document_name', typed=True), 'awake')
         self.assertIn('A saved sentence.', VoiceDocument.open_existing(
             self.root / 'Documents', 'Keyboard report').process('read document'))
@@ -735,6 +736,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

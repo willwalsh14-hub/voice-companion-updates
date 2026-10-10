@@ -17,6 +17,48 @@ from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typ
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
+    def test_document_save_no_restores_existing_file_and_removes_new_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            doc=VoiceDocument(Path(folder),title='Existing');doc.append_text('Original.');original=doc.path.read_bytes()
+            with patch.object(companion,'document',doc),patch.object(companion,'speak'),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'DOCUMENT_BASELINE',None):
+                companion.checkpoint_document();doc.append_text('Changed.')
+                self.assertNotEqual(doc.path.read_bytes(),original)
+                self.assertEqual(companion.handle('main menu','document'),'document_save')
+                self.assertEqual(companion.handle('no','document_save'),'awake')
+                self.assertEqual(doc.path.read_bytes(),original)
+                fresh=VoiceDocument(Path(folder))
+                companion.document=fresh;companion.checkpoint_document();fresh.append_text('Discard me.')
+                self.assertEqual(companion.handle('leave document','document'),'document_save')
+                self.assertEqual(companion.handle('no','document_save'),'awake');self.assertFalse(fresh.path.exists())
+    def test_f2_names_in_place_and_save_prompt_supports_keyboard(self):
+        with tempfile.TemporaryDirectory() as folder:
+            doc=VoiceDocument(Path(folder));doc.append_text('Body stays.')
+            with patch.object(companion,'document',doc),patch.object(companion,'speak'),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'DOCUMENT_NAME_RETURN','awake'),patch.object(companion,'DOCUMENT_BASELINE',None):
+                command=companion.navigation_key('F2','document')
+                self.assertEqual(companion.handle_keyboard(command,'document'),'document_name')
+                self.assertEqual(companion.handle_keyboard('My file','document_name'),'document')
+                self.assertEqual(doc.title,'My file');self.assertIn('Body stays.',document_text(doc))
+                self.assertEqual(companion.handle('main menu','document'),'document_save')
+                self.assertEqual(companion.navigation_key('Down','document_save'),None)
+                self.assertEqual(companion.navigation_key('Enter','document_save'),'no')
+                self.assertEqual(companion.navigation_key('Escape','document_save'),'cancel')
+                self.assertEqual(companion.handle('cancel','document_save'),'document')
+    def test_exit_aliases_and_menu_exit(self):
+        for command in ('close companion','exit companion','return to windows'):
+            self.assertEqual(companion.spoken_control(command),'exit')
+        self.assertEqual(companion.MAIN_MENU_CHOICES[-1],('Exit Voice Companion','exit companion'))
+    def test_mail_shortcuts_and_pending_keyboard_confirmation(self):
+        session=Mock(pending=None,folder_picker=None,folder_choice=None,view='folder')
+        with patch.object(companion,'mail_session',session),patch.object(companion,'speak'):
+            for key,request in {'Ctrl+Y':'go to folder','Ctrl+R':'reply','Ctrl+Shift+R':'reply all','Ctrl+F':'forward','Ctrl+N':'new email','Delete':'delete','Space':'toggle message selection','Ctrl+A':'select all messages','Ctrl+Shift+V':'move','F2':'rename folder','Ctrl+Shift+D':'delete folder'}.items():
+                self.assertEqual(companion.navigation_key(key,'mailbox'),request)
+            session.pending=('delete',[],None);companion.CONFIRM_CHOICE='yes'
+            companion.navigation_key('Right','mailbox');self.assertEqual(companion.navigation_key('Enter','mailbox'),'no')
+    def test_rename_folder_accepts_typed_name(self):
+        session=Mock(folder_choice=('rename','Old','id'))
+        with patch.object(companion,'mail_session',session),patch.object(companion,'handle',return_value='mailbox') as handle:
+            companion.handle_keyboard('New folder','mailbox')
+            handle.assert_called_once_with('rename to New folder','mailbox',typed=True)
     def test_pause_resume_and_stop_control_the_keyboard_voice_on_its_owner_thread(self):
         worker=KeyboardSpeech.__new__(KeyboardSpeech);worker.settings=('',0,100,None);worker.problem=None;worker.paused=False;worker.active=True;worker.quiet_until=0
         worker.queue=Mock(get=Mock(side_effect=['Read this.',('pause',),('resume',),('interrupt',),None]))
@@ -114,6 +156,7 @@ class KeyboardTextTests(unittest.TestCase):
                 doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('Separate body.')]
                 with patch.object(companion,'document',doc),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'KEYBOARD_DIRTY',{}),patch.object(companion,'PENDING_DOCUMENT_NAME',None),patch.object(companion,'speak'),patch.object(companion,'INPUT_MODE','mixed'):
                     mode=companion.handle('leave document','document')
+                    self.assertEqual(mode,'document_save');mode=companion.handle('yes',mode)
                     self.assertEqual(companion.handle('Spoken report',mode),'document_name')
                     self.assertFalse((Path(folder)/'Spoken report.docx').exists())
                     self.assertEqual(companion.app_context('document_name')['naming_request'][1],'Spoken report')
@@ -124,7 +167,8 @@ class KeyboardTextTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('Body stays separate.')]
             with patch.object(companion,'document',doc),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'KEYBOARD_DIRTY',{}),patch.object(companion,'speak'),patch.object(companion,'INPUT_MODE','mixed'):
-                self.assertEqual(companion.handle('leave document','document'),'document_name')
+                self.assertEqual(companion.handle('leave document','document'),'document_save')
+                self.assertEqual(companion.handle('yes','document_save'),'document_name')
                 self.assertEqual(companion.handle('Report for Will','document_name',typed=True),'awake')
                 self.assertTrue((Path(folder)/'Report for Will.docx').exists())
                 self.assertEqual(document_text(doc),'Body stays separate.')
@@ -195,6 +239,29 @@ class WindowKeyboardTests(unittest.TestCase):
                 self.assertEqual(first[0],'text_edit');self.assertEqual(first[1]['after'],'zabc def')
                 self.assertEqual(second,('keyboard',command))
                 while not self.window.commands.empty():self.window.commands.get()
+    def test_f2_flushes_last_edit_before_naming(self):
+        self.context()
+        def edit_and_name():
+            self.window.editor.insert('insert','Z')
+            self.window.editor.event_generate('<KeyPress>',keysym='F2')
+        self.call(edit_and_name)
+        self.wait(lambda:self.window.commands.qsize()>=2)
+        first=self.window.commands.get();second=self.window.commands.get()
+        self.assertEqual(first[0],'text_edit');self.assertTrue(first[1]['after'].startswith('Z'))
+        self.assertEqual(second,('keyboard','F2'))
+    def test_mail_shortcut_works_in_received_message_without_mutating_body(self):
+        self.window.set_context(dict(mode='mailbox',source='mail:test',text='Received body.',readonly=True,caret=0,selection=None,echo='characters',phonetic=False,delay=.5,ack=0,focus=True))
+        self.call(lambda:self.window.editor.event_generate('<Control-KeyPress-r>'))
+        self.wait(lambda:not self.window.commands.empty())
+        self.assertEqual(self.window.commands.get(),('keyboard','Ctrl+R'))
+        body=[];self.call(lambda:body.append(self.window.editor.get('1.0','end-1c')))
+        self.assertEqual(body,['Received body.'])
+    def test_save_confirmation_arrows_enter_and_escape_dispatch_from_field(self):
+        self.window.set_context(dict(mode='document_save',source=None,text='',confirmation='yes',echo='characters',phonetic=False,delay=.5,ack=0,focus=True))
+        for key,result in (('Down','Down'),('Return','Enter'),('Escape','Escape')):
+            self.call(lambda k=key:self.window.typed.event_generate('<KeyPress>',keysym=k))
+            self.wait(lambda:not self.window.commands.empty())
+            self.assertEqual(self.window.commands.get(),('keyboard',result))
     def test_keyboard_typing_emits_literal_edit_and_immediate_echo(self):
         self.context()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='z'))
@@ -246,3 +313,4 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(values,['abc def'])
 
 if __name__=='__main__':unittest.main()
+
