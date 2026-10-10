@@ -17,6 +17,21 @@ from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typ
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
+    def test_builder_script_answers_document_save_question_before_email(self):
+        import io
+        source=(Path(companion.__file__).parent/'build-windows.ps1').read_text()
+        line=next(line for line in source.splitlines() if line.strip().startswith('$testCommands ='))
+        commands=line.split('"',2)[1].replace('`n','\n')
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            with patch.object(companion,'APP',root),patch.object(companion,'TEXT_MODE',True),patch.object(companion.sys,'stdin',io.StringIO(commands)),patch.object(companion.sys,'argv',['companion.py','--text-mode']),patch.object(companion,'speak') as speech:
+                self.assertEqual(companion.main(),0)
+                spoken=' '.join(call.args[0] for call in speech.call_args_list)
+                self.assertIn('Save this document?',spoken)
+                self.assertIn('This is a local email draft',spoken)
+                self.assertIn('It has not been sent',spoken)
+                self.assertTrue((root/'Documents'/'Build check.docx').exists())
+                self.assertTrue(list((root/'Email Drafts').glob('*.eml')))
     def test_document_save_no_restores_existing_file_and_removes_new_file(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder),title='Existing');doc.append_text('Original.');original=doc.path.read_bytes()

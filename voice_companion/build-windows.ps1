@@ -196,7 +196,7 @@ $testData = Join-Path $PSScriptRoot '.build-smoke-data'
 if (Test-Path $testData) { Remove-Item $testData -Recurse -Force }
 try {
   $env:VOICE_COMPANION_DATA_DIR = $testData
-  $testCommands = "wake up`ncreate a document`nname document Build check`nstart dictation`nThis is a test sentence.`npause dictation`nread paragraph`nleave document`nwrite an email`nuse outlook`nemail to example@example.com`nsubject is Build test`nstart dictation`nThis is a local email draft.`npause dictation`nsend email`nshut down companion`n"
+  $testCommands = "wake up`ncreate a document`nname document Build check`nstart dictation`nThis is a test sentence.`npause dictation`nread paragraph`nleave document`nyes`nBuild check`nokay`nwrite an email`nuse outlook`nemail to example@example.com`nsubject is Build test`nstart dictation`nThis is a local email draft.`npause dictation`nsend email`nshut down companion`n"
   $testOutput = $testCommands | & $diagnosticTarget --text-mode
   if ($LASTEXITCODE -ne 0 -or -not (($testOutput -join ' ') -match 'This is a test sentence') -or
       -not (($testOutput -join ' ') -match 'This is a local email draft') -or
