@@ -40,7 +40,8 @@ class NativeSettingsTests(unittest.TestCase):
         for _ in range(2):self.panel.command('next setting')
         self.wait(lambda:any('Lower media volume while Companion speaks' in message for message in self.notices))
         before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
-        self.u.SendMessageW(checkbox,0x100,0x20,0);self.u.SendMessageW(checkbox,0x101,0x20,0)
+        # Queue real keystrokes so IsDialogMessage handles checkbox activation.
+        self.u.PostMessageW(checkbox,0x100,0x20,0);self.u.PostMessageW(checkbox,0x101,0x20,0)
         self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before)
         self.u.PostMessageW(checkbox,0x100,0x0D,0)
         self.wait(lambda:len(self.saved)==1)
