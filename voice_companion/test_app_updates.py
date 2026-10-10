@@ -71,7 +71,7 @@ class UpdateTests(unittest.TestCase):
         service=Mock();service.events=queue.Queue();service.busy=False;service.canceled=threading.Event();service.download.return_value=True
         with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'UPDATE_MANUAL',False),patch.object(companion,'UPDATE_RETURN_MODE','awake'),patch.object(companion,'speak') as speak,patch.object(companion,'speech_busy',return_value=False),patch.object(companion,'document',None),patch.object(companion,'email_draft',None),patch.object(companion,'finish_mail_announcement'):
             service.events.put(('available',self.release()));self.assertEqual(companion.poll_app_updates('sleep'),'update_offer')
-            speak.assert_called_with('A new update is available. Would you like to install it now? Say yes or no.')
+            speak.assert_called_with('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
             self.assertEqual(companion.handle('no','update_offer'),'awake');service.download.assert_not_called()
             self.assertEqual(companion.handle('yes','update_offer'),'update_download');service.download.assert_called_once()
             companion.handle('cancel update','update_download');self.assertTrue(service.canceled.is_set())
@@ -179,7 +179,7 @@ class StartupUpdatePromptTests(unittest.TestCase):
             self.assertEqual(companion.startup_update_mode(),'update_offer')
             self.assertTrue(companion.STARTUP_UPDATE_PENDING)
             self.assertEqual(service.release,release)
-            say.assert_called_once_with('A new update is available. Would you like to install it now? Say yes or no.')
+            say.assert_called_once_with('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
             say.reset_mock()
             self.assertEqual(companion.handle('no','update_offer'),'sleep')
             say.assert_called_once_with(companion.startup_prompt())
