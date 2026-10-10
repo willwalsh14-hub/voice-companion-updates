@@ -142,7 +142,7 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 control=bool(event.state&4);shift=bool(event.state&1)
                 request=None
-                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space'):
+                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space') and not (event.widget==self.typed and self.typed.get().strip() and key in ('Return','space')):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
                 elif mode=='document' and key=='F2':request='F2'

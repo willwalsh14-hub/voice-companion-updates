@@ -180,7 +180,7 @@ def discard_document_changes():
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
-    if logical=='document_save':context['confirmation']=CONFIRM_CHOICE
+    if logical=='document_save' or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
@@ -300,7 +300,7 @@ def settings_action(key,mode):
 
 def navigation_key(key,mode):
     global CONFIRM_CHOICE
-    confirming=mode=='document_save' or (mode=='mailbox' and mail_session and mail_session.pending)
+    confirming=mode=='document_save' or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
     if confirming:
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             CONFIRM_CHOICE='no' if CONFIRM_CHOICE=='yes' else 'yes'
@@ -1916,11 +1916,12 @@ _HANDLE_DEPTH = 0
 def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE
     old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
+    old_send=pending_send
     _HANDLE_DEPTH += 1
     try:
         if _HANDLE_DEPTH==1:flush_keyboard_edits(True)
         result = _handle(text, mode, typed)
-        if mail_session and not old_mail_pending and getattr(mail_session,"pending",None):CONFIRM_CHOICE="yes"
+        if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:

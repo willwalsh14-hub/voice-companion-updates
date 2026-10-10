@@ -272,6 +272,11 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(self.window.commands.get(),('keyboard','Ctrl+R'))
         body=[];self.call(lambda:body.append(self.window.editor.get('1.0','end-1c')))
         self.assertEqual(body,['Received body.'])
+    def test_typed_no_is_submitted_instead_of_default_yes(self):
+        self.window.set_context(dict(mode='document_save',source=None,text='',confirmation='yes',echo='characters',phonetic=False,delay=.5,ack=0,focus=True))
+        self.call(lambda:(self.window.typed.insert(0,'no'),self.window.typed.event_generate('<Return>')))
+        self.wait(lambda:not self.window.commands.empty())
+        self.assertEqual(self.window.commands.get(),'no')
     def test_save_confirmation_arrows_enter_and_escape_dispatch_from_field(self):
         self.window.set_context(dict(mode='document_save',source=None,text='',confirmation='yes',echo='characters',phonetic=False,delay=.5,ack=0,focus=True))
         for key,result in (('Down','Down'),('Return','Enter'),('Escape','Escape')):
