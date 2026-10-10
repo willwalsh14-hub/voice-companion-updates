@@ -1,5 +1,6 @@
 """Voice state for a single connected mailbox; no persistent mail cache."""
 from list_announcements import name_first
+from menu_navigation import menu_label
 import re
 import traceback
 from pathlib import Path
@@ -114,9 +115,9 @@ class MailSession:
                 'create_parent': 'put the new folder inside it'}.get(action, 'open it')
         if ambiguous_name:
             return ('I see ' + str(len(folders)) + ' folders named ' + ambiguous_name +
-                    '. First choice: ' + self._spoken_folder(folders[0][0]) +
+                    '. First choice: ' + menu_label(self._spoken_folder(folders[0][0])) +
                     '. Say next or previous to hear another, then that one to ' + verb + '.')
-        return ('Found '+str(len(folders))+' folders. Folder 1: '+self._spoken_folder(folders[0][0])+
+        return ('Found '+str(len(folders))+' folders. Folder 1: '+menu_label(self._spoken_folder(folders[0][0]))+
                 '. Say next or previous, then that one to ' + verb + '. Say cancel to leave this list.')
 
     def _open_named_folder(self, spoken):
@@ -269,8 +270,8 @@ class MailSession:
 
     def _summary(self, number):
         row = self.rows[number - 1]
-        return ('From ' + row['from'] + '. Subject ' + row['subject'] +
-                '. Date ' + row.get('date', 'unavailable') + '. ' + str(number) + ' of ' + str(len(self.rows)) + '.')
+        return (row['from'] + '. ' + row['subject'] +
+                '. ' + row.get('date', 'unavailable') + '. ' + str(number) + ' of ' + str(len(self.rows)) + '.')
 
     def _focus(self, number):
         self.current = self._number(number)

@@ -129,7 +129,7 @@ class WebTests(unittest.TestCase):
 
     def test_numbered_links_and_late_search_results(self):
         self.session.open('example.com')
-        self.assertIn('Log in, 1 of 2', self.session.command('list links'))
+        self.assertIn('Log in (L), 1 of 2', self.session.command('list links'))
         self.assertIn('Open link Log in', self.session.command('open link 1'))
         self.assertIn('Page: Example account', self.session.command('yes'))
         self.assertEqual(self.backend.activated, ['0'])

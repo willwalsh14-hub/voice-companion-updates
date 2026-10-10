@@ -54,7 +54,7 @@ Read UPDATES - Trainer.txt. Configure your real GitHub repository with SET UP UP
 
 
 
-Settings and keyboard check for 0.2.96-test: with the screen reader off, open Control+Comma, navigate every category and control, confirm spoken values and hidden API-key feedback, test Enter to save and Escape to discard, then test menu arrows and email address-field editing. The builder runs native Windows dialog integration tests before packaging.
+Settings and keyboard check for 0.2.96-test: with the screen reader off, open Alt+O, navigate every category and control, confirm spoken values and hidden API-key feedback, test Enter to save and Escape to discard, then test menu arrows and email address-field editing. The builder runs native Windows dialog integration tests before packaging.
 
 
 RELEASE DOCUMENTATION REQUIREMENT

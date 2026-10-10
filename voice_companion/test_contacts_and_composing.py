@@ -211,7 +211,7 @@ class GuidedChecks(unittest.TestCase):
             web = WebSession(tmp, backend)
             web.open('example.com')
             first=web.command('list links')
-            self.assertIn('Log in, 1 of 2', first)
+            self.assertIn('Log in (L), 1 of 2', first)
             self.assertNotIn('Transfer between accounts', first)
             self.assertIn('Transfer between accounts', web.command('next link'))
             self.assertIn('Log in', web.command('previous link'))

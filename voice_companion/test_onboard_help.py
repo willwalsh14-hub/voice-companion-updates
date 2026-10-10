@@ -30,13 +30,13 @@ class OnboardHelpTests(unittest.TestCase):
 
     def test_email_picker_reading_navigation_and_return(self):
         session = HelpSession(GUIDE)
-        self.assertIn('Read messages, 1 of 5', session.topic('email'))
+        self.assertIn('Read messages (R), 1 of 5', session.topic('email'))
         self.assertIn('Go to folders', session.process('next'))
         self.assertIn('Go to folders', session.process('that one'))
         self.assertIn('Paragraph', session.process('next paragraph'))
-        self.assertIn('Go to folders, 2 of 5', session.process('back to subsections'))
+        self.assertIn('Go to folders (G), 2 of 5', session.process('back to subsections'))
         self.assertIn(' of ', session.process('back to topics'))
-        self.assertIn('Read messages, 1 of 5', session.process('back to email topics'))
+        self.assertIn('Read messages (R), 1 of 5', session.process('back to email topics'))
         self.assertIn('Back where you were', session.process('close help'))
         self.assertTrue(session.closed)
 

@@ -1,5 +1,6 @@
 """Presentation for named picker items; never applied to dictated or stored text."""
 import re
+from menu_navigation import menu_label
 
 
 def name_first(text):
@@ -12,9 +13,9 @@ def name_first(text):
         name = item[:split.start()].rstrip('. ')
         tail = item[split.start():]
         # Keep opening instructions after the name and position.
-        return text[:match.start()] + name + ', ' + match['index'] + ' of ' + match['count'] + tail
-    return text[:match.start()] + item.rstrip('. ') + ', ' + match['index'] + ' of ' + match['count'] + '.'
+        return text[:match.start()] + menu_label(name) + ', ' + match['index'] + ' of ' + match['count'] + tail
+    return text[:match.start()] + menu_label(item.rstrip('. ')) + ', ' + match['index'] + ' of ' + match['count'] + '.'
 
 
 def list_item(name, index, count):
-    return f'{name}, {index + 1} of {count}.'
+    return f'{menu_label(name)}, {index + 1} of {count}.'

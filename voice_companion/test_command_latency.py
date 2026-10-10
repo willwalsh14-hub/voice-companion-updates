@@ -35,8 +35,8 @@ class ConciseMenusTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'speak') as speak,patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'MAIN_MENU_INDEX',None),patch.object(companion,'SYNTH_PICK_INDEX',None),patch.object(companion,'VOICE_PICK_INDEX',None):
             self.assertEqual(companion.resume_from_sleep(),'awake')
             speak.assert_called_with(companion.MAIN_MENU_PROMPT)
-            companion.handle('next','awake');speak.assert_called_with('Documents, 1 of 13.')
-            companion.handle('previous','awake');speak.assert_called_with('Exit Voice Companion, 13 of 13.')
+            companion.handle('next','awake');speak.assert_called_with('Documents (D), 1 of 13.')
+            companion.handle('previous','awake');speak.assert_called_with('Exit Voice Companion (E), 13 of 13.')
             for confirm in ('that one','confirm that','ok','okay'):
                 companion.MAIN_MENU_INDEX=0
                 self.assertEqual(companion.handle(confirm,'awake'),'document')
@@ -44,8 +44,8 @@ class ConciseMenusTests(unittest.TestCase):
 
     def test_synthesizer_browsing_only_says_position_and_name(self):
         with patch.object(companion,'synthesizers',return_value=[('windows','Windows speech'),('espeak','eSpeak NG')]),patch.object(companion,'SYNTH_PICK_INDEX',0),patch.object(companion,'VOICE_PICK_INDEX',None),patch.object(companion,'speak') as speak:
-            companion.voice_menu('next');speak.assert_called_with('eSpeak NG, 2 of 2.')
-            companion.voice_menu('previous');speak.assert_called_with('Windows speech, 1 of 2.')
+            companion.voice_menu('next');speak.assert_called_with('eSpeak NG (E), 2 of 2.')
+            companion.voice_menu('previous');speak.assert_called_with('Windows speech (W), 1 of 2.')
 
     def test_navigation_fast_path_all_units_and_aliases(self):
         with patch.object(companion,'INPUT_MODE','mixed'):

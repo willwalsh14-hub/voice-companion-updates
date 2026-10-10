@@ -215,7 +215,8 @@ class VoiceEmail(VoiceDocument):
         field = email_field_destination(command)
         if field:
             if self.response_context and field == 'subject':
-                return 'This response keeps the original subject and recipients. Start a new email to change them.'
+                self.compose_step='subject'
+                return 'Subject field. '+self.subject+'. This response keeps the original subject. Start a new email to change it.'
             if field in ('cc','bcc'): self.after_copy_step='body'
             self.compose_step=field
             if field=='recipient':

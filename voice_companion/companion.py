@@ -38,11 +38,16 @@ from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
 from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_request
 from keyboard_text import document_text,replace_keyboard_text,absolute
+from menu_navigation import next_match, menu_label, announce_item
 
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.98-test'
+APP_VERSION = '0.2.99-test'
+POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
+POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
+POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
+
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -121,6 +126,7 @@ mail_session = None
 pending_website = None
 web_session = None
 account_setup = False
+ACCOUNT_MENU_INDEX = None
 help_session = None
 help_return_mode = 'awake'
 TEXT_MODE = False
@@ -146,7 +152,7 @@ def focus_email_entry():
     if APP_WINDOW is not None and email_draft is not None:
         field = email_draft.compose_step or 'body'
         if field=='body':return
-        value = email_draft.recipient if field == 'recipient' else email_draft.subject if field == 'subject' else ''
+        value = email_draft.recipient if field == 'recipient' else email_draft.subject if field == 'subject' else ', '.join(getattr(email_draft,field,[]))
         APP_WINDOW.focus_email_field(field, value)
 resampler = None
 input_channels = 1
@@ -182,6 +188,7 @@ def discard_document_changes():
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
+    context['menu_letters']=menu_state(logical) is not None
     if logical in ('document_save','power_confirm') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
@@ -300,8 +307,77 @@ def settings_action(key,mode):
         return 'web'
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
 
+def menu_state(mode):
+    """Expose only active pickers; editable fields and mail messages are excluded."""
+    def state(names, owner, attribute, current=None):
+        return (names, getattr(owner,attribute) if current is None else current,
+                lambda index:setattr(owner,attribute,index)) if names else None
+    module=sys.modules[__name__]
+    if account_setup:return state(['Gmail','Outlook or Exchange','Yahoo'],module,'ACCOUNT_MENU_INDEX')
+    if mode in ('document_save','power_confirm') or mode=='email_draft' and pending_send is not None:
+        return None
+    if SYNTH_PICK_INDEX is not None:
+        return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
+    if VOICE_PICK_INDEX is not None:
+        return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
+    if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
+    if mode=='tutorial' and tutorial_session and not tutorial_session.lesson:
+        return state(['Radio','Email','Documents'],module,'MAIN_MENU_INDEX')
+    if mode=='mailbox' and mail_session and mail_session.folder_picker and not mail_session.pending:
+        picker=mail_session.folder_picker
+        return ([mail_session._spoken_folder(x[0]) for x in picker['folders']],picker['index'],lambda index:picker.update(index=index))
+    if mode=='help' and help_session:
+        if help_session.level=='topics':return state([x['name'] for x in help_session.topics],help_session,'topic_index')
+        if help_session.level=='subtopics':return state([x[0] for x in help_session._subtopics()],help_session,'subtopic_index')
+    if mode in ('media','podcast') and MEDIA_HUB:
+        hub=MEDIA_HUB
+        if MEDIA_SECTION=='radio':
+            if hub.preset_browsing:return state([x['name'] for x in hub.presets()],hub,'preset_index')
+            if hub.station_choices:return state([hub.stations[i]['name'] for i in hub.station_choices],hub,'station_choice_index')
+            if not hub.awaiting_radio_search:return state([x['name'] for x in hub.stations],hub,'station_index')
+        elif hub.browsing_episodes:return state([x['title'] for x in hub.episodes],hub,'episode_index')
+        else:return state([x['name'] for x in hub.shows],hub,'show_index')
+    if mode=='web' and web_session and web_session.form_index is None and not web_session.submit_pending:
+        web=web_session
+        if web.list_focus=='favorites':return state([x[1]['name'] for x in web.favorite_items],web,'favorite_index')
+        if web.list_focus=='fields':return state([x.get('name') or x.get('label') or x.get('text') or x['role'] for x in web.choices],web,'field_list_index')
+        if web.list_focus=='links' and web.snapshot:
+            from urllib.parse import urlsplit
+            links=[x for x in web.snapshot['controls'] if x['role']=='link' and urlsplit(x.get('href','')).scheme=='https']
+            def select(index):web.link_position=index;web.pending=links[index]
+            return ([x.get('name') or x.get('text') or x.get('href') for x in links],web.link_position,select) if links else None
+    return None
+
+def choose_menu_letter(letter,mode):
+    state=menu_state(mode)
+    if state is None:return False
+    names,current,select=state
+    index=next_match(names,current,letter)
+    if index is None:speak('No menu item starts with '+letter.upper()+'.');return True
+    select(index)
+    if VOICE_PICK_INDEX is not None:preview_voice(index)
+    else:speak(announce_item(names[index],index,len(names)))
+    return True
+
+def commit_email_field_tab(payload,mode):
+    """Commit an editable header before moving, without losing unsent text."""
+    if mode!='email_draft' or email_draft is None:return None
+    field=payload['field'];value=payload['value'].strip()
+    if field!=(email_draft.compose_step or 'body'):return None
+    try:
+        if field=='recipient':email_draft.recipient=normalize_recipient(value) if value else ''
+        elif field in ('cc','bcc'):
+            setattr(email_draft,field,[normalize_recipient(x) for x in re.split(r'[,;]',value) if x.strip()])
+        elif field=='subject':
+            if email_draft.response_context and value!=email_draft.subject:
+                raise ValueError('This response keeps the original subject.')
+            email_draft.subject=value
+        email_draft.save()
+    except (ValueError,OSError) as exc:speak(str(exc));return None
+    return navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
+
 def navigation_key(key,mode):
-    global CONFIRM_CHOICE
+    global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     confirming=mode in ('document_save','power_confirm') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
     if confirming:
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -309,6 +385,20 @@ def navigation_key(key,mode):
             speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if key.startswith('Letter:'):
+        choose_menu_letter(key[-1],mode);return None
+    if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
+        return ('gmail','outlook','yahoo')[ACCOUNT_MENU_INDEX]
+    if account_setup and key in ('Up','Down','Left','Right'):
+        ACCOUNT_MENU_INDEX=(0 if key in ('Down','Right') else 2) if ACCOUNT_MENU_INDEX is None else (ACCOUNT_MENU_INDEX+(1 if key in ('Down','Right') else -1))%3
+        speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
+    if key=='Enter' and mode=='tutorial' and MAIN_MENU_INDEX in (0,1,2):
+        return ('practice radio','practice email','practice documents')[MAIN_MENU_INDEX]
+    if mode=='email_draft' and key in ('Tab','ShiftTab') and email_draft:
+        order=('recipient','cc','bcc','subject','body')
+        current=email_draft.compose_step or 'body'
+        target=order[(order.index(current)+(1 if key=='Tab' else -1))%len(order)]
+        return 'go to '+('to' if target=='recipient' else target)
     if mode=='document' and key=='F2':return 'name document'
     if mode=='mailbox':
         if key=='Delete' and mail_session and mail_session.folder_picker:
@@ -391,6 +481,7 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 
 def fast_command_request(command, mode):
+    if command in POWER_COMMANDS:return True
     if mode in ('settings','power_confirm'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('settings','open settings','show settings','preferences','open preferences'):return True
@@ -582,7 +673,7 @@ def synthesizers():
 def preview_voice(index):
     choices = voice_choices(VOICE_PICK_ENGINE)
     name = choose_voice(choices[index])
-    speak(name + ', ' + str(index + 1) + ' of ' + str(len(choices)) + '.')
+    speak(announce_item(name,index,len(choices)))
 
 
 def keep_voice():
@@ -665,7 +756,7 @@ def voice_menu(command):
             preview_voice(VOICE_PICK_INDEX)
             return True
     choices = synthesizers()
-    prompt = choices[SYNTH_PICK_INDEX][1] + ', ' + str(SYNTH_PICK_INDEX + 1) + ' of ' + str(len(choices)) + '.'
+    prompt = announce_item(choices[SYNTH_PICK_INDEX][1],SYNTH_PICK_INDEX,len(choices))
     if command in VOICE_LIST_COMMANDS or command == 'back':
         prompt = 'Select synthesizer. ' + prompt + ' Say next, previous, okay, or cancel voice.'
     speak(prompt)
@@ -1051,7 +1142,7 @@ def _handle(text, mode, typed=False):
         tutorial_session = PracticeTutorial()
         speak(tutorial_session.start())
         return 'tutorial'
-    power_commands={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
+    power_commands=POWER_COMMANDS
     if mode!='sleep' and command in power_commands:
         action=power_commands[command]
         if mode in ('document','document_name','document_save') and document is not None:
@@ -1394,7 +1485,7 @@ def _handle(text, mode, typed=False):
                    'outlook' if selected_type in ('outlook','microsoft 365','exchange') else 'yahoo')
     if command in ('add account', 'add another account', 'add email account', 'connect email account', 'set up email'):
         account_setup = True
-        speak('Which email account type? Say Gmail, Outlook or Exchange, or Yahoo. A trusted person can use the normal sign-in page or type private details.')
+        speak('Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details.')
         return mode
     if account_setup:
         if command in ('cancel', 'cancel account setup'):
@@ -1508,7 +1599,7 @@ def _handle(text, mode, typed=False):
                      or bool(re.fullmatch(r'(?:write|compose|create|start|draft)(?:\s+(?:a|an|new|another|write))*\s+(?:e[ -]?mail|email|message)(?:\s+draft)?', command)))
     if mode == 'awake' and command in ('next', 'previous'):
         MAIN_MENU_INDEX = (0 if command == 'next' else len(MAIN_MENU_CHOICES)-1) if MAIN_MENU_INDEX is None else (MAIN_MENU_INDEX + (1 if command == 'next' else -1)) % len(MAIN_MENU_CHOICES)
-        speak(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0] + ', ' + str(MAIN_MENU_INDEX + 1) + ' of ' + str(len(MAIN_MENU_CHOICES)) + '.')
+        speak(announce_item(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(MAIN_MENU_CHOICES)))
         return mode
     if mode == 'awake' and command in PICK_CONFIRM:
         if MAIN_MENU_INDEX is None:
@@ -2261,6 +2352,10 @@ def main():
                         if typed_command[0]=='text_edit':
                             try:apply_keyboard_edit(typed_command[1],mode)
                             except (ValueError,OSError) as exc:speak(str(exc))
+                            continue
+                        if typed_command[0]=='email_field_tab':
+                            request=commit_email_field_tab(typed_command[1],SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                            if request:mode=handle_keyboard(request,mode)
                             continue
                         key=typed_command[1]
                         typed_command='open settings' if key=='settings' else navigation_key(key,SLEEP_RETURN_MODE if mode=='sleep' else mode)

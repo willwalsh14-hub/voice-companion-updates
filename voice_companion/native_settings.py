@@ -6,6 +6,7 @@ import threading
 import uuid
 import copy
 from settings_model import CATEGORIES
+from menu_navigation import next_match,menu_label
 
 class NativeSettings:
     def __init__(self,session,announce,save,action):
@@ -60,7 +61,7 @@ class NativeSettings:
                 self.session.set(field.key,raw(hwnd,field))
         def describe(hwnd):
             if hwnd not in controls and parent(hwnd) in controls:hwnd=parent(hwnd)
-            if hwnd==category[0]:return self.session.category_name()+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))
+            if hwnd==category[0]:return menu_label(self.session.category_name())+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))
             if hwnd in buttons:return buttons[hwnd]
             field=controls.get(hwnd)
             if not field:return ''
@@ -72,7 +73,7 @@ class NativeSettings:
             for hwnd in children:destroy(hwnd)
             children.clear();controls.clear();buttons.clear();last_focus[0]=None
             u.ShowWindow(category[0],0 if editing[0] else 5)
-            u.SetWindowTextW(self.hwnd,'Voice Companion Settings - '+self.session.category_name() if editing[0] else 'Voice Companion Settings')
+            u.SetWindowTextW(self.hwnd,'Voice Companion Settings - '+self.session.category_name() if editing[0] else 'Voice Companion Options (Alt+O)')
             if not editing[0]:
                 close_button=control('BUTTON','Close settings',0x10000,595,530,100,32,2)
                 children.append(close_button);buttons[close_button]='Close settings.'
@@ -198,10 +199,19 @@ class NativeSettings:
         control('STATIC','Categories',0,15,15,185,22,0)
         category[0]=control('LISTBOX','',0x10000|0x200000|0x800000|1,15,45,185,475,100)
         for name in CATEGORIES:
-            buf=c.create_unicode_buffer(name);send(category[0],0x180,0,c.cast(buf,c.c_void_p).value)
+            buf=c.create_unicode_buffer(menu_label(name));send(category[0],0x180,0,c.cast(buf,c.c_void_p).value)
         send(category[0],0x186,self.session.category,0);render();self.announce('Settings menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
+            if message.message==0x104 and message.wParam==ord('O'):
+                if editing[0]:cancel_category()
+                else:focus(category[0]);self.announce('Settings menu. '+describe(category[0]))
+                continue
+            if message.message==0x100 and 65<=message.wParam<=90 and get_focus()==category[0] and not editing[0]:
+                index=next_match(CATEGORIES,self.session.category,chr(message.wParam))
+                if index is not None:select_category(index)
+                else:self.announce('No category starts with '+chr(message.wParam)+'.')
+                continue
             if message.message==0x100 and message.wParam==0x1B:cancel_category();continue
             if message.message==0x100 and message.wParam in (0x26,0x28,0x25,0x27) and get_focus()==category[0] and not editing[0]:
                 select_category((self.session.category+(-1 if message.wParam in (0x26,0x25) else 1))%len(CATEGORIES));continue

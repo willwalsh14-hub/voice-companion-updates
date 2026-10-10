@@ -49,6 +49,18 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:len(self.saved)==1)
         self.assertFalse(self.panel.closed.is_set())
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
+    def test_category_letters_cycle_enter_opens_and_alt_o_returns(self):
+        hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
+        for expected in (1,2,10):
+            self.u.PostMessageW(categories,0x100,ord('S'),0)
+            self.wait(lambda:self.session.category==expected)
+        self.assertTrue(any('Startup options (S)' in text for text in self.notices))
+        self.u.PostMessageW(categories,0x100,0x0D,0)
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x104,ord('O'),0)
+        self.wait(lambda:not self.u.GetDlgItem(hwnd,200))
+        self.assertFalse(self.saved)
+
     def test_escape_discards_changes_and_voice_settings_are_staged(self):
         hwnd=self.open_panel();self.panel.command('verbosity low')
         self.wait(lambda:self.session.values['verbosity']=='low' and 'Verbosity low' in self.notices)

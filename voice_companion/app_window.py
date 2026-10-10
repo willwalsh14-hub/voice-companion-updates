@@ -142,6 +142,8 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 control=bool(event.state&4);shift=bool(event.state&1)
                 request=None
+                if key.lower()=='o' and event.state&(8|0x20000):
+                    flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
                 if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space') and not (event.widget==self.typed and self.typed.get().strip() and key in ('Return','space')):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
@@ -155,11 +157,25 @@ class CompanionWindow:
                     elif control:
                         code=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper()
                         if code in ('Ctrl+Y','Ctrl+R','Ctrl+Shift+R','Ctrl+F','Ctrl+N','Ctrl+Shift+V','Ctrl+Shift+E','Ctrl+Shift+D') or code=='Ctrl+A' and not self.context.get('source'):request=code
+                elif mode=='email_draft' and key in ('Tab','ISO_Left_Tab'):
+                    flush_pending_edit();cancel_phonetic()
+                    backward=shift or key=='ISO_Left_Tab'
+                    if self.email_field:
+                        self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':backward}))
+                    else:self.commands.put(('keyboard','ShiftTab' if backward else 'Tab'))
+                    return 'break'
                 elif mode=='email_draft' and control and key=='Return':request='Ctrl+Enter'
+                elif self.context.get('menu_letters') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
+                    request='Letter:'+event.char.lower()
                 if request:
                     flush_pending_edit();cancel_phonetic()
                     self.commands.put(('keyboard',request));return 'break'
             root.bind_all('<Alt-F4>',shortcut)
+            root.bind_all('<Alt-o>',shortcut)
+            root.bind_all('<Alt-O>',shortcut)
+            root.bind_all('<Tab>',shortcut)
+            root.bind_all('<Shift-Tab>',shortcut)
+            root.bind_all('<KeyPress>',shortcut,add='+')
             for sequence in ('<F2>','<F5>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
                 root.bind_all(sequence,shortcut)
             def before_key(event):
@@ -209,8 +225,9 @@ class CompanionWindow:
             def settings_shortcut(event):
                 flush_pending_edit()
                 self.commands.put(('keyboard','settings')); return 'break'
-            root.bind_all('<Control-comma>',settings_shortcut)
-            tk.Button(root,text='Settings (Ctrl+Comma)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
+            root.bind_all('<Alt-o>',settings_shortcut)
+            root.bind_all('<Alt-O>',settings_shortcut)
+            tk.Button(root,text='Settings (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
             self.current = tk.StringVar(value='Starting speech and microphone...')
@@ -252,7 +269,6 @@ class CompanionWindow:
                 if shortcut(event)=='break':return 'break'
                 cancel_phonetic()
                 if event.keysym=='Escape':return navigation(event)
-                if event.keysym=='comma' and event.state&4:return settings_shortcut(event)
                 if event.keysym=='a' and event.state&4:
                     editor.tag_add('sel','1.0','end-1c');read_caret('Right');send_text_position();return 'break'
                 nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')

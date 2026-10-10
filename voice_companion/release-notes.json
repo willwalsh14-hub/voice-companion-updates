@@ -1,58 +1,41 @@
 {
-  "version": "0.2.98-test",
+  "version": "0.2.99-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.97-test",
-  "scope": "This build adds keyboard access to updates, a settings menu with separate category pages, optional Windows sign-in startup, confirmed computer restart and shutdown, and in-app access to versioned release notes. Existing document, mail, speech, and update workflows remain available. This is a beta testing build; it is not designated an official stable release.",
+  "baseline": "0.2.98-test",
+  "scope": "This beta adds Alt+O Options, first-letter menu navigation, keyboard draft-field traversal, additional confirmed computer commands, and shorter email-list announcements. It is not designated a stable release.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Check for updates in the main menu.",
+          "title": "Alt+O opens Options from any app activity.",
           "details": [
-            "Check for updates is now a main-menu choice. After Wake up, use Up or Down to choose it and Enter to activate it. Voice navigation also works: Next or Previous chooses an item, then OK, Okay, Confirm, Confirm that, or That one opens it. Each item is spoken by name followed by its position.",
-            "This invokes the existing manual update check. It works when automatic startup checks are disabled. An available update uses the existing Yes or No offer, download percentages in five-percent increments, status commands, silent installation, and restart sequence. This build does not replace that updater.",
-            "The main menu now contains 13 items: Documents, Email, Web browsing, Radio, Podcasts, Notes, Help, What's new, Settings, Check for updates, Restart computer, Shut down computer, and Exit Voice Companion. Direct task commands remain available."
+            "Alt+O replaces Control+Comma. It works in documents, email, the main menu, and built-in help. Settings, Open settings, and Preferences still work by voice.",
+            "Options opens the categorized settings menu. Arrow keys or a category letter select an item, Enter opens it, and Tab or Shift+Tab navigates its standard Windows controls. Each category keeps OK and Cancel. In an open settings category, Alt+O cancels unsaved changes and returns to the category menu."
           ]
         },
         {
-          "title": "Settings menu and separate category pages.",
+          "title": "First-letter navigation and spoken menu keys.",
           "details": [
-            "Control+Comma opens the self-voicing settings menu. Settings, Open settings, Show settings, Preferences, and Open preferences continue to work by voice. The Settings main-menu item provides another keyboard path.",
-            "Focus starts on the categories menu. Up and Down choose a category; Enter opens it. Moving between categories no longer automatically opens their controls. Next and Previous choose categories by voice; OK, Okay, Confirm, Confirm that, or That one opens the selected category. Saying a category name opens that category directly.",
-            "The categories are Verbosity, Speech, Synthesizer, Input, Email, Documents, Web browsing, Radio, Podcasts, Updates, and Startup options. Existing settings remain grouped in their corresponding categories. Punctuation, typing echo, delayed phonetic pronunciation, and the phonetic delay remain under Verbosity.",
-            "Inside a category, focus starts on the first setting. Tab and Shift+Tab move through fields and buttons. Space toggles a focused checkbox, arrows change combo-box values, and text fields support typing and spoken editing feedback. API-key fields keep their contents hidden. Each category has OK and Cancel buttons.",
-            "Enter defaults to OK and saves the category when a setting has focus. If a button has focus, Enter activates that button instead. OK returns to the settings menu. Cancel or Escape discards edits in the open category and returns to the menu. Escape in the menu closes settings and restores the previous app activity. Previously saved category changes remain saved.",
-            "Within a category, Next setting and Previous setting move between controls. Next and Previous change a focused choice or move between controls. Read setting announces the focused setting; On, Off, and Toggle change a checkbox. Value commands such as Verbosity medium, Punctuation most, Rate 4, Volume 50, and Default font Times New Roman remain supported. They are staged until OK.",
-            "Close settings leaves the whole settings window. Choosing another category directly by voice discards unconfirmed edits in the current category. Buttons such as Add an email account or List radio presets retain their existing behavior: they open another app area and discard unsaved settings edits."
+            "Menu announcements now include the letter in parentheses, such as Email (E) and Settings (S). Press a letter to highlight a matching item, then Enter to open it. Repeating a letter cycles matching names; for example, E cycles Email and Exit Voice Companion in the main menu. A missing match keeps the current selection.",
+            "This applies to the main menu, settings categories, help topics and subtopics, synthesizer and voice lists, radio stations and presets, podcasts and episodes, email folder choices, and guided web favorites, links, and field lists. Standard settings combo boxes retain their native first-letter selection.",
+            "First-letter navigation is scoped to active menus and pickers with an empty command box. It does not intercept text in an email header, document, email body, web form answer, or email message list. Menu selection does not itself send email, open a folder, or confirm a computer action. Arrow and voice navigation remain available."
           ]
         },
         {
-          "title": "Optional launch when Windows signs in.",
+          "title": "Tab and Shift+Tab move through draft fields.",
           "details": [
-            "Startup options is a new settings category. Its Start with Windows checkbox is off by default. Open the category, turn the checkbox on with Space or say Start with Windows on, then press Enter or choose OK to save. Turn it off and save to disable automatic launching.",
-            "Outside settings, Start with Windows on and Start with Windows off save the choice immediately. Windows startup on or off, Start automatically with Windows on or off, and Start Voice Companion with Windows on or off are also accepted outside settings.",
-            "The option launches the installed VoiceCompanion.exe for the current Windows user when that account signs in. It does not configure every user on the machine, require administrator privileges, start dictation automatically, or skip the normal update and wake-up prompts. Enabling it requires the installed Windows app; Quick Test cannot register a temporary Python launch.",
-            "The registration uses the current-user Windows Run key with a quoted executable path. Settings shows the actual registration state. Application updates preserve the same installed path and startup choice; uninstall removes the VoiceCompanion startup value. Other programs' startup entries are left alone."
+            "Tab cycles To, CC, BCC, Subject, Body, then To; Shift+Tab reverses that order. This works while editing headers or the body of new, replied, and forwarded drafts. Go to field voice commands remain available.",
+            "Leaving a header commits its current text before moving focus. CC and BCC accept comma-separated or semicolon-separated addresses; blank optional fields stay empty. Invalid addresses keep the current field and its previous saved value. Body edits are committed before switching fields.",
+            "Original response subjects remain protected from changes, but are available for review during field navigation. Ctrl+Enter retains the send-review flow. Tab within a send confirmation changes the Yes/No choice rather than switching draft fields."
           ]
         },
         {
-          "title": "Restart and shut down the computer with confirmation.",
+          "title": "Additional natural computer-power phrases.",
           "details": [
-            "Restart computer and Shut down computer are now main-menu choices, usable with arrows and Enter. Voice alternatives include Restart computer, Restart the computer, Restart Windows, Reboot computer, Shut down computer, Shut down the computer, Shutdown computer, Shut down Windows, Turn off computer, and Turn off the computer.",
-            "These commands affect Windows and the entire computer. Close companion, Exit companion, Return to Windows, and Exit Voice Companion retain their existing meaning: close only Companion. The computer options ask Yes or No before submitting any Windows power request and initially select No. Arrows or Tab choose an answer; Enter confirms it. Escape or No cancels and returns to the previous activity.",
-            "If a document is open, the existing Save this document question runs first. Yes asks for a filename; say or type it and confirm it. No discards document changes. Escape cancels the sequence and keeps editing. After finishing that document decision, a separate computer-action confirmation still appears. Saving the document does not itself authorize a restart.",
-            "At the final Yes, Companion saves the current email draft and note before asking Windows to act. A failure to save or submit the Windows request keeps Companion open and reports that the action could not finish. Companion does not use a force-close switch, so another program's unsaved-work protection can prevent or delay the Windows action.",
-            "For beta testing, check cancellation, the default No selection, and the document save question first. Test an actual confirmed restart or shutdown only after saving work in other programs. A successful power request necessarily ends the Windows session; no automatic return to Companion is promised unless Start with Windows is enabled and the user signs in again."
-          ]
-        },
-        {
-          "title": "What's new inside Companion.",
-          "details": [
-            "Say What's new, What is new, Whats new, Release notes, or Open release notes to read the current build's complete release notes. What's new is also a main-menu item and a topic in built-in Help. Help with what is new and Help with release notes jump to the same topic.",
-            "The spoken notes use the same canonical TXT content as the downloadable release-note files. The content includes version, testing or official status, date, comparison build, numbered changes, and lettered details. It is not a short summary that omits the testing information.",
-            "Use Continue reading, Read from top, Next paragraph, Previous paragraph, Next sentence, Previous sentence, and other reading commands to review. Close help returns to the activity from which the notes were opened. Main menu returns to the start. Notes are available offline because they ship with the app."
+            "Shutdown accepts Shut off the computer, Turn the computer off, Shut down the computer, Shut the computer down, and their existing shorter alternatives. Restart accepts Restart the computer, Reboot the computer, Reboot, Restart, Reboot the damn thing, and Restart the damn thing.",
+            "Every phrase uses the existing document save decision and separate computer confirmation, initially No. Only a confirmed Yes requests a Windows restart or shutdown. Existing cancellation, draft saving, and unsaved-work protections remain in place."
           ]
         }
       ]
@@ -61,31 +44,19 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Version numbers in release-note filenames.",
+          "title": "Email lists read sender, subject, and date without header labels.",
           "details": [
-            "The user-facing release-note files now include the build version: Release Notes for Voice Companion 0.2.98-test.txt, .html, .docx, .epub, and .brf, plus Release Notes for Voice Companion 0.2.98-test - DAISY 3.zip. GitHub downloads use hyphens in place of spaces for portable asset names, with the version preserved.",
-            "The installer writes those versioned names to Documents, Voice Companion, User Guides during both ordinary and silent automatic installation. Open user guides repeats the verified copy. Manual filenames remain START HERE - Veteran with their existing format extensions.",
-            "Versioned release notes from earlier installations are retained rather than overwritten by the next version. Legacy notes without a version in their filename may still be present from earlier builds. The current documentation-version.json records the current verified filenames and version; opening an old retained note intentionally shows that earlier release.",
-            "The source builder keeps fixed internal release-note names for packaging and in-app help while also generating versioned user-facing copies. Those internal names do not determine the downloaded or Documents-folder filenames. All formats derive from the same release-notes.json source."
+            "Inbox and all other folder lists now announce sender, subject, date, and message position without saying From, Subject, or Date. For example: Sam. Meeting tomorrow. Today. 2 of 10.",
+            "The same presentation applies to next/previous navigation and list refreshes. Message data, folder contents, selection behavior, and message-reading commands are unchanged. The email message list remains excluded from first-letter navigation."
           ]
         },
         {
-          "title": "Documentation and release status remain consistent.",
+          "title": "Documentation and focused beta checks.",
           "details": [
-            "The manual documents the 13-item main menu, category activation with Enter, category-level save and cancel, startup commands, power confirmations, and What's new reading. Its opening Guide build marker identifies 0.2.98-test. Built-in help reads this same manual and adds the complete current notes as a separate topic.",
-            "TXT, HTML, DOCX, EPUB, text-only DAISY 3, and contracted UEB BRF continue to be generated for both publications. The supplied reference outline is retained: heading level 1 title, heading level 2 New Apps and Features and Fixes and Enhancements, numbered topics, and lettered details. TXT displays the same labels as plain text.",
-            "BRF uses genuine Liblouis translation with 40 cells per line and 25 lines per page. The translation is mechanical and has not been human Braille proofread. DAISY contains navigable text for a compatible player to speak; it does not include recorded narration.",
-            "Future official releases use the same detailed outline and must identify their actual official status and comparison release. Testing builds continue to be labeled Testing build. The version/status checks reject mismatched release notes before publication; the presence of a public download does not by itself designate a beta build stable."
-          ]
-        },
-        {
-          "title": "Checks and focused beta-testing steps.",
-          "details": [
-            "Automated checks cover manual update selection from the main menu, per-user startup registration and quoted paths, startup disabled by default, both power-confirmation cancellation and acceptance, the default No choice, document save before power confirmation, Windows request failures, and in-app reading of the same release notes.",
-            "Windows-specific controls are tested through the actual native settings window: category arrows choose without opening, Enter opens and speaks the first control, checkboxes and combo boxes change, OK saves and returns to the menu, and Cancel restores staged values. Existing text-entry and hidden-key feedback checks remain in the suite.",
-            "After installing, use keyboard navigation to select Check for updates and What's new. Open settings with Control+Comma, choose a category with arrows, press Enter, change a setting, and test both Cancel and OK. Return to the app and check that document or email keyboard navigation still works. Test speech rate, volume, punctuation, and synthesizer choices without enabling startup or confirming a power action.",
-            "To test startup, enable Start with Windows in the installed app, save, then sign out and sign in after saving other work. Confirm that Companion starts and gives its normal readiness or update offer. Disable the option, save, and verify it does not launch on the next sign-in. Startup behavior may also be constrained by Windows or an organization's policy.",
-            "After an automatic update, close and reopen guide readers, say Open user guides, and check the manual's Guide build marker and versioned release-note filenames. documentation-version.json in User Guides records the verified version. If copying fails, user-guide-update-error.txt under Local AppData, VoiceCompanion provides diagnostic information."
+            "The built-in manual documents the new shortcut, menu letters, field order, power phrases, and mail-list wording. What's new reads these complete release notes. The six release-note filenames include 0.2.99-test.",
+            "Regression checks cover repeated-letter cycling without activation, folder selection without touching messages, draft-field traversal and address validation, protected reply subjects, additional power phrases retaining confirmation, and the exact unlabeled message-list announcement. Windows checks exercise actual settings category selection with letters, Enter activation, and Alt+O return.",
+            "After installing, test Alt+O from an email header and body, use S repeatedly in the settings menu, and press Enter to open a category. Test both OK and Cancel. In a draft, type To and multiple CC addresses, move with Tab, then use Shift+Tab to verify saved text. Navigate Inbox and Sent and confirm that header labels are no longer spoken.",
+            "Test first-letter selection in a folder list, help topics, and media lists; duplicate letters should cycle and Enter should activate. Verify that letters still type normally in document and email editors. Test cancellation of each power phrase before confirming any actual computer action. This build still requires user testing with the microphone and local speakers."
           ]
         }
       ]
