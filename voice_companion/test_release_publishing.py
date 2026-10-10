@@ -16,6 +16,13 @@ class PublishingTests(unittest.TestCase):
         (self.root/'VoiceCompanion-Build-Passed.json').write_text(json.dumps({'version':'1.2.3-test','sha256':hashlib.sha256(self.setup.read_bytes()).hexdigest(),'size':self.setup.stat().st_size}),encoding='utf-8-sig')
         (self.root/'espeak').mkdir()
         for name in ('espeak-ng-1.52.0-source.tar.gz','COPYING'): (self.root/'espeak'/name).write_bytes(b'source or license')
+        from guide_files import GUIDE_NAMES
+        from test_release_documents import fixture
+        fixture(self.root)
+        for name in GUIDE_NAMES:
+            if not (self.root/name).exists():(self.root/name).write_bytes(b'fixture manual')
+        from guide_files import write_manifest
+        write_manifest(self.root,'1.2.3-test')
         self.commands=[];self.existing=None;self.latest=None;self.corrupt=False;self.fail_upload=False
         self.metadata={'private':False,'permissions':{'push':True}}
     def gh(self, executable, *args, **kwargs):
@@ -39,7 +46,7 @@ class PublishingTests(unittest.TestCase):
         self.assertTrue(self.run_publish().endswith('v1.2.3-test'))
         edit=next(i for i,c in enumerate(self.commands) if c[:2]==('release','edit'))
         downloads=[i for i,c in enumerate(self.commands) if c[:2]==('release','download')]
-        self.assertEqual(len(downloads),4);self.assertTrue(all(i<edit for i in downloads))
+        self.assertEqual(len(downloads),16);self.assertTrue(all(i<edit for i in downloads))
         self.assertIn('--draft',next(c for c in self.commands if c[:2]==('release','create')))
         self.assertIn('--latest',self.commands[edit])
         manifest=json.loads((self.root/'release-upload'/'voice-companion-update.json').read_text())
@@ -73,6 +80,11 @@ class PublishingTests(unittest.TestCase):
             self.existing=existing;self.latest=latest;self.commands=[]
             with self.assertRaises(ValueError):self.run_publish()
             self.assertFalse(any(c[0]=='release' for c in self.commands))
+    def test_missing_or_mismatched_documentation_is_not_uploaded(self):
+        (self.root/'Voice Companion Release Notes.brf').unlink()
+        with self.assertRaises(OSError):self.run_publish()
+        self.assertEqual(self.commands,[])
+
     def test_changed_or_unchecked_installer_is_not_uploaded(self):
         self.setup.write_bytes(b'MZchanged')
         with self.assertRaises(ValueError):self.run_publish()
@@ -130,3 +142,4 @@ class ProgressProcessTests(unittest.TestCase):
             self.assertIn('Still waiting',output.getvalue())
             self.assertIn('completed.',output.getvalue())
             self.assertNotIn('private diagnostic',output.getvalue())
+

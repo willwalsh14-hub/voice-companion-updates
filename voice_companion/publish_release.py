@@ -11,6 +11,8 @@ import time
 from pathlib import Path
 from app_updates import version_key
 from update_publisher import release_manifest
+from guide_files import GUIDE_NAMES, guide_sources
+from release_documents import load_notes, validate, STEM
 
 ROOT = Path(__file__).parent
 
@@ -68,6 +70,12 @@ def publish(setup, gh='gh', root=ROOT):
     receipt = json.loads((root/'VoiceCompanion-Build-Passed.json').read_text(encoding='utf-8-sig'))
     if receipt != {'version':version, 'sha256':manifest['sha256'], 'size':manifest['size']}:
         raise ValueError('This installer does not match the successful Windows build checks. Rebuild it before publishing.')
+    load_notes(root)
+    validate(root)
+    guide_sources([root], expected_version=version)
+    documentation = [root/name for name in GUIDE_NAMES]
+    if not all(path.is_file() for path in documentation):
+        raise ValueError('All manual and release-note formats are required before publishing.')
     metadata = json.loads(gh_call(gh, 'api', f'repos/{repo}'))
     # Workflow installation tokens may omit the permissions object. GitHub
     # still enforces write authorization when creating or uploading the draft.
@@ -96,10 +104,16 @@ def publish(setup, gh='gh', root=ROOT):
     if not source.is_file() or not license_path.is_file():
         raise ValueError('The bundled eSpeak source and license are required for distribution.')
     notes = output/'release-notes.txt'
-    notes.write_text(f'Voice Companion {version}\n\nWindows installer with accessible user guides. Install VoiceCompanion-Setup.exe. The update file is used by the app. eSpeak NG source and license are attached.\n', encoding='utf-8')
+    notes.write_text((root/(STEM+'.txt')).read_text(encoding='utf-8'), encoding='utf-8')
     if not existing:
         gh_call(gh, 'release', 'create', tag, '--repo', repo, '--draft', '--title', 'Voice Companion '+version, '--notes-file', str(notes))
+    else:
+        gh_call(gh, 'release', 'edit', tag, '--repo', repo, '--notes-file', str(notes))
     assets = [installer, manifest_path, source, license_path]
+    for document in documentation:
+        copy = output/document.name
+        shutil.copy2(document, copy)
+        assets.append(copy)
     for asset in assets:
         progress(f'Upload file: {asset.name}. Size: {asset.stat().st_size / (1024*1024):.1f} MB.')
         gh_call(gh, 'release', 'upload', tag, str(asset), '--repo', repo, '--clobber')
@@ -138,3 +152,4 @@ def main():
         return 1
 
 if __name__ == '__main__': raise SystemExit(main())
+

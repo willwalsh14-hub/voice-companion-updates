@@ -44,8 +44,11 @@ if (Test-Path $parakeet) {
 }
 & $python prepare_espeak.py (Join-Path $PSScriptRoot 'espeak')
 if ($LASTEXITCODE -ne 0) { Write-Warning 'eSpeak setup did not finish. Windows and configured AI speech remain available.' }
+& $python build_user_guides.py
+if ($LASTEXITCODE -ne 0) { throw 'Quick Test could not generate the current accessible documentation.' }
 & $python companion.py --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'Quick Test could not verify its dependencies and speech model.' }
 Write-Output 'Launching the latest source. Close Voice Companion to return to this window.'
 & $python companion.py --window
 if ($LASTEXITCODE -ne 0) { throw "Quick Test stopped with exit code $LASTEXITCODE." }
+

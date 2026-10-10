@@ -79,7 +79,7 @@ $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
 $releaseErrors = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Errors.txt'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
   -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox',
-    'test_web_assistant','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings','test_native_settings','test_keyboard_text') `
+    'test_web_assistant','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings','test_native_settings','test_keyboard_text','test_release_documents') `
   -RedirectStandardOutput $releaseOutput -RedirectStandardError $releaseErrors
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
 if ($releaseTests.ExitCode -ne 0) {
@@ -105,10 +105,18 @@ if (-not (Test-Path (Join-Path $modelFolder 'am\final.mdl'))) {
 $arguments = @('--clean', '--noconfirm', '--onedir', '--contents-directory', '.',
   '--add-data', 'update-settings.json:.', '--add-data', 'apply-update.ps1:.',
   '--add-data', 'model:model', '--add-data', 'browser-runtime:browser-runtime',
+  '--add-data', 'documentation-manifest.json:.',
   '--add-data', 'START HERE - Veteran.txt:.',
   '--add-data', 'START HERE - Veteran.html:.',
   '--add-data', 'START HERE - Veteran.docx:.',
   '--add-data', 'START HERE - Veteran.epub:.',
+  '--add-data', 'START HERE - Veteran.brf:.',
+  '--add-data', 'Voice Companion Release Notes.txt:.',
+  '--add-data', 'Voice Companion Release Notes.html:.',
+  '--add-data', 'Voice Companion Release Notes.docx:.',
+  '--add-data', 'Voice Companion Release Notes.epub:.',
+  '--add-data', 'Voice Companion Release Notes - DAISY 3.zip:.',
+  '--add-data', 'Voice Companion Release Notes.brf:.',
   '--add-data', 'START HERE - Veteran - DAISY 3.zip:.', '--hidden-import', 'sounddevice',
   '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter',
   '--collect-all', 'win32com', '--collect-all', 'vosk',
@@ -214,7 +222,7 @@ try {
 }
 Copy-Item (Join-Path $PSScriptRoot 'check-setup.cmd') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\check-setup.cmd') -Force
 Copy-Item (Join-Path $PSScriptRoot 'test-microphone.cmd') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\test-microphone.cmd') -Force
-foreach ($guide in @('START HERE - Veteran.txt', 'START HERE - Veteran.html', 'START HERE - Veteran.epub', 'START HERE - Veteran.docx', 'START HERE - Veteran - DAISY 3.zip')) {
+foreach ($guide in @('documentation-manifest.json', 'START HERE - Veteran.txt', 'START HERE - Veteran.html', 'START HERE - Veteran.docx', 'START HERE - Veteran.epub', 'START HERE - Veteran - DAISY 3.zip', 'START HERE - Veteran.brf', 'Voice Companion Release Notes.txt', 'Voice Companion Release Notes.html', 'Voice Companion Release Notes.docx', 'Voice Companion Release Notes.epub', 'Voice Companion Release Notes - DAISY 3.zip', 'Voice Companion Release Notes.brf')) {
   Copy-Item (Join-Path $PSScriptRoot $guide) (Join-Path $PSScriptRoot 'dist\VoiceCompanion') -Force
 }
 Copy-Item (Join-Path $PSScriptRoot 'TRAINER TEST CHECKLIST.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\TRAINER TEST CHECKLIST.txt') -Force
@@ -276,12 +284,14 @@ if (Test-Path $googleRegistration) {
   }
 }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.96-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.97-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
+& $installedDiagnostics --refresh-guides
+if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.96-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.97-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -308,7 +318,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.96-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.97-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing

@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.96-test"
+#define AppVersion "0.2.97-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}
@@ -33,6 +33,14 @@ Source: "dist\VoiceCompanion\START HERE - Veteran.docx"; DestDir: "{userdocs}\Vo
 Source: "dist\VoiceCompanion\START HERE - Veteran.epub"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
 Source: "dist\VoiceCompanion\START HERE - Veteran - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
 
+Source: "dist\VoiceCompanion\START HERE - Veteran.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.html"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.docx"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.epub"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+
 [Icons]
 Name: "{group}\Voice Companion"; Filename: "{app}\VoiceCompanion.exe"
 Name: "{group}\Start Here"; Filename: "{userdocs}\Voice Companion\User Guides\START HERE - Veteran.html"
@@ -43,6 +51,7 @@ Name: "{userdesktop}\Voice Companion"; Filename: "{app}\VoiceCompanion.exe"
 Name: "{userdesktop}\Voice Companion User Guides"; Filename: "{userdocs}\Voice Companion\User Guides"
 
 [Run]
+Filename: "{app}\VoiceCompanion-Diagnostics.exe"; Parameters: "--refresh-guides"; Flags: runhidden
 Filename: "{app}\VoiceCompanion.exe"; Description: "Open Voice Companion now"; Flags: postinstall nowait skipifsilent
 
 [Code]

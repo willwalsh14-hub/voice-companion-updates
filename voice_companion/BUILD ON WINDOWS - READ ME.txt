@@ -56,3 +56,7 @@ Read UPDATES - Trainer.txt. Configure your real GitHub repository with SET UP UP
 
 Settings and keyboard check for 0.2.96-test: with the screen reader off, open Control+Comma, navigate every category and control, confirm spoken values and hidden API-key feedback, test Enter to save and Escape to discard, then test menu arrows and email address-field editing. The builder runs native Windows dialog integration tests before packaging.
 
+
+RELEASE DOCUMENTATION REQUIREMENT
+Before every build, update release-notes.json for the actual application version. Review the comparison version, release date, testing or official status, and detailed changes. Describe new commands and shortcuts, the affected app areas, before and after behavior, instructions, and known limits. Do not recycle previous change claims by editing only the version. Keep the supplied reference structure: release title; New Apps and Features; Fixes and Enhancements; numbered topics and lettered details. The builder generates all six editions of both publications and rejects mismatched notes.
+The first Windows build downloads and verifies pinned Liblouis 3.39.0 for UEB grade 2 BRF generation. This is a build-only dependency and is not bundled into the installed app. The translator archive is cached under Local AppData, VCBuild. If document generation fails, do not skip it or substitute renamed print text. All documentation files are installed in Documents, Voice Companion, User Guides and uploaded as release assets.

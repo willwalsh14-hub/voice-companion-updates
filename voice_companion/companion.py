@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.96-test'
+APP_VERSION = '0.2.97-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -990,11 +990,11 @@ def _handle(text, mode, typed=False):
                    'where is the user guide folder'):
         try:
             from guide_files import publish_guides
-            folder = publish_guides(documents_folder())
+            folder = publish_guides(documents_folder(), expected_version=APP_VERSION)
             if command.startswith(('open ', 'show ')) and os.name == 'nt':
                 os.startfile(str(folder))
-            speak('All five user guide formats are in Documents, Voice Companion, User Guides. The full location is ' + str(folder) + '.')
-        except OSError:
+            speak('All six manual and release-note formats for Voice Companion ' + APP_VERSION + ' are in Documents, Voice Companion, User Guides. The full location is ' + str(folder) + '.')
+        except (OSError, ValueError):
             speak('The user guide folder could not open or update. Say help for onboard instructions and ask your helper to check the installation.')
         return mode
     if voice_menu(command): return mode
@@ -1976,6 +1976,17 @@ def main():
     if '--check-update-environment' in sys.argv:
         from app_updates import check_update_environment
         return check_update_environment()
+    if '--refresh-guides' in sys.argv:
+        try:
+            from guide_files import publish_guides
+            target=publish_guides(documents_folder(), expected_version=APP_VERSION)
+            print('Documentation copied and verified for Voice Companion '+APP_VERSION+': '+str(target),flush=True)
+            return 0
+        except (OSError, ValueError) as exc:
+            APP.mkdir(parents=True,exist_ok=True)
+            (APP/'user-guide-update-error.txt').write_text(str(exc),encoding='utf-8')
+            print('Documentation refresh failed: '+str(exc),file=sys.stderr,flush=True)
+            return 3
     if '--version' in sys.argv:
         print('Voice Companion ' + APP_VERSION, flush=True)
         return 0
@@ -2004,7 +2015,7 @@ def main():
             if not GUIDE.is_file():
                 raise RuntimeError('The onboard user guide is missing.')
             from guide_files import guide_sources
-            guide_sources()
+            guide_sources(expected_version=APP_VERSION)
             update_root = Path(getattr(sys, '_MEIPASS', Path(__file__).parent))
             if not all((update_root / name).is_file() for name in ('update-settings.json','apply-update.ps1')):
                 raise RuntimeError('The updater components are missing.')
@@ -2087,8 +2098,10 @@ def main():
         return 0
     try:
         from guide_files import publish_guides
-        publish_guides(documents_folder())
-    except OSError:
+        publish_guides(documents_folder(), expected_version=APP_VERSION)
+    except (OSError, ValueError) as exc:
+        APP.mkdir(parents=True, exist_ok=True)
+        (APP/'user-guide-update-error.txt').write_text(str(exc), encoding='utf-8')
         speak('The user guide files could not be copied to Documents. Onboard help is still available. Ask your helper to check the installation.')
 
     import sounddevice as sd
