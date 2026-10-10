@@ -121,19 +121,19 @@ class NativeSettingsTests(unittest.TestCase):
         hwnd=self.open_panel();actions=[]
         self.panel.action_callback=actions.append
         self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email')
-        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,204)))
-        for _ in range(6):self.panel.command('next setting')
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,205)))
+        for _ in range(7):self.panel.command('next setting')
         self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
-        self.u.PostMessageW(self.u.GetDlgItem(hwnd,204),0x100,0x0D,0)
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,205),0x100,0x0D,0)
         self.assertTrue(self.panel.closed.wait(5),self.notices)
         self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)
 
     def test_header_list_space_buttons_and_cancel_are_keyboard_accessible(self):
         hwnd=self.open_panel();self.panel.command('Email')
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,302)))
-        for _ in range(2):self.panel.command('next setting')
+        for _ in range(3):self.panel.command('next setting')
         self.wait(lambda:any('From, enabled, 1 of 4' in n for n in self.notices))
-        headers=self.u.GetDlgItem(hwnd,203)
+        headers=self.u.GetDlgItem(hwnd,204)
         self.u.PostMessageW(headers,0x100,0x20,0)
         self.wait(lambda:self.session.values['email_header_order']=='subject, date')
         self.panel.command('next setting');self.panel.command('next setting');self.panel.command('next setting')
@@ -141,7 +141,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,302),0x100,0x0D,0)
         self.wait(lambda:any('From, disabled, 2 of 4' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,302),0x100,0x1B,0)
-        self.wait(lambda:not self.u.GetDlgItem(hwnd,203))
+        self.wait(lambda:not self.u.GetDlgItem(hwnd,204))
         self.assertEqual(self.session.values['email_header_order'],'from, subject, date');self.assertFalse(self.saved)
 
 if __name__=='__main__':unittest.main()

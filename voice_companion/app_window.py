@@ -151,6 +151,8 @@ class CompanionWindow:
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
+                if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
+                    self.commands.put(typed.get().strip().lower());typed.delete(0,'end');return 'break'
                 if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
