@@ -2332,7 +2332,198 @@ def main():
                 if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='sleep' and SLEEP_RETURN_MODE=='settings':
                     SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
                     sync_app_context(mode,True)
-                if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=…2562 tokens truncated…""Short trainer test using the same device and audio conversion as the app."""
+                if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='settings':
+                    mode=SETTINGS_RETURN_MODE
+                    sync_app_context(mode,True)
+                settings_notices=[]
+                while not APP_WINDOW.settings_notices.empty():settings_notices.append(APP_WINDOW.settings_notices.get_nowait())
+                if settings_notices:
+                    interrupt_speech()
+                    for settings_notice in settings_notices:speak_keyboard_feedback(settings_notice)
+                if settings_result:
+                    interrupt_speech()
+                    if AI_SPEECH is not None: AI_SPEECH.enabled = False
+                    if settings_result == 'removed':
+                        if AI_SPEECH is not None: AI_SPEECH.close()
+                        AI_SPEECH = None
+                    try:
+                        if settings_result == 'saved': configure_ai_speech()
+                        save_speech_settings()
+                        speak('AI voice settings saved. Say Use AI voice to test it.' if settings_result == 'saved'
+                              else 'Saved AI voice settings removed. Using Windows speech.')
+                    except Exception:
+                        speak('AI settings could not be loaded. Using Windows speech.')
+                key_notices = []
+                while True:
+                    try: key_notices.append(APP_WINDOW.key_feedback.get_nowait())
+                    except queue.Empty: break
+                if key_notices:
+                    interrupt_speech()
+                    for key_notice in key_notices: speak_keyboard_feedback(key_notice)
+                try: typed_command = APP_WINDOW.commands.get_nowait()
+                except queue.Empty: typed_command = None
+                if typed_command:
+                    if isinstance(typed_command,tuple):
+                        if typed_command[0]=='text_edit':
+                            try:apply_keyboard_edit(typed_command[1],mode)
+                            except (ValueError,OSError) as exc:speak(str(exc))
+                            continue
+                        if typed_command[0]=='email_field_tab':
+                            request=commit_email_field_tab(typed_command[1],SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                            if request:mode=handle_keyboard(request,mode)
+                            continue
+                        key=typed_command[1]
+                        typed_command='open settings' if key=='settings' else navigation_key(key,SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                        if typed_command is None:continue
+                    if mode=='sleep' and typed_command.lower() in ('wake up','wake companion'):
+                        mode=resume_from_sleep()
+                    else:
+                        mode = handle_keyboard(typed_command,mode)
+                    if mode == 'exit': return 0
+                    continue
+            try:
+                audio = AUDIO.get(timeout=0.02)
+            except queue.Empty:
+                if mode == 'web' and web_session and not speech_busy():
+                    notice = web_session.focus_notice()
+                    if notice: speak(notice)
+                continue
+            if mode == 'web' and web_session and not speech_busy() and time.monotonic() - last_focus_check > 1.2:
+                last_focus_check = time.monotonic()
+                notice = web_session.focus_notice()
+                if notice: speak(notice)
+            if AUDIO_OVERFLOW:
+                if cloud:
+                    cloud.stop()
+                    cloud = None
+                    cloud_failed = True
+                recover_audio_overflow(recognizer, utterance)
+                continue
+            if mode=='settings' or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()) or settings_audio_blocked:
+                # Settings readback must not become another settings command.
+                # Keep local silence/sleep/exit controls available during feedback.
+                if cloud:
+                    cloud.stop();cloud=None
+                if (mode=='settings' and speech_busy()) or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()):settings_quiet_until=time.monotonic()+0.2
+                if time.monotonic()<settings_quiet_until:
+                    settings_audio_blocked=True
+                    utterance.clear()
+                    if recognizer.AcceptWaveform(audio):
+                        control=json.loads(recognizer.Result()).get('text','').lower()
+                        if spoken_control(control):
+                            mode=handle(control,mode)
+                            if mode=='exit':return 0
+                    continue
+                if settings_audio_blocked:
+                    recognizer.Reset();utterance.clear();settings_audio_blocked=False
+                    continue
+            if cloud and cloud.active:
+                cloud.write(audio)
+                if recognizer.AcceptWaveform(audio):
+                    local_control = json.loads(recognizer.Result()).get('text', '').lower()
+                    if spoken_control(local_control) or speech_control(local_control):
+                        mode = handle(local_control, mode)
+                        # Pausing narration does not require shutting down online recognition.
+                        if mode in ('sleep', 'exit'):
+                            cloud.stop()
+                            cloud = None
+                        if mode == 'exit':
+                            return 0
+                        continue
+                elif mode != 'sleep' and fast_offline_silence(recognizer, utterance):
+                    continue
+                while not cloud.events.empty():
+                    event, payload = cloud.events.get_nowait()
+                    if event == 'error':
+                        cloud.stop()
+                        cloud = None
+                        cloud_failed = True
+                        speak('Cloud dictation lost its connection. I am switching to offline speech.')
+                        break
+                    print('Cloud heard:', payload, flush=True)
+                    mode = handle(payload, mode)
+                    if mode in ('sleep', 'exit'):
+                        cloud.stop()
+                        cloud = None
+                        break
+                if mode == 'exit':
+                    return 0
+                # Keep offline recognition fresh for fallback, but do not act on
+                # its lower-accuracy guesses while cloud recognition is active.
+                continue
+            if mode != 'sleep' and parakeet:
+                utterance.extend(audio)
+                # Never send more than 25 seconds as one model request.
+                if len(utterance) > 25 * sample_rate * 2:
+                    utterance.clear()
+                    recognizer.Reset()
+                    speak('That was too long. Please speak in shorter passages.')
+                    continue
+            if not recognizer.AcceptWaveform(audio):
+                if mode != 'sleep' and fast_offline_silence(recognizer, utterance):
+                    continue
+                continue
+            heard = json.loads(recognizer.Result()).get('text', '').strip()
+            local_control = heard.lower()
+            if mode != 'sleep' and (spoken_control(local_control) or speech_control(local_control)):
+                utterance.clear()
+                mode = handle(local_control, mode)
+                if mode == 'exit':
+                    return 0
+                continue
+            if mode != 'sleep' and speech_busy() and local_control:
+                # Stop the current readback as soon as the offline recognizer
+                # recognizes a new utterance. Its words can still be refined
+                # by Parakeet before executing the requested action.
+                interrupt_speech()
+            if mode != 'sleep' and fast_command_request(local_control, mode):
+                utterance.clear()
+                mode = handle(local_control, mode)
+                if mode == 'exit': return 0
+                continue
+            if mode != 'sleep' and parakeet and utterance:
+                try:
+                    better = parakeet.recognize(bytes(utterance))
+                    if better:
+                        heard = better
+                except Exception as exc:
+                    print('Parakeet recognition failed:', exc, file=sys.stderr)
+                    speak('Offline dictation had a problem. Using basic speech for this request.')
+                finally:
+                    utterance.clear()
+            heard = heard.lower() if mode == 'sleep' else heard
+            if not heard:
+                continue
+            print('Offline heard:', heard, flush=True)
+            if mode == 'sleep':
+                for wake in WAKE:
+                    if wake in heard:
+                        mode = resume_from_sleep()
+                        if not cloud_failed and not parakeet:
+                            try:
+                                cloud = CloudRecognition()
+                                cloud.start()
+                                speak('Cloud recognition is active.')
+                            except (ImportError, ValueError):
+                                cloud = None
+                                cloud_failed = True
+                                speak('Cloud speech is not configured. Using offline speech.')
+                            except Exception:
+                                cloud = None
+                                cloud_failed = True
+                                speak('Cloud speech is unavailable. Using offline speech.')
+                        remainder = heard.split(wake, 1)[1].strip()
+                        if remainder:
+                            mode = handle(remainder, mode)
+                        break
+            else:
+                mode = handle(heard, mode)
+            if mode == 'exit':
+                return 0
+
+
+def microphone_diagnostic():
+    """Short trainer test using the same device and audio conversion as the app."""
     import sounddevice as sd
     if not MODEL.exists():
         raise FileNotFoundError('The bundled Vosk model is missing.')
