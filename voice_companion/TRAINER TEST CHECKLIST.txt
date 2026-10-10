@@ -186,3 +186,13 @@ SAVE QUESTION, F2, EXIT, AND MAIL KEYS
 Check Escape and Main menu from a new and an existing document: Yes opens naming, typed or spoken name plus Enter saves and leaves; No removes a new document or restores an existing document to its last explicit save; Escape keeps editing. Check F2 names without leaving and captures the last typed character. Repeat with the microphone sleeping.
 Check the last main-menu item Exit Voice Companion, close companion, exit companion, return to Windows, and Alt+F4. An open document must offer saving before exit.
 Check mail Control+Y folders, Control+R reply, Control+Shift+R reply all, Control+F forward, Control+N new message, Space selection, Shift+arrows range selection, Control+A page selection, Delete, Control+Shift+V move, F2 rename folder, Control+Shift+D delete empty folder, and confirmation arrows plus Enter or Escape. Standard folders and folders with messages or children must remain protected. Check the keys from received-message reading as well as list navigation; document and draft text selection must remain intact.
+
+
+0.2.102 keyboard accessibility regression checks
+- Rapidly press arrows, Tab, and repeated menu letters while speech is active. Latest selection must replace speech without waiting. Test Windows, eSpeak, and AI-selected local keyboard feedback. Control alone stops speaking.
+- Test Home/End in the main and Options menus, folders, message lists, and help topics; confirm text fields still use reading/editing navigation.
+- Exit/restart/shutdown confirmations: Y and N act immediately, Escape cancels. Mock power actions during automated checks; use a prepared test machine for manual system-action checks.
+- Options opens via Alt+O, menu selection, and voice; Options menu must be audibly announced. Voice category pitch combo and higher/lower pitch commands must change the voice and persist across restart. AI uses pitch guidance rather than an exact numeric pitch guarantee.
+- Email: no addresses in message navigation, named senders remain readable. Ctrl+Shift+C copies the exact address; Ctrl+Shift+N starts a fresh addressed draft. Voice equivalents work.
+- Email header list: arrows select, Space toggles, Alt+Up/Down reorder, buttons activate with Enter, Tab/Shift+Tab reach all controls, OK persists and Cancel discards. Size remains off by default.
+- What's new and Help: read with standard character/word/line/paragraph keys, Home/End and Ctrl+Home/End. Escape returns through the hierarchy and closes from the topic list.

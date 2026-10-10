@@ -77,7 +77,7 @@ class DraftCancelTests(unittest.TestCase):
     def test_character_echo_uses_local_speech_even_when_ai_voice_is_enabled(self):
         with patch.object(companion,'TEXT_MODE',False),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'update_audio_ducking'),patch.object(companion,'voice',create=True) as voice,patch.object(companion,'AI_SPEECH') as ai:
             companion.speak_keyboard_feedback('at sign')
-            voice.Speak.assert_called_once_with('at sign',1)
+            voice.Speak.assert_called_once_with('at sign',3)
             ai.speak.assert_not_called()
 
     def test_explicit_save_is_kept_when_later_edits_are_canceled(self):

@@ -19,6 +19,16 @@ NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
 
 
+def sender_address(row):
+    from email.utils import getaddresses
+    candidates=getaddresses([row.get('sender_address') or row.get('from','')])
+    return next((address for _,address in candidates if '@' in address),'')
+
+def sender_name(row):
+    from email.utils import parseaddr
+    name,address=parseaddr(row.get('from',''))
+    return row.get('sender_name') or name or (row.get('from','') if '@' not in row.get('from','') else 'Sender name unavailable') or 'Unknown sender'
+
 class MailSession:
     def __init__(self, provider, folder, client_factory=MailboxClient, progress=None):
         self.provider, self.folder = provider, folder
@@ -278,7 +288,7 @@ class MailSession:
         for header in order:
             header=header.strip().lower()
             if header not in ('from','subject','date','size'):continue
-            value=row.get(header,'unavailable')
+            value=sender_name(row) if header=='from' else row.get(header,'unavailable')
             if header=='size':
                 value=(str(value)+' bytes') if isinstance(value,(int,float)) else str(value)
             parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))

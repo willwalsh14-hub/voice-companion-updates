@@ -36,12 +36,14 @@ def integer(value):
 
 def request(command):
     command=re.sub(r'\s+', ' ',command.strip().lower().rstrip('.!?').replace(',', ' ')).strip()
+    if command in ('higher pitch','raise pitch','pitch up','speak higher'):return 'pitch','delta',1
+    if command in ('lower pitch','reduce pitch','pitch down','speak lower'):return 'pitch','delta',-1
     if command in FASTER: return 'rate', 'delta', 1
     if command in SLOWER: return 'rate', 'delta', -1
     if command in LOUDER: return 'volume', 'delta', 10
     if command in QUIETER: return 'volume', 'delta', -10
-    match=re.fullmatch(r'(?:(?:set|change) )?(?:(?:speech|voice) )?(speed|rate|volume)(?: to)? (.+)',command)
+    match=re.fullmatch(r'(?:(?:set|change) )?(?:(?:speech|voice) )?(speed|rate|volume|pitch)(?: to)? (.+)',command)
     if not match: return None
     name, value=match.groups()
     if name=='volume': value=re.sub(r'\s*(?:percent|per cent|%)$', '',value)
-    return ('volume' if name=='volume' else 'rate'), 'set', integer(value)
+    return (name if name in ('volume','pitch') else 'rate'), 'set', integer(value)

@@ -37,9 +37,9 @@ class NativeSettingsTests(unittest.TestCase):
         self.u.PostMessageW(categories,0x100,0x0D,0)
         # Wait for the checkbox itself: rendering the two preceding combo boxes
         # can still be in progress when the first control appears.
-        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,202)))
-        checkbox=self.u.GetDlgItem(hwnd,202)
-        for _ in range(2):self.panel.command('next setting')
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,203)))
+        checkbox=self.u.GetDlgItem(hwnd,203)
+        for _ in range(3):self.panel.command('next setting')
         self.wait(lambda:any('Lower media volume while Companion speaks' in message for message in self.notices))
         before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
         # Queue real keystrokes so IsDialogMessage handles checkbox activation.
@@ -51,7 +51,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
     def test_category_letters_cycle_enter_opens_and_alt_o_returns(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
-        for expected in (1,2,10):
+        for expected in (2,10,2):
             self.u.PostMessageW(categories,0x100,ord('S'),0)
             self.wait(lambda:self.session.category==expected)
         self.assertTrue(any('Startup and exit options (S)' in text for text in self.notices))
@@ -95,7 +95,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:'Z' in self.notices)
         self.panel.command('synthesizer')
         self.wait(lambda:self.session.category==2)
-        for _ in range(3):self.panel.command('next setting')
+        for _ in range(4):self.panel.command('next setting')
         self.wait(lambda:any('AI API key; blank keeps the saved key. Hidden.' in message for message in self.notices))
         password=self.u.GetDlgItem(hwnd,204)
         self.assertTrue(password)
@@ -106,7 +106,7 @@ class NativeSettingsTests(unittest.TestCase):
 
     def test_every_category_tabs_without_invalid_value_and_escape_closes(self):
         hwnd=self.open_panel()
-        for name in ('Speech','Synthesizer','Input','Email','Documents','Web browsing','Radio','Podcasts','Updates','Verbosity'):
+        for name in ('Voice','Synthesizer','Input','Email','Documents','Web browsing','Radio','Podcasts','Updates','Verbosity'):
             self.panel.command(name)
             self.wait(lambda:self.session.category_name()==name)
             self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)
@@ -122,11 +122,27 @@ class NativeSettingsTests(unittest.TestCase):
         self.panel.action_callback=actions.append
         self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email')
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,204)))
-        for _ in range(3):self.panel.command('next setting')
+        for _ in range(6):self.panel.command('next setting')
         self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,204),0x100,0x0D,0)
         self.assertTrue(self.panel.closed.wait(5),self.notices)
         self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)
+
+    def test_header_list_space_buttons_and_cancel_are_keyboard_accessible(self):
+        hwnd=self.open_panel();self.panel.command('Email')
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,302)))
+        for _ in range(2):self.panel.command('next setting')
+        self.wait(lambda:any('From, enabled, 1 of 4' in n for n in self.notices))
+        headers=self.u.GetDlgItem(hwnd,203)
+        self.u.PostMessageW(headers,0x100,0x20,0)
+        self.wait(lambda:self.session.values['email_header_order']=='subject, date')
+        self.panel.command('next setting');self.panel.command('next setting');self.panel.command('next setting')
+        self.wait(lambda:any('Move down. Button.' in n for n in self.notices))
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,302),0x100,0x0D,0)
+        self.wait(lambda:any('From, disabled, 2 of 4' in n for n in self.notices))
+        self.u.PostMessageW(self.u.GetDlgItem(hwnd,302),0x100,0x1B,0)
+        self.wait(lambda:not self.u.GetDlgItem(hwnd,203))
+        self.assertEqual(self.session.values['email_header_order'],'from, subject, date');self.assertFalse(self.saved)
 
 if __name__=='__main__':unittest.main()
 

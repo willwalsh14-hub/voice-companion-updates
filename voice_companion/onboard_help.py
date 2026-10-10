@@ -79,7 +79,7 @@ class HelpSession:
 
     def topic(self, name):
         wanted = name.casefold().strip()
-        aliases = {'what is new':"what's new",'whats new':"what's new",'release notes':"what's new",'email': 'read and organize email', 'mail': 'read and organize email',
+        aliases = {'what is new':"what's new",'whats new':"what's new",'what s new':"what's new",'release notes':"what's new",'email': 'read and organize email', 'mail': 'read and organize email',
                    'email commands': 'read and organize email',
                    'documents': 'write a document', 'document': 'write a document',
                    'document commands': 'write a document',
@@ -137,6 +137,8 @@ class HelpSession:
             self.level = 'topics'
             return self._item()
         if command in ('go back', 'back'):
+            if self.level=='topics':
+                self.closed=True;return 'Help closed. Back where you were.'
             if self.level == 'article' and self._subtopics():
                 self.level = 'subtopics'
             else:

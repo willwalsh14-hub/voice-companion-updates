@@ -10,17 +10,17 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates', 'Startup and exit options')
-DEFAULTS = {'verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+CATEGORIES = ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates', 'Startup and exit options')
+DEFAULTS = {'pitch':'0','verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
     definitions = {
         'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2'))],
-        'Speech':[Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
+        'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('windows',)))),Field('windows_voice','Windows voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation'))],
-        'Email':[Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken headers in order; include from, subject, date, size; omit unwanted headers','text'),Field('add_account','Add an email account','action')],
+        'Email':[Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('add_account','Add an email account','action')],
         'Documents':[Field('document_font','Font for new documents','text'),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify')),Field('open_documents','Open Documents folder','action')],
         'Web browsing':[Field('browser','Guided browser','choice',('edge','chrome','brave','firefox')),Field('web_favorites','List website favorites','action')],
         'Radio':[Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],
@@ -79,7 +79,7 @@ class SettingsSession:
             key,operation,amount=speech
             value=int(self.values.get(key,0))
             value=amount if operation=='set' else value+amount
-            return key,str(max(-10 if key=='rate' else 0,min(10 if key=='rate' else 100,value)))
+            return key,str(max(-10 if key in ('rate','pitch') else 0,min(10 if key in ('rate','pitch') else 100,value)))
         download=re.fullmatch(r'(?:auto download|automatically download) (manual|all|\d+)',command,re.I)
         if download:return 'podcast_limit',download[1].lower()
         match=re.fullmatch(r'(?:set )?(?:verbosity|punctuation)(?: to)? (.+)',command,re.I)

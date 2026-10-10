@@ -7,11 +7,12 @@ import time
 import urllib.request
 
 
-def synthesize(text, rate=0, key=None, voice=None):
+def synthesize(text, rate=0, key=None, voice=None,pitch=0):
     key = key if key is not None else os.getenv('VOICE_COMPANION_OPENAI_KEY', '')
     if not key:
         raise ValueError('AI speech is not configured')
-    body = json.dumps({'model': 'gpt-4o-mini-tts',
+    options={} if not pitch else {'instructions':'Speak with '+('higher' if pitch>0 else 'lower')+' vocal pitch, intensity '+str(abs(pitch))+' out of 10. Keep the requested speaking speed.'}
+    body = json.dumps(options | {'model': 'gpt-4o-mini-tts',
         'voice': voice or os.getenv('VOICE_COMPANION_AI_VOICE', 'coral'),
         'input': text, 'response_format': 'pcm',
         'speed': max(0.25, min(4.0, 1.0 + rate * 0.075))}).encode()

@@ -188,7 +188,7 @@ class MailboxClient:
         path = (cursor or '/mailFolders/' + parse.quote(folder_id, safe='') +
                 '/messages?$top=' + str(limit) + '&$select=id,subject,from,isRead,receivedDateTime&$orderby=receivedDateTime%20desc&$expand=singleValueExtendedProperties($filter=id%20eq%20%27Integer%200x0E08%27)')
         data = self._call(path)
-        rows = [{'id': m['id'], 'from': m.get('from', {}).get('emailAddress', {}).get('address', 'Unknown sender'),
+        rows = [{'id': m['id'], 'from': m.get('from', {}).get('emailAddress', {}).get('address', 'Unknown sender'), 'sender_name': m.get('from', {}).get('emailAddress', {}).get('name',''),
                  'subject': m.get('subject') or '(no subject)',
                  'date': message_date(m.get('receivedDateTime')),
                  'size': next((int(p['value']) for p in m.get('singleValueExtendedProperties',[]) if p.get('id')=='Integer 0x0E08' and str(p.get('value','')).isdigit()),'unavailable'),

@@ -30,7 +30,7 @@ def snapshot(m):
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
     context={'engines':('windows',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
     from windows_actions import startup_enabled
-    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',(m.APP/'ai-voice.account').exists() or bool(__import__('os').getenv('VOICE_COMPANION_OPENAI_KEY'))),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt','firefox'),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
+    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',(m.APP/'ai-voice.account').exists() or bool(__import__('os').getenv('VOICE_COMPANION_OPENAI_KEY'))),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt','firefox'),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
 
 def open_settings(m,mode):
@@ -38,13 +38,14 @@ def open_settings(m,mode):
         m.speak('The settings panel requires the app window. Voice settings commands are still available.');return mode
     if m.SETTINGS_PANEL and not m.SETTINGS_PANEL.closed.is_set():return 'settings'
     values,context=snapshot(m);session=SettingsSession(values,context)
-    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.settings_notices.put,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key))).start()
+    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.KEYBOARD_SPEECH.interrupt() if m.KEYBOARD_SPEECH else m.APP_WINDOW.commands.put(('keyboard','Control'))).start()
     return 'settings'
 
 def apply_settings(m,values):
     from ai_voice_settings import load,save,remove
     values=dict(values)
-    rate=int(values['rate']);volume=int(values['volume'])
+    rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
+    if not -10<=pitch<=10:raise ValueError('Voice pitch must be from minus ten to ten.')
     if not -10<=rate<=10 or not 0<=volume<=100:raise ValueError('Speech rate or volume is out of range.')
     choices=[] if m.TEXT_MODE else m.voice_choices()
     if values['engine']=='espeak' and m.ESPEAK_SPEECH is None:raise ValueError('eSpeak is unavailable.')
@@ -68,7 +69,7 @@ def apply_settings(m,values):
     elif key and (values.get('api_key') or values['ai_voice']!=ai.get('voice','coral')):
         save(m.APP,key,values['ai_voice'],values.get('ai_consent',False))
     if values['engine']=='ai' and m.AI_SPEECH is None:m.configure_ai_speech()
-    m.SPEECH_RATE=rate;m.SPEECH_VOLUME=volume;m.PUNCTUATION_LEVEL=values['punctuation'];m.VERBOSITY=values['verbosity'];m.INPUT_MODE=values['input_mode']
+    m.SPEECH_PITCH=pitch;m.SPEECH_RATE=rate;m.SPEECH_VOLUME=volume;m.PUNCTUATION_LEVEL=values['punctuation'];m.VERBOSITY=values['verbosity'];m.INPUT_MODE=values['input_mode']
     if not m.TEXT_MODE:
         m.voice.Rate=rate;m.voice.Volume=volume
     m.AI_VOICE_NAME=values['ai_voice']

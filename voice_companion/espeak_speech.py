@@ -32,14 +32,14 @@ def executable():
     found = shutil.which('espeak-ng')
     return Path(found) if found else None
 
-def synthesize(text, rate=0, voice='en-us', program=None):
+def synthesize(text, rate=0, voice='en-us', program=None,pitch=0):
     if voice not in {code for _, code in ALL_VOICES}: raise ValueError('Unsupported eSpeak voice')
     program = program or executable()
     if not program: raise OSError('eSpeak NG is not installed')
     program = Path(program).resolve()
     speed = max(80, min(450, round(175 * (1 + rate * .075))))
     options = {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
-    result = subprocess.run([str(program), '--path=' + str(program.parent), '--stdout', '-v', voice, '-s', str(speed), '--stdin'],
+    result = subprocess.run([str(program), '--path=' + str(program.parent), '--stdout', '-v', voice, '-s', str(speed), '-p',str(max(0,min(99,50+int(pitch)*5))), '--stdin'],
                             input=text.encode('utf-8'), stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, timeout=8, check=True, **options)
     with wave.open(io.BytesIO(result.stdout), 'rb') as wav:

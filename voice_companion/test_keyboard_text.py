@@ -222,6 +222,26 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(dict(mode=mode,source='test',text='abc def',caret=0,selection=None,echo='characters',phonetic=True,delay=.5,ack=0,readonly=readonly))
         self.wait(lambda:self.window.context.get('source')=='test')
         self.call(lambda:self.window.editor.focus_force())
+    def test_help_uses_reading_editor_and_escape_dispatches(self):
+        self.context(mode='help',readonly=True)
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))
+        self.wait(lambda:not self.window.key_feedback.empty());self.assertEqual(self.window.key_feedback.get(),'b')
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Escape'))
+        self.wait(lambda:any(item==('keyboard','Escape') for item in self.window.commands.queue))
+    def test_menu_home_end_and_confirmation_letters_dispatch_immediately(self):
+        self.window.set_context(dict(mode='awake',source=None,menu_letters=True,text='',caret=0,ack=0))
+        self.wait(lambda:self.window.context.get('mode')=='awake')
+        self.call(lambda:self.window.typed.focus_force())
+        for key in ('Home','End'):
+            self.call(lambda key=key:self.window.typed.event_generate('<KeyPress>',keysym=key))
+            self.wait(lambda key=key:('keyboard',key) in self.window.commands.queue)
+        self.window.set_context(dict(mode='exit_confirm',source=None,confirmation='no',text='',caret=0,ack=0))
+        self.wait(lambda:self.window.context.get('mode')=='exit_confirm')
+        for key in ('y','n','Control_L'):
+            self.call(lambda key=key:self.window.typed.event_generate('<KeyPress>',keysym=key))
+            expected='Control' if key=='Control_L' else key
+            self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.typed.get(),''))
     def test_right_arrow_echo_is_immediate_and_phonetic_is_delayed(self):
         self.context();started=time.monotonic()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))

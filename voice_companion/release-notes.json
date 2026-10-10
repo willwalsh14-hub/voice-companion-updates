@@ -1,27 +1,25 @@
 {
-  "version": "0.2.101-test",
+  "version": "0.2.102-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.99-test",
-  "scope": "Accessible exit confirmations, Startup and exit options, and configurable email list speech. This is a beta testing build.",
+  "baseline": "0.2.101-test",
+  "scope": "Keyboard responsiveness, readable help, accessible Options, sender actions, voice pitch, and usable email header controls. This is a beta testing build.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Startup and exit options and accessible exit confirmation",
+          "title": "Sender actions without spoken email addresses",
           "details": [
-            "Startup options is renamed Startup and exit options. Start with Windows remains off by default. Ask before exiting Voice Companion, shutting down the computer, and restarting the computer are independently checked by default. Category OK saves; Cancel discards.",
-            "Escape at the main menu invokes Exit Voice Companion. The prompt asks whether you are sure and defaults to No. Arrows or Tab switch Yes and No; Enter activates. Voice yes, no, and cancel work. Escape again cancels and returns to the previous activity. When disabled, the corresponding exit or computer action proceeds without this prompt. Existing document-save protection and Windows unsaved-application handling remain.",
-            "Alt+O now announces Options menu when opening or returning to the category menu."
+            "Email message lists now announce sender names without addresses. Missing names are announced as Sender name unavailable. Outlook preserves display names alongside addresses.",
+            "Ctrl+Shift+C or Copy sender address copies the focused sender address. Ctrl+Shift+N, New email to sender, or Email sender starts a fresh addressed draft in Subject. Ctrl+N still starts a blank message. No message is sent automatically."
           ]
         },
         {
-          "title": "Customize email headers and their order",
+          "title": "Voice pitch and keyboard header customization",
           "details": [
-            "Email settings restores Announce email header names, off by default. Spoken headers in order is a text field containing from, subject, date by default. Rearrange these names to change order, omit unwanted headers, or include size. At least one unique supported header is required. Changes apply across all email folders; OK saves and Cancel discards.",
-            "Size is disabled by default. Gmail reports an estimated byte size, Yahoo reports RFC822.SIZE, and Outlook reports its stored message size when available. Missing size metadata is announced as unavailable. No guessed size is spoken.",
-            "Keyboard and voice settings use the same validation. Example: set email header order subject, from, date. Header-name speech can be enabled separately without altering which values are spoken."
+            "The Speech category is renamed Voice. Pitch defaults to zero and ranges from minus ten to ten. Use the pitch combo with keyboard navigation and category OK/Cancel, or say Higher pitch, Lower pitch, Pitch up/down, or Set voice pitch minus three. Values are saved. Windows and eSpeak use native pitch controls; AI narration receives higher/lower pitch guidance and its exact result depends on the selected voice.",
+            "Email headers are a selectable list rather than a comma-separated editing field. Arrows select; Space enables or disables; Alt+Up/Down move the header. Tab reaches Enable / disable, Move up, and Move down buttons; Enter activates them. Voice Next/Previous header, Toggle header, and Move header up/down work. OK saves; Cancel discards. From, Subject, Date are enabled by default and Size remains disabled. At least one header is required. Header names remain off by default."
           ]
         }
       ]
@@ -30,15 +28,24 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Options menu announcement and main-menu Escape",
+          "title": "Immediate navigation and confirmation keys",
           "details": [
-            "Alt+O announces Options menu. Escape at the main menu now invokes Exit Voice Companion instead of repeating the main menu. A second Escape cancels the checked-by-default confirmation. Existing document-save questions and draft preservation remain."
+            "Keyboard navigation interrupts previous speech and discards obsolete feedback. Menus, first-letter cycling, arrows, and Tab use local speech even with AI narration selected to avoid online generation delays. Control alone stops speech; existing voice silence commands remain.",
+            "Y/N immediately activate Yes/No for exit, restart, and shutdown confirmations. Arrows/Tab and Enter still work; Escape cancels. Home/End reach first/last items in active lists and menus while editable/read-only text retains its own navigation."
           ]
         },
         {
-          "title": "Email list speech preferences",
+          "title": "Options announcements and readable help",
           "details": [
-            "The previous unlabeled sender, subject, and date announcement remains the default. Users can restore header labels independently and change the spoken fields and order across all folders. Duplicate or unsupported header names are rejected without saving invalid settings. Size is optional and missing metadata is announced as unavailable."
+            "Settings on the main menu is renamed Options. Alt+O, keyboard menu activation, and voice Options/Open options announce Options menu through the immediate speech path. The initial focus announcement no longer replaces the greeting. Existing Settings voice aliases remain available.",
+            "Help and What’s new articles now open in the read-only reading area used for received email. Character, word, line, paragraph, Home/End, and Ctrl+Home/End keys work. Escape returns from articles through subsections/topics, then closes Help from topics."
+          ]
+        },
+        {
+          "title": "Beta validation and limits",
+          "details": [
+            "Regression tests cover feedback replacement and interruption order, confirmation keys, Home/End, sender privacy, sender shortcuts, help reading, header toggling/order/Cancel, and pitch commands/markup. Windows integration checks exercise the real native controls and keyboard reading window. Installer checks run before publication.",
+            "Live acoustic responsiveness, individual voice pitch response, and keyboard behavior on the tester’s Windows machine still require beta testing. Online AI pitch is guidance rather than a guaranteed exact pitch. No automated check actually shuts down or restarts the build machine."
           ]
         }
       ]

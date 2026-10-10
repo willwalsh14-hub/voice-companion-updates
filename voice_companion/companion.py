@@ -33,6 +33,7 @@ from web_assistant import WebSession
 from audio_resample import PCM16Resampler, stereo_to_mono
 from app_window import CompanionWindow
 from reading_navigation import ReadingCursor, reading_request
+from voice_pitch import sapi_speak
 from dictation_text import clean_dictation
 from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
@@ -43,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.101-test'
+APP_VERSION = '0.2.102-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -100,6 +101,7 @@ ESPEAK_SPEECH = None
 ESPEAK_VOICE_NAME = 'en-us'
 SYNTH_PICK_INDEX = None
 VOICE_PICK_ENGINE = None
+SPEECH_PITCH = 0
 SPEECH_RATE = -1
 SPEECH_VOLUME = 100
 PUNCTUATION_LEVEL = 'some'
@@ -202,6 +204,9 @@ def app_context(mode):
         context['caret']=absolute(editor,position)
         if editor.selection:
             s=editor.selection;context['selection']=(absolute(editor,(s.first_paragraph,s.first_offset)),absolute(editor,(s.last_paragraph,s.last_offset)))
+    elif logical=='help' and help_session and help_session.level=='article':
+        source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
+        context.update(source=source,text=help_session.reading.text,readonly=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
     elif logical=='mailbox' and mail_session and mail_session.view=='message':
         source='mail:'+str(id(mail_session))+':'+str(mail_session.current)
         context.update(source=source,text=mail_session.body_text,readonly=True,caret=mail_session.reading.position,ack=EDIT_ACK.get(source,0))
@@ -212,7 +217,7 @@ def sync_app_context(mode,focus=False):
     if APP_WINDOW is None:return
     context=app_context(mode)
     if KEYBOARD_SPEECH and not TEXT_MODE:
-        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH)
+        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH)
     if focus or context!=UI_CONTEXT_CACHE:
         UI_CONTEXT_CACHE=dict(context);context['focus']=focus;APP_WINDOW.set_context(context)
 
@@ -221,7 +226,8 @@ def apply_keyboard_edit(payload,mode):
     if payload['source']!=context['source']:return False
     if payload.get('readonly'):
         if payload['after']!=context['text']:return False
-        mail_session.reading.position=payload['caret'];mail_session.reading.continuation=payload['caret']
+        reader=help_session.reading if context['mode']=='help' else mail_session.reading
+        reader.position=payload['caret'];reader.continuation=payload['caret']
     else:
         logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
         editor=document if logical=='document' else email_draft
@@ -240,7 +246,15 @@ def flush_keyboard_edits(force=False):
                 raise
             KEYBOARD_DIRTY.pop(key,None)
 
+KEYBOARD_NAVIGATION=False
+
 def handle_keyboard(text,mode):
+    global KEYBOARD_NAVIGATION
+    previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+    try:return _handle_keyboard(text,mode)
+    finally:KEYBOARD_NAVIGATION=previous
+
+def _handle_keyboard(text,mode):
     global SLEEP_RETURN_MODE
     if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
         SLEEP_RETURN_MODE=handle_keyboard(text,SLEEP_RETURN_MODE)
@@ -262,7 +276,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to get started and launch the main menu. Say help for the user guide.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Settings', 'settings'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -378,14 +392,31 @@ def commit_email_field_tab(payload,mode):
     return navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
 
 def navigation_key(key,mode):
+    global KEYBOARD_NAVIGATION
+    previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+    try:return _navigation_key(key,mode)
+    finally:KEYBOARD_NAVIGATION=previous
+
+def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
+    interrupt_speech()
+    if key=='Control':return None
     confirming=mode in ('document_save','power_confirm','exit_confirm') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
     if confirming:
+        if key.lower() in ('y','n'):return 'yes' if key.lower()=='y' else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             CONFIRM_CHOICE='no' if CONFIRM_CHOICE=='yes' else 'yes'
             speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if key in ('Home','End'):
+        state=menu_state(mode)
+        if state:
+            names,current,select=state;index=0 if key=='Home' else len(names)-1
+            select(index);speak(announce_item(names[index],index,len(names)));return None
+        if mode=='mailbox' and mail_session and mail_session.view=='folder' and mail_session.rows and not mail_session.pending:
+            speak(mail_session._focus(1 if key=='Home' else len(mail_session.rows)));return None
+    if mode=='help' and key=='Escape':return 'go back'
     if key.startswith('Letter:'):
         choose_menu_letter(key[-1],mode);return None
     if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
@@ -405,7 +436,7 @@ def navigation_key(key,mode):
         if key=='Delete' and mail_session and mail_session.folder_picker:
             picker=mail_session.folder_picker
             return 'delete folder '+picker['folders'][picker['index']][0]
-        request={'Ctrl+Shift+V':'move','Ctrl+Shift+E':'create folder','Ctrl+Y':'go to folder','Ctrl+R':'reply','Ctrl+Shift+R':'reply all','Ctrl+F':'forward','Ctrl+N':'new email','Delete':'delete','Space':'toggle message selection','ShiftUp':'extend selection previous','ShiftDown':'extend selection next','Ctrl+A':'select all messages','F2':'rename folder','Ctrl+Shift+D':'delete folder','F5':'list messages'}.get(key)
+        request={'Ctrl+Shift+V':'move','Ctrl+Shift+E':'create folder','Ctrl+Y':'go to folder','Ctrl+R':'reply','Ctrl+Shift+R':'reply all','Ctrl+F':'forward','Ctrl+N':'new email','Ctrl+Shift+C':'copy sender address','Ctrl+Shift+N':'new email to sender','Delete':'delete','Space':'toggle message selection','ShiftUp':'extend selection previous','ShiftDown':'extend selection next','Ctrl+A':'select all messages','F2':'rename folder','Ctrl+Shift+D':'delete folder','F5':'list messages'}.get(key)
         if request:return request
     if mode=='email_draft' and key=='Ctrl+Enter':return 'send email'
     if key=='Alt+F4':return 'exit companion'
@@ -485,7 +516,7 @@ def fast_command_request(command, mode):
     if command in POWER_COMMANDS:return True
     if mode in ('settings','power_confirm','exit_confirm'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
-    if command in ('settings','open settings','show settings','preferences','open preferences'):return True
+    if command in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
     if mode in ('update_offer','update_download') and command in ('yes','yes please','no','no thanks','okay','ok','install it','install update','cancel','cancel update','stop update','not now','later','status','update status'): return True
     setting = speech_setting_request(command)
@@ -525,7 +556,7 @@ def fast_offline_silence(recognizer, utterance):
 def interrupt_speech():
     global SPEECH_PAUSED
     if APP_WINDOW is not None:APP_WINDOW.ui_actions.put(('cancel_phonetic',None))
-    if KEYBOARD_SPEECH is not None:KEYBOARD_SPEECH.interrupt()
+    if KEYBOARD_SPEECH is not None:KEYBOARD_SPEECH.interrupt(notify=False)
     if ESPEAK_SPEECH is not None:
         ESPEAK_SPEECH.interrupt()
     if AI_SPEECH is not None:
@@ -610,7 +641,7 @@ def update_audio_ducking(active=None):
 def save_speech_settings():
     APP.mkdir(parents=True, exist_ok=True)
     (APP / 'speech-settings.json').write_text(
-        json.dumps({'rate': SPEECH_RATE, 'volume': SPEECH_VOLUME, 'punctuation': PUNCTUATION_LEVEL, 'verbosity':VERBOSITY, 'input_mode':INPUT_MODE,
+        json.dumps({'pitch':SPEECH_PITCH,'rate': SPEECH_RATE, 'volume': SPEECH_VOLUME, 'punctuation': PUNCTUATION_LEVEL, 'verbosity':VERBOSITY, 'input_mode':INPUT_MODE,
                     'ai_enabled': bool(AI_SPEECH and AI_SPEECH.enabled), 'ai_voice': AI_VOICE_NAME,
                     'espeak_enabled': bool(ESPEAK_SPEECH and ESPEAK_SPEECH.enabled), 'espeak_voice': ESPEAK_VOICE_NAME,
                     'voice': voice.Voice.GetDescription() if not TEXT_MODE else ''}), encoding='utf-8')
@@ -618,25 +649,27 @@ def save_speech_settings():
 
 
 def change_speech_setting(command):
-    global SPEECH_RATE, SPEECH_VOLUME
+    global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME
     request = speech_setting_request(command)
     if request is None: return False
     kind, operation, amount = request
-    lower, upper = (-10, 10) if kind == 'rate' else (0, 100)
+    lower, upper = (-10, 10) if kind in ('rate','pitch') else (0, 100)
     if amount is None or (operation == 'set' and not lower <= amount <= upper):
-        speak('Speech rate must be a whole number from minus ten to ten.' if kind == 'rate' else
+        speak(('Voice '+kind+' must be a whole number from minus ten to ten.') if kind in ('rate','pitch') else
               'Speech volume must be a whole number from zero to one hundred percent.')
         return True
-    current = SPEECH_RATE if kind == 'rate' else SPEECH_VOLUME
+    current = SPEECH_RATE if kind == 'rate' else SPEECH_PITCH if kind=='pitch' else SPEECH_VOLUME
     value = max(lower, min(upper, current + amount if operation == 'delta' else amount))
-    if kind == 'rate':
+    if kind=='pitch':SPEECH_PITCH=value
+    elif kind == 'rate':
         SPEECH_RATE = value
         if not TEXT_MODE: voice.Rate = value
     else:
         SPEECH_VOLUME = value
         if not TEXT_MODE: voice.Volume = value
     save_speech_settings()
-    speak('Speech rate ' + str(value) + '.' if kind == 'rate' else 'Volume ' + str(value) + ' percent.')
+    if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH)
+    speak('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')
     return True
 
 def voice_choices(engine=None):
@@ -788,7 +821,7 @@ def configure_espeak_speech():
         pythoncom.CoInitialize()
         return win32com.client.Dispatch('SAPI.SpVoice')
     ESPEAK_SPEECH = AISpeech(fallback, lambda text, rate: synthesize(text, rate,
-        voice=ESPEAK_VOICE_NAME, program=program), engine_name='eSpeak', error_callback=record_espeak_error)
+        voice=ESPEAK_VOICE_NAME, program=program,pitch=SPEECH_PITCH), engine_name='eSpeak', error_callback=record_espeak_error)
     return True
 
 
@@ -808,7 +841,7 @@ def configure_ai_speech():
         AI_SPEECH = AISpeech(fallback)
     AI_VOICE_NAME = settings.get('voice', 'coral')
     AI_SPEECH.synthesizer = lambda text, rate: synthesize(text, rate,
-        key=settings['key'], voice=AI_VOICE_NAME)
+        key=settings['key'], voice=AI_VOICE_NAME,pitch=SPEECH_PITCH)
     return True
 
 
@@ -823,13 +856,15 @@ def speak(text):
     if TEXT_MODE:
         return
     update_audio_ducking(True)
+    if KEYBOARD_NAVIGATION and KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem:
+        KEYBOARD_SPEECH.speak(punctuation_for_speech(text));return
     if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.enabled:
         ESPEAK_SPEECH.speak(punctuation_for_speech(text), SPEECH_RATE, SPEECH_VOLUME)
         return
     if AI_SPEECH is not None and AI_SPEECH.enabled:
         AI_SPEECH.speak(punctuation_for_speech(text), SPEECH_RATE, SPEECH_VOLUME)
         return
-    voice.Speak(punctuation_for_speech(text), 1)  # Async: microphone stays responsive.
+    sapi_speak(voice,punctuation_for_speech(text),SPEECH_PITCH,flags=1)  # Async: microphone stays responsive.
 
 
 def speak_keyboard_feedback(text):
@@ -839,7 +874,7 @@ def speak_keyboard_feedback(text):
         update_audio_ducking(True)
         if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.enabled:
             ESPEAK_SPEECH.speak(str(text), SPEECH_RATE, SPEECH_VOLUME)
-        else: voice.Speak(str(text), 1)
+        else: sapi_speak(voice,str(text),SPEECH_PITCH)
 
 
 def mail_progress(text):
@@ -949,7 +984,7 @@ def _handle(text, mode, typed=False):
             speak('Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.')
             POWER_ACTION=None;return 'exit'
         speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
-    if mode=='document_save' and not spoken_control(command) and command not in ('settings','open settings'):
+    if mode=='document_save' and not spoken_control(command) and command not in ('options','open options','settings','open settings'):
         if command in ('cancel','go back','back'):
             speak('Your document is still open.');return 'document'
         if command in ('yes','yes please','ok','okay','confirm','confirm that','that one'):
@@ -965,7 +1000,7 @@ def _handle(text, mode, typed=False):
             speak('Changes discarded.')
             return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else 'awake'
         speak('Save this document? Yes or no.');return mode
-    if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('settings','open settings'):
+    if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('options','open options','settings','open settings'):
         if normalized_command(text) in ('cancel','cancel naming','go back'):
             PENDING_DOCUMENT_NAME=None
             speak('Naming canceled. Your document is still open.');return 'document'
@@ -1002,7 +1037,7 @@ def _handle(text, mode, typed=False):
             speak('Start with Windows '+startup_command[1]+'.')
         except (OSError,ValueError) as exc:speak(str(exc))
         return mode
-    if normalized_command(text) in ('settings','open settings','show settings','preferences','open preferences'):
+    if normalized_command(text) in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):
         SETTINGS_RETURN_MODE = mode
         return open_settings(mode)
     verbosity_request = re.fullmatch(r'(?:set )?verbosity(?: to)? (high|medium|low)',normalized_command(text))
@@ -1170,7 +1205,7 @@ def _handle(text, mode, typed=False):
         if not PREFERENCES.get('ask_before_'+action,True):return _handle('yes','power_confirm',typed)
         speak(('Restart the computer?' if action=='restart' else 'Shut down the computer?')+' Yes or no. Use arrows to choose, then Enter. Escape cancels.')
         return 'power_confirm'
-    if command in ("what's new",'what is new','whats new','release notes','open release notes'):
+    if command in ("what's new",'what s new','what is new','whats new','release notes','open release notes'):
         try:
             help_return_mode=mode if mode!='help' else help_return_mode
             help_session=HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
@@ -1196,7 +1231,7 @@ def _handle(text, mode, typed=False):
             help_session = None
             return help_return_mode
         return 'help'
-    global SPEECH_RATE, SPEECH_VOLUME, PUNCTUATION_LEVEL
+    global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME, PUNCTUATION_LEVEL
     if command in ('check voices', 'voice check', 'voice diagnostics'):
         if TEXT_MODE:
             speak('Voice checking requires Windows speech output.')
@@ -1608,6 +1643,17 @@ def _handle(text, mode, typed=False):
         mail_session = MailSession(selected[0], APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
         return 'mailbox'
+    sender_recipient=None
+    if mode=='mailbox' and command in ('copy sender address','copy sender email address','copy the sender address','email sender','email the sender','new email to sender','write an email to sender','compose email to sender'):
+        from mail_voice import sender_address
+        address=sender_address(mail_session.rows[mail_session.current-1]) if mail_session and mail_session.rows and mail_session.current else ''
+        if not address:speak('No sender address is available for the current message.');return mode
+        if command.startswith('copy'):
+            from document_editor import copy_to_clipboard
+            copy_to_clipboard(address)
+            from document_editor import CLIPBOARD_WRITE_OK
+            speak('Sender address copied.' if CLIPBOARD_WRITE_OK else 'The sender address could not be copied to the Windows clipboard. Try again.');return mode
+        sender_recipient=address;command='new email'
     email_request = (command in ('write an email', 'write email', 'compose email', 'new email', 'create email',
                                  'write a message', 'compose a message', 'new message', 'send a message',
                                  'write a new message', 'compose a new message', 'write mail')
@@ -1638,14 +1684,15 @@ def _handle(text, mode, typed=False):
         if email_request:
             selected = store.selected()
             email_draft = VoiceEmail(APP / 'Email Drafts')
-            email_draft.compose_step = 'recipient'
+            email_draft.compose_step = 'subject' if sender_recipient else 'recipient'
+            if sender_recipient:email_draft.recipient=sender_recipient
             email_draft.dictating = INPUT_MODE != 'commands'
             email_draft.automatic_dictation = INPUT_MODE != 'commands'
             if selected: email_draft.provider = selected[0]
             email_draft.save()
             speak('New email draft named ' + email_draft.title + '. ' +
                   ('Sending account ' + selected[1] + '. ' if selected else 'No sending account selected. Say add account. ') +
-                  'Who do you want to send the email to? Say or type an address, or a saved contact name.')
+                  ('New message to the selected sender. Subject field.' if sender_recipient else 'Who do you want to send the email to? Say or type an address, or a saved contact name.'))
             focus_email_entry()
             return 'email_draft'
         if document_request:
@@ -2339,7 +2386,7 @@ def main():
                 while not APP_WINDOW.settings_notices.empty():settings_notices.append(APP_WINDOW.settings_notices.get_nowait())
                 if settings_notices:
                     interrupt_speech()
-                    for settings_notice in settings_notices:speak_keyboard_feedback(settings_notice)
+                    speak_keyboard_feedback(settings_notices[-1])
                 if settings_result:
                     interrupt_speech()
                     if AI_SPEECH is not None: AI_SPEECH.enabled = False
@@ -2359,10 +2406,11 @@ def main():
                     except queue.Empty: break
                 if key_notices:
                     interrupt_speech()
-                    for key_notice in key_notices: speak_keyboard_feedback(key_notice)
+                    speak_keyboard_feedback(key_notices[-1])
                 try: typed_command = APP_WINDOW.commands.get_nowait()
                 except queue.Empty: typed_command = None
                 if typed_command:
+                    interrupt_speech()
                     if isinstance(typed_command,tuple):
                         if typed_command[0]=='text_edit':
                             try:apply_keyboard_edit(typed_command[1],mode)
@@ -2587,6 +2635,7 @@ if __name__ == '__main__':
             voice = win32com.client.Dispatch('SAPI.SpVoice')
             try:
                 settings = json.loads((APP / 'speech-settings.json').read_text(encoding='utf-8'))
+                SPEECH_PITCH = max(-10,min(10,int(settings.get('pitch',0))))
                 SPEECH_RATE = max(-10, min(10, int(settings.get('rate', -1))))
                 SPEECH_VOLUME = max(0, min(100, int(settings.get('volume', 100))))
                 PUNCTUATION_LEVEL = settings.get('punctuation', 'some')

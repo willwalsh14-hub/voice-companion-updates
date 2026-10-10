@@ -9,8 +9,8 @@ from settings_model import CATEGORIES
 from menu_navigation import next_match,menu_label
 
 class NativeSettings:
-    def __init__(self,session,announce,save,action):
-        self.session=session;self.announce=announce;self.save_callback=save;self.action_callback=action
+    def __init__(self,session,announce,save,action,interrupt=None):
+        self.session=session;self.announce=announce;self.interrupt=interrupt or (lambda:None);self.save_callback=save;self.action_callback=action
         self.actions=queue.Queue();self.ready=threading.Event();self.closed=threading.Event();self.hwnd=None;self.pending=False
     def start(self):
         threading.Thread(target=self.run,name='Settings dialog',daemon=True).start()
@@ -42,7 +42,7 @@ class NativeSettings:
         api('SetTimer',c.c_size_t,[w.HWND,c.c_size_t,w.UINT,c.c_void_p]);api('PostQuitMessage',None,[c.c_int])
         api('GetKeyState',c.c_short,[c.c_int])
         k.GetModuleHandleW.restype=w.HMODULE;k.GetModuleHandleW.argtypes=[w.LPCWSTR];instance=k.GetModuleHandleW(None)
-        controls={};children=[];last_focus=[None];category=[None];buttons={};alive=[True];editing=[False];baseline=[copy.deepcopy(self.session.values)]
+        headers=[None];header_buttons={};controls={};children=[];last_focus=[None];category=[None];buttons={};alive=[True];editing=[False];baseline=[copy.deepcopy(self.session.values)]
         def control(cls,label,style,x,y,width,height,identifier,extended=0):
             hwnd=create(extended,cls,label,0x50000000|style,x,y,width,height,self.hwnd,identifier,instance,None)
             if not hwnd:raise c.WinError(c.get_last_error())
@@ -50,6 +50,7 @@ class NativeSettings:
         def text(hwnd):
             buf=c.create_unicode_buffer(4096);u.GetWindowTextW(hwnd,buf,len(buf));return buf.value
         def raw(hwnd,field):
+            if field.kind=='headers':return self.session.values[field.key]
             if field.kind=='check':return bool(send(hwnd,0xF0,0,0))
             if field.kind=='choice':
                 index=int(send(hwnd,0x147,0,0))
@@ -65,27 +66,40 @@ class NativeSettings:
             if hwnd in buttons:return buttons[hwnd]
             field=controls.get(hwnd)
             if not field:return ''
+            if field.kind=='headers':return headers[0].label()+'. Space enables or disables. Alt+Up or Alt+Down changes order.'
             if field.kind=='password':return field.label+'. Hidden.'
             if field.kind=='action':return field.label+'. Button.'
             value=raw(hwnd,field)
             return field.label+', '+('on' if value is True else 'off' if value is False else value)
         def render(focus_key=None):
             for hwnd in children:destroy(hwnd)
-            children.clear();controls.clear();buttons.clear();last_focus[0]=None
+            children.clear();controls.clear();buttons.clear();header_buttons.clear();headers[0]=None;last_focus[0]=None
             u.ShowWindow(category[0],0 if editing[0] else 5)
-            u.SetWindowTextW(self.hwnd,'Voice Companion Settings - '+self.session.category_name() if editing[0] else 'Voice Companion Options (Alt+O)')
+            u.SetWindowTextW(self.hwnd,'Voice Companion Options - '+self.session.category_name() if editing[0] else 'Voice Companion Options (Alt+O)')
             if not editing[0]:
                 close_button=control('BUTTON','Close settings',0x10000,595,530,100,32,2)
                 children.append(close_button);buttons[close_button]='Close settings.'
                 focus(category[0]);return
+            y=-17
             for index,field in enumerate(self.session.current_fields()):
-                y=45+index*62
+                y+=62
                 if field.kind not in ('check','action'):
                     children.append(control('STATIC',field.label,0,225,y,470,22,0))
                 value=self.session.values.get(field.key,False if field.kind=='check' else '')
                 if field.kind=='check':
                     hwnd=control('BUTTON',field.label,0x10000|3,225,y+22,480,27,200+index);send(hwnd,0xF1,int(bool(value)),0)
                 elif field.kind=='action':hwnd=control('BUTTON',field.label,0x10000,225,y+22,450,27,200+index)
+                elif field.kind=='headers':
+                    from email_headers import HeaderEditor
+                    headers[0]=HeaderEditor(self.session)
+                    hwnd=control('LISTBOX','',0x10000|0x200000|1,225,y+22,460,86,200+index)
+                    for i in range(4):
+                        buf=c.create_unicode_buffer(headers[0].label(i));send(hwnd,0x180,0,c.cast(buf,c.c_void_p).value)
+                    send(hwnd,0x186,0,0)
+                    for j,(label,action) in enumerate((('Enable / disable','toggle'),('Move up','up'),('Move down','down'))):
+                        button=control('BUTTON',label,0x10000,225+j*155,y+110,145,27,300+j)
+                        children.append(button);buttons[button]=label+'. Button.';header_buttons[button]=action
+                    y+=90
                 elif field.kind in ('choice','combo'):
                     hwnd=control('COMBOBOX','',0x10000|0x200000|(3 if field.kind=='choice' else 2),225,y+22,460,300,200+index)
                     for item in field.choices:
@@ -99,6 +113,18 @@ class NativeSettings:
             ok=control('BUTTON','OK',0x10000|1,485,530,100,32,1);cancel=control('BUTTON','Cancel',0x10000,595,530,100,32,2)
             buttons[ok]='OK. Save settings.';buttons[cancel]='Cancel. Discard changes.';children.extend((ok,cancel))
             target=next((h for h,f in controls.items() if f.key==focus_key),next((h for h in controls if u.IsWindowEnabled(h)),ok));focus(target)
+        def change_header(action):
+            model=headers[0]
+            if model is None:return
+            hwnd=next(h for h,f in controls.items() if f.kind=='headers')
+            index=int(send(hwnd,0x188,0,0));model.index=max(0,min(3,index))
+            try:
+                message=model.toggle() if action=='toggle' else model.move(-1 if action=='up' else 1)
+            except ValueError as exc:self.announce(str(exc));return
+            send(hwnd,0x184,0,0)
+            for i in range(4):
+                buf=c.create_unicode_buffer(model.label(i));send(hwnd,0x180,0,c.cast(buf,c.c_void_p).value)
+            send(hwnd,0x186,model.index,0);self.announce(message)
         def close(saved=False):
             if not saved:self.session.cancel()
             self.closed.set();alive[0]=False;destroy(self.hwnd)
@@ -123,6 +149,12 @@ class NativeSettings:
             render();self.announce(describe(category[0]));last_focus[0]=category[0]
         def voice(text_command):
             cmd=text_command.lower().strip().rstrip('.!?')
+            if cmd in ('toggle header','enable or disable header','move header up','move header down') and headers[0]:
+                change_header('toggle' if cmd in ('toggle header','enable or disable header') else 'up' if cmd.endswith('up') else 'down');return
+            if cmd in ('next header','previous header') and headers[0]:
+                hwnd=next(h for h,f in controls.items() if f.kind=='headers')
+                self.announce(headers[0].select(-1 if cmd.startswith('previous') else 1));send(hwnd,0x186,headers[0].index,0);focus(hwnd);last_focus[0]=hwnd;return
+            if cmd in ('voice','speech','go to voice','go to speech'):cmd='voice'
             action=next((key for key,value in self.session.context.get('actions',{}).items() if cmd==value),None)
             if action:self.action_callback(action);close();return
             if cmd in ('read setting','say setting','read current setting'):
@@ -169,8 +201,11 @@ class NativeSettings:
                     if identifier==1:save();return 0
                     if identifier==2:cancel_category();return 0
                     if identifier==100 and notice==1:select_category(int(send(category[0],0x188,0,0)));return 0
+                    if lp in header_buttons and notice==0:change_header(header_buttons[lp]);return 0
                     if lp in controls:
                         field=controls[lp]
+                        if field.kind=='headers' and notice==1:
+                            headers[0].index=max(0,min(3,int(send(lp,0x188,0,0))));self.announce(describe(lp));return 0
                         if field.kind=='action' and notice==0:self.action_callback(field.key);close();return 0
                         if (field.kind=='check' and notice==0) or (field.kind in ('choice','combo') and notice==1):
                             self.session.set(field.key,raw(lp,field));self.announce(describe(lp))
@@ -200,9 +235,18 @@ class NativeSettings:
         category[0]=control('LISTBOX','',0x10000|0x200000|0x800000|1,15,45,185,475,100)
         for name in CATEGORIES:
             buf=c.create_unicode_buffer(menu_label(name));send(category[0],0x180,0,c.cast(buf,c.c_void_p).value)
-        send(category[0],0x186,self.session.category,0);render();self.announce('Options menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
+        send(category[0],0x186,self.session.category,0);render();last_focus[0]=category[0];self.announce('Options menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
+            if message.message==0x100 and message.wParam==0x11:self.interrupt();continue
+            if message.message in (0x100,0x104) and headers[0]:
+                target=get_focus();field=controls.get(target)
+                if field and field.kind=='headers':
+                    if message.wParam==0x20:change_header('toggle');continue
+                    if message.wParam in (0x26,0x28) and u.GetKeyState(0x12)&0x8000:
+                        change_header('up' if message.wParam==0x26 else 'down');continue
+            if message.message==0x100 and message.wParam in (0x24,0x23) and get_focus()==category[0] and not editing[0]:
+                select_category(0 if message.wParam==0x24 else len(CATEGORIES)-1);continue
             if message.message==0x104 and message.wParam==ord('O'):
                 if editing[0]:cancel_category()
                 else:focus(category[0]);self.announce('Options menu. '+describe(category[0]))
@@ -223,7 +267,8 @@ class NativeSettings:
                 self.announce(describe(target));continue
             if message.message==0x100 and message.wParam==0x0D:
                 target=get_focus()
-                if get_focus() in buttons and (buttons[get_focus()].startswith('Cancel') or not editing[0]):cancel_category()
+                if target in header_buttons:change_header(header_buttons[target])
+                elif get_focus() in buttons and (buttons[get_focus()].startswith('Cancel') or not editing[0]):cancel_category()
                 elif target in controls and controls[target].kind=='action':self.action_callback(controls[target].key);close()
                 else:save()
                 continue

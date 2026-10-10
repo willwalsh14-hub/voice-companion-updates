@@ -142,9 +142,16 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 control=bool(event.state&4);shift=bool(event.state&1)
                 request=None
+                if key in ('Control_L','Control_R'):
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    self.commands.put(('keyboard','Control'));return 'break'
+                if key in ('Up','Down','Left','Right','Tab','ISO_Left_Tab','Home','End','Escape') or self.context.get('menu_letters') and event.char.isalpha():
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                if key in ('Home','End') and not self.context.get('source') and not self.email_field and not typed.get():
+                    self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
-                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space') and not (event.widget==self.typed and self.typed.get().strip() and key in ('Return','space')):
+                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N') and not (event.widget==self.typed and self.typed.get().strip() and key in ('Return','space')):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
                 elif mode=='document' and key=='F2':request='F2'
@@ -156,7 +163,7 @@ class CompanionWindow:
                     elif key=='space' and not self.context.get('source') and not self.typed.get():request='Space'
                     elif control:
                         code=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper()
-                        if code in ('Ctrl+Y','Ctrl+R','Ctrl+Shift+R','Ctrl+F','Ctrl+N','Ctrl+Shift+V','Ctrl+Shift+E','Ctrl+Shift+D') or code=='Ctrl+A' and not self.context.get('source'):request=code
+                        if code in ('Ctrl+Y','Ctrl+R','Ctrl+Shift+R','Ctrl+F','Ctrl+N','Ctrl+Shift+C','Ctrl+Shift+N','Ctrl+Shift+V','Ctrl+Shift+E','Ctrl+Shift+D') or code=='Ctrl+A' and not self.context.get('source'):request=code
                 elif mode=='email_draft' and key in ('Tab','ISO_Left_Tab'):
                     flush_pending_edit();cancel_phonetic()
                     backward=shift or key=='ISO_Left_Tab'
@@ -227,7 +234,7 @@ class CompanionWindow:
                 self.commands.put(('keyboard','settings')); return 'break'
             root.bind_all('<Alt-o>',settings_shortcut)
             root.bind_all('<Alt-O>',settings_shortcut)
-            tk.Button(root,text='Settings (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
+            tk.Button(root,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
             self.current = tk.StringVar(value='Starting speech and microphone...')
@@ -376,7 +383,7 @@ class CompanionWindow:
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue
-                        text_mode=source is not None and mode in ('document','email_draft','mailbox')
+                        text_mode=source is not None and mode in ('document','email_draft','mailbox','help')
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:
                             history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
