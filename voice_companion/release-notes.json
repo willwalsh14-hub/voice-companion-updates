@@ -25,6 +25,23 @@
           ]
         }
       ]
+    },
+    {
+      "title": "Fixes and Enhancements",
+      "topics": [
+        {
+          "title": "Options menu announcement and main-menu Escape",
+          "details": [
+            "Alt+O announces Options menu. Escape at the main menu now invokes Exit Voice Companion instead of repeating the main menu. A second Escape cancels the checked-by-default confirmation. Existing document-save questions and draft preservation remain."
+          ]
+        },
+        {
+          "title": "Email list speech preferences",
+          "details": [
+            "The previous unlabeled sender, subject, and date announcement remains the default. Users can restore header labels independently and change the spoken fields and order across all folders. Duplicate or unsupported header names are rejected without saving invalid settings. Size is optional and missing metadata is announced as unavailable."
+          ]
+        }
+      ]
     }
   ]
 }
