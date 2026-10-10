@@ -32,6 +32,15 @@ class KeyboardTextTests(unittest.TestCase):
                 self.assertIn('It has not been sent',spoken)
                 self.assertTrue((root/'Documents'/'Build check.docx').exists())
                 self.assertTrue(list((root/'Email Drafts').glob('*.eml')))
+    def test_keyboard_menu_and_document_exit_work_in_dictation_only(self):
+        with tempfile.TemporaryDirectory() as folder:
+            doc=VoiceDocument(Path(folder));doc.append_text('Keep this body.')
+            with patch.object(companion,'document',doc),patch.object(companion,'INPUT_MODE','dictation'),patch.object(companion,'speak'),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'MAIN_MENU_INDEX',None):
+                self.assertEqual(companion.handle_keyboard('next','awake'),'awake')
+                self.assertEqual(companion.MAIN_MENU_INDEX,0)
+                for typed in (False,True):
+                    self.assertEqual(companion.handle('main menu','document',typed=typed),'document_save')
+                    self.assertEqual(document_text(doc),'Keep this body.')
     def test_document_save_no_restores_existing_file_and_removes_new_file(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder),title='Existing');doc.append_text('Original.');original=doc.path.read_bytes()

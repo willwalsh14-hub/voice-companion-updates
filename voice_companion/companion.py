@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.95-test'
+APP_VERSION = '0.2.96-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -1276,6 +1276,13 @@ def _handle(text, mode, typed=False):
             if (email_draft.compose_step or 'body') == 'body': speak(email_draft.process(text))
             else: speak_prompt('This email field is single-line. Say go to body to insert a new line in the message.')
             return mode
+    if mode=='document' and command in ('leave document', 'close document', 'back to main menu',
+               'go back', 'back', 'exit', 'exit document', 'exit document mode', 'close', 'main menu'):
+        document.pending_spacing = False
+        document.pending_spacing_candidate = None
+        DOCUMENT_CLOSE_TARGET='awake';CONFIRM_CHOICE='yes'
+        speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
+        return 'document_save'
     if mode=='document' and command in ('name document','rename document','save as','save document as'):
         DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=None
         speak('Name this document. Say or type its name, then press Enter.');return 'document_name'
@@ -1312,7 +1319,7 @@ def _handle(text, mode, typed=False):
         if body_active and ((((isinstance(editor.replacement_candidates, list) and editor.replacement_candidates) or (isinstance(editor.selection_candidates, list) and editor.selection_candidates)) and command not in ('main menu', 'back to main menu', 'leave document', 'close document', 'go back', 'back', 'exit', 'exit document', 'leave email', 'close email', 'exit email')) or re.fullmatch(r'(?:replace|change) .+ (?:with|to) .+', command) or re.fullmatch(r'insert (?:before|after) .+', command) or re.fullmatch(r'(?:select|find|highlight|bold|underline|italicize|copy|cut|delete) .+', command)):
             speak(editor.process(text))
             return mode
-    if INPUT_MODE == 'dictation':
+    if INPUT_MODE == 'dictation' and not typed:
         if mode in ('email_draft', 'document'):
             editor = email_draft if mode == 'email_draft' else document
             if (mode == 'document' or mode == 'email_draft' and (email_draft.compose_step or 'body') == 'body') and (document_format_command(command) or editor.pending_spacing):
@@ -1669,13 +1676,6 @@ def _handle(text, mode, typed=False):
         if INPUT_MODE == 'commands' and command in ('start dictation', 'dictate', 'continue writing'):
             speak_prompt('Commands only is on. Say normal mode or dictation mode to write.')
             return mode
-        if command in ('leave document', 'close document', 'back to main menu',
-                       'go back', 'back', 'exit', 'exit document', 'exit document mode', 'close', 'main menu'):
-            document.pending_spacing = False
-            document.pending_spacing_candidate = None
-            DOCUMENT_CLOSE_TARGET='awake';CONFIRM_CHOICE='yes'
-            speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
-            return 'document_save'
         result = document.process(text)
         if INPUT_MODE == 'mixed' and result.startswith('I did not recognize that document request.'):
             document.dictating = True
