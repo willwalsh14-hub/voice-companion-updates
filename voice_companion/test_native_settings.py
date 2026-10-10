@@ -35,7 +35,9 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:self.session.category==1)
         self.assertFalse(self.u.GetDlgItem(hwnd,200))
         self.u.PostMessageW(categories,0x100,0x0D,0)
-        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
+        # Wait for the checkbox itself: rendering the two preceding combo boxes
+        # can still be in progress when the first control appears.
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,202)))
         checkbox=self.u.GetDlgItem(hwnd,202)
         for _ in range(2):self.panel.command('next setting')
         self.wait(lambda:any('Lower media volume while Companion speaks' in message for message in self.notices))

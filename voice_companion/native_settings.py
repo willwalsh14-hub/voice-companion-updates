@@ -217,16 +217,6 @@ class NativeSettings:
                 elif target in controls and controls[target].kind=='action':self.action_callback(controls[target].key);close()
                 else:save()
                 continue
-            # Handle Space explicitly in this custom window's message loop.
-            # Keep native checkbox state, staged value, and speech in sync.
-            if message.message in (0x100,0x101) and message.wParam==0x20:
-                target=get_focus();field=controls.get(target)
-                if field and field.kind=='check':
-                    if message.message==0x100 and not (message.lParam & (1<<30)):
-                        value=not raw(target,field)
-                        send(target,0xF1,int(value),0)
-                        self.session.set(field.key,value);self.announce(describe(target))
-                    continue
             if not u.IsDialogMessageW(self.hwnd,c.byref(message)):
                 u.TranslateMessage(c.byref(message));u.DispatchMessageW(c.byref(message))
             target=message.hWnd
