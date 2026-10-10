@@ -95,7 +95,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:'Z' in self.notices)
         self.panel.command('synthesizer')
         self.wait(lambda:self.session.category==2)
-        for _ in range(4):self.panel.command('next setting')
+        for _ in range(3):self.panel.command('next setting')
         self.wait(lambda:any('AI API key; blank keeps the saved key. Hidden.' in message for message in self.notices))
         password=self.u.GetDlgItem(hwnd,204)
         self.assertTrue(password)
