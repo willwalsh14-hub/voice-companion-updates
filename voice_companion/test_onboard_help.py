@@ -33,7 +33,7 @@ class OnboardHelpTests(unittest.TestCase):
         self.assertIn('Read messages (R), 1 of 5', session.topic('email'))
         self.assertIn('Go to folders', session.process('next'))
         self.assertIn('Go to folders', session.process('that one'))
-        self.assertIn('Paragraph', session.process('next paragraph'))
+        self.assertTrue(session.process('next paragraph').startswith('Say'))
         self.assertIn('Go to folders (G), 2 of 5', session.process('back to subsections'))
         self.assertIn(' of ', session.process('back to topics'))
         self.assertIn('Read messages (R), 1 of 5', session.process('back to email topics'))
@@ -106,7 +106,7 @@ class OnboardHelpTests(unittest.TestCase):
                 self.assertEqual(companion.handle('that one', 'help'), 'help')
                 self.assertIn('Go to folder', spoken.call_args.args[0])
                 self.assertEqual(companion.handle('next word', 'help'), 'help')
-                self.assertIn('Word', spoken.call_args.args[0])
+                self.assertEqual(spoken.call_args.args[0],'"Go')
                 self.assertEqual(companion.handle('back to email topics', 'help'), 'help')
                 self.assertEqual(companion.handle('close help', 'help'), mode)
 

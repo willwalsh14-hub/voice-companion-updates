@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.102-test'
+APP_VERSION = '0.2.103-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -247,6 +247,8 @@ def flush_keyboard_edits(force=False):
             KEYBOARD_DIRTY.pop(key,None)
 
 KEYBOARD_NAVIGATION=False
+KEYBOARD_BATCH=False
+KEYBOARD_BATCH_TEXT=None
 
 def handle_keyboard(text,mode):
     global KEYBOARD_NAVIGATION
@@ -264,6 +266,38 @@ def _handle_keyboard(text,mode):
     if mode=='mailbox' and mail_session and mail_session.folder_choice and mail_session.folder_choice[0]=='rename' and not text.startswith('rename to ') and text not in ('cancel','go back'):
         text='rename to '+text
     return handle(text,mode,typed=True)
+def process_keyboard_batch(mode):
+    """Apply every queued action in order and announce only the final navigation result."""
+    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT
+    previous=KEYBOARD_BATCH;KEYBOARD_BATCH=True
+    try:
+        # Bound each batch so microphone controls continue to be serviced.
+        for _ in range(100):
+            try:command=APP_WINDOW.commands.get_nowait()
+            except queue.Empty:break
+            if isinstance(command,tuple) and command[0]=='text_edit':
+                # UI-thread caret speech is already current; acknowledge without canceling it.
+                KEYBOARD_BATCH_TEXT=None
+                try:apply_keyboard_edit(command[1],mode)
+                except (ValueError,OSError) as exc:speak(str(exc))
+                continue
+            interrupt_speech()
+            if isinstance(command,tuple):
+                if command[0]=='email_field_tab':
+                    command=commit_email_field_tab(command[1],SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                else:
+                    key=command[1]
+                    if key=='Control':KEYBOARD_BATCH_TEXT=None
+                    command='open options' if key=='settings' else navigation_key(key,SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                if command is None:continue
+            mode=resume_from_sleep() if mode=='sleep' and command.lower() in ('wake up','wake companion') else handle_keyboard(command,mode)
+            if mode=='exit':break
+    finally:KEYBOARD_BATCH=previous
+    if not previous and APP_WINDOW.commands.empty() and KEYBOARD_BATCH_TEXT:
+        text=KEYBOARD_BATCH_TEXT;KEYBOARD_BATCH_TEXT=None
+        APP_WINDOW.feedback(punctuation_for_speech(text))
+    return mode
+
 SLEEP_RETURN_MODE = 'awake'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
@@ -513,6 +547,7 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 
 def fast_command_request(command, mode):
+    if mode in ('document','email_draft','mailbox','help','web','note') and reading_request(command) and not (mode in ('document','email_draft') and INPUT_MODE=='dictation'):return True
     if command in POWER_COMMANDS:return True
     if mode in ('settings','power_confirm','exit_confirm'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
@@ -850,6 +885,9 @@ def speak_prompt(text):
 
 
 def speak(text):
+    global KEYBOARD_BATCH_TEXT
+    if KEYBOARD_BATCH:
+        KEYBOARD_BATCH_TEXT=str(text);return
     print('Companion:', text, flush=True)
     if APP_WINDOW is not None:
         APP_WINDOW.show(text)
@@ -2110,7 +2148,10 @@ def startup_update_mode():
 _HANDLE_DEPTH = 0
 
 def handle(text, mode, typed=False):
-    global _HANDLE_DEPTH, CONFIRM_CHOICE
+    global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
+    previous_navigation=KEYBOARD_NAVIGATION
+    quick_read=mode in ('document','email_draft','mailbox','help','web','note') and reading_request(text) is not None and not (mode in ('document','email_draft') and INPUT_MODE=='dictation')
+    if quick_read:KEYBOARD_NAVIGATION=True
     old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
     old_send=pending_send
     _HANDLE_DEPTH += 1
@@ -2120,6 +2161,7 @@ def handle(text, mode, typed=False):
         if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1
+        KEYBOARD_NAVIGATION=previous_navigation
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         announce_main_menu()
     if _HANDLE_DEPTH==0:sync_app_context(result,result!=mode)
@@ -2407,27 +2449,9 @@ def main():
                 if key_notices:
                     interrupt_speech()
                     speak_keyboard_feedback(key_notices[-1])
-                try: typed_command = APP_WINDOW.commands.get_nowait()
-                except queue.Empty: typed_command = None
-                if typed_command:
-                    interrupt_speech()
-                    if isinstance(typed_command,tuple):
-                        if typed_command[0]=='text_edit':
-                            try:apply_keyboard_edit(typed_command[1],mode)
-                            except (ValueError,OSError) as exc:speak(str(exc))
-                            continue
-                        if typed_command[0]=='email_field_tab':
-                            request=commit_email_field_tab(typed_command[1],SLEEP_RETURN_MODE if mode=='sleep' else mode)
-                            if request:mode=handle_keyboard(request,mode)
-                            continue
-                        key=typed_command[1]
-                        typed_command='open settings' if key=='settings' else navigation_key(key,SLEEP_RETURN_MODE if mode=='sleep' else mode)
-                        if typed_command is None:continue
-                    if mode=='sleep' and typed_command.lower() in ('wake up','wake companion'):
-                        mode=resume_from_sleep()
-                    else:
-                        mode = handle_keyboard(typed_command,mode)
-                    if mode == 'exit': return 0
+                if not APP_WINDOW.commands.empty():
+                    mode=process_keyboard_batch(mode)
+                    if mode=='exit':return 0
                     continue
             try:
                 audio = AUDIO.get(timeout=0.02)

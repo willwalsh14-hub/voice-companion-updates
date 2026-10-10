@@ -777,7 +777,7 @@ class VoiceDocument:
             self.sentence_cursor = 0 if at_start else max(0,len(re.findall(r'\S.*?(?:[.!?](?=\s|$)|$)',p.text,re.S))-1)
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs), reset=True)
             if not at_start: self.reading.position = len(self.reading.text)
-            return ('Beginning' if at_start else 'End') + ' of document. ' + self.process('read current paragraph')
+            return ('Beginning' if at_start else 'End')+' of document. '+(self.describe_cell() if p.table_id else p.text or 'Empty paragraph.')
         if command in LINE_BREAK_COMMANDS:
             self.selection_candidates, self.selection_action = [], ''
             if self.selection and self.selected_text():
@@ -1009,7 +1009,7 @@ class VoiceDocument:
         if request:
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             unit, direction = request
-            if navigation and self.paragraphs:
+            if unit!='read' and self.paragraphs:
                 current_base = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
                 current_end = current_base+len(self.paragraphs[self.cursor].text)
                 if not current_base <= self.reading.position <= current_end: self.reading.position = current_base
@@ -1022,7 +1022,7 @@ class VoiceDocument:
                     local = min(len(p.text),max(0,self.reading.position-base))
                     break
                 base += len(p.text)+1
-            if navigation: self.navigation_position = (self.cursor,local)
+            if navigation or unit!='read' and direction!=0:self.navigation_position=(self.cursor,local)
             if unit in ('paragraph','line'):
                 self.word_cursor = self.sentence_cursor = 0
             if unit == 'word':
@@ -1086,7 +1086,7 @@ class VoiceDocument:
             p = self.paragraphs[self.cursor]
             if p.table_id:
                 return self.describe_cell()
-            return f'Paragraph {self.cursor + 1} of {len(self.paragraphs)}. ' + (p.text or 'Empty paragraph.')
+            return (f'Paragraph {self.cursor + 1} of {len(self.paragraphs)}. ' if command=='where am i' else '')+(p.text or 'Empty paragraph.')
         if command in ('read sentence', 'read current sentence', 'next sentence', 'previous sentence'):
             if not self.paragraphs:
                 return 'The document is empty.'
@@ -1099,7 +1099,7 @@ class VoiceDocument:
             elif command == 'previous sentence':
                 self.sentence_cursor = max(0, self.sentence_cursor - 1)
             self.sentence_cursor = min(self.sentence_cursor, len(sentences) - 1)
-            return f'Sentence {self.sentence_cursor + 1} of {len(sentences)}. ' + sentences[self.sentence_cursor]
+            return sentences[self.sentence_cursor]
         if command in ('read word', 'next word', 'previous word', 'spell word'):
             if not self.paragraphs:
                 return 'The document is empty.'
@@ -1112,7 +1112,7 @@ class VoiceDocument:
                 self.word_cursor = max(0, self.word_cursor - 1)
             self.word_cursor = min(self.word_cursor, len(words) - 1)
             word = words[self.word_cursor]
-            return (' '.join(word) if command == 'spell word' else f'Word {self.word_cursor + 1} of {len(words)}. {word}')
+            return (' '.join(word) if command == 'spell word' else word)
         if command in ('delete word', 'remove word') or command.startswith('replace word with '):
             if not self.paragraphs or not self.paragraphs[self.cursor].text.strip():
                 return 'There is no word here.'

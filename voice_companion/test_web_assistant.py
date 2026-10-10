@@ -203,9 +203,9 @@ class WebTests(unittest.TestCase):
     def test_web_reading_units(self):
         self.session.open('example.com')
         self.assertIn('Welcome', self.session.command('start reading'))
-        self.assertIn('Character', self.session.command('next character'))
-        self.assertIn('Word', self.session.command('next word'))
-        self.assertIn('Sentence', self.session.command('next sentence'))
+        self.assertEqual(self.session.command('next character'),'e')
+        self.assertNotRegex(self.session.command('next word'),r'^Word \d')
+        self.assertNotRegex(self.session.command('next sentence'),r'^Sentence \d')
 
     def test_browser_dictation_respects_focused_field_and_password(self):
         class Frame:

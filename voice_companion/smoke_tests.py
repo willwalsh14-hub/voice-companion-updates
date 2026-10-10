@@ -256,9 +256,9 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             companion.handle('next paragraph', mode)
             self.assertIn('Third line', spoken.call_args.args[0])
             companion.handle('previous word', mode)
-            self.assertIn('Word', spoken.call_args.args[0])
+            self.assertNotRegex(spoken.call_args.args[0],r'^Word \d+ of ')
             companion.handle('next character', mode)
-            self.assertIn('Character', spoken.call_args.args[0])
+            self.assertNotRegex(spoken.call_args.args[0],r'^Character \d+ of ')
 
     def test_note_reading_uses_same_commands(self):
         mode = companion.handle('write a note', 'awake')
@@ -267,7 +267,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             companion.handle('start reading', mode)
             self.assertIn('Remember the meeting', spoken.call_args.args[0])
             companion.handle('next word', mode)
-            self.assertIn('Word', spoken.call_args.args[0])
+            self.assertNotRegex(spoken.call_args.args[0],r'^Word \d+ of ')
 
     def test_spoken_voice_picker_previews_then_confirms(self):
         from unittest.mock import MagicMock

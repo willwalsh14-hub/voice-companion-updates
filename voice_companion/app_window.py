@@ -244,7 +244,7 @@ class CompanionWindow:
             history.pack(fill='both', expand=True, padx=18, pady=(0, 18))
             editor=tk.Text(root,wrap='word',font=('Segoe UI',12),undo=True,exportselection=False)
             self.editor=editor
-            local={'text':'','seq':0,'applying':False,'phonetic':None}
+            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None}
             def offset(index='insert'):return len(editor.get('1.0',index))
             def selection():
                 try:return (offset('sel.first'),offset('sel.last'))
@@ -287,8 +287,10 @@ class CompanionWindow:
                     if event.state&4 and event.keysym.lower()=='c':return
                     return 'break'
                 if event.state&4 and event.keysym in ('Up','Down'):
-                    old_index=editor.index('insert');row=int(old_index.split('.')[0])
-                    target=f'{row}.0' if event.keysym=='Up' and int(old_index.split('.')[1]) else f'{max(1,row-1) if event.keysym=="Up" else row+1}.0'
+                    from keyboard_text import paragraph_destination
+                    old_index=editor.index('insert')
+                    destination=paragraph_destination(editor.get('1.0','end-1c'),offset(),-1 if event.keysym=='Up' else 1)
+                    target='1.0 + '+str(destination)+' chars'
                     editor.mark_set('insert',target)
                     if event.state&1:
                         anchor=editor.index('anchor') if editor.tag_ranges('sel') else old_index
@@ -302,7 +304,12 @@ class CompanionWindow:
                     if local['applying']:return
                     if nav:read_caret(event.keysym,bool(event.state&4));send_text_position()
                     else:self.feedback(typing_feedback(before,editor.get('1.0','end-1c'),offset(),self.context.get('echo','characters')))
-                root.after_idle(after)
+                if nav:
+                    if local['reading_after'] is not None:root.after_cancel(local['reading_after'])
+                    def latest_read():
+                        local['reading_after']=None;after()
+                    local['reading_after']=root.after_idle(latest_read)
+                else:root.after_idle(after)
             editor.bind('<KeyPress>',edit_key)
             editor.bind('<<Paste>>',lambda event:'break' if self.context.get('readonly') else None)
             editor.bind('<<Cut>>',lambda event:'break' if self.context.get('readonly') else None)

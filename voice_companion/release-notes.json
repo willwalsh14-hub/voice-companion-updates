@@ -1,25 +1,18 @@
 {
-  "version": "0.2.102-test",
+  "version": "0.2.103-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.101-test",
-  "scope": "Keyboard responsiveness, readable help, accessible Options, sender actions, voice pitch, and usable email header controls. This is a beta testing build.",
+  "baseline": "0.2.102-test",
+  "scope": "Repairs keyboard reading and speech cancellation, rapid navigation backlog, and slow or verbose text-unit reading. This is a beta testing build.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Sender actions without spoken email addresses",
+          "title": "Concise reading at a shared position",
           "details": [
-            "Email message lists now announce sender names without addresses. Missing names are announced as Sender name unavailable. Outlook preserves display names alongside addresses.",
-            "Ctrl+Shift+C or Copy sender address copies the focused sender address. Ctrl+Shift+N, New email to sender, or Email sender starts a fresh addressed draft in Subject. Ctrl+N still starts a blank message. No message is sent automatically."
-          ]
-        },
-        {
-          "title": "Voice pitch and keyboard header customization",
-          "details": [
-            "The Speech category is renamed Voice. Pitch defaults to zero and ranges from minus ten to ten. Use the pitch combo with keyboard navigation and category OK/Cancel, or say Higher pitch, Lower pitch, Pitch up/down, or Set voice pitch minus three. Values are saved. Windows and eSpeak use native pitch controls; AI narration receives higher/lower pitch guidance and its exact result depends on the selected voice.",
-            "Email headers are a selectable list rather than a comma-separated editing field. Arrows select; Space enables or disables; Alt+Up/Down move the header. Tab reaches Enable / disable, Move up, and Move down buttons; Enter activates them. Voice Next/Previous header, Toggle header, and Move header up/down work. OK saves; Cancel discards. From, Subject, Date are enabled by default and Size remains disabled. At least one header is required. Header names remain off by default."
+            "Next, previous, read, current, and read current character, word, line, sentence, and paragraph commands speak the text without announcing the unit number or total first. Character navigation includes spoken spaces and new lines. Explicit Where am I document location reporting remains available.",
+            "Keyboard caret movement and spoken text-unit movement share the reading position, including crossing paragraph boundaries. Reading-unit spans are cached so repeated movement through long text does not rebuild the entire unit list every time."
           ]
         }
       ]
@@ -28,24 +21,24 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Immediate navigation and confirmation keys",
+          "title": "Keyboard reading remains audible",
           "details": [
-            "Keyboard navigation interrupts previous speech and discards obsolete feedback. Menus, first-letter cycling, arrows, and Tab use local speech even with AI narration selected to avoid online generation delays. Control alone stops speech; existing voice silence commands remain.",
-            "Y/N immediately activate Yes/No for exit, restart, and shutdown confirmations. Arrows/Tab and Enter still work; Escape cancels. Home/End reach first/last items in active lists and menus while editable/read-only text retains its own navigation."
+            "Fixed cursor acknowledgment processing that interrupted newly generated keyboard speech. Cursor-only updates now preserve line, word, and character feedback in documents, received email, Help, and What’s new.",
+            "Repeated keyboard reading callbacks are replaced by the latest callback. Windows integration checks cover Up/Down, Left/Right, Ctrl+arrows, Home/End, and Ctrl+Home/End across editable and read-only text, and verify that processing cursor updates does not stop speech."
           ]
         },
         {
-          "title": "Options announcements and readable help",
+          "title": "Rapid navigation without replaying skipped items",
           "details": [
-            "Settings on the main menu is renamed Options. Alt+O, keyboard menu activation, and voice Options/Open options announce Options menu through the immediate speech path. The initial focus announcement no longer replaces the greeting. Existing Settings voice aliases remain available.",
-            "Help and What’s new articles now open in the read-only reading area used for received email. Character, word, line, paragraph, Home/End, and Ctrl+Home/End keys work. Escape returns from articles through subsections/topics, then closes Help from topics."
+            "Queued keyboard actions are applied in order while intermediate speech is suppressed. Only the final navigation result is announced. Cursor updates and editable field changes are preserved, and Control discards pending feedback.",
+            "Batches are bounded to keep microphone processing responsive. Regression tests verify that six rapid arrows move through all six items but announce only the destination. Native Options controls retain immediate feedback replacement."
           ]
         },
         {
-          "title": "Beta validation and limits",
+          "title": "Faster spoken text navigation",
           "details": [
-            "Regression tests cover feedback replacement and interruption order, confirmation keys, Home/End, sender privacy, sender shortcuts, help reading, header toggling/order/Cancel, and pitch commands/markup. Windows integration checks exercise the real native controls and keyboard reading window. Installer checks run before publication.",
-            "Live acoustic responsiveness, individual voice pitch response, and keyboard behavior on the tester’s Windows machine still require beta testing. Online AI pitch is guidance rather than a guaranteed exact pitch. No automated check actually shuts down or restarts the build machine."
+            "Complete text-unit reading commands in email, Help, web reading, and notes join documents in the fast recognition path, skipping the slower second dictation-model pass. Natural move/go-to next/previous aliases and read current unit commands use the shared parser.",
+            "Short spoken text navigation uses local feedback even with AI narration selected, avoiding online speech-generation delays. Full narration remains available through the selected synthesizer. Explicit document/email dictation mode keeps literal dictation handling. Live microphone latency and acoustic output still require beta testing on the user’s Windows machine."
           ]
         }
       ]

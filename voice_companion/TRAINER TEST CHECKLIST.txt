@@ -196,3 +196,10 @@ Check mail Control+Y folders, Control+R reply, Control+Shift+R reply all, Contro
 - Email: no addresses in message navigation, named senders remain readable. Ctrl+Shift+C copies the exact address; Ctrl+Shift+N starts a fresh addressed draft. Voice equivalents work.
 - Email header list: arrows select, Space toggles, Alt+Up/Down reorder, buttons activate with Enter, Tab/Shift+Tab reach all controls, OK persists and Cancel discards. Size remains off by default.
 - What's new and Help: read with standard character/word/line/paragraph keys, Home/End and Ctrl+Home/End. Escape returns through the hierarchy and closes from the topic list.
+
+
+0.2.103 reading checks
+- In a document, received email, Help article, and What's new, test Up/Down, Left/Right, Ctrl+arrows, Home/End, Ctrl+Home/End. Every destination must speak and cursor acknowledgments must not cancel speech.
+- Rapid arrows, first-letter navigation, and Tab must apply every movement and announce only the final destination without replaying skipped items.
+- Next/previous/read/current character, word, line, sentence, paragraph: read only content, including named spaces/newlines for character movement. Test crossing paragraph boundaries and switching between keyboard and voice.
+- Test voice navigation with AI selected: short navigation feedback stays local and prompt. Full narration remains available in the selected engine. Keep explicit dictation mode behavior unchanged.

@@ -242,6 +242,24 @@ class WindowKeyboardTests(unittest.TestCase):
             expected='Control' if key=='Control_L' else key
             self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.typed.get(),''))
+    def test_reading_keys_speak_and_cursor_acknowledgment_preserves_feedback(self):
+        output=Mock(problem=None);self.window.keyboard_output=output
+        for mode in ('document','mailbox','help'):
+            self.window.set_context(dict(mode=mode,source='reading-'+mode,text='First line.\nSecond line.\nThird line.',caret=0,selection=None,echo='characters',phonetic=False,delay=.5,ack=0,readonly=mode!='document'))
+            self.wait(lambda:self.window.context.get('source')=='reading-'+mode)
+            self.call(lambda:self.window.editor.focus_force())
+            output.speak.reset_mock()
+            self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
+            self.wait(lambda:output.speak.called)
+            output.speak.assert_called_with('Second line.')
+            self.wait(lambda:not self.window.commands.empty())
+            with patch.object(companion,'APP_WINDOW',self.window),patch.object(companion,'apply_keyboard_edit') as ack,patch.object(companion,'interrupt_speech') as stop,patch.object(companion,'KEYBOARD_BATCH_TEXT',None):
+                companion.process_keyboard_batch(mode);self.assertTrue(ack.called);stop.assert_not_called()
+            for keysym,control in (('Up',False),('Right',False),('Left',False),('Right',True),('Left',True),('Down',True),('Up',True),('Home',False),('End',False),('Home',True),('End',True)):
+                output.speak.reset_mock()
+                self.call(lambda key=keysym,ctrl=control:self.window.editor.event_generate('<KeyPress>',keysym=key,state=4 if ctrl else 0))
+                self.wait(lambda:output.speak.called)
+            while not self.window.commands.empty():self.window.commands.get_nowait()
     def test_right_arrow_echo_is_immediate_and_phonetic_is_delayed(self):
         self.context();started=time.monotonic()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))

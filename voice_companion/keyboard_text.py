@@ -40,11 +40,21 @@ def replace_keyboard_text(doc,before,after,caret,selection=None):
             p.runs=doc.compress_runs(p.text,styles);created.append(p)
         doc.paragraphs[i:j+1]=created
         doc.last_change_type='edit'
+    doc.reading.set_text(after);doc.reading.position=max(0,min(len(after),caret));doc.reading.continuation=doc.reading.position
     pos=doc._location(max(0,min(len(after),caret)));doc.cursor=pos[0];doc.insertion_position=pos;doc.navigation_position=None
     doc.selection_candidates=[];doc.replacement_candidates=[]
     if selection and selection[0]!=selection[1]:
         a=doc._location(selection[0]);b=doc._location(selection[1]);doc.selection=TextSelection(a[0],a[1],b[0],b[1])
     else:doc.selection=None
+
+def paragraph_destination(text,caret,direction):
+    """Ctrl+arrows skip separator-only lines and retain paragraph-start behavior."""
+    starts=[m.start() for m in re.finditer(r'[^\n]+',text) if m.group().strip()]
+    if not starts:return 0
+    from bisect import bisect_right
+    index=max(0,bisect_right(starts,caret)-1)
+    if direction<0 and caret>starts[index]:return starts[index]
+    return starts[max(0,min(len(starts)-1,index+direction))]
 
 def caret_feedback(text,caret,key,control=False,selection=None):
     if selection and selection[0]!=selection[1]:return 'Selected '+text[selection[0]:selection[1]],''
