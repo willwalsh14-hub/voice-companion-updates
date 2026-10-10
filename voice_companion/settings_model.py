@@ -10,8 +10,8 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates')
-DEFAULTS = {'verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+CATEGORIES = ('Verbosity', 'Speech', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browsing', 'Radio', 'Podcasts', 'Updates', 'Startup options')
+DEFAULTS = {'verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
@@ -25,6 +25,7 @@ def fields(category, context):
         'Web browsing':[Field('browser','Guided browser','choice',('edge','chrome','brave','firefox')),Field('web_favorites','List website favorites','action')],
         'Radio':[Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],
         'Podcasts':[Field('podcast_feed','Podcast subscription','choice',tuple(context.get('podcasts',()))),Field('podcast_limit','Automatic downloads for this subscription','combo',('manual','all','1','2','3','5','10','20','50','100','1000')),Field('podcast_subscriptions','List subscriptions','action')],
+        'Startup options':[Field('start_with_windows','Start with Windows','check')],
         'Updates':[Field('check_updates','Check automatically at startup','check'),Field('check_now','Check for updates now','action')],
     }
     return definitions[category]
@@ -64,7 +65,7 @@ class SettingsSession:
         return field.label + (' hidden' if field.kind=='password' else ' '+('on' if value is True else 'off' if value is False else value))
     def voice_setting(self,command):
         command=command.strip().rstrip('.!?')
-        aliases={'phonetic pronunciation':'phonetic enabled','phonetics':'phonetic enabled','audio ducking':'duck audio','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
+        aliases={'windows startup':'start with windows','start automatically with windows':'start with windows','phonetic pronunciation':'phonetic enabled','phonetics':'phonetic enabled','audio ducking':'duck audio','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
         for alias,name in aliases.items():command=re.sub(r'^(?:set )?'+re.escape(alias)+r'\b',name,command,flags=re.I)
         engine=re.fullmatch(r'(?:use|select|choose) (?:synthesizer )?(windows|windows speech|microsoft|espeak|espeak ng|ai voice)',command,re.I)
         if engine:return 'engine',{'windows speech':'windows','microsoft':'windows','espeak ng':'espeak','ai voice':'ai'}.get(engine[1].lower(),engine[1].lower())

@@ -35,8 +35,8 @@ class ConciseMenusTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'speak') as speak,patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'MAIN_MENU_INDEX',None),patch.object(companion,'SYNTH_PICK_INDEX',None),patch.object(companion,'VOICE_PICK_INDEX',None):
             self.assertEqual(companion.resume_from_sleep(),'awake')
             speak.assert_called_with(companion.MAIN_MENU_PROMPT)
-            companion.handle('next','awake');speak.assert_called_with('Documents, 1 of 8.')
-            companion.handle('previous','awake');speak.assert_called_with('Exit Voice Companion, 8 of 8.')
+            companion.handle('next','awake');speak.assert_called_with('Documents, 1 of 13.')
+            companion.handle('previous','awake');speak.assert_called_with('Exit Voice Companion, 13 of 13.')
             for confirm in ('that one','confirm that','ok','okay'):
                 companion.MAIN_MENU_INDEX=0
                 self.assertEqual(companion.handle(confirm,'awake'),'document')

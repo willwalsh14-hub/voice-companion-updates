@@ -34,6 +34,6 @@ class MenuPromptTests(unittest.TestCase):
             self.assertNotIn(companion.MAIN_MENU_PROMPT,[c.args[0] for c in speech.call_args_list])
     def test_main_menu_navigation_order_and_confirm(self):
         with patch.object(companion,'MAIN_MENU_INDEX',None),patch.object(companion,'speak') as speech,patch.object(companion,'SYNTH_PICK_INDEX',None),patch.object(companion,'VOICE_PICK_INDEX',None):
-            companion.handle('next','awake');speech.assert_called_with('Documents, 1 of 8.')
-            companion.handle('previous','awake');speech.assert_called_with('Exit Voice Companion, 8 of 8.')
+            companion.handle('next','awake');speech.assert_called_with('Documents, 1 of 13.')
+            companion.handle('previous','awake');speech.assert_called_with('Exit Voice Companion, 13 of 13.')
 

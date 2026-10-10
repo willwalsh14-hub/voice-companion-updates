@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from app_updates import version_key
 from update_publisher import release_manifest
-from guide_files import GUIDE_NAMES, guide_sources
+from guide_files import GUIDE_NAMES, guide_sources, published_name
 from release_documents import load_notes, validate, STEM
 
 ROOT = Path(__file__).parent
@@ -111,7 +111,7 @@ def publish(setup, gh='gh', root=ROOT):
         gh_call(gh, 'release', 'edit', tag, '--repo', repo, '--notes-file', str(notes))
     assets = [installer, manifest_path, source, license_path]
     for document in documentation:
-        safe_name = re.sub('-+', '-', re.sub(r'[^A-Za-z0-9._-]+', '-', document.name))
+        safe_name = re.sub('-+', '-', re.sub(r'[^A-Za-z0-9._-]+', '-', published_name(document.name,version)))
         copy = output/safe_name
         shutil.copy2(document, copy)
         assets.append(copy)

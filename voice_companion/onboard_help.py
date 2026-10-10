@@ -28,7 +28,7 @@ SUBTOPICS = {
 
 
 class HelpSession:
-    def __init__(self, path):
+    def __init__(self, path, release_notes_path=None):
         lines = Path(path).read_text(encoding='utf-8-sig').splitlines()
         self.topics = []
         current = None
@@ -46,6 +46,9 @@ class HelpSession:
                 current['paragraphs'].append(value)
         if not self.topics:
             raise ValueError('The user guide has no topics.')
+        if release_notes_path is not None and Path(release_notes_path).is_file():
+            notes=Path(release_notes_path).read_text(encoding='utf-8-sig')
+            self.topics.append({'key':'WHATS NEW','name':"What's new",'paragraphs':[p.strip() for p in notes.split('\n\n') if p.strip()]})
         self.topic_index = 0
         self.subtopic_index = 0
         self.level = 'topics'
@@ -76,7 +79,7 @@ class HelpSession:
 
     def topic(self, name):
         wanted = name.casefold().strip()
-        aliases = {'email': 'read and organize email', 'mail': 'read and organize email',
+        aliases = {'what is new':"what's new",'whats new':"what's new",'release notes':"what's new",'email': 'read and organize email', 'mail': 'read and organize email',
                    'email commands': 'read and organize email',
                    'documents': 'write a document', 'document': 'write a document',
                    'document commands': 'write a document',

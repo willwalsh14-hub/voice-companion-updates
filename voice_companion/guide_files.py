@@ -53,12 +53,18 @@ def guide_sources(roots=None, expected_version=None):
     return sources
 
 
+def published_name(name, version):
+    if version and name.startswith('Voice Companion Release Notes'):
+        return 'Release Notes for Voice Companion '+version+name[len('Voice Companion Release Notes'):]
+    return name
+
+
 def publish_guides(documents, roots=None, expected_version=None):
     sources = guide_sources(roots, expected_version)
     target = Path(documents) / 'User Guides'
     target.mkdir(parents=True, exist_ok=True)
     for name, source in sources.items():
-        destination = target / name
+        destination = target / published_name(name, expected_version)
         if destination.is_file() and destination.read_bytes() == source.read_bytes():
             continue
         # Replace complete copies only; never leave a half-written guide after interruption.
@@ -70,10 +76,10 @@ def publish_guides(documents, roots=None, expected_version=None):
         finally:
             Path(temporary).unlink(missing_ok=True)
     for name,source in sources.items():
-        if hashlib.sha256((target/name).read_bytes()).digest()!=hashlib.sha256(source.read_bytes()).digest():
+        if hashlib.sha256((target/published_name(name,expected_version)).read_bytes()).digest()!=hashlib.sha256(source.read_bytes()).digest():
             raise OSError('Documentation verification failed: '+name)
     if expected_version is not None:
-        receipt={'version':expected_version,'verified':True,'files':{name:hashlib.sha256((target/name).read_bytes()).hexdigest() for name in GUIDE_NAMES}}
+        receipt={'version':expected_version,'verified':True,'files':{published_name(name,expected_version):hashlib.sha256((target/published_name(name,expected_version)).read_bytes()).hexdigest() for name in GUIDE_NAMES}}
         descriptor,temporary=tempfile.mkstemp(prefix='documentation-',suffix='.tmp',dir=target)
         os.close(descriptor)
         try:

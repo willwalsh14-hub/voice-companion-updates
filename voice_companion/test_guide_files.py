@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 import companion
-from guide_files import GUIDE_NAMES, guide_sources, publish_guides
+from guide_files import GUIDE_NAMES, guide_sources, publish_guides, published_name
 
 class GuideFileTests(unittest.TestCase):
     def test_all_formats_publish_update_and_preserve_other_user_files(self):
@@ -69,9 +69,10 @@ class GuideFileTests(unittest.TestCase):
             write_manifest(fresh,'1.2.3-test');write_manifest(stale,'1.2.2-test')
             docs=root/'OneDrive'/'Documents'/'Voice Companion'
             target=publish_guides(docs,[stale,fresh],expected_version='1.2.3-test')
-            for name in GUIDE_NAMES:self.assertEqual((target/name).read_bytes(),(fresh/name).read_bytes())
+            for name in GUIDE_NAMES:self.assertEqual((target/published_name(name,'1.2.3-test')).read_bytes(),(fresh/name).read_bytes())
             receipt=json.loads((target/'documentation-version.json').read_text())
             self.assertEqual(receipt['version'],'1.2.3-test');self.assertTrue(receipt['verified'])
+            self.assertEqual(set(receipt['files']),{published_name(n,'1.2.3-test') for n in GUIDE_NAMES})
             (target/GUIDE_NAMES[1]).write_text('stale HTML after update')
             publish_guides(docs,[stale,fresh],expected_version='1.2.3-test')
             self.assertEqual((target/GUIDE_NAMES[1]).read_bytes(),(fresh/GUIDE_NAMES[1]).read_bytes())

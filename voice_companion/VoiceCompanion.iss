@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.97-test"
+#define AppVersion "0.2.98-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}
@@ -34,12 +34,12 @@ Source: "dist\VoiceCompanion\START HERE - Veteran.epub"; DestDir: "{userdocs}\Vo
 Source: "dist\VoiceCompanion\START HERE - Veteran - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
 
 Source: "dist\VoiceCompanion\START HERE - Veteran.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
-Source: "dist\VoiceCompanion\Voice Companion Release Notes.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
-Source: "dist\VoiceCompanion\Voice Companion Release Notes.html"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
-Source: "dist\VoiceCompanion\Voice Companion Release Notes.docx"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
-Source: "dist\VoiceCompanion\Voice Companion Release Notes.epub"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
-Source: "dist\VoiceCompanion\Voice Companion Release Notes - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
-Source: "dist\VoiceCompanion\Voice Companion Release Notes.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.txt"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.html"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.html"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.docx"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.docx"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.epub"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.epub"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion} - DAISY 3.zip"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\Voice Companion Release Notes.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.brf"; Flags: ignoreversion uninsneveruninstall
 
 [Icons]
 Name: "{group}\Voice Companion"; Filename: "{app}\VoiceCompanion.exe"
@@ -87,3 +87,9 @@ end;
 
 
 
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usUninstall then
+    RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'VoiceCompanion');
+end;

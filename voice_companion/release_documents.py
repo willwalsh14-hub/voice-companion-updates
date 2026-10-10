@@ -168,6 +168,9 @@ def build(root):
     word(root,title,notes);daisy(root,title,notes,uid)
     build_brf(root/(STEM+'.txt'),root/(STEM+'.brf'))
     validate(root,notes)
+    from guide_files import published_name
+    import shutil
+    for suffix in FORMATS:shutil.copyfile(root/(STEM+suffix),root/published_name(STEM+suffix,notes['version']))
 
 
 def validate(root,notes=None):

@@ -1,69 +1,58 @@
 {
-  "version": "0.2.97-test",
+  "version": "0.2.98-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.96-test",
-  "scope": "This build adds comprehensive accessible release documentation and Braille copies. Keyboard instructions below also describe features already available in the comparison build; they are labeled as current references rather than new application changes.",
+  "baseline": "0.2.97-test",
+  "scope": "This build adds keyboard access to updates, a settings menu with separate category pages, optional Windows sign-in startup, confirmed computer restart and shutdown, and in-app access to versioned release notes. Existing document, mail, speech, and update workflows remain available. This is a beta testing build; it is not designated an official stable release.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Accessible release notes in six formats.",
+          "title": "Check for updates in the main menu.",
           "details": [
-            "Every new build includes these release notes as TXT, HTML, Word DOCX, EPUB, text-only DAISY 3, and BRF. All print and digital text editions use the same reviewed source; the BRF contains a Braille translation of that source.",
-            "The outline follows the supplied BrailleSense reference: a release title at heading level 1; New Apps and Features and Fixes and Enhancements at heading level 2; numbered topics; and lettered details beneath each topic. Topic numbering restarts in each major section, and detail lettering restarts for each topic. The TXT edition displays those numbers and letters as ordinary text.",
-            "In Word, use heading navigation to move between the title and major sections. In HTML and EPUB, use heading navigation or the linked contents. In DAISY, open the extracted guide.opf in a player supporting text-only DAISY 3. The DAISY edition uses the same two heading levels and nested numbered and lettered lists. It contains text for the player to speak rather than recorded narration.",
-            "The notes identify the version, release date, comparison build, testing or official status, and the scope of changes. New release notes must be reviewed and updated for each version: the builder rejects notes belonging to another version. A testing build is not described as an official stable release."
+            "Check for updates is now a main-menu choice. After Wake up, use Up or Down to choose it and Enter to activate it. Voice navigation also works: Next or Previous chooses an item, then OK, Okay, Confirm, Confirm that, or That one opens it. Each item is spoken by name followed by its position.",
+            "This invokes the existing manual update check. It works when automatic startup checks are disabled. An available update uses the existing Yes or No offer, download percentages in five-percent increments, status commands, silent installation, and restart sequence. This build does not replace that updater.",
+            "The main menu now contains 13 items: Documents, Email, Web browsing, Radio, Podcasts, Notes, Help, What's new, Settings, Check for updates, Restart computer, Shut down computer, and Exit Voice Companion. Direct task commands remain available."
           ]
         },
         {
-          "title": "Braille copies of the manual and release notes.",
+          "title": "Settings menu and separate category pages.",
           "details": [
-            "START HERE - Veteran.brf and Voice Companion Release Notes.brf are now produced during the installer build. These are genuine six-dot ASCII BRF files translated with Liblouis using contracted Unified English Braille, also called UEB grade 2. They are not print text renamed with a .brf extension.",
-            "The Braille copies use 40 cells per line, 25 lines per page, and form-feed page separators. Open them on a Braille device or in a BRF reader that supports this layout. Print typographic quotation marks and dashes are normalized before translation. Words, shortcuts, numbers, and letters remain part of the source content.",
-            "The translator is a build tool. People installing Voice Companion do not need to install Liblouis, and it does not become another synthesizer choice. A build fails if translation or BRF validation fails, rather than distributing a missing or placeholder Braille copy.",
-            "These files are mechanically translated. They have not undergone a human Braille proofreading or embosser-specific production review. For literal spelling of an unfamiliar command, filename, email address, or URL, consult the matching TXT edition when needed."
+            "Control+Comma opens the self-voicing settings menu. Settings, Open settings, Show settings, Preferences, and Open preferences continue to work by voice. The Settings main-menu item provides another keyboard path.",
+            "Focus starts on the categories menu. Up and Down choose a category; Enter opens it. Moving between categories no longer automatically opens their controls. Next and Previous choose categories by voice; OK, Okay, Confirm, Confirm that, or That one opens the selected category. Saying a category name opens that category directly.",
+            "The categories are Verbosity, Speech, Synthesizer, Input, Email, Documents, Web browsing, Radio, Podcasts, Updates, and Startup options. Existing settings remain grouped in their corresponding categories. Punctuation, typing echo, delayed phonetic pronunciation, and the phonetic delay remain under Verbosity.",
+            "Inside a category, focus starts on the first setting. Tab and Shift+Tab move through fields and buttons. Space toggles a focused checkbox, arrows change combo-box values, and text fields support typing and spoken editing feedback. API-key fields keep their contents hidden. Each category has OK and Cancel buttons.",
+            "Enter defaults to OK and saves the category when a setting has focus. If a button has focus, Enter activates that button instead. OK returns to the settings menu. Cancel or Escape discards edits in the open category and returns to the menu. Escape in the menu closes settings and restores the previous app activity. Previously saved category changes remain saved.",
+            "Within a category, Next setting and Previous setting move between controls. Next and Previous change a focused choice or move between controls. Read setting announces the focused setting; On, Off, and Toggle change a checkbox. Value commands such as Verbosity medium, Punctuation most, Rate 4, Volume 50, and Default font Times New Roman remain supported. They are staged until OK.",
+            "Close settings leaves the whole settings window. Choosing another category directly by voice discards unconfirmed edits in the current category. Buttons such as Add an email account or List radio presets retain their existing behavior: they open another app area and discard unsaved settings edits."
           ]
         },
         {
-          "title": "Where to find the documentation.",
+          "title": "Optional launch when Windows signs in.",
           "details": [
-            "Installation and updates copy the current manual and release notes into Documents, Voice Companion, User Guides. Windows supplies the Documents location, including a redirected Documents folder. A successful new installation replaces the shipped documentation there with the current build copies.",
-            "Use the Voice Companion User Guides shortcut on the desktop or Start menu, or say open user guides from the app. You can also press Alt+T, type open user guides, and press Enter. Personal files placed in that folder are preserved.",
-            "The GitHub release includes the manual and release-note files as separate downloads as well as the installer. You can read or share documentation without installing the app. The release page itself contains the detailed print release notes.",
-            "The release publisher requires all twelve documentation files before uploading. It verifies the uploaded files before making a release visible to the automatic updater. Missing notes, missing formats, or a mismatched version prevent publication."
+            "Startup options is a new settings category. Its Start with Windows checkbox is off by default. Open the category, turn the checkbox on with Space or say Start with Windows on, then press Enter or choose OK to save. Turn it off and save to disable automatic launching.",
+            "Outside settings, Start with Windows on and Start with Windows off save the choice immediately. Windows startup on or off, Start automatically with Windows on or off, and Start Voice Companion with Windows on or off are also accepted outside settings.",
+            "The option launches the installed VoiceCompanion.exe for the current Windows user when that account signs in. It does not configure every user on the machine, require administrator privileges, start dictation automatically, or skip the normal update and wake-up prompts. Enabling it requires the installed Windows app; Quick Test cannot register a temporary Python launch.",
+            "The registration uses the current-user Windows Run key with a quoted executable path. Settings shows the actual registration state. Application updates preserve the same installed path and startup choice; uninstall removes the VoiceCompanion startup value. Other programs' startup entries are left alone."
           ]
         },
         {
-          "title": "Email keyboard reference: open, compose, and send.",
+          "title": "Restart and shut down the computer with confirmation.",
           "details": [
-            "The following shortcuts describe the current email controls introduced in 0.2.96-test. They are documented here for clarity; 0.2.97-test does not add a new set of mail actions. First open Email from the main menu and select or connect an account.",
-            "Ctrl+Y opens the folder chooser. Use Up Arrow and Down Arrow to choose a folder, then Enter to open it. F5 reloads the message list for the current folder. Ctrl+N starts a new email.",
-            "With a message current, Ctrl+R starts a reply; Ctrl+Shift+R starts a reply to all; and Ctrl+F starts a forward. These shortcuts are available while reading a received message as well as from its message list.",
-            "To move to a draft field using the keyboard, press Alt+T, type go to to, go to cc, go to bcc, go to subject, or go to body, then press Enter. These use the same commands available by voice. In an address field, type the address and press Enter to accept it. Body editing uses ordinary Windows text editing keys.",
-            "Ctrl+Enter in a draft requests Send. It does not bypass the normal send confirmation. Answer the confirmation before sending. Escape cancels a draft without saving it; Escape while reading a received message returns to its message list.",
-            "Mail keyboard actions continue to work while the microphone sleeps and in Dictation Only mode. Direct text editing applies to documents and draft bodies. Received email text can be navigated and selected, but it is read-only."
+            "Restart computer and Shut down computer are now main-menu choices, usable with arrows and Enter. Voice alternatives include Restart computer, Restart the computer, Restart Windows, Reboot computer, Shut down computer, Shut down the computer, Shutdown computer, Shut down Windows, Turn off computer, and Turn off the computer.",
+            "These commands affect Windows and the entire computer. Close companion, Exit companion, Return to Windows, and Exit Voice Companion retain their existing meaning: close only Companion. The computer options ask Yes or No before submitting any Windows power request and initially select No. Arrows or Tab choose an answer; Enter confirms it. Escape or No cancels and returns to the previous activity.",
+            "If a document is open, the existing Save this document question runs first. Yes asks for a filename; say or type it and confirm it. No discards document changes. Escape cancels the sequence and keeps editing. After finishing that document decision, a separate computer-action confirmation still appears. Saving the document does not itself authorize a restart.",
+            "At the final Yes, Companion saves the current email draft and note before asking Windows to act. A failure to save or submit the Windows request keeps Companion open and reports that the action could not finish. Companion does not use a force-close switch, so another program's unsaved-work protection can prevent or delay the Windows action.",
+            "For beta testing, check cancellation, the default No selection, and the document save question first. Test an actual confirmed restart or shutdown only after saving work in other programs. A successful power request necessarily ends the Windows session; no automatic return to Companion is promised unless Start with Windows is enabled and the user signs in again."
           ]
         },
         {
-          "title": "Email keyboard reference: select, delete, and move messages.",
+          "title": "What's new inside Companion.",
           "details": [
-            "In the message list, Space marks or unmarks the current message. This action applies when the typed command field is empty. Shift+Up Arrow and Shift+Down Arrow extend the message selection while moving through the list.",
-            "Ctrl+A in the message list selects all messages on the currently loaded page. It does not select every message in the account. Ctrl+A inside received-message text or an editable text body selects text instead of messages.",
-            "Delete in the message list requests deletion of the current message or selected messages. A Yes or No question must be answered. Messages are moved to the provider Trash or Deleted Items folder; this shortcut is not a permanent-delete command.",
-            "Ctrl+Shift+V opens the destination folder chooser to move the current or selected messages. Choose a folder with the arrows and Enter, then answer the confirmation. This is a mail action, separate from the ordinary Ctrl+V text paste shortcut.",
-            "For a Yes or No question, use the arrows or Tab and Shift+Tab to choose an answer, then Enter or Space to accept it. Escape cancels the question. You can also say yes or no, or type the answer into the command field and press Enter. Typing no must not accept a preselected Yes."
-          ]
-        },
-        {
-          "title": "Email keyboard reference: create, rename, and delete folders.",
-          "details": [
-            "Ctrl+Shift+E opens the Create Folder prompt. Type the name and press Enter, or say the name using the folder command. Review and answer the confirmation before the provider is changed.",
-            "F2 in Email opens the Rename Folder chooser. Select the folder with the arrows and Enter, type its new name, and press Enter. Review the Yes or No confirmation. F2 in a document names the document instead; its action depends on the current area.",
-            "Ctrl+Shift+D opens the Delete Folder chooser. Choose the folder and answer the confirmation. Delete while a folder chooser is open requests deletion of the highlighted folder.",
-            "Standard provider folders are protected. Folder deletion is restricted to empty user-created folders with no child folders. If the app refuses to delete a populated or protected folder, move its messages or use the provider interface as appropriate; refusal is intentional protection.",
-            "The matching voice commands include create folder followed by its name, rename folder, rename to followed by the new name, and delete folder. Use next or previous and okay, confirm, confirm that, or that one for a chooser. Alt+T lets you type the same commands and press Enter."
+            "Say What's new, What is new, Whats new, Release notes, or Open release notes to read the current build's complete release notes. What's new is also a main-menu item and a topic in built-in Help. Help with what is new and Help with release notes jump to the same topic.",
+            "The spoken notes use the same canonical TXT content as the downloadable release-note files. The content includes version, testing or official status, date, comparison build, numbered changes, and lettered details. It is not a short summary that omits the testing information.",
+            "Use Continue reading, Read from top, Next paragraph, Previous paragraph, Next sentence, Previous sentence, and other reading commands to review. Close help returns to the activity from which the notes were opened. Main menu returns to the start. Notes are available offline because they ship with the app."
           ]
         }
       ]
@@ -72,53 +61,31 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Release documentation generation and publication.",
+          "title": "Version numbers in release-note filenames.",
           "details": [
-            "Previously, the published release description was a short generic installer message. New releases now use reviewed, version-specific notes that describe changed behavior, how to use relevant commands and shortcuts, where files are installed, and material limitations.",
-            "The document builder creates all six release-note formats together and creates a BRF manual alongside the existing five manual editions. Shared source text prevents the formats from describing different features or shortcut mappings.",
-            "The numbered and lettered labels in the supplied reference are generated list formatting, not literal characters stored in the paragraph text. The new release-note exporter reproduces the list hierarchy instead of dropping those labels during text extraction.",
-            "Publication stops if the notes version differs from the application version. Future maintainers must update release-notes.json for each build, describe actual changes since the named baseline, and retain the distinction between testing and official releases. Changing only the version number is not sufficient editorial review.",
-            "Installer copying, application guide discovery, separate GitHub assets, and release verification all include the additional document files. An app update can therefore refresh the accessible release notes and Braille manual in the same location as the other guide formats."
+            "The user-facing release-note files now include the build version: Release Notes for Voice Companion 0.2.98-test.txt, .html, .docx, .epub, and .brf, plus Release Notes for Voice Companion 0.2.98-test - DAISY 3.zip. GitHub downloads use hyphens in place of spaces for portable asset names, with the version preserved.",
+            "The installer writes those versioned names to Documents, Voice Companion, User Guides during both ordinary and silent automatic installation. Open user guides repeats the verified copy. Manual filenames remain START HERE - Veteran with their existing format extensions.",
+            "Versioned release notes from earlier installations are retained rather than overwritten by the next version. Legacy notes without a version in their filename may still be present from earlier builds. The current documentation-version.json records the current verified filenames and version; opening an old retained note intentionally shows that earlier release.",
+            "The source builder keeps fixed internal release-note names for packaging and in-app help while also generating versioned user-facing copies. Those internal names do not determine the downloaded or Documents-folder filenames. All formats derive from the same release-notes.json source."
           ]
         },
         {
-          "title": "Verify guide refresh after automatic updates.",
+          "title": "Documentation and release status remain consistent.",
           "details": [
-            "Guide discovery previously checked that filenames existed, without verifying the documentation version or content. It could prefer a copy beside the executable over the bundled copy. Those checks did not establish that the copies in Documents matched the running build.",
-            "The builder now creates a documentation manifest containing the version and SHA-256 checksum of every manual and release-note file. The app checks that manifest and chooses files matching its version and checksums. A stale alternative copy cannot silently overwrite the current guide with old content.",
-            "Setup now runs a hidden documentation refresh after copying application files, including during a silent automatic update. This refresh does not open the microphone or start another interactive app window. Normal app startup and the Open User Guides command also copy and verify the current documentation.",
-            "The Windows build checks the installed documentation refresh before publishing. In Documents, Voice Companion, User Guides, documentation-version.json records the successfully verified version and file checksums. The print manual also shows its guide build near the beginning so you can identify an old copy.",
-            "If a file is locked open or Documents is unavailable, the app cannot guarantee replacement until the problem is resolved. Close any guide reader, then reopen User Guides or restart the app to retry. A failed refresh writes user-guide-update-error.txt under Local AppData, VoiceCompanion; stale copies are not reported as successfully updated. A reader already displaying a guide may need to close and reopen it to load the replaced file."
+            "The manual documents the 13-item main menu, category activation with Enter, category-level save and cancel, startup commands, power confirmations, and What's new reading. Its opening Guide build marker identifies 0.2.98-test. Built-in help reads this same manual and adds the complete current notes as a separate topic.",
+            "TXT, HTML, DOCX, EPUB, text-only DAISY 3, and contracted UEB BRF continue to be generated for both publications. The supplied reference outline is retained: heading level 1 title, heading level 2 New Apps and Features and Fixes and Enhancements, numbered topics, and lettered details. TXT displays the same labels as plain text.",
+            "BRF uses genuine Liblouis translation with 40 cells per line and 25 lines per page. The translation is mechanical and has not been human Braille proofread. DAISY contains navigable text for a compatible player to speak; it does not include recorded narration.",
+            "Future official releases use the same detailed outline and must identify their actual official status and comparison release. Testing builds continue to be labeled Testing build. The version/status checks reject mismatched release notes before publication; the presence of a public download does not by itself designate a beta build stable."
           ]
         },
         {
-          "title": "Current document saving and exit behavior: keyboard reference.",
+          "title": "Checks and focused beta-testing steps.",
           "details": [
-            "These controls were introduced in 0.2.96-test and are restated to explain the current behavior. F2 while writing a document opens its naming field. Type the name and press Enter, or say the name and confirm. The filename changes and you return to editing; the name is not inserted into the document body.",
-            "Escape or the voice command main menu while editing asks whether you want to save. Yes opens the naming step before leaving. No discards changes made since the document was opened or last explicitly saved. Escape at the question cancels the exit and keeps you in the document.",
-            "An existing document retains the previously saved file when changes are discarded. A new unsaved document is removed rather than left as an unwanted untitled file. The discarded session is cleared so Resume does not bring those changes back.",
-            "Exit Voice Companion is the last main-menu item. The commands close companion, exit companion, and return to windows request exit. Alt+F4 or closing the app window also requests exit. If a document is open, the save question comes first.",
-            "Enter and Escape are contextual. Enter in a naming field accepts its text; Enter in a chooser opens the highlighted option; Escape in a document starts the save question; and Escape in a mail draft cancels that draft. Do not assume Escape has the same save behavior in every area."
-          ]
-        },
-        {
-          "title": "Current text navigation and speech settings: keyboard reference.",
-          "details": [
-            "In a document, draft body, or received message, Left and Right Arrow move by character; Ctrl+Left and Ctrl+Right move by word; Up and Down Arrow move by display line; and Ctrl+Up and Ctrl+Down move by paragraph. Home and End move within the line; Ctrl+Home and Ctrl+End move to the beginning or end of the text. Shift with a movement key extends text selection.",
-            "Ctrl+Comma opens the self-voicing settings dialog. Focus starts in the category list. Up and Down Arrow change category without requiring Enter. Tab and Shift+Tab move through that category controls. Space toggles checkboxes, and the arrows change radio or combo choices. Enter accepts OK; Cancel or Escape leaves without applying pending dialog changes.",
-            "Verbosity contains punctuation, typing echo, and delayed phonetic character feedback. Typing echo can announce words, characters, characters and words, or none. Phonetic feedback can be enabled or disabled and its delay adjusted; the default delay is half a second.",
-            "High verbosity provides fuller navigation guidance. Medium uses shorter hints. Low omits optional navigation hints. These presets do not remove document or email content, important questions, or errors, and do not replace your independently chosen typing echo, punctuation, or phonetic settings.",
-            "Press Alt+T anywhere a typed command field is available to focus it, type an app command, and press Enter. This supplies a keyboard path for actions that do not have a dedicated shortcut. Menu and list navigation uses arrows and Enter, with spoken item names followed by their positions."
-          ]
-        },
-        {
-          "title": "Testing status, update instructions, and limits.",
-          "details": [
-            "0.2.97-test remains a testing build. This release changes documentation generation, packaging, and publication; it does not intentionally change speech recognition, email provider authentication, or the application editing commands.",
-            "Install VoiceCompanion-Setup.exe or accept the offered automatic update. Download progress is announced in five-percent increments. You can request update status or status during the update. Keep the machine connected and allow the update process to finish before checking the new version.",
-            "Email still depends on the configured Gmail or Microsoft application permissions and provider policies. This documentation release does not remove Gmail testing-user restrictions or Microsoft organization approval requirements. People must use their own authorized email accounts.",
-            "The notes describe implemented behavior and automated validation, not a guarantee for every microphone, headset, account, DAISY player, Braille display, or embosser. Report the app version, the command or shortcut used, the current area, the expected result, and what actually happened when testing.",
-            "Before publication, the Windows builder must pass its application tests, package the installer, install it for its runtime check, and verify release assets. These notes are prepared before those checks run; the final release log provides the actual test outcome."
+            "Automated checks cover manual update selection from the main menu, per-user startup registration and quoted paths, startup disabled by default, both power-confirmation cancellation and acceptance, the default No choice, document save before power confirmation, Windows request failures, and in-app reading of the same release notes.",
+            "Windows-specific controls are tested through the actual native settings window: category arrows choose without opening, Enter opens and speaks the first control, checkboxes and combo boxes change, OK saves and returns to the menu, and Cancel restores staged values. Existing text-entry and hidden-key feedback checks remain in the suite.",
+            "After installing, use keyboard navigation to select Check for updates and What's new. Open settings with Control+Comma, choose a category with arrows, press Enter, change a setting, and test both Cancel and OK. Return to the app and check that document or email keyboard navigation still works. Test speech rate, volume, punctuation, and synthesizer choices without enabling startup or confirming a power action.",
+            "To test startup, enable Start with Windows in the installed app, save, then sign out and sign in after saving other work. Confirm that Companion starts and gives its normal readiness or update offer. Disable the option, save, and verify it does not launch on the next sign-in. Startup behavior may also be constrained by Windows or an organization's policy.",
+            "After an automatic update, close and reopen guide readers, say Open user guides, and check the manual's Guide build marker and versioned release-note filenames. documentation-version.json in User Guides records the verified version. If copying fails, user-guide-update-error.txt under Local AppData, VoiceCompanion provides diagnostic information."
           ]
         }
       ]

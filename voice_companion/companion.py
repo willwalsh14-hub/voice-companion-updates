@@ -42,7 +42,7 @@ from keyboard_text import document_text,replace_keyboard_text,absolute
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.97-test'
+APP_VERSION = '0.2.98-test'
 def documents_folder():
     if os.getenv('VOICE_COMPANION_DATA_DIR') or APP != DEFAULT_APP:
         return APP / 'Documents'
@@ -160,6 +160,8 @@ DOCUMENT_NAME_RETURN = "awake"
 DOCUMENT_CLOSE_TARGET = "awake"
 DOCUMENT_BASELINE = None
 CONFIRM_CHOICE = "yes"
+POWER_ACTION = None
+POWER_RETURN_MODE = "awake"
 
 def checkpoint_document():
     global DOCUMENT_BASELINE
@@ -180,7 +182,7 @@ def discard_document_changes():
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
-    if logical=='document_save' or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
+    if logical in ('document_save','power_confirm') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
@@ -252,7 +254,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to get started and launch the main menu. Say help for the user guide.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Settings', 'settings'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -300,7 +302,7 @@ def settings_action(key,mode):
 
 def navigation_key(key,mode):
     global CONFIRM_CHOICE
-    confirming=mode=='document_save' or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
+    confirming=mode in ('document_save','power_confirm') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
     if confirming:
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             CONFIRM_CHOICE='no' if CONFIRM_CHOICE=='yes' else 'yes'
@@ -389,7 +391,8 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 
 def fast_command_request(command, mode):
-    if mode == 'settings': return True
+    if mode in ('settings','power_confirm'): return True
+    if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
     if mode in ('update_offer','update_download') and command in ('yes','yes please','no','no thanks','okay','ok','install it','install update','cancel','cancel update','stop update','not now','later','status','update status'): return True
@@ -822,7 +825,22 @@ def _handle(text, mode, typed=False):
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
+    global POWER_ACTION, POWER_RETURN_MODE
     command=normalized_command(text)
+    if mode=='power_confirm':
+        if command in ('no','no thanks','cancel','main menu','back'):
+            POWER_ACTION=None;speak('Canceled.');return POWER_RETURN_MODE
+        if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
+            try:
+                if email_draft is not None:email_draft.save()
+                flush_note(POWER_RETURN_MODE)
+                from windows_actions import request_power
+                request_power(POWER_ACTION)
+            except (OSError,ValueError,__import__('subprocess').SubprocessError) as exc:
+                speak('The computer could not '+str(POWER_ACTION)+'. Your app is still open.');POWER_ACTION=None;return POWER_RETURN_MODE
+            speak('Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.')
+            POWER_ACTION=None;return 'exit'
+        speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
     if mode=='document_save' and not spoken_control(command) and command not in ('settings','open settings'):
         if command in ('cancel','go back','back'):
             speak('Your document is still open.');return 'document'
@@ -837,7 +855,7 @@ def _handle(text, mode, typed=False):
                 speak('Could not discard changes safely. Your document is still open.');return 'document'
             document=None
             speak('Changes discarded.')
-            return handle('exit companion','awake',typed) if DOCUMENT_CLOSE_TARGET=='exit' else 'awake'
+            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else 'awake'
         speak('Save this document? Yes or no.');return mode
     if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('settings','open settings'):
         if normalized_command(text) in ('cancel','cancel naming','go back'):
@@ -856,7 +874,7 @@ def _handle(text, mode, typed=False):
         if result.startswith('Document named '):
             PENDING_DOCUMENT_NAME=None
             checkpoint_document()
-            return handle('exit companion','awake',typed) if DOCUMENT_NAME_RETURN=='exit' else DOCUMENT_NAME_RETURN
+            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_NAME_RETURN],'awake',typed) if DOCUMENT_NAME_RETURN in ('exit','restart','shutdown') else DOCUMENT_NAME_RETURN
         return 'document_name'
     if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
         control=speech_control(text)
@@ -866,6 +884,15 @@ def _handle(text, mode, typed=False):
             SETTINGS_PANEL.cancel()
             return handle(text,SETTINGS_RETURN_MODE,typed)
         SETTINGS_PANEL.command(text)
+        return mode
+    startup_command=re.fullmatch(r'(?:set )?(?:start with windows|start voice companion with windows|start automatically with windows|windows startup)(?: to)? (on|off)',command)
+    if startup_command:
+        try:
+            from windows_actions import set_startup
+            enabled=startup_command[1]=='on';set_startup(enabled)
+            PREFERENCES['start_with_windows']=enabled;save_preferences()
+            speak('Start with Windows '+startup_command[1]+'.')
+        except (OSError,ValueError) as exc:speak(str(exc))
         return mode
     if normalized_command(text) in ('settings','open settings','show settings','preferences','open preferences'):
         SETTINGS_RETURN_MODE = mode
@@ -1024,6 +1051,22 @@ def _handle(text, mode, typed=False):
         tutorial_session = PracticeTutorial()
         speak(tutorial_session.start())
         return 'tutorial'
+    power_commands={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
+    if mode!='sleep' and command in power_commands:
+        action=power_commands[command]
+        if mode in ('document','document_name','document_save') and document is not None:
+            DOCUMENT_CLOSE_TARGET=action;CONFIRM_CHOICE='yes'
+            speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
+            return 'document_save'
+        POWER_ACTION=action;POWER_RETURN_MODE=mode;CONFIRM_CHOICE='no'
+        speak(('Restart the computer?' if action=='restart' else 'Shut down the computer?')+' Yes or no. Use arrows to choose, then Enter. Escape cancels.')
+        return 'power_confirm'
+    if command in ("what's new",'what is new','whats new','release notes','open release notes'):
+        try:
+            help_return_mode=mode if mode!='help' else help_return_mode
+            help_session=HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
+            speak(help_session.topic('what is new'));return 'help'
+        except (OSError,ValueError):speak('Release notes could not open. Ask your helper to check the installation.');return mode
     if mode == 'help' and not spoken_control(command) and command not in (
             'faster', 'slower', 'speak faster', 'speak slower', 'louder', 'quieter',
             'list voices', 'next voice', 'previous voice'):
@@ -1116,7 +1159,7 @@ def _handle(text, mode, typed=False):
         try:
             if mode != 'help' or help_session is None:
                 help_return_mode = mode
-                help_session = HelpSession(GUIDE)
+                help_session = HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
             topic_name = ('writing email' if help_topic and help_topic[1] == 'email' and mode == 'email_draft'
                           else help_topic[1] if help_topic else None)
             result = help_session.topic(topic_name) if topic_name else help_session.process('back to topics')
@@ -1128,7 +1171,7 @@ def _handle(text, mode, typed=False):
     if command in help_alias:
         try:
             help_return_mode = mode
-            help_session = HelpSession(GUIDE)
+            help_session = HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
             speak(help_session.topic(help_alias[command]))
             return 'help'
         except (OSError, ValueError):

@@ -4,6 +4,7 @@ from ctypes import wintypes as w
 import queue
 import threading
 import uuid
+import copy
 from settings_model import CATEGORIES
 
 class NativeSettings:
@@ -35,12 +36,12 @@ class NativeSettings:
         default=api('DefWindowProcW',result,[w.HWND,w.UINT,w.WPARAM,w.LPARAM])
         api('RegisterClassW',w.ATOM,[c.POINTER(WC)]);api('SetWindowTextW',w.BOOL,[w.HWND,w.LPCWSTR]);api('GetWindowTextW',c.c_int,[w.HWND,w.LPWSTR,c.c_int])
         api('ShowWindow',w.BOOL,[w.HWND,c.c_int]);api('SetForegroundWindow',w.BOOL,[w.HWND]);api('EnableWindow',w.BOOL,[w.HWND,w.BOOL]);api('IsWindow',w.BOOL,[w.HWND]);api('GetNextDlgTabItem',w.HWND,[w.HWND,w.HWND,w.BOOL])
-        api('GetKeyState',c.c_short,[c.c_int])
+        api('GetKeyState',c.c_short,[c.c_int]);api('IsWindowEnabled',w.BOOL,[w.HWND])
         api('GetMessageW',w.BOOL,[c.POINTER(w.MSG),w.HWND,w.UINT,w.UINT]);api('IsDialogMessageW',w.BOOL,[w.HWND,c.POINTER(w.MSG)]);api('TranslateMessage',w.BOOL,[c.POINTER(w.MSG)]);api('DispatchMessageW',result,[c.POINTER(w.MSG)])
         api('SetTimer',c.c_size_t,[w.HWND,c.c_size_t,w.UINT,c.c_void_p]);api('PostQuitMessage',None,[c.c_int])
         api('GetKeyState',c.c_short,[c.c_int])
         k.GetModuleHandleW.restype=w.HMODULE;k.GetModuleHandleW.argtypes=[w.LPCWSTR];instance=k.GetModuleHandleW(None)
-        controls={};children=[];last_focus=[None];category=[None];buttons={};alive=[True]
+        controls={};children=[];last_focus=[None];category=[None];buttons={};alive=[True];editing=[False];baseline=[copy.deepcopy(self.session.values)]
         def control(cls,label,style,x,y,width,height,identifier,extended=0):
             hwnd=create(extended,cls,label,0x50000000|style,x,y,width,height,self.hwnd,identifier,instance,None)
             if not hwnd:raise c.WinError(c.get_last_error())
@@ -70,6 +71,12 @@ class NativeSettings:
         def render(focus_key=None):
             for hwnd in children:destroy(hwnd)
             children.clear();controls.clear();buttons.clear();last_focus[0]=None
+            u.ShowWindow(category[0],0 if editing[0] else 5)
+            u.SetWindowTextW(self.hwnd,'Voice Companion Settings - '+self.session.category_name() if editing[0] else 'Voice Companion Settings')
+            if not editing[0]:
+                close_button=control('BUTTON','Close settings',0x10000,595,530,100,32,2)
+                children.append(close_button);buttons[close_button]='Close settings.'
+                focus(category[0]);return
             for index,field in enumerate(self.session.current_fields()):
                 y=45+index*62
                 if field.kind not in ('check','action'):
@@ -90,17 +97,29 @@ class NativeSettings:
                 controls[hwnd]=field;children.append(hwnd)
             ok=control('BUTTON','OK',0x10000|1,485,530,100,32,1);cancel=control('BUTTON','Cancel',0x10000,595,530,100,32,2)
             buttons[ok]='OK. Save settings.';buttons[cancel]='Cancel. Discard changes.';children.extend((ok,cancel))
-            target=next((h for h,f in controls.items() if f.key==focus_key),category[0]);focus(target)
+            target=next((h for h,f in controls.items() if f.key==focus_key),next((h for h in controls if u.IsWindowEnabled(h)),ok));focus(target)
         def close(saved=False):
             if not saved:self.session.cancel()
             self.closed.set();alive[0]=False;destroy(self.hwnd)
+        def show_menu(discard=False):
+            if discard:self.session.values=copy.deepcopy(baseline[0])
+            editing[0]=False;self.pending=False;render();self.announce('Settings menu. '+describe(category[0]));last_focus[0]=category[0]
+        def cancel_category():
+            if editing[0]:self.announce('Changes canceled.');show_menu(True)
+            else:self.announce('Settings closed.');close()
+        def open_category():
+            baseline[0]=copy.deepcopy(self.session.values);editing[0]=True;render()
+            self.announce(self.session.category_name()+'. '+describe(get_focus()));last_focus[0]=get_focus()
         def save():
+            if not editing[0]:open_category();return
             if self.pending:return
             try:collect()
             except ValueError as exc:self.announce(str(exc));return
             self.pending=True;self.save_callback(dict(self.session.values))
         def select_category(index):
-            collect();self.session.category=max(0,min(len(CATEGORIES)-1,index));send(category[0],0x186,self.session.category,0);render();self.announce(describe(category[0]));last_focus[0]=category[0]
+            if editing[0]:self.session.values=copy.deepcopy(baseline[0]);editing[0]=False
+            self.session.category=max(0,min(len(CATEGORIES)-1,index));send(category[0],0x186,self.session.category,0)
+            render();self.announce(describe(category[0]));last_focus[0]=category[0]
         def voice(text_command):
             cmd=text_command.lower().strip().rstrip('.!?')
             action=next((key for key,value in self.session.context.get('actions',{}).items() if cmd==value),None)
@@ -108,10 +127,11 @@ class NativeSettings:
             if cmd in ('read setting','say setting','read current setting'):
                 self.announce(describe(get_focus()));return
             if cmd in ('ok','okay','confirm','confirm that','save','save settings','that one'):save();return
-            if cmd in ('cancel','cancel settings','close settings','back'):self.announce('Settings canceled.');close();return
+            if cmd in ('close settings','cancel settings'):self.announce('Settings closed.');close();return
+            if cmd in ('cancel','back','settings menu','back to settings'):cancel_category();return
             name=cmd.removeprefix('go to ').removeprefix('settings ').removeprefix('select ')
             match=next((i for i,n in enumerate(CATEGORIES) if name==n.lower()),None)
-            if match is not None:select_category(match);return
+            if match is not None:select_category(match);open_category();return
             if cmd in ('next setting','previous setting'):
                 focus(u.GetNextDlgTabItem(self.hwnd,get_focus(),cmd.startswith('previous')));return
             if cmd in ('next','previous','next category','previous category'):
@@ -124,7 +144,9 @@ class NativeSettings:
                 return
             setting=self.session.voice_setting(text_command)
             if setting:
-                collect();key,value=setting;message=self.session.set(key,value)
+                collect();key,value=setting
+                if not editing[0]:baseline[0]=copy.deepcopy(self.session.values);editing[0]=True
+                message=self.session.set(key,value)
                 self.session.category=next(i for i,name in enumerate(CATEGORIES) if any(f.key==key for f in __import__('settings_model').fields(name,self.session.context)))
                 send(category[0],0x186,self.session.category,0);render(key);self.announce(message);last_focus[0]=get_focus();return
             if cmd in ('on','off','toggle'):
@@ -144,7 +166,7 @@ class NativeSettings:
                 if msg==0x111:
                     identifier=wp&0xFFFF;notice=(wp>>16)&0xFFFF
                     if identifier==1:save();return 0
-                    if identifier==2:self.announce('Settings canceled.');close();return 0
+                    if identifier==2:cancel_category();return 0
                     if identifier==100 and notice==1:select_category(int(send(category[0],0x188,0,0)));return 0
                     if lp in controls:
                         field=controls[lp]
@@ -156,7 +178,7 @@ class NativeSettings:
                 if msg==0x113:
                     while not self.actions.empty():
                         action,payload=self.actions.get_nowait()
-                        if action=='accepted':close(True);return 0
+                        if action=='accepted':self.session.original=copy.deepcopy(self.session.values);show_menu();return 0
                         if action=='cancel':close();return 0
                         if action=='failed':self.pending=False;self.announce(payload)
                         if action=='voice' and not self.pending:voice(payload)
@@ -177,10 +199,12 @@ class NativeSettings:
         category[0]=control('LISTBOX','',0x10000|0x200000|0x800000|1,15,45,185,475,100)
         for name in CATEGORIES:
             buf=c.create_unicode_buffer(name);send(category[0],0x180,0,c.cast(buf,c.c_void_p).value)
-        send(category[0],0x186,self.session.category,0);render();u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
+        send(category[0],0x186,self.session.category,0);render();self.announce('Settings menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
-            if message.message==0x100 and message.wParam==0x1B:self.announce('Settings canceled.');close();continue
+            if message.message==0x100 and message.wParam==0x1B:cancel_category();continue
+            if message.message==0x100 and message.wParam in (0x26,0x28,0x25,0x27) and get_focus()==category[0] and not editing[0]:
+                select_category((self.session.category+(-1 if message.wParam in (0x26,0x25) else 1))%len(CATEGORIES));continue
             if message.message==0x100 and message.wParam==9:
                 current=get_focus()
                 if parent(current) in controls:current=parent(current)
@@ -189,7 +213,7 @@ class NativeSettings:
                 self.announce(describe(target));continue
             if message.message==0x100 and message.wParam==0x0D:
                 target=get_focus()
-                if get_focus() in buttons and buttons[get_focus()].startswith('Cancel'):self.announce('Settings canceled.');close()
+                if get_focus() in buttons and (buttons[get_focus()].startswith('Cancel') or not editing[0]):cancel_category()
                 elif target in controls and controls[target].kind=='action':self.action_callback(controls[target].key);close()
                 else:save()
                 continue

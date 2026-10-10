@@ -88,7 +88,7 @@ class PublishingTests(unittest.TestCase):
     def test_release_document_asset_names_are_portable(self):
         self.run_publish()
         uploads=[Path(c[3]).name for c in self.commands if c[:2]==('release','upload')]
-        self.assertIn('Voice-Companion-Release-Notes.brf',uploads)
+        self.assertIn('Release-Notes-for-Voice-Companion-1.2.3-test.brf',uploads)
         self.assertIn('START-HERE-Veteran.brf',uploads)
         self.assertFalse(any(' ' in name for name in uploads))
 
