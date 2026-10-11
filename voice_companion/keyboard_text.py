@@ -64,12 +64,17 @@ def caret_feedback(text,caret,key,control=False,selection=None):
         match=re.search(r'\S+',text[caret:]);return (match.group() if match else 'End of text.'),''
     if key in ('Up','Down','Prior','Next') or (control and key in ('Home','End')):
         start=text.rfind('\n',0,caret)+1;end=text.find('\n',caret);end=len(text) if end<0 else end
-        return text[start:end] or 'Blank line.',''
+        return text[start:end] or 'Blank.',''
     char=text[caret:caret+1];return character(char),char
 
-def typing_feedback(before,after,caret,echo):
+def typing_feedback(before,after,caret,echo,key=None,old_caret=None):
     if echo=='none' or before==after:return None
-    if len(after)<len(before):return 'Deleted.'
+    if len(after)<len(before):
+        if key=='Delete':return character(after[caret:caret+1])
+        if key=='BackSpace' and old_caret is not None:
+            removed=before[caret:old_caret]
+            return character(removed[-1:]) if removed else 'Deleted.'
+        return 'Deleted.'
     start=0
     while start<min(len(before),len(after)) and before[start]==after[start]:start+=1
     end_before=len(before);end_after=len(after)

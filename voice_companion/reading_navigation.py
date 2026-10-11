@@ -46,7 +46,7 @@ class ReadingCursor:
         if unit=='character':
             from keyboard_text import character
             return character(value)
-        return value.strip() or 'Blank line.'
+        return value.strip() or 'Blank.'
 
     def read(self, from_top=False):
         if not self.text.strip(): return 'There is no text to read.'

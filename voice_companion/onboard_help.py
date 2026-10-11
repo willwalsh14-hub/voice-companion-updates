@@ -18,9 +18,9 @@ SUBTOPICS = {
     'READ AND ORGANIZE EMAIL - HELPER MUST CONNECT AND TEST THE ACCOUNT FIRST': [
         ('Read messages', 0, 1), ('Go to folders', 1, 2),
         ('Mark, move, and delete messages', 2, 3), ('Reply and forward', 3, 4),
-        ('Create and manage folders', 4, 5)],
+        ('Create and manage folders', 4, 5), ('HTML links and buttons', 5, 6)],
     'WEB BROWSING': [('Search and links', 0, 2), ('Choose a browser', 2, 3),
-                     ('Favorites and filling forms', 3, 4), ('Review and submit forms', 4, 5), ('Keyboard and voice page navigation', 5, 7), ('Tables and page reading', 7, 9)],
+                     ('Favorites and filling forms', 3, 4), ('Review and submit forms', 4, 5), ('Keyboard and voice page navigation', 5, 7), ('Tables and page reading', 7, 9), ('Page loading and typed searches', 9, 10)],
     'FIND AND PLAY PODCASTS': [('Search for a show', 0, 1), ('Browse episodes', 1, 2)],
     'SAVE AND PLAY RADIO PRESETS': [('Save a preset', 0, 1),
                                      ('Play saved stations', 1, 2), ('Delete a preset', 2, 3)],

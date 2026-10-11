@@ -1,43 +1,47 @@
 {
-  "version": "0.2.108-test",
+  "version": "0.2.109-test",
   "status": "Testing build",
-  "date": "October 10, 2026",
-  "baseline": "0.2.105-test",
-  "scope": "Web browsing audit, shared keyboard and voice element/form/table navigation, and email sending with both subject and body blank.",
+  "date": "October 11, 2026",
+  "baseline": "0.2.108-test",
+  "scope": "Page-load speech and keyboard focus, typed web searches, deletion feedback, and accessible HTML email controls.",
   "sections": [
-    {
-      "title": "New Apps and Features",
-      "topics": [
-        {
-          "title": "Keyboard and voice web browsing",
-          "details": [
-            "In Companion page reading, quick keys move to the next element: K links, H headings, B buttons, X checkboxes, C combo boxes, E edit fields, F all form controls, T tables, R or A radio buttons, L lists, I list items, D landmarks, G graphics, P paragraphs, and 1 through 6 headings at that level. Hold Shift to move backward. Say next or previous followed by the element name, for example next heading, previous checkbox, next form control, or next heading level two. Next link and previous link retain their existing behavior while the numbered link picker is active.",
-            "Press Tab or Shift+Tab to move through links and controls. Enter activates the current link or button with the existing confirmation, begins editing a field, or selects a radio button. Space toggles a checkbox. Up/Down changes a native combo box. Say activate current element, edit current field, toggle checkbox, check checkbox, uncheck checkbox, select radio button, next option, previous option, or select option followed by its label. Say read current element for its name and state. In a nonprivate field say type followed by text; save field saves it. Tab saves and advances; Escape or cancel field editing cancels staged edits. Enter saves a single-line field; Ctrl+Enter saves a multiline field. Passwords use masked keyboard entry; do not dictate them.",
-            "Inside a table, Ctrl+Alt+Up/Down moves rows and Ctrl+Alt+Left/Right moves columns. Ctrl+Alt+Home/End moves to the first/last column; Ctrl+Alt+Page Up/Page Down moves to the first/last row. Say next row, previous row, next column, previous column, first row, last row, first column, or last column. Header text, cell text and row/column position are announced; merged cells retain their logical coordinates. Move to the table with T or next table first.",
-            "The Companion page reading area supports ordinary character, word, line and paragraph reading, including arrow keys and the spoken reading commands. F5 or refresh page refreshes a changed page; Alt+Left or go back returns to the previous page. Alt+T lets you type a command. Leave website returns to the main menu. Dynamic or inaccessible custom widgets may still need direct browser interaction or help; this testing build does not claim complete NVDA or JAWS compatibility."
-          ]
-        },
-        {
-          "title": "Emails with no subject or body",
-          "details": [
-            "A valid recipient is sufficient to review a new email even when both subject and body are blank. The review announces both missing parts and still requires Yes/No confirmation. Keyboard and guided voice composition remain available. No automatic send retries were added."
-          ]
-        }
-      ]
-    },
     {
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Browser audit fixes and release checks",
+          "title": "Page loading and browser keyboard navigation",
           "details": [
-            "Page snapshots now expose headings, controls, lists, landmarks, graphics, paragraphs and logical table cells in document order, alongside a Companion read-only reading area. Open shadow content and visible embedded frames are included. Hidden/inert content is excluded, password values stay private, and table cells are separated in page text.",
-            "Frame form filling and option selection use the correct frame and validate the current control identity. Accessible labels support aria-labelledby; submit inputs are recognized as buttons. Required radio groups are checked as groups within their form and frame; disabled fields do not block review. Activation switches to a new popup only when one actually opened. Staged field editing invalidates an earlier submission review. Existing guided form, numbered link picker and submission confirmation protections remain.",
-            "Expanded unit/regression checks cover every spoken quick-key and table direction. Real Firefox tests exercise DOM snapshots, open shadow roots, frames, actual form edits, password privacy, stale labels, radio groups, disabled fields, checkboxes, dropdowns, links and merged table cells. Native Windows Tk checks exercise browse-key routing. Live page checks are mandatory during the Windows release build. Synthetic pages do not replace personal testing on real public sites or prove compatibility with every custom ARIA widget.",
-            "Final voice review added spoken heading levels one through six as well as digits. Normal paragraph reading retains complete text, while element navigation and standard reading share their caret. Quick keys interrupt keyboard speech immediately; aria-hidden frames do not block form review.",
-            "Field editing loads the full current value rather than the shortened review snapshot. Saving an unchanged rich-text field preserves its original formatting; staged multiline voice line breaks are retained. Labels appear once in page reading. Superseded Windows builds are canceled when a newer source change is queued.",
-            "Semantic element positions are converted from browser UTF-16 offsets to Companion character positions, keeping headings, controls, tables, frames and reading aligned after emoji and other non-BMP characters. A live Unicode page test verifies the actual text ranges.",
-            "Keyboard P and spoken next/previous paragraph share the semantic paragraph cursor and read its complete text. Plain-text fallback reading remains available when a page has no semantic paragraphs."
+            "Loaded pages use operation-result speech instead of discardable caret feedback. A page revision restores Companion reading focus after opening, following links, going back or refreshing, including when the browsing mode has not changed. Native browser focus polling no longer replaces Companion browse-cursor announcements.",
+            "Use the Companion page reading area for arrows, quick keys, forms and table navigation. These controls share the same backend behavior for Firefox, Chrome, Edge and Brave. The release checks now exercise actual installed Chrome, Edge and Brave adapters as well as Firefox, including page loading, app focus, arrow speech and quick-key dispatch. Native browser windows retain their own keyboard behavior.",
+            "Website-address confirmation now accepts keyboard Y/N, arrow/Tab selection, Enter and Escape. Existing voice Yes/No and website confirmation remain."
+          ]
+        },
+        {
+          "title": "Type a web search",
+          "details": [
+            "Press Ctrl+L from Companion web browsing, choose Web browsing on the main menu, or say Search the web to open a typed search field. Type a search and press Enter; Escape returns to the previous page or main menu. Standard text editing, caret movement, word movement and typing echo apply. Spoken searches remain available."
+          ]
+        },
+        {
+          "title": "Backspace, Delete and blank feedback",
+          "details": [
+            "Backspace announces the erased character. Delete announces the new character at the caret, to the right of the removed character, or End of text. Document and email editors, email header entries, typed commands and search entries use this feedback. Typing echo Off remains silent; password deletion stays private.",
+            "Keyboard and spoken blank-line reading now say Blank rather than Blank line."
+          ]
+        },
+        {
+          "title": "HTML email links and buttons",
+          "details": [
+            "Reading HTML email announces link and button roles without adding those words to the text you copy. Donation links made from images retain their alternative text; empty labelled image anchors retain a usable label. Explicit button roles and passive HTML buttons are exposed.",
+            "Press K or Shift+K for next/previous link, B or Shift+B for next/previous button, Tab/Shift+Tab for controls and Enter to open. Say Next link, Previous link, Next button, Previous button, List links, List buttons, Activate current link or Activate current button. Numbered Open link and Open button commands remain available. Buttons without a safe URL are announced and cannot run email scripts.",
+            "Plain text email remains available. No remote images or email scripts are loaded by the passive email reader. Guided email composition, send review, provider safeguards and blank-subject/body sending remain."
+          ]
+        },
+        {
+          "title": "Help and release validation",
+          "details": [
+            "Built-in Help includes the new typed-search and HTML email navigation instructions. What\u2019s New and downloadable release notes use version 0.2.109-test.",
+            "Regression checks cover dropped page announcements, repeated page focus restoration, typed search submission/cancellation, browser adapter selection, deletion feedback, blank announcements, image donation links, role buttons, passive buttons and spoken control navigation. Windows checks additionally exercise actual Tk key events and the four browser runtimes. Real public-site testing remains necessary."
           ]
         }
       ]
