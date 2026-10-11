@@ -1,18 +1,26 @@
 {
-  "version": "0.2.105-test",
+  "version": "0.2.106-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.104-test",
-  "scope": "Restores keyboard email operation announcements, allows subject-only or body-only sending, removes the startup speech wait, and shortens setting-change feedback. This is a beta testing build.",
+  "baseline": "0.2.105-test",
+  "scope": "Web browsing audit, shared keyboard and voice element/form/table navigation, and email sending with both subject and body blank.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Subject-only and body-only email",
+          "title": "Keyboard and voice web browsing",
           "details": [
-            "A valid recipient and either a subject or a body are sufficient to review a new message. The review explicitly says no subject or no message body when that part is blank. An entirely empty message is still refused.",
-            "For voice composition, say skip subject, no subject, or leave subject blank to move from the subject to the body. A response keeps the original message subject. The guided recipient, subject and body workflow, review and Yes/No confirmation remain available. Alt+S and Ctrl+Enter still start the same review."
+            "In Companion page reading, quick keys move to the next element: K links, H headings, B buttons, X checkboxes, C combo boxes, E edit fields, F all form controls, T tables, R or A radio buttons, L lists, I list items, D landmarks, G graphics, P paragraphs, and 1 through 6 headings at that level. Hold Shift to move backward. Say next or previous followed by the element name, for example next heading, previous checkbox, next form control, or next heading level two. Next link and previous link retain their existing behavior while the numbered link picker is active.",
+            "Press Tab or Shift+Tab to move through links and controls. Enter activates the current link or button with the existing confirmation, begins editing a field, or selects a radio button. Space toggles a checkbox. Up/Down changes a native combo box. Say activate current element, edit current field, toggle checkbox, check checkbox, uncheck checkbox, select radio button, next option, previous option, or select option followed by its label. Say read current element for its name and state. In a nonprivate field say type followed by text; save field saves it. Tab saves and advances; Escape or cancel field editing cancels staged edits. Enter saves a single-line field; Ctrl+Enter saves a multiline field. Passwords use masked keyboard entry; do not dictate them.",
+            "Inside a table, Ctrl+Alt+Up/Down moves rows and Ctrl+Alt+Left/Right moves columns. Ctrl+Alt+Home/End moves to the first/last column; Ctrl+Alt+Page Up/Page Down moves to the first/last row. Say next row, previous row, next column, previous column, first row, last row, first column, or last column. Header text, cell text and row/column position are announced; merged cells retain their logical coordinates. Move to the table with T or next table first.",
+            "The Companion page reading area supports ordinary character, word, line and paragraph reading, including arrow keys and the spoken reading commands. F5 or refresh page refreshes a changed page; Alt+Left or go back returns to the previous page. Alt+T lets you type a command. Leave website returns to the main menu. Dynamic or inaccessible custom widgets may still need direct browser interaction or help; this testing build does not claim complete NVDA or JAWS compatibility."
+          ]
+        },
+        {
+          "title": "Emails with no subject or body",
+          "details": [
+            "A valid recipient is sufficient to review a new email even when both subject and body are blank. The review announces both missing parts and still requires Yes/No confirmation. Keyboard and guided voice composition remain available. No automatic send retries were added."
           ]
         }
       ]
@@ -21,24 +29,11 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Email operation announcements with the keyboard",
+          "title": "Browser audit fixes and release checks",
           "details": [
-            "Getting messages from the selected folder and Email sent successfully bypass the navigation speech coalescing that previously discarded them. Progress starts before fetching. Before the final folder summary, active status speech can complete; rapid navigation continues to retain only the latest ordinary destination feedback.",
-            "The local keyboard speech worker now marks speech active when it actually starts, so send success is not immediately replaced by refresh feedback. Success is announced only after provider acceptance; failure and uncertain-result protections remain in place."
-          ]
-        },
-        {
-          "title": "Interruptible startup",
-          "details": [
-            "The main input loop no longer waits up to 15 seconds for the startup announcement or discards microphone audio collected during it. The window context is ready for keyboard navigation immediately after the startup update check. Saying Wake up interrupts the current announcement before continuing to the main menu or the previous activity.",
-            "The short startup message avoids speaking the literal wake phrase, which could otherwise wake the app through its own speakers. Microphone, model and account initialization still must complete before commands can be processed. Live microphone testing is still needed."
-          ]
-        },
-        {
-          "title": "Shorter setting-change feedback",
-          "details": [
-            "Tab focus still announces the setting name and current value. Changing a list choice or checkbox announces only its new value, such as medium, 3, on or off. Combo-box child focus is normalized to avoid a second full-label announcement. Category navigation, explicit voice setting requests, OK and Cancel remain unchanged.",
-            "Regression checks cover partial email bodies, guided subject skipping, keyboard status announcements before refresh, active local speech, wake interruption and native Windows value-only choice/checkbox feedback. HTML message reading and its saved format preference are unchanged in this build."
+            "Page snapshots now expose headings, controls, lists, landmarks, graphics, paragraphs and logical table cells in document order, alongside a Companion read-only reading area. Open shadow content and visible embedded frames are included. Hidden/inert content is excluded, password values stay private, and table cells are separated in page text.",
+            "Frame form filling and option selection use the correct frame and validate the current control identity. Accessible labels support aria-labelledby; submit inputs are recognized as buttons. Required radio groups are checked as groups within their form and frame; disabled fields do not block review. Activation switches to a new popup only when one actually opened. Staged field editing invalidates an earlier submission review. Existing guided form, numbered link picker and submission confirmation protections remain.",
+            "Expanded unit/regression checks cover every spoken quick-key and table direction. Real Firefox tests exercise DOM snapshots, open shadow roots, frames, actual form edits, password privacy, stale labels, radio groups, disabled fields, checkboxes, dropdowns, links and merged table cells. Native Windows Tk checks exercise browse-key routing. Live page checks are mandatory during the Windows release build. Synthetic pages do not replace personal testing on real public sites or prove compatibility with every custom ARIA widget."
           ]
         }
       ]

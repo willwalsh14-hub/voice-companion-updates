@@ -26,8 +26,6 @@ def message_parts(draft):
     body = '\n\n'.join(p.text for p in draft.paragraphs).strip()
     if any(c in subject for c in '\r\n'):
         raise DeliveryError('The subject must be on one line.',uncertain=False)
-    if not subject and not body:
-        raise DeliveryError('Enter a subject or a message body before sending.',uncertain=False)
     for address in draft.cc:
         normalize_recipient(address)
     for address in getattr(draft, 'bcc', []):

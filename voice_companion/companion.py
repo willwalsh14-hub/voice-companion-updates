@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.105-test'
+APP_VERSION = '0.2.106-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -204,6 +204,16 @@ def app_context(mode):
         context['caret']=absolute(editor,position)
         if editor.selection:
             s=editor.selection;context['selection']=(absolute(editor,(s.first_paragraph,s.first_offset)),absolute(editor,(s.last_paragraph,s.last_offset)))
+    elif logical=='web' and web_session and web_session.snapshot and not web_session.list_focus and web_session.form_index is None:
+        field=getattr(web_session,'keyboard_field',None)
+        context['web_browse']=field is None
+        context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
+        if field and field.get('type')=='password':context['web_private']=True;context['web_field']=field
+        else:
+            source='web:'+str(id(web_session))+(':'+field['key'] if field else ':page')
+            context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None,caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
+            context['web_field']=field
+        if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
     elif logical=='help' and help_session and help_session.level=='article':
         source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
         context.update(source=source,text=help_session.reading.text,readonly=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
@@ -227,8 +237,11 @@ def apply_keyboard_edit(payload,mode):
     if payload['source']!=context['source']:return False
     if payload.get('readonly'):
         if payload['after']!=context['text']:return False
-        reader=help_session.reading if context['mode']=='help' else mail_session.reading
+        reader=help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
         reader.position=payload['caret'];reader.continuation=payload['caret']
+        if context['mode']=='web' and web_session.browse:web_session.browse.set_position(payload['caret'])
+    elif context['mode']=='web':
+        web_session.keyboard_field['value']=payload['after'];web_session.web_edit_caret=payload['caret']
     else:
         logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
         editor=document if logical=='document' else email_draft
@@ -286,7 +299,10 @@ def process_keyboard_batch(mode):
                 continue
             interrupt_speech()
             if isinstance(command,tuple):
-                if command[0]=='email_field_tab':
+                if command[0]=='web_private_value':
+                    try:web_session.commit_keyboard_field(command[1]['value']);command='web key '+command[1].get('next','Done')
+                    except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
+                elif command[0]=='email_field_tab':
                     command=commit_email_field_tab(command[1],SLEEP_RETURN_MODE if mode=='sleep' else mode)
                 else:
                     key=command[1]
@@ -440,7 +456,7 @@ def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
     if key=='Control':return None
-    confirming=mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending)
+    confirming=mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n'):return 'yes' if key.lower()=='y' else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -448,6 +464,7 @@ def _navigation_key(key,mode):
             speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
     if key in ('Home','End'):
         state=menu_state(mode)
         if state:
@@ -1769,6 +1786,7 @@ def _handle(text, mode, typed=False):
             speak_prompt('Website request canceled. Say open website followed by the address to try again.')
         return mode
     if mode == 'web':
+        if text.startswith('web key '):speak(web_session.keyboard(text[8:]));return mode
         web_session.input_mode = INPUT_MODE
         if command in ('leave website', 'close website', 'main menu', 'back to main menu'):
             speak('The browser window remains available.')

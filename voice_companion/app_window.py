@@ -99,6 +99,8 @@ class CompanionWindow:
         if not self.closed.is_set(): self.ui_actions.put(('clear_email', None))
 
     def submit_entry(self, value):
+        if self.context.get('web_private'):
+            self.commands.put(('web_private_value',{'value':value,'next':'Done'}));return True
         value = value.strip()
         if value:
             self.commands.put(value)
@@ -107,6 +109,10 @@ class CompanionWindow:
         return False
 
     def report_entry_key(self, before, after, old_caret, caret, key, character=""):
+        if self.context.get('web_private'):
+            if before!=after:self.feedback('Hidden character.' if len(after)>len(before) else 'Deleted.')
+            else:self.feedback('Private field.')
+            return
         echo=getattr(self,'context',{}).get('echo','characters')
         notice=typing_feedback(before,after,caret,echo) if before!=after else entry_feedback(before,after,old_caret,caret,key)
         self.feedback(notice)
@@ -156,6 +162,20 @@ class CompanionWindow:
                 if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
+                elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and (event.widget==self.editor or event.widget==typed and (self.context.get('web_private') or not typed.get())):
+                    field=self.context.get('web_field')
+                    if field and self.context.get('web_private') and key in ('Return','Tab','ISO_Left_Tab'):
+                        self.commands.put(('web_private_value',{'value':typed.get(),'next':'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done'}));typed.delete(0,'end');return 'break'
+                    elif key=='Escape':request='Web:Escape'
+                    elif key=='F5':request='Web:Refresh'
+                    elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
+                    elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
+                    elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgp123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
+                    elif key=='Return' and (not field or field.get('tag')!='textarea' or control):request='Web:Activate'
+                    elif not field and key=='space':request='Web:Space'
+                    elif not field and key in ('Up','Down') and self.context.get('web_combo'):request='Web:'+key
+                    elif key=='Left' and event.state&(8|0x20000):request='Web:Back'
+
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
                     if shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
@@ -422,7 +442,10 @@ class CompanionWindow:
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue
-                        text_mode=source is not None and mode in ('document','email_draft','mailbox','help')
+                        typed.configure(show='*' if field.get('web_private') else '')
+                        if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
+                            typed.delete(0,'end');entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
+                        text_mode=source is not None and mode in ('document','email_draft','mailbox','help','web')
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:
                             history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
@@ -454,7 +477,7 @@ class CompanionWindow:
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft':entry_label.configure(text='Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private'):entry_label.configure(text='Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
                             if transition:typed.focus_force()
                         continue
                     if action == 'email_select' and not field['canceled'].is_set():

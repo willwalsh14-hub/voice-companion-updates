@@ -222,6 +222,14 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(dict(mode=mode,source='test',text='abc def',caret=0,selection=None,echo='characters',phonetic=True,delay=.5,ack=0,readonly=readonly))
         self.wait(lambda:self.window.context.get('source')=='test')
         self.call(lambda:self.window.editor.focus_force())
+    def test_web_quick_keys_tables_and_reading_editor(self):
+        self.context(mode='web',readonly=True)
+        self.window.set_context({**self.window.context,'web_browse':True})
+        self.wait(lambda:self.window.context.get('web_browse'))
+        for key,state,expected in [('k',0,'Web:Quick:k'),('h',1,'Web:Quick:Previous:h'),('Right',12,'Web:Table:Right'),('Tab',0,'Web:Tab'),('Escape',0,'Web:Escape')]:
+            self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
+            self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'abc def'))
     def test_help_uses_reading_editor_and_escape_dispatches(self):
         self.context(mode='help',readonly=True)
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))

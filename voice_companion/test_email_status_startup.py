@@ -14,14 +14,14 @@ class EmailStatusStartupTests(unittest.TestCase):
         return draft
     def test_subject_only_and_body_only_provider_requests(self):
         with tempfile.TemporaryDirectory() as folder:
-            for subject,body in (('Only subject',''),('','Only body')):
+            for subject,body in (('Only subject',''),('','Only body'),('','')):
                 draft=self.draft(folder,subject,body)
                 self.assertEqual(message_parts(draft),('friend@example.com',subject,body))
                 msg=BytesParser(policy=policy.default).parsebytes(base64.urlsafe_b64decode(json.loads(gmail_request(draft,'token').data)['raw']))
                 self.assertEqual(str(msg['Subject']),subject)
                 payload=json.loads(microsoft_request(draft,'token').data)
                 self.assertEqual(payload['message']['subject'],subject)
-            with self.assertRaises(DeliveryError):message_parts(self.draft(folder,'',''))
+            self.assertEqual(message_parts(self.draft(folder,'','')),('friend@example.com','',''))
     def test_skip_subject_preserves_guided_compose(self):
         with tempfile.TemporaryDirectory() as folder:
             draft=self.draft(folder,'','');draft.compose_step='subject'

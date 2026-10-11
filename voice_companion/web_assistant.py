@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, quote
 
 from browser_navigation import prepare_address
+from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
 from reading_navigation import ReadingCursor, reading_request
 from dictation_text import clean_dictation
 
@@ -148,10 +149,11 @@ class BrowserBackend:
     def snapshot(self):
         self.start()
         script = '''() => {
-          const visible = e => !!(e.getClientRects().length) && getComputedStyle(e).visibility !== 'hidden';
+          const visible = e => [...e.getClientRects()].some(r=>r.width>0&&r.height>0) && getComputedStyle(e).visibility !== 'hidden';
+          const accessibleLabel=e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\\s+/g,' ').slice(0,120);};
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
-          const selector='a,button,input,textarea,select,[role="button"],[role="link"]';
+          const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[contenteditable="true"]';
           const all = root => [...root.querySelectorAll('*')].flatMap(e =>
             [e, ...(e.shadowRoot ? all(e.shadowRoot) : [])]);
           const priority=document.querySelector('#search,#main,main,[role="main"],article');
@@ -159,22 +161,19 @@ class BrowserBackend:
                                    ...all(document).filter(e=>e.matches(selector))])];
           const controls = [];
           for (let i=0; i<nodes.length && controls.length<500; i++) {
-            const e=nodes[i]; if (!visible(e)) continue;
+            const e=nodes[i]; if (!visible(e) || e.closest('[aria-hidden="true"],[inert]')) continue;
             const tag=e.tagName.toLowerCase(), type=(e.type || '').toLowerCase();
             if (['hidden','submit-image'].includes(type)) continue;
-            let label=e.getAttribute('aria-label') || (e.labels && [...e.labels].map(text).join(' ')) ||
-                (e.id && document.querySelector('label[for="'+CSS.escape(e.id)+'"]')?.innerText) ||
-                e.getAttribute('placeholder') || text(e) || e.getAttribute('title') ||
-                (tag==='a' && e.href ? (text(e.querySelector('h3')) || new URL(e.href).hostname) : '') || '';
+            let label=accessibleLabel(e);
             label=(label || '').trim().replace(/\\s+/g,' ').slice(0,120);
             if (!label) continue;
-            const role=(tag==='a' && e.href ? 'link' : e.getAttribute('role')) || (tag==='button'?'button':
+            const role=(tag==='a' && e.href ? 'link' : e.getAttribute('role')) || (tag==='button'||tag==='input'&&['submit','button','reset','image'].includes(type)?'button':
                 ['input','textarea','select'].includes(tag)?'field':'');
             if (!role) continue;
             e.setAttribute('data-voice-companion-key', String(i));
             controls.push({key:String(i), role, label, tag, type,
                 in_form:!!e.closest('form'),
-                required:!!e.required, checked:!!e.checked,
+                required:!!e.required, disabled:!!e.disabled, radio_group:e.name ? [...document.forms].indexOf(e.form)+':'+e.name : '', checked:!!e.checked||e.getAttribute('aria-checked')==='true',
                 options:tag==='select'?[...e.options].map(o=>({label:o.text.trim().slice(0,80), value:o.value})).slice(0,30):[],
                 selected_label:tag==='select'?(e.selectedOptions[0]?.text.trim().slice(0,80) || ''):'',
                 href:tag==='a'?e.href:'', value:type==='password'?'':
@@ -183,7 +182,8 @@ class BrowserBackend:
                 filled:type==='password'?!!e.value:false});
           }
           // Read the full visible page. Sites may put most content outside main.
-          const bodyText=(document.body?.innerText || '').slice(0,200000);
+          /*SEMANTICS*/
+          const bodyText=output.trimEnd().slice(0,200000);
           const frameUrls=[...document.querySelectorAll('iframe')].map(e=>e.src || '');
           const challenge=/(captcha|recaptcha|hcaptcha|unusual traffic|just a moment)/i
               .test((document.title || '')+' '+location.href) ||
@@ -191,16 +191,19 @@ class BrowserBackend:
               .test(bodyText.slice(0,1000)) ||
               frameUrls.some(url=>/(recaptcha|hcaptcha|turnstile|arkoselabs|captcha)/i.test(url));
           return {title:document.title || location.hostname, url:location.href,
-                  text:bodyText, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
+                  text:bodyText, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(visible).length};
         }'''
+        script=script.replace('/*SEMANTICS*/',SEMANTICS)
         result = self.page.evaluate(script)
         # Playwright can inspect cross-origin frames without asking page JS to
         # cross the browser's origin boundary.
         for index, frame in enumerate(self.page.frames):
             if frame == self.page.main_frame: continue
             try:
+                frame_element=frame.frame_element()
+                if not frame_element.is_visible() or frame_element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):continue
                 part = frame.evaluate(script)
             except Exception:
                 continue
@@ -210,6 +213,13 @@ class BrowserBackend:
             result['controls'].extend(part['controls'])
             result['challenge'] = result.get('challenge', False) or part.get('challenge', False)
             if part['text']:
+                base=len(result['text'])+1
+                part['elements']=[e for e in part.get('elements',[]) if e.get('end',0)<=50000]
+                for element in part.get('elements',[]):
+                    element.update(frame_index=index,frame_url=part['url']);element['start']+=base;element['end']+=base
+                    if element.get('table'):element['table']='frame'+str(index)+':'+element['table']
+                    if element.get('role')=='table':element['key']='frame'+str(index)+':'+element['key']
+                result.setdefault('elements',[]).extend(part.get('elements',[]))
                 result['text'] += '\n' + part['text'][:50000]
                 result['text_truncated'] = result.get('text_truncated', False) or part.get('text_truncated', False) or len(part['text']) > 50000
         return result
@@ -217,22 +227,28 @@ class BrowserBackend:
     def focused_control(self):
         """Read current keyboard focus; never expose secret field contents."""
         self.start()
-        return self.page.evaluate('''() => {
-          const e=document.activeElement;
+        script = '''() => {
+          let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
           if (!e || e===document.body) return null;
           const label=(e.getAttribute('aria-label') || (e.labels && [...e.labels].map(x=>x.innerText).join(' ')) ||
             e.getAttribute('placeholder') || e.innerText || e.getAttribute('title') || e.tagName).trim().replace(/\\s+/g,' ').slice(0,120);
           return {label, tag:e.tagName.toLowerCase(), type:(e.type || '').toLowerCase(),
             value:e.type==='password'?'':String(e.value || '').slice(0,300),
             checked:!!e.checked, selected:e.tagName==='SELECT'?(e.selectedOptions[0]?.text || ''):''};
-        }''')
+        }'''
+        for frame in reversed(self.page.frames):
+            try:
+                item=frame.evaluate(script)
+                if item and item.get("tag") not in ("iframe","frame"):return item
+            except Exception:continue
+        return None
 
     def dictate_focused(self, spoken, literal=False):
         self.start()
         for frame in self.page.frames:
             try:
                 target = frame.evaluate('''() => {
-                  const e=document.activeElement;
+                  let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
                   if (!e || e===document.body) return null;
                   const tag=e.tagName.toLowerCase(), type=(e.type || '').toLowerCase();
                   return {tag, type, editable:!!e.isContentEditable,
@@ -255,7 +271,7 @@ class BrowserBackend:
         self.start()
         for frame in self.page.frames:
             try:
-                kind = frame.evaluate("() => {const e=document.activeElement;return e?.isContentEditable?'rich':e?.tagName==='TEXTAREA'?'text':null;}")
+                kind = frame.evaluate("() => {let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;return e?.isContentEditable?'rich':e?.tagName==='TEXTAREA'?'text':null;}")
             except Exception: continue
             if kind == 'rich': self.page.keyboard.press('Enter'); return 'New line.'
             if kind == 'text': self.page.keyboard.insert_text('\n'); return 'New line.'
@@ -267,7 +283,7 @@ class BrowserBackend:
         for frame in self.page.frames:
             try:
                 state = frame.evaluate("""() => {
-                  const e=document.activeElement;
+                  let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
                   if (!e || !(e.isContentEditable || e.tagName==='TEXTAREA' || e.tagName==='INPUT')) return null;
                   if (e.tagName==='INPUT' && !['text','search','url','tel','email','password'].includes(e.type)) return null;
                   e.dataset.voiceSelectionKey ||= 'field-'+(window.voiceSelectionCounter=(window.voiceSelectionCounter||0)+1);
@@ -294,7 +310,7 @@ class BrowserBackend:
             def native_offset(value): return len(text[:value].encode('utf-16-le'))//2
             native = [native_offset(x) for x in span] if span else None
             status = frame.evaluate("""data => {
-              const e=document.activeElement;
+              let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
               if(!e || e.dataset.voiceSelectionKey!==data.key || (e.isContentEditable?e.textContent:e.value)!==data.text) return 'changed';
               if(data.delete) return 'delete';
               if(!data.span){ if(e.isContentEditable) window.getSelection().removeAllRanges(); else if(e.setSelectionRange && e.type!=='email') e.setSelectionRange(e.selectionStart,e.selectionStart); return 'ok'; }
@@ -323,41 +339,40 @@ class BrowserBackend:
             return result
         return 'No editable text field has focus. Focus a field in the browser first.'
 
-    def activate(self, item):
-        frame = self.page
+    def _element(self,item):
+        frame=self.page
         if 'frame_index' in item:
-            frames = self.page.frames
-            index = item['frame_index']
-            if index >= len(frames) or frames[index].url != item['frame_url']:
-                raise WebError('The page changed. Say list links to refresh it.')
-            frame = frames[index]
-        element = frame.locator('[data-voice-companion-key="' + item['key'] + '"]')
-        if element.count() != 1:
-            raise WebError('The page changed. Say read page to refresh it.')
-        current = element.evaluate('e => ({label:(e.getAttribute("aria-label") || (e.labels && [...e.labels].map(x=>x.innerText).join(" ")) || e.getAttribute("placeholder") || e.innerText || e.getAttribute("title") || (e.tagName.toLowerCase()==="a" && e.href ? (e.querySelector("h3")?.innerText || new URL(e.href).hostname) : "") || "").trim().replace(/\\s+/g," ").slice(0,120), href:e.tagName.toLowerCase()==="a"?e.href:""})')
-        if _plain(current['label']).casefold() != _plain(item['label']).casefold() or current['href'] != item.get('href', ''):
-            raise WebError('The page changed. Say read page to refresh it.')
-        element.click(timeout=10000)
-        if self.context and len(self.context.pages) > 1:
-            self.page = self.context.pages[-1]
+            frames=self.page.frames;index=item['frame_index']
+            if index>=len(frames) or frames[index].url!=item['frame_url']:
+                raise WebError('The frame changed. Refresh the page before continuing.')
+            frame=frames[index]
+        element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
+        if element.count()!=1:raise WebError('The page changed. Refresh it before continuing.')
+        current=element.evaluate(LIVE_IDENTITY)
+        if current['label'].casefold()!=_label(item).casefold() or current['tag']!=item['tag'] or current['type']!=item.get('type','') or current['href']!=item.get('href',''):
+            raise WebError('The control changed. Refresh the page before continuing.')
+        if current['disabled']:raise WebError('That control is unavailable.')
+        return element
 
-    def fill(self, item, value):
-        element = self.page.locator('[data-voice-companion-key="' + item['key'] + '"]')
-        if element.count() != 1 or element.get_attribute('type') == 'password':
-            raise WebError('That field changed or needs private entry. Ask your helper to enter a password.')
-        current = element.evaluate('e => ({tag:e.tagName.toLowerCase(), type:(e.type || "").toLowerCase(), label:(e.getAttribute("aria-label") || (e.labels && [...e.labels].map(x=>x.innerText).join(" ")) || e.getAttribute("placeholder") || e.innerText || e.getAttribute("title") || "").trim().replace(/\\s+/g," ").slice(0,120)})')
-        if (current['tag'] != item['tag'] or current['type'] != item['type'] or
-                _plain(current['label']).casefold() != _plain(item['label']).casefold()):
-            raise WebError('The form changed. Say read page to refresh it.')
-        element.fill(value, timeout=10000)
+    def activate(self,item):
+        element=self._element(item)
+        if self.context:before=list(self.context.pages)
+        else:before=[]
+        element.click(timeout=10000)
+        if self.context:
+            new=[p for p in self.context.pages if p not in before]
+            if new:self.page=new[-1]
+
+    def focus(self,item):self._element(item).focus()
+
+    def fill(self,item,value,private=False):
+        element=self._element(item)
+        if item.get('type')=='password' and not private:
+            raise WebError('Password needs private keyboard entry.')
+        element.fill(value,timeout=10000)
 
     def choose_form_option(self, item, answer):
-        element = self.page.locator('[data-voice-companion-key="' + item['key'] + '"]')
-        if element.count() != 1:
-            raise WebError('The form changed. Say read page to refresh it.')
-        current_label = element.evaluate('e => (e.getAttribute("aria-label") || (e.labels && [...e.labels].map(x=>x.innerText).join(" ")) || e.getAttribute("placeholder") || e.innerText || "").trim().replace(/\\s+/g," ").slice(0,120)')
-        if _plain(current_label).casefold() != _plain(item['label']).casefold():
-            raise WebError('The form changed. Say read page to refresh it.')
+        element=self._element(item)
         if item['tag'] == 'select':
             options = [o for o in item.get('options', []) if o['label'].casefold() == answer.casefold()]
             if len(options) != 1:
@@ -370,6 +385,11 @@ class BrowserBackend:
                 return
             if answer == 'yes': element.check(timeout=10000)
             else: element.uncheck(timeout=10000)
+        elif item.get('role') in ('checkbox','radio'):
+            if answer not in ('yes','no'):raise WebError('Say yes or no for this choice.')
+            if item.get('role')=='radio' and answer=='no':return
+            checked=element.get_attribute('aria-checked')=='true'
+            if checked!=(answer=='yes'):element.click(timeout=10000)
         else:
             raise WebError('That is not a choice field.')
 
@@ -408,6 +428,73 @@ class WebSession:
         self.field_list_index = 0
         self.input_mode = 'mixed'
         self.reading = ReadingCursor()
+        self.browse=None;self.keyboard_field=None
+
+    def keyboard(self,key):
+        if not self.snapshot:return 'Open a website first.'
+        if self.browse is None:self.browse=BrowseCursor(self.snapshot)
+        try:
+            if self.keyboard_field and key.startswith(('Quick:','Table:')):self.commit_keyboard_field()
+            if key.startswith('Quick:'):
+                parts=key.split(':');message=self.browse.move(parts[-1],len(parts)>2)
+            elif key.startswith('Table:'):message=self.browse.table_move(key.split(':')[-1])
+            elif key in ('Tab','ShiftTab'):
+                if self.keyboard_field:self.commit_keyboard_field()
+                message=self.browse.move('',key=='ShiftTab',tab=True)
+            elif key=='Refresh':
+                self.backend.page.reload(wait_until='domcontentloaded',timeout=30000)
+                return self._refresh()
+            elif key=='Back':return self.command('go back')
+            elif key=='Done':
+                if self.keyboard_field:self.commit_keyboard_field()
+                return 'Browse mode.'
+            elif key=='Escape':
+                if self.keyboard_field:self.keyboard_field=None;return 'Browse mode. Field editing canceled.'
+                self.pending=None;self.submit_pending=None;return 'Browse mode. Press Alt+T for a typed command, or say leave website to return to the main menu.'
+            elif key in ('Activate','Space'):
+                if self.keyboard_field:self.commit_keyboard_field();return 'Browse mode.'
+                item=self.browse.current()
+                if not item:return 'Move to a link or control first.'
+                role=kind(item)
+                if role=='edit':
+                    self.backend.focus(item);self.keyboard_field=dict(item);self.web_edit_caret=len(item.get('value',''))
+                    return item['label']+'. Forms mode. Tab saves and moves to the next control. Escape cancels.'
+                if role in ('checkbox','radio'):
+                    self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
+                    return self._refresh_at(item)
+                if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
+                if role=='button' and item.get('type')=='submit':return self.prepare_submit()
+                if role in ('link','button'):
+                    if item.get('href') and urlsplit(item['href']).scheme!='https':return 'Only secure HTTPS links can be opened.'
+                    self.choices=[item];return self.choose(1)
+                return describe(item)
+            elif key in ('Up','Down') and self.browse.current() and kind(self.browse.current())=='combobox':
+                item=self.browse.current();options=item.get('options',[])
+                if not options:return 'This custom combo box needs direct interaction in the browser.'
+                index=next((i for i,o in enumerate(options) if o['label']==item.get('selected_label')),0)
+                index=max(0,min(len(options)-1,index+(-1 if key=='Up' else 1)))
+                self.backend.choose_form_option(item,options[index]['label']);return self._refresh_at(item)
+            else:return self.command({'Up':'previous line','Down':'next line','Left':'previous character','Right':'next character','Home':'read from beginning','End':'read current line'}.get(key,'read current line'))
+            self.reading.position=self.browse.position;self.reading.continuation=self.browse.position
+            return message
+        except Exception as exc:
+            return str(exc) if isinstance(exc,WebError) else 'The page changed or the control could not be used. Press F5 to refresh it.'
+
+    def _refresh_at(self,item):
+        snapshot=self.backend.snapshot();self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
+        self.browse=BrowseCursor(snapshot)
+        target=next((e for e in self.browse.elements if e.get('key')==item.get('key') and e.get('frame_index')==item.get('frame_index') and e.get('label')==item.get('label')),None)
+        if target:
+            self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0);self.reading.position=self.browse.position
+            return describe(target)
+        return 'The page changed. Press F5 to refresh.'
+
+    def commit_keyboard_field(self,value=None):
+        item=self.keyboard_field
+        if item is None:return
+        text=item.get('value','') if value is None else value
+        self.backend.fill(item,text,private=item.get('type')=='password')
+        self.keyboard_field=None;self.submit_pending=None;self.review_submission=None;self._refresh_at(item)
 
     def insert_line_break(self):
         if not self.snapshot: return 'Open a website first.'
@@ -423,6 +510,10 @@ class WebSession:
         if not self.snapshot: return 'Open a website first.'
         self.submit_pending = None
         self.review_submission = None
+        if self.keyboard_field:
+            if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
+            self.keyboard_field['value']=self.keyboard_field.get('value','')+(spoken if literal else clean_dictation(spoken))
+            return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
 
@@ -462,6 +553,7 @@ class WebSession:
                 self.snapshot = self.backend.snapshot()
                 if self.snapshot.get('challenge') or str(self.snapshot.get('text', '')).strip(): break
         self.reading.set_text(self.snapshot.get('text', ''), reset=True)
+        self.browse=BrowseCursor(self.snapshot);self.keyboard_field=None
         self.link_offset = 0
         self.link_position = None
         self.offset = 0
@@ -673,7 +765,7 @@ class WebSession:
                 (urlsplit(self.snapshot['url']).hostname or 'an unknown site') + '. ' +
                 (('I see choices such as ' + examples + '. ') if examples else 'I could not identify clickable controls on this page. ') +
                 (('I found ' + str(len(fields)) + ' form fields. ') if fields else '') +
-                'Tell me what you want to do in your own words. Say read page to hear it, or leave website to return to the main menu.')
+                'Tell me what you want to do in your own words. Say next or previous followed by link, heading, button, checkbox, combo box, edit field, form control, table, radio button, list, list item, landmark, graphic, or paragraph. Say next heading level two for a numbered heading. Say activate current element or edit current field. In tables say next row, previous row, next column, previous column, first row, last row, first column, or last column. Say read page to hear it, or leave website to return to the main menu.')
 
     def focus_notice(self):
         if not self.snapshot or not hasattr(self.backend, 'focused_control'): return ''
@@ -879,8 +971,9 @@ class WebSession:
             return 'I cannot inspect the whole form on this page. Ask your helper to review it in Edge.'
         if any(c.get('value_truncated') for c in self._form_controls(current)):
             return 'A form answer is too long for safe spoken review. Ask your helper to check it in Edge.'
-        missing = [c for c in self._form_controls(current) if c.get('required') and
+        missing = [c for c in self._form_controls(current) if c.get('required') and not c.get('disabled') and
                    ((not c.get('filled')) if c.get('type') == 'password' else
+                    (not any(other.get('type')=='radio' and other.get('radio_group')==c.get('radio_group') and other.get('frame_index')==c.get('frame_index') and other.get('checked') for other in self._form_controls(current))) if c.get('type')=='radio' and c.get('radio_group') else
                     (not c.get('checked')) if c.get('type') in ('checkbox','radio') else
                     (not c.get('value')))]
         if missing:
@@ -941,13 +1034,40 @@ class WebSession:
 
     def command(self, spoken):
         command = _plain(spoken).rstrip('.!?').lower()
+        if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
+        browse_key=voice_browse_key(command)
+        if browse_key and self.form_index is None and not self.list_focus:return self.keyboard(browse_key)
+        if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
+            if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
+            value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]
+            self.keyboard_field['value']=value
+            return 'Text entered. Say save field, next control, or cancel field editing.'
+        if self.form_index is None and not self.list_focus and self.browse:
+            item=self.browse.current()
+            if command in ('read current element','current element','what element am i on'):
+                return describe(item) if item else 'Move to a page element first.'
+            if command in ('check checkbox','check current checkbox','uncheck checkbox','uncheck current checkbox'):
+                if not item or kind(item)!='checkbox':return 'Move to a checkbox first.'
+                try:
+                    self.backend.choose_form_option(item,'no' if command.startswith('uncheck') else 'yes')
+                    return self._refresh_at(item)
+                except Exception:return 'The checkbox changed or could not be used. Refresh the page.'
+            if command.startswith('select option '):
+                if not item or kind(item)!='combobox':return 'Move to a combo box first.'
+                try:
+                    self.backend.choose_form_option(item,spoken.split(' ',2)[2])
+                    return self._refresh_at(item)
+                except WebError as exc:return str(exc)
+                except Exception:return 'The option changed or could not be used. Refresh the page.'
         if selection_command(spoken): return self.select_focused(spoken)
         if command in ('new line','insert new line','line break','carriage return','insert carriage return'): return self.insert_line_break()
         request = reading_request(command)
         if request and self.snapshot:
             unit, direction = request
             self.reading.set_text(self.snapshot.get('text', ''))
-            return self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            result=self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            if self.browse:self.browse.set_position(self.reading.position)
+            return result
         match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(edge|chrome|brave|firefox)(?: browser)?', command)
         if match: return self.choose_browser(match[1])
         if command in ('which browser','what browser am i using'):
@@ -1081,6 +1201,8 @@ class WebSession:
         if match: return self.search((self.last_search + ' ' + match[1]).strip())
         if command.startswith(('i am looking for ', "i'm looking for ", 'where is ', 'how do i ', 'find ', 'look for ')):
             return self.find(spoken)
+        if self.keyboard_field and command in ('cancel','go back','browse mode'):
+            self.keyboard_field=None;return 'Browse mode.'
         if self.input_mode == 'mixed' and not command.startswith(('open ', 'go to ', 'search ', 'look up ',
                  'what ', 'help ', 'list ', 'read ', 'fill ', 'submit ', 'click ', 'choose ', 'save ')):
             try:
@@ -1088,3 +1210,6 @@ class WebSession:
                 if not result.startswith('No editable text field'): return result
             except Exception: pass
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
+
+# The same accessible name is used for snapshot and stale-target validation.
+LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''

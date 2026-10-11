@@ -175,6 +175,9 @@ class WebTests(unittest.TestCase):
         class Frame:
             def __init__(self, url, label):
                 self.url, self.label = url, label
+            def frame_element(self):
+                from unittest.mock import Mock
+                return Mock(is_visible=lambda:True,evaluate=lambda script:False)
             def evaluate(self, script):
                 self.script = script
                 return {'title':'Page', 'url':self.url, 'text':'Content',
