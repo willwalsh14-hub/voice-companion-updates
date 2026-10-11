@@ -18,8 +18,9 @@ def entry_feedback(before, after, old_caret, caret, key, character=""):
     if key == 'Home': return 'Start of field'
     if key == 'End': return 'End of field'
     if key in ('BackSpace','Delete') and len(after) < len(before):
+        if key=='Delete':return say(after[caret:caret+1])
         removed = before[caret:old_caret] if key == 'BackSpace' else before[old_caret:old_caret+1]
-        return 'Deleted ' + say(removed[-1]) if removed else 'Deleted'
+        return say(removed[-1]) if removed else 'Deleted'
     if character and character.isprintable(): return say(character)
     if len(after) > len(before):
         return say(after[max(0,caret-1)])
@@ -103,7 +104,7 @@ class CompanionWindow:
             self.commands.put(('web_private_value',{'value':value,'next':'Done'}));return True
         value = value.strip()
         if value:
-            self.commands.put(value)
+            self.commands.put(('web_search_query',value) if self.context.get('mode')=='search' else value)
             self.last_email_request = None
             return True
         return False
@@ -114,7 +115,7 @@ class CompanionWindow:
             else:self.feedback('Private field.')
             return
         echo=getattr(self,'context',{}).get('echo','characters')
-        notice=typing_feedback(before,after,caret,echo) if before!=after else entry_feedback(before,after,old_caret,caret,key)
+        notice=typing_feedback(before,after,caret,echo,key,old_caret) if before!=after else entry_feedback(before,after,old_caret,caret,key)
         self.feedback(notice)
 
     def setup_ai_voice(self):
@@ -157,9 +158,11 @@ class CompanionWindow:
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
+                if mode=='web' and control and key.lower()=='l':request='Web:Search'
                 if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
                     self.commands.put(typed.get().strip().lower());typed.delete(0,'end');return 'break'
-                if self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N'):
+                if request:pass
+                elif self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
                 elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and (event.widget==self.editor or event.widget==typed and (self.context.get('web_private') or not typed.get())):
@@ -178,7 +181,9 @@ class CompanionWindow:
 
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
-                    if shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
+                    if self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not event.state&(8|0x20000) and key.lower() in ('k','b'):
+                        request='Email:'+('previous ' if shift else 'next ')+('link' if key.lower()=='k' else 'button')
+                    elif shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
                     elif key=='F2':request='F2'
                     elif key=='F5':request='F5'
                     elif key=='Delete' and not self.context.get('source') and not self.typed.get():request='Delete'
@@ -217,11 +222,13 @@ class CompanionWindow:
                 if shortcut(event)=='break':return 'break'
                 previous[:] = [typed.get(), typed.index('insert')]
                 cancel_phonetic()
-                if event.keysym in ('Up','Down','Left','Right') and not typed.get() and not self.email_field and self.context.get('mode')!='document_name':return
+                if event.keysym in ('Up','Down','Left','Right') and not typed.get() and not self.email_field and self.context.get('mode') not in ('document_name','search'):return
                 before=typed.get();old_caret=typed.index('insert')
                 def after_entry():
                     caret=typed.index('insert');value=typed.get()
-                    self.report_entry_key(before,value,old_caret,caret,event.keysym,event.char)
+                    if event.state&4 and event.keysym in ('Left','Right'):
+                        self.feedback(caret_feedback(value,caret,event.keysym,True)[0])
+                    else:self.report_entry_key(before,value,old_caret,caret,event.keysym,event.char)
                     if event.keysym in ('Left','Right') and not event.state&4 and caret<len(value) and self.context.get('phonetic') and phonetic(value[caret]):
                         local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(value[caret])))
                 root.after_idle(after_entry)
@@ -243,7 +250,7 @@ class CompanionWindow:
                 if event.keysym=='Return' and isinstance(event.widget,tk.Button):
                     event.widget.invoke(); return 'break'
                 if event.widget==editor:return
-                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode')=='document_name'):return
+                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode') in ('document_name','search')):return
                 if event.widget == typed or event.widget == history or event.widget == root or isinstance(event.widget,tk.Button):
                     self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
             def enter(event):
@@ -283,7 +290,7 @@ class CompanionWindow:
                     webbrowser.open(url)
             def link_at_caret():
                 caret=offset()
-                return next((span for span in self.context.get('rich_spans',[]) if span[2]=='link' and span[0]<=caret<span[1]),None)
+                return next((span for span in self.context.get('rich_spans',[]) if span[2] in ('link','button') and span[0]<=caret<span[1]),None)
             local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None}
             def offset(index='insert'):return len(editor.get('1.0',index))
             def selection():
@@ -297,8 +304,11 @@ class CompanionWindow:
                 text=editor.get('1.0','end-1c');caret=offset()
                 notice,char=caret_feedback(text,caret,key,control,selection())
                 if not selection() and key in ('Up','Down') and not control:
-                    notice=editor.get('insert display linestart','insert display lineend') or 'Blank line.'
+                    notice=editor.get('insert display linestart','insert display lineend') or 'Blank.'
                     if self.context.get('rich_spans'):
+                        from email_reader import MessageBody,spoken_range
+                        start=offset('insert display linestart');end=offset('insert display lineend')
+                        notice=spoken_range(MessageBody(text,spans=self.context['rich_spans']),start,end)
                         if notice.lstrip().startswith('• '):notice='Bullet '+notice.lstrip()[2:]
                         if any(a<=caret<b and style=='heading' for a,b,style,url in self.context['rich_spans']):notice='Heading. '+notice
                 self.feedback(notice);cancel_phonetic()
@@ -324,16 +334,20 @@ class CompanionWindow:
                     editor.tag_add('sel','1.0','end-1c');read_caret('Right');send_text_position();return 'break'
                 nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')
                 if self.context.get('readonly') and event.keysym=='Return' and link_at_caret():
-                    open_link(link_at_caret()[3]);return 'break'
-                if self.context.get('readonly') and event.keysym=='Tab':
-                    links=[span for span in self.context.get('rich_spans',[]) if span[2]=='link']
-                    caret=offset();backward=bool(event.state&1)
+                    span=link_at_caret()
+                    if span[3]:open_link(span[3]);self.feedback('Opening '+span[2]+'.')
+                    else:self.feedback('This email button has no safe link to open.')
+                    return 'break'
+                if self.context.get('readonly') and event.keysym in ('Tab','ISO_Left_Tab'):
+                    from email_reader import MessageBody,message_controls
+                    links=message_controls(MessageBody(editor.get('1.0','end-1c'),spans=self.context.get('rich_spans',[])))
+                    caret=offset();backward=bool(event.state&1) or event.keysym=='ISO_Left_Tab'
                     candidates=[span for span in links if span[0]<caret] if backward else [span for span in links if span[0]>caret or caret==0 and span[0]==0 and local['link']!=0]
                     if candidates:
                         span=candidates[-1] if backward else candidates[0];local['link']=span[0]
                         editor.mark_set('insert','1.0 + '+str(span[0])+' chars');editor.tag_remove('sel','1.0','end');editor.tag_add('sel','1.0 + '+str(span[0])+' chars','1.0 + '+str(span[1])+' chars');editor.see('insert')
-                        self.feedback(editor.get('sel.first','sel.last')+', link. Enter to open.');send_text_position();return 'break'
-                    target=editor.tk_focusPrev() if event.state&1 else editor.tk_focusNext()
+                        self.feedback(editor.get('sel.first','sel.last')+', '+span[2]+'. Enter to open.');send_text_position();return 'break'
+                    target=editor.tk_focusPrev() if backward else editor.tk_focusNext()
                     if target:target.focus_set()
                     return 'break'
                 if self.context.get('readonly') and not nav and event.keysym not in ('Shift_L','Shift_R','Control_L','Control_R','Tab'):
@@ -352,11 +366,11 @@ class CompanionWindow:
                         editor.tag_add('sel',a,b)
                     else:editor.tag_remove('sel','1.0','end')
                     editor.see('insert');read_caret(event.keysym,True);send_text_position();return 'break'
-                before=editor.get('1.0','end-1c')
+                before=editor.get('1.0','end-1c');old_caret=offset()
                 def after():
                     if local['applying']:return
                     if nav:read_caret(event.keysym,bool(event.state&4));send_text_position()
-                    else:self.feedback(typing_feedback(before,editor.get('1.0','end-1c'),offset(),self.context.get('echo','characters')))
+                    else:self.feedback(typing_feedback(before,editor.get('1.0','end-1c'),offset(),self.context.get('echo','characters'),event.keysym,old_caret))
                 if nav:
                     if local['reading_after'] is not None:root.after_cancel(local['reading_after'])
                     def latest_read():
@@ -439,7 +453,7 @@ class CompanionWindow:
                     if action=='context':
                         old=self.context;self.context=field
                         mode=field['mode'];source=field.get('source')
-                        transition=old.get('mode')!=mode or old.get('source')!=source or field.get('focus',False)
+                        transition=old.get('mode')!=mode or old.get('source')!=source or old.get('web_revision')!=field.get('web_revision') or field.get('focus',False)
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue
@@ -462,14 +476,23 @@ class CompanionWindow:
                             for tag in editor.tag_names():
                                 if tag in ('bold','italic','underline','heading') or tag.startswith('mail_link_'):editor.tag_remove(tag,'1.0','end')
                             for i,(start,end,style,url) in enumerate(field.get('rich_spans',[])):
-                                tag='mail_link_'+str(i) if style=='link' else style
-                                if style=='link':
+                                tag='mail_link_'+str(i) if style in ('link','button') else style
+                                if style in ('link','button'):
                                     editor.tag_configure(tag,foreground='blue',underline=True)
                                     editor.tag_bind(tag,'<Button-1>',lambda event,u=url:open_link(u))
                                 editor.tag_add(tag,'1.0 + '+str(start)+' chars','1.0 + '+str(end)+' chars')
                             self.email_field=None
                             if transition:typed.delete(0,'end');self.last_email_request=None
-                            if transition:editor.focus_force()
+                            if transition:
+                                root.deiconify();root.lift()
+                                if mode=='web':
+                                    try:
+                                        import sys,ctypes
+                                        if sys.platform=='win32':
+                                            hwnd=ctypes.windll.user32.GetAncestor(root.winfo_id(),2)
+                                            ctypes.windll.user32.SetForegroundWindow(hwnd)
+                                    except (AttributeError,OSError):pass
+                                editor.focus_force()
                         else:
                             editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18))
                             if mode!='email_draft' or not self.email_field:
@@ -478,7 +501,7 @@ class CompanionWindow:
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft' and not field.get('web_private'):entry_label.configure(text='Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private'):entry_label.configure(text='Web search; type a search, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
                             if transition:typed.focus_force()
                         continue
                     if action == 'email_select' and not field['canceled'].is_set():

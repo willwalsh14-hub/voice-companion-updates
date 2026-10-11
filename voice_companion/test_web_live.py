@@ -1,5 +1,6 @@
 """Real Firefox DOM tests using synthetic HTTPS pages; no accounts or real submissions."""
-import os,sys,tempfile,unittest
+import os,sys,tempfile,unittest,time,threading
+from unittest.mock import Mock,patch
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from web_assistant import BrowserBackend,WebSession,WebError
@@ -19,9 +20,12 @@ class LiveWebTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):cls.browser.close();cls.driver.stop()
     def setUp(self):
-        self.context=self.browser.new_context();self.addCleanup(self.context.close)
+        self.context=getattr(self,'persistent_context',None) or self.browser.new_context()
+        if hasattr(self,'persistent_context'):self.addCleanup(lambda:self.context.unroute_all(behavior='wait'))
+        else:self.addCleanup(self.context.close)
         self.context.route('https://fixture.test/**',lambda route:route.fulfill(content_type='text/html',body='<label for="f">Frame name</label><input id="f"><a href="https://fixture.test/next">Frame link</a>' if route.request.url.endswith('/frame') else '<h1>Destination</h1>' if route.request.url.endswith('/next') else PAGE))
         self.page=self.context.new_page();self.page.set_default_timeout(5000);self.page.goto('https://fixture.test/')
+        if hasattr(self,'persistent_context'):self.addCleanup(self.page.close)
         self.backend=BrowserBackend(tempfile.gettempdir());self.backend.page=self.page;self.backend.context=self.context;self.backend.start=lambda:None
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.session=WebSession(self.temp.name,self.backend);self.session._refresh()
@@ -113,4 +117,65 @@ class LiveWebTests(unittest.TestCase):
     def test_link_confirmation_navigates_without_unreviewed_actions(self):
         self.session.keyboard('Quick:k');self.assertIn('Say yes or no',self.session.keyboard('Activate'));self.assertEqual(self.page.url,'https://fixture.test/')
         result=self.session.command('yes');self.assertIn('Destination',result);self.assertEqual(self.page.url,'https://fixture.test/next')
+    @unittest.skipUnless(sys.platform=='win32','Windows application focus and keyboard integration')
+    def test_load_speaks_restores_reading_focus_and_real_keys_work(self):
+        import companion as app
+        from app_window import CompanionWindow
+        window=CompanionWindow('live browser test');window.start()
+        def ui(function):
+            done=threading.Event();errors=[]
+            def run():
+                try:function()
+                except Exception as exc:errors.append(exc)
+                finally:done.set()
+            window.ui_actions.put(('ui_call',run));self.assertTrue(done.wait(5))
+            if errors:raise errors[0]
+        def wait(condition):
+            deadline=time.monotonic()+5
+            while not condition() and time.monotonic()<deadline:time.sleep(.02)
+            self.assertTrue(condition())
+        output=Mock(problem=None);window.keyboard_output=output
+        try:
+            with patch.object(app,'APP_WINDOW',window),patch.object(app,'web_session',self.session),patch.object(app,'KEYBOARD_SPEECH',output),patch.object(app,'voice',Mock(),create=True),patch.object(app,'TEXT_MODE',False),patch.object(app,'KEYBOARD_BATCH',False),patch.object(app,'UI_CONTEXT_CACHE',None),patch.object(app,'interrupt_speech'),patch.object(app,'update_audio_ducking'),patch.object(app,'pending_website',None):
+                app.sync_app_context('web',True);wait(lambda:window.context.get('web_revision')==self.session.page_revision)
+                self.page.bring_to_front()
+                self.assertEqual(app.handle_keyboard('web key Refresh','web'),'web')
+                wait(lambda:window.context.get('web_revision')==self.session.page_revision)
+                ui(lambda:self.assertIs(window.editor.focus_get(),window.editor))
+                import ctypes
+                ui(lambda:self.assertEqual(ctypes.windll.user32.GetForegroundWindow(),ctypes.windll.user32.GetAncestor(window.root.winfo_id(),2)))
+                self.assertTrue(any('Page: Fixture' in str(call.args[0]) for call in output.speak.call_args_list))
+                output.reset_mock()
+                ctypes.windll.user32.keybd_event(ord('H'),0,0,0);ctypes.windll.user32.keybd_event(ord('H'),0,2,0)
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertEqual(self.session.browse.current()['label'],'Fixture heading')
+                self.assertTrue(any('heading' in str(call.args[0]) for call in output.speak.call_args_list))
+                ctypes.windll.user32.keybd_event(0x28,0,0,0);ctypes.windll.user32.keybd_event(0x28,0,2,0)
+                wait(lambda:any('Readable text' in str(call.args[0]) for call in output.speak.call_args_list))
+                ui(lambda:window.editor.event_generate('<KeyPress>',keysym='l',state=4))
+                wait(lambda:any(item==('keyboard','Web:Search') for item in window.commands.queue))
+        finally:
+            window.closed.set();ui(window.root.destroy);window.thread.join(5)
+
+@unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
+class ChromeLiveTests(LiveWebTests):
+    browser_name='chrome'
+    @classmethod
+    def setUpClass(cls):
+        cls.profile=tempfile.TemporaryDirectory()
+        cls.adapter=BrowserBackend(cls.profile.name,cls.browser_name)
+        try:cls.adapter.start()
+        except WebError:
+            cls.profile.cleanup()
+            if os.getenv('VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS'):raise
+            raise unittest.SkipTest(cls.browser_name+' is not installed.')
+        cls.persistent_context=cls.adapter.context
+    @classmethod
+    def tearDownClass(cls):cls.adapter.close();cls.profile.cleanup()
+
+@unittest.skipUnless(sys.platform=='win32','Installed Windows Edge browser')
+class EdgeLiveTests(ChromeLiveTests):browser_name='edge'
+
+@unittest.skipUnless(sys.platform=='win32','Installed Windows Brave browser')
+class BraveLiveTests(ChromeLiveTests):browser_name='brave'
 if __name__=='__main__':unittest.main()

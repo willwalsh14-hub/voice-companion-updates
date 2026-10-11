@@ -92,9 +92,10 @@ class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one."""
     BROWSERS = ('edge', 'chrome', 'brave', 'firefox')
 
-    def __init__(self, folder, browser='edge'):
+    def __init__(self, folder, browser='edge', headless=False):
         self.folder = Path(folder)
         self.browser = browser.lower()
+        self.headless = headless
         if self.browser not in self.BROWSERS:
             raise WebError('Choose Edge, Chrome, Brave, or Firefox.')
         self.playwright = self.context = self.page = None
@@ -120,7 +121,7 @@ class BrowserBackend:
                     if not executable: raise WebError('Brave is not installed in a standard Windows location.')
                     kwargs = {'executable_path': str(executable)}
             self.context = engine.launch_persistent_context(
-                str(self.folder), headless=False, accept_downloads=False, **kwargs)
+                str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.set_default_timeout(10000)
         except Exception as exc:
@@ -568,6 +569,7 @@ class WebSession:
 
     def _refresh(self):
         self.snapshot = self.backend.snapshot()
+        self.page_revision=getattr(self,'page_revision',0)+1
         # DOMContentLoaded often precedes text inserted by the site's scripts.
         # Wait briefly before declaring a genuinely empty page.
         if not self.snapshot.get('challenge') and not str(self.snapshot.get('text', '')).strip():

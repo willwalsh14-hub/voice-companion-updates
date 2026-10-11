@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.108-test'
+APP_VERSION = '0.2.109-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -171,6 +171,7 @@ CONFIRM_CHOICE = "yes"
 POWER_ACTION = None
 POWER_RETURN_MODE = "awake"
 EXIT_RETURN_MODE = "awake"
+SEARCH_RETURN_MODE = 'awake'
 
 def checkpoint_document():
     global DOCUMENT_BASELINE
@@ -192,7 +193,7 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=menu_state(logical) is not None
-    if logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
+    if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
@@ -205,6 +206,7 @@ def app_context(mode):
         if editor.selection:
             s=editor.selection;context['selection']=(absolute(editor,(s.first_paragraph,s.first_offset)),absolute(editor,(s.last_paragraph,s.last_offset)))
     elif logical=='web' and web_session and web_session.snapshot and not web_session.list_focus and web_session.form_index is None:
+        context['web_revision']=getattr(web_session,'page_revision',0)
         field=getattr(web_session,'keyboard_field',None)
         context['web_browse']=field is None
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
@@ -221,6 +223,7 @@ def app_context(mode):
         mail_session.set_format(PREFERENCES.get('email_format','html'))
         source='mail:'+str(id(mail_session))+':'+str(mail_session.current)
         context.update(source=source,text=mail_session.body_text,rich_spans=getattr(mail_session.body_text,'spans',[]) if PREFERENCES.get('email_format','html')=='html' else [],readonly=True,caret=mail_session.reading.position,ack=EDIT_ACK.get(source,0))
+        context['email_html']=PREFERENCES.get('email_format','html')=='html'
     return context
 
 def sync_app_context(mode,focus=False):
@@ -283,7 +286,7 @@ def _handle_keyboard(text,mode):
     return handle(text,mode,typed=True)
 def process_keyboard_batch(mode):
     """Apply every queued action in order and announce only the final navigation result."""
-    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT,KEYBOARD_BATCH_STATUS
+    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT,KEYBOARD_BATCH_STATUS,SLEEP_RETURN_MODE
     previous=KEYBOARD_BATCH;KEYBOARD_BATCH=True
     if not previous:KEYBOARD_BATCH_STATUS=False
     try:
@@ -299,7 +302,12 @@ def process_keyboard_batch(mode):
                 continue
             interrupt_speech()
             if isinstance(command,tuple):
-                if command[0]=='web_private_value':
+                if command[0]=='web_search_query':
+                    if mode=='sleep':SLEEP_RETURN_MODE=run_web_search(command[1])
+                    else:mode=run_web_search(command[1])
+                    sync_app_context(mode,True)
+                    continue
+                elif command[0]=='web_private_value':
                     try:web_session.commit_keyboard_field(command[1]['value']);command='web key '+command[1].get('next','Done')
                     except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
                 elif command[0]=='email_field_tab':
@@ -456,7 +464,7 @@ def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
     if key=='Control':return None
-    confirming=mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n'):return 'yes' if key.lower()=='y' else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -465,6 +473,8 @@ def _navigation_key(key,mode):
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
+    if mode=='search' and key=='Escape':return 'go back'
+    if mode=='mailbox' and key.startswith('Email:'):return key[6:]
     if key in ('Home','End'):
         state=menu_state(mode)
         if state:
@@ -948,6 +958,31 @@ def speak_status(text):
 def mail_progress(text):
     speak_status(text)
 
+def speak_web_result(text,previous_revision):
+    """A loaded page is an operation result, not discardable caret feedback."""
+    global KEYBOARD_NAVIGATION,KEYBOARD_BATCH_TEXT
+    if web_session and getattr(web_session,'page_revision',0)!=previous_revision:
+        sync_app_context('web',True)
+        KEYBOARD_BATCH_TEXT=None
+        previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+        try:speak_status(text)
+        finally:KEYBOARD_NAVIGATION=previous
+    else:speak(text)
+
+def run_web_search(query):
+    """Search-entry text is literal, even when it resembles an app command."""
+    global web_session
+    web_session=web_session or WebSession(APP)
+    revision=getattr(web_session,'page_revision',0)
+    speak_web_result(web_session.search(query),revision)
+    return 'web' if web_session.snapshot else 'search'
+
+def browser_focus_notice(mode):
+    """Native focus polling must not overwrite Companion browse-cursor speech."""
+    if mode!='web' or not web_session or speech_busy():return ''
+    if APP_WINDOW is not None and app_context(mode).get('source'):return ''
+    return web_session.focus_notice()
+
 
 def callback(indata, frames, time_info, status):
     global AUDIO_OVERFLOW
@@ -1031,6 +1066,7 @@ def _handle(text, mode, typed=False):
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
+    global SEARCH_RETURN_MODE
     command=normalized_command(text)
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
@@ -1779,14 +1815,20 @@ def _handle(text, mode, typed=False):
         pending_website = None
         if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
             web_session = web_session or WebSession(APP)
+            revision=getattr(web_session,'page_revision',0)
             result = web_session.open(address)
-            speak(result)
+            speak_web_result(result,revision)
             return 'web' if web_session.snapshot else mode
         else:
             speak_prompt('Website request canceled. Say open website followed by the address to try again.')
         return mode
     if mode == 'web':
-        if text.startswith('web key '):speak(web_session.keyboard(text[8:]));return mode
+        if command in ('search','search web','search the web','web search','new search') or text=='web key Search':
+            SEARCH_RETURN_MODE='web'
+            speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
+            return 'search'
+        revision=getattr(web_session,'page_revision',0)
+        if text.startswith('web key '):speak_web_result(web_session.keyboard(text[8:]),revision);return mode
         web_session.input_mode = INPUT_MODE
         if command in ('leave website', 'close website', 'main menu', 'back to main menu'):
             speak('The browser window remains available.')
@@ -1798,7 +1840,7 @@ def _handle(text, mode, typed=False):
             except ValueError as exc:
                 speak(str(exc))
             return 'web'
-        speak(web_session.command(text))
+        speak_web_result(web_session.command(text),revision)
         return 'web'
     if mode == 'mailbox':
         if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
@@ -2039,15 +2081,16 @@ def _handle(text, mode, typed=False):
         focus_email_entry()
         return 'email_draft'
     if mode in ('podcast', 'search') and command in ('go back', 'back', 'exit', 'main menu', 'back to main menu'):
-        pass
+        if mode=='search' and command in ('go back','back','exit'):return SEARCH_RETURN_MODE
         return 'awake'
     if mode == 'podcast':
         speak(media().search_podcasts(text))
         return 'media'
     if mode == 'search':
         web_session = web_session or WebSession(APP)
-        speak(web_session.search(text))
-        return 'web' if web_session.snapshot else 'awake'
+        revision=getattr(web_session,'page_revision',0)
+        speak_web_result(web_session.search(text),revision)
+        return 'web' if web_session.snapshot else 'search'
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
@@ -2137,9 +2180,11 @@ def _handle(text, mode, typed=False):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:
             web_session = web_session or WebSession(APP)
-            speak(web_session.search(topic, provider='google' if command.startswith('google ') else 'brave'))
+            revision=getattr(web_session,'page_revision',0)
+            speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'brave'),revision)
             return 'web' if web_session.snapshot else 'awake'
-        speak('What would you like to search for?')
+        SEARCH_RETURN_MODE='awake'
+        speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
         return 'search'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
@@ -2489,13 +2534,14 @@ def main():
             try:
                 audio = AUDIO.get(timeout=0.02)
             except queue.Empty:
-                if mode == 'web' and web_session and not speech_busy():
-                    notice = web_session.focus_notice()
+                if time.monotonic()-last_focus_check>1.2:
+                    last_focus_check=time.monotonic()
+                    notice = browser_focus_notice(mode)
                     if notice: speak(notice)
                 continue
             if mode == 'web' and web_session and not speech_busy() and time.monotonic() - last_focus_check > 1.2:
                 last_focus_check = time.monotonic()
-                notice = web_session.focus_notice()
+                notice = browser_focus_notice(mode)
                 if notice: speak(notice)
             if AUDIO_OVERFLOW:
                 if cloud:

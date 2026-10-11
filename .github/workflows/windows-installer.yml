@@ -1,6 +1,11 @@
 name: Build and publish Windows installer
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'voice_companion/**'
+      - '.github/workflows/windows-installer.yml'
   push:
     branches: [main]
     paths:
@@ -9,7 +14,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: voice-companion-release
+  group: voice-companion-release-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   installer:
@@ -49,6 +54,9 @@ jobs:
         shell: powershell
         run: |
           $env:VOICE_COMPANION_BUILD_PYTHON = (Get-Command python.exe).Source
+          choco install googlechrome brave --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Chrome and Brave installation for browser checks failed.' }
+          $env:VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS = '1'
           & ./voice_companion/build-windows.ps1 -Parakeet -NoPublish -Unattended
       - name: Preserve checked installer before publishing
         uses: actions/upload-artifact@v6
@@ -61,6 +69,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
       - name: Publish verified installer and update feed
+        if: github.ref == 'refs/heads/main'
         shell: pwsh
         run: |
           & python -u ./voice_companion/publish_release.py --setup ./voice_companion/VoiceCompanion-Setup.exe --gh gh

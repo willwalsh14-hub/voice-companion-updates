@@ -82,7 +82,7 @@ class GuidedChecks(unittest.TestCase):
     def test_address_entry_feedback_and_subject_voice_navigation(self):
         self.assertEqual(entry_feedback('bob@example.com','bob@example.com',2,1,'Left'),'o')
         self.assertEqual(entry_feedback('bob@example.com','bob@example.com',2,3,'Right'),'at sign')
-        self.assertEqual(entry_feedback('bob@example.com','bo@example.com',3,2,'BackSpace'),'Deleted b')
+        self.assertEqual(entry_feedback('bob@example.com','bo@example.com',3,2,'BackSpace'),'b')
         self.assertEqual(entry_feedback('bob','bob@',3,4,'at'),'at sign')
         import companion
         with tempfile.TemporaryDirectory() as tmp:
