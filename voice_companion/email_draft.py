@@ -239,6 +239,10 @@ class VoiceEmail(VoiceDocument):
             self.after_copy_step = self.compose_step or 'body'
             self.compose_step = field
             return 'Who should receive the ' + field.upper() + ' copy? Say the email address, or say skip.'
+        if command in ('no subject','skip subject','leave subject blank') or command=='skip' and self.compose_step=='subject':
+            if self.response_context:return 'This response keeps the original subject.'
+            self.checkpoint();self.subject='';self.compose_step='body';self.save()
+            return 'No subject. What would you like the message to say?'
         if command in ('skip','skip cc','skip bcc') and self.compose_step in ('cc','bcc'):
             self.compose_step = self.after_copy_step or 'body'
             return 'Skipped. ' + ('What is the subject?' if self.compose_step == 'subject' else 'What would you like the message to say?')

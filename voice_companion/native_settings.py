@@ -71,6 +71,9 @@ class NativeSettings:
             if field.kind=='action':return field.label+'. Button.'
             value=raw(hwnd,field)
             return field.label+', '+('on' if value is True else 'off' if value is False else value)
+        def changed_value(hwnd):
+            field=controls[hwnd];value=raw(hwnd,field)
+            return 'on' if value is True else 'off' if value is False else str(value)
         def render(focus_key=None):
             for hwnd in children:destroy(hwnd)
             children.clear();controls.clear();buttons.clear();header_buttons.clear();headers[0]=None;last_focus[0]=None
@@ -172,7 +175,7 @@ class NativeSettings:
                 hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if hwnd==category[0] or cmd.endswith('category'):select_category(self.session.category+delta)
                 elif field and field.choices:
-                    index=int(send(hwnd,0x147,0,0));index=max(0,min(len(field.choices)-1,index+delta));send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(describe(hwnd))
+                    index=int(send(hwnd,0x147,0,0));index=max(0,min(len(field.choices)-1,index+delta));send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(hwnd))
                 else:focus(u.GetNextDlgTabItem(self.hwnd,hwnd,delta<0))
                 return
             setting=self.session.voice_setting(text_command)
@@ -185,7 +188,7 @@ class NativeSettings:
             if cmd in ('on','off','toggle'):
                 hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if field and field.kind=='check':
-                    value=not raw(hwnd,field) if cmd=='toggle' else cmd=='on';send(hwnd,0xF1,int(value),0);self.session.set(field.key,value);self.announce(describe(hwnd));return
+                    value=not raw(hwnd,field) if cmd=='toggle' else cmd=='on';send(hwnd,0xF1,int(value),0);self.session.set(field.key,value);self.announce(changed_value(hwnd));return
             field=controls.get(get_focus())
             if field and field.kind=='action' and cmd in ('open','activate','click'):
                 self.action_callback(field.key);close();return
@@ -208,7 +211,7 @@ class NativeSettings:
                             headers[0].index=max(0,min(3,int(send(lp,0x188,0,0))));self.announce(describe(lp));return 0
                         if field.kind=='action' and notice==0:self.action_callback(field.key);close();return 0
                         if (field.kind=='check' and notice==0) or (field.kind in ('choice','combo') and notice==1):
-                            self.session.set(field.key,raw(lp,field));self.announce(describe(lp))
+                            self.session.set(field.key,raw(lp,field));self.announce(changed_value(lp));last_focus[0]=lp
                             if field.key=='podcast_feed':render(field.key)
                         return 0
                 if msg==0x113:
@@ -220,6 +223,7 @@ class NativeSettings:
                         if action=='voice' and not self.pending:voice(payload)
                         if not alive[0]:return 0
                     current=get_focus()
+                    if parent(current) in controls:current=parent(current)
                     if current!=last_focus[0]:
                         last_focus[0]=current;message=describe(current)
                         if message:self.announce(message)

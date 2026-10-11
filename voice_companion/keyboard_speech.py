@@ -51,6 +51,7 @@ class KeyboardSpeech:
                             elif espeak:espeak.resume()
                         continue
                     if getattr(self,'paused',False):voice.Resume();self.paused=False
+                    self.active=True
                     if espeak and espeak.enabled:espeak.interrupt();espeak.speak(text,rate,volume);continue
                     if voice_id and voice_id!=chosen:
                         voices=voice.GetVoices()

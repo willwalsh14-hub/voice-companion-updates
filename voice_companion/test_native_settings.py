@@ -44,7 +44,7 @@ class NativeSettingsTests(unittest.TestCase):
         before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
         # Queue real keystrokes so IsDialogMessage handles checkbox activation.
         self.u.PostMessageW(checkbox,0x100,0x20,0);self.u.PostMessageW(checkbox,0x101,0x20,0)
-        self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before)
+        self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before and self.notices[-1]==('off' if before else 'on'))
         self.u.PostMessageW(checkbox,0x100,0x0D,0)
         self.wait(lambda:len(self.saved)==1)
         self.assertFalse(self.panel.closed.is_set())
@@ -76,7 +76,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
         combo=self.u.GetDlgItem(hwnd,200)
         self.u.PostMessageW(combo,0x100,0x28,0)
-        self.wait(lambda:self.session.values['verbosity']=='medium')
+        self.wait(lambda:self.session.values['verbosity']=='medium' and self.notices[-1]=='medium')
         self.u.PostMessageW(combo,0x100,0x0D,0)
         self.wait(lambda:len(self.saved)==1)
         self.assertEqual(self.saved[0]['verbosity'],'medium')

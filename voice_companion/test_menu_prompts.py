@@ -7,8 +7,9 @@ class MenuPromptTests(unittest.TestCase):
     def test_startup_version_help_and_wake_instructions(self):
         prompt=companion.startup_prompt()
         self.assertTrue(prompt.startswith('Voice Companion '+companion.APP_VERSION+' is ready.'))
-        self.assertIn('Say wake up to get started and launch the main menu.',prompt)
-        self.assertIn('Say help for the user guide.',prompt)
+        self.assertIn('Use your wake command or keyboard to begin.',prompt)
+        self.assertNotIn('wake up',prompt.lower())
+        self.assertIn('Help is available.',prompt)
     def test_all_picker_confirmation_aliases_skip_dictation_model(self):
         with patch.object(companion,'INPUT_MODE','mixed'):
             for mode in ('awake','media','web','mailbox','help'):

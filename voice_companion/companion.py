@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.104-test'
+APP_VERSION = '0.2.105-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -250,6 +250,7 @@ def flush_keyboard_edits(force=False):
 KEYBOARD_NAVIGATION=False
 KEYBOARD_BATCH=False
 KEYBOARD_BATCH_TEXT=None
+KEYBOARD_BATCH_STATUS=False
 
 def handle_keyboard(text,mode):
     global KEYBOARD_NAVIGATION
@@ -269,8 +270,9 @@ def _handle_keyboard(text,mode):
     return handle(text,mode,typed=True)
 def process_keyboard_batch(mode):
     """Apply every queued action in order and announce only the final navigation result."""
-    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT
+    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT,KEYBOARD_BATCH_STATUS
     previous=KEYBOARD_BATCH;KEYBOARD_BATCH=True
+    if not previous:KEYBOARD_BATCH_STATUS=False
     try:
         # Bound each batch so microphone controls continue to be serviced.
         for _ in range(100):
@@ -295,6 +297,7 @@ def process_keyboard_batch(mode):
             if mode=='exit':break
     finally:KEYBOARD_BATCH=previous
     if not previous and APP_WINDOW.commands.empty() and KEYBOARD_BATCH_TEXT:
+        if KEYBOARD_BATCH_STATUS:finish_mail_announcement()
         text=KEYBOARD_BATCH_TEXT;KEYBOARD_BATCH_TEXT=None
         APP_WINDOW.feedback(punctuation_for_speech(text))
     return mode
@@ -308,7 +311,7 @@ def announce_main_menu():
     speak_prompt(MAIN_MENU_PROMPT)
 
 def startup_prompt():
-    return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to get started and launch the main menu. Say help for the user guide.'
+    return 'Voice Companion ' + APP_VERSION + ' is ready. Use your wake command or keyboard to begin. Help is available.'
 
 MAIN_MENU_INDEX = None
 MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
@@ -316,6 +319,7 @@ MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('W
 
 def resume_from_sleep():
     global MAIN_MENU_INDEX
+    interrupt_speech()
     mode = SLEEP_RETURN_MODE
     if mode == 'awake':
         MAIN_MENU_INDEX = None
@@ -916,8 +920,16 @@ def speak_keyboard_feedback(text):
         else: sapi_speak(voice,str(text),SPEECH_PITCH)
 
 
+def speak_status(text):
+    # Operation results must not be coalesced with routine list navigation.
+    global KEYBOARD_BATCH,KEYBOARD_BATCH_STATUS
+    previous=KEYBOARD_BATCH;KEYBOARD_BATCH=False
+    if previous:KEYBOARD_BATCH_STATUS=True
+    try:speak(text)
+    finally:KEYBOARD_BATCH=previous
+
 def mail_progress(text):
-    speak(text)
+    speak_status(text)
 
 
 def callback(indata, frames, time_info, status):
@@ -1844,7 +1856,7 @@ def _handle(text, mode, typed=False):
                                ('. Original attachments are not included' if context['action'] == 'forward' and provider != 'outlook' else '')
                                if context else '')
                 speak('Review before sending. From ' + address + '. To ' + recipient +
-                      copied + '. Subject ' + subject + '. Message: ' + body + source_note +
+                      copied + '. Subject ' + (subject or 'no subject') + '. Message: ' + (body or 'no message body') + source_note +
                       '. Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
                 reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
@@ -1874,7 +1886,7 @@ def _handle(text, mode, typed=False):
                 reason=str(exc) if isinstance(exc,(AccountError,DeliveryError,ValueError)) else 'The email connection could not complete the request.'
                 speak(reason+' The draft is saved locally.'+(' Check Sent Mail before trying again; do not send a duplicate.' if uncertain else ' It has not been sent. Correct the problem and review the draft again.'))
                 return mode
-            speak('Email sent successfully.')
+            speak_status('Email sent successfully.')
             finish_mail_announcement()
             original_body = (mail_session.body_text if mail_session is not None and
                              email_draft.response_context and mail_session.view == 'message' else None)
@@ -2376,13 +2388,8 @@ def main():
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
-        # Do not allow the start announcement to activate the microphone itself.
-        wait_for_speech(15000)
-        while not AUDIO.empty():
-            try: AUDIO.get_nowait()
-            except queue.Empty: break
-        recognizer.Reset()
-        resampler.reset()
+        sync_app_context(mode,True)
+        # Listen and process keys while the asynchronous startup speech plays.
         result_file = APP / 'update-result.json'
         if result_file.exists():
             try:

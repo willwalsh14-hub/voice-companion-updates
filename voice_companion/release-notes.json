@@ -1,31 +1,18 @@
 {
-  "version": "0.2.104-test",
+  "version": "0.2.105-test",
   "status": "Testing build",
   "date": "October 10, 2026",
-  "baseline": "0.2.103-test",
-  "scope": "Email send diagnostics, Alt+S sending review, and selectable HTML or plain-text message reading. This is a beta testing build.",
+  "baseline": "0.2.104-test",
+  "scope": "Restores keyboard email operation announcements, allows subject-only or body-only sending, removes the startup speech wait, and shortens setting-change feedback. This is a beta testing build.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "HTML and plain-text email reading",
+          "title": "Subject-only and body-only email",
           "details": [
-            "Options, Email, Email format offers HTML and plain text. HTML is the default, including for existing installations without a saved format choice. Say email format HTML or email format plain text to change it.",
-            "HTML message reading preserves safe clickable links, headings, bold, italic, underline, numbered lists and bullet points. Tab and Shift+Tab move among links, and Enter opens the focused link. Say list links and open link followed by its number. Normal arrow reading and Escape remain available. HTML is rendered passively: scripts and remote images are not loaded. This is basic email formatting, not a full browser layout.",
-            "Plain text uses the original plain-text MIME part when available, otherwise the readable HTML text. Changing the format of an open message returns its reading position to the beginning."
-          ]
-        },
-        {
-          "title": "Alt+S send shortcut",
-          "details": [
-            "Alt+S and Ctrl+Enter start the same review as send it. They commit the current editable header before reviewing. A yes confirmation is still required before sending."
-          ]
-        },
-        {
-          "title": "Keyboard update and email send confirmations",
-          "details": [
-            "Update installation and email send review prompts support Y or N immediately, arrows or Tab/Shift+Tab to change the spoken Yes/No choice, Enter to activate it, and Escape to cancel. Confirmation keys take priority over any text remaining in an email header field. Voice yes and no still work."
+            "A valid recipient and either a subject or a body are sufficient to review a new message. The review explicitly says no subject or no message body when that part is blank. An entirely empty message is still refused.",
+            "For voice composition, say skip subject, no subject, or leave subject blank to move from the subject to the body. A response keeps the original message subject. The guided recipient, subject and body workflow, review and Yes/No confirmation remain available. Alt+S and Ctrl+Enter still start the same review."
           ]
         }
       ]
@@ -34,17 +21,24 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Specific sending errors and safe retries",
+          "title": "Email operation announcements with the keyboard",
           "details": [
-            "The draft remains saved, but the spoken error now explains invalid recipient data, expired sign-in, missing sending permission, or provider rejection instead of hiding the reason. Account renewal failures before submission do not count as an attempted send. Explicit provider rejection releases the attempted-send block so the corrected draft can be reviewed again.",
-            "Timeouts, network failures during submission, unclear acceptance and provider server errors remain protected against duplicate sends. Check Sent Mail before trying again. No automatic retry or real test email is sent by these checks. Actual sending with the affected account still needs testing on the user\u2019s computer."
+            "Getting messages from the selected folder and Email sent successfully bypass the navigation speech coalescing that previously discarded them. Progress starts before fetching. Before the final folder summary, active status speech can complete; rapid navigation continues to retain only the latest ordinary destination feedback.",
+            "The local keyboard speech worker now marks speech active when it actually starts, so send success is not immediately replaced by refresh feedback. Success is announced only after provider acceptance; failure and uncertain-result protections remain in place."
           ]
         },
         {
-          "title": "Cleaner message spacing",
+          "title": "Interruptible startup",
           "details": [
-            "Plain-text messages normalize Windows line endings and collapse repeated empty lines to one blank line. HTML source indentation and nested layout containers do not create extra reading lines. Consecutive HTML breaks retain at most one blank line. An intentional blank line is still spoken as Blank line by keyboard reading.",
-            "Automated checks cover MIME selection, safe links, lists, formatting, blank-line cleanup, default/voice format selection, send review shortcuts, last-field commits, expired sign-in and rejected permission responses. Windows checks exercise Tab, Shift+Tab, Enter link activation and Alt+S."
+            "The main input loop no longer waits up to 15 seconds for the startup announcement or discards microphone audio collected during it. The window context is ready for keyboard navigation immediately after the startup update check. Saying Wake up interrupts the current announcement before continuing to the main menu or the previous activity.",
+            "The short startup message avoids speaking the literal wake phrase, which could otherwise wake the app through its own speakers. Microphone, model and account initialization still must complete before commands can be processed. Live microphone testing is still needed."
+          ]
+        },
+        {
+          "title": "Shorter setting-change feedback",
+          "details": [
+            "Tab focus still announces the setting name and current value. Changing a list choice or checkbox announces only its new value, such as medium, 3, on or off. Combo-box child focus is normalized to avoid a second full-label announcement. Category navigation, explicit voice setting requests, OK and Cancel remain unchanged.",
+            "Regression checks cover partial email bodies, guided subject skipping, keyboard status announcements before refresh, active local speech, wake interruption and native Windows value-only choice/checkbox feedback. HTML message reading and its saved format preference are unchanged in this build."
           ]
         }
       ]

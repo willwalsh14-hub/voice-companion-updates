@@ -212,3 +212,11 @@ Check mail Control+Y folders, Control+R reply, Control+Shift+R reply all, Contro
 - Verify expired sign-in and missing send permissions speak a useful error and retain the draft. Verify uncertain submission remains protected against duplicates.
 
 Update installation and email send confirmation: press Y or N immediately; arrows or Tab/Shift+Tab choose Yes or No, Enter activates the spoken choice, and Escape cancels. Voice Yes and No still work. Test this with text left in an email header field.
+
+0.2.105-test CHECKS
+- Using keyboard navigation, open Inbox, Sent and another folder. Confirm Getting messages from the correct folder speaks and is followed by the message list.
+- Review a subject-only and body-only test email by voice and keyboard. Confirm missing parts are named in the review, No preserves the draft, and Yes submits only after review. Verify actual recipient receipt and sent folder separately.
+- Confirm Email sent successfully speaks before the folder refresh summary after a keyboard send.
+- Say Wake up during the initial startup announcement and use arrows/first-letter navigation on a separate launch. Verify speech stops and navigation works, without the app waking from its own announcement.
+- Tab onto a setting: verify its name and value speak. Change the value with arrows or toggle a checkbox: verify only the new value speaks. OK applies; Cancel discards.
+- Recheck HTML/plain-text preference, link navigation, normal reading, guided email composition and uncertain-send safeguards.
