@@ -136,4 +136,8 @@ SEMANTICS = r'''
             if(['input','select','textarea'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
           walk(document.body);
+          // JavaScript offsets count UTF-16 units; Companion reading uses code points.
+          const boundaries=new Set(elements.flatMap(e=>[e.start,e.end]));const offsets=new Map();let units=0,points=0;
+          for(const char of output){if(boundaries.has(units))offsets.set(units,points);units+=char.length;points++;}
+          offsets.set(units,points);for(const item of elements){item.start=offsets.get(item.start);item.end=offsets.get(item.end);}
 '''

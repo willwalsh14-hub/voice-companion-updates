@@ -73,6 +73,12 @@ class LiveWebTests(unittest.TestCase):
         self.session.command('edit current field');self.session.command('type First')
         self.assertEqual(self.session.command('new line'),'New line.');self.session.command('save field')
         self.assertEqual(self.page.locator('textarea').input_value(),'First\n')
+    def test_unicode_element_offsets_match_the_actual_reading_text(self):
+        self.page.evaluate("()=>{let e=document.createElement('p');e.textContent='Before heading: \U0001f600 café';document.body.prepend(e);}")
+        self.session._refresh();text=self.session.snapshot['text']
+        for label in ('Fixture heading','Next page','Name','Apple','Frame name','Shadow action'):
+            item=self.element(label);self.assertIn(label,text[item['start']:item['end']])
+        self.session.command('next heading');self.assertEqual(text[self.session.reading.position:self.session.reading.position+15],'Fixture heading')
     def test_frames_fill_and_check_actual_target(self):
         item=self.element('Frame name');self.backend.fill(item,'Frame value')
         self.assertEqual(self.page.frames[1].locator('#f').input_value(),'Frame value');self.assertEqual(self.page.locator('#name').input_value(),'')
