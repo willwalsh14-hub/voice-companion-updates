@@ -6,6 +6,17 @@
   "scope": "Page-load speech and keyboard focus, typed web searches, deletion feedback, and accessible HTML email controls.",
   "sections": [
     {
+      "title": "New Apps and Features",
+      "topics": [
+        {
+          "title": "Type a web search",
+          "details": [
+            "Press Ctrl+L from Companion web browsing, choose Web browsing on the main menu, or say Search the web to open a typed search field. Type a search and press Enter; Escape returns to the previous page or main menu. Standard text editing, caret movement, word movement and typing echo apply. Spoken searches remain available."
+          ]
+        }
+      ]
+    },
+    {
       "title": "Fixes and Enhancements",
       "topics": [
         {
@@ -14,12 +25,6 @@
             "Loaded pages use operation-result speech instead of discardable caret feedback. A page revision restores Companion reading focus after opening, following links, going back or refreshing, including when the browsing mode has not changed. Native browser focus polling no longer replaces Companion browse-cursor announcements.",
             "Use the Companion page reading area for arrows, quick keys, forms and table navigation. These controls share the same backend behavior for Firefox, Chrome, Edge and Brave. The release checks now exercise actual installed Chrome, Edge and Brave adapters as well as Firefox, including page loading, app focus, arrow speech and quick-key dispatch. Native browser windows retain their own keyboard behavior.",
             "Website-address confirmation now accepts keyboard Y/N, arrow/Tab selection, Enter and Escape. Existing voice Yes/No and website confirmation remain."
-          ]
-        },
-        {
-          "title": "Type a web search",
-          "details": [
-            "Press Ctrl+L from Companion web browsing, choose Web browsing on the main menu, or say Search the web to open a typed search field. Type a search and press Enter; Escape returns to the previous page or main menu. Standard text editing, caret movement, word movement and typing echo apply. Spoken searches remain available."
           ]
         },
         {
