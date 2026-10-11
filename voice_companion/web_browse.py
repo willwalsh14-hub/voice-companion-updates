@@ -124,6 +124,8 @@ SEMANTICS = r'''
             if(block.has(e.tagName))newline();if(e.tagName==='BR'){newline();return;}
             let role=e.getAttribute('role')||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
             if(/^h[1-6]$/.test(tag))role='heading';else if(tag==='a' && e.href)role='link';else if(tag==='button'||tag==='input'&&['submit','reset','button','image'].includes(type))role='button';else if(['input','textarea','select'].includes(tag)||editable)role='field';else if(tag==='table'||role==='grid')role='table';else if(tableMaps.has(e))role='cell';else if(['ul','ol'].includes(tag))role='list';else if(tag==='li')role='listitem';else if(tag==='p')role='paragraph';else if(['main','nav','aside','header','footer'].includes(tag))role='landmark';else if(tag==='img')role='graphic';
+            if(tag==='label'){for(const child of all(e).filter(c=>c.matches(selector)))walk(child);return;}
+            if(['input','select','textarea'].includes(tag))newline();
             const control=controls.find(c=>c.key===e.getAttribute('data-voice-companion-key'));
             const label=accessibleLabel(e);
             let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,level:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
@@ -131,7 +133,7 @@ SEMANTICS = r'''
             else if(tag==='img')append(label);
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.childNodes))walk(child);
             if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);}
-            if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
+            if(['input','select','textarea'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
           walk(document.body);
 '''

@@ -27,7 +27,7 @@ class LiveWebTests(unittest.TestCase):
         self.session=WebSession(self.temp.name,self.backend);self.session._refresh()
     def element(self,label):return next(e for e in self.session.snapshot['elements'] if e['label']==label)
     def test_readable_semantics_document_order_and_hidden_content(self):
-        snapshot=self.session.snapshot;self.assertNotIn('window.sent',snapshot['text']);self.assertNotIn('Hidden link',snapshot['text'])
+        snapshot=self.session.snapshot;self.assertNotIn('NameName',snapshot['text']);self.assertNotIn('AgreeAgree',snapshot['text']);self.assertNotIn('window.sent',snapshot['text']);self.assertNotIn('Hidden link',snapshot['text'])
         self.assertLess(self.element('Fixture heading')['start'],self.element('Next page')['start'])
         self.assertEqual(self.element('Submit application')['role'],'button');self.assertEqual(self.element('Shadow action')['role'],'button')
         self.assertTrue(any(e['role']=='table' for e in snapshot['elements']))
