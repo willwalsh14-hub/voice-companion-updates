@@ -221,5 +221,5 @@ Update installation and email send confirmation: press Y or N immediately; arrow
 - Tab onto a setting: verify its name and value speak. Change the value with arrows or toggle a checkbox: verify only the new value speaks. OK applies; Cancel discards.
 - Recheck HTML/plain-text preference, link navigation, normal reading, guided email composition and uncertain-send safeguards.
 
-0.2.107-test WEB AND EMAIL CHECKS
+0.2.108-test WEB AND EMAIL CHECKS
 Test every quick key and Shift reverse with speech interruption. Test the matching next/previous voice commands, heading levels 1-6, Tab/Shift+Tab, field Enter/Ctrl+Enter and Escape. Test check/uncheck, radios and dropdown options by both input methods. Test all eight table keyboard and voice directions, headers, row/column spans and boundaries. Verify standard reading, page refresh/back, embedded frames, shadow controls and masked password entry. Check link and submit confirmations and cancellation. Send a consented test email with both subject and body blank, verify recipient review and actual provider acceptance. Test public sites with dynamic/custom controls and document limitations.

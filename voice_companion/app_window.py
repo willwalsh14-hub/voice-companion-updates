@@ -171,7 +171,7 @@ class CompanionWindow:
                     elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
                     elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
                     elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgp123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
-                    elif key=='Return' and (not field or field.get('tag')!='textarea' or control):request='Web:Activate'
+                    elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control):request='Web:Activate'
                     elif not field and key=='space':request='Web:Space'
                     elif not field and key in ('Up','Down') and self.context.get('web_combo'):request='Web:'+key
                     elif key=='Left' and event.state&(8|0x20000):request='Web:Back'

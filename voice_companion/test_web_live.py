@@ -57,6 +57,22 @@ class LiveWebTests(unittest.TestCase):
         from web_browse import kind
         rich=[e for e in self.session.snapshot['elements'] if e.get('editable') and kind(e)=='edit']
         self.assertEqual([e['label'] for e in rich],['Rich edit'])
+    def test_long_fields_and_unchanged_rich_text_are_preserved(self):
+        original='Long value. '*300
+        self.page.locator('#name').fill(original);self.session._refresh()
+        self.session.command('next edit field');self.session.command('edit current field')
+        self.assertEqual(self.session.keyboard_field['value'],original)
+        self.session.command('save field');self.assertEqual(self.page.locator('#name').input_value(),original)
+        self.page.evaluate("()=>{let e=document.createElement('div');e.contentEditable='true';e.setAttribute('aria-label','Rich editor');e.id='rich';e.innerHTML='<p><b>Original bold</b></p><p>Second paragraph</p>';document.body.append(e);}")
+        self.session._refresh();item=self.element('Rich editor');self.session.browse.index=self.session.browse.elements.index(item)
+        original_html=self.page.locator('#rich').inner_html()
+        self.session.command('edit current field');self.assertIn('Original bold',self.session.keyboard_field['value'])
+        self.session.command('save field');self.assertEqual(self.page.locator('#rich').inner_html(),original_html)
+    def test_voice_line_break_changes_staged_multiline_value(self):
+        self.session._refresh();item=self.element('Notes');self.session.browse.index=self.session.browse.elements.index(item)
+        self.session.command('edit current field');self.session.command('type First')
+        self.assertEqual(self.session.command('new line'),'New line.');self.session.command('save field')
+        self.assertEqual(self.page.locator('textarea').input_value(),'First\n')
     def test_frames_fill_and_check_actual_target(self):
         item=self.element('Frame name');self.backend.fill(item,'Frame value')
         self.assertEqual(self.page.frames[1].locator('#f').input_value(),'Frame value');self.assertEqual(self.page.locator('#name').input_value(),'')

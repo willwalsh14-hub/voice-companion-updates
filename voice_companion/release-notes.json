@@ -1,5 +1,5 @@
 {
-  "version": "0.2.107-test",
+  "version": "0.2.108-test",
   "status": "Testing build",
   "date": "October 10, 2026",
   "baseline": "0.2.105-test",
@@ -34,7 +34,8 @@
             "Page snapshots now expose headings, controls, lists, landmarks, graphics, paragraphs and logical table cells in document order, alongside a Companion read-only reading area. Open shadow content and visible embedded frames are included. Hidden/inert content is excluded, password values stay private, and table cells are separated in page text.",
             "Frame form filling and option selection use the correct frame and validate the current control identity. Accessible labels support aria-labelledby; submit inputs are recognized as buttons. Required radio groups are checked as groups within their form and frame; disabled fields do not block review. Activation switches to a new popup only when one actually opened. Staged field editing invalidates an earlier submission review. Existing guided form, numbered link picker and submission confirmation protections remain.",
             "Expanded unit/regression checks cover every spoken quick-key and table direction. Real Firefox tests exercise DOM snapshots, open shadow roots, frames, actual form edits, password privacy, stale labels, radio groups, disabled fields, checkboxes, dropdowns, links and merged table cells. Native Windows Tk checks exercise browse-key routing. Live page checks are mandatory during the Windows release build. Synthetic pages do not replace personal testing on real public sites or prove compatibility with every custom ARIA widget.",
-            "Final voice review added spoken heading levels one through six as well as digits. Normal paragraph reading retains complete text, while element navigation and standard reading share their caret. Quick keys interrupt keyboard speech immediately; aria-hidden frames do not block form review."
+            "Final voice review added spoken heading levels one through six as well as digits. Normal paragraph reading retains complete text, while element navigation and standard reading share their caret. Quick keys interrupt keyboard speech immediately; aria-hidden frames do not block form review.",
+            "Field editing loads the full current value rather than the shortened review snapshot. Saving an unchanged rich-text field preserves its original formatting; staged multiline voice line breaks are retained. Labels appear once in page reading. Superseded Windows builds are canceled when a newer source change is queued."
           ]
         }
       ]

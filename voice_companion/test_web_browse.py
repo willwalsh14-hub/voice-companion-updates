@@ -26,6 +26,13 @@ class WebBrowseTests(unittest.TestCase):
             self.assertIn('keyboard',session.command('next form control'));backend.fill.assert_not_called()
             self.assertIsNotNone(session.keyboard_field)
             self.assertIn('canceled',session.command('cancel field editing'));self.assertIsNone(session.keyboard_field)
+    def test_failed_live_value_read_never_leaves_a_partial_editor(self):
+        with tempfile.TemporaryDirectory() as folder:
+            backend=Mock();backend.field_value.side_effect=RuntimeError('Page changed')
+            session=WebSession(folder,backend)
+            item=dict(key='a',role='field',tag='input',type='text',label='Name',value='Partial',start=0,end=8)
+            session.snapshot={'text':'Name','elements':[item]};session.browse=BrowseCursor(session.snapshot);session.browse.move('e')
+            session.keyboard('Activate');self.assertIsNone(session.keyboard_field);backend.fill.assert_not_called()
     def test_paragraph_reading_keeps_the_full_text(self):
         with tempfile.TemporaryDirectory() as folder:
             session=WebSession(folder,Mock());text='First paragraph.\n\n'+('Second paragraph text. '*30)

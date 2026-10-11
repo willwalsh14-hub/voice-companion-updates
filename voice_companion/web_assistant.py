@@ -365,6 +365,10 @@ class BrowserBackend:
 
     def focus(self,item):self._element(item).focus()
 
+    def field_value(self,item):
+        if item.get('type')=='password':return ''
+        return self._element(item).evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
+
     def fill(self,item,value,private=False):
         element=self._element(item)
         if item.get('type')=='password' and not private:
@@ -459,7 +463,15 @@ class WebSession:
                 if not item:return 'Move to a link or control first.'
                 role=kind(item)
                 if role=='edit':
-                    self.backend.focus(item);self.keyboard_field=dict(item);self.web_edit_caret=len(item.get('value',''))
+                    self.backend.focus(item)
+                    value=self.backend.field_value(item) if hasattr(self.backend,'field_value') else item.get('value','')
+                    if not isinstance(value,str):
+                        if item.get('value_truncated'):raise WebError('This field is too long for this browser integration. Use direct browser editing.')
+                        value=item.get('value','')
+                    self.keyboard_field=dict(item)
+                    self.keyboard_field['value']=value
+                    if item.get('type')!='password':self.keyboard_field['_original_value']=value
+                    self.web_edit_caret=len(value)
                     return item['label']+'. Forms mode. Tab saves and moves to the next control. Escape cancels.'
                 if role in ('checkbox','radio'):
                     self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
@@ -495,10 +507,17 @@ class WebSession:
         item=self.keyboard_field
         if item is None:return
         text=item.get('value','') if value is None else value
-        self.backend.fill(item,text,private=item.get('type')=='password')
+        if item.get('type')=='password' or text!=item.get('_original_value'):
+            self.backend.fill(item,text,private=item.get('type')=='password')
         self.keyboard_field=None;self.submit_pending=None;self.review_submission=None;self._refresh_at(item)
 
     def insert_line_break(self):
+        if self.keyboard_field:
+            item=self.keyboard_field
+            if item.get('type')=='password' or not (item.get('tag')=='textarea' or item.get('editable')):return 'This field is single-line.'
+            value=item.get('value','');caret=getattr(self,'web_edit_caret',len(value))
+            item['value']=value[:caret]+'\n'+value[caret:];self.web_edit_caret=caret+1
+            return 'New line.'
         if not self.snapshot: return 'Open a website first.'
         try: return self.backend.insert_line_break()
         except Exception: return 'I could not insert the line break. Focus a multiline field and try again.'
@@ -515,6 +534,7 @@ class WebSession:
         if self.keyboard_field:
             if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
             self.keyboard_field['value']=self.keyboard_field.get('value','')+(spoken if literal else clean_dictation(spoken))
+            self.web_edit_caret=len(self.keyboard_field['value'])
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
@@ -1042,7 +1062,7 @@ class WebSession:
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
             if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]
-            self.keyboard_field['value']=value
+            self.keyboard_field['value']=value;self.web_edit_caret=len(value)
             return 'Text entered. Say save field, next control, or cancel field editing.'
         if self.form_index is None and not self.list_focus and self.browse:
             item=self.browse.current()
