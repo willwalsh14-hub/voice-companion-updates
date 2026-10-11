@@ -6,7 +6,7 @@ def voice_browse_key(command):
     import re
     command=command.lower().strip().rstrip('.!?')
     command=re.sub(r'^(?:go to|move to|go|move) ', '', command)
-    names={'link':'k','heading':'h','form control':'f','form field':'f','control':'f',
+    names={'link':'k','heading':'h','form control':'f','form field':'f',
            'button':'b','checkbox':'x','check box':'x','combo box':'c','combobox':'c',
            'dropdown':'c','drop down':'c','edit field':'e','text field':'e','table':'t',
            'radio button':'r','list':'l','list item':'i','landmark':'d','graphic':'g',

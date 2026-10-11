@@ -7,6 +7,8 @@ from web_assistant import WebSession
 def cell(key,row,column,label,**values):return dict(key=key,role='cell',tag='td',type='',label=label,row=row,column=column,table='t',start=row*20+column*4,end=row*20+column*4+3,**values)
 class WebBrowseTests(unittest.TestCase):
     def test_voice_covers_every_quick_key_and_table_direction(self):
+        self.assertEqual(voice_browse_key('next control'),'Tab')
+        self.assertEqual(voice_browse_key('previous control'),'ShiftTab')
         names={'form':'form control','combobox':'combo box','edit':'edit field','radio':'radio button','listitem':'list item'}
         for key,name in QUICK_KEYS.items():
             spoken=names.get(name,name)

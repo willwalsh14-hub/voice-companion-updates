@@ -442,7 +442,9 @@ class WebSession:
                 return 'Save this private field with Enter or Tab on the keyboard, or cancel field editing.'
             if self.keyboard_field and key.startswith(('Quick:','Table:')):self.commit_keyboard_field()
             if key.startswith('Quick:'):
-                parts=key.split(':');message=self.browse.move(parts[-1],len(parts)>2)
+                parts=key.split(':');old_index=self.browse.index;message=self.browse.move(parts[-1],len(parts)>2)
+                if parts[-1]=='p' and self.browse.index!=old_index:
+                    item=self.browse.current();message=self.snapshot.get('text','')[item.get('start',0):item.get('end',0)].strip() or message
             elif key.startswith('Table:'):message=self.browse.table_move(key.split(':')[-1])
             elif key in ('Tab','ShiftTab'):
                 if self.keyboard_field:self.commit_keyboard_field()
@@ -1058,7 +1060,7 @@ class WebSession:
         command = _plain(spoken).rstrip('.!?').lower()
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
         browse_key=voice_browse_key(command)
-        if browse_key and self.form_index is None and not self.list_focus and not reading_request(command):return self.keyboard(browse_key)
+        if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
             if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]

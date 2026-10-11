@@ -79,6 +79,12 @@ class LiveWebTests(unittest.TestCase):
         for label in ('Fixture heading','Next page','Name','Apple','Frame name','Shadow action'):
             item=self.element(label);self.assertIn(label,text[item['start']:item['end']])
         self.session.command('next heading');self.assertEqual(text[self.session.reading.position:self.session.reading.position+15],'Fixture heading')
+    def test_keyboard_and_voice_read_the_same_complete_html_paragraph(self):
+        paragraph='A complete paragraph. '*100
+        self.page.locator('p').first.evaluate('(e,text)=>e.textContent=text',paragraph)
+        self.session._refresh();voice=self.session.command('next paragraph')
+        self.session._refresh();keyboard=self.session.keyboard('Quick:p')
+        self.assertEqual(voice,paragraph.strip());self.assertEqual(keyboard,voice)
     def test_frames_fill_and_check_actual_target(self):
         item=self.element('Frame name');self.backend.fill(item,'Frame value')
         self.assertEqual(self.page.frames[1].locator('#f').input_value(),'Frame value');self.assertEqual(self.page.locator('#name').input_value(),'')
