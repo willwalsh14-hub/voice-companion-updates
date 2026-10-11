@@ -155,7 +155,7 @@ class LiveWebTests(unittest.TestCase):
                 ui(lambda:window.editor.event_generate('<KeyPress>',keysym='l',state=4))
                 wait(lambda:any(item==('keyboard','Web:Search') for item in window.commands.queue))
         finally:
-            window.closed.set();ui(window.root.destroy);window.thread.join(5)
+            ui(window.root.destroy);window.thread.join(5)
 
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):
