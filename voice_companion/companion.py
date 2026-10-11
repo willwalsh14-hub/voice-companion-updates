@@ -286,7 +286,7 @@ def _handle_keyboard(text,mode):
     return handle(text,mode,typed=True)
 def process_keyboard_batch(mode):
     """Apply every queued action in order and announce only the final navigation result."""
-    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT,KEYBOARD_BATCH_STATUS
+    global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT,KEYBOARD_BATCH_STATUS,SLEEP_RETURN_MODE
     previous=KEYBOARD_BATCH;KEYBOARD_BATCH=True
     if not previous:KEYBOARD_BATCH_STATUS=False
     try:
@@ -303,7 +303,8 @@ def process_keyboard_batch(mode):
             interrupt_speech()
             if isinstance(command,tuple):
                 if command[0]=='web_search_query':
-                    mode=run_web_search(command[1])
+                    if mode=='sleep':SLEEP_RETURN_MODE=run_web_search(command[1])
+                    else:mode=run_web_search(command[1])
                     sync_app_context(mode,True)
                     continue
                 elif command[0]=='web_private_value':

@@ -359,7 +359,7 @@ class MailSession:
             import webbrowser
             webbrowser.open(item[3]);return 'Opening '+self.body_text[item[0]:item[1]]+', '+item[2]+'.'
         current=getattr(self,'message_control',None)
-        candidates=[span for span in controls if span[0]<self.reading.position] if direction<0 else [span for span in controls if span[0]>self.reading.position or span[0]==self.reading.position and current!=span]
+        candidates=[span for span in controls if span[0]<self.reading.position] if direction<0 else [span for span in controls if span[0]>self.reading.position or span[0]==self.reading.position==0 and current!=span]
         if not candidates:return 'No '+('previous ' if direction<0 else 'next ')+role+'.'
         item=candidates[-1] if direction<0 else candidates[0];self.message_control=item
         self.reading.position=self.reading.continuation=item[0]

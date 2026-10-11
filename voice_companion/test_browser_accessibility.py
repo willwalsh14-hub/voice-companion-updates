@@ -55,6 +55,11 @@ class BrowserAccessibilityTests(unittest.TestCase):
             self.assertEqual(app.app_context('awake')['confirmation'],'yes')
             self.assertEqual(app.navigation_key('y','awake'),'yes');self.assertEqual(app.navigation_key('n','awake'),'no')
             self.assertEqual(app.navigation_key('Escape','awake'),'no')
+    def test_keyboard_search_keeps_microphone_sleep_state(self):
+        window=CompanionWindow('test');window.context['mode']='search';window.submit_entry('weather')
+        session=Mock(snapshot={'text':'Results'},page_revision=0);session.search.return_value='Results.'
+        with patch.object(app,'APP_WINDOW',window),patch.object(app,'web_session',session),patch.object(app,'SLEEP_RETURN_MODE','search'),patch.object(app,'speak'),patch.object(app,'sync_app_context'),patch.object(app,'interrupt_speech'),patch.object(app,'KEYBOARD_BATCH',False),patch.object(app,'KEYBOARD_BATCH_TEXT',None),patch.object(app,'KEYBOARD_BATCH_STATUS',False):
+            self.assertEqual(app.process_keyboard_batch('sleep'),'sleep');self.assertEqual(app.SLEEP_RETURN_MODE,'web');session.search.assert_called_once_with('weather')
     def test_load_status_survives_keyboard_batch_and_caret_acknowledgement(self):
         with tempfile.TemporaryDirectory() as folder:
             session=WebSession(folder,FakeBackend());session._refresh()
