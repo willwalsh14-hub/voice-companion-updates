@@ -14,6 +14,8 @@ def voice_browse_key(command):
     match=re.fullmatch(r'(next|previous|prior) (.+)',command)
     if match:
         direction,name=match.groups()
+        numbers={'one':'1','two':'2','three':'3','four':'4','five':'5','six':'6'}
+        name=re.sub(r'\b(one|two|three|four|five|six)\b',lambda m:numbers[m[0]],name)
         level=re.fullmatch(r'heading (?:level )?([1-6])',name)
         key=level[1] if level else names.get(name)
         if key:return 'Quick:'+('Previous:' if direction!='next' else '')+key

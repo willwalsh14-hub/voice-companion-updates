@@ -1,6 +1,6 @@
 VOICE COMPANION - SIMPLE TEST GUIDE
 
-Guide build: 0.2.106-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud and listens through the computer's microphone. You do not need Microsoft Word to make a document.
+Guide build: 0.2.107-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud and listens through the computer's microphone. You do not need Microsoft Word to make a document.
 
 START
 
@@ -275,7 +275,7 @@ Across areas, arrows, Enter, Escape, and Alt+O provide navigation and settings, 
 
 RELEASE NOTES AND BRAILLE
 Each installer includes the current manual and detailed release notes in TXT, HTML, DOCX, EPUB, text-only DAISY 3, and BRF. All editions of each publication come from the same source. The BRF copies use contracted Unified English Braille, 40 cells per line, and 25 lines per page. They are mechanically translated and have not been human Braille proofread. The app does not require a Braille translator to read its guides.
-Find the files under Documents, Voice Companion, User Guides. Say open user guides, or press Alt+T, type open user guides, and press Enter. Updates replace the manual copies with the current build editions and preserve personal files in this folder. Release notes use filenames such as Release Notes for Voice Companion 0.2.106-test.docx; the same version appears in TXT, HTML, EPUB, BRF, and the DAISY ZIP filename. Notes from earlier versions remain available if they were installed with versioned names. Documentation files are also separate downloads on each new GitHub release.
+Find the files under Documents, Voice Companion, User Guides. Say open user guides, or press Alt+T, type open user guides, and press Enter. Updates replace the manual copies with the current build editions and preserve personal files in this folder. Release notes use filenames such as Release Notes for Voice Companion 0.2.107-test.docx; the same version appears in TXT, HTML, EPUB, BRF, and the DAISY ZIP filename. Notes from earlier versions remain available if they were installed with versioned names. Documentation files are also separate downloads on each new GitHub release.
 Release notes follow the supplied reference structure: a level 1 release title, level 2 New Apps and Features and Fixes and Enhancements headings, numbered topics, and lettered details. Numbering starts over for each main section, and lettering starts over for each topic. TXT displays the same numbers and letters without heading styles. Official releases must have comprehensive notes describing actual changes since the named comparison release. Testing builds are labeled as testing builds.
 The current email shortcuts are Ctrl+N for new email, Ctrl+R for reply, Ctrl+Shift+R for reply all, Ctrl+F for forward, Ctrl+Y for folders, F5 for refresh, Ctrl+Enter in a draft for send with confirmation, and Escape in a draft for cancel without saving.
 In a message list, Space toggles the current message selection when the command field is empty. Shift+Up and Shift+Down extend selection. Ctrl+A selects messages on the loaded page. Delete requests deletion with confirmation. Ctrl+Shift+V chooses a destination folder and requests a confirmed move. Ctrl+A inside message or draft text selects text instead of messages.
@@ -343,6 +343,6 @@ Getting messages from the folder and Email sent successfully now speak during ke
 You can say Wake up or begin keyboard navigation during the startup announcement once initialization and the startup update check finish. The app no longer waits for that speech to finish.
 Tab announces the setting name and value. Arrowing through a setting choice or toggling a checkbox says just the new value.
 
-VERSION 0.2.106-test - WEB BROWSING AND EMPTY EMAIL
+VERSION 0.2.107-test - WEB BROWSING AND EMPTY EMAIL
 
 A valid recipient can receive a new email with both subject and message body blank. Alt+S, Ctrl+Enter or send it still starts the review and Yes/No confirmation. No subject and no message body are announced. Provider errors and uncertain delivery safeguards remain.

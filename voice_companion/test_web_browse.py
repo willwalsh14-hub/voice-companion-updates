@@ -13,9 +13,26 @@ class WebBrowseTests(unittest.TestCase):
             expected='r' if key=='a' else key
             self.assertEqual(voice_browse_key('next '+spoken),'Quick:'+expected)
             self.assertEqual(voice_browse_key('move to previous '+spoken),'Quick:Previous:'+expected)
+        for number,word in enumerate(('one','two','three','four','five','six'),1):
+            self.assertEqual(voice_browse_key('next heading level '+word),'Quick:'+str(number))
+            self.assertEqual(voice_browse_key('previous heading '+word),'Quick:Previous:'+str(number))
         for level in range(1,7):self.assertEqual(voice_browse_key('next heading level '+str(level)),'Quick:'+str(level))
         for phrase,key in [('next row','Down'),('previous row','Up'),('next column','Right'),('previous column','Left'),('first column','Home'),('last column','End'),('first row','Prior'),('last row','Next')]:
             self.assertEqual(voice_browse_key(phrase),'Table:'+key)
+    def test_voice_navigation_cannot_erase_an_uncommitted_private_field(self):
+        with tempfile.TemporaryDirectory() as folder:
+            backend=Mock();session=WebSession(folder,backend)
+            session.snapshot={'text':'Page','elements':[]};session.keyboard_field={'type':'password','label':'Password','value':''}
+            self.assertIn('keyboard',session.command('next form control'));backend.fill.assert_not_called()
+            self.assertIsNotNone(session.keyboard_field)
+            self.assertIn('canceled',session.command('cancel field editing'));self.assertIsNone(session.keyboard_field)
+    def test_paragraph_reading_keeps_the_full_text(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,Mock());text='First paragraph.\n\n'+('Second paragraph text. '*30)
+            session.snapshot={'text':text,'elements':[]};session.reading.set_text(text);session.browse=BrowseCursor(session.snapshot)
+            result=session.command('next paragraph')
+            if 'Second' not in result:result=session.command('next paragraph')
+            self.assertIn('Second paragraph text.',result);self.assertGreater(len(result),300)
     def test_voice_actions_reach_the_application_web_dispatcher(self):
         import companion as app
         session=Mock();session.command.return_value='Page action.'

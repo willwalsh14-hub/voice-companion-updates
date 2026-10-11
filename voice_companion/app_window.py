@@ -200,6 +200,7 @@ class CompanionWindow:
                 elif self.context.get('menu_letters') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
                 if request:
+                    if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
                     self.commands.put(('keyboard',request));return 'break'
             root.bind_all('<Alt-F4>',shortcut)

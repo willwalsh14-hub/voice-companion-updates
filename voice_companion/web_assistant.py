@@ -193,7 +193,7 @@ class BrowserBackend:
           return {title:document.title || location.hostname, url:location.href,
                   text:bodyText, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
-                  visible_frames:[...document.querySelectorAll('iframe')].filter(visible).length};
+                  visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
         }'''
         script=script.replace('/*SEMANTICS*/',SEMANTICS)
         result = self.page.evaluate(script)
@@ -434,6 +434,8 @@ class WebSession:
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
+            if self.keyboard_field and self.keyboard_field.get('type')=='password' and (key.startswith(('Quick:','Table:')) or key in ('Tab','ShiftTab','Done','Activate')):
+                return 'Save this private field with Enter or Tab on the keyboard, or cancel field editing.'
             if self.keyboard_field and key.startswith(('Quick:','Table:')):self.commit_keyboard_field()
             if key.startswith('Quick:'):
                 parts=key.split(':');message=self.browse.move(parts[-1],len(parts)>2)
@@ -1036,7 +1038,7 @@ class WebSession:
         command = _plain(spoken).rstrip('.!?').lower()
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
         browse_key=voice_browse_key(command)
-        if browse_key and self.form_index is None and not self.list_focus:return self.keyboard(browse_key)
+        if browse_key and self.form_index is None and not self.list_focus and not reading_request(command):return self.keyboard(browse_key)
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
             if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]
