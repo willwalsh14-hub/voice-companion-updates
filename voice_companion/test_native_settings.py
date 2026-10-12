@@ -31,23 +31,19 @@ class NativeSettingsTests(unittest.TestCase):
         if hasattr(self,'panel') and not self.panel.closed.is_set():self.panel.cancel();self.panel.closed.wait(3)
     def test_category_and_choice_home_end_stop_at_boundaries(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
-        self.u.PostMessageW(categories,0x100,0x23,0)
-        self.wait(lambda:self.session.category==10)
-        before=len(self.notices);self.u.PostMessageW(categories,0x100,0x28,0)
-        self.wait(lambda:len(self.notices)>before and 'End of list' in self.notices[-1])
-        self.assertEqual(self.session.category,10)
-        self.u.PostMessageW(categories,0x100,0x24,0);self.wait(lambda:self.session.category==0)
-        before=len(self.notices);self.u.PostMessageW(categories,0x100,0x26,0)
-        self.wait(lambda:len(self.notices)>before and 'Start of list' in self.notices[-1]);self.assertEqual(self.session.category,0)
-        self.u.PostMessageW(categories,0x100,0x0D,0)
-        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
+        def press(control,key,condition):
+            before=len(self.notices);self.u.PostMessageW(control,0x100,key,0)
+            self.wait(lambda:len(self.notices)>before and condition())
+        press(categories,0x23,lambda:self.session.category==10 and 'End of list' in self.notices[-1])
+        press(categories,0x28,lambda:self.session.category==10 and 'End of list' in self.notices[-1])
+        press(categories,0x24,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
+        press(categories,0x26,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
+        press(categories,0x0D,lambda:bool(self.u.GetDlgItem(hwnd,200)))
         choice=self.u.GetDlgItem(hwnd,200)
-        self.u.PostMessageW(choice,0x100,0x23,0);self.wait(lambda:self.session.values['verbosity']=='low')
-        before=len(self.notices);self.u.PostMessageW(choice,0x100,0x28,0)
-        self.wait(lambda:len(self.notices)>before and 'End of list' in self.notices[-1]);self.assertEqual(self.session.values['verbosity'],'low')
-        self.u.PostMessageW(choice,0x100,0x24,0);self.wait(lambda:self.session.values['verbosity']=='high')
-        before=len(self.notices);self.u.PostMessageW(choice,0x100,0x26,0)
-        self.wait(lambda:len(self.notices)>before and 'Start of list' in self.notices[-1]);self.assertEqual(self.session.values['verbosity'],'high')
+        press(choice,0x23,lambda:self.session.values['verbosity']=='low' and 'End of list' in self.notices[-1])
+        press(choice,0x28,lambda:self.session.values['verbosity']=='low' and 'End of list' in self.notices[-1])
+        press(choice,0x24,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
+        press(choice,0x26,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
     def test_category_arrows_choose_enter_opens_then_checkbox_and_enter_save(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x28,0) # Choose only; Enter opens.
@@ -70,9 +66,9 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
     def test_category_letters_stop_enter_opens_and_alt_o_returns(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
-        for expected in (2,10,10):
+        for expected,notice in ((2,'Synthesizer'),(10,'Startup and exit options'),(10,'End of matching items')):
             before=len(self.notices);self.u.PostMessageW(categories,0x100,ord('S'),0)
-            self.wait(lambda:self.session.category==expected and len(self.notices)>before)
+            self.wait(lambda:self.session.category==expected and len(self.notices)>before and notice in self.notices[-1])
         self.assertTrue(any('Startup and exit options (S)' in text for text in self.notices))
         self.u.PostMessageW(categories,0x100,0x24,0);self.wait(lambda:self.session.category==0)
         self.u.PostMessageW(categories,0x100,ord('S'),0);self.wait(lambda:self.session.category==2)
