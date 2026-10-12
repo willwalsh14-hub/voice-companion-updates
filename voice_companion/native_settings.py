@@ -6,7 +6,7 @@ import threading
 import uuid
 import copy
 from settings_model import CATEGORIES
-from menu_navigation import next_match,menu_label
+from menu_navigation import boundary_notice, next_match,menu_label
 
 class NativeSettings:
     def __init__(self,session,announce,save,action,interrupt=None):
@@ -62,7 +62,7 @@ class NativeSettings:
                 self.session.set(field.key,raw(hwnd,field))
         def describe(hwnd):
             if hwnd not in controls and parent(hwnd) in controls:hwnd=parent(hwnd)
-            if hwnd==category[0]:return menu_label(self.session.category_name())+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))
+            if hwnd==category[0]:return menu_label(self.session.category_name())+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))+'. '+boundary_notice(self.session.category,len(CATEGORIES))
             if hwnd in buttons:return buttons[hwnd]
             field=controls.get(hwnd)
             if not field:return ''
@@ -73,7 +73,10 @@ class NativeSettings:
             return field.label+', '+('on' if value is True else 'off' if value is False else value)
         def changed_value(hwnd):
             field=controls[hwnd];value=raw(hwnd,field)
-            return 'on' if value is True else 'off' if value is False else str(value)
+            notice='on' if value is True else 'off' if value is False else str(value)
+            if field.choices:
+                index=int(send(hwnd,0x147,0,0));notice+=' '+boundary_notice(index,len(field.choices))
+            return notice.strip()
         def render(focus_key=None):
             for hwnd in children:destroy(hwnd)
             children.clear();controls.clear();buttons.clear();header_buttons.clear();headers[0]=None;last_focus[0]=None
@@ -171,6 +174,14 @@ class NativeSettings:
             if match is not None:select_category(match);open_category();return
             if cmd in ('next setting','previous setting'):
                 focus(u.GetNextDlgTabItem(self.hwnd,get_focus(),cmd.startswith('previous')));return
+            if cmd in ('first item','start of list','last item','end of list'):
+                hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd);bottom=cmd in ('last item','end of list')
+                if hwnd==category[0]:select_category(len(CATEGORIES)-1 if bottom else 0)
+                elif field and field.kind=='headers':
+                    headers[0].index=3 if bottom else 0;send(hwnd,0x186,headers[0].index,0);self.announce(headers[0].label())
+                elif field and field.choices:
+                    index=len(field.choices)-1 if bottom else 0;send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(hwnd))
+                return
             if cmd in ('next','previous','next category','previous category'):
                 delta=-1 if cmd.startswith('previous') else 1
                 hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
@@ -260,12 +271,27 @@ class NativeSettings:
                 continue
             if message.message==0x100 and 65<=message.wParam<=90 and get_focus()==category[0] and not editing[0]:
                 index=next_match(CATEGORIES,self.session.category,chr(message.wParam))
+                if index==self.session.category:self.announce('End of matching items.');continue
                 if index is not None:select_category(index)
                 else:self.announce('No category starts with '+chr(message.wParam)+'.')
                 continue
+            current=get_focus();current=parent(current) if parent(current) in controls else current
+            field=controls.get(current)
+            if message.message==0x100 and field and field.kind=='headers' and message.wParam in (0x26,0x28,0x24,0x23):
+                model=headers[0];old=max(0,int(send(current,0x188,0,0)))
+                model.index=0 if message.wParam==0x24 else 3 if message.wParam==0x23 else max(0,min(3,old+(-1 if message.wParam==0x26 else 1)))
+                send(current,0x186,model.index,0);self.announce(model.label());continue
+            if message.message==0x100 and field and field.kind=='choice' and field.choices and (message.wParam in (0x26,0x28,0x24,0x23) or 65<=message.wParam<=90):
+                old=int(send(current,0x147,0,0))
+                if message.wParam in (0x24,0x23):index=0 if message.wParam==0x24 else len(field.choices)-1
+                elif message.wParam in (0x26,0x28):index=max(0,min(len(field.choices)-1,old+(-1 if message.wParam==0x26 else 1)))
+                else:index=next_match(field.choices,old,chr(message.wParam))
+                if index is None:self.announce('No matching option.');continue
+                if index==old and 65<=message.wParam<=90:self.announce('End of matching items.');continue
+                send(current,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(current));continue
             if message.message==0x100 and message.wParam==0x1B:cancel_category();continue
             if message.message==0x100 and message.wParam in (0x26,0x28,0x25,0x27) and get_focus()==category[0] and not editing[0]:
-                select_category((self.session.category+(-1 if message.wParam in (0x26,0x25) else 1))%len(CATEGORIES));continue
+                select_category(self.session.category+(-1 if message.wParam in (0x26,0x25) else 1));continue
             if message.message==0x100 and message.wParam==9:
                 current=get_focus()
                 if parent(current) in controls:current=parent(current)

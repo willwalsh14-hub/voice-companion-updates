@@ -45,7 +45,7 @@ class WindowsActionTests(unittest.TestCase):
                 self.assertEqual(companion.handle('no','power_confirm'),'awake')
                 power.assert_not_called()
             companion.handle('restart computer','awake')
-            self.assertEqual(companion.navigation_key('Down','power_confirm'),None)
+            self.assertEqual(companion.navigation_key('Up','power_confirm'),None)
             self.assertEqual(companion.navigation_key('Enter','power_confirm'),'yes')
             self.assertEqual(companion.handle('yes','power_confirm'),'exit')
             power.assert_called_once_with('restart')

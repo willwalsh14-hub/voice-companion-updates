@@ -66,13 +66,13 @@ class WebBrowseTests(unittest.TestCase):
         self.assertIn('heading level 2',cursor.move('2'));self.assertIn('Link',cursor.move('k'))
         self.assertIn('checked',cursor.move('x'));self.assertIn('heading',cursor.move('h',True))
         self.assertIn('Link',cursor.move('',tab=True));self.assertIn('Agree',cursor.move('f'));self.assertIn('button',cursor.move('b'))
-        self.assertEqual(cursor.move('b'),'No next button.')
+        self.assertEqual(cursor.move('b'),'End of list. No next button.')
     def test_table_rows_columns_headers_spans_and_boundaries(self):
         elements=[dict(key='t',role='table',label='Prices',start=0,end=100),cell('h',0,0,'Product',header=True,scope='col'),cell('h2',0,1,'Cost',header=True,scope='col'),cell('a',1,0,'Apple'),cell('b',1,1,'One dollar'),cell('c',2,0,'Summary',colspan=2)]
         cursor=BrowseCursor({'elements':elements});cursor.move('t')
         self.assertIn('Product',cursor.table_move('Home'));self.assertIn('Apple',cursor.table_move('Down'))
         self.assertIn('Cost. One dollar',cursor.table_move('Right'));self.assertIn('Summary',cursor.table_move('Down'))
-        self.assertIn('One dollar',cursor.table_move('Up'));self.assertEqual(cursor.table_move('Right'),'Table boundary.')
+        self.assertIn('One dollar',cursor.table_move('Up'));self.assertEqual(cursor.table_move('Right'),'End of table.')
         self.assertIn('Cost',cursor.table_move('Prior'));self.assertIn('Summary',cursor.table_move('Next'))
     def test_keyboard_edit_does_not_submit_and_esc_cancels(self):
         with tempfile.TemporaryDirectory() as folder:

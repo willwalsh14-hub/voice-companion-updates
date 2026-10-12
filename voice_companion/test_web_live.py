@@ -140,15 +140,25 @@ class LiveWebTests(unittest.TestCase):
         self.page.set_content("""<h1>Form</h1><p>Before</p><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1"><input aria-label="Name"><select aria-label="Choice"><option>One</option><option>Two</option><option disabled>Three</option></select><select size="4" aria-label="List"><option>Alpha</option><option>Beta</option><option>Bravo</option></select></form><p>After</p>""")
         self.session._refresh();self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Name')
         self.session.command('type Typed name');self.session.keyboard('Tab');self.assertEqual(self.page.locator('input').input_value(),'Typed name')
-        self.assertEqual(self.session.keyboard('Down'),'Two.');self.assertEqual(self.session.keyboard('ChoiceLetter:o'),'One.')
-        self.session.keyboard('Tab');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Bravo.')
-        self.assertEqual(self.session.command('first option'),'Alpha.');self.session.keyboard('Tab');self.assertIsNone(self.session.keyboard_field)
+        self.assertIn('Two.',self.session.keyboard('Down'));self.assertIn('One.',self.session.keyboard('ChoiceLetter:o'))
+        self.session.keyboard('Tab');self.assertIn('Beta.',self.session.keyboard('ChoiceLetter:b'));self.assertIn('Bravo.',self.session.keyboard('ChoiceLetter:b'))
+        self.assertIn('Alpha.',self.session.command('first option'));self.session.keyboard('Tab');self.assertIsNone(self.session.keyboard_field)
         self.assertEqual(self.page.evaluate('window.sent||0'),0)
+
+    def test_choice_boundaries_do_not_fire_repeated_change_events(self):
+        self.page.set_content('<select aria-label="Choice" onchange="window.changes++"><option>One</option><option>Two</option></select><script>window.changes=0</script>')
+        self.session._refresh();self.session.keyboard('Quick:c')
+        self.assertIn('End of list',self.session.keyboard('End'));self.assertEqual(self.page.evaluate('window.changes'),1)
+        self.assertIn('End of list',self.session.keyboard('Down'));self.session.keyboard('End')
+        self.assertEqual(self.page.evaluate('window.changes'),1)
+        self.assertIn('Start of list',self.session.keyboard('Home'));self.assertEqual(self.page.evaluate('window.changes'),2)
+        self.assertIn('Start of list',self.session.keyboard('Up'));self.session.keyboard('Home')
+        self.assertEqual(self.page.evaluate('window.changes'),2)
 
     def test_custom_combo_options_and_popup_are_one_tab_stop(self):
         self.page.set_content("""<button type="button" id="combo" role="combobox" aria-label="Custom choice" aria-controls="options" aria-expanded="false" onclick="this.setAttribute('aria-expanded','true');document.getElementById('options').style.display='block'" onblur="this.setAttribute('aria-expanded','false');document.getElementById('options').style.display='none'">Choose</button><div id="options" role="listbox" tabindex="-1" style="display:none"><div onmousedown="event.preventDefault()" role="option" aria-selected="true">Alpha</div><div onmousedown="event.preventDefault()" role="option">Beta</div><div onmousedown="event.preventDefault()" role="option">Bravo</div></div><input aria-label="Next"><script>document.querySelectorAll('[role=option]').forEach(option=>option.onclick=()=>{document.querySelectorAll('[role=option]').forEach(o=>o.setAttribute('aria-selected',String(o===option)));document.getElementById('combo').setAttribute('aria-valuetext',option.textContent);});</script>""")
         self.session._refresh();self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Custom choice')
-        self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('Down'),'Bravo.')
+        self.assertIn('Beta.',self.session.keyboard('ChoiceLetter:b'));self.assertIn('Bravo.',self.session.keyboard('Down'))
         self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Next')
 
     def test_later_dom_updates_refresh_buffer_without_read_page(self):

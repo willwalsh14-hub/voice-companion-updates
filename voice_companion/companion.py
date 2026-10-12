@@ -39,12 +39,12 @@ from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
 from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_request
 from keyboard_text import document_text,replace_keyboard_text,absolute
-from menu_navigation import next_match, menu_label, announce_item
+from menu_navigation import boundary_notice, bounded_index, next_match, menu_label, announce_item
 
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.114-test'
+APP_VERSION = '0.2.115-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -202,6 +202,7 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=menu_state(logical) is not None
+    if NAMED_LIST:context['named_list']=True;context['mode']='list';return context
     if logical in ('media','podcast') and MEDIA_HUB:
         nav=media_navigation();context['media_navigation']=True
         if nav.pending:context['confirmation']=nav.confirm_choice
@@ -422,6 +423,14 @@ def settings_action(key,mode):
         return 'web'
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
 
+NAMED_LIST=None
+
+def open_named_list(title,items):
+    global NAMED_LIST,pending_website
+    pending_website=None
+    NAMED_LIST={'title':title,'items':items,'index':0} if items else None
+    return (title+' list. '+announce_item(items[0][0],0,len(items))+' Arrows move, Home and End reach boundaries, Enter selects, and Escape closes the list.') if items else 'Empty list.'
+
 def menu_state(mode):
     """Expose only active pickers; editable fields and mail messages are excluded."""
     def state(names, owner, attribute, current=None):
@@ -431,6 +440,8 @@ def menu_state(mode):
     if account_setup:return state(['Gmail','Outlook or Exchange','Yahoo'],module,'ACCOUNT_MENU_INDEX')
     if mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None:
         return None
+    if NAMED_LIST:
+        return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
     if SYNTH_PICK_INDEX is not None:
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
     if VOICE_PICK_INDEX is not None:
@@ -465,6 +476,7 @@ def choose_menu_letter(letter,mode):
     index=next_match(names,current,letter)
     if index is None:speak('No menu item starts with '+letter.upper()+'.');return True
     select(index)
+    if current==index:speak('End of matching items.');return True
     if VOICE_PICK_INDEX is not None:preview_voice(index)
     else:speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)))
     return True
@@ -496,13 +508,16 @@ def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
     if key=='Control':return None
+    if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
     if key=='Alt+F4':return 'exit companion'
     confirming=pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
-        if key.lower() in ('y','n'):return 'yes' if key.lower()=='y' else 'no'
+        if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
-            CONFIRM_CHOICE='no' if CONFIRM_CHOICE=='yes' else 'yes'
-            speak(CONFIRM_CHOICE.capitalize()+'.');return None
+            CONFIRM_CHOICE='yes' if key in ('Up','Left','ShiftTab') else 'no'
+            speak(CONFIRM_CHOICE.capitalize()+'. '+('Start of list.' if CONFIRM_CHOICE=='yes' else 'End of list.'));return None
+        if key in ('Home','End'):
+            CONFIRM_CHOICE='yes' if key=='Home' else 'no';speak(CONFIRM_CHOICE.capitalize()+'. '+('Start of list.' if key=='Home' else 'End of list.'));return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode in ('media','podcast') and MEDIA_HUB:
@@ -522,9 +537,11 @@ def _navigation_key(key,mode):
         state=menu_state(mode)
         if state:
             names,current,select=state;index=0 if key=='Home' else len(names)-1
-            select(index);speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)));return None
-        if mode=='mailbox' and mail_session and mail_session.view=='folder' and mail_session.rows and not mail_session.pending:
-            speak(mail_session._focus(1 if key=='Home' else len(mail_session.rows)));return None
+            select(index)
+            if VOICE_PICK_INDEX is not None:preview_voice(index);return None
+            speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)));return None
+        if mode=='mailbox' and mail_session and mail_session.view=='folder' and not mail_session.pending:
+            speak(mail_session.list_boundary(key=='End'));return None
     if mode=='help' and key=='Escape':return 'go back'
     if key.startswith('Letter:'):
         if mode=='web' and web_session and not web_session.list_focus and key[-1] in __import__('web_browse').QUICK_KEYS:return 'web key Quick:'+key[-1]
@@ -532,7 +549,7 @@ def _navigation_key(key,mode):
     if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
         return ('gmail','outlook','yahoo')[ACCOUNT_MENU_INDEX]
     if account_setup and key in ('Up','Down','Left','Right'):
-        ACCOUNT_MENU_INDEX=(0 if key in ('Down','Right') else 2) if ACCOUNT_MENU_INDEX is None else (ACCOUNT_MENU_INDEX+(1 if key in ('Down','Right') else -1))%3
+        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,1 if key in ('Down','Right') else -1,3)
         speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
     if key=='Enter' and mode=='tutorial' and MAIN_MENU_INDEX in (0,1,2):
         return ('practice radio','practice email','practice documents')[MAIN_MENU_INDEX]
@@ -559,6 +576,7 @@ def _navigation_key(key,mode):
     editor=document if mode=='document' else email_draft if mode=='email_draft' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
         if key=='Enter':return 'ok'
+        if key in ('Home','End'):return 'first item' if key=='Home' else 'last item'
         if key=='Escape':return 'cancel replacement' if getattr(editor,'replacement_candidates',[]) else 'cancel selection' if getattr(editor,'selection_candidates',[]) else 'cancel'
         if key in ('Up','Left'):return 'previous'
         if key in ('Down','Right'):return 'next'
@@ -645,7 +663,7 @@ def fast_command_request(command, mode):
         return command in PICK_CONFIRM or command in ('next voice', 'previous voice', 'next synthesizer',
             'previous synthesizer', 'cancel voice', 'cancel synthesizer')
     if command in ('speak faster', 'speak slower', 'faster', 'slower', 'speak louder', 'speak quieter',
-                   'louder', 'quieter', 'use windows voice', 'use ai voice', 'use espeak'):
+                   'louder', 'quieter', 'use sapi', 'use sapi voice', 'use windows voice', 'use ai voice', 'use espeak'):
         return True
     if mode in ('document', 'email_draft') and INPUT_MODE != 'dictation':
         from document_editor import START_COMMANDS, END_COMMANDS, FORMAT_READ_COMMANDS, document_navigation_request
@@ -822,7 +840,7 @@ def choose_voice(choice):
 
 
 def synthesizers():
-    choices = [('windows', 'Windows speech')]
+    choices = [('windows', 'SAPI')]
     if ESPEAK_SPEECH is not None: choices.append(('espeak', 'eSpeak NG'))
     if AI_SPEECH is not None: choices.append(('ai', 'AI voice'))
     return choices
@@ -908,9 +926,9 @@ def voice_menu(command):
     elif command.startswith(('next', 'previous')):
         step = 1 if command.startswith('next') else -1
         if SYNTH_PICK_INDEX is not None:
-            SYNTH_PICK_INDEX = (SYNTH_PICK_INDEX + step) % len(synthesizers())
+            SYNTH_PICK_INDEX = bounded_index(SYNTH_PICK_INDEX,step,len(synthesizers()))
         else:
-            VOICE_PICK_INDEX = (VOICE_PICK_INDEX + step) % len(voice_choices(VOICE_PICK_ENGINE))
+            VOICE_PICK_INDEX = bounded_index(VOICE_PICK_INDEX,step,len(voice_choices(VOICE_PICK_ENGINE)))
             preview_voice(VOICE_PICK_INDEX)
             return True
     choices = synthesizers()
@@ -1128,10 +1146,27 @@ def _handle(text, mode, typed=False):
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
-    global SEARCH_RETURN_MODE
+    global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
     if command in ('word processor','open word processor'):text='create a document';command=text
     if command in ('notepad','open notepad'):text='write a note';command=text
+    if command in ('start of list','beginning of list','first item','end of list','last item') and menu_state(mode):
+        navigation_key('End' if command in ('end of list','last item') else 'Home',mode)
+        return mode
+    if NAMED_LIST:
+        if command in ('cancel','close list','escape','go back'):
+            NAMED_LIST=None;speak('List closed.')
+            if mode=='email_draft':focus_email_entry()
+            return mode
+        if command in ('next','previous'):
+            NAMED_LIST['index']=bounded_index(NAMED_LIST['index'],1 if command=='next' else -1,len(NAMED_LIST['items']))
+            speak(announce_item(NAMED_LIST['items'][NAMED_LIST['index']][0],NAMED_LIST['index'],len(NAMED_LIST['items'])));return mode
+        if command in PICK_CONFIRM:
+            request=NAMED_LIST['items'][NAMED_LIST['index']][1];NAMED_LIST=None
+            result=handle(request,mode)
+            if result=='email_draft':focus_email_entry()
+            return result
+        NAMED_LIST=None
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
             speak('Canceled.');return EXIT_RETURN_MODE
@@ -1309,9 +1344,9 @@ def _handle(text, mode, typed=False):
         else:
             speak('AI voice setup requires the app window.')
         return mode
-    if normalized_command(text) in ('use ai voice', 'use windows voice', 'use espeak', 'use espeak voice', 'use e speak'):
+    if normalized_command(text) in ('use sapi','use sapi voice', 'use ai voice', 'use windows voice', 'use espeak', 'use espeak voice', 'use e speak'):
         requested = normalized_command(text)
-        kind = 'windows' if requested == 'use windows voice' else 'ai' if requested == 'use ai voice' else 'espeak'
+        kind = 'windows' if requested in ('use windows voice','use sapi','use sapi voice') else 'ai' if requested == 'use ai voice' else 'espeak'
         if TEXT_MODE:
             choices = []
         elif kind == 'windows':
@@ -1749,9 +1784,7 @@ def _handle(text, mode, typed=False):
         selected = store.selected()
         if not accounts: speak_prompt('No email account is connected. Say add account.')
         else:
-            speak('Connected accounts: ' + '; '.join(p.capitalize() + ' ' + a +
-                  (' selected' if selected == (p,a) else '') for p,a in accounts) +
-                  '. Say switch to followed by the email address.')
+            speak(open_named_list('Email accounts',[(p.capitalize()+' '+a+(' selected' if selected==(p,a) else ''),'switch to '+a) for p,a in accounts]))
         return mode
     contact_account = store.selected()
     contacts = AddressBook(APP, contact_account[1] if contact_account else '')
@@ -1772,8 +1805,7 @@ def _handle(text, mode, typed=False):
         return mode
     if command in ('list contacts','list address book','read address book'):
         entries = list(contacts.all().values())
-        speak('Contacts: ' + '; '.join(e['name'] + ', ' + e['address'] for e in entries[:30]) +
-              ('. Say find contact followed by a name for another entry.' if len(entries)>30 else '.') if entries else
+        speak(open_named_list('Contacts',[(e['name'],'find contact '+e['name']) for e in entries]) if entries else
               'Your address book is empty. Type add contact Bob as bob@example.com, then press Enter.')
         return mode
     contact = re.fullmatch(r'(?:find|read|look up) contact (.+)', text, re.I)
@@ -1847,7 +1879,7 @@ def _handle(text, mode, typed=False):
                                  'write a new message', 'compose a new message', 'write mail')
                      or bool(re.fullmatch(r'(?:write|compose|create|start|draft)(?:\s+(?:a|an|new|another|write))*\s+(?:e[ -]?mail|email|message)(?:\s+draft)?', command)))
     if mode == 'awake' and command in ('next', 'previous'):
-        MAIN_MENU_INDEX = (0 if command == 'next' else len(MAIN_MENU_CHOICES)-1) if MAIN_MENU_INDEX is None else (MAIN_MENU_INDEX + (1 if command == 'next' else -1)) % len(MAIN_MENU_CHOICES)
+        MAIN_MENU_INDEX = bounded_index(MAIN_MENU_INDEX,1 if command=='next' else -1,len(MAIN_MENU_CHOICES))
         speak(announce_item(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(MAIN_MENU_CHOICES)))
         return mode
     if mode == 'awake' and command in PICK_CONFIRM:
@@ -2113,8 +2145,7 @@ def _handle(text, mode, typed=False):
     if command in ('list documents', 'what documents do i have', 'my documents'):
         folder = documents_folder()
         names = sorted((p.stem for p in folder.glob('*.docx')), key=str.casefold) if folder.exists() else []
-        speak('Your documents are: ' + ', '.join(names[:20]) + ('. There are more documents.' if len(names) > 20 else '.')
-              if names else 'You have no saved documents yet.')
+        speak(open_named_list('Documents',[(name,'open document '+name) for name in names]) if names else 'You have no saved documents yet.')
         return mode
     if command.startswith('open document '):
         title = text[len('open document '):].strip()
@@ -2629,9 +2660,9 @@ def main():
                         if settings_result == 'saved': configure_ai_speech()
                         save_speech_settings()
                         speak('AI voice settings saved. Say Use AI voice to test it.' if settings_result == 'saved'
-                              else 'Saved AI voice settings removed. Using Windows speech.')
+                              else 'Saved AI voice settings removed. Using SAPI.')
                     except Exception:
-                        speak('AI settings could not be loaded. Using Windows speech.')
+                        speak('AI settings could not be loaded. Using SAPI.')
                 key_notices = []
                 while True:
                     try: key_notices.append(APP_WINDOW.key_feedback.get_nowait())

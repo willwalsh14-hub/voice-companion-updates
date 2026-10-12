@@ -700,13 +700,18 @@ class VoiceDocument:
         if command == 'type new line': return self.append_text('new line', literal=True)
         command = ' '.join(command.split())
         if self.replacement_candidates:
+            if command in ('first item','last item','start of list','end of list'):
+                self.replacement_index=0 if command in ('first item','start of list') else len(self.replacement_candidates)-1
+                return ('Start of list. ' if self.replacement_index==0 else 'End of list. ')+self.replacement_context()
             if command in ('cancel', 'cancel replacement', 'never mind', 'no'):
                 self.replacement_candidates = []
                 self.replacement_text = ''
                 return 'Replacement canceled. Text unchanged.'
             if command in ('next', 'next match', 'previous', 'previous match'):
                 step = 1 if command.startswith('next') else -1
-                self.replacement_index = (self.replacement_index + step) % len(self.replacement_candidates)
+                new=self.replacement_index+step
+                if not 0<=new<len(self.replacement_candidates):return 'Start of list.' if new<0 else 'End of list.'
+                self.replacement_index = new
                 return self.replacement_context()
             if command in ('read sentence', 'read context', 'read match', 'where am i'):
                 return self.replacement_context()
@@ -903,13 +908,18 @@ class VoiceDocument:
             self.word_cursor = self.sentence_cursor = 0
             return 'Paragraph ' + str(index+1) + '. ' + self._apply_selection_action(selected, 'select')
         if self.selection_candidates:
+            if command in ('first item','last item','start of list','end of list'):
+                self.selection_index=0 if command in ('first item','start of list') else len(self.selection_candidates)-1
+                return ('Start of list. ' if self.selection_index==0 else 'End of list. ')+self.match_context(self.selection_candidates,self.selection_index)
             if command in ('cancel', 'cancel selection', 'never mind', 'no'):
                 self.selection_candidates = []
                 self.selection_action = ''
                 return 'Selection canceled. The text was not changed.'
             if command in ('next', 'next match', 'previous', 'previous match'):
                 step = 1 if command.startswith('next') else -1
-                self.selection_index = (self.selection_index + step) % len(self.selection_candidates)
+                new=self.selection_index+step
+                if not 0<=new<len(self.selection_candidates):return 'Start of list.' if new<0 else 'End of list.'
+                self.selection_index = new
                 return self.match_context(self.selection_candidates, self.selection_index)
             if command in ('read sentence', 'read context', 'read match', 'where am i'):
                 return self.match_context(self.selection_candidates, self.selection_index)

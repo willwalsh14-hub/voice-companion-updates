@@ -107,7 +107,8 @@ class MatchBrowsingAndPunctuationTests(unittest.TestCase):
                     if kind is VoiceEmail: doc.compose_step='body'
                     with patch.object(companion,'document',doc),patch.object(companion,'email_draft',doc),patch.object(companion,'INPUT_MODE',input_mode),patch.object(companion,'speak') as speak:
                         companion.handle('select red fox',mode);self.assertIn('1 of 2',speak.call_args.args[0])
-                        companion.handle('previous',mode);self.assertIn('Last red fox sleeps.',speak.call_args.args[0])
+                        companion.handle('previous',mode);self.assertIn('Start of list',speak.call_args.args[0])
+                        companion.handle('last item',mode);self.assertIn('Last red fox sleeps.',speak.call_args.args[0])
                         companion.handle('confirm that',mode);self.assertEqual(doc.selection.first_paragraph,1)
                         for direction in ('before','after'):
                             companion.handle('insert '+direction+' red fox',mode)
@@ -124,6 +125,6 @@ class MatchBrowsingAndPunctuationTests(unittest.TestCase):
         from document_editor import Paragraph
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('cat sleeps.') for _ in range(25)]
-            self.assertIn('1 of 25',doc.process('select cat'));doc.process('previous');doc.process('ok');self.assertEqual(doc.selection.first_paragraph,24)
+            self.assertIn('1 of 25',doc.process('select cat'));self.assertIn('Start of list',doc.process('previous'));doc.process('last item');doc.process('ok');self.assertEqual(doc.selection.first_paragraph,24)
             self.assertIn('possible ranges',doc.process('select cat through sleeps'))
             doc.process('next');self.assertIn('2 of 25',doc.process('read context'));doc.process('that one');self.assertEqual(doc.selected_text(),'cat sleeps')

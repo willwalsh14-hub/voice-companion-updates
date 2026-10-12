@@ -224,7 +224,7 @@ class WindowsSetupIsolationTests(unittest.TestCase):
 
 class CompactVoiceListTests(unittest.TestCase):
     setUp = ESpeakTests.setUp
-    def test_picker_cycles_six_choices_and_cancel_restores_saved_variant(self):
+    def test_picker_stops_after_six_choices_and_cancel_restores_saved_variant(self):
         self.espeak.enabled=True;companion.ESPEAK_VOICE_NAME='en-us+Alex'
         companion.handle('select voice','awake')
         seen=[]
@@ -232,7 +232,7 @@ class CompactVoiceListTests(unittest.TestCase):
             seen.append(companion.ESPEAK_VOICE_NAME)
             companion.handle('next voice','awake')
         self.assertEqual(set(seen),{'en-us','en-gb','en-us+m1','en-gb+m1','en-us+f1','en-gb+f1'})
-        self.assertEqual(companion.ESPEAK_VOICE_NAME,seen[0])
+        self.assertEqual(companion.ESPEAK_VOICE_NAME,seen[-1])
         companion.handle('cancel voice','awake')
         self.assertEqual(companion.ESPEAK_VOICE_NAME,'en-us+Alex')
         companion.handle('use espeak','awake')

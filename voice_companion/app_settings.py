@@ -28,7 +28,7 @@ def snapshot(m):
     podcast_names={str(i+1)+'. '+s['name']:s['feed'] for i,s in enumerate(subs)}
     podcast_limits={str(i+1)+'. '+s['name']:s.get('download_limit','manual') for i,s in enumerate(subs)}
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
-    context={'engines':('windows',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
+    context={'engines':('SAPI',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
     from windows_actions import startup_enabled
     values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',(m.APP/'ai-voice.account').exists() or bool(__import__('os').getenv('VOICE_COMPANION_OPENAI_KEY'))),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt','firefox'),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
@@ -44,6 +44,7 @@ def open_settings(m,mode):
 def apply_settings(m,values):
     from ai_voice_settings import load,save,remove
     values=dict(values)
+    if str(values.get('engine','')).lower()=='sapi':values['engine']='windows'
     rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
     if not -10<=pitch<=10:raise ValueError('Voice pitch must be from minus ten to ten.')
     if not -10<=rate<=10 or not 0<=volume<=100:raise ValueError('Speech rate or volume is out of range.')

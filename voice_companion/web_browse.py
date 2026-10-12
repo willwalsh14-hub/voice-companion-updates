@@ -76,7 +76,7 @@ class BrowseCursor:
             return role==wanted
         candidates=range(self.index-1,-1,-1) if backward else range(self.index+1,len(self.elements))
         index=next((i for i in candidates if match(self.elements[i])),None)
-        if index is None:return 'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else wanted)+'.'
+        if index is None:return ('Start of list. ' if backward else 'End of list. ')+'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else wanted)+'.'
         self.index=index;item=self.current();self.position=item.get('start',0)
         if kind(item)=='table':self.table=item['key'];self.row=self.column=0
         elif kind(item)=='cell':self.table=item.get('table');self.row=item.get('row',0);self.column=item.get('column',0)
@@ -101,7 +101,7 @@ class BrowseCursor:
         elif key=='End':column=maxcol
         elif key=='Prior':row=0
         elif key=='Next':row=maxrow
-        if not 0<=row<=maxrow or not 0<=column<=maxcol:return 'Table boundary.'
+        if not 0<=row<=maxrow or not 0<=column<=maxcol:return 'Start of table.' if row<0 or column<0 else 'End of table.'
         target=self.cell_at(row,column)
         if target is None:return 'No cell at row '+str(row+1)+', column '+str(column+1)+'.'
         self.row,self.column=row,column;self.index=self.elements.index(target);self.position=target.get('start',0)

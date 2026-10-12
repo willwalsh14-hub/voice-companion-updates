@@ -295,12 +295,38 @@ class MailSession:
         return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
 
 
+    def list_boundary(self,bottom=False):
+        names=('rows','next_cursor','current','view','body_text','body_offset','page_cursor','previous_cursors','selected')
+        saved={name:getattr(self,name) for name in names if hasattr(self,name)}
+        if 'previous_cursors' in saved:saved['previous_cursors']=list(saved['previous_cursors'])
+        try:return self._list_boundary(bottom)
+        except (AccountError,MailboxError,OSError) as exc:
+            for name,value in saved.items():setattr(self,name,value)
+            return 'Could not reach the '+('end' if bottom else 'start')+' of the list. '+str(exc)
+
+    def _list_boundary(self,bottom=False):
+        if not self.rows:return 'Empty list.'
+        if not bottom:
+            if self.page_cursor is not None:self.list_messages()
+            self.previous_cursors=[]
+            return self._focus(1)
+        seen=set()
+        while self.next_cursor:
+            cursor=self.next_cursor;identity=repr(cursor)
+            if identity in seen:return 'The server repeated a page. I could not reach the end of the list.'
+            seen.add(identity);self.previous_cursors.append(self.page_cursor)
+            self.list_messages(cursor)
+            if not self.rows:return 'No messages returned on the last page.'
+        return self._focus(len(self.rows))
+
     def _focus(self, number):
         self.current = self._number(number)
         self.view = 'folder'
         self.body_text = ''
         self.body_offset = 0
-        return self._summary(self.current) + ' Say open current message to read it.'
+        from menu_navigation import boundary_notice
+        boundary=boundary_notice(self.current-1,len(self.rows)) if not self.next_cursor and not self.previous_cursors else ('Start of list.' if self.current==1 and not self.previous_cursors else 'End of list.' if self.current==len(self.rows) and not self.next_cursor else '')
+        return self._summary(self.current) + (' '+boundary if boundary else '') + ' Say open current message to read it.'
 
     def _number(self, value):
         n = NUMBER_WORDS.get(str(value), None)
@@ -447,6 +473,8 @@ class MailSession:
                 if command in ('cancel', 'go back', 'back'):
                     return 'Folder choice canceled. Nothing was changed.'
                 return 'Say rename to followed by the new name, or cancel.'
+            if command in ('first message','start of list','beginning of list','last message','end of list') and self.rows and not self.folder_picker:
+                return self.list_boundary(command in ('last message','end of list'))
             if command in ('next','previous') and self.rows:
                 command += ' message'
             if self.view == 'message' and command in ('message details','who is this from','read message details'):
@@ -544,14 +572,14 @@ class MailSession:
                 delta = 1 if command == 'next message' else -1
                 if delta == 1 and self.current == len(self.rows):
                     if not self.next_cursor:
-                        return 'This is the last message in this folder.'
+                        return 'End of list. This is the last message in this folder.'
                     cursor = self.next_cursor
                     self.previous_cursors.append(self.page_cursor)
                     self.list_messages(cursor)
                     return self._focus(1) if self.rows else 'No more messages were returned.'
                 if delta == -1 and self.current == 1:
                     if not self.previous_cursors:
-                        return 'This is the first message in this folder.'
+                        return 'Start of list. This is the first message in this folder.'
                     self.list_messages(self.previous_cursors.pop())
                     return self._focus(len(self.rows)) if self.rows else 'No previous messages were returned.'
                 return self._focus(self.current + delta)
