@@ -242,6 +242,8 @@ class NativeSettings:
         send(category[0],0x186,self.session.category,0);render();last_focus[0]=category[0];self.announce('Options menu. Use arrows to choose a category, then Enter to open. '+describe(category[0]));u.ShowWindow(self.hwnd,5);u.SetForegroundWindow(self.hwnd);focus(category[0]);u.SetTimer(self.hwnd,1,100,None);self.ready.set()
         message=w.MSG()
         while u.GetMessageW(c.byref(message),None,0,0)>0:
+            if message.message==0x104 and message.wParam==0x73:
+                self.action_callback('exit_app');close();continue
             if message.message==0x100 and message.wParam==0x11:self.interrupt();continue
             if message.message in (0x100,0x104) and headers[0]:
                 target=get_focus();field=controls.get(target)

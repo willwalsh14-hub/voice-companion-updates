@@ -1,19 +1,27 @@
 {
-  "version": "0.2.111-test",
+  "version": "0.2.112-test",
   "status": "Testing build",
   "date": "October 11, 2026",
-  "baseline": "0.2.110-test",
-  "scope": "Destination loading, optional automatic page reading, transparent field editing, choice navigation and page boundaries.",
+  "baseline": "0.2.111-test",
+  "scope": "Browser window lifecycle, reliable result headings, app exit and complete radio/podcast keyboard menus.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Automatic reading and transparent fields",
+          "title": "Radio and podcasts by keyboard and voice",
           "details": [
-            "Options, Web browsing now includes Automatic page reading, on by default. The loaded message and virtual viewer remain available when it is off. Say Automatic page reading on or off, Enable automatic page reading, or Disable automatic page reading. Read page explicitly reads the page regardless of this setting.",
-            "Tab, arrows and quick keys automatically make text fields ready for typing and combo/list boxes ready for selection. No additional Enter or forms-mode command is required. Tab/Shift+Tab saves a text field and moves on; arrows leave single-line fields, and leave multiline fields at their text boundaries. Outside fields, ordinary page reading resumes.",
-            "Combo/list boxes accept arrows, Home/End and first-letter cycling. Disabled options are skipped. Say next option, previous option, first option, last option, select option followed by its label, or choose option beginning with a letter. Native and labelled ARIA choice widgets are supported; popup lists do not add a second Tab stop."
+            "Radio and Podcasts open shared action menus. Arrows, Home/End, first-letter navigation and Enter choose actions. Tab/Shift+Tab switches between actions and results. Result lists support the same navigation; Enter plays stations, presets, saved recordings and downloaded episodes, or opens a podcast show. Escape backs out through episodes, results, actions and the main menu. Voice Actions, Results, Next action, Previous action and spoken menu labels use the same state.",
+            "Search and browse forms accept typed or spoken values. Radio forms cover genre, country, state, city, database choice, preset naming, recording length, scheduling day/time/length/daily repeat and RadioSure import path. Podcast forms cover search/category, automatic download limits and seek amounts. Tab/Shift+Tab visits fields, OK and Cancel; Enter continues or submits, Escape cancels. Choice fields support arrows, Home/End, letters and spoken option navigation. Invalid input keeps the form open.",
+            "Ctrl+F opens search. Ctrl+P lists radio presets or podcast subscriptions. F5 refreshes station directories or subscriptions. Space pauses/resumes selected audio, Ctrl+R resumes, Ctrl+S stops and Ctrl+Left/Right seeks 15 seconds where supported. Ctrl+D saves a radio preset or downloads a selected podcast episode. Radio actions include recording, scheduling, stopping recordings and individually browsing saved recordings and schedules. Podcast actions include subscriptions, episodes, offline downloads, automatic/manual downloads, seeking and chapter/episode/show controls.",
+            "Deleting a preset, canceling a selected schedule or removing a subscription asks Yes or No. Y/N answers immediately; arrows/Tab choose and Enter confirms, Escape cancels. Schedule cancellation and subscription removal use stable identifiers so the intended item is removed. Removing a subscription does not delete existing downloaded audio."
+          ]
+        },
+        {
+          "title": "Keep browser window open",
+          "details": [
+            "Options, Web browsing includes Keep browser window open, unchecked by default. Say Keep browser window open on or off. When off, leaving the browser activity closes all windows and tabs in Companion’s dedicated browser context. Your ordinary browser windows are unaffected.",
+            "When enabled, leaving the activity retains the browser page. Choosing Web browser from the main menu raises the retained page and refreshes Companion’s virtual reader rather than requiring another search. If the retained page has been closed, the typed/voice search prompt opens normally. Exiting Voice Companion closes its owned browser context regardless of this preference."
           ]
         }
       ]
@@ -22,25 +30,18 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Page readiness and virtual-view refresh",
+          "title": "Heading navigation and concise page loading",
           "details": [
-            "Following a result waits for navigation, destination document readiness and readable content, including new tabs and delayed single-page transitions, before capturing the virtual view. Page loaded identifies a ready document; a partially loading document is reported separately. Automatic narration reads the first chunk and Continue reading reads more.",
-            "Later URL, document and DOM changes update the virtual buffer without requiring a spoken Read page request. Incidental text updates preserve the reading position and continuation. Page updates can be detected while old page narration is playing; active field edits, lists and pending reviews are protected from background refresh."
+            "Repeated H and Shift+H retain the selected semantic heading when a nested link shares its text position. Caret acknowledgments and incidental DOM refreshes no longer reset the cursor into that nested link and cause repeated headings.",
+            "Result heading labels prefer the title text over URL/breadcrumb metadata. Search-result links use available title text while retaining the original DOM identity for safe activation. Page-loaded speech no longer announces heading or link totals.",
+            "Alt+F4 again requests exit of the entire app from editable text, browser reading, media menus, confirmation prompts and Options. Existing exit confirmation and unsaved-document review remain in force."
           ]
         },
         {
-          "title": "Link roles, Escape and page boundaries",
+          "title": "Documentation and verification",
           "details": [
-            "Web links announce Link before the label during quick navigation, arrow reading and link lists. List first-letter shortcuts continue to use the link label. The main-menu item is now Web browser.",
-            "Ctrl+Home and Ctrl+End reach the exact beginning/end of the virtual page. Voice equivalents include Top of page, Beginning of page, Start of page, Bottom of page and End of page, with Go to, Move to or Jump to also accepted.",
-            "Escape from the page returns to the main menu. Escape first closes an element list or cancels staged field editing; a subsequent Escape leaves the browser activity. Voice Close list, Cancel field editing, Leave website, Close browser and Exit web browser provide matching actions."
-          ]
-        },
-        {
-          "title": "Preserved safeguards and release verification",
-          "details": [
-            "Automatic field focus does not submit a form. Consequential buttons retain review safeguards, passwords stay masked and are never included in the virtual text, and leaving an unchanged rich field preserves its markup. Keyboard page-boundary navigation can save privately typed input; voice navigation cannot expose a staged password.",
-            "Help and all versioned What\u2019s New formats document these changes. Regression tests cover the new behavior; live Windows fixtures exercise delayed pages, new tabs, native/ARIA choices, physical typing and page-boundary shortcuts across Firefox, Chrome, Edge and Brave. Site-specific beta testing remains necessary."
+            "The built-in Help guide and versioned What’s New formats include the new browser preference, media menus/forms, shortcuts and matching voice commands. Existing email, document, web-form review and guided voice workflows remain covered by regression tests.",
+            "Tests exercise radio/podcast keyboard and voice interchange, validation, recording/scheduling, subscriptions/download policies, confirmations, actual Windows key dispatch and browser window cleanup. Live fixtures cover nested result headings, caret updates and result activation across Firefox, Chrome, Edge and Brave. Site-specific search results, radio streams and podcast hosts still require beta testing."
           ]
         }
       ]

@@ -233,7 +233,7 @@ class WebPolishTests(unittest.TestCase):
     def test_link_role_is_first_and_main_menu_has_requested_name(self):
         from web_browse import describe
         self.assertEqual(describe({'role':'link','label':'Result'}),'Link Result.')
-        self.assertIn(('Web browser','search the web'),app.MAIN_MENU_CHOICES)
+        self.assertIn(('Web browser','web browser'),app.MAIN_MENU_CHOICES)
     def test_navigation_readiness_runs_before_virtual_snapshot(self):
         calls=[];self.backend.wait_ready=lambda:calls.append('ready')
         original=self.backend.snapshot

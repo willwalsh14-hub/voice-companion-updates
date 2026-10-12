@@ -100,6 +100,8 @@ class CompanionWindow:
         if not self.closed.is_set(): self.ui_actions.put(('clear_email', None))
 
     def submit_entry(self, value):
+        if self.context.get('media_input'):
+            self.commands.put(('media_field',{'value':value,'next':'Enter'}));return True
         if self.context.get('web_private'):
             self.commands.put(('web_private_value',{'value':value,'next':'Done'}));return True
         value = value.strip()
@@ -149,6 +151,8 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 control=bool(event.state&4);shift=bool(event.state&1)
                 request=None
+                if key=='F4' and event.state&(8|0x20000):
+                    flush_pending_edit();self.commands.put(('keyboard','Alt+F4'));return 'break'
                 if key in ('Control_L','Control_R'):
                     cancel_phonetic()
                     if local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
@@ -160,6 +164,14 @@ class CompanionWindow:
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
+                if mode in ('media','podcast') and self.context.get('media_navigation'):
+                    if self.context.get('media_input') and key in ('Tab','ISO_Left_Tab','Return'):
+                        self.commands.put(('media_field',{'value':typed.get(),'next':'Enter' if key=='Return' else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab'}));typed.delete(0,'end');return 'break'
+                    if key=='Escape':request='Escape'
+                    elif key in ('Tab','ISO_Left_Tab'):request='ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab'
+                    elif not control and not self.context.get('media_input') and key in ('Up','Down','Left','Right','Home','End','Return','space','Delete','F5') and not typed.get():request='Enter' if key=='Return' else 'Space' if key=='space' else key
+                    elif control and key.lower() in ('f','p','r','s','d'):request='Ctrl+'+key.upper()
+                    elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
                 if mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
                 elif mode=='web' and control and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
@@ -211,7 +223,7 @@ class CompanionWindow:
                     if self.email_field:
                         self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'send':True}));return 'break'
                     request='Ctrl+Enter' if control else 'Alt+S'
-                elif self.context.get('menu_letters') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
+                elif self.context.get('menu_letters') and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
                 if request:
                     if self.keyboard_output:self.keyboard_output.interrupt()
@@ -267,7 +279,7 @@ class CompanionWindow:
                 if self.context.get('mode')=='document_name':
                     if not typed.get().strip():self.feedback('Enter a document name.');return 'break'
                     return submit_typed(event)
-                if self.email_field or typed.get(): return submit_typed(event)
+                if self.email_field or typed.get() or self.context.get('media_input'): return submit_typed(event)
                 return navigation(event)
             typed.bind('<Return>', enter)
             for key in ('Up','Down','Left','Right','Escape'):
@@ -475,6 +487,11 @@ class CompanionWindow:
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue
+                        if mode in ('media','podcast') and field.get('media_revision')!=old.get('media_revision'):
+                            form=field.get('media_form')
+                            if form:
+                                entry_label.configure(text=form['label']+':');typed.delete(0,'end');typed.insert(0,form['value'] if field.get('media_input') else '');typed.icursor('end');typed.focus_force()
+                            else:typed.delete(0,'end')
                         typed.configure(show='*' if field.get('web_private') else '')
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
@@ -515,12 +532,19 @@ class CompanionWindow:
                             editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18))
                             if mode!='email_draft' or not self.email_field:
                                 self.email_field=None;self.last_email_request=None
-                                if transition and not (mode=='document_name' and old.get('mode')=='settings'):typed.delete(0,'end')
+                                if transition and not field.get('media_form') and not (mode=='document_name' and old.get('mode')=='settings'):typed.delete(0,'end')
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft' and not field.get('web_private'):entry_label.configure(text='Web search; type a search, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
-                            if transition:typed.focus_force()
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web search; type a search, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
+                            if transition:
+                                if mode in ('media','podcast'):
+                                    root.deiconify();root.lift()
+                                    try:
+                                        import sys,ctypes
+                                        if sys.platform=='win32':ctypes.windll.user32.SetForegroundWindow(ctypes.windll.user32.GetAncestor(root.winfo_id(),2))
+                                    except (AttributeError,OSError):pass
+                                typed.focus_force()
                         continue
                     if action == 'email_select' and not field['canceled'].is_set():
                         try:

@@ -56,6 +56,10 @@ class BrowseCursor:
     def __init__(self,snapshot):
         self.elements=snapshot.get('elements',snapshot.get('controls',[]));self.index=-1;self.position=0;self.table=None;self.row=self.column=0
     def set_position(self,position):
+        # GUI caret acknowledgments must retain the semantic heading/link selected
+        # by a quick key, even when several nested elements start at this offset.
+        current=self.current()
+        if current and position==self.position==current.get('start',0):return
         self.position=position
         matches=[(i,e) for i,e in enumerate(self.elements) if e.get('start',0)<=position<e.get('end',0)]
         if matches:self.index=min(matches,key=lambda x:x[1].get('end',0)-x[1].get('start',0))[0]
@@ -129,15 +133,18 @@ SEMANTICS = r'''
             if(tag==='label'){for(const child of all(e).filter(c=>c.matches(selector)))walk(child);return;}
             if(['input','select','textarea','a','button'].includes(tag))newline();
             const control=controlsByKey.get(e.getAttribute('data-voice-companion-key'));
-            const label=accessibleLabel(e);
-            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,href:tag==='a'?e.href:(control?.href||''),level:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
+            const resultHeading=e.querySelector('h1,h2,h3,h4,h5,h6,[role="heading"]')||e.closest('h1,h2,h3,h4,h5,h6,[role="heading"]');
+            const resultTitle=role==='link'?(e.querySelector('[class*="title"],[class*="heading"]')||resultHeading?.querySelector('[class*="title"],[class*="heading"]')||resultHeading):null;
+            const label=role==='link'&&resultTitle && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby')?accessibleLabel(resultTitle):accessibleLabel(e);
+            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,href:tag==='a'?e.href:(control?.href||''),level:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
             if(['input','select','textarea'].includes(tag)){append(label);if(type!=='password' && e.value && !['checkbox','radio','submit','button'].includes(type))append(' '+(tag==='select'?e.selectedOptions[0]?.text:e.value));}
             else if(tag==='img')append(label);
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.childNodes))walk(child);
-            if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);}
+            if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);if(item.role==='heading' && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby')){const title=e.querySelector('[class*="title"],[class*="heading"]');const parts=(title?.innerText||e.innerText||item.label).split(/\n+/).map(s=>s.trim()).filter(Boolean);item.label=parts.find(s=>!/^https?:|^www\.|^[\w-]+(?:\.[\w-]+)+(?:[ /›>]|$)/i.test(s))||item.label;}}
             if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
           walk(document.body);
+          for(const item of elements){const control=controlsByKey.get(item.key);if(control&&item.role==='link'){control.identity_label=control.label;control.label=item.label;}}
           // JavaScript offsets count UTF-16 units; Companion reading uses code points.
           const boundaries=new Set(elements.flatMap(e=>[e.start,e.end]));const offsets=new Map();let units=0,points=0;
           for(const char of output){if(boundaries.has(units))offsets.set(units,points);units+=char.length;points++;}

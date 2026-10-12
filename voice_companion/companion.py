@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.111-test'
+APP_VERSION = '0.2.112-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -137,6 +137,7 @@ note_selection = FieldSelection()
 note_reading = ReadingCursor()
 last_podcasts = []
 MEDIA_HUB = None
+MEDIA_NAV = None
 MEDIA_SECTION = 'radio'
 MEDIA_NOTICES = queue.Queue()
 tutorial_session = None
@@ -157,6 +158,14 @@ def focus_email_entry():
         value = email_draft.recipient if field == 'recipient' else email_draft.subject if field == 'subject' else ', '.join(getattr(email_draft,field,[]))
         APP_WINDOW.focus_email_field(field, value)
 resampler = None
+def media_navigation():
+    global MEDIA_NAV
+    from media_navigation import MediaNavigation
+    hub=media()
+    if MEDIA_NAV is None or MEDIA_NAV.hub is not hub or MEDIA_NAV.section!=MEDIA_SECTION:
+        MEDIA_NAV=MediaNavigation(hub,MEDIA_SECTION)
+    return MEDIA_NAV
+
 input_channels = 1
 APP_WINDOW = None
 KEYBOARD_SPEECH = None
@@ -193,6 +202,16 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=menu_state(logical) is not None
+    if logical in ('media','podcast') and MEDIA_HUB:
+        nav=media_navigation();context['media_navigation']=True
+        if nav.pending:context['confirmation']=nav.confirm_choice
+        if nav.form:
+            context['media_revision']=nav.revision
+            if nav.field_index<len(nav.form['fields']):
+                field=nav.form['fields'][nav.field_index];context['media_form']=dict(field)
+                context['media_input']=not field['choices']
+            else:context['media_button']='OK' if nav.field_index==len(nav.form['fields']) else 'Cancel'
+        else:context['media_form']=None
     if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and (web_session.pending or web_session.submit_pending):context['confirmation']=CONFIRM_CHOICE
@@ -317,6 +336,8 @@ def process_keyboard_batch(mode):
                 elif command[0]=='web_private_value':
                     try:web_session.commit_keyboard_field(command[1]['value']);command='web key '+command[1].get('next','Done')
                     except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
+                elif command[0]=='media_field':
+                    speak(media_navigation().field_value(command[1]['value'],command[1]['next']));sync_app_context(mode,True);continue
                 elif command[0]=='email_field_tab':
                     command=commit_email_field_tab(command[1],SLEEP_RETURN_MODE if mode=='sleep' else mode)
                 else:
@@ -345,7 +366,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Use your wake command or keyboard to begin. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browser', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -382,9 +403,10 @@ def open_settings(mode):
 
 def settings_action(key,mode):
     global MEDIA_SECTION,web_session
+    if key=='exit_app':return handle('exit companion',SETTINGS_RETURN_MODE,typed=True)
     if key in ('radio_presets','radio_recordings','podcast_subscriptions'):
         MEDIA_SECTION='podcast' if key=='podcast_subscriptions' else 'radio'
-        speak(media().command(SETTINGS_ACTIONS[key],section=MEDIA_SECTION))
+        speak(media_navigation().run(SETTINGS_ACTIONS[key]))
         return 'media'
     if key=='web_favorites':
         web_session=web_session or WebSession(APP)
@@ -415,14 +437,7 @@ def menu_state(mode):
     if mode=='help' and help_session:
         if help_session.level=='topics':return state([x['name'] for x in help_session.topics],help_session,'topic_index')
         if help_session.level=='subtopics':return state([x[0] for x in help_session._subtopics()],help_session,'subtopic_index')
-    if mode in ('media','podcast') and MEDIA_HUB:
-        hub=MEDIA_HUB
-        if MEDIA_SECTION=='radio':
-            if hub.preset_browsing:return state([x['name'] for x in hub.presets()],hub,'preset_index')
-            if hub.station_choices:return state([hub.stations[i]['name'] for i in hub.station_choices],hub,'station_choice_index')
-            if not hub.awaiting_radio_search:return state([x['name'] for x in hub.stations],hub,'station_index')
-        elif hub.browsing_episodes:return state([x['title'] for x in hub.episodes],hub,'episode_index')
-        else:return state([x['name'] for x in hub.shows],hub,'show_index')
+    if mode in ('media','podcast') and MEDIA_HUB:return media_navigation().state()
     if mode=='web' and web_session and web_session.form_index is None and not web_session.submit_pending:
         web=web_session
         if web.list_focus=='favorites':return state([x[1]['name'] for x in web.favorite_items],web,'favorite_index')
@@ -473,6 +488,7 @@ def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
     if key=='Control':return None
+    if key=='Alt+F4':return 'exit companion'
     confirming=pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n'):return 'yes' if key.lower()=='y' else 'no'
@@ -481,6 +497,12 @@ def _navigation_key(key,mode):
             speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if mode in ('media','podcast') and MEDIA_HUB:
+        result=media_navigation().keyboard(key)
+        if result=='__main__':return 'main menu'
+        if result:speak(result)
+        sync_app_context(mode,True)
+        return None
     if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'leave website'
     if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None:return 'leave website'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
@@ -594,7 +616,7 @@ FAST_OFFLINE_COMMANDS = frozenset((
 def fast_command_request(command, mode):
     if mode in ('document','email_draft','mailbox','help','web','note') and reading_request(command) and not (mode in ('document','email_draft') and INPUT_MODE=='dictation'):return True
     if command in POWER_COMMANDS:return True
-    if mode in ('settings','power_confirm','exit_confirm'): return True
+    if mode in ('settings','power_confirm','exit_confirm','media'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
@@ -1080,6 +1102,9 @@ def finish_exit(mode):
     help_session=None;account_setup=False;pending_send=None;mail_session=None
     flush_note(mode)
     if MEDIA_HUB is not None:MEDIA_HUB.player.close()
+    if web_session:
+        try:web_session.leave(False)
+        except Exception:pass
     speak('Shutting down. Goodbye.')
     return 'exit'
 
@@ -1156,6 +1181,10 @@ def _handle(text, mode, typed=False):
             return handle(text,SETTINGS_RETURN_MODE,typed)
         SETTINGS_PANEL.command(text)
         return mode
+    keep_open_request=re.fullmatch(r'(?:(?:set|turn) )?keep browser window open(?: to)? (on|off)',command)
+    if keep_open_request:
+        PREFERENCES['web_keep_open']=keep_open_request[1]=='on';save_preferences()
+        speak('Keep browser window open '+keep_open_request[1]+'.');return mode
     auto_read_request=re.fullmatch(r'(?:(?:set|turn) )?(?:automatic page reading|automatically read (?:web )?pages|read pages automatically)(?: to)? (on|off)',command)
     toggle_read=re.fullmatch(r'(?:turn|switch) (on|off) automatic page reading',command)
     enable_read=re.fullmatch(r'(enable|disable) automatic page reading',command)
@@ -1479,7 +1508,7 @@ def _handle(text, mode, typed=False):
     if command in ('subscription list', 'subscriptions list', 'podcast list', 'podcasts list',
                    'list podcast', 'list podcasts', 'list subscriptions', 'my podcasts'):
         MEDIA_SECTION = 'podcast'
-        speak(media().command(command, section='podcast'))
+        speak(media_navigation().run(command))
         return 'media'
     if command in ('where are my documents', 'where do documents save', 'open documents',
                    'open documents folder', 'show documents folder'):
@@ -1542,11 +1571,13 @@ def _handle(text, mode, typed=False):
                                 'save favorite as ', 'add favorite as ', 'play preset ',
                                 'open preset ', 'delete preset ', 'remove preset '))):
         MEDIA_SECTION = 'radio'
-        speak(media().command(text, section='radio'))
+        speak(media_navigation().run(text))
         return 'media'
     if command == 'list favorites' and mode == 'media' and MEDIA_SECTION == 'radio':
-        speak(media().command(text, section='radio'))
+        speak(media_navigation().run(text))
         return 'media'
+    if mode=='media' and MEDIA_HUB and (media_navigation().form or media_navigation().pending) and spoken_control(command) is None and command not in ('main menu','back to main menu','leave radio','leave podcasts'):
+        speak(media_navigation().command(text));return 'media'
     if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media')) or re.fullmatch(
             r'(?:play|resume|pause|stop) (?:radio|podcast|audio)',command) or
             re.fullmatch(r'(?:rewind|back|go back|fast forward|forward|skip ahead) (?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|fifty|sixty)\b.*(?:seconds?|minutes?|hours?)',command) or
@@ -1565,10 +1596,10 @@ def _handle(text, mode, typed=False):
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
             if MEDIA_SECTION == 'podcast': media().awaiting_radio_search = False
             else: media().awaiting_podcast_search = False
-            speak('Podcasts are ready. Say search podcasts for a name or list subscriptions.' if MEDIA_SECTION == 'podcast'
-                  else 'Radio is ready. Say search followed by a station name, or browse genre jazz.')
+            speak(media_navigation().enter(MEDIA_SECTION))
             return 'media'
-        try: speak(media().command(text, section=MEDIA_SECTION))
+        try:
+            speak(media_navigation().command(text));sync_app_context('media',True)
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
             speak('I could not complete that media request. ' + str(exc))
         return 'media'
@@ -1865,6 +1896,8 @@ def _handle(text, mode, typed=False):
         if text.startswith('web key '):speak_web_result(web_session.keyboard(text[8:]),revision);return mode
         web_session.input_mode = INPUT_MODE
         if command in ('leave website', 'close website','close browser','exit browser','leave web browser','close web browser','exit web browser', 'main menu', 'back to main menu'):
+            try:web_session.leave(PREFERENCES.get('web_keep_open',False))
+            except Exception:speak('The browser window could not close. Try closing it again.')
             announce_main_menu()
             return 'awake'
         if command.startswith(('open website ', 'go to website ')):
@@ -2182,12 +2215,12 @@ def _handle(text, mode, typed=False):
         return 'awake'
     if command in ('radio','internet radio'):
         MEDIA_SECTION = 'radio'
-        speak_prompt('Radio is ready. Say search followed by a station name, browse genre jazz, or choose station database.')
+        speak_prompt(media_navigation().enter(MEDIA_SECTION))
         return 'media'
     if command in ('podcasts','listen to podcasts'):
         MEDIA_SECTION = 'podcast'
         media().awaiting_radio_search = False
-        speak_prompt('Podcasts are ready. Say search followed by a name, browse podcasts category science, or list subscriptions.')
+        speak_prompt(media_navigation().enter(MEDIA_SECTION))
         return 'media'
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',
@@ -2200,7 +2233,7 @@ def _handle(text, mode, typed=False):
                            'list scheduled recordings','import radiosure','play station ','play episode ',
                            'play recording ','play download ','record station ','schedule station ')) or command in ('station database','which station database','which radio source','list station databases'):
         MEDIA_SECTION = 'podcast' if any(word in command for word in ('podcast','subscription','episode','download')) else 'radio'
-        try: speak(media().command(text, section=MEDIA_SECTION))
+        try: speak(media_navigation().command(text))
         except (OSError,ValueError,IndexError,ET.ParseError) as exc:
             speak('I could not complete that media request. ' + str(exc))
         return 'media'
@@ -2214,6 +2247,10 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError): speak('Podcast search could not connect. Try later.')
         return 'media'
     if command in ('web browser','open web browser','web browsing','open web browsing'):
+        if PREFERENCES.get('web_keep_open',False) and web_session:
+            try:result=web_session.resume()
+            except Exception:result=''
+            if result:speak(result);return 'web'
         SEARCH_RETURN_MODE='awake';speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.');return 'search'
     if re.search(r'\b(search|look up|google|find|web)\b', command):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|find(?: me)?|web(?: for)?)\b\s*', '', text)
