@@ -221,7 +221,18 @@ class LiveWebTests(unittest.TestCase):
                 self.assertEqual(self.session.browse.current()['label'],'Fixture heading')
                 self.assertTrue(any('heading' in str(call.args[0]) for call in output.speak.call_args_list))
                 ctypes.windll.user32.keybd_event(0x28,0,0,0);ctypes.windll.user32.keybd_event(0x28,0,2,0)
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
                 wait(lambda:any('Readable text' in str(call.args[0]) for call in output.speak.call_args_list))
+                self.page.locator('#title').evaluate("e=>e.insertAdjacentHTML('afterend','<p>Before later heading</p><h2>Later heading destination</h2><p>After later heading</p>')")
+                self.session._refresh();app.sync_app_context('web',True)
+                wait(lambda:window.context.get('web_revision')==self.session.page_revision)
+                for key,state,expected in [('h',0,'Fixture heading'),('h',0,'Later heading destination'),('Down',0,'After later heading'),('Up',0,'Later heading destination'),('h',1,'Fixture heading')]:
+                    ui(lambda k=key,s=state:window.editor.event_generate('<KeyPress>',keysym=k,state=s))
+                    wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                    wait(lambda:window.context.get('caret')==self.session.reading.position)
+                    position=self.session.reading.position
+                    ui(lambda p=position:self.assertEqual(len(window.editor.get('1.0','insert')),p))
+                    self.assertTrue(any(expected in str(call.args[0]) for call in output.speak.call_args_list))
                 ui(lambda:window.editor.event_generate('<KeyPress>',keysym='F7'))
                 wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
                 self.assertEqual(self.session.list_focus,'links');self.assertIsNone(self.session.pending)
@@ -286,6 +297,18 @@ class LiveWebTests(unittest.TestCase):
         session=WebSession(self.temp.name,owned);session.open('https://fixture.test');second=context.new_page();session.leave(True)
         self.assertIn('Kept page',session.resume());self.assertFalse(second.is_closed());pages=list(context.pages);session.leave(False)
         self.assertTrue(all(p.is_closed() for p in pages));self.assertIsNone(owned.context)
+
+    def test_result_titles_and_virtual_cursor_stay_on_the_selected_text(self):
+        self.page.set_content('<h1>Search</h1><p>Before result</p><a href="https://fixture.test/next"><h2 aria-label="https://source.test/path"><span class="source-title">https://source.test/path</span><br><span>Actual result title</span></h2></a><p>After result</p><h2>https://metadata.test/path</h2><h2>Last heading</h2><h2>Example.org accessibility</h2>')
+        self.session._refresh();self.session.keyboard('Quick:h');message=self.session.keyboard('Quick:h')
+        self.assertIn('Actual result title',message);self.assertNotIn('https://',message)
+        self.assertTrue(any(e['label']=='Example.org accessibility' for e in self.session.heading_items()))
+        position=self.session.reading.position;self.assertEqual(position,self.session.reading.text.index('Actual result title'))
+        self.assertIn('After result',self.session.keyboard('Read:Down'));self.assertIn('Actual result title',self.session.keyboard('Read:Up'))
+        self.assertIn('Last heading',self.session.keyboard('Quick:h'));self.assertIn('Actual result title',self.session.keyboard('Quick:Previous:h'))
+        self.page.evaluate("()=>{let p=document.createElement('p');p.textContent='Inserted before everything';document.body.prepend(p);}")
+        self.session.refresh_changed();self.assertEqual(self.session.reading.position,self.session.reading.text.index('Actual result title'))
+        self.assertIn('Destination',self.session.keyboard('Activate'))
 
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):

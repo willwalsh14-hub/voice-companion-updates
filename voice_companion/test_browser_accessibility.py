@@ -54,7 +54,7 @@ class BrowserAccessibilityTests(unittest.TestCase):
     def test_empty_brave_results_never_redirect_to_another_engine(self):
         with tempfile.TemporaryDirectory() as folder:
             backend=FakeBackend();backend.snapshot=lambda:{'url':backend.url,'title':'Search','text':'','controls':[]}
-            session=WebSession(folder,backend);session.search('simple search')
+            session=WebSession(folder,backend);session.search('simple search',provider='brave')
             self.assertIn('search.brave.com',backend.url)
 
     def test_backspace_erased_character_and_delete_new_caret_character(self):
@@ -215,7 +215,7 @@ class WebPolishTests(unittest.TestCase):
         from settings_model import SettingsSession,fields
         settings=SettingsSession({},{});self.assertTrue(settings.values['web_auto_read'])
         settings.set('web_auto_read','off');self.assertFalse(settings.values['web_auto_read'])
-        self.assertTrue(any(field.key=='web_auto_read' and field.kind=='check' for field in fields('Web browsing',{})))
+        self.assertTrue(any(field.key=='web_auto_read' and field.kind=='check' for field in fields('Web browser',{})))
         with patch.object(app,'PREFERENCES',{}),patch.object(app,'web_session',self.session),patch.object(app,'save_preferences'),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None):
             app.handle('automatic page reading off','web');self.assertFalse(app.PREFERENCES['web_auto_read'])
             app.handle('enable automatic page reading','web');self.assertTrue(app.PREFERENCES['web_auto_read'])
