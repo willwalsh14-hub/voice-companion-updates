@@ -204,8 +204,16 @@ class WindowKeyboardTests(unittest.TestCase):
     def setUp(self):
         self.window=CompanionWindow('keyboard test');self.window.start()
     def tearDown(self):
-        self.call(lambda:self.window.root.destroy())
+        if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
+    def test_shutdown_discards_delayed_view_updates_and_readback(self):
+        def close_with_pending_readback():
+            self.window.messages.put('Delayed readback')
+            self.window.ui_actions.put(('context',{'mode':'web','source':'closed-page','text':'Old page','caret':0}))
+            self.window.root.destroy()
+        self.call(close_with_pending_readback)
+        self.window.thread.join(5)
+        self.assertTrue(self.window.closed.is_set());self.assertFalse(self.window.thread.is_alive());self.assertIsNone(self.window.problem)
     def call(self,function):
         done=threading.Event();errors=[]
         def run():

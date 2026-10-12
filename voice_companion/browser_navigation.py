@@ -8,7 +8,7 @@ def prepare_address(spoken):
     address = re.sub(' dot ','.',spoken.strip(),flags=re.I)
     address = re.sub(' slash ','/',address,flags=re.I)
     address = re.sub(r'\s+', '', address)
-    if not address or any(c in address for c in '@\\') or any(ord(c)<32 for c in spoken):
+    if not address or '\\' in address or any(ord(c)<32 for c in spoken):
         raise ValueError('Type a website address, such as example.com.')
     if '://' in address:
         parsed = urllib.parse.urlsplit(address)

@@ -47,8 +47,10 @@ def find_external_input(sd,endpoints=None):
     devices=sd.query_devices()
     candidates=[(i,d) for i,d in enumerate(devices) if external_input(d,endpoints)]
     def priority(value):
-        try:return 'wasapi' not in sd.query_hostapis(value[1]['hostapi'])['name'].casefold()
-        except (KeyError,TypeError,AttributeError):return True
+        try:
+            host=sd.query_hostapis(value[1]['hostapi'])
+            return ('wasapi' not in host['name'].casefold(),value[0]!=host.get('default_input_device'))
+        except (KeyError,TypeError,AttributeError):return (True,True)
     return min(candidates,key=priority) if candidates else None
 
 class ExternalMicrophoneGuard:

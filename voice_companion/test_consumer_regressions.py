@@ -12,6 +12,8 @@ class ConsumerRegressionTests(unittest.TestCase):
         for address,expected in [('example.com/SpeedTest','https://example.com/SpeedTest'),('www.example.com','https://www.example.com'),('http://example.com/Test?x=One#Result','https://example.com/Test?x=One#Result'),('https://example.com/Test','https://example.com/Test')]:
             self.assertTrue(looks_like_address(address));self.assertEqual(prepare_address(address)[0],expected)
         self.assertFalse(looks_like_address('speed test near me'))
+        self.assertEqual(prepare_address('youtube.com/@ExampleChannel')[0],'https://youtube.com/@ExampleChannel')
+        self.assertEqual(prepare_address('example.com/?email=person@example.com')[0],'https://example.com/?email=person@example.com')
         for address in ('https://user:password@example.com','javascript:alert(1)','example.com:1234'):
             with self.assertRaises(ValueError):prepare_address(address)
 
@@ -65,5 +67,11 @@ class ConsumerRegressionTests(unittest.TestCase):
         guard=ExternalMicrophoneGuard(Mock(query_devices=Mock(return_value=device)),0,device)
         with patch('external_microphone.connected_external_endpoints',return_value=[{'name':device['name'],'connection':'USB\\VID_1234'}]):self.assertTrue(guard.check_connection())
         with patch('external_microphone.connected_external_endpoints',return_value=[]):self.assertFalse(guard.check_connection())
+
+    def test_confirmed_windows_default_external_microphone_is_preferred(self):
+        devices=[{'name':'USB Desk Microphone','max_input_channels':2,'hostapi':0},{'name':'USB Headset Microphone','max_input_channels':2,'hostapi':0}]
+        endpoints=[{'name':d['name'],'connection':'USB\\VID_'+str(i)} for i,d in enumerate(devices)]
+        sd=Mock(query_devices=Mock(return_value=devices),query_hostapis=Mock(return_value={'name':'Windows WASAPI','default_input_device':1}))
+        self.assertEqual(find_external_input(sd,endpoints)[0],1)
 
 if __name__=='__main__':unittest.main()

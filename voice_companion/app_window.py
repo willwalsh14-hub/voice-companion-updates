@@ -51,6 +51,10 @@ class CompanionWindow:
         try:self._run()
         finally:
             # Tcl interpreters and widget cycles must be released on their owner thread.
+            self.closed.set()
+            while True:
+                try:self.ui_actions.get_nowait()
+                except queue.Empty:break
             self.root=self.typed=self.editor=self.current=None
             import gc
             gc.collect()
@@ -130,6 +134,7 @@ class CompanionWindow:
             from tkinter import scrolledtext
             root = tk.Tk()
             self.root=root
+            root.bind('<Destroy>',lambda event:self.closed.set() if event.widget==root else None)
             root.title('Voice Companion ' + self.version)
             root.geometry('660x430')
             root.minsize(470, 300)
@@ -484,6 +489,7 @@ class CompanionWindow:
 
             def poll():
                 while True:
+                    if self.closed.is_set():return
                     try: action, field = self.ui_actions.get_nowait()
                     except queue.Empty: break
                     if action=='cancel_phonetic':cancel_phonetic();continue
@@ -603,6 +609,7 @@ class CompanionWindow:
                         root.lift()
                         typed.focus_force()
                 while True:
+                    if self.closed.is_set():return
                     try: message = self.messages.get_nowait()
                     except queue.Empty: break
                     self.current.set(message)
@@ -618,7 +625,7 @@ class CompanionWindow:
             root.after(15, poll)
             root.mainloop()
         except Exception as exc:
-            self.problem = exc
+            self.problem = exc.with_traceback(None)
             self.ready.set()
             self.closed.set()
 
