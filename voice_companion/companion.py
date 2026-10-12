@@ -426,7 +426,8 @@ def settings_action(key,mode):
 NAMED_LIST=None
 
 def open_named_list(title,items):
-    global NAMED_LIST
+    global NAMED_LIST,pending_website
+    pending_website=None
     NAMED_LIST={'title':title,'items':items,'index':0} if items else None
     return (title+' list. '+announce_item(items[0][0],0,len(items))+' Arrows move, Home and End reach boundaries, Enter selects, and Escape closes the list.') if items else 'Empty list.'
 
@@ -1154,13 +1155,17 @@ def _handle(text, mode, typed=False):
         return mode
     if NAMED_LIST:
         if command in ('cancel','close list','escape','go back'):
-            NAMED_LIST=None;speak('List closed.');return mode
+            NAMED_LIST=None;speak('List closed.')
+            if mode=='email_draft':focus_email_entry()
+            return mode
         if command in ('next','previous'):
             NAMED_LIST['index']=bounded_index(NAMED_LIST['index'],1 if command=='next' else -1,len(NAMED_LIST['items']))
             speak(announce_item(NAMED_LIST['items'][NAMED_LIST['index']][0],NAMED_LIST['index'],len(NAMED_LIST['items'])));return mode
         if command in PICK_CONFIRM:
             request=NAMED_LIST['items'][NAMED_LIST['index']][1];NAMED_LIST=None
-            return handle(request,mode)
+            result=handle(request,mode)
+            if result=='email_draft':focus_email_entry()
+            return result
         NAMED_LIST=None
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):

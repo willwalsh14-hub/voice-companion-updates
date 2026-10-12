@@ -57,6 +57,18 @@ class BoundaryTests(unittest.TestCase):
                 app.handle('next','awake');self.assertEqual(app.NAMED_LIST['index'],1)
                 app.navigation_key('Home','awake');self.assertEqual(app.NAMED_LIST['index'],0)
                 app.handle('close list','awake');self.assertIsNone(app.NAMED_LIST)
+    def test_named_picker_returns_to_email_header_and_cancels_old_website_question(self):
+        from types import SimpleNamespace
+        draft=SimpleNamespace(compose_step='recipient',recipient='keep@example.com')
+        with patch.object(app,'NAMED_LIST',None),patch.object(app,'pending_website',('https://example.test','example.test')),patch.object(app,'email_draft',draft),patch.object(app,'APP_WINDOW',Mock()) as window,patch.object(app,'speak'):
+            app.open_named_list('Contacts',[('Alpha','find contact Alpha')]);self.assertIsNone(app.pending_website)
+            self.assertEqual(app._handle('close list','email_draft'),'email_draft')
+            window.focus_email_field.assert_called_with('recipient','keep@example.com')
+            app.open_named_list('Contacts',[('Alpha','find contact Alpha')])
+            with patch.object(app,'handle',return_value='email_draft') as handle:
+                self.assertEqual(app._handle('okay','email_draft'),'email_draft')
+                handle.assert_called_with('find contact Alpha','email_draft')
+            window.focus_email_field.assert_called_with('recipient','keep@example.com')
     def test_email_end_and_home_follow_pages_without_wrapping(self):
         class Client:
             def list_messages(self,folder,cursor=None,limit=10):
