@@ -632,7 +632,8 @@ def web_feedback_control(text,mode):
         return command in ('yes','yes please','no','no thanks','cancel','okay','ok','confirm','confirm that')
     if web_session.list_focus in ('links','headings'):
         return command in ('next','previous','open current link','open current heading','go to heading','that one','okay','ok','cancel','close list','back to page')
-    return False
+    from web_browse import voice_browse_key
+    return bool(voice_browse_key(command) or reading_request(command)) or command in ('list links','list headings','read page','leave website','go back')
 
 def interrupt_speech():
     global SPEECH_PAUSED
@@ -940,7 +941,7 @@ def speak(text):
     if TEXT_MODE:
         return
     update_audio_ducking(True)
-    if KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem and (KEYBOARD_NAVIGATION or not (AI_SPEECH and AI_SPEECH.enabled)):
+    if KEYBOARD_NAVIGATION and KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem:
         KEYBOARD_SPEECH.speak(punctuation_for_speech(text));return
     if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.enabled:
         ESPEAK_SPEECH.speak(punctuation_for_speech(text), SPEECH_RATE, SPEECH_VOLUME)
@@ -2805,7 +2806,7 @@ if __name__ == '__main__':
         try:
             APP_WINDOW = CompanionWindow(APP_VERSION, APP)
             from keyboard_speech import KeyboardSpeech
-            KEYBOARD_SPEECH=KeyboardSpeech();APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
+            KEYBOARD_SPEECH=KeyboardSpeech();KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH);APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
             APP_WINDOW.start()
         except Exception:
             APP_WINDOW = None
