@@ -40,9 +40,9 @@ class NativeSettingsTests(unittest.TestCase):
         press(categories,0x26,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
         press(categories,0x0D,lambda:bool(self.u.GetDlgItem(hwnd,200)))
         choice=self.u.GetDlgItem(hwnd,200)
-        press(choice,0x23,lambda:self.session.values['verbosity']=='low' and 'Verbosity, low' in self.notices[-1] and 'of list' not in self.notices[-1])
+        press(choice,0x23,lambda:self.session.values['verbosity']=='low' and self.notices[-1]=='low' and 'of list' not in self.notices[-1])
         press(choice,0x28,lambda:self.session.values['verbosity']=='low' and 'End of list' in self.notices[-1])
-        press(choice,0x24,lambda:self.session.values['verbosity']=='high' and 'Verbosity, high' in self.notices[-1] and 'of list' not in self.notices[-1])
+        press(choice,0x24,lambda:self.session.values['verbosity']=='high' and self.notices[-1]=='high' and 'of list' not in self.notices[-1])
         press(choice,0x26,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
     def test_entering_choice_and_tabbing_back_repeat_boundary(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
