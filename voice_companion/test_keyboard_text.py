@@ -471,5 +471,24 @@ class WindowKeyboardTests(unittest.TestCase):
         values=[];self.call(lambda:values.append(self.window.editor.get('1.0','end-1c')))
         self.assertEqual(values,['abc def'])
 
+    def test_media_editable_form_tab_commits_exact_text_and_combo_keys_do_not_type(self):
+        base=dict(mode='media',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0,focus=True,media_navigation=True)
+        self.window.set_context(dict(base,media_revision=1,media_input=True,media_form=dict(label='Time',value='8 PM',choices=())))
+        self.call(lambda:self.window.typed.focus_force())
+        self.call(lambda:(self.window.typed.delete(0,'end'),self.window.typed.insert(0,'9:30 PM'),self.window.typed.event_generate('<KeyPress>',keysym='Tab')))
+        self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('media_field',{'value':'9:30 PM','next':'Tab'}))
+        self.window.set_context(dict(base,menu_letters=True,media_revision=2,media_input=False,media_form=dict(label='Repeat every day',value='no',choices=('no','yes'))))
+        self.call(lambda:self.window.typed.focus_force())
+        for key,result in [('y','Letter:y'),('Down','Down'),('Tab','Tab')]:
+            self.call(lambda k=key:self.window.typed.event_generate('<KeyPress>',keysym=k));self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('keyboard',result))
+        values=[];self.call(lambda:values.append(self.window.typed.get()));self.assertEqual(values,[''])
+
+    def test_alt_f4_requests_app_exit_even_from_edit_and_confirmation(self):
+        for mode in ('web','media','exit_confirm'):
+            self.window.set_context(dict(mode=mode,source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0,focus=True,confirmation='no' if mode=='exit_confirm' else None))
+            self.call(lambda:self.window.typed.focus_force())
+            self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='F4',state=8))
+            self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('keyboard','Alt+F4'))
+
 if __name__=='__main__':unittest.main()
 

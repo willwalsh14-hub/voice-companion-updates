@@ -117,11 +117,12 @@ class LiveWebTests(unittest.TestCase):
     def test_link_confirmation_navigates_without_unreviewed_actions(self):
         self.session.keyboard('Quick:k');result=self.session.keyboard('Activate');self.assertIn('Destination',result);self.assertEqual(self.page.url,'https://fixture.test/next');self.assertIsNone(self.session.pending)
     def test_virtual_view_traverses_display_contents_and_labels_unnamed_links(self):
+        self.context.route('https://captcha.test/**',lambda r:r.fulfill(content_type='text/html',body='<p>Hidden frame</p>'))
         self.page.set_content('<body style="display:contents"><main style="display:contents"><h1>Search results</h1><p>Result description</p><a href="https://fixture.test/next"><img alt="Result link"></a></main><div style="display:none">Hidden text</div><iframe style="display:none" src="https://captcha.test/"></iframe></body>')
         result=self.session._refresh()
         self.assertIn('Search results',self.session.reading.text);self.assertIn('Result link',self.session.reading.text)
         self.assertNotIn('Hidden text',self.session.reading.text);self.assertFalse(self.session.snapshot['challenge'])
-        self.assertIn('Virtual page view',result);self.assertIn('heading',self.session.keyboard('Quick:h'))
+        self.assertIn('Page loaded',result);self.assertIn('heading',self.session.keyboard('Quick:h'))
         self.assertIn('Link Result link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
 
     def test_result_navigation_waits_for_delayed_single_page_content(self):
@@ -255,6 +256,36 @@ class LiveWebTests(unittest.TestCase):
                 wait(lambda:any(item==('keyboard','Web:Search') for item in window.commands.queue))
         finally:
             ui(window.root.destroy);window.thread.join(5)
+
+    def test_nested_search_headings_and_caret_ack_move_without_url_repetition(self):
+        page='<h1>Search results</h1><h2><a href="https://fixture.test/next"><span>https://first.test/path</span><br><span class="result-title">First result title</span></a></h2><h2><a href="https://fixture.test/next"><span>second.test › article</span><br><span class="result-title">Second result title</span></a></h2>'
+        self.page.set_content(page);self.session._refresh();self.session.keyboard('Quick:h');self.session.browse.set_position(self.session.reading.position)
+        for key,expected in [('Quick:h','First result title'),('Quick:h','Second result title'),('Quick:Previous:h','First result title'),('Quick:Previous:h','Search results')]:
+            message=self.session.keyboard(key);self.assertIn(expected,message);self.assertNotIn('https://',message)
+            self.session.browse.set_position(self.session.reading.position)
+            self.page.evaluate("()=>document.body.setAttribute('data-updated',String(Date.now()))")
+            self.session.refresh_changed()
+        self.assertIn('No previous heading',self.session.keyboard('Quick:Previous:h'))
+        result_link=next(e for e in self.session.snapshot['elements'] if e['role']=='link')
+        self.assertEqual(result_link['label'],'First result title')
+        self.session.browse.index=self.session.browse.elements.index(result_link);self.assertIn('Destination',self.session.keyboard('Activate'))
+
+    def test_leave_closes_all_owned_pages_and_keep_open_reuses_context(self):
+        # Use an isolated context so closing it cannot affect another fixture.
+        if self.page.context.browser:
+            context=self.page.context.browser.new_context()
+        else:
+            options={'headless':True,'channel':{'chrome':'chrome','edge':'msedge'}.get(self.browser_name)}
+            if self.browser_name=='brave':
+                roots=[os.environ.get('PROGRAMFILES',''),os.environ.get('PROGRAMFILES(X86)',''),os.environ.get('LOCALAPPDATA','')]
+                options={'headless':True,'executable_path':str(next(Path(root)/'BraveSoftware/Brave-Browser/Application/brave.exe' for root in roots if (Path(root)/'BraveSoftware/Brave-Browser/Application/brave.exe').is_file()))}
+            browser=self.adapter.playwright.chromium.launch(**options);self.addCleanup(browser.close);context=browser.new_context()
+        self.addCleanup(context.close)
+        context.route('https://fixture.test/**',lambda r:r.fulfill(content_type='text/html',body='<title>Kept page</title><h1>Kept page</h1>'))
+        owned=BrowserBackend(self.temp.name);owned.context=context;owned.page=context.new_page();owned.start=lambda:None
+        session=WebSession(self.temp.name,owned);session.open('https://fixture.test');second=context.new_page();session.leave(True)
+        self.assertIn('Kept page',session.resume());self.assertFalse(second.is_closed());pages=list(context.pages);session.leave(False)
+        self.assertTrue(all(p.is_closed() for p in pages));self.assertIsNone(owned.context)
 
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):

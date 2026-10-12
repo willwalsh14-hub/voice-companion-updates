@@ -103,6 +103,7 @@ class BrowserBackend:
 
     def start(self):
         if self.page and not self.page.is_closed(): return
+        if self.context or self.playwright:self.close()
         try:
             from playwright.sync_api import sync_playwright
             bundled = Path(getattr(__import__('sys'), '_MEIPASS', Path(__file__).parent)) / 'browser-runtime'
@@ -136,6 +137,11 @@ class BrowserBackend:
         finally:
             if self.playwright: self.playwright.stop()
             self.page = self.context = self.playwright = None
+
+    def refocus(self):
+        if not self.page or self.page.is_closed():return False
+        self.page.bring_to_front()
+        return True
 
     def goto(self, url):
         self.start()
@@ -366,7 +372,7 @@ class BrowserBackend:
         element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
         if element.count()!=1:raise WebError('The page changed. Refresh it before continuing.')
         current=element.evaluate(LIVE_IDENTITY)
-        if current['label'].casefold()!=_label(item).casefold() or current['tag']!=item['tag'] or current['type']!=item.get('type','') or current['href']!=item.get('href',''):
+        if current['label'].casefold()!=_plain(item.get('identity_label') or _label(item)).casefold() or current['tag']!=item['tag'] or current['type']!=item.get('type','') or current['href']!=item.get('href',''):
             raise WebError('The control changed. Refresh the page before continuing.')
         if current['disabled']:raise WebError('That control is unavailable.')
         return element
@@ -656,6 +662,18 @@ class WebSession:
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
 
+    def leave(self,keep_open=False):
+        self.keyboard_field=None;self.pending=None;self.submit_pending=None;self.list_focus=None;self.form_index=None
+        if not keep_open:
+            self.backend.close()
+            self.snapshot=None;self.browse=None;self.document_state=None
+            self.reading.set_text('',reset=True)
+
+    def resume(self):
+        if not self.snapshot or not hasattr(self.backend,'refocus') or not self.backend.refocus():
+            self.snapshot=None;return ''
+        return self._refresh(read=False)
+
     def _browser_preference(self):
         try:
             choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
@@ -722,7 +740,7 @@ class WebSession:
                     if self.snapshot.get('controls') else
                     'I could not read the page content after waiting for it to load. Try read page again or ask your helper to inspect the browser.')
         return (('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
-                (urlsplit(url).hostname or 'unknown') + '. Virtual page view. ' + str(sum(kind(e)=='heading' for e in self.browse.elements)) + ' headings, ' + str(sum(kind(e)=='link' for e in self.browse.elements)) + ' links.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
+                (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
         if not self.snapshot or self.keyboard_field or self.list_focus or self.form_index is not None or self.pending or self.submit_pending or not hasattr(self.backend,'document_stamp'):return ''
@@ -735,10 +753,14 @@ class WebSession:
         snapshot=self.backend.snapshot()
         if snapshot.get('title')!=self.snapshot.get('title'):return self._refresh()
         position=self.reading.position;continuation=self.reading.continuation
+        anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
         if changed:self.page_revision+=1
         self.browse=BrowseCursor(snapshot);self.browse.set_position(min(position,len(self.reading.text)))
+        if anchor and position==anchor.get('start'):
+            match=next((i for i,e in enumerate(self.browse.elements) if e['key']==anchor['key'] and e.get('frame_index')==anchor.get('frame_index') and e.get('start')==position),None)
+            if match is not None:self.browse.index=match
         self.reading.position=self.browse.position;self.reading.continuation=min(continuation,len(self.reading.text))
         return ''
 
