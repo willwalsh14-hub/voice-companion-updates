@@ -10,7 +10,7 @@ class HeaderEditor:
     def label(self,index=None):
         index=self.index if index is None else index
         name=self.order[index]
-        return name.capitalize()+', '+('enabled' if name in self.enabled else 'disabled')+', '+str(index+1)+' of 4'+('. '+boundary_notice(index,4) if boundary_notice(index,4) else '')
+        return name.capitalize()+', '+('enabled' if name in self.enabled else 'disabled')+', '+str(index+1)+' of 4'
     def save(self):
         self.session.set('email_header_order',', '.join(x for x in self.order if x in self.enabled))
     def toggle(self):
@@ -25,4 +25,5 @@ class HeaderEditor:
         self.order[self.index],self.order[target]=self.order[target],self.order[self.index]
         self.index=target;self.save();return self.label()
     def select(self,delta):
+        if not 0<=self.index+delta<4:return 'Start of list.' if delta<0 else 'End of list.'
         self.index=max(0,min(3,self.index+delta));return self.label()

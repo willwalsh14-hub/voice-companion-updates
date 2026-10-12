@@ -67,7 +67,7 @@ class BoundaryTests(unittest.TestCase):
             app.open_named_list('Contacts',[('Alpha','find contact Alpha')])
             with patch.object(app,'handle',return_value='email_draft') as handle:
                 self.assertEqual(app._handle('okay','email_draft'),'email_draft')
-                handle.assert_called_with('find contact Alpha','email_draft')
+                handle.assert_called_with('find contact Alpha','email_draft',typed=True)
             window.focus_email_field.assert_called_with('recipient','keep@example.com')
     def test_email_end_and_home_follow_pages_without_wrapping(self):
         class Client:
@@ -76,10 +76,10 @@ class BoundaryTests(unittest.TestCase):
                 return pages[cursor]
         with tempfile.TemporaryDirectory() as folder:
             session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
-            session.list_messages();self.assertIn('End of list',session.list_boundary(True))
+            session.list_messages();self.assertNotIn('of list',session.list_boundary(True));self.assertIn('End of list',session.process('next message'))
             self.assertEqual(session.rows[session.current-1]['id'],'c')
             self.assertIn('last message',session.process('next message'));self.assertEqual(session.rows[0]['id'],'c')
-            self.assertIn('Start of list',session.list_boundary(False));self.assertEqual(session.rows[0]['id'],'a')
+            self.assertNotIn('of list',session.list_boundary(False));self.assertIn('Start of list',session.process('previous message'));self.assertEqual(session.rows[0]['id'],'a')
             self.assertIn('first message',session.process('previous message'));self.assertEqual(session.rows[0]['id'],'a')
     def test_failed_email_end_preserves_current_page(self):
         from mailbox_access import MailboxError
@@ -120,7 +120,7 @@ class EverydayWorkflowTests(unittest.TestCase):
                     self.assertEqual(app.email_draft.compose_step,'recipient')
                     window.focus_email_field.assert_called_with('recipient','')
                     if not typed:
-                        app.handle('sam@example.test','email_draft')
+                        app.handle('sam@example.test','email_draft',typed=True)
                         self.assertEqual(app.email_draft.compose_step,'subject')
                         self.assertIn('subject',speech.call_args.args[0].lower())
                         app.handle('Tomorrow meeting','email_draft')
@@ -139,23 +139,23 @@ class EverydayWorkflowTests(unittest.TestCase):
             for index,count,expected in ((0,2,'Start of list.'),(1,2,'End of list.'),(0,1,'Start and end of list.')):
                 for notice in (announce_item('Test',index,count),name_first(f'Topic {index+1} of {count}: Test. Say next or previous. Say that one to open.'),choice_feedback('Speech rate, zero',index,count)):
                     spoken=prompt_text(notice,level)
-                    self.assertTrue(spoken.startswith(expected),(level,spoken))
-                    self.assertEqual(spoken.count(expected),1)
+                    self.assertFalse(spoken.startswith(expected),(level,spoken));self.assertIn('Test' if not notice.startswith('Speech') else 'Speech rate',spoken)
+                    self.assertEqual(spoken.count(expected),0)
     def test_inbox_entry_and_page_transitions_announce_real_folder_boundaries(self):
         class Client:
             def list_messages(self,folder,cursor=None,limit=10):
                 return ([{'id':'a','subject':'First','from':'Sam'}],'page2') if cursor is None else ([{'id':'b','subject':'Last','from':'Alex'}],None)
         with tempfile.TemporaryDirectory() as folder:
             session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox'
-            self.assertIn('Start of list.',session.list_messages())
+            self.assertNotIn('of list',session.list_messages())
             self.assertNotIn('End of list.',session._focus(1))
-            self.assertTrue(session.process('next message').startswith('End of list.'))
+            self.assertIn('Last',session.process('next message'));self.assertTrue(session.process('next message').startswith('End of list.'))
             self.assertNotIn('Start of list.',session._focus(1))
-            self.assertTrue(session.process('previous message').startswith('Start of list.'))
+            self.assertIn('First',session.process('previous message'));self.assertTrue(session.process('previous message').startswith('Start of list.'))
     def test_singleton_inbox_entry_announces_both_boundaries(self):
         with tempfile.TemporaryDirectory() as folder:
             session=MailSession('gmail',folder);session.client=lambda:Mock(list_messages=Mock(return_value=([{'id':'a','subject':'Only','from':'Sam'}],None)))
-            self.assertIn('Start and end of list.',session.list_messages())
+            self.assertIn('Only',session.list_messages());self.assertTrue(session.process('next message').startswith('End of list.'));self.assertTrue(session.process('previous message').startswith('Start of list.'))
 
     def test_network_failure_preserves_email_page_and_history(self):
         from mailbox_access import MailboxError

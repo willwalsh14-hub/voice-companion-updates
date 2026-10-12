@@ -34,27 +34,27 @@ class NativeSettingsTests(unittest.TestCase):
         def press(control,key,condition):
             before=len(self.notices);self.u.PostMessageW(control,0x100,key,0)
             self.wait(lambda:len(self.notices)>before and condition())
-        press(categories,0x23,lambda:self.session.category==10 and 'End of list' in self.notices[-1])
+        press(categories,0x23,lambda:self.session.category==10 and 'Startup and exit options' in self.notices[-1] and 'of list' not in self.notices[-1])
         press(categories,0x28,lambda:self.session.category==10 and 'End of list' in self.notices[-1])
-        press(categories,0x24,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
+        press(categories,0x24,lambda:self.session.category==0 and 'Verbosity options' in self.notices[-1] and 'of list' not in self.notices[-1])
         press(categories,0x26,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
         press(categories,0x0D,lambda:bool(self.u.GetDlgItem(hwnd,200)))
         choice=self.u.GetDlgItem(hwnd,200)
-        press(choice,0x23,lambda:self.session.values['verbosity']=='low' and 'End of list' in self.notices[-1])
+        press(choice,0x23,lambda:self.session.values['verbosity']=='low' and 'Verbosity, low' in self.notices[-1] and 'of list' not in self.notices[-1])
         press(choice,0x28,lambda:self.session.values['verbosity']=='low' and 'End of list' in self.notices[-1])
-        press(choice,0x24,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
+        press(choice,0x24,lambda:self.session.values['verbosity']=='high' and 'Verbosity, high' in self.notices[-1] and 'of list' not in self.notices[-1])
         press(choice,0x26,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
     def test_entering_choice_and_tabbing_back_repeat_boundary(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.session.values['punctuation']='none'
         self.u.PostMessageW(categories,0x100,0x0D,0)
-        self.wait(lambda:any('Start of list. Verbosity, high' in notice for notice in self.notices))
+        self.wait(lambda:any('Verbosity, high' in notice for notice in self.notices))
         choice=self.u.GetDlgItem(hwnd,200)
         self.u.PostMessageW(choice,0x100,9,0)
-        self.wait(lambda:any('Start of list. Spoken punctuation, none' in notice for notice in self.notices))
+        self.wait(lambda:any('Spoken punctuation, none' in notice for notice in self.notices))
         before=len(self.notices)
         self.panel.command('previous setting')
-        self.wait(lambda:len(self.notices)>before and 'Start of list. Verbosity, high' in self.notices[-1])
+        self.wait(lambda:len(self.notices)>before and 'Verbosity, high' in self.notices[-1])
     def test_category_arrows_choose_enter_opens_then_checkbox_and_enter_save(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x28,0) # Choose only; Enter opens.
@@ -136,7 +136,7 @@ class NativeSettingsTests(unittest.TestCase):
         hwnd=self.open_panel()
         for name in ('Voice','Synthesizer','Input','Email','Documents','Web browser','Radio','Podcasts','Updates','Verbosity'):
             self.panel.command(name)
-            self.wait(lambda:self.session.category_name()==name)
+            self.wait(lambda:self.session.category_name()==name+' options')
             self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)
             time.sleep(.15)
             self.assertFalse(any('Choose one of' in n or 'Settings:' in n for n in self.notices),self.notices)
@@ -148,7 +148,7 @@ class NativeSettingsTests(unittest.TestCase):
     def test_enter_activates_action_without_saving(self):
         hwnd=self.open_panel();actions=[]
         self.panel.action_callback=actions.append
-        self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email')
+        self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email options')
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,205)))
         for _ in range(7):self.panel.command('next setting')
         self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))

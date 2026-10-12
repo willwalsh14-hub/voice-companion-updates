@@ -144,7 +144,7 @@ class GuidedChecks(unittest.TestCase):
                  patch.object(companion,'speak') as speech:
                 self.assertEqual(companion.handle('go to to','email_draft'),'email_draft')
                 self.assertIn('To field',speech.call_args.args[0])
-                companion.handle('typed@example.com','email_draft')
+                companion.handle('typed@example.com','email_draft',typed=True)
                 self.assertEqual(draft.recipient,'typed@example.com')
                 companion.handle('go to subject','email_draft')
                 companion.handle('New subject','email_draft')

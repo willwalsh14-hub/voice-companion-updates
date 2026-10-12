@@ -18,8 +18,7 @@ def next_match(names, current, letter):
 
 
 def announce_item(name, index, count):
-    boundary=boundary_notice(index,count)
-    return (boundary+' ' if boundary else '')+f'{menu_label(name)}, {index + 1} of {count}.'
+    return f'{menu_label(name)}, {index + 1} of {count}.'
 
 
 def boundary_notice(index,count):

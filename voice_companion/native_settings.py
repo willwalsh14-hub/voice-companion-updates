@@ -9,8 +9,7 @@ from settings_model import CATEGORIES
 from menu_navigation import boundary_notice, next_match,menu_label
 
 def choice_feedback(value,index,count):
-    boundary=boundary_notice(index,count)
-    return (boundary+' ' if boundary else '')+str(value)
+    return str(value)
 
 class NativeSettings:
     def __init__(self,session,announce,save,action,interrupt=None):
@@ -66,7 +65,7 @@ class NativeSettings:
                 self.session.set(field.key,raw(hwnd,field))
         def describe(hwnd):
             if hwnd not in controls and parent(hwnd) in controls:hwnd=parent(hwnd)
-            if hwnd==category[0]:return menu_label(self.session.category_name())+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))+'. '+boundary_notice(self.session.category,len(CATEGORIES))
+            if hwnd==category[0]:return menu_label(self.session.category_name())+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))+'.'
             if hwnd in buttons:return buttons[hwnd]
             field=controls.get(hwnd)
             if not field:return ''
@@ -157,6 +156,7 @@ class NativeSettings:
             except ValueError as exc:self.announce(str(exc));return
             self.pending=True;self.save_callback(dict(self.session.values))
         def select_category(index):
+            if not 0<=index<len(CATEGORIES):self.announce('Start of list.' if index<0 else 'End of list.');return
             if editing[0]:self.session.values=copy.deepcopy(baseline[0]);editing[0]=False
             self.session.category=max(0,min(len(CATEGORIES)-1,index));send(category[0],0x186,self.session.category,0)
             render();self.announce(describe(category[0]));last_focus[0]=category[0]
@@ -177,7 +177,7 @@ class NativeSettings:
             if cmd in ('cancel','back','settings menu','back to settings'):cancel_category();return
             cmd=cmd.replace('web browsing','web browser')
             name=cmd.removeprefix('go to ').removeprefix('settings ').removeprefix('select ')
-            match=next((i for i,n in enumerate(CATEGORIES) if name==n.lower()),None)
+            match=next((i for i,n in enumerate(CATEGORIES) if name in (n.lower(),n.removesuffix(' options').lower())),None)
             if match is not None:select_category(match);open_category();return
             if cmd in ('next setting','previous setting'):
                 focus(u.GetNextDlgTabItem(self.hwnd,get_focus(),cmd.startswith('previous')));return
@@ -194,7 +194,9 @@ class NativeSettings:
                 hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if hwnd==category[0] or cmd.endswith('category'):select_category(self.session.category+delta)
                 elif field and field.choices:
-                    index=int(send(hwnd,0x147,0,0));index=max(0,min(len(field.choices)-1,index+delta));send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(hwnd))
+                    index=int(send(hwnd,0x147,0,0))
+                    if not 0<=index+delta<len(field.choices):self.announce('Start of list.' if delta<0 else 'End of list.');return
+                    index+=delta;send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(hwnd))
                 else:focus(u.GetNextDlgTabItem(self.hwnd,hwnd,delta<0))
                 return
             setting=self.session.voice_setting(text_command)
@@ -287,6 +289,7 @@ class NativeSettings:
             if message.message==0x100 and field and field.kind=='headers' and message.wParam in (0x26,0x28,0x24,0x23):
                 model=headers[0];old=max(0,int(send(current,0x188,0,0)))
                 model.index=0 if message.wParam==0x24 else 3 if message.wParam==0x23 else max(0,min(3,old+(-1 if message.wParam==0x26 else 1)))
+                if model.index==old and message.wParam in (0x26,0x28):self.announce('Start of list.' if message.wParam==0x26 else 'End of list.');continue
                 send(current,0x186,model.index,0);self.announce(model.label());continue
             if message.message==0x100 and field and field.kind=='choice' and field.choices and (message.wParam in (0x26,0x28,0x24,0x23) or 65<=message.wParam<=90):
                 old=int(send(current,0x147,0,0))
@@ -294,6 +297,7 @@ class NativeSettings:
                 elif message.wParam in (0x26,0x28):index=max(0,min(len(field.choices)-1,old+(-1 if message.wParam==0x26 else 1)))
                 else:index=next_match(field.choices,old,chr(message.wParam))
                 if index is None:self.announce('No matching option.');continue
+                if index==old and message.wParam in (0x26,0x28):self.announce('Start of list.' if message.wParam==0x26 else 'End of list.');continue
                 if index==old and 65<=message.wParam<=90:self.announce('End of matching items.');continue
                 send(current,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(current));continue
             if message.message==0x100 and message.wParam==0x1B:cancel_category();continue

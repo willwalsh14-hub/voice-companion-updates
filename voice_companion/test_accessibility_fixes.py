@@ -52,7 +52,7 @@ class AccessibilityFixTests(unittest.TestCase):
         with self.assertRaises(ValueError):model.toggle()
     def test_pitch_parser_settings_and_xml_escaping(self):
         for phrase,expected in [('higher pitch',('pitch','delta',1)),('pitch down',('pitch','delta',-1)),('set voice pitch minus three',('pitch','set',-3))]:self.assertEqual(request(phrase),expected)
-        session=SettingsSession({},{});self.assertIn('Voice',CATEGORIES);self.assertNotIn('Speech',CATEGORIES);self.assertEqual(session.voice_setting('pitch up'),('pitch','1'))
+        session=SettingsSession({},{});self.assertIn('Voice options',CATEGORIES);self.assertNotIn('Speech',CATEGORIES);self.assertEqual(session.voice_setting('pitch up'),('pitch','1'))
         voice=Mock();sapi_speak(voice,'<hello> & goodbye',4);voice.Speak.assert_called_once_with('<pitch absmiddle="4">&lt;hello&gt; &amp; goodbye</pitch>',11)
     def test_keyboard_feedback_uses_local_engine_even_with_ai(self):
         local=Mock(problem=None);ai=Mock(enabled=True)

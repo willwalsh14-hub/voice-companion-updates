@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.117-test'
+APP_VERSION = '0.2.118-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -234,10 +234,11 @@ def app_context(mode):
         context['web_browse']=field is None
         context['web_choice']=bool(field and __import__('web_browse').kind(field) in ('combobox','listbox'))
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
-        if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(getattr(web_session,'page_revision',0))+':'+str(field.get('frame_index','main'))+':'+field['key']
+        document_identity=(web_session.document_state or {}).get('epoch',getattr(web_session,'page_revision',0))
+        if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(document_identity)+':'+str(field.get('frame_index','main'))+':'+field['key']
         if field and field.get('type')=='password':context['web_private']=True;context['web_field']=field
         else:
-            source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key']+':document:'+str(getattr(web_session,'page_revision',0)) if field else ':page')
+            source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key']+':document:'+str(document_identity) if field else ':page')
             context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'] or bool(field.get('readonly')),selection=getattr(web_session,'selection',None),caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
             context['web_field']=field
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
@@ -372,7 +373,7 @@ def announce_main_menu():
     speak_prompt(MAIN_MENU_PROMPT)
 
 def startup_prompt():
-    return 'Voice Companion ' + APP_VERSION + ' is ready. Use your wake command or keyboard to begin. Help is available.'
+    return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Help is available.'
 
 MAIN_MENU_INDEX = None
 MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notepad', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
@@ -468,7 +469,7 @@ def menu_state(mode):
             from urllib.parse import urlsplit
             links=web.link_items()
             def select(index):web.link_position=index
-            return ([x.get('name') or x.get('text') or x.get('href') for x in links],web.link_position,select) if links else None
+            return ([x.get('label') or x.get('name') or x.get('text') or x.get('href') for x in links],web.link_position,select) if links else None
     return None
 
 def choose_menu_letter(letter,mode):
@@ -516,10 +517,11 @@ def _navigation_key(key,mode):
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
-            CONFIRM_CHOICE='yes' if key in ('Up','Left','ShiftTab') else 'no'
-            speak(CONFIRM_CHOICE.capitalize()+'. '+('Start of list.' if CONFIRM_CHOICE=='yes' else 'End of list.'));return None
+            choice='yes' if key in ('Up','Left','ShiftTab') else 'no'
+            if choice==CONFIRM_CHOICE:speak('Start of list.' if choice=='yes' else 'End of list.');return None
+            CONFIRM_CHOICE=choice;speak(choice.capitalize()+'.');return None
         if key in ('Home','End'):
-            CONFIRM_CHOICE='yes' if key=='Home' else 'no';speak(CONFIRM_CHOICE.capitalize()+'. '+('Start of list.' if key=='Home' else 'End of list.'));return None
+            CONFIRM_CHOICE='yes' if key=='Home' else 'no';speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode in ('media','podcast') and MEDIA_HUB:
@@ -551,7 +553,9 @@ def _navigation_key(key,mode):
     if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
         return ('gmail','outlook','yahoo')[ACCOUNT_MENU_INDEX]
     if account_setup and key in ('Up','Down','Left','Right'):
-        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,1 if key in ('Down','Right') else -1,3)
+        step=1 if key in ('Down','Right') else -1
+        if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<3:speak('Start of list.' if step<0 else 'End of list.');return None
+        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,3)
         speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
     if key=='Enter' and mode=='tutorial' and MAIN_MENU_INDEX in (0,1,2):
         return ('practice radio','practice email','practice documents')[MAIN_MENU_INDEX]
@@ -593,14 +597,14 @@ def apply_document_defaults(document):
     from app_settings import apply_document_defaults as apply
     apply(sys.modules[__name__],document)
 
-def microphone_settings(sd):
-    device = sd.query_devices(kind='input')
+def microphone_settings(sd,device_index=None):
+    device = sd.query_devices(kind='input') if device_index is None else sd.query_devices(device_index,kind='input')
     rate = int(round(device['default_samplerate']))
     for channels in (1, 2):
         if channels > device.get('max_input_channels', 1):
             continue
         try:
-            sd.check_input_settings(samplerate=rate, channels=channels, dtype='int16')
+            sd.check_input_settings(samplerate=rate, channels=channels, dtype='int16',**({'device':device_index} if device_index is not None else {}))
             PCM16Resampler(rate)
             return device, rate, channels
         except (ValueError, OSError, getattr(sd, 'PortAudioError', OSError)):
@@ -1053,8 +1057,17 @@ def run_web_search(query):
     web_session.auto_read=PREFERENCES.get('web_auto_read',True)
     web_session.search_engine=PREFERENCES.get('web_search_engine','google')
     revision=getattr(web_session,'page_revision',0)
-    speak_web_result(web_session.search(query),revision)
+    from browser_navigation import looks_like_address
+    speak_web_result(web_session.open(query) if looks_like_address(query) else web_session.search(query),revision)
     return 'web' if web_session.snapshot else 'search'
+
+def refresh_browser_view(mode):
+    logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
+    if logical!='web' or not web_session:return
+    revision=getattr(web_session,'page_revision',0)
+    notice=web_session.refresh_changed()
+    sync_app_context(mode)
+    if notice:speak_web_result(notice,revision)
 
 def browser_focus_notice(mode):
     """Native focus polling must not overwrite Companion browse-cursor speech."""
@@ -1150,6 +1163,14 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
+    from browser_navigation import contains_address
+    if not typed and (contains_address(text) or command.startswith(('open website ','go to website '))):
+        speak('Website and email addresses must be typed on the keyboard. You can use a saved contact or website favorite by voice.')
+        return mode
+    if command in ('next','previous'):
+        state=menu_state(mode)
+        if state and state[1] is not None and (state[1]==0 and command=='previous' or state[1]==len(state[0])-1 and command=='next'):
+            speak('Start of list.' if command=='previous' else 'End of list.');return mode
     if command in ('word processor','open word processor'):text='create a document';command=text
     if command in ('notepad','open notepad'):text='write a note';command=text
     if command in ('start of list','beginning of list','first item','end of list','last item') and menu_state(mode):
@@ -1165,7 +1186,7 @@ def _handle(text, mode, typed=False):
             speak(announce_item(NAMED_LIST['items'][NAMED_LIST['index']][0],NAMED_LIST['index'],len(NAMED_LIST['items'])));return mode
         if command in PICK_CONFIRM:
             request=NAMED_LIST['items'][NAMED_LIST['index']][1];NAMED_LIST=None
-            result=handle(request,mode)
+            result=handle(request,mode,typed=True)
             if result=='email_draft':focus_email_entry()
             return result
         NAMED_LIST=None
@@ -1925,7 +1946,7 @@ def _handle(text, mode, typed=False):
             if typed or KEYBOARD_NAVIGATION:
                 speak('New email. '+('Subject field.' if sender_recipient else 'To field.'))
             else:
-                speak('New email. '+('New message to the selected sender. Subject field.' if sender_recipient else 'To field. Who do you want to send the email to? Say or type an address, or a saved contact name.'))
+                speak('New email. '+('New message to the selected sender. Subject field.' if sender_recipient else 'To field. Who do you want to send the email to? Type an address, or say a saved contact name.'))
             focus_email_entry()
             return 'email_draft'
         if document_request:
@@ -1958,7 +1979,7 @@ def _handle(text, mode, typed=False):
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
             SEARCH_RETURN_MODE='web'
-            speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
+            speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
             return 'search'
         revision=getattr(web_session,'page_revision',0)
         if text.startswith('web key '):speak_web_result(web_session.keyboard(text[8:]),revision);return mode
@@ -2221,12 +2242,7 @@ def _handle(text, mode, typed=False):
         speak(media().search_podcasts(text))
         return 'media'
     if mode == 'search':
-        web_session = web_session or WebSession(APP,progress=speak_status)
-        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
-        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
-        revision=getattr(web_session,'page_revision',0)
-        speak_web_result(web_session.search(text),revision)
-        return 'web' if web_session.snapshot else 'search'
+        return run_web_search(text)
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
@@ -2321,7 +2337,7 @@ def _handle(text, mode, typed=False):
             try:result=web_session.resume()
             except Exception:result=''
             if result:speak(result);return 'web'
-        SEARCH_RETURN_MODE='awake';speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.');return 'search'
+        SEARCH_RETURN_MODE='awake';speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.');return 'search'
     direct_engine=re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)',text,re.I)
     if direct_engine:
         web_session=web_session or WebSession(APP,progress=speak_status)
@@ -2340,7 +2356,7 @@ def _handle(text, mode, typed=False):
             speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'bing' if command.startswith('bing ') else None),revision)
             return 'web' if web_session.snapshot else 'awake'
         SEARCH_RETURN_MODE='awake'
-        speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
+        speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
         return 'search'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
@@ -2583,10 +2599,22 @@ def main():
 
     import sounddevice as sd
     sample_rate = 16000
-    _, input_rate, channels = microphone_settings(sd)
     global resampler, input_channels
-    resampler = PCM16Resampler(input_rate, sample_rate)
-    input_channels = channels
+    import contextlib
+    from external_microphone import find_external_input,ExternalMicrophoneGuard
+    input_stream=None;microphone_guard=None
+    try:
+        external=find_external_input(sd)
+        if external:
+            device_index,device=external
+            _,input_rate,channels=microphone_settings(sd,device_index)
+            resampler=PCM16Resampler(input_rate,sample_rate);input_channels=channels
+            input_stream=sd.RawInputStream(device=device_index,samplerate=input_rate,blocksize=max(1,input_rate//20),dtype='int16',channels=channels,callback=callback)
+            input_stream.start()
+            microphone_guard=ExternalMicrophoneGuard(sd,device_index,device).start()
+    except Exception:
+        if input_stream:input_stream.close()
+        input_stream=None
     recognizer = KaldiRecognizer(model, sample_rate)
     mode = 'sleep'
     media()  # Restore scheduled radio recordings after an app restart.
@@ -2602,12 +2630,14 @@ def main():
             speak('Parakeet could not start. Using basic offline speech.')
     utterance = bytearray()
     last_focus_check = 0.0
-    with sd.RawInputStream(samplerate=input_rate, blocksize=max(1, input_rate // 20),
-                           dtype='int16', channels=channels, callback=callback):
+    with contextlib.ExitStack() as input_lifetime:
+        if input_stream:input_lifetime.callback(input_stream.close)
+        if microphone_guard:input_lifetime.callback(microphone_guard.close)
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
         sync_app_context(mode,True)
+        if not microphone_guard:speak('No external microphone was detected. Voice commands are disabled. Keyboard navigation is available. Connect an external microphone and restart Companion to use voice commands.')
         # Listen and process keys while the asynchronous startup speech plays.
         result_file = APP / 'update-result.json'
         if result_file.exists():
@@ -2619,7 +2649,15 @@ def main():
             except OSError: pass
         settings_quiet_until=0
         settings_audio_blocked=False
+        last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
+        microphone_was_allowed=bool(microphone_guard)
         while True:
+            logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
+            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.6:
+                last_web_refresh=time.monotonic()
+                try:
+                    refresh_browser_view(mode)
+                except Exception:pass
             if KEYBOARD_SPEECH and KEYBOARD_SPEECH.narration_interrupt.is_set():
                 KEYBOARD_SPEECH.narration_interrupt.clear()
                 voice.Speak('',3)
@@ -2712,6 +2750,18 @@ def main():
                     cloud_failed = True
                 recover_audio_overflow(recognizer, utterance)
                 continue
+            microphone_allowed=bool(microphone_guard and microphone_guard.allowed)
+            if not microphone_allowed:
+                recognizer.Reset();utterance.clear()
+                if cloud:cloud.stop();cloud=None
+                if microphone_was_allowed:speak('The external microphone is no longer detected. Voice commands are disabled. You can continue with the keyboard.')
+                microphone_was_allowed=False
+                continue
+            microphone_was_allowed=True
+            if startup_speaking:
+                if speech_busy():startup_quiet_until=time.monotonic()+.3
+                if time.monotonic()<startup_quiet_until:recognizer.Reset();utterance.clear();continue
+                startup_speaking=False
             if mode=='settings' or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()) or settings_audio_blocked:
                 # Settings readback must not become another settings command.
                 # Keep local silence/sleep/exit controls available during feedback.

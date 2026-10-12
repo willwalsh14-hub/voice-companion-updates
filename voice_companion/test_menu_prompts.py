@@ -7,8 +7,8 @@ class MenuPromptTests(unittest.TestCase):
     def test_startup_version_help_and_wake_instructions(self):
         prompt=companion.startup_prompt()
         self.assertTrue(prompt.startswith('Voice Companion '+companion.APP_VERSION+' is ready.'))
-        self.assertIn('Use your wake command or keyboard to begin.',prompt)
-        self.assertNotIn('wake up',prompt.lower())
+        self.assertIn('Say wake up to control the app by voice',prompt);self.assertIn('Up and Down arrow keys, Enter and Escape',prompt)
+        self.assertIn('wake up',prompt.lower())
         self.assertIn('Help is available.',prompt)
     def test_all_picker_confirmation_aliases_skip_dictation_model(self):
         with patch.object(companion,'INPUT_MODE','mixed'):
@@ -35,6 +35,6 @@ class MenuPromptTests(unittest.TestCase):
             self.assertNotIn(companion.MAIN_MENU_PROMPT,[c.args[0] for c in speech.call_args_list])
     def test_main_menu_navigation_order_and_confirm(self):
         with patch.object(companion,'MAIN_MENU_INDEX',None),patch.object(companion,'speak') as speech,patch.object(companion,'SYNTH_PICK_INDEX',None),patch.object(companion,'VOICE_PICK_INDEX',None):
-            companion.handle('next','awake');speech.assert_called_with('Start of list. Word processor (W), 1 of 13.')
-            companion.handle('previous','awake');speech.assert_called_with('Start of list. Word processor (W), 1 of 13.')
+            companion.handle('next','awake');speech.assert_called_with('Word processor (W), 1 of 13.')
+            companion.handle('previous','awake');speech.assert_called_with('Start of list.')
 

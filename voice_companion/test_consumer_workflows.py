@@ -66,11 +66,14 @@ class ConsumerWorkflowTests(unittest.TestCase):
         rng=random.Random(498)
         for _ in range(600):
             key=rng.choice(('Up','Down','Home','End'))
+            before=app.MAIN_MENU_INDEX;last=len(app.MAIN_MENU_CHOICES)-1
+            expected=0 if key=='Home' else last if key=='End' else (0 if key=='Down' else last) if before is None else max(0,min(last,before+(1 if key=='Down' else -1)))
             request=app.navigation_key(key,'awake')
             if request:self.say(request,'awake',typed=True)
-            self.assertGreaterEqual(app.MAIN_MENU_INDEX,0);self.assertLess(app.MAIN_MENU_INDEX,len(app.MAIN_MENU_CHOICES))
-            if app.MAIN_MENU_INDEX==0:self.assertIn('Start of list',self.speech.call_args.args[0])
-            if app.MAIN_MENU_INDEX==len(app.MAIN_MENU_CHOICES)-1:self.assertIn('End of list',self.speech.call_args.args[0])
+            self.assertEqual(app.MAIN_MENU_INDEX,expected)
+            notice=self.speech.call_args.args[0]
+            if before is not None and (key=='Up' and before==0 or key=='Down' and before==last):self.assertEqual(notice,'Start of list.' if key=='Up' else 'End of list.')
+            else:self.assertTrue(notice.startswith(app.MAIN_MENU_CHOICES[expected][0]));self.assertNotIn('of list',notice)
 
     def test_keyboard_and_voice_email_draft_switching_does_not_send(self):
         self.stack.enter_context(patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('gmail','user@example.test')))))
@@ -78,7 +81,7 @@ class ConsumerWorkflowTests(unittest.TestCase):
         self.stack.enter_context(patch.object(app,'submit',side_effect=AssertionError('Unexpected send')))
         mode=self.say('new email','awake',typed=True)
         self.assertEqual(self.speech.call_args.args[0],'New email. To field.')
-        self.say('sam@example.test',mode);self.say('Status update',mode);self.say('This is a draft.',mode)
+        self.say('sam@example.test',mode,typed=True);self.say('Status update',mode);self.say('This is a draft.',mode)
         self.say('go to subject',mode);self.say('read subject',mode)
         self.assertIn('Status update',self.speech.call_args.args[0])
         self.assertEqual(self.say('go to sleep',mode),'sleep');self.assertEqual(app.resume_from_sleep(),'email_draft')
@@ -125,10 +128,10 @@ class ConsumerMediaTests(unittest.TestCase):
     def test_radio_search_keyboard_play_preset_and_cancel_delete(self):
         nav=MediaNavigation(self.hub,'radio');nav.enter('radio');nav.keyboard('Ctrl+F');nav.field_value('WGN')
         self.assertEqual(len(self.hub.stations),2)
-        self.assertIn('End of list',nav.keyboard('End'));nav.keyboard('Enter')
+        self.assertNotIn('of list',nav.keyboard('End'));nav.keyboard('Enter')
         self.assertEqual(self.player.calls[-1][1],'https://audio.test/two')
         nav.command('save preset as Favorite');nav.command('list presets')
-        self.assertIn('Start and end of list',nav.announce())
+        self.assertNotIn('of list',nav.announce())
         nav.keyboard('Delete');self.assertIsNotNone(nav.pending);nav.keyboard('Alt+N')
         self.assertEqual(len(self.hub.presets()),1)
         reopened=MediaHub(self.root,player=self.player);self.assertEqual(reopened.presets()[0]['url'],'https://audio.test/two')
@@ -136,8 +139,8 @@ class ConsumerMediaTests(unittest.TestCase):
     def test_radio_and_podcast_initial_results_announce_boundaries(self):
         for section,term in (('radio','WGN'),('podcast','Planet')):
             nav=MediaNavigation(self.hub,section);nav.enter(section);nav.command('search')
-            self.assertIn('Start of list',nav.command(term))
-            self.assertIn('End of list',nav.keyboard('End'))
+            self.assertNotIn('of list',nav.command(term))
+            self.assertNotIn('of list',nav.keyboard('End'))
             self.assertIn('End of list',nav.keyboard('Down'))
 
     def test_podcast_search_feed_episode_navigation_and_subscription_cancel(self):
@@ -158,6 +161,6 @@ class ConsumerMediaTests(unittest.TestCase):
             for _ in range(100):nav.keyboard('Down')
             self.assertEqual(nav.index,len(nav.actions)-1)
             for _ in range(100):nav.command('previous action')
-            self.assertEqual(nav.index,0);self.assertIn('Start of list',nav.announce())
+            self.assertEqual(nav.index,0);self.assertNotIn('of list',nav.announce());self.assertEqual(nav.keyboard('Up'),'Start of list.')
 
 if __name__=='__main__':unittest.main()

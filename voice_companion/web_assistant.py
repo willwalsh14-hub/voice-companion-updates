@@ -227,11 +227,12 @@ class BrowserBackend:
               (/^(?:just a moment|checking your browser|verify you are human|human verification|security check)\\b/i.test(document.title||'')&&bodyText.length<6000) ||
               (/our systems have detected unusual traffic from your computer network|complete the security check|checking your browser before accessing/i.test(bodyText.slice(0,1200))&&bodyText.length<6000);
           return {title:document.title || location.hostname, url:location.href,
-                  text:bodyText, anchors, document_epoch:performance.timeOrigin, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
+                  text:bodyText, anchors, document_epoch:String(performance.timeOrigin)+':'+window.__voiceCompanionDocument.epoch, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
         }'''
         script=script.replace('/*SEMANTICS*/',SEMANTICS)
+        self.page.evaluate(DOCUMENT_STAMP)
         result = self.page.evaluate(script)
         # Playwright can inspect cross-origin frames without asking page JS to
         # cross the browser's origin boundary.
@@ -240,6 +241,7 @@ class BrowserBackend:
             try:
                 frame_element=frame.frame_element()
                 if not frame_element.is_visible() or frame_element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):continue
+                frame.evaluate(DOCUMENT_STAMP)
                 part = frame.evaluate(script)
             except Exception:
                 continue
@@ -283,6 +285,8 @@ class BrowserBackend:
         return None
 
     def dictate_focused(self, spoken, literal=False):
+        from browser_navigation import contains_address
+        if contains_address(spoken):return 'Website and email addresses must be typed on the keyboard.'
         self.start()
         for frame in self.page.frames:
             try:
@@ -296,6 +300,7 @@ class BrowserBackend:
             except Exception:
                 continue
             if not target: continue
+            if __import__('browser_navigation').private_address_field(target):return 'Use private keyboard entry for passwords, email addresses and website addresses.'
             if target['type'] in ('password','hidden','file','number','email','url','tel'):
                 return 'That field needs private or precise keyboard entry. I did not type into it.'
             if not (target['editable'] or target['tag'] == 'textarea' or
@@ -385,6 +390,8 @@ class BrowserBackend:
             if index>=len(frames) or frames[index].url!=item['frame_url']:
                 raise WebError('The frame changed. Refresh the page before continuing.')
             frame=frames[index]
+            if item.get('frame_epoch') is not None and frame.evaluate(DOCUMENT_STAMP)['epoch']!=item['frame_epoch']:
+                raise WebError('The frame document changed. Refresh the page before continuing.')
         element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
         if element.count()!=1:raise WebError('The page changed. Refresh it before continuing.')
         current=element.evaluate(LIVE_IDENTITY)
@@ -397,6 +404,7 @@ class BrowserBackend:
         try:
             frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
             if 'frame_url' in item and frame.url!=item['frame_url']:return False
+            if item.get('frame_epoch') is not None and frame.evaluate(DOCUMENT_STAMP)['epoch']!=item['frame_epoch']:return False
             element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
             return element.count()==1 and element.evaluate("(e,item)=>e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
         except Exception:return False
@@ -658,12 +666,13 @@ class WebSession:
         elif key in ('Up','Down','Left','Right'):index=max(0,min(len(options)-1,current+(-1 if key in ('Up','Left') else 1)))
         else:return item.get('selected_label','')+'.'
         label=options[index]['label']
+        if index==current and key in ('Up','Down','Left','Right'):return 'Start of list.' if key in ('Up','Left') else 'End of list.'
         from menu_navigation import boundary_notice
         boundary=boundary_notice(index,len(options))
         if index!=current:
             self.backend.choose_form_option(item,label)
             self._refresh_at(item);self.focus_current()
-        return label+'.'+(' '+boundary if boundary else '')
+        return label+'.'
 
     def keyboard(self,key):
         if not self.snapshot:return 'Open a website first.'
@@ -727,6 +736,7 @@ class WebSession:
             if key.startswith('Quick:') or key in ('Tab','ShiftTab'):self.focus_current()
             return message
         except Exception as exc:
+            self.cursor_changed()
             return str(exc) if isinstance(exc,WebError) else 'The page changed or the control could not be used. Press F5 to refresh it.'
 
     def _refresh_at(self,item):
@@ -792,7 +802,8 @@ class WebSession:
         self.submit_pending = None
         self.review_submission = None
         if self.keyboard_field:
-            if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
+            from browser_navigation import private_address_field,contains_address
+            if private_address_field(self.keyboard_field) or contains_address(spoken):return 'Use private keyboard entry for passwords, email addresses and website addresses.'
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             self._insert_field_text(spoken if literal else clean_dictation(spoken))
             return 'Text entered. Say save field or next control.'
@@ -844,7 +855,7 @@ class WebSession:
         for _ in range(3):
             before=self._stamp();snapshot=self.backend.snapshot();after=self._stamp()
             if before and after:
-                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch','frames','frame_identity'))
+                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch'))
                 changed=changed or bool(after.get('url') and snapshot.get('url')!=after['url'])
                 if changed:
                     if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
@@ -854,9 +865,9 @@ class WebSession:
             return snapshot,before
         raise WebError('The page is still changing. Its virtual view will update when it settles.')
 
-    def _refresh(self,read=None,preserve=False):
+    def _refresh(self,read=None,preserve=False,wait=True):
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
-        if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
+        if wait and hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
         self.snapshot,captured_state = self._capture()
         self.preferred_column=None
         self.page_revision=getattr(self,'page_revision',0)+1
@@ -916,17 +927,17 @@ class WebSession:
         stamp=self._stamp()
         if not stamp:return ''
         previous=self.document_state or {}
-        if any(stamp.get(k)!=previous.get(k) for k in ('url','epoch')):
-            return self._refresh()
+        if stamp.get('url')!=previous.get('url'):return self._refresh()
+        if stamp.get('epoch')!=previous.get('epoch'):return self._refresh(read=False,wait=False)
         if self.keyboard_field and hasattr(self.backend,'field_exists') and not self.backend.field_exists(self.keyboard_field):return self._refresh()
-        if self.keyboard_field or getattr(self,'selection',None) or self.list_focus or self.form_index is not None or self.pending or self.submit_pending:return ''
-        if not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True)
+        if self.list_focus or self.form_index is not None or self.pending or self.submit_pending:return ''
+        if not self.keyboard_field and not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True)
         if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames','frame_states')):return ''
         self.document_state=stamp
-        if previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True)
+        if not self.keyboard_field and previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True)
         snapshot,captured_state=self._capture()
         self.document_state=captured_state
-        if snapshot.get('title')!=self.snapshot.get('title'):return self._refresh(read=False,preserve=True)
+        if not self.keyboard_field and snapshot.get('title')!=self.snapshot.get('title'):return self._refresh(read=False,preserve=True)
         position=self.reading.position;continuation=self.reading.continuation
         anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
@@ -939,7 +950,7 @@ class WebSession:
                 self.browse.index=match;target=self.browse.current()
                 self.browse.position=min(target.get('end',0),target.get('start',0)+position-anchor.get('start',0))
                 continuation+=self.browse.position-position
-        if changed:self.cursor_changed()
+        if changed and not self.keyboard_field:self.cursor_changed()
         self.reading.position=self.browse.position;self.reading.continuation=min(continuation,len(self.reading.text))
         return ''
 
@@ -1060,7 +1071,7 @@ class WebSession:
         if not links: return 'No links are listed. Say list links.'
         position = self.link_position
         index = (0 if direction > 0 else len(links)-1) if position is None else position + direction
-        if index < 0 or index >= len(links): return 'That is the '+('first' if index<0 else 'last')+' link on this page.'
+        if index < 0 or index >= len(links): return 'Start of list.' if index<0 else 'End of list.'
         self.link_position = index
         self.list_focus = 'links'
         self.pending = None
@@ -1214,7 +1225,7 @@ class WebSession:
     def _ask_field(self):
         while self.form_index is not None and self.form_index < len(self.form_fields):
             item = self.form_fields[self.form_index]
-            if item['type'] in ('password','file'):
+            if item['type']=='file' or __import__('browser_navigation').private_address_field(item):
                 self.form_index += 1
                 continue
             if kind(item) in ('combobox','listbox'):
@@ -1227,13 +1238,14 @@ class WebSession:
             return ('Field ' + str(self.form_index + 1) + ': ' + _label(item) +
                     '. What should I enter? Say skip to leave it blank, or cancel form to stop.')
         self.form_index = None
-        manual = [_label(item) for item in self.form_fields if item['type'] in ('password','file')]
+        manual = [_label(item) for item in self.form_fields if item['type']=='file' or __import__('browser_navigation').private_address_field(item)]
         return ('That is the end of the text fields. ' +
                 ('These need private or manual entry: ' + ', '.join(manual) + '. ' if manual else '') +
                 'Say review form to hear the answers entered by voice. Review every answer and other controls in Edge with your helper before submitting.')
 
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
+        if __import__('browser_navigation').contains_address(spoken):return 'Website and email addresses must be typed on the keyboard. Say skip to continue the guided form.'
         if spoken.lower() in ('skip','skip field'):
             self.form_index += 1
             return 'Skipped ' + _label(item) + '. ' + self._ask_field()
@@ -1651,6 +1663,6 @@ class WebSession:
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
 # The same accessible name is used for snapshot and stale-target validation.
-DOCUMENT_STAMP=r'''()=>{if(!window.__voiceCompanionDocument){const state={revision:0,changed:Date.now()};const observer=new MutationObserver(records=>{if(records.some(r=>r.type!=='attributes'||!r.attributeName.startsWith('data-voice-companion-'))){state.revision++;state.changed=Date.now();}});observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true});window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:performance.timeOrigin,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
+DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement){old?.observer?.disconnect();const state={revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+1};const observer=new MutationObserver(records=>{if(records.some(r=>r.type!=='attributes'||!r.attributeName.startsWith('data-voice-companion-'))){state.revision++;state.changed=Date.now();}});observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true});state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
 
 LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''

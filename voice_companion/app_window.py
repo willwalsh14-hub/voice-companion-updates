@@ -231,6 +231,9 @@ class CompanionWindow:
                 if request:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
+                    if self.context.get('web_browse') and request.startswith(('Web:Quick:','Web:Read:','Web:Table:','Web:Page')):
+                        local['web_navigation_pending']=True
+                        if local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
                     self.commands.put(('keyboard',request));return 'break'
             root.bind_all('<Alt-F4>',shortcut)
             root.bind_all('<Alt-o>',shortcut)
@@ -316,7 +319,7 @@ class CompanionWindow:
             def link_at_caret():
                 caret=offset()
                 return next((span for span in self.context.get('rich_spans',[]) if span[2] in ('link','button') and span[0]<=caret<span[1]),None)
-            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None}
+            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None,'web_navigation_pending':False}
             def offset(index='insert'):return len(editor.get('1.0',index))
             def selection():
                 try:return (offset('sel.first'),offset('sel.last'))
@@ -325,6 +328,7 @@ class CompanionWindow:
                 if local['phonetic'] is not None:
                     root.after_cancel(local['phonetic']);local['phonetic']=None
             def read_caret(key,control=False):
+                if local['web_navigation_pending']:return
                 local['link']=None
                 text=editor.get('1.0','end-1c');caret=offset()
                 notice,char=caret_feedback(text,caret,key,control,selection())
@@ -349,6 +353,7 @@ class CompanionWindow:
                 if char and self.context.get('phonetic') and phonetic(char):
                     local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(char)))
             def send_text_position(before=None):
+                if self.context.get('web_browse') and local['web_navigation_pending']:return
                 text=editor.get('1.0','end-1c');local['seq']+=1
                 self.commands.put(('text_edit',{'source':self.context.get('source'),'before':local['text'] if before is None else before,'after':text,'caret':offset(),'selection':selection(),'seq':local['seq'],'readonly':self.context.get('readonly',False),'web_cursor_revision':self.context.get('web_cursor_revision')}))
                 local['text']=text
@@ -487,7 +492,7 @@ class CompanionWindow:
                     if action=='context':
                         old=self.context;self.context=field
                         mode=field['mode'];source=field.get('source')
-                        transition=old.get('mode')!=mode or old.get('source')!=source or old.get('web_revision')!=field.get('web_revision') or field.get('focus',False)
+                        transition=old.get('mode')!=mode or old.get('source')!=source or (old.get('web_revision')!=field.get('web_revision') and not field.get('web_field')) or field.get('focus',False)
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue
@@ -504,6 +509,7 @@ class CompanionWindow:
                         if text_mode:
                             history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
                             web_cursor_changed=mode=='web' and old.get('web_cursor_revision')!=field.get('web_cursor_revision')
+                            if web_cursor_changed or transition:local['web_navigation_pending']=False
                             if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
                             if old.get('source')!=source or web_cursor_changed or field.get('ack',0)>=local['seq']:
                                 local['applying']=True
@@ -542,7 +548,7 @@ class CompanionWindow:
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web search; type a search, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()

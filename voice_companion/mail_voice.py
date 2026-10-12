@@ -301,7 +301,7 @@ class MailSession:
                 value=(str(value)+' bytes') if isinstance(value,(int,float)) else str(value)
             parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))
         boundary=self._message_boundary(number) if announce_boundary else ''
-        return (boundary+' ' if boundary else '')+'. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
+        return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
 
     def _message_boundary(self,number):
         first=number==1 and self.page_cursor is None

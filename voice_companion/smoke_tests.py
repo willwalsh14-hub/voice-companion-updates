@@ -337,7 +337,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             store = ProtectedStore(self.root)
             store.save('gmail', {'address':'one@example.com'})
             store.save('outlook', {'address':'two@example.com'})
-            self.assertEqual(companion.handle('switch to one at example dot com', 'awake'), 'awake')
+            self.assertEqual(companion.handle('switch to one at example dot com', 'awake',typed=True), 'awake')
             self.assertEqual(store.selected(), ('gmail','one@example.com'))
             self.assertEqual(companion.handle('write an email', 'awake'), 'email_draft')
             self.assertEqual(companion.email_draft.provider, 'gmail')
@@ -432,7 +432,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
 
     def test_email_is_saved_and_never_sent(self):
         mode = companion.handle('write an email', 'awake')
-        companion.handle('email to friend at example dot com', mode)
+        companion.handle('email to friend at example dot com', mode,typed=True)
         companion.handle('subject is Hello', mode)
         companion.handle('start dictation', mode)
         companion.handle('This is a draft.', mode)
@@ -528,32 +528,45 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
                 self.snapshot = {'title': 'Example'}
                 return 'Page: Example.'
         with patch.object(companion, 'WebSession', FakeWeb):
-            companion.handle('open website example dot com', 'awake')
+            companion.handle('open website example dot com', 'awake',typed=True)
             self.assertEqual(FakeWeb.opened, [])
             companion.handle('go to sleep', 'awake')
             self.assertIsNone(companion.pending_website)
             companion.handle('yes open website', 'awake')
             self.assertEqual(FakeWeb.opened, [])
-            companion.handle('open website example dot com', 'awake')
+            companion.handle('open website example dot com', 'awake',typed=True)
             self.assertEqual(companion.handle('yes open website', 'awake'), 'web')
             self.assertEqual(FakeWeb.opened, ['https://example.com'])
 
-    def test_no_ready_announcement_if_microphone_cannot_open(self):
+    def test_keyboard_remains_available_if_external_microphone_cannot_open(self):
+        import queue
+        from unittest.mock import Mock
         companion.TEXT_MODE = False
         fake_audio = SimpleNamespace(
-            query_devices=lambda **kwargs: {'name': 'test microphone', 'default_samplerate': 48000},
+            query_devices=lambda *args, **kwargs: {'name': 'USB microphone', 'default_samplerate': 48000},
             check_input_settings=lambda **kwargs: None,
-            RawInputStream=lambda **kwargs: (_ for _ in ()).throw(OSError('no microphone')))
+            RawInputStream=Mock(side_effect=OSError('no microphone')))
+        window=Mock(commands=queue.Queue(),settings_results=queue.Queue(),key_feedback=queue.Queue(),closed=Mock(is_set=Mock(return_value=False)))
+        for action in (('keyboard','Down'),('keyboard','Alt+F4'),'yes'):window.commands.put(action)
+        def ready():companion.speak(companion.startup_prompt());return 'sleep'
         with (patch.object(companion, 'MODEL', self.root),
               patch.object(companion, 'PARAKEET_MODEL', self.root / 'missing'),
               patch.object(companion, 'Model', lambda path: object()),
               patch.object(companion, 'KaldiRecognizer', lambda model, rate: object()),
-              patch.object(companion, 'SetLogLevel'),
-              patch.object(companion, 'speak') as spoken,
+              patch.object(companion, 'SetLogLevel'),patch.object(companion,'APP_WINDOW',window),
+              patch.object(companion,'KEYBOARD_SPEECH',None),patch.object(companion,'update_audio_ducking'),
+              patch.object(companion,'startup_update_mode',ready),patch.object(companion,'poll_app_updates',side_effect=lambda mode:mode),
+              patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'MAIN_MENU_INDEX',None),
+              patch('external_microphone.find_external_input',return_value=(0,{'name':'USB microphone'})),
+              patch.object(companion, 'speak') as spoken,patch.object(sys,'argv',['VoiceCompanion.exe']),
               patch.dict(sys.modules, {'sounddevice': fake_audio})):
-            with self.assertRaises(OSError):
-                companion.main()
-            self.assertFalse(any('is ready' in call.args[0] for call in spoken.call_args_list))
+            self.assertEqual(companion.main(),0)
+            fake_audio.RawInputStream.assert_called_once()
+            notices=[str(call.args[0]) for call in spoken.call_args_list]
+            self.assertTrue(any('is ready' in text for text in notices))
+            self.assertTrue(any('Voice commands are disabled' in text for text in notices))
+            self.assertEqual(companion.MAIN_MENU_INDEX,0)
+            self.assertTrue(window.commands.empty())
 
     def test_missing_offline_model_is_explained_aloud(self):
         companion.TEXT_MODE = False

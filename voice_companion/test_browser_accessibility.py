@@ -194,13 +194,13 @@ class WebPolishTests(unittest.TestCase):
         self.session.keyboard('Leave:Up');self.assertIsNone(self.session.keyboard_field);self.assertEqual(self.backend.filled[-1],('name','Saved'))
     def test_combo_and_listbox_arrows_home_end_letters_and_voice(self):
         self.session.keyboard('Quick:c');self.assertIsNotNone(self.session.keyboard_field)
-        self.assertEqual(self.session.keyboard('Down'),'Two. End of list.');self.assertEqual(self.session.keyboard('End'),'Two. End of list.')
-        self.assertEqual(self.session.keyboard('Home'),'One. Start of list.');self.assertEqual(self.session.keyboard('ChoiceLetter:t'),'Two. End of list.')
+        self.assertEqual(self.session.keyboard('Down'),'Two.');self.assertEqual(self.session.keyboard('End'),'Two.')
+        self.assertEqual(self.session.keyboard('Home'),'One.');self.assertEqual(self.session.keyboard('ChoiceLetter:t'),'Two.')
         self.session.keyboard('Quick:s');self.assertEqual(self.session.keyboard_field['key'],'list')
-        self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Bravo. End of list.')
-        self.assertEqual(self.session.command('first option'),'Alpha. Start of list.');self.assertEqual(self.session.command('last option'),'Bravo. End of list.')
+        self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Bravo.')
+        self.assertEqual(self.session.command('first option'),'Alpha.');self.assertEqual(self.session.command('last option'),'Bravo.')
         self.assertEqual(self.session.command('select option Beta'),'Beta.')
-        self.assertEqual(self.session.command('choose option beginning with b'),'Bravo. End of list.')
+        self.assertEqual(self.session.command('choose option beginning with b'),'Bravo.')
     def test_page_boundaries_all_voice_aliases_and_keyboard_are_exact(self):
         for request in ('top of page','beginning of page','start of page','go to the top of the page','move to beginning of page'):
             self.session.command(request);self.assertEqual(self.session.reading.position,0)

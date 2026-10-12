@@ -169,7 +169,7 @@ class DeliveryTests(unittest.TestCase):
             mode = companion.handle('write an email', 'awake')
             draft = companion.email_draft
             draft.provider = 'gmail'
-            companion.handle('email to friend at example dot com', mode)
+            companion.handle('email to friend at example dot com', mode,typed=True)
             companion.handle('subject is Hello', mode)
             companion.handle('I will see you on Tuesday.', mode)
             self.assertIn('I will see you on Tuesday.', draft.paragraphs[0].text)

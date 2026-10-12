@@ -18,6 +18,8 @@ SITES=(('Simple page','https://example.org/'),
        ('JAWS enhancements','https://support.freedomscientific.com/downloads/jaws/JAWSWhatsNew'),
        ('Podcast website','https://www.npr.org/podcasts/510289/planet-money'),
        ('Brave search','https://search.brave.com/search?q=accessible+keyboard+navigation'),
+       ('Brave speedtest search','https://search.brave.com/search?q=speedtest+global+broadband'),
+       ('Speedtest rendered page','https://www.speedtest.net/'),
        ('Google search','https://www.google.com/search?q=accessible+keyboard+navigation'))
 
 def audit(timeout=20000):
@@ -60,6 +62,15 @@ def audit(timeout=20000):
                             valid=session.browse.current()['key']==first
                             entry['checks'].append({'action':'H, H, Shift+H reversibility','passed':valid})
                             if not valid:entry['status']='failed'
+                        if name in ('Brave speedtest search','Speedtest rendered page'):
+                            entry['heading_labels']=[e.get('label','') for e in session.snapshot.get('elements',[]) if kind(e)=='heading'][:30]
+                            entry['render_updates']=[]
+                            for _ in range(5):
+                                page.wait_for_timeout(600)
+                                previous=session.reading.text;session.refresh_changed()
+                                valid=session.reading.position==session.browse.position and 0<=session.reading.position<=len(session.reading.text)
+                                entry['render_updates'].append({'changed':previous!=session.reading.text,'characters':len(session.reading.text),'cursor_valid':valid})
+                                if not valid:entry['status']='failed'
             except Exception as exc:entry['reason']=type(exc).__name__+': '+str(exc)[:250]
             finally:context.close()
             entry['seconds']=round(time.monotonic()-start,2);report['sites'].append(entry)

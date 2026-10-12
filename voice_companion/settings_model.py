@@ -10,11 +10,12 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browser', 'Radio', 'Podcasts', 'Updates', 'Startup and exit options')
+CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browser', 'Radio', 'Podcasts', 'Updates'))+('Startup and exit options',)
 DEFAULTS = {'web_search_engine':'google','web_keep_open':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
+    if category!='Startup and exit options':category=category.removesuffix(' options')
     definitions = {
         'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2'))],
         'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],

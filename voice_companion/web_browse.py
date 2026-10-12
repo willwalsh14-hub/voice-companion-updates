@@ -119,7 +119,8 @@ SEMANTICS = r'''
           const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output || /[ \n]$/.test(output))s=s.trimStart();output+=s;};
           const key=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+serial++);return e.getAttribute('data-voice-companion-key');};
           const searchHost=['search.brave.com','www.google.com','google.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'].includes(location.hostname);
-          const braveResult=e=>location.hostname==='search.brave.com'&&e.matches('.search-snippet-title')&&e.closest('a[href]');
+          const titleSelector='.search-snippet-title,.snippet-title,.snippet-title-text,[data-testid="result-title"],.title';
+          const braveResult=e=>location.hostname==='search.brave.com'&&e.matches(titleSelector)&&e.closest('a[href]');
           const controlsByKey=new Map(controls.map(c=>[c.key,c]));const tableMaps=new Map();
           for(const table of all(document).filter(e=>e.matches('table,[role="table"],[role="grid"]'))){
             const grid=[];const rows=all(table).filter(e=>e.matches('tr,[role="row"]') && visible(e) && !e.closest('[aria-hidden="true"],[inert]') && e.closest('table,[role="table"],[role="grid"]')===table);
@@ -128,8 +129,8 @@ SEMANTICS = r'''
           }
           const urlOnly=s=>/^(?:https?:\/\/|www\.)\S+(?:\s*[›>]\s*\S+)*$|^[\w-]+(?:\.[\w-]+)+(?:[\/?]\S*)?(?:\s*[›>]\s*\S+)*$/i.test(String(s||'').trim());
           const contentTitle=e=>{
-            const title=e.querySelector('[class*="title"],[class*="heading"]');
-            const lines=[title?.innerText,...String(e.innerText||'').split(/\n+/)].map(s=>String(s||'').trim()).filter(s=>s&&!urlOnly(s));
+            const titles=[...e.querySelectorAll(titleSelector+',h1,h2,h3,h4,h5,h6,[role="heading"]')];
+            const lines=[...titles.flatMap(t=>String(t.innerText||'').split(/\n+/)),...String(e.innerText||'').split(/\n+/)].map(s=>String(s||'').trim()).filter(s=>s&&!urlOnly(s));
             return lines[0]||'';
           };
           const walk=e=>{
@@ -144,7 +145,7 @@ SEMANTICS = r'''
             if(['input','select','textarea','a','button'].includes(tag))newline();
             const control=controlsByKey.get(e.getAttribute('data-voice-companion-key'));
             const resultHeading=e.querySelector('h1,h2,h3,h4,h5,h6,[role="heading"]')||e.closest('h1,h2,h3,h4,h5,h6,[role="heading"]');
-            const braveTitle=location.hostname==='search.brave.com'?e.querySelector('.search-snippet-title'):null;
+            const braveTitle=location.hostname==='search.brave.com'?e.querySelector(titleSelector):null;
             const resultTitle=role==='link'?(braveTitle||e.querySelector('[class*="title"],[class*="heading"]')||resultHeading?.querySelector('[class*="title"],[class*="heading"]')||resultHeading):null;
             let label=role==='link'&&resultTitle && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby')?accessibleLabel(resultTitle):accessibleLabel(e);
             if(role==='heading'){label=contentTitle(e)||contentTitle(e.closest('a')||e)||label;}
@@ -159,6 +160,13 @@ SEMANTICS = r'''
             if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
           walk(document.body);
+          // A result may put its URL in an H tag and its human title in a
+          // sibling div. The heading's label and caret must target that title.
+          for(const item of elements){if(item.role!=='heading'||!item.label||urlOnly(item.label))continue;
+            if(output.slice(item.start,item.end).includes(item.label))continue;
+            const link=elements.find(e=>e.role==='link'&&e.key===item.activation_key);
+            if(link){const offset=output.slice(link.start,link.end).indexOf(item.label);if(offset>=0){item.start=link.start+offset;item.end=item.start+item.label.length;}}
+          }
           // URL/breadcrumb-only headings are metadata, not useful heading destinations.
           for(let i=elements.length-1;i>=0;i--)if(elements[i].role==='heading'&&urlOnly(elements[i].label))elements.splice(i,1);
           if(searchHost){const seen=new Set();for(let i=0;i<elements.length;i++){const item=elements[i];if(item.role!=='heading')continue;const link=elements.find(e=>e.key===item.activation_key&&e.role==='link');if(!link)continue;const identity=link.href+'|'+item.label.toLocaleLowerCase().replace(/\s+/g,' ').trim();if(seen.has(identity)){elements.splice(i,1);i--;}else seen.add(identity);}}

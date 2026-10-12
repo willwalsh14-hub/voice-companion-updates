@@ -13,6 +13,48 @@ class ConsumerWebTests(unittest.TestCase):
         self.page.set_content('<html><title>Consumer task</title><body>'+html+'</body></html>')
         self.session._refresh()
 
+    def test_result_title_caret_and_arrows_do_not_land_on_address_metadata(self):
+        html='<title>Search</title><a href="https://www.speedtest.net/"><h3>https://www.speedtest.net</h3><div class="snippet-title">Speedtest by Ookla - The Global Broadband Speed Test</div></a><p>Measure your connection.</p><a href="https://example.test/second"><div class="title">Another speed test</div></a><p>Second result details.</p>'
+        self.context.route('https://search.brave.com/**',lambda r:r.fulfill(content_type='text/html',body=html))
+        self.session.open('https://search.brave.com/search?q=speedtest')
+        message=self.session.keyboard('Quick:h');self.assertIn('Speedtest by Ookla',message);self.assertNotIn('https://',message)
+        item=self.session.browse.current();self.assertEqual(self.session.reading.text[item['start']:item['end']],item['label'])
+        position=self.session.reading.position;self.session.keyboard('Read:Right');self.assertEqual(self.session.reading.position,position+1)
+        self.session.keyboard('Quick:h');self.assertIn('Another speed test',self.session.browse.current()['label'])
+        self.assertIn('Second result details',self.session.keyboard('Read:Down'))
+
+    def test_busy_dynamic_page_updates_with_selection_without_resetting_heading(self):
+        self.load('<h1 id="title">Speed test</h1><p id="status" aria-busy="true">Measuring</p><h2 id="results">Results</h2>')
+        self.session.keyboard('Quick:h');self.session.keyboard('Quick:h')
+        self.session.selection=(0,3)
+        self.page.locator('#status').evaluate("e=>e.textContent='Download speed: 100 Mbps'")
+        self.session.refresh_changed()
+        self.assertIn('100 Mbps',self.session.reading.text)
+        self.assertEqual(self.session.browse.current()['label'],'Results')
+        self.assertEqual(self.session.reading.position,self.session.browse.current()['start'])
+        self.page.locator('#status').evaluate("e=>e.textContent='Download speed: 200 Mbps'");self.session.refresh_changed()
+        self.assertIn('200 Mbps',self.session.reading.text)
+
+    def test_live_updates_preserve_staged_field_and_its_keyboard_identity(self):
+        import companion as app
+        from unittest.mock import patch
+        self.load('<label for="answer">Your comment</label><input id="answer"><p id="status">Starting</p>')
+        self.session.keyboard('Quick:e');self.session.dictate_to_focus('Keep this draft',literal=True)
+        self.session.web_edit_caret=4;self.session.selection=(0,4)
+        with patch.object(app,'web_session',self.session):before=app.app_context('web')
+        self.page.locator('#status').evaluate("e=>e.textContent='Finished rendering'");self.session.refresh_changed()
+        with patch.object(app,'web_session',self.session):after=app.app_context('web')
+        self.assertEqual(after['source'],before['source']);self.assertEqual(after['text'],'Keep this draft');self.assertEqual(after['caret'],4);self.assertEqual(after['selection'],(0,4))
+        self.assertIn('Finished rendering',self.session.reading.text)
+
+    def test_email_and_url_fields_refuse_spoken_values_but_accept_keyboard_text(self):
+        for kind in ('email','url','password'):
+            self.load('<label for="private">Private value</label><input id="private" type="'+kind+'">')
+            self.session.keyboard('Quick:e');self.assertIn('keyboard',self.session.dictate_to_focus('example value').lower())
+            self.assertEqual(self.page.locator('#private').input_value(),'')
+            self.session.commit_keyboard_field('example.com' if kind=='url' else 'person@example.com' if kind=='email' else 'FixtureSecret')
+            self.assertTrue(self.page.locator('#private').input_value())
+
     def test_every_field_on_large_form_is_available(self):
         self.load(''.join(f'<label for="f{i}">Question {i}</label><input id="f{i}">' for i in range(45)))
         self.session.command('list fields')
@@ -68,7 +110,7 @@ class ConsumerWebTests(unittest.TestCase):
         for command in ('list fields','list favorites'):
             with self.subTest(command=command):
                 self.session.command('save favorite as Account')
-                self.assertIn('Start and end of list',self.session.command(command))
+                self.assertNotIn('of list',self.session.command(command))
                 self.assertIn('End of list',self.session.command('next'))
                 self.assertIn('Start of list',self.session.command('previous'))
                 self.session.command('close list')

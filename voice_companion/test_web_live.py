@@ -148,10 +148,10 @@ class LiveWebTests(unittest.TestCase):
     def test_choice_boundaries_do_not_fire_repeated_change_events(self):
         self.page.set_content('<select aria-label="Choice" onchange="window.changes++"><option>One</option><option>Two</option></select><script>window.changes=0</script>')
         self.session._refresh();self.session.keyboard('Quick:c')
-        self.assertIn('End of list',self.session.keyboard('End'));self.assertEqual(self.page.evaluate('window.changes'),1)
+        self.assertNotIn('of list',self.session.keyboard('End'));self.assertEqual(self.page.evaluate('window.changes'),1)
         self.assertIn('End of list',self.session.keyboard('Down'));self.session.keyboard('End')
         self.assertEqual(self.page.evaluate('window.changes'),1)
-        self.assertIn('Start of list',self.session.keyboard('Home'));self.assertEqual(self.page.evaluate('window.changes'),2)
+        self.assertNotIn('of list',self.session.keyboard('Home'));self.assertEqual(self.page.evaluate('window.changes'),2)
         self.assertIn('Start of list',self.session.keyboard('Up'));self.session.keyboard('Home')
         self.assertEqual(self.page.evaluate('window.changes'),2)
 
@@ -243,6 +243,11 @@ class LiveWebTests(unittest.TestCase):
                     position=self.session.reading.position
                     ui(lambda p=position:self.assertEqual(len(window.editor.get('1.0','insert')),p))
                     self.assertTrue(any(expected in str(call.args[0]) for call in output.speak.call_args_list))
+                ui(lambda:(window.editor.event_generate('<KeyPress>',keysym='h'),window.editor.event_generate('<KeyPress>',keysym='Down')))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                wait(lambda:window.context.get('caret')==self.session.reading.position)
+                position=self.session.reading.position;self.assertIn('After later heading',self.session.reading.text[position:self.session.reading.text.find('\n',position) if '\n' in self.session.reading.text[position:] else len(self.session.reading.text)])
+                ui(lambda p=position:self.assertEqual(len(window.editor.get('1.0','insert')),p))
                 ui(lambda:window.editor.event_generate('<KeyPress>',keysym='F7'))
                 wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
                 self.assertEqual(self.session.list_focus,'links');self.assertIsNone(self.session.pending)
@@ -275,6 +280,10 @@ class LiveWebTests(unittest.TestCase):
                 wait(lambda:window.context.get('source') is not None and not window.context.get('web_private'))
                 ui(lambda:window.editor.event_generate('<KeyPress>',keysym='l',state=4))
                 wait(lambda:any(item==('keyboard','Web:Search') for item in window.commands.queue))
+                self.assertEqual(app.process_keyboard_batch('web'),'search');wait(lambda:window.context.get('mode')=='search')
+                ui(lambda:(window.typed.delete(0,'end'),window.typed.insert(0,'fixture.test/next'),window.typed.event_generate('<KeyPress>',keysym='Return')))
+                wait(lambda:not window.commands.empty());self.assertEqual(app.process_keyboard_batch('search'),'web')
+                self.assertEqual(self.session.snapshot['url'],'https://fixture.test/next');self.assertIn('Destination',self.session.reading.text)
         finally:
             ui(window.root.destroy);window.thread.join(5)
 

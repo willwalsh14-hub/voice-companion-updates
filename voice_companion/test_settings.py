@@ -91,7 +91,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(companion.navigation_key('Escape','settings'),'cancel settings')
 
     def test_all_categories_have_settings_or_actions(self):
-        self.assertIn('Email',CATEGORIES);self.assertIn('Documents',CATEGORIES);self.assertIn('Radio',CATEGORIES)
+        self.assertIn('Email options',CATEGORIES);self.assertIn('Documents options',CATEGORIES);self.assertIn('Radio options',CATEGORIES)
         for category in CATEGORIES:self.assertTrue(fields(category,self.context))
 
 if __name__=='__main__':unittest.main()

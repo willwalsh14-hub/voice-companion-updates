@@ -65,8 +65,11 @@ class MediaNavigation:
     def keyboard(self,key):
         if self.pending:
             if key.lower() in ('y','n','alt+y','alt+n'):return self.command('yes' if key.lower() in ('y','alt+y') else 'no')
-            if key in ('Up','Down','Left','Right','Tab','ShiftTab'):self.confirm_choice='yes' if key in ('Up','Left','ShiftTab') else 'no';return self.confirm_choice.capitalize()+'. '+('Start of list.' if self.confirm_choice=='yes' else 'End of list.')
-            if key in ('Home','End'):self.confirm_choice='yes' if key=='Home' else 'no';return self.confirm_choice.capitalize()+'. '+('Start of list.' if key=='Home' else 'End of list.')
+            if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
+                choice='yes' if key in ('Up','Left','ShiftTab') else 'no'
+                if choice==self.confirm_choice:return 'Start of list.' if choice=='yes' else 'End of list.'
+                self.confirm_choice=choice;return choice.capitalize()+'.'
+            if key in ('Home','End'):self.confirm_choice='yes' if key=='Home' else 'no';return self.confirm_choice.capitalize()+'.'
             if key=='Enter':return self.command(self.confirm_choice)
             if key=='Escape':return self.command('no')
             return ''
@@ -94,7 +97,10 @@ class MediaNavigation:
         if not state:return self.announce() if key in ('Home','End','Up','Down') and not self.form else ''
         names,index,select=state;index=index or 0
         if key in ('Home','End'):index=0 if key=='Home' else len(names)-1
-        elif key in ('Up','Down','Left','Right'):index=max(0,min(len(names)-1,index+(-1 if key in ('Up','Left') else 1)))
+        elif key in ('Up','Down','Left','Right'):
+            step=-1 if key in ('Up','Left') else 1
+            if not 0<=index+step<len(names):return 'Start of list.' if step<0 else 'End of list.'
+            index+=step
         elif key.startswith('Letter:'):
             match=next_match(names,index,key[-1])
             if match is None:return 'No item starts with '+key[-1].upper()+'.'
@@ -193,9 +199,6 @@ class MediaNavigation:
         elif h.station_choices and self.section=='radio':self.view='station_choices';self.focus='items'
         attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index'}.get(self.view)
         self.item_index=(getattr(h,attr,None) or 0) if attr else 0;self.revision+=1
-        if self.focus=='items' and (cmd.startswith(('search','find','browse ','list ')) or cmd in ('back to podcasts','back to feeds','radio presets','favorites list')):
-            boundary=boundary_notice(self.item_index,len(self.items()))
-            if boundary and boundary not in result:result=boundary+' '+result
         return result
     def command(self,text):
         cmd=text.strip().casefold().rstrip('.!?')

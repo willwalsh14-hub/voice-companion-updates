@@ -61,5 +61,5 @@ class EmailStatusStartupTests(unittest.TestCase):
     def test_wake_interrupts_existing_speech(self):
         with patch.object(app,'SLEEP_RETURN_MODE','awake'),patch.object(app,'interrupt_speech') as stop,patch.object(app,'announce_main_menu') as announce,patch.object(app,'sync_app_context'):
             self.assertEqual(app.resume_from_sleep(),'awake');stop.assert_called_once();announce.assert_called_once()
-        self.assertNotIn('wake up',app.startup_prompt().lower())
+        self.assertIn('say wake up',app.startup_prompt().lower())
 if __name__=='__main__':unittest.main()

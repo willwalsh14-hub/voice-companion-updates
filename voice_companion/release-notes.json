@@ -1,23 +1,23 @@
 {
-  "version": "0.2.117-test",
+  "version": "0.2.118-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.116-test",
-  "scope": "Deeper consumer testing, web form and field editing corrections, media list feedback and stalled playback recovery.",
+  "baseline": "0.2.117-test",
+  "scope": "Keyboard browser fixes, rendered dynamic page updates, precise private entry and external microphone safeguards.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Hands-free web field editing",
+          "title": "Private entry",
           "details": [
-            "Dictation inserts at the spoken caret rather than always appending. Voice selection, replacement and scratch operate on staged field text before Save field. Typed caret changes clear outdated voice selections."
+            "Website addresses, email addresses and passwords require keyboard entry. Voice searches, saved contact names and saved website favorites remain available. Guided forms skip private address fields."
           ]
         },
         {
-          "title": "Guided modern forms",
+          "title": "External microphone required",
           "details": [
-            "Guided forms include labelled contenteditable fields and custom checkbox, radio and option controls. Available fields are rechecked after an answer so newly revealed conditional fields can be prompted. Ambiguous changes stop the guide and request a fresh page read."
+            "Voice commands require a present USB or Bluetooth microphone endpoint associated with external hardware. Internal, virtual and unconfirmed inputs do not enable voice. Keyboard navigation remains available without an external microphone. A lost external endpoint disables recognition. Connect an external microphone and restart Companion to enable voice after keyboard-only startup. Analog jack microphones cannot be reliably distinguished from an internal microphone and remain unconfirmed."
           ]
         }
       ]
@@ -26,36 +26,45 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Field lists and read-only controls",
+          "title": "List navigation",
           "details": [
-            "Removed the 30-field cap from guided form lists. Disabled and read-only fields are not offered as editable answers. Read-only controls announce their state and reject dictation and destructive editing."
+            "Items are announced when reached. Start of list or End of list is announced only on an additional move beyond the boundary. This behavior applies regardless of verbosity."
           ]
         },
         {
-          "title": "List feedback and voice exit",
+          "title": "Dynamic browser pages and reading position",
           "details": [
-            "Web field and favorite lists announce their boundaries on entry and repeated movement, and Close list returns to the virtual page view. Initial radio and podcast search results now announce the boundary before the result details."
+            "Rendered page updates refresh the virtual viewer independently of microphone audio, including keyboard use while asleep. Replaced document roots reconnect their observer. Live updates preserve staged field text, field selection and keyboard identity. Quick-key destinations and arrow movement share the same caret."
           ]
         },
         {
-          "title": "Private field masking",
+          "title": "Brave result titles",
           "details": [
-            "Password values are masked in selected-label metadata as well as the ordinary value property. A fixture credential regression test checks that the value is absent from the snapshot and spoken responses."
+            "Additional result title layouts are recognized as headings. When an address is wrapped in a heading and the human title is a sibling, the heading label and virtual caret both target the result title."
           ]
         },
         {
-          "title": "Stalled audio recovery",
+          "title": "Web address or search",
           "details": [
-            "Starting or resuming audio has a 12-second deadline. Failed starts clear the player state; a stalled stream returns control with an error instead of waiting indefinitely."
+            "Ctrl+L and the browser entry box accept a bare domain, a domain with www, or a full HTTP/HTTPS address. HTTP entry is upgraded to HTTPS. URL paths, queries and fragments retain their case. Ordinary words still perform a search."
           ]
         },
         {
-          "title": "Consumer testing and remaining limits",
+          "title": "Options and startup",
           "details": [
-            "Added long and mixed keyboard/voice workflows for documents, notes, drafts, help, tutorials, sleep and resume, radio presets, podcast subscriptions and finite menus. Real browser fixtures cover large forms, conditional fields, custom controls, cross-site history, field selection and cursor consistency.",
-            "Windows checks run the new browser tasks in Firefox, Chrome, Edge and Brave and exercise audio decoding and transport. A separate read-only audit attempts real public websites, search engines, radio catalogs, podcast feeds and streams; website verification, network errors and inaccessible content are recorded separately from navigation failures.",
-            "Synthesized SAPI and eSpeak US/UK utterances are passed through Vosk and, when installed, Parakeet. Matching recognized commands are dispatched through isolated application fixtures. Recognition errors are reported separately; this is not a microphone or background-noise accuracy test.",
-            "Password and file-upload entry still require private keyboard or manual input. CAPTCHA and website verification may need help. No test establishes recognition accuracy with a particular microphone or verifies personal authenticated accounts."
+            "Every options category includes the word options. Startup says Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Startup narration does not wake the app through its own microphone feedback."
+          ]
+        },
+        {
+          "title": "Regression coverage",
+          "details": [
+            "New checks cover result labels and exact text offsets, dynamic updates during selection and editing, typed addresses with optional prefixes, address dictation refusal, external endpoint selection and disconnect detection. Real browser suites cover Firefox, Chrome, Edge and Brave."
+          ]
+        },
+        {
+          "title": "Remaining limitations",
+          "details": [
+            "CAPTCHA and website verification can need assistance. Human microphone accuracy and external hardware identification on your own computer still need real-device testing. Artificial eSpeak command recognition misses reported in the prior audit remain a limitation."
           ]
         }
       ]
