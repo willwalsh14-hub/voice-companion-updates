@@ -6,6 +6,18 @@
   "scope": "Actual Brave result titles, reliable page refresh and accessible search verification alternatives.",
   "sections": [
     {
+      "title": "New Apps and Features",
+      "topics": [
+        {
+          "title": "Search verification alternatives",
+          "details": [
+            "When the selected search engine requires human verification, an accessible engine menu offers another engine for the same query. Use arrows and Enter, first-letter menu navigation, or say Try Brave Search, Try Bing or Try DuckDuckGo. Escape returns to the verification page. Choosing an alternative applies only to that search and leaves the saved default unchanged.",
+            "Google controls its verification requirement. Companion does not solve or bypass it and does not silently change engines. A normal search about captcha help is no longer mistaken for a verification page."
+          ]
+        }
+      ]
+    },
+    {
       "title": "Fixes and Enhancements",
       "topics": [
         {
@@ -20,13 +32,6 @@
           "details": [
             "Links wait for actual navigation or their delayed new tab even when a loading message changes the old page first. The destination is captured after readiness, and Loading page and Page loaded feedback accompany navigation. A link is never automatically clicked again after an uncertain result.",
             "Snapshot capture retries when a document changes during extraction. Mutations immediately after extraction remain detectable. Child-frame updates are monitored, and incidental changes preserve the selected element instead of resetting reading to the top. Same-page fragment links move the virtual cursor to their target. External navigation cancels old field editing; stale staged field input cannot be applied to the new document."
-          ]
-        },
-        {
-          "title": "Search verification alternatives",
-          "details": [
-            "When the selected search engine requires human verification, an accessible engine menu offers another engine for the same query. Use arrows and Enter, first-letter menu navigation, or say Try Brave Search, Try Bing or Try DuckDuckGo. Escape returns to the verification page. Choosing an alternative applies only to that search and leaves the saved default unchanged.",
-            "Google controls its verification requirement. Companion does not solve or bypass it and does not silently change engines. A normal search about captcha help is no longer mistaken for a verification page."
           ]
         },
         {
