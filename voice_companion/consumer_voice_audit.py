@@ -11,6 +11,7 @@ import companion as app
 PHRASES=('next heading','previous link','list fields','main menu','go to sleep','wake up')
 
 def dispatch(phrase):
+    phrase=app.normalized_command(phrase)
     from test_consumer_workflows import ConsumerWorkflowTests
     from test_web_assistant import FakeBackend
     from web_assistant import WebSession

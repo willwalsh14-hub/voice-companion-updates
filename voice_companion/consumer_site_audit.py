@@ -81,10 +81,18 @@ def audit(timeout=20000):
                 entry['catalog_items']=len(choices)
                 if not choices:entry['reason']='No live catalog results were available.'
                 else:
-                    item=choices[0];entry['selected']=item.get('name') or item.get('title')
-                    player.open(item['url'],entry['selected'],name.casefold())
-                    player.control('pause');player.control('play');player.control('stop')
-                    entry['status']='passed';entry['playback']='Browser started, paused, resumed and stopped the live public stream.'
+                    entry['attempts']=[]
+                    for item in choices[:5]:
+                        selected=item.get('name') or item.get('title')
+                        try:
+                            player.open(item['url'],selected,name.casefold())
+                            player.control('pause');player.control('play');player.control('stop')
+                            entry['selected']=selected;entry['status']='passed'
+                            entry['playback']='Browser started, paused, resumed and stopped the live public stream.'
+                            entry['attempts'].append({'name':selected,'status':'passed'});break
+                        except Exception as exc:
+                            entry['attempts'].append({'name':selected,'status':'blocked','reason':type(exc).__name__+': '+str(exc)[:250]})
+                    if entry['status']!='passed':entry['reason']='None of the first five returned streams started; see attempts.'
             except Exception as exc:entry['reason']=type(exc).__name__+': '+str(exc)[:250]
             finally:context.close()
             report['media'].append(entry);print('LIVE MEDIA AUDIT '+json.dumps(entry),flush=True)

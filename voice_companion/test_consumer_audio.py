@@ -20,10 +20,6 @@ class ConsumerAudioTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):cls.browser.close();cls.driver.stop()
     def setUp(self):
-        if sys.platform=='win32' and self._testMethodName!='test_stalled_start_and_resume_return_control_instead_of_hanging':
-            import sounddevice
-            if not any(d['max_output_channels']>0 for d in sounddevice.query_devices()):
-                self.skipTest('The Windows runner has no audio output device; decoding/playback needs a local audio endpoint.')
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.folder=Path(self.temp.name);(self.folder/'audio-player.html').write_text(PLAYER_HTML)
         self.context=self.browser.new_context();self.addCleanup(self.context.close)
