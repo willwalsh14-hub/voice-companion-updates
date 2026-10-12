@@ -209,7 +209,11 @@ class WindowKeyboardTests(unittest.TestCase):
     def call(self,function):
         done=threading.Event();errors=[]
         def run():
-            try:function()
+            try:
+                # Geometry is settled before a real key can reach a newly
+                # shown widget; synthetic events need the same barrier.
+                self.window.root.update_idletasks()
+                function()
             except Exception as exc:errors.append(exc)
             finally:done.set()
         self.window.ui_actions.put(('ui_call',run));self.assertTrue(done.wait(5))
@@ -251,6 +255,7 @@ class WindowKeyboardTests(unittest.TestCase):
         body=render_html('<p>First</p><a href="https://example.com/donate"><img alt="Click to donate"></a><p><a role="button" href="https://example.com/give">Donate now</a></p>')
         self.window.set_context(dict(mode='mailbox',source='mail:test',text=body,rich_spans=body.spans,email_html=True,readonly=True,caret=0,echo='characters',phonetic=False,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('source')=='mail:test')
+        self.call(lambda:self.window.editor.focus_force())
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
         self.wait(lambda:not self.window.key_feedback.empty());self.assertIn('Click to donate, link',self.window.key_feedback.get())
         self.call(lambda:self.window.editor.mark_set('insert','1.0'))
