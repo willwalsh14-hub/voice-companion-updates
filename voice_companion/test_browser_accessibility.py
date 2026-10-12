@@ -40,6 +40,17 @@ class BrowserAccessibilityTests(unittest.TestCase):
                 app.menu_state('web')[2](1);self.assertIsNone(session.pending)
                 self.assertIn('Page:',session.command('open current link'));self.assertEqual(session.backend.activated,['1'])
 
+    def test_guided_web_yes_and_no_dispatch_through_app_keyboard_and_voice(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend());session._refresh()
+            with patch.object(app,'web_session',session),patch.object(app,'pending_website',None),patch.object(app,'APP_WINDOW',None),patch.object(app,'INPUT_MODE','mixed'),patch.object(app,'interrupt_speech'),patch.object(app,'speak'),patch.object(app,'speak_status'):
+                session.command('find login')
+                self.assertEqual(app.handle_keyboard(app.navigation_key('y','web'),'web'),'web')
+                self.assertEqual(session.backend.activated,['0'])
+                session.command('find login or transfer');app.handle('no','web')
+                self.assertIn('Transfer',session.pending['label']);app.handle('yes','web')
+                self.assertEqual(session.backend.activated,['0','1'])
+
     def test_empty_brave_results_never_redirect_to_another_engine(self):
         with tempfile.TemporaryDirectory() as folder:
             backend=FakeBackend();backend.snapshot=lambda:{'url':backend.url,'title':'Search','text':'','controls':[]}

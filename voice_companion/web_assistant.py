@@ -5,6 +5,7 @@ never treated as an instruction to the assistant. No credentials are stored by
 this module; the browser retains its own session in its dedicated profile.
 """
 from list_announcements import name_first
+from menu_navigation import announce_item
 from field_selection import FieldSelection, selection_command
 import json
 import os
@@ -151,7 +152,7 @@ class BrowserBackend:
         self.start()
         script = '''() => {
           const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&(!parent||visible(parent));visibility.set(e,result);return result;};
-          const accessibleLabel=e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\\s+/g,' ').slice(0,120);};
+          const accessibleLabel=e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\\s+/g,' ').slice(0,120);};
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[contenteditable="true"]';
@@ -671,6 +672,11 @@ class WebSession:
         self.suggestion_index = 0
         return self._suggest()
 
+    def link_items(self):
+        snapshot=self.snapshot or {}
+        items=snapshot.get('elements',snapshot.get('controls',[]))
+        return [c for c in items if kind(c)=='link' and (not c.get('href') or urlsplit(c['href']).scheme=='https')]
+
     def list_links(self, direction='first'):
         if not self.snapshot: return 'Open a website first.'
         if direction == 'first':
@@ -678,16 +684,14 @@ class WebSession:
             self.link_position = None
             self.pending = None
             self.choices = []
-        links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                 urlsplit(c.get('href', '')).scheme == 'https']
+        links = self.link_items()
         if not links and direction == 'first':
             for _ in range(3):
                 try:
                     if hasattr(self.backend, 'settle'): self.backend.settle()
                     self.snapshot = self.backend.snapshot()
                 except Exception: break
-                links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                         urlsplit(c.get('href', '')).scheme == 'https']
+                links = self.link_items()
                 if links: break
         if not links:
             return 'I could not identify links on this page. They may be loading or inaccessible to this browser helper. Ask your helper to inspect the page.'
@@ -695,12 +699,11 @@ class WebSession:
         self.link_position = 0
         self.list_focus = 'links'
         self.pending = None
-        return 'Links list. '+_label(links[0])+' (L), 1 of '+str(len(links))+'. Press Enter or say open current link to open. Escape returns to the page.'
+        return 'Links list. '+announce_item(_label(links[0]),0,len(links))+' Press Enter or say open current link to open. Escape returns to the page.'
 
     def open_link(self, number):
         if not self.snapshot: return 'Open a website first.'
-        links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                 urlsplit(c.get('href', '')).scheme == 'https']
+        links = self.link_items()
         index = int(number)-1
         if index < 0 or index >= len(links): return 'That link number is not on this page. Say list links.'
         self.link_position = index
@@ -709,8 +712,7 @@ class WebSession:
 
     def move_link(self, direction):
         if not self.snapshot: return 'Open a website first.'
-        links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                 urlsplit(c.get('href', '')).scheme == 'https']
+        links = self.link_items()
         if not links: return 'No links are listed. Say list links.'
         position = self.link_position
         index = (0 if direction > 0 else len(links)-1) if position is None else position + direction
@@ -718,7 +720,7 @@ class WebSession:
         self.link_position = index
         self.list_focus = 'links'
         self.pending = None
-        return _label(links[index]) + ', link, ' + str(index+1) + ' of ' + str(len(links)) + '.'
+        return announce_item(_label(links[index])+', link',index,len(links))
 
     def _suggest_link(self, item):
         host = urlsplit(item.get('href', '')).hostname or 'unknown site'
@@ -1046,12 +1048,12 @@ class WebSession:
         items=self.heading_items()
         if not items:return 'No headings on this page.'
         self.list_focus='headings';self.heading_index=0;self.pending=None
-        return 'Headings list. '+describe(items[0])+' Enter moves to the heading. Escape returns to the page.'
+        return 'Headings list. '+announce_item(describe(items[0]).rstrip('.'),0,len(items))+' Enter moves to the heading. Escape returns to the page.'
 
     def move_heading(self,step):
         items=self.heading_items();index=self.heading_index+step
         if not 0<=index<len(items):return 'List boundary.'
-        self.heading_index=index;return describe(items[index])
+        self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items))
 
     def activate_list_item(self):
         if self.list_focus=='links':return self.open_link((self.link_position or 0)+1)
@@ -1251,4 +1253,4 @@ class WebSession:
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
 # The same accessible name is used for snapshot and stale-target validation.
-LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''
+LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''

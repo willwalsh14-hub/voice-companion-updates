@@ -122,7 +122,7 @@ class LiveWebTests(unittest.TestCase):
         self.assertIn('Search results',self.session.reading.text);self.assertIn('Result link',self.session.reading.text)
         self.assertNotIn('Hidden text',self.session.reading.text);self.assertFalse(self.session.snapshot['challenge'])
         self.assertIn('Virtual page view',result);self.assertIn('heading',self.session.keyboard('Quick:h'))
-        self.assertIn('link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
+        self.assertIn('Result link, link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
 
     @unittest.skipUnless(sys.platform=='win32','Windows global Control key integration')
     def test_control_silences_while_browser_has_focus_in_awake_and_sleep_states(self):

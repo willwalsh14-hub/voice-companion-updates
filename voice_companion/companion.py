@@ -424,7 +424,7 @@ def menu_state(mode):
         if web.list_focus=='headings':return state([__import__('web_browse').describe(x) for x in web.heading_items()],web,'heading_index')
         if web.list_focus=='links' and web.snapshot:
             from urllib.parse import urlsplit
-            links=[x for x in web.snapshot['controls'] if x['role']=='link' and urlsplit(x.get('href','')).scheme=='https']
+            links=web.link_items()
             def select(index):web.link_position=index
             return ([x.get('name') or x.get('text') or x.get('href') for x in links],web.link_position,select) if links else None
     return None
