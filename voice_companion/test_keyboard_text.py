@@ -250,6 +250,18 @@ class WindowKeyboardTests(unittest.TestCase):
         self.wait(lambda:not self.window.key_feedback.empty());self.assertEqual(self.window.key_feedback.get(),'End of text.')
         self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Return'))
         self.wait(lambda:('web_search_query','a') in self.window.commands.queue)
+    def test_web_choice_keys_do_not_type_or_require_explicit_activation(self):
+        self.window.set_context(dict(mode='web',source='web-choice',text='Alpha',caret=0,readonly=True,web_choice=True,web_field={'key':'choice','role':'combobox','tag':'select'},echo='characters',phonetic=False,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='web-choice');self.call(self.window.editor.focus_force)
+        for key,state,request in (('Down',0,'Web:Down'),('b',0,'Web:ChoiceLetter:b'),('Home',4,'Web:PageTop'),('End',4,'Web:PageBottom'),('Tab',0,'Web:Tab')):
+            self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
+            self.wait(lambda r=request:('keyboard',r) in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Alpha'))
+    def test_single_line_web_edit_arrows_leave_field(self):
+        self.window.set_context(dict(mode='web',source='web-field',text='Typed',caret=0,readonly=False,web_field={'key':'name','role':'field','tag':'input','type':'text'},echo='characters',phonetic=False,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='web-field');self.call(self.window.editor.focus_force)
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
+        self.wait(lambda:('keyboard','Web:Leave:Down') in self.window.commands.queue)
     def test_html_email_roles_quick_keys_and_activation(self):
         from email_reader import render_html
         body=render_html('<p>First</p><a href="https://example.com/donate"><img alt="Click to donate"></a><p><a role="button" href="https://example.com/give">Donate now</a></p>')

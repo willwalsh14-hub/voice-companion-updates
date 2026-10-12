@@ -1,18 +1,19 @@
 {
-  "version": "0.2.110-test",
+  "version": "0.2.111-test",
   "status": "Testing build",
   "date": "October 11, 2026",
-  "baseline": "0.2.109-test",
-  "scope": "Virtual web page reading, links and headings lists, immediate Ctrl silence and reliable search/confirmation handling.",
+  "baseline": "0.2.110-test",
+  "scope": "Destination loading, optional automatic page reading, transparent field editing, choice navigation and page boundaries.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Virtual page view and element lists",
+          "title": "Automatic reading and transparent fields",
           "details": [
-            "Web pages render in Companion as a stable, read-only virtual text view with element positions. Arrows read text and announce link, heading and control roles; existing quick keys, forms and table navigation use the same view across Firefox, Chrome, Edge and Brave. Page loading announces the title, site, heading/link counts and first line.",
-            "F7 or Insert+F7 opens links; F6 or Insert+F6 opens headings. Say List links or List headings. Up/Down, Home/End and first-letter navigation browse the list. Enter or Open current link opens the chosen link; Enter or Go to heading moves the virtual caret to the selected heading. Escape or Close list returns to the page."
+            "Options, Web browsing now includes Automatic page reading, on by default. The loaded message and virtual viewer remain available when it is off. Say Automatic page reading on or off, Enable automatic page reading, or Disable automatic page reading. Read page explicitly reads the page regardless of this setting.",
+            "Tab, arrows and quick keys automatically make text fields ready for typing and combo/list boxes ready for selection. No additional Enter or forms-mode command is required. Tab/Shift+Tab saves a text field and moves on; arrows leave single-line fields, and leave multiline fields at their text boundaries. Outside fields, ordinary page reading resumes.",
+            "Combo/list boxes accept arrows, Home/End and first-letter cycling. Disabled options are skipped. Say next option, previous option, first option, last option, select option followed by its label, or choose option beginning with a letter. Native and labelled ARIA choice widgets are supported; popup lists do not add a second Tab stop."
           ]
         }
       ]
@@ -21,23 +22,25 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Silencing speech and responsive confirmation",
+          "title": "Page readiness and virtual-view refresh",
           "details": [
-            "Ctrl silences Companion independently of microphone wake/sleep state and foreground window. Windows key-state polling runs on the local speech thread and interrupts local, eSpeak and AI speech; delayed caret and phonetic feedback is canceled.",
-            "Link lists no longer create a Yes/No prompt for each item. Explicitly opening an ordinary link activates it directly. Guided intent suggestions and potentially consequential buttons retain their review safeguards. Remaining web confirmations expose keyboard Y/N and Enter/Escape even when a list is active; voice confirmation and list commands are accepted during local feedback."
+            "Following a result waits for navigation, destination document readiness and readable content, including new tabs and delayed single-page transitions, before capturing the virtual view. Page loaded identifies a ready document; a partially loading document is reported separately. Automatic narration reads the first chunk and Continue reading reads more.",
+            "Later URL, document and DOM changes update the virtual buffer without requiring a spoken Read page request. Incidental text updates preserve the reading position and continuation. Page updates can be detected while old page narration is playing; active field edits, lists and pending reviews are protected from background refresh."
           ]
         },
         {
-          "title": "Page extraction and search engine choice",
+          "title": "Link roles, Escape and page boundaries",
           "details": [
-            "The virtual view traverses visible content in display:contents and zero-rectangle layout containers, preserves link destinations and labels, and reads each link/control on a virtual line. Large-page key generation avoids a spread argument limit; control lookup uses a map. Hidden verification frames no longer mark an otherwise readable page as blocked.",
-            "Search stays on the requested engine. An empty or blocked Brave Search page no longer silently redirects to DuckDuckGo. Readable verification prompts are reported, and another search engine remains a deliberate user choice. Native focus polling does not replace virtual-page or element-list speech."
+            "Web links announce Link before the label during quick navigation, arrow reading and link lists. List first-letter shortcuts continue to use the link label. The main-menu item is now Web browser.",
+            "Ctrl+Home and Ctrl+End reach the exact beginning/end of the virtual page. Voice equivalents include Top of page, Beginning of page, Start of page, Bottom of page and End of page, with Go to, Move to or Jump to also accepted.",
+            "Escape from the page returns to the main menu. Escape first closes an element list or cancels staged field editing; a subsequent Escape leaves the browser activity. Voice Close list, Cancel field editing, Leave website, Close browser and Exit web browser provide matching actions."
           ]
         },
         {
-          "title": "Documentation and verification",
+          "title": "Preserved safeguards and release verification",
           "details": [
-            "Built-in Help and versioned What\u2019s New documents describe the virtual view, list shortcuts, direct link activation and Ctrl silence. Regression tests cover all reported paths; Windows live tests exercise all four supported browser adapters with layout-container and list fixtures. Public-site behavior still needs beta testing."
+            "Automatic field focus does not submit a form. Consequential buttons retain review safeguards, passwords stay masked and are never included in the virtual text, and leaving an unchanged rich field preserves its markup. Keyboard page-boundary navigation can save privately typed input; voice navigation cannot expose a staged password.",
+            "Help and all versioned What\u2019s New formats document these changes. Regression tests cover the new behavior; live Windows fixtures exercise delayed pages, new tabs, native/ARIA choices, physical typing and page-boundary shortcuts across Firefox, Chrome, Edge and Brave. Site-specific beta testing remains necessary."
           ]
         }
       ]

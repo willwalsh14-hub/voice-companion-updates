@@ -1,5 +1,5 @@
 """Screen-reader style browse cursor and logical table coordinates."""
-QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','p':'paragraph'}
+QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','p':'paragraph','s':'listbox'}
 
 def voice_browse_key(command):
     """Translate spoken browsing actions to the same actions used by keys."""
@@ -8,7 +8,7 @@ def voice_browse_key(command):
     command=re.sub(r'^(?:go to|move to|go|move) ', '', command)
     names={'link':'k','heading':'h','form control':'f','form field':'f',
            'button':'b','checkbox':'x','check box':'x','combo box':'c','combobox':'c',
-           'dropdown':'c','drop down':'c','edit field':'e','text field':'e','table':'t',
+           'list box':'s','listbox':'s','dropdown':'c','drop down':'c','edit field':'e','text field':'e','table':'t',
            'radio button':'r','list':'l','list item':'i','landmark':'d','graphic':'g',
            'image':'g','paragraph':'p'}
     match=re.fullmatch(r'(next|previous|prior) (.+)',command)
@@ -29,7 +29,7 @@ def voice_browse_key(command):
             'activate current link':'Activate','activate current button':'Activate',
             'edit current field':'Activate','enter forms mode':'Activate',
             'toggle checkbox':'Space','select radio button':'Space',
-            'next option':'Down','previous option':'Up',
+            'next option':'Down','previous option':'Up','first option':'Home','last option':'End',
             'next control':'Tab','previous control':'ShiftTab',
             'cancel field editing':'Escape','cancel forms mode':'Escape',
             'save field':'Done','finish field editing':'Done'}.get(command)
@@ -37,6 +37,7 @@ def kind(item):
     role=item.get('role','');tag=item.get('tag','');type=item.get('type','')
     if role=='button':return role
     if type in ('checkbox','radio'):return type
+    if role=='listbox' or tag=='select' and (item.get('multiple') or item.get('size',0)>1):return 'listbox'
     if tag=='select' or role=='combobox':return 'combobox'
     if tag in ('input','textarea') or role=='textbox' or item.get('editable'):return 'edit'
     return role
@@ -46,10 +47,10 @@ def describe(item):
     if role=='heading':role+=' level '+str(item.get('level',1))
     state=''
     if role in ('checkbox','radio'):state=', '+('checked' if item.get('checked') else 'not checked')
-    if role=='combobox':state=', '+(item.get('selected_label') or 'no selection')
+    if role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
     if item.get('disabled'):state+=', unavailable'
     if item.get('required'):state+=', required'
-    return name+', '+role+state+'.'
+    return ('Link '+name+state+'.') if role=='link' else name+', '+role+state+'.'
 
 class BrowseCursor:
     def __init__(self,snapshot):
@@ -66,8 +67,8 @@ class BrowseCursor:
         def match(e):
             role=kind(e)
             if level:return role=='heading' and e.get('level')==level
-            if wanted=='form':return role in ('edit','checkbox','radio','combobox','button')
-            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','button') and not e.get('disabled')
+            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button')
+            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button') and not e.get('disabled') and e.get('tabindex',0)>=0
             return role==wanted
         candidates=range(self.index-1,-1,-1) if backward else range(self.index+1,len(self.elements))
         index=next((i for i in candidates if match(self.elements[i])),None)
@@ -124,6 +125,7 @@ SEMANTICS = r'''
             if(block.has(e.tagName))newline();if(e.tagName==='BR'){newline();return;}
             let role=e.getAttribute('role')||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
             if(/^h[1-6]$/.test(tag))role='heading';else if(tag==='a' && e.href)role='link';else if(tag==='button'||tag==='input'&&['submit','reset','button','image'].includes(type))role='button';else if(['input','textarea','select'].includes(tag)||editable)role='field';else if(tag==='table'||role==='grid')role='table';else if(tableMaps.has(e))role='cell';else if(['ul','ol'].includes(tag))role='list';else if(tag==='li')role='listitem';else if(tag==='p')role='paragraph';else if(['main','nav','aside','header','footer'].includes(tag))role='landmark';else if(tag==='img')role='graphic';
+            if(['combobox','listbox','checkbox','radio','button','link','textbox'].includes(e.getAttribute('role')))role=e.getAttribute('role');
             if(tag==='label'){for(const child of all(e).filter(c=>c.matches(selector)))walk(child);return;}
             if(['input','select','textarea','a','button'].includes(tag))newline();
             const control=controlsByKey.get(e.getAttribute('data-voice-companion-key'));

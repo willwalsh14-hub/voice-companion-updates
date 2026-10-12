@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.110-test'
+APP_VERSION = '0.2.111-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -211,11 +211,12 @@ def app_context(mode):
         context['web_elements']=web_session.snapshot.get('elements',[])
         field=getattr(web_session,'keyboard_field',None)
         context['web_browse']=field is None
+        context['web_choice']=bool(field and __import__('web_browse').kind(field) in ('combobox','listbox'))
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
         if field and field.get('type')=='password':context['web_private']=True;context['web_field']=field
         else:
-            source='web:'+str(id(web_session))+(':'+field['key'] if field else ':page')
-            context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None,caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
+            source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key'] if field else ':page')
+            context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'],caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
             context['web_field']=field
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
     elif logical=='help' and help_session and help_session.level=='article':
@@ -242,9 +243,13 @@ def apply_keyboard_edit(payload,mode):
     if payload['source']!=context['source']:return False
     if payload.get('readonly'):
         if payload['after']!=context['text']:return False
+        if context['mode']=='web' and context.get('web_choice'):
+            EDIT_ACK[payload['source']]=payload['seq'];return True
         reader=help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
         reader.position=payload['caret'];reader.continuation=payload['caret']
-        if context['mode']=='web' and web_session.browse:web_session.browse.set_position(payload['caret'])
+        if context['mode']=='web' and web_session.browse and web_session.keyboard_field is None:
+            web_session.browse.set_position(payload['caret'])
+            if not payload.get('selection'):web_session.auto_focus_position()
     elif context['mode']=='web':
         web_session.keyboard_field['value']=payload['after'];web_session.web_edit_caret=payload['caret']
     else:
@@ -340,7 +345,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Use your wake command or keyboard to begin. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browsing', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browser', 'search the web'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -383,6 +388,7 @@ def settings_action(key,mode):
         return 'media'
     if key=='web_favorites':
         web_session=web_session or WebSession(APP)
+        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         speak(web_session.command('list favorites'))
         return 'web'
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
@@ -437,7 +443,7 @@ def choose_menu_letter(letter,mode):
     if index is None:speak('No menu item starts with '+letter.upper()+'.');return True
     select(index)
     if VOICE_PICK_INDEX is not None:preview_voice(index)
-    else:speak(announce_item(names[index],index,len(names)))
+    else:speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)))
     return True
 
 def commit_email_field_tab(payload,mode):
@@ -475,6 +481,8 @@ def _navigation_key(key,mode):
             speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'leave website'
+    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None:return 'leave website'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key=='Enter':return 'open current heading' if web_session.list_focus=='headings' else 'open current link'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
@@ -484,7 +492,7 @@ def _navigation_key(key,mode):
         state=menu_state(mode)
         if state:
             names,current,select=state;index=0 if key=='Home' else len(names)-1
-            select(index);speak(announce_item(names[index],index,len(names)));return None
+            select(index);speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)));return None
         if mode=='mailbox' and mail_session and mail_session.view=='folder' and mail_session.rows and not mail_session.pending:
             speak(mail_session._focus(1 if key=='Home' else len(mail_session.rows)));return None
     if mode=='help' and key=='Escape':return 'go back'
@@ -633,7 +641,7 @@ def web_feedback_control(text,mode):
     if web_session.list_focus in ('links','headings'):
         return command in ('next','previous','open current link','open current heading','go to heading','that one','okay','ok','cancel','close list','back to page')
     from web_browse import voice_browse_key
-    return bool(voice_browse_key(command) or reading_request(command)) or command in ('list links','list headings','read page','leave website','go back')
+    return bool(voice_browse_key(command) or reading_request(command)) or command in ('list links','list headings','read page','leave website','go back','top of page','beginning of page','start of page','bottom of page','end of page','go to top of page','go to beginning of page','go to bottom of page','go to end of page')
 
 def interrupt_speech():
     global SPEECH_PAUSED
@@ -988,6 +996,7 @@ def run_web_search(query):
     """Search-entry text is literal, even when it resembles an app command."""
     global web_session
     web_session=web_session or WebSession(APP)
+    web_session.auto_read=PREFERENCES.get('web_auto_read',True)
     revision=getattr(web_session,'page_revision',0)
     speak_web_result(web_session.search(query),revision)
     return 'web' if web_session.snapshot else 'search'
@@ -1147,6 +1156,14 @@ def _handle(text, mode, typed=False):
             return handle(text,SETTINGS_RETURN_MODE,typed)
         SETTINGS_PANEL.command(text)
         return mode
+    auto_read_request=re.fullmatch(r'(?:(?:set|turn) )?(?:automatic page reading|automatically read (?:web )?pages|read pages automatically)(?: to)? (on|off)',command)
+    toggle_read=re.fullmatch(r'(?:turn|switch) (on|off) automatic page reading',command)
+    enable_read=re.fullmatch(r'(enable|disable) automatic page reading',command)
+    if auto_read_request or toggle_read or enable_read:
+        enabled=enable_read[1]=='enable' if enable_read else (auto_read_request or toggle_read)[1]=='on'
+        PREFERENCES['web_auto_read']=enabled;save_preferences()
+        if web_session:web_session.auto_read=enabled
+        speak('Automatic page reading '+('on.' if enabled else 'off.'));return mode
     startup_command=re.fullmatch(r'(?:set )?(?:start with windows|start voice companion with windows|start automatically with windows|windows startup)(?: to)? (on|off)',command)
     if startup_command:
         try:
@@ -1830,6 +1847,7 @@ def _handle(text, mode, typed=False):
         pending_website = None
         if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
             web_session = web_session or WebSession(APP)
+            web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             revision=getattr(web_session,'page_revision',0)
             result = web_session.open(address)
             speak_web_result(result,revision)
@@ -1838,15 +1856,16 @@ def _handle(text, mode, typed=False):
             speak_prompt('Website request canceled. Say open website followed by the address to try again.')
         return mode
     if mode == 'web':
-        if command in ('search','search web','search the web','web search','new search') or text=='web key Search':
+        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
             SEARCH_RETURN_MODE='web'
             speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
             return 'search'
         revision=getattr(web_session,'page_revision',0)
         if text.startswith('web key '):speak_web_result(web_session.keyboard(text[8:]),revision);return mode
         web_session.input_mode = INPUT_MODE
-        if command in ('leave website', 'close website', 'main menu', 'back to main menu'):
-            speak('The browser window remains available.')
+        if command in ('leave website', 'close website','close browser','exit browser','leave web browser','close web browser','exit web browser', 'main menu', 'back to main menu'):
+            announce_main_menu()
             return 'awake'
         if command.startswith(('open website ', 'go to website ')):
             try:
@@ -2103,6 +2122,7 @@ def _handle(text, mode, typed=False):
         return 'media'
     if mode == 'search':
         web_session = web_session or WebSession(APP)
+        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         revision=getattr(web_session,'page_revision',0)
         speak_web_result(web_session.search(text),revision)
         return 'web' if web_session.snapshot else 'search'
@@ -2140,6 +2160,7 @@ def _handle(text, mode, typed=False):
         return 'awake'
     if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
         web_session = web_session or WebSession(APP)
+        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         speak(web_session.command(text))
         return mode
     if command.startswith(('open website ', 'go to website ')):
@@ -2153,6 +2174,7 @@ def _handle(text, mode, typed=False):
         return mode
     if command in ('list favorites','my favorites') or command.startswith(('open favorite ', 'go to favorite ')):
         web_session = web_session or WebSession(APP)
+        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         speak(web_session.command(text))
         return 'web' if web_session.snapshot else 'awake'
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):
@@ -2191,10 +2213,13 @@ def _handle(text, mode, typed=False):
         try: speak(media().search_podcasts(topic))
         except (OSError,ValueError): speak('Podcast search could not connect. Try later.')
         return 'media'
+    if command in ('web browser','open web browser','web browsing','open web browsing'):
+        SEARCH_RETURN_MODE='awake';speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.');return 'search'
     if re.search(r'\b(search|look up|google|find|web)\b', command):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:
             web_session = web_session or WebSession(APP)
+            web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             revision=getattr(web_session,'page_revision',0)
             speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'brave'),revision)
             return 'web' if web_session.snapshot else 'awake'
@@ -2554,10 +2579,15 @@ def main():
                     notice = browser_focus_notice(mode)
                     if notice: speak(notice)
                 continue
-            if mode == 'web' and web_session and not speech_busy() and time.monotonic() - last_focus_check > 1.2:
+            if mode == 'web' and web_session and time.monotonic() - last_focus_check > 1.2:
                 last_focus_check = time.monotonic()
-                notice = browser_focus_notice(mode)
-                if notice: speak(notice)
+                revision=getattr(web_session,'page_revision',0)
+                web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+                try:
+                    notice=web_session.refresh_changed()
+                    sync_app_context(mode)
+                    if notice:speak_web_result(notice,revision)
+                except Exception:pass
             if AUDIO_OVERFLOW:
                 if cloud:
                     cloud.stop()

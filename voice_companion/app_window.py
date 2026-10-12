@@ -156,12 +156,13 @@ class CompanionWindow:
                     self.commands.put(('keyboard','Control'));return 'break'
                 if key in ('Up','Down','Left','Right','Tab','ISO_Left_Tab','Home','End','Escape') or self.context.get('menu_letters') and event.char.isalpha():
                     if self.keyboard_output:self.keyboard_output.interrupt()
-                if key in ('Home','End') and not self.context.get('source') and not self.email_field and not typed.get():
+                if key in ('Home','End') and not control and not self.context.get('source') and not self.email_field and not typed.get():
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
                 if mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
+                elif mode=='web' and control and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
                 if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
                     self.commands.put(typed.get().strip().lower());typed.delete(0,'end');return 'break'
                 if request:pass
@@ -170,16 +171,21 @@ class CompanionWindow:
                 elif key=='F4' and event.state&8:request='Alt+F4'
                 elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and (event.widget==self.editor or event.widget==typed and (self.context.get('web_private') or not typed.get())):
                     field=self.context.get('web_field')
-                    if field and self.context.get('web_private') and key in ('Return','Tab','ISO_Left_Tab'):
-                        self.commands.put(('web_private_value',{'value':typed.get(),'next':'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done'}));typed.delete(0,'end');return 'break'
+                    if field and self.context.get('web_private') and (key in ('Return','Tab','ISO_Left_Tab','Up','Down') or control and key in ('Home','End')):
+                        self.commands.put(('web_private_value',{'value':typed.get(),'next':('PageTop' if key=='Home' else 'PageBottom') if control and key in ('Home','End') else 'Leave:'+key if key in ('Up','Down') else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done'}));typed.delete(0,'end');return 'break'
                     elif key=='Escape':request='Web:Escape'
+                    elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
+                    elif self.context.get('web_choice') and key in ('Up','Down','Left','Right','Home','End'):request='Web:'+key
+                    elif self.context.get('web_choice') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalnum():request='Web:ChoiceLetter:'+event.char
+                    elif field and not self.context.get('web_private') and not control and not shift and key in ('Up','Down','Left','Right'):
+                        value=editor.get('1.0','end-1c');caret=len(editor.get('1.0','insert'))
+                        multiline=field.get('tag')=='textarea' or field.get('editable')
+                        if key=='Up' and (not multiline or '\n' not in value[:caret]) or key=='Down' and (not multiline or '\n' not in value[caret:]) or key=='Left' and caret==0 or key=='Right' and caret==len(value):request='Web:Leave:'+key
                     elif key=='F5':request='Web:Refresh'
                     elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
-                    elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
-                    elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgp123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
-                    elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control):request='Web:Activate'
+                    elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
+                    elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control):request='Web:Done' if field and not self.context.get('web_choice') else 'Web:Activate'
                     elif not field and key=='space':request='Web:Space'
-                    elif not field and key in ('Up','Down') and self.context.get('web_combo'):request='Web:'+key
                     elif key=='Left' and event.state&(8|0x20000):request='Web:Back'
 
                 elif mode=='document' and key=='F2':request='F2'
@@ -321,6 +327,7 @@ class CompanionWindow:
                         if item.get('start',0)<=caret<item.get('end',0) and kind(item) in ('link','heading','button','edit','checkbox','radio','combobox','cell'):
                             role=kind(item)+(' level '+str(item.get('level',1)) if kind(item)=='heading' else '')
                             if role not in roles:roles.append(role)
+                    if 'link' in roles:notice='Link '+notice;roles.remove('link')
                     if roles:notice+=', '+', '.join(roles)+'.'
                 self.feedback(notice);cancel_phonetic()
                 if char and self.context.get('phonetic') and phonetic(char):
