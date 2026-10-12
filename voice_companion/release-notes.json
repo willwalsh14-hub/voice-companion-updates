@@ -1,27 +1,24 @@
 {
-  "version": "0.2.112-test",
+  "version": "0.2.113-test",
   "status": "Testing build",
   "date": "October 11, 2026",
-  "baseline": "0.2.111-test",
-  "scope": "Browser window lifecycle, reliable result headings, app exit and complete radio/podcast keyboard menus.",
+  "baseline": "0.2.112-test",
+  "scope": "Unified virtual cursor, readable result headings, configurable Google-default search and main-menu labels.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Radio and podcasts by keyboard and voice",
+          "title": "Default search engine",
           "details": [
-            "Radio and Podcasts open shared action menus. Arrows, Home/End, first-letter navigation and Enter choose actions. Tab/Shift+Tab switches between actions and results. Result lists support the same navigation; Enter plays stations, presets, saved recordings and downloaded episodes, or opens a podcast show. Escape backs out through episodes, results, actions and the main menu. Voice Actions, Results, Next action, Previous action and spoken menu labels use the same state.",
-            "Search and browse forms accept typed or spoken values. Radio forms cover genre, country, state, city, database choice, preset naming, recording length, scheduling day/time/length/daily repeat and RadioSure import path. Podcast forms cover search/category, automatic download limits and seek amounts. Tab/Shift+Tab visits fields, OK and Cancel; Enter continues or submits, Escape cancels. Choice fields support arrows, Home/End, letters and spoken option navigation. Invalid input keeps the form open.",
-            "Ctrl+F opens search. Ctrl+P lists radio presets or podcast subscriptions. F5 refreshes station directories or subscriptions. Space pauses/resumes selected audio, Ctrl+R resumes, Ctrl+S stops and Ctrl+Left/Right seeks 15 seconds where supported. Ctrl+D saves a radio preset or downloads a selected podcast episode. Radio actions include recording, scheduling, stopping recordings and individually browsing saved recordings and schedules. Podcast actions include subscriptions, episodes, offline downloads, automatic/manual downloads, seeking and chapter/episode/show controls.",
-            "Deleting a preset, canceling a selected schedule or removing a subscription asks Yes or No. Y/N answers immediately; arrows/Tab choose and Enter confirms, Escape cancels. Schedule cancellation and subscription removal use stable identifiers so the intended item is removed. Removing a subscription does not delete existing downloaded audio."
+            "Google is the initial default for typed searches, Search the web requests and follow-up searches. Options, Web browser includes Default search engine. Google, Bing, Brave Search and DuckDuckGo are retained choices; the installed browser selection remains separate.",
+            "Say Default search engine Google, Set default search engine Brave Search, or Search engine DuckDuckGo. Explicit engine-name searches use that engine for the request. The selected search engine is not silently replaced after unreadable results or human verification. The setting is saved with the other preferences."
           ]
         },
         {
-          "title": "Keep browser window open",
+          "title": "Word processor and Notepad",
           "details": [
-            "Options, Web browsing includes Keep browser window open, unchecked by default. Say Keep browser window open on or off. When off, leaving the browser activity closes all windows and tabs in Companion’s dedicated browser context. Your ordinary browser windows are unaffected.",
-            "When enabled, leaving the activity retains the browser page. Choosing Web browser from the main menu raises the retained page and refreshes Companion’s virtual reader rather than requiring another search. If the retained page has been closed, the typed/voice search prompt opens normally. Exiting Voice Companion closes its owned browser context regardless of this preference."
+            "Documents on the main menu is now Word processor, with W as its first-letter key. Notes is now Notepad, with N. Say Word processor, Open word processor, Notepad or Open Notepad to open them. Existing document and note commands, file locations and editing functions remain available."
           ]
         }
       ]
@@ -30,18 +27,25 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Heading navigation and concise page loading",
+          "title": "One virtual cursor for page navigation",
           "details": [
-            "Repeated H and Shift+H retain the selected semantic heading when a nested link shares its text position. Caret acknowledgments and incidental DOM refreshes no longer reset the cursor into that nested link and cause repeated headings.",
-            "Result heading labels prefer the title text over URL/breadcrumb metadata. Search-result links use available title text while retaining the original DOM identity for safe activation. Page-loaded speech no longer announces heading or link totals.",
-            "Alt+F4 again requests exit of the entire app from editable text, browser reading, media menus, confirmation prompts and Options. Existing exit confirmation and unsaved-document review remain in force."
+            "Quick element navigation, link/heading lists, keyboard reading and voice reading use the same virtual page position. After H, Shift+H, K, Tab or other element navigation, subsequent arrow reading continues from the selected element. The reading editor receives a cursor revision independently of outstanding caret acknowledgments. Stale read-only caret events are discarded rather than moving the cursor back.",
+            "Left/Right reads characters, Ctrl+Left/Right moves words, Up/Down reads lines while preserving the preferred column, Ctrl+Up/Down moves paragraphs, Home/End moves within the line and Page Up/Page Down makes longer jumps. Ctrl+Home/End reaches the page boundaries. Shift selection and Ctrl+C remain available in the read-only view; a new element jump clears the selection. Editable fields keep their ordinary typing/caret behavior.",
+            "Incidental DOM changes remap the selected element by its stable key when preceding text shifts. Active read-only selections are protected from background buffer replacement. Continue reading retains its continuation rather than restarting. Existing automatic field/choice handling and form review safeguards remain in place."
+          ]
+        },
+        {
+          "title": "Result headings and link activation",
+          "details": [
+            "Readable heading title text takes precedence over URL/breadcrumb metadata, including URL-only ARIA labels. URL-only metadata headings are excluded from heading destinations when no readable title is available. Heading and link positions point at their title text in the virtual buffer.",
+            "The original DOM identity is retained for validating link activation. Enter on a heading contained in a link opens that associated link; Enter in the separate headings list continues to move to the heading without opening it."
           ]
         },
         {
           "title": "Documentation and verification",
           "details": [
-            "The built-in Help guide and versioned What’s New formats include the new browser preference, media menus/forms, shortcuts and matching voice commands. Existing email, document, web-form review and guided voice workflows remain covered by regression tests.",
-            "Tests exercise radio/podcast keyboard and voice interchange, validation, recording/scheduling, subscriptions/download policies, confirmations, actual Windows key dispatch and browser window cleanup. Live fixtures cover nested result headings, caret updates and result activation across Firefox, Chrome, Edge and Brave. Site-specific search results, radio streams and podcast hosts still require beta testing."
+            "Built-in Help and every versioned What’s New format document the new menu labels, retained engines, default setting and virtual-reading behavior. Regression tests cover stale caret events, selection, search routing, voice/keyboard interchange and reading continuation.",
+            "Live browser fixtures cover result title metadata, headings/links, arrows after jumps, DOM reflow and safe activation. Windows integration checks actual editor caret positions and keyboard navigation across Firefox, Chrome, Edge and Brave. These checks do not replace beta testing on individual public websites."
           ]
         }
       ]

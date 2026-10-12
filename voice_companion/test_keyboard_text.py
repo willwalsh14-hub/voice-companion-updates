@@ -490,5 +490,19 @@ class WindowKeyboardTests(unittest.TestCase):
             self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='F4',state=8))
             self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('keyboard','Alt+F4'))
 
+    def test_virtual_browser_reading_keys_dispatch_without_using_old_native_caret(self):
+        context=dict(mode='web',source='page',text='Title\nBefore\nLater heading\nAfter',caret=0,readonly=True,web_browse=True,web_cursor_revision=1,echo='characters',phonetic=False,ack=0,focus=True)
+        self.window.set_context(context);self.call(lambda:self.window.editor.focus_force())
+        # Create an unacknowledged selection update to reproduce the old seq gate.
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='a',state=4))
+        self.wait(lambda:not self.window.commands.empty());self.window.commands.get()
+        target=context['text'].index('Later heading')
+        self.window.set_context(dict(context,caret=target,web_cursor_revision=2,focus=False))
+        self.call(lambda:self.assertEqual(len(self.window.editor.get('1.0','insert')),target))
+        for key,state,expected in [('Down',0,'Web:Read:Down'),('Up',0,'Web:Read:Up'),('Right',4,'Web:Read:Control:Right'),('Home',0,'Web:Read:Home'),('Next',0,'Web:Read:Next')]:
+            self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
+            self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('keyboard',expected))
+        self.call(lambda:self.assertEqual(len(self.window.editor.get('1.0','insert')),target))
+
 if __name__=='__main__':unittest.main()
 

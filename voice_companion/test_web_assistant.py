@@ -124,9 +124,9 @@ class WebTests(unittest.TestCase):
     def test_search_and_matching_reject_empty(self):
         self.assertEqual(match_choices(self.backend.controls, 'um uh'), [])
         self.assertIn('Page loaded: Example', self.session.command('look up public benefits'))
-        self.assertIn('search.brave.com/search?q=public%20benefits', self.backend.url)
+        self.assertIn('www.google.com/search?q=public%20benefits', self.backend.url)
         self.assertIn('Page loaded: Example', self.session.command('what about eligibility'))
-        self.assertIn('search.brave.com/search?q=public%20benefits%20eligibility', self.backend.url)
+        self.assertIn('www.google.com/search?q=public%20benefits%20eligibility', self.backend.url)
         self.assertIn('Source: Example account', self.session.command('what does this page say about transfer'))
 
     def test_numbered_links_and_late_search_results(self):

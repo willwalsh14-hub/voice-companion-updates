@@ -165,6 +165,7 @@ class NativeSettings:
             if cmd in ('ok','okay','confirm','confirm that','save','save settings','that one'):save();return
             if cmd in ('close settings','cancel settings'):self.announce('Settings closed.');close();return
             if cmd in ('cancel','back','settings menu','back to settings'):cancel_category();return
+            cmd=cmd.replace('web browsing','web browser')
             name=cmd.removeprefix('go to ').removeprefix('settings ').removeprefix('select ')
             match=next((i for i,n in enumerate(CATEGORIES) if name==n.lower()),None)
             if match is not None:select_category(match);open_category();return

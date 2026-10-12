@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.112-test'
+APP_VERSION = '0.2.113-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -227,6 +227,7 @@ def app_context(mode):
             s=editor.selection;context['selection']=(absolute(editor,(s.first_paragraph,s.first_offset)),absolute(editor,(s.last_paragraph,s.last_offset)))
     elif logical=='web' and web_session and web_session.snapshot and not web_session.list_focus and web_session.form_index is None:
         context['web_revision']=getattr(web_session,'page_revision',0)
+        context['web_cursor_revision']=getattr(web_session,'cursor_revision',0)
         context['web_elements']=web_session.snapshot.get('elements',[])
         field=getattr(web_session,'keyboard_field',None)
         context['web_browse']=field is None
@@ -235,7 +236,7 @@ def app_context(mode):
         if field and field.get('type')=='password':context['web_private']=True;context['web_field']=field
         else:
             source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key'] if field else ':page')
-            context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'],caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
+            context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'],selection=getattr(web_session,'selection',None) if field is None else None,caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
             context['web_field']=field
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
     elif logical=='help' and help_session and help_session.level=='article':
@@ -261,12 +262,14 @@ def apply_keyboard_edit(payload,mode):
     context=app_context(mode)
     if payload['source']!=context['source']:return False
     if payload.get('readonly'):
+        if context['mode']=='web' and payload.get('web_cursor_revision',context.get('web_cursor_revision'))!=context.get('web_cursor_revision'):return False
         if payload['after']!=context['text']:return False
         if context['mode']=='web' and context.get('web_choice'):
             EDIT_ACK[payload['source']]=payload['seq'];return True
         reader=help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
         reader.position=payload['caret'];reader.continuation=payload['caret']
         if context['mode']=='web' and web_session.browse and web_session.keyboard_field is None:
+            web_session.selection=payload.get('selection')
             web_session.browse.set_position(payload['caret'])
             if not payload.get('selection'):web_session.auto_focus_position()
     elif context['mode']=='web':
@@ -366,7 +369,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Use your wake command or keyboard to begin. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Documents', 'create a document'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notes', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notepad', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -411,6 +414,7 @@ def settings_action(key,mode):
     if key=='web_favorites':
         web_session=web_session or WebSession(APP)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command('list favorites'))
         return 'web'
     return handle(SETTINGS_ACTIONS[key],mode,typed=True)
@@ -615,6 +619,8 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 def fast_command_request(command, mode):
     if mode in ('document','email_draft','mailbox','help','web','note') and reading_request(command) and not (mode in ('document','email_draft') and INPUT_MODE=='dictation'):return True
+    if command in ('word processor','open word processor','notepad','open notepad'):return True
+    if re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command):return True
     if command in POWER_COMMANDS:return True
     if mode in ('settings','power_confirm','exit_confirm','media'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
@@ -1019,6 +1025,7 @@ def run_web_search(query):
     global web_session
     web_session=web_session or WebSession(APP)
     web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+    web_session.search_engine=PREFERENCES.get('web_search_engine','google')
     revision=getattr(web_session,'page_revision',0)
     speak_web_result(web_session.search(query),revision)
     return 'web' if web_session.snapshot else 'search'
@@ -1117,6 +1124,8 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE
     command=normalized_command(text)
+    if command in ('word processor','open word processor'):text='create a document';command=text
+    if command in ('notepad','open notepad'):text='write a note';command=text
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
             speak('Canceled.');return EXIT_RETURN_MODE
@@ -1181,6 +1190,12 @@ def _handle(text, mode, typed=False):
             return handle(text,SETTINGS_RETURN_MODE,typed)
         SETTINGS_PANEL.command(text)
         return mode
+    search_engine_request=re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command)
+    if search_engine_request:
+        engine='brave' if search_engine_request[1].startswith('brave') else 'duckduckgo' if search_engine_request[1].startswith('duck') else search_engine_request[1]
+        PREFERENCES['web_search_engine']=engine;save_preferences()
+        if web_session:web_session.search_engine=engine
+        speak('Default search engine '+{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[engine]+'.');return mode
     keep_open_request=re.fullmatch(r'(?:(?:set|turn) )?keep browser window open(?: to)? (on|off)',command)
     if keep_open_request:
         PREFERENCES['web_keep_open']=keep_open_request[1]=='on';save_preferences()
@@ -1879,6 +1894,7 @@ def _handle(text, mode, typed=False):
         if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
             web_session = web_session or WebSession(APP)
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+            web_session.search_engine=PREFERENCES.get('web_search_engine','google')
             revision=getattr(web_session,'page_revision',0)
             result = web_session.open(address)
             speak_web_result(result,revision)
@@ -1888,6 +1904,7 @@ def _handle(text, mode, typed=False):
         return mode
     if mode == 'web':
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
             SEARCH_RETURN_MODE='web'
             speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
@@ -2156,6 +2173,7 @@ def _handle(text, mode, typed=False):
     if mode == 'search':
         web_session = web_session or WebSession(APP)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         revision=getattr(web_session,'page_revision',0)
         speak_web_result(web_session.search(text),revision)
         return 'web' if web_session.snapshot else 'search'
@@ -2194,6 +2212,7 @@ def _handle(text, mode, typed=False):
     if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
         web_session = web_session or WebSession(APP)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command(text))
         return mode
     if command.startswith(('open website ', 'go to website ')):
@@ -2208,6 +2227,7 @@ def _handle(text, mode, typed=False):
     if command in ('list favorites','my favorites') or command.startswith(('open favorite ', 'go to favorite ')):
         web_session = web_session or WebSession(APP)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command(text))
         return 'web' if web_session.snapshot else 'awake'
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):
@@ -2252,13 +2272,22 @@ def _handle(text, mode, typed=False):
             except Exception:result=''
             if result:speak(result);return 'web'
         SEARCH_RETURN_MODE='awake';speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.');return 'search'
-    if re.search(r'\b(search|look up|google|find|web)\b', command):
-        topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|find(?: me)?|web(?: for)?)\b\s*', '', text)
+    direct_engine=re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)',text,re.I)
+    if direct_engine:
+        web_session=web_session or WebSession(APP)
+        web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+        web_session.search_engine=PREFERENCES.get('web_search_engine','google')
+        revision=getattr(web_session,'page_revision',0)
+        speak_web_result(web_session.command(text),revision)
+        return 'web' if web_session.snapshot else 'awake'
+    if re.search(r'\b(search|look up|google|bing|find|web)\b', command):
+        topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|bing|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:
             web_session = web_session or WebSession(APP)
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+            web_session.search_engine=PREFERENCES.get('web_search_engine','google')
             revision=getattr(web_session,'page_revision',0)
-            speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'brave'),revision)
+            speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'bing' if command.startswith('bing ') else None),revision)
             return 'web' if web_session.snapshot else 'awake'
         SEARCH_RETURN_MODE='awake'
         speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.')
@@ -2620,6 +2649,7 @@ def main():
                 last_focus_check = time.monotonic()
                 revision=getattr(web_session,'page_revision',0)
                 web_session.auto_read=PREFERENCES.get('web_auto_read',True)
+                web_session.search_engine=PREFERENCES.get('web_search_engine','google')
                 try:
                     notice=web_session.refresh_changed()
                     sync_app_context(mode)

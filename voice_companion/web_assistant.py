@@ -143,6 +143,11 @@ class BrowserBackend:
         self.page.bring_to_front()
         return True
 
+    def scroll_to(self,item):
+        frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
+        element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
+        if element.count()==1:element.evaluate("e=>e.scrollIntoView({block:'nearest',inline:'nearest'})",timeout=300)
+
     def goto(self, url):
         self.start()
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
@@ -492,7 +497,55 @@ class WebSession:
         self.field_list_index = 0
         self.input_mode = 'mixed'
         self.reading = ReadingCursor()
-        self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None
+        self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
+
+    def cursor_changed(self,scroll=False):
+        self.cursor_revision+=1;self.selection=None
+        item=self.browse.current() if self.browse else None
+        if scroll and item and hasattr(self.backend,'scroll_to'):
+            try:self.backend.scroll_to(item)
+            except Exception:pass
+
+    def read_key(self,key):
+        control=key.startswith('Control:');key=key.split(':')[-1]
+        text=self.reading.text;position=self.reading.position
+        direction=-1 if key in ('Up','Left','Prior') else 1
+        if key in ('Home','End'):
+            start=text.rfind('\n',0,position)+1;end=text.find('\n',position)
+            if end<0:end=len(text)
+            self.reading.position=start if key=='Home' else end
+        elif key in ('Left','Right'):
+            if control:
+                starts=[m.start() for m in re.finditer(r'\S+',text)]
+                candidates=[x for x in starts if x<position] if direction<0 else [x for x in starts if x>position]
+                self.reading.position=(candidates[-1] if direction<0 else candidates[0]) if candidates else 0 if direction<0 else len(text)
+            else:self.reading.position=max(0,min(len(text),position+direction))
+        elif control:
+            from keyboard_text import paragraph_destination
+            self.reading.position=paragraph_destination(text,position,direction)
+        else:
+            from bisect import bisect_right
+            starts=[0]+[m.end() for m in re.finditer('\n',text)]
+            index=max(0,bisect_right(starts,position)-1)
+            column=getattr(self,'preferred_column',None)
+            if column is None:column=position-starts[index]
+            self.preferred_column=column
+            index=max(0,min(len(starts)-1,index+direction*(20 if key in ('Prior','Next') else 1)))
+            end=text.find('\n',starts[index]);end=len(text) if end<0 else end
+            self.reading.position=min(starts[index]+column,end)
+        if key not in ('Up','Down','Prior','Next') or control:self.preferred_column=None
+        self.reading.continuation=self.reading.position
+        self.browse.set_position(self.reading.position);self.cursor_changed()
+        from keyboard_text import caret_feedback
+        message=caret_feedback(text,self.reading.position,key,control)[0] or 'Blank.'
+        if key in ('Up','Down','Prior','Next'):
+            item=self.browse.current()
+            if item and item.get('start',0)<=self.reading.position<item.get('end',0):
+                role=kind(item)
+                if role=='link':message='Link '+message
+                elif role=='heading':message+=' heading level '+str(item.get('level',1))+'.'
+            self.auto_focus_position()
+        return message
 
     def focus_current(self):
         item=self.browse.current() if self.browse else None
@@ -525,7 +578,7 @@ class WebSession:
         self.browse.set_position(self.reading.position)
         message=self.reading.move('line',0)
         self.reading.position=len(self.reading.text) if bottom else 0;self.reading.continuation=self.reading.position
-        self.browse.set_position(self.reading.position)
+        self.browse.set_position(self.reading.position);self.cursor_changed()
         return ('Bottom of page. ' if bottom else 'Top of page. ')+message
 
     def leave_field(self,direction):
@@ -561,6 +614,7 @@ class WebSession:
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
+            if key.startswith('Read:'):return self.read_key(key[5:])
             if key in ('PageTop','PageBottom'):return self.page_boundary(key=='PageBottom')
             if key.startswith('Leave:'):return self.leave_field(key.split(':')[1])
             if self.keyboard_field and kind(self.keyboard_field) in ('combobox','listbox') and (key in ('Up','Down','Left','Right','Home','End','Activate','Space','Done') or key.startswith('ChoiceLetter:')):return self.choice_key(key)
@@ -596,6 +650,9 @@ class WebSession:
                 item=self.browse.current()
                 if not item:return 'Move to a link or control first.'
                 role=kind(item)
+                if role=='heading':
+                    links=[e for e in self.browse.elements if kind(e)=='link' and e.get('start',0)<=item.get('start',0)<e.get('end',0)]
+                    if links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
                 if role in ('checkbox','radio'):
@@ -609,7 +666,7 @@ class WebSession:
                     self.choices=[item];return self.choose(1)
                 return describe(item)
             else:return self.command({'Up':'previous line','Down':'next line','Left':'previous character','Right':'next character','Home':'read from beginning','End':'read current line'}.get(key,'read current line'))
-            self.reading.position=self.browse.position;self.reading.continuation=self.browse.position
+            self.reading.position=self.browse.position;self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
             if key.startswith('Quick:') or key in ('Tab','ShiftTab'):self.focus_current()
             return message
         except Exception as exc:
@@ -621,7 +678,7 @@ class WebSession:
         self.browse=BrowseCursor(snapshot)
         target=next((e for e in self.browse.elements if e.get('key')==item.get('key') and e.get('frame_index')==item.get('frame_index') and e.get('tag')==item.get('tag')),None)
         if target:
-            self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0);self.reading.position=self.browse.position
+            self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0);self.reading.position=self.browse.position;self.cursor_changed()
             return describe(target)
         return 'The page changed. Press F5 to refresh.'
 
@@ -703,6 +760,7 @@ class WebSession:
         if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
         self.snapshot = self.backend.snapshot()
         self.page_revision=getattr(self,'page_revision',0)+1
+        self.cursor_changed()
         # DOMContentLoaded often precedes text inserted by the site's scripts.
         # Wait briefly before declaring a genuinely empty page.
         if not self.snapshot.get('challenge') and not str(self.snapshot.get('text', '')).strip():
@@ -743,7 +801,7 @@ class WebSession:
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
-        if not self.snapshot or self.keyboard_field or self.list_focus or self.form_index is not None or self.pending or self.submit_pending or not hasattr(self.backend,'document_stamp'):return ''
+        if not self.snapshot or self.keyboard_field or getattr(self,'selection',None) or self.list_focus or self.form_index is not None or self.pending or self.submit_pending or not hasattr(self.backend,'document_stamp'):return ''
         stamp=self.backend.document_stamp()
         if not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh()
         previous=self.document_state or {}
@@ -758,9 +816,13 @@ class WebSession:
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
         if changed:self.page_revision+=1
         self.browse=BrowseCursor(snapshot);self.browse.set_position(min(position,len(self.reading.text)))
-        if anchor and position==anchor.get('start'):
-            match=next((i for i,e in enumerate(self.browse.elements) if e['key']==anchor['key'] and e.get('frame_index')==anchor.get('frame_index') and e.get('start')==position),None)
-            if match is not None:self.browse.index=match
+        if anchor and anchor.get('start',0)<=position<=anchor.get('end',0):
+            match=next((i for i,e in enumerate(self.browse.elements) if e['key']==anchor['key'] and e.get('frame_index')==anchor.get('frame_index')),None)
+            if match is not None:
+                self.browse.index=match;target=self.browse.current()
+                self.browse.position=min(target.get('end',0),target.get('start',0)+position-anchor.get('start',0))
+                continuation+=self.browse.position-position
+        if changed:self.cursor_changed()
         self.reading.position=self.browse.position;self.reading.continuation=min(continuation,len(self.reading.text))
         return ''
 
@@ -774,14 +836,12 @@ class WebSession:
         except Exception:
             return 'The page did not open. Check the address and internet connection.'
 
-    def search(self, query, provider='brave'):
+    def search(self, query, provider=None):
         if not _plain(query): return 'What would you like to look up?'
-        urls = {
-            'google': ('Google', 'https://www.google.com/search?q='),
-            'brave': ('Brave Search', 'https://search.brave.com/search?q='),
-            'duckduckgo': ('DuckDuckGo', 'https://html.duckduckgo.com/html/?q='),
-        }
-        name, base = urls.get(provider, urls['brave'])
+        urls={'google':('Google','https://www.google.com/search?q='),'bing':('Bing','https://www.bing.com/search?q='),'brave':('Brave Search','https://search.brave.com/search?q='),'duckduckgo':('DuckDuckGo','https://html.duckduckgo.com/html/?q=')}
+        engine=provider or (self.search_engine if self.search_engine in urls else 'google')
+        if engine not in urls:return 'Choose Google, Bing, Brave Search or DuckDuckGo as the search engine.'
+        name,base=urls[engine]
         try:
             self.backend.goto(base + quote(query))
             result = self._refresh()
@@ -1215,7 +1275,7 @@ class WebSession:
         if self.list_focus=='links':return self.open_link((self.link_position or 0)+1)
         if self.list_focus=='headings':
             item=self.heading_items()[self.heading_index];self.list_focus=None
-            self.browse.set_position(item['start']);self.reading.position=item['start'];self.reading.continuation=item['start']
+            self.browse.set_position(item['start']);self.reading.position=item['start'];self.reading.continuation=item['start'];self.cursor_changed()
             return describe(item)
         return 'Move to a link or heading first.'
 
@@ -1279,7 +1339,7 @@ class WebSession:
             self.reading.set_text(self.snapshot.get('text', ''))
             result=self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
             if self.browse:self.browse.set_position(self.reading.position)
-            self.auto_focus_position()
+            self.auto_focus_position();self.cursor_changed()
             return result
         match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(edge|chrome|brave|firefox)(?: browser)?', command)
         if match: return self.choose_browser(match[1])
@@ -1406,8 +1466,8 @@ class WebSession:
             return 'Canceled. The web action was not opened.'
         match = re.match(r'^(?:what does (?:this |the )?page say about|tell me about)\s+(.+)', spoken, re.I)
         if match: return self.answer_from_page(match[1])
-        match = re.match(r'^(google|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)', spoken, re.I)
-        if match:return self.search(match[2],provider='duckduckgo' if match[1].lower().startswith('duck') else 'brave' if match[1].lower().startswith('brave') else 'google')
+        match = re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)', spoken, re.I)
+        if match:return self.search(match[2],provider='duckduckgo' if match[1].lower().startswith('duck') else 'brave' if match[1].lower().startswith('brave') else match[1].lower())
         match = re.match(r'^(?:search(?: the web)?(?: for)?|look up)\s+(.+)', spoken, re.I)
         if match: return self.search(match[1])
         match = re.match(r'^what about\s+(.+)', spoken, re.I)

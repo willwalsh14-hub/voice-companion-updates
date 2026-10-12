@@ -174,7 +174,7 @@ class CompanionWindow:
                     elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
                 if mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
-                elif mode=='web' and control and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
+                elif mode=='web' and control and not shift and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
                 if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
                     self.commands.put(typed.get().strip().lower());typed.delete(0,'end');return 'break'
                 if request:pass
@@ -197,6 +197,7 @@ class CompanionWindow:
                     elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
                     elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
                     elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control):request='Web:Done' if field and not self.context.get('web_choice') else 'Web:Activate'
+                    elif not field and not shift and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Read:'+('Control:' if control else '')+key
                     elif not field and key=='space':request='Web:Space'
                     elif key=='Left' and event.state&(8|0x20000):request='Web:Back'
 
@@ -346,7 +347,7 @@ class CompanionWindow:
                     local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(char)))
             def send_text_position(before=None):
                 text=editor.get('1.0','end-1c');local['seq']+=1
-                self.commands.put(('text_edit',{'source':self.context.get('source'),'before':local['text'] if before is None else before,'after':text,'caret':offset(),'selection':selection(),'seq':local['seq'],'readonly':self.context.get('readonly',False)}))
+                self.commands.put(('text_edit',{'source':self.context.get('source'),'before':local['text'] if before is None else before,'after':text,'caret':offset(),'selection':selection(),'seq':local['seq'],'readonly':self.context.get('readonly',False),'web_cursor_revision':self.context.get('web_cursor_revision')}))
                 local['text']=text
             def changed(event=None):
                 if not editor.edit_modified():return
@@ -499,7 +500,9 @@ class CompanionWindow:
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:
                             history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
-                            if old.get('source')!=source or field.get('ack',0)>=local['seq']:
+                            web_cursor_changed=mode=='web' and old.get('web_cursor_revision')!=field.get('web_cursor_revision')
+                            if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
+                            if old.get('source')!=source or web_cursor_changed or field.get('ack',0)>=local['seq']:
                                 local['applying']=True
                                 if editor.get('1.0','end-1c')!=field.get('text',''):
                                     editor.delete('1.0','end');editor.insert('1.0',field.get('text',''));editor.edit_reset()
