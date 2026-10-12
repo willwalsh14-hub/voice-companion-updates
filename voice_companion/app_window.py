@@ -237,6 +237,7 @@ class CompanionWindow:
             root.bind_all('<Alt-O>',shortcut)
             root.bind_all('<Alt-s>',shortcut)
             root.bind_all('<Alt-S>',shortcut)
+            for sequence in ('<Alt-y>','<Alt-Y>','<Alt-n>','<Alt-N>'):root.bind_all(sequence,shortcut)
             root.bind_all('<Tab>',shortcut)
             root.bind_all('<Shift-Tab>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')

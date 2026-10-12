@@ -68,12 +68,14 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:len(self.saved)==1)
         self.assertFalse(self.panel.closed.is_set())
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
-    def test_category_letters_cycle_enter_opens_and_alt_o_returns(self):
+    def test_category_letters_stop_enter_opens_and_alt_o_returns(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
-        for expected in (2,10,2):
+        for expected in (2,10,10):
             self.u.PostMessageW(categories,0x100,ord('S'),0)
             self.wait(lambda:self.session.category==expected)
         self.assertTrue(any('Startup and exit options (S)' in text for text in self.notices))
+        self.u.PostMessageW(categories,0x100,0x24,0);self.wait(lambda:self.session.category==0)
+        self.u.PostMessageW(categories,0x100,ord('S'),0);self.wait(lambda:self.session.category==2)
         self.u.PostMessageW(categories,0x100,0x0D,0)
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,200),0x104,ord('O'),0)
