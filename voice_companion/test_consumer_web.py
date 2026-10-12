@@ -162,8 +162,9 @@ class ChromeConsumerWebTests(ConsumerWebTests):
         cls.driver=sync_playwright().start()
         try:
             if cls.browser_name=='brave':
-                from web_assistant import BrowserBackend
-                cls.browser=cls.driver.chromium.launch(executable_path=BrowserBackend.browser_program('brave'),headless=True)
+                roots=[os.environ.get('PROGRAMFILES',''),os.environ.get('PROGRAMFILES(X86)',''),os.environ.get('LOCALAPPDATA','')]
+                program=next(Path(root)/'BraveSoftware/Brave-Browser/Application/brave.exe' for root in roots if (Path(root)/'BraveSoftware/Brave-Browser/Application/brave.exe').is_file())
+                cls.browser=cls.driver.chromium.launch(executable_path=str(program),headless=True)
             else:cls.browser=cls.driver.chromium.launch(channel=cls.browser_name if cls.browser_name!='edge' else 'msedge',headless=True)
         except Exception:
             cls.driver.stop()
