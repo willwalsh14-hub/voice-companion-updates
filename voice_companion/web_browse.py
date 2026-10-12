@@ -112,11 +112,13 @@ class BrowseCursor:
 
 # Runs in the page's DOM; scripts, hidden subtrees and closed roots are not read.
 SEMANTICS = r'''
-          const elements=[];let output='';let serial=1+all(document).reduce((maximum,e)=>Math.max(maximum,/^n\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
+          const elements=[],anchors=[];let output='';let serial=1+all(document).reduce((maximum,e)=>Math.max(maximum,/^n\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
           const block=new Set(['P','DIV','SECTION','ARTICLE','HEADER','FOOTER','MAIN','NAV','ASIDE','H1','H2','H3','H4','H5','H6','LI','UL','OL','TR','TABLE']);
           const newline=()=>{output=output.replace(/ +$/,'');if(output && !output.endsWith('\n'))output+='\n';};
           const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output || /[ \n]$/.test(output))s=s.trimStart();output+=s;};
           const key=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+serial++);return e.getAttribute('data-voice-companion-key');};
+          const searchHost=['search.brave.com','www.google.com','google.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'].includes(location.hostname);
+          const braveResult=e=>location.hostname==='search.brave.com'&&e.matches('.search-snippet-title')&&e.closest('a[href]');
           const controlsByKey=new Map(controls.map(c=>[c.key,c]));const tableMaps=new Map();
           for(const table of all(document).filter(e=>e.matches('table,[role="table"],[role="grid"]'))){
             const grid=[];const rows=all(table).filter(e=>e.matches('tr,[role="row"]') && visible(e) && !e.closest('[aria-hidden="true"],[inert]') && e.closest('table,[role="table"],[role="grid"]')===table);
@@ -135,28 +137,34 @@ SEMANTICS = r'''
             if(block.has(e.tagName))newline();if(e.tagName==='BR'){newline();return;}
             let role=e.getAttribute('role')||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
             if(/^h[1-6]$/.test(tag))role='heading';else if(tag==='a' && e.href)role='link';else if(tag==='button'||tag==='input'&&['submit','reset','button','image'].includes(type))role='button';else if(['input','textarea','select'].includes(tag)||editable)role='field';else if(tag==='table'||role==='grid')role='table';else if(tableMaps.has(e))role='cell';else if(['ul','ol'].includes(tag))role='list';else if(tag==='li')role='listitem';else if(tag==='p')role='paragraph';else if(['main','nav','aside','header','footer'].includes(tag))role='landmark';else if(tag==='img')role='graphic';
+            if(braveResult(e))role='heading';
             if(['combobox','listbox','checkbox','radio','button','link','textbox'].includes(e.getAttribute('role')))role=e.getAttribute('role');
             if(tag==='label'){for(const child of all(e).filter(c=>c.matches(selector)))walk(child);return;}
             if(['input','select','textarea','a','button'].includes(tag))newline();
             const control=controlsByKey.get(e.getAttribute('data-voice-companion-key'));
             const resultHeading=e.querySelector('h1,h2,h3,h4,h5,h6,[role="heading"]')||e.closest('h1,h2,h3,h4,h5,h6,[role="heading"]');
-            const resultTitle=role==='link'?(e.querySelector('[class*="title"],[class*="heading"]')||resultHeading?.querySelector('[class*="title"],[class*="heading"]')||resultHeading):null;
+            const braveTitle=location.hostname==='search.brave.com'?e.querySelector('.search-snippet-title'):null;
+            const resultTitle=role==='link'?(braveTitle||e.querySelector('[class*="title"],[class*="heading"]')||resultHeading?.querySelector('[class*="title"],[class*="heading"]')||resultHeading):null;
             let label=role==='link'&&resultTitle && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby')?accessibleLabel(resultTitle):accessibleLabel(e);
             if(role==='heading'){label=contentTitle(e)||contentTitle(e.closest('a')||e)||label;}
-            if(role==='link'&&resultHeading){label=contentTitle(resultTitle||e)||contentTitle(e)||label;}
-            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,href:tag==='a'?e.href:(control?.href||''),level:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
+            if(role==='link'&&(resultHeading||braveTitle)){label=contentTitle(resultTitle||e)||contentTitle(e)||label;}
+            const bookmark=e.id?{id:e.id,key:key(e),start:output.length,end:output.length}:null;if(bookmark)anchors.push(bookmark);
+            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
             if(['input','select','textarea'].includes(tag)){append(label);if(type!=='password' && e.value && !['checkbox','radio','submit','button'].includes(type))append(' '+(tag==='select'?e.selectedOptions[0]?.text:e.value));}
             else if(tag==='img')append(label);
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.childNodes))walk(child);
             if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}
+            if(bookmark)bookmark.end=output.length;
             if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
           walk(document.body);
           // URL/breadcrumb-only headings are metadata, not useful heading destinations.
           for(let i=elements.length-1;i>=0;i--)if(elements[i].role==='heading'&&urlOnly(elements[i].label))elements.splice(i,1);
+          if(searchHost){const seen=new Set();for(let i=0;i<elements.length;i++){const item=elements[i];if(item.role!=='heading')continue;const link=elements.find(e=>e.key===item.activation_key&&e.role==='link');if(!link)continue;const identity=link.href+'|'+item.label.toLocaleLowerCase().replace(/\s+/g,' ').trim();if(seen.has(identity)){elements.splice(i,1);i--;}else seen.add(identity);}}
+          if(searchHost){const seenLinks=new Set(),removed=new Set(),resultUrls=new Set(elements.filter(e=>e.search_result).map(e=>e.href));for(let i=0;i<elements.length;i++){const item=elements[i];if(item.role!=='link')continue;const identity=item.href+'|'+item.label.toLocaleLowerCase().replace(/\s+/g,' ').trim();if(item.search_result&&seenLinks.has(identity)||!item.search_result&&urlOnly(item.label)&&resultUrls.has(item.href)){removed.add(item.key);elements.splice(i,1);i--;}else if(item.search_result)seenLinks.add(identity);}for(let i=controls.length-1;i>=0;i--)if(removed.has(controls[i].key))controls.splice(i,1);}
           for(const item of elements){const control=controlsByKey.get(item.key);if(control&&item.role==='link'){control.identity_label=control.label;control.label=item.label;}}
           // JavaScript offsets count UTF-16 units; Companion reading uses code points.
-          const boundaries=new Set(elements.flatMap(e=>[e.start,e.end]));const offsets=new Map();let units=0,points=0;
+          const boundaries=new Set([...elements,...anchors].flatMap(e=>[e.start,e.end]));const offsets=new Map();let units=0,points=0;
           for(const char of output){if(boundaries.has(units))offsets.set(units,points);units+=char.length;points++;}
-          offsets.set(units,points);for(const item of elements){item.start=offsets.get(item.start);item.end=offsets.get(item.end);}
+          offsets.set(units,points);for(const item of [...elements,...anchors]){item.start=offsets.get(item.start);item.end=offsets.get(item.end);}
 '''

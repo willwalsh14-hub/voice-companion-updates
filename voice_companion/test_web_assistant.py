@@ -36,6 +36,45 @@ class FakeBackend:
 
 
 class WebTests(unittest.TestCase):
+    def test_capture_does_not_swallow_mutation_after_extraction(self):
+        backend=FakeBackend();backend.revision=0
+        backend.document_stamp=lambda:{'url':backend.url,'epoch':1,'revision':backend.revision,'ready':'complete','busy':False,'frames':[]}
+        original=backend.snapshot
+        def snapshot():
+            result=original();result['text']='Old text' if backend.revision==0 else 'New text'
+            backend.revision=1
+            return result
+        backend.snapshot=snapshot
+        session=WebSession(self.temp.name,backend);session._refresh()
+        self.assertEqual(session.reading.text,'Old text');session.refresh_changed()
+        self.assertEqual(session.reading.text,'New text')
+
+    def test_capture_retries_navigation_without_repeating_action(self):
+        backend=FakeBackend();backend.epoch=1;backend.calls=0
+        backend.document_stamp=lambda:{'url':backend.url,'epoch':backend.epoch}
+        original=backend.snapshot
+        def snapshot():
+            result=original();backend.calls+=1
+            if backend.calls==1:backend.url='https://example.com/new';backend.epoch=2
+            return result
+        backend.snapshot=snapshot
+        session=WebSession(self.temp.name,backend);session._refresh()
+        self.assertEqual(session.snapshot['url'],'https://example.com/new');self.assertEqual(backend.calls,2);self.assertEqual(backend.activated,[])
+
+    def test_blocked_search_waits_for_explicit_voice_engine_choice(self):
+        original=self.backend.snapshot;requests=[]
+        def goto(url):requests.append(url);self.backend.url=url
+        self.backend.goto=goto
+        def snapshot():
+            result=original()
+            if 'google.com' in self.backend.url:result.update(challenge=True,text='Verification')
+            return result
+        self.backend.snapshot=snapshot
+        self.session.search('accessible help','google')
+        self.assertEqual(len(requests),1);self.assertEqual(self.session.engine_names()[0],'Brave Search')
+        self.session.command('try brave search')
+        self.assertEqual(len(requests),2);self.assertIn('search.brave.com',requests[-1]);self.assertEqual(self.session.search_engine,'google')
+
     def test_waits_for_late_page_text_before_reporting_empty(self):
         original = self.backend.snapshot
         calls = [0]
@@ -157,7 +196,7 @@ class WebTests(unittest.TestCase):
         self.backend.snapshot = challenge_then_results
         result = self.session.command('google veterans benefits')
         self.assertIn('human verification', result)
-        self.assertNotIn('Brave Search', result)
+        self.assertNotIn('Searching with Brave Search', result)
         self.assertIn('google.com', self.backend.url)
         self.backend.url = 'https://www.google.com/sorry/index'
         self.assertIn('human verification', self.session._refresh())
