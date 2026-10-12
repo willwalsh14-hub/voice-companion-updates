@@ -69,6 +69,14 @@ class BoundaryTests(unittest.TestCase):
             self.assertIn('last message',session.process('next message'));self.assertEqual(session.rows[0]['id'],'c')
             self.assertIn('Start of list',session.list_boundary(False));self.assertEqual(session.rows[0]['id'],'a')
             self.assertIn('first message',session.process('previous message'));self.assertEqual(session.rows[0]['id'],'a')
+    def test_failed_email_end_preserves_current_page(self):
+        from mailbox_access import MailboxError
+        with tempfile.TemporaryDirectory() as folder:
+            session=MailSession('gmail',folder);session.rows=[{'id':'a'}];session.current=1;session.next_cursor='p2';session.page_cursor=None;session.previous_cursors=[]
+            def fail(cursor):session.rows=[];session.current=None;raise MailboxError('Offline')
+            session.list_messages=fail
+            self.assertIn('Could not reach the end',session.list_boundary(True))
+            self.assertEqual(session.rows,[{'id':'a'}]);self.assertEqual(session.current,1);self.assertEqual(session.next_cursor,'p2');self.assertEqual(session.previous_cursors,[])
     def test_repeated_email_cursor_reports_failure_without_looping(self):
         with tempfile.TemporaryDirectory() as folder:
             session=MailSession('gmail',folder);session.rows=[{'id':'a'}];session.next_cursor='repeat';session.page_cursor=None;session.previous_cursors=[]

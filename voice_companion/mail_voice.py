@@ -296,6 +296,15 @@ class MailSession:
 
 
     def list_boundary(self,bottom=False):
+        names=('rows','next_cursor','current','view','body_text','body_offset','page_cursor','previous_cursors','selected')
+        saved={name:getattr(self,name) for name in names if hasattr(self,name)}
+        if 'previous_cursors' in saved:saved['previous_cursors']=list(saved['previous_cursors'])
+        try:return self._list_boundary(bottom)
+        except (AccountError,MailboxError,OSError) as exc:
+            for name,value in saved.items():setattr(self,name,value)
+            return 'Could not reach the '+('end' if bottom else 'start')+' of the list. '+str(exc)
+
+    def _list_boundary(self,bottom=False):
         if not self.rows:return 'Empty list.'
         if not bottom:
             if self.page_cursor is not None:self.list_messages()

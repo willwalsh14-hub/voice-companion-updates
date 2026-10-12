@@ -539,7 +539,7 @@ def _navigation_key(key,mode):
             select(index)
             if VOICE_PICK_INDEX is not None:preview_voice(index);return None
             speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)));return None
-        if mode=='mailbox' and mail_session and mail_session.view=='folder' and mail_session.rows and not mail_session.pending:
+        if mode=='mailbox' and mail_session and mail_session.view=='folder' and not mail_session.pending:
             speak(mail_session.list_boundary(key=='End'));return None
     if mode=='help' and key=='Escape':return 'go back'
     if key.startswith('Letter:'):

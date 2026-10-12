@@ -91,7 +91,7 @@ class MediaNavigation:
                 if key=='Ctrl+F':return self.open_form('search')
                 return self.run(shortcuts[key]) if shortcuts[key] else 'Choose an item first.'
         state=self.state()
-        if not state:return ''
+        if not state:return self.announce() if key in ('Home','End','Up','Down') and not self.form else ''
         names,index,select=state;index=index or 0
         if key in ('Home','End'):index=0 if key=='Home' else len(names)-1
         elif key in ('Up','Down','Left','Right'):index=max(0,min(len(names)-1,index+(-1 if key in ('Up','Left') else 1)))
