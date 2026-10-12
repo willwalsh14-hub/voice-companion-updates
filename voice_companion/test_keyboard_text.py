@@ -301,16 +301,17 @@ class WindowKeyboardTests(unittest.TestCase):
             self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.typed.get(),''))
     def test_alt_yes_no_confirmations_override_editor_and_typed_fields(self):
-        for mode in ('exit_confirm','power_confirm','update_offer','email_draft'):
-            self.window.set_context(dict(mode=mode,source='confirm-'+mode,text='Preserved text',readonly=False,confirmation='no',caret=0,ack=0,focus=True))
+        for mode in ('exit_confirm','power_confirm','update_offer','email_draft','web'):
+            source='confirm-'+mode if mode in ('email_draft','web') else None
+            self.window.set_context(dict(mode=mode,source=source,text='Preserved text' if source else '',readonly=mode=='web',confirmation='no',caret=0,ack=0,focus=True))
             self.wait(lambda:self.window.context.get('mode')==mode)
-            for widget in (self.window.editor,self.window.typed):
+            for widget in ((self.window.editor,self.window.typed) if source else (self.window.typed,)):
                 self.call(lambda widget=widget:widget.focus_force())
                 if widget==self.window.typed:self.call(lambda:(self.window.typed.delete(0,'end'),self.window.typed.insert(0,'Preserved header')))
                 for key,expected in (('y','Alt+Y'),('n','Alt+N')):
                     self.call(lambda key=key,widget=widget:widget.event_generate('<KeyPress>',keysym=key,state=8))
                     self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
-                self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Preserved text'))
+                if source:self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Preserved text'))
                 if widget==self.window.typed:self.call(lambda:self.assertEqual(self.window.typed.get(),'Preserved header'))
                 while not self.window.commands.empty():self.window.commands.get_nowait()
     def test_update_and_email_confirmation_override_nonempty_header(self):
