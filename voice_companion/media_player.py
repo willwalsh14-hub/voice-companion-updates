@@ -26,6 +26,7 @@ class MediaPlayer:
         self.playwright=self.context=self.page=None
         self.kind=None
         self.ducked=False
+        self.start_timeout_ms=12000
 
     def start(self):
         if self.page and not self.page.is_closed(): return
@@ -57,16 +58,24 @@ class MediaPlayer:
 
     def open(self, url, title, kind):
         self.start()
+        self.kind=None
         if self.page.url != (self.folder/'audio-player.html').as_uri():
             self.page.goto((self.folder/'audio-player.html').as_uri())
-        result=self.page.evaluate('''async ({url,title}) => {
+        result=self.page.evaluate('''async ({url,title,timeout}) => {
             const a=document.getElementById('audio');a.pause();a.src=url;
             a.volume=window.voiceCompanionDucked?0.18:1;
             document.getElementById('title').textContent=title;
             document.getElementById('status').textContent='Loading audio.';
-            try { await a.play(); return true; } catch(e) { return false; }
-        }''',{'url':url,'title':title})
-        if not result: raise OSError('This audio format could not start in the player.')
+            let timer;
+            try {
+                const started=await Promise.race([a.play().then(()=>true,()=>false),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),timeout)})]);
+                if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
+                return started;
+            } finally {clearTimeout(timer);}
+        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms})
+        if not result:
+            self.kind=None
+            raise OSError('This audio format could not start in the player.')
         self.kind=kind
 
     def set_ducked(self, ducked):
@@ -84,11 +93,18 @@ class MediaPlayer:
 
     def control(self, action, seconds=15, position=None):
         if not self.page or self.page.is_closed() or not self.kind: return None
-        return self.page.evaluate('''async ({action,seconds,position}) => {
+        return self.page.evaluate('''async ({action,seconds,position,timeout}) => {
             const a=document.getElementById('audio');
             if(action==='stop'){a.pause();try{a.currentTime=0}catch(e){};return 0}
             if(action==='pause'){a.pause();return a.currentTime}
-            if(action==='play'){await a.play();return a.currentTime}
+            if(action==='play'){
+                let timer;
+                try {
+                    const started=await Promise.race([a.play().then(()=>true,()=>false),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),timeout)})]);
+                    if(!started){a.pause();throw new Error('This audio could not resume. Choose the station or episode again.');}
+                    return a.currentTime;
+                }finally{clearTimeout(timer);}
+            }
             if(action==='seek'){
                 if(!a.seekable.length)return null;
                 let p=position===null?a.currentTime+seconds:position;
@@ -96,4 +112,4 @@ class MediaPlayer:
                 a.currentTime=p;return p;
             }
             return a.currentTime;
-        }''',{'action':action,'seconds':seconds,'position':position})
+        }''',{'action':action,'seconds':seconds,'position':position,'timeout':self.start_timeout_ms})

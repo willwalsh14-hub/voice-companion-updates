@@ -205,16 +205,16 @@ class BrowserBackend:
             label=(label || '').trim().replace(/\\s+/g,' ').slice(0,120);
             if (!label) continue;
             const role=(tag==='a' && e.href ? 'link' : e.getAttribute('role')) || (tag==='button'||tag==='input'&&['submit','button','reset','image'].includes(type)?'button':
-                ['input','textarea','select'].includes(tag)?'field':'');
+                e.isContentEditable?'textbox':['input','textarea','select'].includes(tag)?'field':'');
             if (!role) continue;
             e.setAttribute('data-voice-companion-key', String(i));
-            controls.push({key:String(i), role, label, tag, type,
+            controls.push({key:String(i), id:e.id||'', role, label, tag, type,
                 in_form:!!e.closest('form'),
-                required:!!e.required, disabled:!!e.disabled, radio_group:e.name ? [...document.forms].indexOf(e.form)+':'+e.name : '', checked:!!e.checked||e.getAttribute('aria-checked')==='true',
+                required:!!e.required||e.getAttribute('aria-required')==='true', disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true', readonly:!!e.readOnly||e.getAttribute('aria-readonly')==='true', radio_group:e.name ? [...document.forms].indexOf(e.form)+':'+e.name : '', checked:!!e.checked||e.getAttribute('aria-checked')==='true',
                 tabindex:e.tabIndex,size:e.size||0,multiple:!!e.multiple,options:tag==='select'?[...e.options].map(o=>({label:o.text.trim().slice(0,120),value:o.value,disabled:o.disabled,selected:o.selected})): [...(e.querySelectorAll('[role="option"]')), ...((e.getAttribute('aria-controls')||e.getAttribute('aria-owns')||'').split(/\\s+/).filter(Boolean).flatMap(id=>[...(document.getElementById(id)?.querySelectorAll('[role="option"]')||[])]))].filter((o,i,a)=>a.indexOf(o)===i).map(o=>({label:accessibleLabel(o),value:o.getAttribute('data-value')||accessibleLabel(o),disabled:o.getAttribute('aria-disabled')==='true',selected:o.getAttribute('aria-selected')==='true'})),
-                selected_label:tag==='select'?(e.selectedOptions[0]?.text.trim().slice(0,120) || ''):(e.getAttribute('aria-valuetext')||e.querySelector('[role="option"][aria-selected="true"]')?.innerText||e.value||''),
+                selected_label:type==='password'?'':tag==='select'?(e.selectedOptions[0]?.text.trim().slice(0,120) || ''):(e.getAttribute('aria-valuetext')||e.querySelector('[role="option"][aria-selected="true"]')?.innerText||e.value||''),
                 href:tag==='a'?e.href:'', value:type==='password'?'':
-                (['input','textarea','select'].includes(tag)?String(e.value || '').slice(0,2000):''),
+                (e.isContentEditable?e.innerText.slice(0,2000):['input','textarea','select'].includes(tag)?String(e.value || '').slice(0,2000):''),
                 value_truncated:type!=='password' && String(e.value || '').length>2000,
                 filled:type==='password'?!!e.value:false});
             const control=controls[controls.length-1];if(!control.selected_label)control.selected_label=control.options.find(option=>option.selected)?.label||'';
@@ -611,7 +611,7 @@ class WebSession:
                 value=item.get('value','')
             field['value']=value;field['_original_value']=value
         else:field['value']=item.get('selected_label','')
-        self.keyboard_field=field;self.web_edit_caret=0
+        self.keyboard_field=field;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None
         return True
 
     def auto_focus_position(self):
@@ -746,6 +746,7 @@ class WebSession:
         if state and (state.get('url')!=item.get('_page_url') or item.get('_document_epoch') is not None and state.get('epoch')!=item['_document_epoch']):
             self.keyboard_field=None;raise WebError('The page changed. The old field edit was not saved or submitted.')
         text=item.get('value','') if value is None else value
+        if item.get('readonly') and text!=item.get('_original_value'):raise WebError('This field is read-only. Its contents were not changed.')
         if kind(item)=='edit' and (item.get('type')=='password' or text!=item.get('_original_value')):
             self.backend.fill(item,text,private=item.get('type')=='password')
         if hasattr(self.backend,'blur_field'):self.backend.blur_field(item)
@@ -754,9 +755,9 @@ class WebSession:
     def insert_line_break(self):
         if self.keyboard_field:
             item=self.keyboard_field
+            if item.get('readonly'):return 'This field is read-only.'
             if item.get('type')=='password' or not (item.get('tag')=='textarea' or item.get('editable')):return 'This field is single-line.'
-            value=item.get('value','');caret=getattr(self,'web_edit_caret',len(value))
-            item['value']=value[:caret]+'\n'+value[caret:];self.web_edit_caret=caret+1
+            self._insert_field_text('\n')
             return 'New line.'
         if not self.snapshot: return 'Open a website first.'
         try: return self.backend.insert_line_break()
@@ -764,8 +765,27 @@ class WebSession:
 
     def select_focused(self, spoken):
         if not self.snapshot: return 'Open a website first.'
+        if self.keyboard_field and kind(self.keyboard_field)=='edit' and self.keyboard_field.get('type')!='password':
+            if self.keyboard_field.get('readonly') and spoken.lower().strip() in ('scratch','scratch that'):return 'This field is read-only. Its contents were not changed.'
+            model=getattr(self,'_web_field_selection',None)
+            if model is None:self._web_field_selection=model=FieldSelection()
+            value=self.keyboard_field.get('value','')
+            span=getattr(self,'selection',None) or (getattr(self,'web_edit_caret',0),)*2
+            result,selected=model.select(value,spoken,*span)
+            if model.edited_text is not None:self.keyboard_field['value']=model.edited_text
+            self.selection=selected if selected and selected[0]!=selected[1] else None
+            if selected:self.web_edit_caret=selected[1]
+            return result
         try: return self.backend.select_focused(spoken)
         except Exception: return 'I could not select text. Focus the browser field and try again.'
+
+    def _insert_field_text(self,text):
+        value=self.keyboard_field.get('value','')
+        caret=max(0,min(len(value),getattr(self,'web_edit_caret',len(value))))
+        start,end=getattr(self,'selection',None) or (caret,caret)
+        start=max(0,min(len(value),start));end=max(start,min(len(value),end))
+        self.keyboard_field['value']=value[:start]+text+value[end:]
+        self.web_edit_caret=start+len(text);self.selection=None
 
     def dictate_to_focus(self, spoken, literal=False):
         if not self.snapshot: return 'Open a website first.'
@@ -773,8 +793,8 @@ class WebSession:
         self.review_submission = None
         if self.keyboard_field:
             if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
-            self.keyboard_field['value']=self.keyboard_field.get('value','')+(spoken if literal else clean_dictation(spoken))
-            self.web_edit_caret=len(self.keyboard_field['value'])
+            if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
+            self._insert_field_text(spoken if literal else clean_dictation(spoken))
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
@@ -1175,10 +1195,10 @@ class WebSession:
 
     def fields(self, guided=False):
         if not self.snapshot: return 'Open a website first.'
-        self.choices = [c for c in self.snapshot['controls'] if c['tag'] in ('input','textarea','select')
-                        and c['type'] not in ('hidden','submit','button','image')][:30]
+        self.choices = [c for c in self._form_controls(self.snapshot) if not c.get('disabled') and not c.get('readonly')]
         if not self.choices: return 'I did not find readable form fields on this page.'
         if guided:
+            self.list_focus=None
             self.form_fields = list(self.choices)
             self.form_index = 0
             self.form_answers = []
@@ -1188,8 +1208,8 @@ class WebSession:
         self.list_focus='fields'
         self.field_list_index=0
         self.pending=None
-        return ('Found '+str(len(self.choices))+' fields. Field 1: '+_label(self.choices[0])+
-                '. Say next or previous, then that one to answer it. Passwords need private entry in Edge.')
+        return ('Found '+str(len(self.choices))+' fields. '+announce_item(_label(self.choices[0]),0,len(self.choices))+
+                ' Say next or previous, then that one to answer it. Passwords need private keyboard entry.')
 
     def _ask_field(self):
         while self.form_index is not None and self.form_index < len(self.form_fields):
@@ -1197,11 +1217,11 @@ class WebSession:
             if item['type'] in ('password','file'):
                 self.form_index += 1
                 continue
-            if item['tag'] == 'select':
-                options = [o['label'] for o in item.get('options', []) if o['label']][:10]
+            if kind(item) in ('combobox','listbox'):
+                options = [o['label'] for o in item.get('options', []) if o['label'] and not o.get('disabled')]
                 return ('Field ' + str(self.form_index + 1) + ': ' + _label(item) +
                         '. Choices: ' + ', '.join(options) + '. Which one? Say skip to leave it unchanged.')
-            if item['type'] in ('checkbox','radio'):
+            if kind(item) in ('checkbox','radio'):
                 return ('Field ' + str(self.form_index + 1) + ': ' + _label(item) +
                         '. Say yes or no, or skip to leave it unchanged.')
             return ('Field ' + str(self.form_index + 1) + ': ' + _label(item) +
@@ -1223,19 +1243,19 @@ class WebSession:
             self.form_index = None
             return 'Stopped filling the form. Entries already made remain on the page; nothing was submitted.'
         value = _plain(spoken)
-        if item['type'] in ('checkbox','radio'):
+        if kind(item) in ('checkbox','radio'):
             if value.casefold() not in ('yes','no'):
                 return 'Say yes or no for ' + _label(item) + ', or say skip.'
             value = value.casefold()
-        elif item['tag'] == 'select':
-            options = [o['label'] for o in item.get('options', []) if o['label'].casefold() == value.casefold()]
+        elif kind(item) in ('combobox','listbox'):
+            options = [o['label'] for o in item.get('options', []) if o['label'].casefold() == value.casefold() and not o.get('disabled')]
             if len(options) != 1:
                 return 'I could not identify one choice. ' + self._ask_field()
             value = options[0]
         else:
             value = clean_dictation(value)
         try:
-            if item['tag'] == 'select' or item['type'] in ('checkbox','radio'):
+            if kind(item) in ('combobox','listbox','checkbox','radio'):
                 self.backend.choose_form_option(item, value)
             else:
                 self.backend.fill(item, value)
@@ -1245,6 +1265,18 @@ class WebSession:
         self.form_index += 1
         self.form_answers.append({'label': _label(item), 'value': value, 'key': item['key'],
                                   'tag': item['tag'], 'type': item['type']})
+        try:
+            latest=self.backend.snapshot()
+            if latest['url']!=self.form_page:
+                self.form_index=None;return 'The form moved to a different page. Your answer was entered; nothing was submitted. Say read page to continue.'
+            fields=[c for c in self._form_controls(latest) if not c.get('disabled') and not c.get('readonly')]
+            matches=[i for i,c in enumerate(fields) if c.get('frame_index')==item.get('frame_index') and
+                     (c.get('id')==item['id'] if item.get('id') else _label(c)==_label(item) and c.get('tag')==item.get('tag') and c.get('type')==item.get('type'))]
+            if len(matches)==1:self.form_fields=fields;self.form_index=matches[0]+1
+            elif fields!=self.form_fields:
+                self.form_index=None;return 'The form changed after your answer. Nothing was submitted. Say read page, then fill out this form to continue.'
+        except Exception:
+            self.form_index=None;return 'Your answer was entered, but the form could not be checked again. Nothing was submitted. Say read page to retry.'
         return 'Recorded ' + value + ' for ' + _label(item) + '. ' + self._ask_field()
 
     def review_form(self):
@@ -1260,7 +1292,7 @@ class WebSession:
 
     @staticmethod
     def _form_controls(current):
-        return [c for c in current.get('controls', []) if c.get('tag') in ('input','textarea','select')
+        return [c for c in current.get('controls', []) if kind(c) in ('edit','combobox','listbox','checkbox','radio')
                 and c.get('type') not in ('hidden','submit','button','image')]
 
     @classmethod
@@ -1277,8 +1309,8 @@ class WebSession:
             label = _label(c)
             if c.get('type') == 'password': value = 'entered privately' if c.get('filled') else 'empty; enter privately'
             elif c.get('type') == 'file': value = 'file selected' if c.get('value') else 'no file selected'
-            elif c.get('tag') == 'select': value = c.get('selected_label') or 'nothing selected'
-            elif c.get('type') in ('checkbox','radio'): value = 'checked' if c.get('checked') else 'not checked'
+            elif kind(c) in ('combobox','listbox'): value = c.get('selected_label') or 'nothing selected'
+            elif kind(c) in ('checkbox','radio'): value = 'checked' if c.get('checked') else 'not checked'
             else: value = _plain(c.get('value')) or 'blank'
             parts.append(label + ': ' + value + (', required' if c.get('required') else ''))
         return parts
@@ -1317,10 +1349,11 @@ class WebSession:
             return 'I cannot inspect the whole form on this page. Ask your helper to review it in Edge.'
         if any(c.get('value_truncated') for c in self._form_controls(current)):
             return 'A form answer is too long for safe spoken review. Ask your helper to check it in Edge.'
-        missing = [c for c in self._form_controls(current) if c.get('required') and not c.get('disabled') and
+        missing = [c for c in self._form_controls(current) if c.get('required') and not c.get('disabled') and not c.get('readonly') and
                    ((not c.get('filled')) if c.get('type') == 'password' else
                     (not any(other.get('type')=='radio' and other.get('radio_group')==c.get('radio_group') and other.get('frame_index')==c.get('frame_index') and other.get('checked') for other in self._form_controls(current))) if c.get('type')=='radio' and c.get('radio_group') else
-                    (not c.get('checked')) if c.get('type') in ('checkbox','radio') else
+                    (not c.get('checked')) if kind(c) in ('checkbox','radio') else
+                    (not c.get('selected_label')) if kind(c) in ('combobox','listbox') and c.get('tag')!='select' else
                     (not c.get('value')))]
         if missing:
             return 'Required fields appear empty: ' + ', '.join(_label(c) for c in missing) + '. Complete them before submitting.'
@@ -1402,6 +1435,8 @@ class WebSession:
 
     def command(self, spoken):
         command = _plain(spoken).rstrip('.!?').lower()
+        if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):
+            self.list_focus=None;self.pending=None;return 'Virtual page view.'
         if self.list_focus=='search_engines':
             if command in ('cancel','escape','go back','back to page','close list'):self.list_focus=None;return 'Verification page. Escape leaves Web browser.'
             if command in ('next','previous'):
@@ -1434,8 +1469,9 @@ class WebSession:
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
             if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
+            if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]
-            self.keyboard_field['value']=value;self.web_edit_caret=len(value)
+            self.keyboard_field['value']=value;self.web_edit_caret=len(value);self.selection=None
             return 'Text entered. Say save field, next control, or cancel field editing.'
         if self.form_index is None and not self.list_focus and self.browse:
             item=self.browse.current()
@@ -1462,7 +1498,7 @@ class WebSession:
             if unit=='line' and direction and self.keyboard_field.get('tag')!='textarea' and not self.keyboard_field.get('editable'):return self.leave_field('Up' if direction<0 else 'Down')
             reader=ReadingCursor();reader.set_text(self.keyboard_field.get('value',''));reader.position=getattr(self,'web_edit_caret',0)
             result=reader.read(direction=='top') if unit=='read' else reader.move(unit,direction)
-            self.web_edit_caret=reader.position;return result
+            self.web_edit_caret=reader.position;self.selection=None;return result
         if request and self.snapshot:
             unit, direction = request
             self.reading.set_text(self.snapshot.get('text', ''))
@@ -1510,18 +1546,19 @@ class WebSession:
             step=-1 if command.startswith('previous') else 1
             if self.list_focus=='favorites' and self.favorite_items:
                 index=self.favorite_index+step
-                if not 0<=index<len(self.favorite_items): return 'That is the '+('first' if step<0 else 'last')+' favorite.'
+                if not 0<=index<len(self.favorite_items): return ('Start of list. ' if step<0 else 'End of list. ')+'That is the '+('first' if step<0 else 'last')+' favorite.'
                 self.favorite_index=index
                 return name_first('Favorite '+str(index+1)+' of '+str(len(self.favorite_items))+': '+self.favorite_items[index][1]['name']+'. Say that one to open it.')
             if self.list_focus=='fields' and self.choices:
                 index=self.field_list_index+step
-                if not 0<=index<len(self.choices): return 'That is the '+('first' if step<0 else 'last')+' field.'
+                if not 0<=index<len(self.choices): return ('Start of list. ' if step<0 else 'End of list. ')+'That is the '+('first' if step<0 else 'last')+' field.'
                 self.field_list_index=index
                 return name_first('Field '+str(index+1)+' of '+str(len(self.choices))+': '+_label(self.choices[index])+'. Say that one to answer it.')
             return self.move_link(step)
         if command in ('that one','okay','ok','confirm','confirm that') and self.list_focus=='favorites' and self.favorite_items:
             return self.open(self.favorite_items[self.favorite_index][1]['url'])
         if command in ('that one','okay','ok','confirm','confirm that') and self.list_focus=='fields' and self.choices:
+            self.list_focus=None
             self.form_fields=list(self.choices)
             self.form_index=self.field_list_index
             self.form_answers=[]
@@ -1574,8 +1611,8 @@ class WebSession:
             self.favorite_index=0
             self.list_focus='favorites'
             self.pending=None
-            return ('Found '+str(len(self.favorite_items))+' favorites. Favorite 1: '+self.favorite_items[0][1]['name']+
-                    '. Say next or previous, then that one to open it.' if self.favorite_items else 'No favorites saved yet.')
+            return ('Found '+str(len(self.favorite_items))+' favorites. '+announce_item(self.favorite_items[0][1]['name'],0,len(self.favorite_items))+
+                    ' Say next or previous, then that one to open it.' if self.favorite_items else 'No favorites saved yet.')
         match = re.fullmatch(r'(?:open|go to) favorite (.+)', spoken, re.I)
         if match:
             item = self.favorites.get(match[1])

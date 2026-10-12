@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import re
-from menu_navigation import announce_item,next_match
+from menu_navigation import announce_item,next_match,boundary_notice
 
 @dataclass(frozen=True)
 class Action:
@@ -193,6 +193,9 @@ class MediaNavigation:
         elif h.station_choices and self.section=='radio':self.view='station_choices';self.focus='items'
         attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index'}.get(self.view)
         self.item_index=(getattr(h,attr,None) or 0) if attr else 0;self.revision+=1
+        if self.focus=='items' and (cmd.startswith(('search','find','browse ','list ')) or cmd in ('back to podcasts','back to feeds','radio presets','favorites list')):
+            boundary=boundary_notice(self.item_index,len(self.items()))
+            if boundary and boundary not in result:result=boundary+' '+result
         return result
     def command(self,text):
         cmd=text.strip().casefold().rstrip('.!?')

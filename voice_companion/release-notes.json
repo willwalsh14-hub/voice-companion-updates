@@ -1,17 +1,23 @@
 {
-  "version": "0.2.116-test",
+  "version": "0.2.117-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.115-test",
-  "scope": "Short new-email announcement, consistent list feedback and preserved email paging after connection failures. Named documents keep their filename when closing.",
+  "baseline": "0.2.116-test",
+  "scope": "Deeper consumer testing, web form and field editing corrections, media list feedback and stalled playback recovery.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "New email announcement",
+          "title": "Hands-free web field editing",
           "details": [
-            "Starting a new email with the keyboard says New email. To field. Automatic draft names and the sending account are omitted. Voice commands retain the guided recipient, subject and message prompts. New email to sender starts in the Subject field."
+            "Dictation inserts at the spoken caret rather than always appending. Voice selection, replacement and scratch operate on staged field text before Save field. Typed caret changes clear outdated voice selections."
+          ]
+        },
+        {
+          "title": "Guided modern forms",
+          "details": [
+            "Guided forms include labelled contenteditable fields and custom checkbox, radio and option controls. Available fields are rechecked after an answer so newly revealed conditional fields can be prompted. Ambiguous changes stop the guide and request a fresh page read."
           ]
         }
       ]
@@ -20,27 +26,36 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Consistent list boundaries",
+          "title": "Field lists and read-only controls",
           "details": [
-            "Boundary feedback comes before optional list guidance so high, medium and low verbosity retain it. Entering an inbox announces the first or last boundary, including both for a single message. Entering a settings choice announces its boundary as well as its value. Empty email lists are explicitly identified."
+            "Removed the 30-field cap from guided form lists. Disabled and read-only fields are not offered as editable answers. Read-only controls announce their state and reject dictation and destructive editing."
           ]
         },
         {
-          "title": "Email paging recovery",
+          "title": "List feedback and voice exit",
           "details": [
-            "If loading the next or previous email page fails, the current messages, selection and page history remain available for retry. Both message-by-message and page-by-page navigation preserve the existing position."
+            "Web field and favorite lists announce their boundaries on entry and repeated movement, and Close list returns to the virtual page view. Initial radio and podcast search results now announce the boundary before the result details."
           ]
         },
         {
-          "title": "Save and close named documents",
+          "title": "Private field masking",
           "details": [
-            "Answering Yes to save when leaving an already named document saves to its existing filename and closes the editor. It no longer asks for another filename. Untitled documents retain the naming prompt, and save failures keep the editor open."
+            "Password values are masked in selected-label metadata as well as the ordinary value property. A fixture credential regression test checks that the value is absent from the snapshot and spoken responses."
           ]
         },
         {
-          "title": "Everyday workflow checks",
+          "title": "Stalled audio recovery",
           "details": [
-            "Regression checks exercise keyboard and guided voice email creation, recipient-to-subject-to-body progression, all verbosity levels, inbox entry, singleton lists, paginated messages and connection failures. The release workflow also runs Windows controls and browser integration checks before publishing. Real personal mailboxes and physical microphone interactions still require user testing."
+            "Starting or resuming audio has a 12-second deadline. Failed starts clear the player state; a stalled stream returns control with an error instead of waiting indefinitely."
+          ]
+        },
+        {
+          "title": "Consumer testing and remaining limits",
+          "details": [
+            "Added long and mixed keyboard/voice workflows for documents, notes, drafts, help, tutorials, sleep and resume, radio presets, podcast subscriptions and finite menus. Real browser fixtures cover large forms, conditional fields, custom controls, cross-site history, field selection and cursor consistency.",
+            "Windows checks run the new browser tasks in Firefox, Chrome, Edge and Brave and exercise audio decoding and transport. A separate read-only audit attempts real public websites, search engines, radio catalogs, podcast feeds and streams; website verification, network errors and inaccessible content are recorded separately from navigation failures.",
+            "Synthesized SAPI and eSpeak US/UK utterances are passed through Vosk and, when installed, Parakeet. Matching recognized commands are dispatched through isolated application fixtures. Recognition errors are reported separately; this is not a microphone or background-noise accuracy test.",
+            "Password and file-upload entry still require private keyboard or manual input. CAPTCHA and website verification may need help. No test establishes recognition accuracy with a particular microphone or verifies personal authenticated accounts."
           ]
         }
       ]

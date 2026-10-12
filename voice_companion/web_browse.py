@@ -49,6 +49,7 @@ def describe(item):
     if role in ('checkbox','radio'):state=', '+('checked' if item.get('checked') else 'not checked')
     if role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
     if item.get('disabled'):state+=', unavailable'
+    if item.get('readonly'):state+=', read-only'
     if item.get('required'):state+=', required'
     return ('Link '+name+state+'.') if role=='link' else name+', '+role+state+'.'
 

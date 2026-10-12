@@ -1,6 +1,6 @@
 VOICE COMPANION - SIMPLE TEST GUIDE
 
-Guide build: 0.2.116-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud and listens through the computer's microphone. You do not need Microsoft Word to make a document.
+Guide build: 0.2.117-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud and listens through the computer's microphone. You do not need Microsoft Word to make a document.
 
 START
 
@@ -11,6 +11,12 @@ START
 USING THE USER GUIDE
 
 After checking for updates, Companion says its version and that it is ready, followed by "Use your wake command or keyboard to begin. Help is available." After you wake it, say "Help" to open this same complete guide inside the app. In the guide, say "Next" or "Previous" to hear one topic at a time, then "That one," "Okay," or "Confirm" to open it. Larger topics such as email and documents have subtopics. Radio presets, podcast playback, and email list size have separate topics. Move through them the same way, then say "That one" to read one. Say "Continue reading" for more, or "Read from top," "Next word," "Previous sentence," "Next paragraph," and the other reading commands to review. Say "Back to subsections," "Back to topics," or "Back to email topics" to navigate. Say "Close help" to return to what you were doing. Say "Main menu" to leave help and return to the start. To open a topic directly, say "Help with" followed by its name, such as "Help with documents," "Help with email," "Help with web," "Help with radio," "Help with presets," or "Help with podcasts."
+
+DEEPER WEB AND MEDIA TASKS
+
+In an editable web field, voice dictation now inserts where spoken character or word navigation placed the caret. Say Select all, Read selection, or Scratch to select, review or remove staged text. Dictation replaces selected text. Say Save field to apply the changes or Cancel field editing to leave the existing page value unchanged. Read-only fields identify themselves and do not accept dictation.
+Say Fill out this form for guided entry. Disabled and read-only fields are skipped. Labelled rich text fields and custom choice controls are included, and newly revealed conditional questions are checked after each answer. If a form changes ambiguously, Companion stops and asks you to read the page again. Password and file-upload fields still need private keyboard or manual input. Website verification and CAPTCHA can still prevent a completely hands-free task.
+Say Close list to leave a web field or favorite list and return to the page. Radio and podcast result lists announce their first or last boundary on entry. If audio cannot start or resume within twelve seconds, Companion returns an error so you can choose another station or episode.
 
 NEW EMAIL AND LIST FEEDBACK
 

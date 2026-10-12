@@ -50,7 +50,8 @@ class SettingsTests(unittest.TestCase):
         with patch.object(companion,'mail_session',mail):
             self.assertEqual(companion.navigation_key('Enter','mailbox'),'open current message')
     def test_settings_actions_dispatch_without_dictating_into_a_document(self):
-        hub=Mock()
+        hub=Mock(shows=[],show_index=None,station_choices=[],browsing_episodes=False,preset_delete_pending=None)
+        hub.command.return_value='No podcast subscriptions.'
         with patch.object(companion,'media',return_value=hub),patch.object(companion,'speak'),patch.object(companion,'MEDIA_SECTION','radio'):
             self.assertEqual(companion.settings_action('podcast_subscriptions','document'),'media')
             hub.command.assert_called_once_with('list subscriptions',section='podcast')

@@ -68,6 +68,19 @@ jobs:
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
+      - name: Audit public websites and live radio and podcast streams
+        shell: pwsh
+        run: |
+          $python = Join-Path $env:LOCALAPPDATA 'VCBuild\py312\Scripts\python.exe'
+          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $PWD 'voice_companion/browser-runtime'
+          & $python -u ./voice_companion/consumer_site_audit.py --output ./voice_companion/VoiceCompanion-Consumer-Site-Audit.txt
+          if ($LASTEXITCODE -ne 0) { throw 'A loaded public website failed its consumer navigation checks. Read the site audit report.' }
+      - name: Audit synthesized speech recognition and command routing
+        shell: pwsh
+        run: |
+          $python = Join-Path $env:LOCALAPPDATA 'VCBuild\py312\Scripts\python.exe'
+          & $python -u ./voice_companion/consumer_voice_audit.py
+          if ($LASTEXITCODE -ne 0) { throw 'A recognized synthetic speech command failed its routing check. Read the voice audit report.' }
       - name: Publish verified installer and update feed
         if: github.ref == 'refs/heads/main'
         shell: pwsh
