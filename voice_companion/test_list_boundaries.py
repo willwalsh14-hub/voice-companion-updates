@@ -174,4 +174,30 @@ class EverydayWorkflowTests(unittest.TestCase):
                 self.assertEqual(app.process_keyboard_batch('mailbox'),'email_draft')
                 window.feedback.assert_called_once_with('New email. To field.')
 
+    def test_leaving_named_document_keeps_filename_and_saves_changes(self):
+        from pathlib import Path
+        from document_editor import VoiceDocument
+        for typed in (True,False):
+            with tempfile.TemporaryDirectory() as folder:
+                doc=VoiceDocument(Path(folder));doc.append_text('First paragraph.')
+                doc.process('save document as My report');doc.append_text('Second paragraph.')
+                with patch.object(app,'document',doc),patch.object(app,'APP_WINDOW',None),patch.object(app,'KEYBOARD_DIRTY',{}),patch.object(app,'INPUT_MODE','mixed'),patch.object(app,'speak') as speech:
+                    self.assertEqual(app.handle('leave document','document',typed=typed),'document_save')
+                    self.assertEqual(app.handle('yes','document_save',typed=typed),'awake')
+                    self.assertIsNone(app.document)
+                    self.assertIn('Saved My report.docx.',[call.args[0] for call in speech.call_args_list])
+                    self.assertFalse(any('Name this document' in call.args[0] for call in speech.call_args_list))
+                reopened=VoiceDocument.open_existing(Path(folder),'My report')
+                self.assertIn('Second paragraph.',reopened.process('read document'))
+
+    def test_failed_named_document_save_keeps_editor_open(self):
+        from pathlib import Path
+        from document_editor import VoiceDocument
+        with tempfile.TemporaryDirectory() as folder:
+            doc=VoiceDocument(Path(folder),title='My report')
+            with patch.object(app,'document',doc),patch.object(app,'APP_WINDOW',None),patch.object(app,'KEYBOARD_DIRTY',{}),patch.object(app,'speak') as speech,patch.object(doc,'save',side_effect=OSError('Disk unavailable')):
+                self.assertEqual(app.handle('yes','document_save'),'document')
+                self.assertIs(app.document,doc)
+                self.assertIn('still open',speech.call_args.args[0])
+
 if __name__=='__main__':unittest.main()

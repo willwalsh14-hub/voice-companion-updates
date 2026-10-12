@@ -15,7 +15,7 @@ After checking for updates, Companion says its version and that it is ready, fol
 NEW EMAIL AND LIST FEEDBACK
 
 When you start a new email with the keyboard, Companion says "New email. To field." Type the recipient there. Starting an email by voice still asks who to send it to, then guides you through the subject and message. The automatic draft name and sending account are not read when creating the message.
-Lists announce "Start of list," "End of list," or "Start and end of list" for a single item before optional instructions. These announcements remain at high, medium, and low verbosity. Entering an inbox and entering a settings choice also announce their boundaries. Home and End move to the first and last item. If an email page cannot load, your existing messages and position remain available so you can retry.
+Lists announce "Start of list," "End of list," or "Start and end of list" for a single item before optional instructions. These announcements remain at high, medium, and low verbosity. Entering an inbox and entering a settings choice also announce their boundaries. Home and End move to the first and last item. If an email page cannot load, your existing messages and position remain available so you can retry. When leaving a named document, answering Yes to save keeps its filename and closes the editor. Untitled documents still ask for a filename. A failed save leaves the document open for another attempt.
 
 COMMANDS AND MODES
 

@@ -3,7 +3,7 @@
   "status": "Testing build",
   "date": "October 12, 2026",
   "baseline": "0.2.115-test",
-  "scope": "Short new-email announcement, consistent list feedback and preserved email paging after connection failures.",
+  "scope": "Short new-email announcement, consistent list feedback and preserved email paging after connection failures. Named documents keep their filename when closing.",
   "sections": [
     {
       "title": "Fixes and Enhancements",
@@ -24,6 +24,12 @@
           "title": "Email paging recovery",
           "details": [
             "If loading the next or previous email page fails, the current messages, selection and page history remain available for retry. Both message-by-message and page-by-page navigation preserve the existing position."
+          ]
+        },
+        {
+          "title": "Save and close named documents",
+          "details": [
+            "Answering Yes to save when leaving an already named document saves to its existing filename and closes the editor. It no longer asks for another filename. Untitled documents retain the naming prompt, and save failures keep the editor open."
           ]
         },
         {

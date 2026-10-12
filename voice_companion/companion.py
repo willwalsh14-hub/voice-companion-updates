@@ -1191,6 +1191,16 @@ def _handle(text, mode, typed=False):
         if command in ('cancel','go back','back'):
             speak('Your document is still open.');return 'document'
         if command in ('yes','yes please','ok','okay','confirm','confirm that','that one'):
+            if document is not None and not re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):
+                try:
+                    document.save()
+                    checkpoint_document()
+                except OSError:
+                    speak('I could not save the document. Your document is still open.');return 'document'
+                filename=document.path.name
+                document=None
+                speak('Saved '+filename+'.')
+                return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else 'awake'
             DOCUMENT_NAME_RETURN=DOCUMENT_CLOSE_TARGET
             PENDING_DOCUMENT_NAME=None
             speak('Name this document. Say or type its name, then press Enter. Say cancel to keep editing.')
