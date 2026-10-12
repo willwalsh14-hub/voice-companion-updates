@@ -57,7 +57,7 @@ class WebBrowseTests(unittest.TestCase):
             session.snapshot={'text':'Name','elements':[item]};session.browse=BrowseCursor(session.snapshot)
             backend.snapshot.return_value=session.snapshot
             self.assertIn('Name',session.command('next edit field'))
-            self.assertIn('Forms mode',session.command('edit current field'))
+            self.assertIn('edit',session.command('edit current field'))
             session.command('type Test name');session.command('save field')
             self.assertEqual(backend.fill.call_args.args[1],'Test name');self.assertFalse(backend.fill.call_args.kwargs['private'])
     def test_quick_keys_reverse_level_and_boundaries(self):
@@ -79,7 +79,7 @@ class WebBrowseTests(unittest.TestCase):
             backend=Mock();session=WebSession(folder,backend)
             item=dict(key='a',role='field',tag='input',type='text',label='Name',value='Original',start=0,end=8,href='')
             session.snapshot={'text':'Name','elements':[item]};session.browse=BrowseCursor(session.snapshot);session.browse.move('e')
-            self.assertIn('Forms mode',session.keyboard('Activate'));backend.fill.assert_not_called()
+            self.assertIn('edit',session.keyboard('Activate'));backend.fill.assert_not_called()
             session.keyboard_field['value']='Changed';session.keyboard('Escape');backend.fill.assert_not_called();self.assertIsNone(session.keyboard_field)
     def test_password_echo_is_hidden_and_values_are_not_command_text(self):
         from app_window import CompanionWindow

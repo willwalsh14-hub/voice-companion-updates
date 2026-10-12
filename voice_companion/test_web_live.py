@@ -122,7 +122,41 @@ class LiveWebTests(unittest.TestCase):
         self.assertIn('Search results',self.session.reading.text);self.assertIn('Result link',self.session.reading.text)
         self.assertNotIn('Hidden text',self.session.reading.text);self.assertFalse(self.session.snapshot['challenge'])
         self.assertIn('Virtual page view',result);self.assertIn('heading',self.session.keyboard('Quick:h'))
-        self.assertIn('Result link, link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
+        self.assertIn('Link Result link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
+
+    def test_result_navigation_waits_for_delayed_single_page_content(self):
+        self.page.set_content("""<title>Old</title><h1>Old page</h1><a href="https://fixture.test/next" onclick="event.preventDefault();history.pushState({},'','/next');document.body.setAttribute('aria-busy','true');setTimeout(()=>{document.title='New';document.body.innerHTML='<h1>New page</h1><p>Fresh content</p>';document.body.removeAttribute('aria-busy');},700)">Search result</a>""")
+        self.session._refresh();self.session.keyboard('Quick:k');result=self.session.keyboard('Activate')
+        self.assertIn('Page loaded: New',result);self.assertIn('Fresh content',self.session.reading.text);self.assertNotIn('Old page',self.session.reading.text)
+
+    def test_new_tab_result_is_loaded_before_virtual_view_capture(self):
+        self.page.set_content("""<a target="_blank" href="https://fixture.test/next">New tab result</a>""")
+        self.session._refresh();self.session.keyboard('Quick:k');result=self.session.keyboard('Activate')
+        self.addCleanup(self.backend.page.close)
+        self.assertIsNot(self.backend.page,self.page);self.assertIn('Destination',self.session.reading.text);self.assertIn('Page loaded:',result)
+
+    def test_native_fields_choices_and_listboxes_need_no_activation(self):
+        self.page.set_content("""<h1>Form</h1><p>Before</p><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1"><input aria-label="Name"><select aria-label="Choice"><option>One</option><option>Two</option><option disabled>Three</option></select><select size="4" aria-label="List"><option>Alpha</option><option>Beta</option><option>Bravo</option></select></form><p>After</p>""")
+        self.session._refresh();self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Name')
+        self.session.command('type Typed name');self.session.keyboard('Tab');self.assertEqual(self.page.locator('input').input_value(),'Typed name')
+        self.assertEqual(self.session.keyboard('Down'),'Two.');self.assertEqual(self.session.keyboard('ChoiceLetter:o'),'One.')
+        self.session.keyboard('Tab');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Bravo.')
+        self.assertEqual(self.session.command('first option'),'Alpha.');self.session.keyboard('Tab');self.assertIsNone(self.session.keyboard_field)
+        self.assertEqual(self.page.evaluate('window.sent||0'),0)
+
+    def test_custom_combo_options_and_popup_are_one_tab_stop(self):
+        self.page.set_content("""<button type="button" id="combo" role="combobox" aria-label="Custom choice" aria-controls="options" aria-expanded="false" onclick="this.setAttribute('aria-expanded','true');document.getElementById('options').style.display='block'" onblur="this.setAttribute('aria-expanded','false');document.getElementById('options').style.display='none'">Choose</button><div id="options" role="listbox" tabindex="-1" style="display:none"><div onmousedown="event.preventDefault()" role="option" aria-selected="true">Alpha</div><div onmousedown="event.preventDefault()" role="option">Beta</div><div onmousedown="event.preventDefault()" role="option">Bravo</div></div><input aria-label="Next"><script>document.querySelectorAll('[role=option]').forEach(option=>option.onclick=()=>{document.querySelectorAll('[role=option]').forEach(o=>o.setAttribute('aria-selected',String(o===option)));document.getElementById('combo').setAttribute('aria-valuetext',option.textContent);});</script>""")
+        self.session._refresh();self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Custom choice')
+        self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('Down'),'Bravo.')
+        self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Next')
+
+    def test_later_dom_updates_refresh_buffer_without_read_page(self):
+        self.session.auto_read=False;self.session._refresh();previous=self.session.page_revision
+        self.page.evaluate("()=>{const p=document.createElement('p');p.textContent='Late content';document.body.append(p)}")
+        self.page.wait_for_timeout(20);self.session.refresh_changed()
+        self.assertIn('Late content',self.session.reading.text);self.assertGreater(self.session.page_revision,previous)
+        self.page.evaluate("()=>document.title='Updated title'");self.page.wait_for_timeout(20)
+        self.assertIn('Page loaded: Updated title',self.session.refresh_changed())
 
     @unittest.skipUnless(sys.platform=='win32','Windows global Control key integration')
     def test_control_silences_while_browser_has_focus_in_awake_and_sleep_states(self):
@@ -179,7 +213,7 @@ class LiveWebTests(unittest.TestCase):
                 ui(lambda:self.assertIs(window.editor.focus_get(),window.editor))
                 import ctypes
                 ui(lambda:self.assertEqual(ctypes.windll.user32.GetForegroundWindow(),ctypes.windll.user32.GetAncestor(window.root.winfo_id(),2)))
-                self.assertTrue(any('Page: Fixture' in str(call.args[0]) for call in output.speak.call_args_list))
+                self.assertTrue(any('Page loaded: Fixture' in str(call.args[0]) for call in output.speak.call_args_list))
                 output.reset_mock()
                 ctypes.windll.user32.keybd_event(ord('H'),0,0,0);ctypes.windll.user32.keybd_event(ord('H'),0,2,0)
                 wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
@@ -197,6 +231,26 @@ class LiveWebTests(unittest.TestCase):
                 ui(lambda:window.typed.event_generate('<KeyPress>',keysym='Return'))
                 wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
                 self.assertIsNone(self.session.list_focus);wait(lambda:window.context.get('source') is not None)
+                ui(lambda:window.editor.event_generate('<KeyPress>',keysym='End',state=4))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertEqual(self.session.reading.position,len(self.session.reading.text))
+                ui(lambda:window.editor.event_generate('<KeyPress>',keysym='Home',state=4))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web');self.assertEqual(self.session.reading.position,0)
+                for _ in range(2):
+                    ui(lambda:window.editor.event_generate('<KeyPress>',keysym='Tab'))
+                    wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertEqual(self.session.keyboard_field['label'],'Name')
+                wait(lambda:window.context.get('web_field') is not None)
+                ui(lambda:window.editor.insert('1.0','From keys'))
+                wait(lambda:any(isinstance(item,tuple) and item[0]=='text_edit' for item in window.commands.queue));app.process_keyboard_batch('web')
+                ui(lambda:window.editor.event_generate('<KeyPress>',keysym='Tab'))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web');self.assertEqual(self.page.locator('#name').input_value(),'From keys')
+                wait(lambda:window.context.get('web_private'))
+                ui(lambda:window.typed.insert(0,'private value'))
+                ui(lambda:window.typed.event_generate('<KeyPress>',keysym='Home',state=4))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertEqual(self.page.locator('#secret').input_value(),'private value');self.assertEqual(self.session.reading.position,0)
+                wait(lambda:window.context.get('source') is not None and not window.context.get('web_private'))
                 ui(lambda:window.editor.event_generate('<KeyPress>',keysym='l',state=4))
                 wait(lambda:any(item==('keyboard','Web:Search') for item in window.commands.queue))
         finally:

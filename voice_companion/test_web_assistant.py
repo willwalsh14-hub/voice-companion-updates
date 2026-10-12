@@ -17,6 +17,8 @@ class FakeBackend:
             {'key':'4','role':'button','label':'Submit application','href':'','type':'submit','tag':'button'},
             {'key':'5','role':'button','label':'Continue','href':'','type':'submit','tag':'button','in_form':True},
         ]
+    def focus(self,item):self.focused=item['key']
+    def field_value(self,item):return item.get('value','')
     def goto(self, url): self.url = url
     def back(self): self.url = 'https://example.com/'
     def snapshot(self):
@@ -24,7 +26,7 @@ class FakeBackend:
                 'text':'Welcome to the account. Log in or transfer between accounts. Fill out an application.',
                 'controls':self.controls}
     def activate(self, item): self.activated.append(item['key'])
-    def fill(self, item, value):
+    def fill(self, item, value, private=False):
         self.filled.append((item['key'], value))
         next(c for c in self.controls if c['key'] == item['key'])['value'] = value
     def choose_form_option(self, item, answer):
@@ -56,14 +58,14 @@ class WebTests(unittest.TestCase):
         self.session = WebSession(self.temp.name, self.backend)
 
     def test_guided_login_and_page_reading(self):
-        self.assertIn('Page: Example account', self.session.open('example.com'))
+        self.assertIn('Page loaded: Example account', self.session.open('example.com'))
         self.assertIn('Log in', self.session.command("Um, I'm looking for how to log in"))
         self.assertEqual(self.backend.activated, [])
         self.assertIn('Is that what you want?', self.session.command('I am looking for login'))
         self.session.command('cancel')
         self.assertEqual(self.backend.activated, [])
         self.session.command('I am looking for login')
-        self.assertIn('Page: Example account', self.session.command('yes'))
+        self.assertIn('Page loaded: Example account', self.session.command('yes'))
         self.assertEqual(self.backend.activated, ['0'])
         self.assertIn('Welcome', self.session.command('read page'))
 
@@ -72,7 +74,7 @@ class WebTests(unittest.TestCase):
         self.assertIn('Tell me what you want', self.session.command('help me'))
         self.assertIn('Log in', self.session.command('I am looking for login or transfer'))
         self.assertIn('Transfer between accounts', self.session.command('no'))
-        self.assertIn('Page: Example account', self.session.command('yes'))
+        self.assertIn('Page loaded: Example account', self.session.command('yes'))
         self.assertEqual(self.backend.activated, ['1'])
 
     def test_transfer_link_and_submission_guard(self):
@@ -92,13 +94,13 @@ class WebTests(unittest.TestCase):
         self.session.open('example.com')
         self.assertIn('Saved favorite Bank', self.session.command('save favorite as Bank'))
         self.assertIn('Bank', self.session.command('list favorites'))
-        self.assertIn('Page:', self.session.command('that one'))
+        self.assertIn('Page loaded:', self.session.command('that one'))
         self.session.command('save favorite as Portal')
         self.assertIn('Bank', self.session.command('list favorites'))
         self.assertIn('Portal', self.session.command('next'))
-        self.assertIn('Page:', self.session.command('confirm'))
+        self.assertIn('Page loaded:', self.session.command('confirm'))
         self.assertEqual(Favorites(self.temp.name).get('bank')['url'], 'https://example.com')
-        self.assertIn('Page: Example account', self.session.command('open favorite Bank'))
+        self.assertIn('Page loaded: Example account', self.session.command('open favorite Bank'))
         self.assertIn('Full name', self.session.command('list fields'))
         self.assertNotIn('Field 2:', self.session.command('list fields'))
         self.assertIn('Password', self.session.command('next'))
@@ -121,16 +123,16 @@ class WebTests(unittest.TestCase):
 
     def test_search_and_matching_reject_empty(self):
         self.assertEqual(match_choices(self.backend.controls, 'um uh'), [])
-        self.assertIn('Page: Example', self.session.command('look up public benefits'))
+        self.assertIn('Page loaded: Example', self.session.command('look up public benefits'))
         self.assertIn('search.brave.com/search?q=public%20benefits', self.backend.url)
-        self.assertIn('Page: Example', self.session.command('what about eligibility'))
+        self.assertIn('Page loaded: Example', self.session.command('what about eligibility'))
         self.assertIn('search.brave.com/search?q=public%20benefits%20eligibility', self.backend.url)
         self.assertIn('Source: Example account', self.session.command('what does this page say about transfer'))
 
     def test_numbered_links_and_late_search_results(self):
         self.session.open('example.com')
         self.assertIn('Log in (L), 1 of 2', self.session.command('list links'))
-        self.assertIn('Page: Example account', self.session.command('open link 1'))
+        self.assertIn('Page loaded: Example account', self.session.command('open link 1'))
         self.assertIsNone(self.session.pending)
         self.assertEqual(self.backend.activated, ['0'])
         self.backend.controls = []
@@ -169,7 +171,7 @@ class WebTests(unittest.TestCase):
         self.backend.snapshot = blocked
         result = self.session.search('help with email')
         self.assertIn('human verification', result)
-        self.assertNotIn('Page:', result)
+        self.assertNotIn('Page loaded:', result)
 
     def test_browser_snapshot_includes_embedded_page_links(self):
         class Frame:
