@@ -248,6 +248,14 @@ class MailSession:
         return 'I heard move ' + target + ' to Trash or Deleted Items. Is that right? Say yes or no.'
 
     def list_messages(self, cursor=None):
+        names=('rows','next_cursor','current','view','body_text','body_offset','page_cursor','selected')
+        saved={name:getattr(self,name) for name in names if hasattr(self,name)}
+        try:return self._list_messages(cursor)
+        except (AccountError,MailboxError,OSError):
+            for name,value in saved.items():setattr(self,name,value)
+            raise
+
+    def _list_messages(self, cursor=None):
         self.rows = []
         self.next_cursor = None
         self.current = None
@@ -274,11 +282,11 @@ class MailSession:
         self.selected = {index for index, row in enumerate(self.rows, 1)
                          if row['id'] in self.marked_ids}
         if not self.rows:
-            return 'No messages on this page of ' + self.folder_name + '.'
+            return 'Empty list. No messages on this page of ' + self.folder_name + '.'
         self.current = 1
-        return self.folder_name + '. ' + self._summary(1) + (' More messages are available.' if self.next_cursor else '')
+        return self.folder_name + '. ' + self._summary(1,True) + (' More messages are available.' if self.next_cursor else '')
 
-    def _summary(self, number):
+    def _summary(self, number, announce_boundary=False):
         row = self.rows[number - 1]
         import json
         try:preferences=json.loads((Path(getattr(self,'folder',''))/'preferences.json').read_text(encoding='utf-8'))
@@ -292,7 +300,13 @@ class MailSession:
             if header=='size':
                 value=(str(value)+' bytes') if isinstance(value,(int,float)) else str(value)
             parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))
-        return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
+        boundary=self._message_boundary(number) if announce_boundary else ''
+        return (boundary+' ' if boundary else '')+'. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
+
+    def _message_boundary(self,number):
+        first=number==1 and self.page_cursor is None
+        last=number==len(self.rows) and not self.next_cursor
+        return 'Start and end of list.' if first and last else 'Start of list.' if first else 'End of list.' if last else ''
 
 
     def list_boundary(self,bottom=False):
@@ -324,9 +338,7 @@ class MailSession:
         self.view = 'folder'
         self.body_text = ''
         self.body_offset = 0
-        from menu_navigation import boundary_notice
-        boundary=boundary_notice(self.current-1,len(self.rows)) if not self.next_cursor and not self.previous_cursors else ('Start of list.' if self.current==1 and not self.previous_cursors else 'End of list.' if self.current==len(self.rows) and not self.next_cursor else '')
-        return self._summary(self.current) + (' '+boundary if boundary else '') + ' Say open current message to read it.'
+        return self._summary(self.current,True) + ' Say open current message to read it.'
 
     def _number(self, value):
         n = NUMBER_WORDS.get(str(value), None)
@@ -527,14 +539,18 @@ class MailSession:
             if command in ('next messages', 'next page', 'next list', 'get more emails',
                            'more emails', 'show more emails', 'show more messages', 'get more messages'):
                 if not self.next_cursor:
-                    return 'There are no more messages on this list.'
-                self.previous_cursors.append(self.page_cursor)
-                return self.list_messages(self.next_cursor)
+                    return 'End of list. There are no more messages on this list.'
+                previous=self.page_cursor
+                result=self.list_messages(self.next_cursor)
+                self.previous_cursors.append(previous)
+                return result
             if command in ('previous messages', 'previous page', 'previous list',
                            'go back a list', 'back a list', 'back one list', 'earlier emails'):
                 if not self.previous_cursors:
-                    return 'This is the first page of messages.'
-                return self.list_messages(self.previous_cursors.pop())
+                    return 'Start of list. This is the first page of messages.'
+                result=self.list_messages(self.previous_cursors[-1])
+                self.previous_cursors.pop()
+                return result
             if command in open_selection and self.view == 'folder':
                 return self._read(self.current) if self.current is not None else 'There is no highlighted message. Say list messages.'
             match = re.fullmatch(r'(?:read|open) message (' + NUMBER + r')', command)
@@ -574,13 +590,15 @@ class MailSession:
                     if not self.next_cursor:
                         return 'End of list. This is the last message in this folder.'
                     cursor = self.next_cursor
-                    self.previous_cursors.append(self.page_cursor)
+                    previous=self.page_cursor
                     self.list_messages(cursor)
+                    self.previous_cursors.append(previous)
                     return self._focus(1) if self.rows else 'No more messages were returned.'
                 if delta == -1 and self.current == 1:
                     if not self.previous_cursors:
                         return 'Start of list. This is the first message in this folder.'
-                    self.list_messages(self.previous_cursors.pop())
+                    self.list_messages(self.previous_cursors[-1])
+                    self.previous_cursors.pop()
                     return self._focus(len(self.rows)) if self.rows else 'No previous messages were returned.'
                 return self._focus(self.current + delta)
             if command in ('extend selection next','extend selection previous'):

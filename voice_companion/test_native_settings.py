@@ -44,6 +44,17 @@ class NativeSettingsTests(unittest.TestCase):
         press(choice,0x28,lambda:self.session.values['verbosity']=='low' and 'End of list' in self.notices[-1])
         press(choice,0x24,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
         press(choice,0x26,lambda:self.session.values['verbosity']=='high' and 'Start of list' in self.notices[-1])
+    def test_entering_choice_and_tabbing_back_repeat_boundary(self):
+        hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
+        self.session.values['punctuation']='none'
+        self.u.PostMessageW(categories,0x100,0x0D,0)
+        self.wait(lambda:any('Start of list. Verbosity, high' in notice for notice in self.notices))
+        choice=self.u.GetDlgItem(hwnd,200)
+        self.u.PostMessageW(choice,0x100,9,0)
+        self.wait(lambda:any('Start of list. Spoken punctuation, none' in notice for notice in self.notices))
+        before=len(self.notices)
+        self.panel.command('previous setting')
+        self.wait(lambda:len(self.notices)>before and 'Start of list. Verbosity, high' in self.notices[-1])
     def test_category_arrows_choose_enter_opens_then_checkbox_and_enter_save(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x28,0) # Choose only; Enter opens.

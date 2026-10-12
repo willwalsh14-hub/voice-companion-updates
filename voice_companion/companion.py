@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.115-test'
+APP_VERSION = '0.2.116-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1910,9 +1910,10 @@ def _handle(text, mode, typed=False):
             email_draft.automatic_dictation = INPUT_MODE != 'commands'
             if selected: email_draft.provider = selected[0]
             email_draft.save()
-            speak('New email draft named ' + email_draft.title + '. ' +
-                  ('Sending account ' + selected[1] + '. ' if selected else 'No sending account selected. Say add account. ') +
-                  ('New message to the selected sender. Subject field.' if sender_recipient else 'Who do you want to send the email to? Say or type an address, or a saved contact name.'))
+            if typed or KEYBOARD_NAVIGATION:
+                speak('New email. '+('Subject field.' if sender_recipient else 'To field.'))
+            else:
+                speak('New email. '+('New message to the selected sender. Subject field.' if sender_recipient else 'To field. Who do you want to send the email to? Say or type an address, or a saved contact name.'))
             focus_email_entry()
             return 'email_draft'
         if document_request:

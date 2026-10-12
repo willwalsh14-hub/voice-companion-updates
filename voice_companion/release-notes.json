@@ -1,43 +1,35 @@
 {
-  "version": "0.2.115-test",
+  "version": "0.2.116-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.114-test",
-  "scope": "SAPI synthesizer labels, finite lists, keyboard boundaries and confirmation accelerators.",
+  "baseline": "0.2.115-test",
+  "scope": "Short new-email announcement, consistent list feedback and preserved email paging after connection failures.",
   "sections": [
-    {
-      "title": "New Apps and Features",
-      "topics": [
-        {
-          "title": "Confirmation accelerators",
-          "details": [
-            "Alt+Y immediately chooses Yes and Alt+N immediately chooses No in confirmation prompts, including exit, power actions, updates, sending mail and media actions. Existing Y/N and voice Yes/No remain available. Home selects Yes, End selects No, Enter activates the selected choice, and Escape cancels. Directional movement stops at Yes or No rather than cycling."
-          ]
-        }
-      ]
-    },
     {
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "SAPI synthesizer name",
+          "title": "New email announcement",
           "details": [
-            "The synthesizer formerly displayed as Windows speech is now SAPI. Options uses SAPI and SAPI voice labels. Use SAPI and Use SAPI voice select it. Saved settings and selected voices remain compatible; existing Windows speech commands continue to work."
+            "Starting a new email with the keyboard says New email. To field. Automatic draft names and the sending account are omitted. Voice commands retain the guided recipient, subject and message prompts. New email to sender starts in the Subject field."
           ]
         },
         {
-          "title": "Finite list navigation",
+          "title": "Consistent list boundaries",
           "details": [
-            "Menus, synthesizer and voice pickers, Options categories and choices, email folders and messages, help topics, browser element lists, radio and podcast lists, email headers and document match pickers stop at their boundaries. Start of list and End of list identify the first and last items; a one-item list announces both. Empty lists remain distinguishable.",
-            "Home and End select the first and last item without opening it. Voice First item, Last item, Start of list, Beginning of list and End of list provide equivalent navigation in active menus. Repeated first-letter navigation stops at the last matching item; choosing a different letter can jump back. Editable text keeps normal caret commands and forms keep normal Tab navigation. Browser choice keys that retain the selected value announce the boundary without firing another native change event.",
-            "Email Home and End reach the first or last message in the current folder across fetched pages. Message navigation never wraps to the opposite end. A repeated server page cursor reports that the end could not be reached rather than looping. Document selection and replacement match lists also stop; Home/End previews their first/last candidate without applying the action.",
-            "Contacts, connected email accounts and saved document names now open navigable pickers instead of a truncated spoken report. Arrows, first letters, Home/End and voice equivalents browse them; Enter selects and Escape closes the picker without activating an item."
+            "Boundary feedback comes before optional list guidance so high, medium and low verbosity retain it. Entering an inbox announces the first or last boundary, including both for a single message. Entering a settings choice announces its boundary as well as its value. Empty email lists are explicitly identified."
           ]
         },
         {
-          "title": "Documentation and validation",
+          "title": "Email paging recovery",
           "details": [
-            "Built-in Help, the attached HTML guide and all versioned What’s New formats document SAPI, list boundaries and confirmation keys. Regression checks cover singleton/empty lists, repeated letters, voice navigation, paginated email and preserved settings. Windows integration checks real Options controls and Alt+Y/Alt+N from editable fields; browser checks preserve focus and ordinary form editing."
+            "If loading the next or previous email page fails, the current messages, selection and page history remain available for retry. Both message-by-message and page-by-page navigation preserve the existing position."
+          ]
+        },
+        {
+          "title": "Everyday workflow checks",
+          "details": [
+            "Regression checks exercise keyboard and guided voice email creation, recipient-to-subject-to-body progression, all verbosity levels, inbox entry, singleton lists, paginated messages and connection failures. The release workflow also runs Windows controls and browser integration checks before publishing. Real personal mailboxes and physical microphone interactions still require user testing."
           ]
         }
       ]

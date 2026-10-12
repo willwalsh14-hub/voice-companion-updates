@@ -95,4 +95,83 @@ class BoundaryTests(unittest.TestCase):
             def fetch(cursor):session.rows=[{'id':'a'}];session.next_cursor='repeat';session.page_cursor=cursor
             session.list_messages=fetch
             self.assertIn('could not reach the end',session.list_boundary(True))
+class EverydayWorkflowTests(unittest.TestCase):
+    def test_new_email_keyboard_is_short_and_voice_remains_guided(self):
+        from pathlib import Path
+        from contextlib import ExitStack
+        for level in ('high','medium','low'):
+            for typed in (True,False):
+                with tempfile.TemporaryDirectory() as folder,ExitStack() as stack:
+                    for name,value in {'APP':Path(folder),'VERBOSITY':level,'email_draft':None,'mail_session':None,'pending_send':None,'NAMED_LIST':None,'MAIN_MENU_INDEX':None,'SYNTH_PICK_INDEX':None,'VOICE_PICK_INDEX':None,'account_setup':False,'KEYBOARD_NAVIGATION':False,'INPUT_MODE':'mixed'}.items():
+                        stack.enter_context(patch.object(app,name,value))
+                    stack.enter_context(patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('gmail','me@example.test')))))
+                    window=stack.enter_context(patch.object(app,'APP_WINDOW',Mock()))
+                    speech=stack.enter_context(patch.object(app,'speak'))
+                    self.assertEqual(app.handle('new email','awake',typed=typed),'email_draft')
+                    notice=speech.call_args.args[0]
+                    if typed:self.assertEqual(notice,'New email. To field.')
+                    else:self.assertIn('Who do you want to send',notice)
+                    self.assertNotIn('Untitled',notice);self.assertNotIn('me@example.test',notice)
+                    self.assertEqual(app.email_draft.compose_step,'recipient')
+                    window.focus_email_field.assert_called_with('recipient','')
+                    if not typed:
+                        app.handle('sam@example.test','email_draft')
+                        self.assertEqual(app.email_draft.compose_step,'subject')
+                        self.assertIn('subject',speech.call_args.args[0].lower())
+                        app.handle('Tomorrow meeting','email_draft')
+                        self.assertEqual(app.email_draft.compose_step,'body')
+                        self.assertIn('message',speech.call_args.args[0].lower())
+                        app.handle('We will meet at noon.','email_draft')
+                        self.assertEqual(app.email_draft.recipient,'sam@example.test')
+                        self.assertEqual(app.email_draft.subject,'Tomorrow meeting')
+                        self.assertIsNone(app.pending_send)
+    def test_guidance_cannot_remove_or_delay_boundaries(self):
+        from list_announcements import name_first
+        from settings_model import prompt_text
+        from menu_navigation import announce_item
+        from native_settings import choice_feedback
+        for level in ('high','medium','low'):
+            for index,count,expected in ((0,2,'Start of list.'),(1,2,'End of list.'),(0,1,'Start and end of list.')):
+                for notice in (announce_item('Test',index,count),name_first(f'Topic {index+1} of {count}: Test. Say next or previous. Say that one to open.'),choice_feedback('Speech rate, zero',index,count)):
+                    spoken=prompt_text(notice,level)
+                    self.assertTrue(spoken.startswith(expected),(level,spoken))
+                    self.assertEqual(spoken.count(expected),1)
+    def test_inbox_entry_and_page_transitions_announce_real_folder_boundaries(self):
+        class Client:
+            def list_messages(self,folder,cursor=None,limit=10):
+                return ([{'id':'a','subject':'First','from':'Sam'}],'page2') if cursor is None else ([{'id':'b','subject':'Last','from':'Alex'}],None)
+        with tempfile.TemporaryDirectory() as folder:
+            session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox'
+            self.assertIn('Start of list.',session.list_messages())
+            self.assertNotIn('End of list.',session._focus(1))
+            self.assertTrue(session.process('next message').startswith('End of list.'))
+            self.assertNotIn('Start of list.',session._focus(1))
+            self.assertTrue(session.process('previous message').startswith('Start of list.'))
+    def test_singleton_inbox_entry_announces_both_boundaries(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=MailSession('gmail',folder);session.client=lambda:Mock(list_messages=Mock(return_value=([{'id':'a','subject':'Only','from':'Sam'}],None)))
+            self.assertIn('Start and end of list.',session.list_messages())
+
+    def test_network_failure_preserves_email_page_and_history(self):
+        from mailbox_access import MailboxError
+        for command in ('next message','next page','previous message','previous page'):
+            with tempfile.TemporaryDirectory() as folder:
+                session=MailSession('gmail',folder)
+                session.rows=[{'id':'a','subject':'Keep','from':'Sam'}];session.current=1
+                session.next_cursor='next';session.page_cursor='current';session.previous_cursors=[None]
+                session.client=lambda:Mock(list_messages=Mock(side_effect=MailboxError('Offline')))
+                self.assertIn('Offline',session.process(command))
+                self.assertEqual(session.rows[0]['id'],'a');self.assertEqual(session.current,1)
+                self.assertEqual(session.next_cursor,'next');self.assertEqual(session.page_cursor,'current')
+                self.assertEqual(session.previous_cursors,[None])
+
+    def test_batched_keyboard_email_menu_uses_short_announcement(self):
+        import queue
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as folder:
+            window=Mock();window.commands=queue.Queue();window.commands.put(('keyboard','Ctrl+N'))
+            with patch.object(app,'APP',Path(folder)),patch.object(app,'APP_WINDOW',window),patch.object(app,'email_draft',None),patch.object(app,'mail_session',Mock(folder_picker=None,folder_choice=None,pending=None)),patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('gmail','me@example.test')))),patch.object(app,'interrupt_speech'),patch.object(app,'sync_app_context'),patch.object(app,'KEYBOARD_BATCH_TEXT',None),patch.object(app,'KEYBOARD_BATCH',False),patch.object(app,'NAMED_LIST',None),patch.object(app,'INPUT_MODE','mixed'):
+                self.assertEqual(app.process_keyboard_batch('mailbox'),'email_draft')
+                window.feedback.assert_called_once_with('New email. To field.')
+
 if __name__=='__main__':unittest.main()

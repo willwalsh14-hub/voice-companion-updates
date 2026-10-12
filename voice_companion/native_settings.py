@@ -8,6 +8,10 @@ import copy
 from settings_model import CATEGORIES
 from menu_navigation import boundary_notice, next_match,menu_label
 
+def choice_feedback(value,index,count):
+    boundary=boundary_notice(index,count)
+    return (boundary+' ' if boundary else '')+str(value)
+
 class NativeSettings:
     def __init__(self,session,announce,save,action,interrupt=None):
         self.session=session;self.announce=announce;self.interrupt=interrupt or (lambda:None);self.save_callback=save;self.action_callback=action
@@ -70,12 +74,15 @@ class NativeSettings:
             if field.kind=='password':return field.label+'. Hidden.'
             if field.kind=='action':return field.label+'. Button.'
             value=raw(hwnd,field)
-            return field.label+', '+('on' if value is True else 'off' if value is False else value)
+            value='on' if value is True else 'off' if value is False else value
+            if field.kind=='choice' and field.choices:
+                return choice_feedback(field.label+', '+str(value),int(send(hwnd,0x147,0,0)),len(field.choices))
+            return field.label+', '+str(value)
         def changed_value(hwnd):
             field=controls[hwnd];value=raw(hwnd,field)
             notice='on' if value is True else 'off' if value is False else str(value)
             if field.choices:
-                index=int(send(hwnd,0x147,0,0));notice+=' '+boundary_notice(index,len(field.choices))
+                index=int(send(hwnd,0x147,0,0));notice=choice_feedback(notice,index,len(field.choices))
             return notice.strip()
         def render(focus_key=None):
             for hwnd in children:destroy(hwnd)

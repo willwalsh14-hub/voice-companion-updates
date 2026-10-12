@@ -9,15 +9,16 @@ def name_first(text):
     if not match: return text
     item = match['item']
     boundary=boundary_notice(int(match['index'])-1,int(match['count']))
-    boundary=(' '+boundary) if boundary else ''
+    boundary=(boundary+' ') if boundary else ''
     split = re.search(r'\. Say |\? Say |\. Open link ', item)
     if split:
         name = item[:split.start()].rstrip('. ')
         tail = item[split.start():]
         # Keep opening instructions after the name and position.
-        return text[:match.start()] + menu_label(name) + ', ' + match['index'] + ' of ' + match['count'] + tail+boundary
-    return text[:match.start()] + menu_label(item.rstrip('. ')) + ', ' + match['index'] + ' of ' + match['count'] + '.'+boundary
+        return text[:match.start()] + boundary + menu_label(name) + ', ' + match['index'] + ' of ' + match['count'] + tail
+    return text[:match.start()] + boundary + menu_label(item.rstrip('. ')) + ', ' + match['index'] + ' of ' + match['count'] + '.'
 
 
 def list_item(name, index, count):
-    return f'{menu_label(name)}, {index + 1} of {count}.'+(' '+boundary_notice(index,count) if boundary_notice(index,count) else '')
+    from menu_navigation import announce_item
+    return announce_item(name,index,count)

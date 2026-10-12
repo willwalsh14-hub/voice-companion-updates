@@ -469,7 +469,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         companion.handle('Remember this.', mode)
         self.assertEqual(companion.handle('go back', mode), 'awake')
         self.assertIn('Remember this.', (self.root / 'notes.txt').read_text())
-        for mode in ('search', 'podcast'):
+        for mode in (companion.handle('search the web','awake'), 'podcast'):
             self.assertEqual(companion.handle('go back', mode), 'awake')
 
     def test_go_back_saves_document_and_allows_email(self):
