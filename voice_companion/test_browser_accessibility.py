@@ -12,6 +12,51 @@ from test_web_assistant import FakeBackend
 from web_assistant import WebSession,BrowserBackend
 
 class BrowserAccessibilityTests(unittest.TestCase):
+    def test_control_silences_all_engines_without_microphone_or_focus_dependency(self):
+        import threading
+        from keyboard_speech import KeyboardSpeech
+        worker=KeyboardSpeech.__new__(KeyboardSpeech);worker.queue=queue.Queue();worker.narration_interrupt=threading.Event()
+        engine=Mock();worker.settings=('',0,100,engine,0);worker.ai=Mock()
+        worker.queue.put('obsolete speech');worker.poll_control(True)
+        self.assertEqual(list(worker.queue.queue),[('interrupt',)]);self.assertTrue(worker.narration_interrupt.is_set())
+        worker.ai.interrupt.assert_called_once();engine.interrupt.assert_called_once()
+        worker.poll_control(True);engine.interrupt.assert_called_once()
+        worker.poll_control(False);worker.poll_control(True);self.assertEqual(engine.interrupt.call_count,2)
+
+    def test_web_confirmations_are_keyboard_accessible_even_when_in_a_list(self):
+        session=Mock(pending={'role':'button'},submit_pending=None,list_focus='links')
+        with patch.object(app,'web_session',session),patch.object(app,'pending_website',None),patch.object(app,'interrupt_speech'):
+            self.assertEqual(app.app_context('web')['confirmation'],'yes')
+            self.assertEqual(app.navigation_key('y','web'),'yes');self.assertEqual(app.navigation_key('n','web'),'no')
+            self.assertTrue(app.web_feedback_control('yes','web'));self.assertFalse(app.web_feedback_control('yes','sleep'))
+
+    def test_lists_have_shortcuts_and_do_not_create_pending_actions(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend());session._refresh()
+            with patch.object(app,'web_session',session),patch.object(app,'pending_website',None),patch.object(app,'interrupt_speech'),patch.object(app,'speak'):
+                self.assertEqual(app.navigation_key('F7','web'),'list links');self.assertEqual(app.navigation_key('F6','web'),'list headings')
+                session.list_links();self.assertNotIn('confirmation',app.app_context('web'))
+                self.assertEqual(app.navigation_key('Enter','web'),'open current link')
+                app.menu_state('web')[2](1);self.assertIsNone(session.pending)
+                self.assertIn('Page:',session.command('open current link'));self.assertEqual(session.backend.activated,['1'])
+
+    def test_guided_web_yes_and_no_dispatch_through_app_keyboard_and_voice(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend());session._refresh()
+            with patch.object(app,'web_session',session),patch.object(app,'pending_website',None),patch.object(app,'APP_WINDOW',None),patch.object(app,'INPUT_MODE','mixed'),patch.object(app,'interrupt_speech'),patch.object(app,'speak'),patch.object(app,'speak_status'):
+                session.command('find login')
+                self.assertEqual(app.handle_keyboard(app.navigation_key('y','web'),'web'),'web')
+                self.assertEqual(session.backend.activated,['0'])
+                session.command('find login or transfer');app.handle('no','web')
+                self.assertIn('Transfer',session.pending['label']);app.handle('yes','web')
+                self.assertEqual(session.backend.activated,['0','1'])
+
+    def test_empty_brave_results_never_redirect_to_another_engine(self):
+        with tempfile.TemporaryDirectory() as folder:
+            backend=FakeBackend();backend.snapshot=lambda:{'url':backend.url,'title':'Search','text':'','controls':[]}
+            session=WebSession(folder,backend);session.search('simple search')
+            self.assertIn('search.brave.com',backend.url)
+
     def test_backspace_erased_character_and_delete_new_caret_character(self):
         for echo in ('characters','words','characters and words'):
             self.assertEqual(typing_feedback('abc','ac',1,echo,'BackSpace',2),'b')

@@ -5,6 +5,7 @@ never treated as an instruction to the assistant. No credentials are stored by
 this module; the browser retains its own session in its dedicated profile.
 """
 from list_announcements import name_first
+from menu_navigation import announce_item
 from field_selection import FieldSelection, selection_command
 import json
 import os
@@ -150,8 +151,8 @@ class BrowserBackend:
     def snapshot(self):
         self.start()
         script = '''() => {
-          const visible = e => [...e.getClientRects()].some(r=>r.width>0&&r.height>0) && getComputedStyle(e).visibility !== 'hidden';
-          const accessibleLabel=e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\\s+/g,' ').slice(0,120);};
+          const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&(!parent||visible(parent));visibility.set(e,result);return result;};
+          const accessibleLabel=e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\\s+/g,' ').slice(0,120);};
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[contenteditable="true"]';
@@ -185,12 +186,10 @@ class BrowserBackend:
           // Read the full visible page. Sites may put most content outside main.
           /*SEMANTICS*/
           const bodyText=output.trimEnd().slice(0,200000);
-          const frameUrls=[...document.querySelectorAll('iframe')].map(e=>e.src || '');
           const challenge=/(captcha|recaptcha|hcaptcha|unusual traffic|just a moment)/i
               .test((document.title || '')+' '+location.href) ||
               /(verify (?:that )?you(?:'re| are) human|unusual traffic|complete the security check|checking your browser)/i
-              .test(bodyText.slice(0,1000)) ||
-              frameUrls.some(url=>/(recaptcha|hcaptcha|turnstile|arkoselabs|captcha)/i.test(url));
+              .test(bodyText.slice(0,1000));
           return {title:document.title || location.hostname, url:location.href,
                   text:bodyText, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
@@ -212,7 +211,7 @@ class BrowserBackend:
                 control['frame_index'] = index
                 control['frame_url'] = part['url']
             result['controls'].extend(part['controls'])
-            result['challenge'] = result.get('challenge', False) or part.get('challenge', False)
+            result['challenge'] = result.get('challenge', False) or (not result.get('text','').strip() and part.get('challenge', False))
             if part['text']:
                 base=len(result['text'])+1
                 part['elements']=[e for e in part.get('elements',[]) if e.get('end',0)<=50000]
@@ -483,6 +482,7 @@ class WebSession:
                 if role=='button' and item.get('type')=='submit':return self.prepare_submit()
                 if role in ('link','button'):
                     if item.get('href') and urlsplit(item['href']).scheme!='https':return 'Only secure HTTPS links can be opened.'
+                    if role=='link':self.pending=item;return self.confirm()
                     self.choices=[item];return self.choose(1)
                 return describe(item)
             elif key in ('Up','Down') and self.browse.current() and kind(self.browse.current())=='combobox':
@@ -606,7 +606,7 @@ class WebSession:
                     if self.snapshot.get('controls') else
                     'I could not read the page content after waiting for it to load. Try read page again or ask your helper to inspect the browser.')
         return ('Page: ' + _plain(self.snapshot['title']) + '. Site: ' +
-                (urlsplit(url).hostname or 'unknown') + '. ' + self.read())
+                (urlsplit(url).hostname or 'unknown') + '. Virtual page view. ' + str(sum(kind(e)=='heading' for e in self.browse.elements)) + ' headings, ' + str(sum(kind(e)=='link' for e in self.browse.elements)) + ' links. ' + self.reading.move('line',0))
 
     def open(self, url):
         try:
@@ -625,29 +625,14 @@ class WebSession:
             'brave': ('Brave Search', 'https://search.brave.com/search?q='),
             'duckduckgo': ('DuckDuckGo', 'https://html.duckduckgo.com/html/?q='),
         }
-        order = (['google','brave','duckduckgo'] if provider == 'google' else ['brave','duckduckgo'])
-        failures = []
-        for engine in order:
-            name, base = urls[engine]
-            try:
-                self.backend.goto(base + quote(query))
-                result = self._refresh()
-                if self.snapshot.get('challenge') or not self._search_readable():
-                    if hasattr(self.backend, 'settle'): self.backend.settle()
-                    result = self._refresh()
-                if self.snapshot.get('challenge'):
-                    failures.append(name + ' asked for human verification')
-                    continue
-                if not self._search_readable():
-                    failures.append(name + ' had no readable results')
-                    continue
-                self.last_search = query
-                return (('I switched from ' + ', '.join(failures) + ' to ' + name + '. ') if failures else
-                        'Searching with ' + name + '. ') + result
-            except Exception:
-                failures.append(name + ' could not open')
-        return ('I could not read search results. ' + '; '.join(failures) +
-                '. A helper can inspect the browser. I cannot solve human verification by voice.')
+        name, base = urls.get(provider, urls['brave'])
+        try:
+            self.backend.goto(base + quote(query))
+            result = self._refresh()
+            self.last_search = query
+            return 'Searching with ' + name + '. ' + result
+        except Exception:
+            return name + ' could not open. Your search engine was not changed. Try again or choose another search engine.'
 
     def _search_readable(self):
         if not self.snapshot: return False
@@ -687,57 +672,55 @@ class WebSession:
         self.suggestion_index = 0
         return self._suggest()
 
+    def link_items(self):
+        snapshot=self.snapshot or {}
+        items=snapshot.get('elements',snapshot.get('controls',[]))
+        return [c for c in items if kind(c)=='link' and (not c.get('href') or urlsplit(c['href']).scheme=='https')]
+
     def list_links(self, direction='first'):
         if not self.snapshot: return 'Open a website first.'
         if direction == 'first':
-            try: self.snapshot = self.backend.snapshot()
-            except Exception: return 'The links could not be read. Try read page.'
             self.link_offset = 0
             self.link_position = None
             self.pending = None
             self.choices = []
-        links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                 urlsplit(c.get('href', '')).scheme == 'https']
+        links = self.link_items()
         if not links and direction == 'first':
             for _ in range(3):
                 try:
                     if hasattr(self.backend, 'settle'): self.backend.settle()
                     self.snapshot = self.backend.snapshot()
                 except Exception: break
-                links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                         urlsplit(c.get('href', '')).scheme == 'https']
+                links = self.link_items()
                 if links: break
         if not links:
             return 'I could not identify links on this page. They may be loading or inaccessible to this browser helper. Ask your helper to inspect the page.'
         if direction != 'first': return self.move_link(1 if direction == 'next' else -1)
         self.link_position = 0
         self.list_focus = 'links'
-        self.pending = links[0]
-        return (name_first('Found '+str(len(links))+' links. Link 1 of '+str(len(links))+': '+_label(links[0])+'. '+
-                self._suggest_link(links[0])+' Say next or previous to browse.'))
+        self.pending = None
+        return 'Links list. '+announce_item(_label(links[0]),0,len(links))+' Press Enter or say open current link to open. Escape returns to the page.'
 
     def open_link(self, number):
         if not self.snapshot: return 'Open a website first.'
-        links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                 urlsplit(c.get('href', '')).scheme == 'https']
+        links = self.link_items()
         index = int(number)-1
         if index < 0 or index >= len(links): return 'That link number is not on this page. Say list links.'
         self.link_position = index
         self.pending = links[index]
-        return self._suggest_link(links[index])
+        return self.confirm()
 
     def move_link(self, direction):
         if not self.snapshot: return 'Open a website first.'
-        links = [c for c in self.snapshot['controls'] if c['role'] == 'link' and
-                 urlsplit(c.get('href', '')).scheme == 'https']
+        links = self.link_items()
         if not links: return 'No links are listed. Say list links.'
         position = self.link_position
         index = (0 if direction > 0 else len(links)-1) if position is None else position + direction
         if index < 0 or index >= len(links): return 'That is the '+('first' if index<0 else 'last')+' link on this page.'
         self.link_position = index
         self.list_focus = 'links'
-        self.pending = links[index]
-        return _label(links[index]) + ', ' + str(index+1) + ' of ' + str(len(links)) + '. ' + self._suggest_link(links[index])
+        self.pending = None
+        return announce_item(_label(links[index])+', link',index,len(links))
 
     def _suggest_link(self, item):
         host = urlsplit(item.get('href', '')).hostname or 'unknown site'
@@ -1058,8 +1041,40 @@ class WebSession:
         except WebError as exc: return str(exc)
         except Exception: return 'That field changed. Say list fields and try again.'
 
+    def heading_items(self):
+        return [e for e in (self.snapshot or {}).get('elements',[]) if kind(e)=='heading']
+
+    def list_headings(self):
+        items=self.heading_items()
+        if not items:return 'No headings on this page.'
+        self.list_focus='headings';self.heading_index=0;self.pending=None
+        return 'Headings list. '+announce_item(describe(items[0]).rstrip('.'),0,len(items))+' Enter moves to the heading. Escape returns to the page.'
+
+    def move_heading(self,step):
+        items=self.heading_items();index=self.heading_index+step
+        if not 0<=index<len(items):return 'List boundary.'
+        self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items))
+
+    def activate_list_item(self):
+        if self.list_focus=='links':return self.open_link((self.link_position or 0)+1)
+        if self.list_focus=='headings':
+            item=self.heading_items()[self.heading_index];self.list_focus=None
+            self.browse.set_position(item['start']);self.reading.position=item['start'];self.reading.continuation=item['start']
+            return describe(item)
+        return 'Move to a link or heading first.'
+
     def command(self, spoken):
         command = _plain(spoken).rstrip('.!?').lower()
+        if command in ('list headings','show headings','headings list','heading list'):return self.list_headings()
+        if self.list_focus in ('links','headings') and not (self.pending or self.submit_pending):
+            if command in ('cancel','go back','close list','back to page','escape'):
+                self.list_focus=None;self.pending=None;return 'Virtual page view.'
+            if command in ('yes','yes please','okay','ok','confirm','confirm that','that one','open current link','activate current link','go to heading','open current heading'):
+                return self.activate_list_item()
+            if command in ('no','no thanks'):
+                self.list_focus=None;self.pending=None;return 'Virtual page view.'
+            if self.list_focus=='headings' and command in ('next','previous','next heading','previous heading'):
+                return self.move_heading(-1 if command.startswith('previous') else 1)
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
         browse_key=voice_browse_key(command)
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
@@ -1219,8 +1234,8 @@ class WebSession:
             return 'Canceled. The web action was not opened.'
         match = re.match(r'^(?:what does (?:this |the )?page say about|tell me about)\s+(.+)', spoken, re.I)
         if match: return self.answer_from_page(match[1])
-        match = re.match(r'^google(?: for)?\s+(.+)', spoken, re.I)
-        if match: return self.search(match[1], provider='google')
+        match = re.match(r'^(google|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)', spoken, re.I)
+        if match:return self.search(match[2],provider='duckduckgo' if match[1].lower().startswith('duck') else 'brave' if match[1].lower().startswith('brave') else 'google')
         match = re.match(r'^(?:search(?: the web)?(?: for)?|look up)\s+(.+)', spoken, re.I)
         if match: return self.search(match[1])
         match = re.match(r'^what about\s+(.+)', spoken, re.I)
@@ -1238,4 +1253,4 @@ class WebSession:
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
 # The same accessible name is used for snapshot and stale-target validation.
-LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''
+LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''

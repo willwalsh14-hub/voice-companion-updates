@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.109-test'
+APP_VERSION = '0.2.110-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -195,6 +195,7 @@ def app_context(mode):
     context['menu_letters']=menu_state(logical) is not None
     if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
+    if logical=='web' and web_session and (web_session.pending or web_session.submit_pending):context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
@@ -207,6 +208,7 @@ def app_context(mode):
             s=editor.selection;context['selection']=(absolute(editor,(s.first_paragraph,s.first_offset)),absolute(editor,(s.last_paragraph,s.last_offset)))
     elif logical=='web' and web_session and web_session.snapshot and not web_session.list_focus and web_session.form_index is None:
         context['web_revision']=getattr(web_session,'page_revision',0)
+        context['web_elements']=web_session.snapshot.get('elements',[])
         field=getattr(web_session,'keyboard_field',None)
         context['web_browse']=field is None
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
@@ -231,7 +233,7 @@ def sync_app_context(mode,focus=False):
     if APP_WINDOW is None:return
     context=app_context(mode)
     if KEYBOARD_SPEECH and not TEXT_MODE:
-        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH)
+        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH)
     if focus or context!=UI_CONTEXT_CACHE:
         UI_CONTEXT_CACHE=dict(context);context['focus']=focus;APP_WINDOW.set_context(context)
 
@@ -419,10 +421,11 @@ def menu_state(mode):
         web=web_session
         if web.list_focus=='favorites':return state([x[1]['name'] for x in web.favorite_items],web,'favorite_index')
         if web.list_focus=='fields':return state([x.get('name') or x.get('label') or x.get('text') or x['role'] for x in web.choices],web,'field_list_index')
+        if web.list_focus=='headings':return state([__import__('web_browse').describe(x) for x in web.heading_items()],web,'heading_index')
         if web.list_focus=='links' and web.snapshot:
             from urllib.parse import urlsplit
-            links=[x for x in web.snapshot['controls'] if x['role']=='link' and urlsplit(x.get('href','')).scheme=='https']
-            def select(index):web.link_position=index;web.pending=links[index]
+            links=web.link_items()
+            def select(index):web.link_position=index
             return ([x.get('name') or x.get('text') or x.get('href') for x in links],web.link_position,select) if links else None
     return None
 
@@ -472,6 +475,8 @@ def _navigation_key(key,mode):
             speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
+    if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
+    if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key=='Enter':return 'open current heading' if web_session.list_focus=='headings' else 'open current link'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
     if mode=='search' and key=='Escape':return 'go back'
     if mode=='mailbox' and key.startswith('Email:'):return key[6:]
@@ -620,6 +625,16 @@ def fast_offline_silence(recognizer, utterance):
     return True
 
 
+def web_feedback_control(text,mode):
+    if mode!='web' or not web_session:return False
+    command=normalized_command(text)
+    if web_session.pending or web_session.submit_pending:
+        return command in ('yes','yes please','no','no thanks','cancel','okay','ok','confirm','confirm that')
+    if web_session.list_focus in ('links','headings'):
+        return command in ('next','previous','open current link','open current heading','go to heading','that one','okay','ok','cancel','close list','back to page')
+    from web_browse import voice_browse_key
+    return bool(voice_browse_key(command) or reading_request(command)) or command in ('list links','list headings','read page','leave website','go back')
+
 def interrupt_speech():
     global SPEECH_PAUSED
     if APP_WINDOW is not None:APP_WINDOW.ui_actions.put(('cancel_phonetic',None))
@@ -735,7 +750,7 @@ def change_speech_setting(command):
         SPEECH_VOLUME = value
         if not TEXT_MODE: voice.Volume = value
     save_speech_settings()
-    if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH)
+    if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH)
     speak('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')
     return True
 
@@ -980,7 +995,7 @@ def run_web_search(query):
 def browser_focus_notice(mode):
     """Native focus polling must not overwrite Companion browse-cursor speech."""
     if mode!='web' or not web_session or speech_busy():return ''
-    if APP_WINDOW is not None and app_context(mode).get('source'):return ''
+    if APP_WINDOW is not None and web_session.snapshot:return ''
     return web_session.focus_notice()
 
 
@@ -2561,7 +2576,8 @@ def main():
                     utterance.clear()
                     if recognizer.AcceptWaveform(audio):
                         control=json.loads(recognizer.Result()).get('text','').lower()
-                        if spoken_control(control):
+                        if spoken_control(control) or web_feedback_control(control,mode):
+                            interrupt_speech()
                             mode=handle(control,mode)
                             if mode=='exit':return 0
                     continue
@@ -2790,7 +2806,7 @@ if __name__ == '__main__':
         try:
             APP_WINDOW = CompanionWindow(APP_VERSION, APP)
             from keyboard_speech import KeyboardSpeech
-            KEYBOARD_SPEECH=KeyboardSpeech();APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
+            KEYBOARD_SPEECH=KeyboardSpeech();KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH);APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
             APP_WINDOW.start()
         except Exception:
             APP_WINDOW = None

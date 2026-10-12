@@ -150,6 +150,8 @@ class CompanionWindow:
                 control=bool(event.state&4);shift=bool(event.state&1)
                 request=None
                 if key in ('Control_L','Control_R'):
+                    cancel_phonetic()
+                    if local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     self.commands.put(('keyboard','Control'));return 'break'
                 if key in ('Up','Down','Left','Right','Tab','ISO_Left_Tab','Home','End','Escape') or self.context.get('menu_letters') and event.char.isalpha():
@@ -158,7 +160,8 @@ class CompanionWindow:
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
-                if mode=='web' and control and key.lower()=='l':request='Web:Search'
+                if mode=='web' and key in ('F6','F7'):request=key
+                elif mode=='web' and control and key.lower()=='l':request='Web:Search'
                 if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
                     self.commands.put(typed.get().strip().lower());typed.delete(0,'end');return 'break'
                 if request:pass
@@ -216,7 +219,7 @@ class CompanionWindow:
             root.bind_all('<Tab>',shortcut)
             root.bind_all('<Shift-Tab>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')
-            for sequence in ('<F2>','<F5>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
+            for sequence in ('<F2>','<F5>','<F6>','<F7>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
                 root.bind_all(sequence,shortcut)
             def before_key(event):
                 if shortcut(event)=='break':return 'break'
@@ -311,6 +314,14 @@ class CompanionWindow:
                         notice=spoken_range(MessageBody(text,spans=self.context['rich_spans']),start,end)
                         if notice.lstrip().startswith('• '):notice='Bullet '+notice.lstrip()[2:]
                         if any(a<=caret<b and style=='heading' for a,b,style,url in self.context['rich_spans']):notice='Heading. '+notice
+                if self.context.get('web_elements') and key in ('Up','Down','Home','End') and not selection():
+                    from web_browse import kind
+                    roles=[]
+                    for item in self.context['web_elements']:
+                        if item.get('start',0)<=caret<item.get('end',0) and kind(item) in ('link','heading','button','edit','checkbox','radio','combobox','cell'):
+                            role=kind(item)+(' level '+str(item.get('level',1)) if kind(item)=='heading' else '')
+                            if role not in roles:roles.append(role)
+                    if roles:notice+=', '+', '.join(roles)+'.'
                 self.feedback(notice);cancel_phonetic()
                 if char and self.context.get('phonetic') and phonetic(char):
                     local['phonetic']=root.after(int(float(self.context.get('delay',.5))*1000),lambda:self.feedback(phonetic(char)))

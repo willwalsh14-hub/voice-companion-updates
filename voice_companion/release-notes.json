@@ -1,17 +1,18 @@
 {
-  "version": "0.2.109-test",
+  "version": "0.2.110-test",
   "status": "Testing build",
   "date": "October 11, 2026",
-  "baseline": "0.2.108-test",
-  "scope": "Page-load speech and keyboard focus, typed web searches, deletion feedback, and accessible HTML email controls.",
+  "baseline": "0.2.109-test",
+  "scope": "Virtual web page reading, links and headings lists, immediate Ctrl silence and reliable search/confirmation handling.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Type a web search",
+          "title": "Virtual page view and element lists",
           "details": [
-            "Press Ctrl+L from Companion web browsing, choose Web browsing on the main menu, or say Search the web to open a typed search field. Type a search and press Enter; Escape returns to the previous page or main menu. Standard text editing, caret movement, word movement and typing echo apply. Spoken searches remain available."
+            "Web pages render in Companion as a stable, read-only virtual text view with element positions. Arrows read text and announce link, heading and control roles; existing quick keys, forms and table navigation use the same view across Firefox, Chrome, Edge and Brave. Page loading announces the title, site, heading/link counts and first line.",
+            "F7 or Insert+F7 opens links; F6 or Insert+F6 opens headings. Say List links or List headings. Up/Down, Home/End and first-letter navigation browse the list. Enter or Open current link opens the chosen link; Enter or Go to heading moves the virtual caret to the selected heading. Escape or Close list returns to the page."
           ]
         }
       ]
@@ -20,33 +21,23 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Page loading and browser keyboard navigation",
+          "title": "Silencing speech and responsive confirmation",
           "details": [
-            "Loaded pages use operation-result speech instead of discardable caret feedback. A page revision restores Companion reading focus after opening, following links, going back or refreshing, including when the browsing mode has not changed. Native browser focus polling no longer replaces Companion browse-cursor announcements.",
-            "Use the Companion page reading area for arrows, quick keys, forms and table navigation. These controls share the same backend behavior for Firefox, Chrome, Edge and Brave. The release checks now exercise actual installed Chrome, Edge and Brave adapters as well as Firefox, including page loading, app focus, arrow speech and quick-key dispatch. Native browser windows retain their own keyboard behavior.",
-            "Website-address confirmation now accepts keyboard Y/N, arrow/Tab selection, Enter and Escape. Existing voice Yes/No and website confirmation remain."
+            "Ctrl silences Companion independently of microphone wake/sleep state and foreground window. Windows key-state polling runs on the local speech thread and interrupts local, eSpeak and AI speech; delayed caret and phonetic feedback is canceled.",
+            "Link lists no longer create a Yes/No prompt for each item. Explicitly opening an ordinary link activates it directly. Guided intent suggestions and potentially consequential buttons retain their review safeguards. Remaining web confirmations expose keyboard Y/N and Enter/Escape even when a list is active; voice confirmation and list commands are accepted during local feedback."
           ]
         },
         {
-          "title": "Backspace, Delete and blank feedback",
+          "title": "Page extraction and search engine choice",
           "details": [
-            "Backspace announces the erased character. Delete announces the new character at the caret, to the right of the removed character, or End of text. Document and email editors, email header entries, typed commands and search entries use this feedback. Typing echo Off remains silent; password deletion stays private.",
-            "Keyboard and spoken blank-line reading now say Blank rather than Blank line."
+            "The virtual view traverses visible content in display:contents and zero-rectangle layout containers, preserves link destinations and labels, and reads each link/control on a virtual line. Large-page key generation avoids a spread argument limit; control lookup uses a map. Hidden verification frames no longer mark an otherwise readable page as blocked.",
+            "Search stays on the requested engine. An empty or blocked Brave Search page no longer silently redirects to DuckDuckGo. Readable verification prompts are reported, and another search engine remains a deliberate user choice. Native focus polling does not replace virtual-page or element-list speech."
           ]
         },
         {
-          "title": "HTML email links and buttons",
+          "title": "Documentation and verification",
           "details": [
-            "Reading HTML email announces link and button roles without adding those words to the text you copy. Donation links made from images retain their alternative text; empty labelled image anchors retain a usable label. Explicit button roles and passive HTML buttons are exposed.",
-            "Press K or Shift+K for next/previous link, B or Shift+B for next/previous button, Tab/Shift+Tab for controls and Enter to open. Say Next link, Previous link, Next button, Previous button, List links, List buttons, Activate current link or Activate current button. Numbered Open link and Open button commands remain available. Buttons without a safe URL are announced and cannot run email scripts.",
-            "Plain text email remains available. No remote images or email scripts are loaded by the passive email reader. Guided email composition, send review, provider safeguards and blank-subject/body sending remain."
-          ]
-        },
-        {
-          "title": "Help and release validation",
-          "details": [
-            "Built-in Help includes the new typed-search and HTML email navigation instructions. What\u2019s New and downloadable release notes use version 0.2.109-test.",
-            "Regression checks cover dropped page announcements, repeated page focus restoration, typed search submission/cancellation, browser adapter selection, deletion feedback, blank announcements, image donation links, role buttons, passive buttons and spoken control navigation. Windows checks additionally exercise actual Tk key events and the four browser runtimes. Real public-site testing remains necessary."
+            "Built-in Help and versioned What\u2019s New documents describe the virtual view, list shortcuts, direct link activation and Ctrl silence. Regression tests cover all reported paths; Windows live tests exercise all four supported browser adapters with layout-container and list fixtures. Public-site behavior still needs beta testing."
           ]
         }
       ]

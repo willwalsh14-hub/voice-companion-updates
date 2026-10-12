@@ -2,13 +2,14 @@
 import queue
 import threading
 import time
+import sys
 
 class KeyboardSpeech:
     def __init__(self):
-        self.narration_interrupt=threading.Event()
+        self.narration_interrupt=threading.Event();self.ctrl_down=False;self.ai=None
         self.queue=queue.Queue();self.settings=('',0,100,None,0);self.problem=None;self.active=False;self.paused=False;self.quiet_until=0
-        threading.Thread(target=self.run,name='Immediate keyboard speech',daemon=True).start()
-    def configure(self,voice_id,rate,volume,espeak=None,pitch=0):self.settings=(voice_id,rate,volume,espeak,pitch)
+        self.thread=threading.Thread(target=self.run,name='Immediate keyboard speech',daemon=True);self.thread.start()
+    def configure(self,voice_id,rate,volume,espeak=None,pitch=0,ai=None):self.settings=(voice_id,rate,volume,espeak,pitch);self.ai=ai
     def speak(self,text):
         if text:
             self.interrupt()
@@ -21,6 +22,14 @@ class KeyboardSpeech:
             try:self.queue.get_nowait()
             except queue.Empty:break
         self.control('interrupt')
+    def poll_control(self,pressed):
+        # Control also silences Companion when the guided browser has focus.
+        if pressed and not getattr(self,'ctrl_down',False):
+            self.interrupt()
+            if getattr(self,'ai',None):self.ai.interrupt()
+            if len(self.settings)>3 and self.settings[3]:self.settings[3].interrupt()
+        self.ctrl_down=pressed
+
     def run(self):
         import pythoncom
         from win32com.client import Dispatch
@@ -28,6 +37,9 @@ class KeyboardSpeech:
         try:
             voice=Dispatch('SAPI.SpVoice');chosen=None
             while True:
+                if sys.platform=='win32':
+                    import ctypes
+                    self.poll_control(bool(ctypes.windll.user32.GetAsyncKeyState(0x11)&0x8000))
                 try:text=self.queue.get(timeout=.02)
                 except queue.Empty:
                     self.active=self.active and (not bool(voice.WaitUntilDone(0)) or bool(self.settings[3] and self.settings[3].enabled and self.settings[3].busy()))

@@ -204,7 +204,7 @@ class WindowKeyboardTests(unittest.TestCase):
     def setUp(self):
         self.window=CompanionWindow('keyboard test');self.window.start()
     def tearDown(self):
-        self.window.closed.set();self.call(lambda:self.window.root.destroy())
+        self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
     def call(self,function):
         done=threading.Event();errors=[]
