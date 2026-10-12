@@ -130,8 +130,8 @@ class WebTests(unittest.TestCase):
     def test_numbered_links_and_late_search_results(self):
         self.session.open('example.com')
         self.assertIn('Log in (L), 1 of 2', self.session.command('list links'))
-        self.assertIn('Open link Log in', self.session.command('open link 1'))
-        self.assertIn('Page: Example account', self.session.command('yes'))
+        self.assertIn('Page: Example account', self.session.command('open link 1'))
+        self.assertIsNone(self.session.pending)
         self.assertEqual(self.backend.activated, ['0'])
         self.backend.controls = []
         original = self.backend.snapshot
@@ -145,7 +145,7 @@ class WebTests(unittest.TestCase):
         self.session.open('example.com')
         self.assertIn('Veterans benefits', self.session.command('find veterans benefits'))
 
-    def test_search_challenge_is_spoken_and_falls_back(self):
+    def test_search_challenge_is_spoken_without_changing_engine(self):
         original = self.backend.snapshot
         def challenge_then_results():
             snap = original()
@@ -154,9 +154,9 @@ class WebTests(unittest.TestCase):
             return snap
         self.backend.snapshot = challenge_then_results
         result = self.session.command('google veterans benefits')
-        self.assertIn('Google asked for human verification', result)
-        self.assertIn('Brave Search', result)
-        self.assertIn('search.brave.com', self.backend.url)
+        self.assertIn('human verification', result)
+        self.assertNotIn('Brave Search', result)
+        self.assertIn('google.com', self.backend.url)
         self.backend.url = 'https://www.google.com/sorry/index'
         self.assertIn('human verification', self.session._refresh())
 

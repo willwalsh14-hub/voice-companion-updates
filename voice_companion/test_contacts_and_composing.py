@@ -217,8 +217,8 @@ class GuidedChecks(unittest.TestCase):
             self.assertIn('Log in', web.command('previous link'))
             self.assertIn('Page:', web.command('confirm that'))
             self.assertEqual(backend.activated, ['0'])
-            self.assertIn('Transfer between accounts', web.command('open link number two'))
-            self.assertIn('Page:', web.command('okay'))
+            self.assertIn('Page:', web.command('open link number two'))
+            self.assertIsNone(web.pending)
             self.assertEqual(backend.activated, ['0','1'])
 
 

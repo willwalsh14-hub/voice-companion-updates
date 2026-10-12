@@ -115,8 +115,43 @@ class LiveWebTests(unittest.TestCase):
         self.page.locator('#name').fill('Tester');self.page.locator('iframe').evaluate('e=>e.remove()');self.session._refresh()
         response=self.session.prepare_submit();self.assertNotIn('Required fields appear empty',response);self.assertNotIn('Unavailable',response);self.assertEqual(self.page.evaluate('window.sent'),0)
     def test_link_confirmation_navigates_without_unreviewed_actions(self):
-        self.session.keyboard('Quick:k');self.assertIn('Say yes or no',self.session.keyboard('Activate'));self.assertEqual(self.page.url,'https://fixture.test/')
-        result=self.session.command('yes');self.assertIn('Destination',result);self.assertEqual(self.page.url,'https://fixture.test/next')
+        self.session.keyboard('Quick:k');result=self.session.keyboard('Activate');self.assertIn('Destination',result);self.assertEqual(self.page.url,'https://fixture.test/next');self.assertIsNone(self.session.pending)
+    def test_virtual_view_traverses_display_contents_and_labels_unnamed_links(self):
+        self.page.set_content('<body style="display:contents"><main style="display:contents"><h1>Search results</h1><p>Result description</p><a href="https://fixture.test/next"><img alt="Result link"></a></main><div style="display:none">Hidden text</div><iframe style="display:none" src="https://captcha.test/"></iframe></body>')
+        result=self.session._refresh()
+        self.assertIn('Search results',self.session.reading.text);self.assertIn('Result link',self.session.reading.text)
+        self.assertNotIn('Hidden text',self.session.reading.text);self.assertFalse(self.session.snapshot['challenge'])
+        self.assertIn('Virtual page view',result);self.assertIn('heading',self.session.keyboard('Quick:h'))
+        self.assertIn('link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
+
+    @unittest.skipUnless(sys.platform=='win32','Windows global Control key integration')
+    def test_control_silences_while_browser_has_focus_in_awake_and_sleep_states(self):
+        import ctypes
+        import companion as app
+        from keyboard_speech import KeyboardSpeech
+        voice=Mock(WaitUntilDone=Mock(return_value=True))
+        with patch('win32com.client.Dispatch',return_value=voice):
+            worker=KeyboardSpeech();worker.configure('',0,100)
+            try:
+                self.page.bring_to_front()
+                for mode in ('awake','sleep'):
+                    with patch.object(app,'SLEEP_RETURN_MODE','web'):
+                        worker.speak('Speech in '+mode);time.sleep(.05);worker.narration_interrupt.clear()
+                        ctypes.windll.user32.keybd_event(0x11,0,0,0)
+                        try:self.assertTrue(worker.narration_interrupt.wait(1))
+                        finally:ctypes.windll.user32.keybd_event(0x11,0,2,0)
+                        time.sleep(.05)
+                        self.assertTrue(any(call.args==('',3) for call in voice.Speak.call_args_list))
+            finally:worker.close();worker.thread.join(2)
+
+    def test_link_and_heading_lists_browse_without_confirmation_and_return_to_page(self):
+        self.assertIn('Links list',self.session.list_links());self.assertIsNone(self.session.pending)
+        self.session.command('next');self.assertIsNone(self.session.pending)
+        self.assertIn('Virtual page view',self.session.command('cancel'));self.assertIsNone(self.session.list_focus)
+        self.assertIn('Headings list',self.session.command('list headings'))
+        self.assertIn('heading',self.session.command('open current heading'));self.assertIsNone(self.session.list_focus)
+        self.assertEqual(self.session.reading.position,self.session.heading_items()[0]['start'])
+
     @unittest.skipUnless(sys.platform=='win32','Windows application focus and keyboard integration')
     def test_load_speaks_restores_reading_focus_and_real_keys_work(self):
         import companion as app
@@ -152,6 +187,16 @@ class LiveWebTests(unittest.TestCase):
                 self.assertTrue(any('heading' in str(call.args[0]) for call in output.speak.call_args_list))
                 ctypes.windll.user32.keybd_event(0x28,0,0,0);ctypes.windll.user32.keybd_event(0x28,0,2,0)
                 wait(lambda:any('Readable text' in str(call.args[0]) for call in output.speak.call_args_list))
+                ui(lambda:window.editor.event_generate('<KeyPress>',keysym='F7'))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertEqual(self.session.list_focus,'links');self.assertIsNone(self.session.pending)
+                wait(lambda:window.context.get('menu_letters'));self.assertNotIn('confirmation',window.context)
+                ui(lambda:window.typed.event_generate('<KeyPress>',keysym='F6'))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertEqual(self.session.list_focus,'headings')
+                ui(lambda:window.typed.event_generate('<KeyPress>',keysym='Return'))
+                wait(lambda:not window.commands.empty());app.process_keyboard_batch('web')
+                self.assertIsNone(self.session.list_focus);wait(lambda:window.context.get('source') is not None)
                 ui(lambda:window.editor.event_generate('<KeyPress>',keysym='l',state=4))
                 wait(lambda:any(item==('keyboard','Web:Search') for item in window.commands.queue))
         finally:

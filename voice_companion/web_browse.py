@@ -107,12 +107,12 @@ class BrowseCursor:
 
 # Runs in the page's DOM; scripts, hidden subtrees and closed roots are not read.
 SEMANTICS = r'''
-          const elements=[];let output='';let serial=1+Math.max(0,...all(document).map(e=>/^n\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0));
+          const elements=[];let output='';let serial=1+all(document).reduce((maximum,e)=>Math.max(maximum,/^n\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
           const block=new Set(['P','DIV','SECTION','ARTICLE','HEADER','FOOTER','MAIN','NAV','ASIDE','H1','H2','H3','H4','H5','H6','LI','UL','OL','TR','TABLE']);
           const newline=()=>{output=output.replace(/ +$/,'');if(output && !output.endsWith('\n'))output+='\n';};
           const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output || /[ \n]$/.test(output))s=s.trimStart();output+=s;};
           const key=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+serial++);return e.getAttribute('data-voice-companion-key');};
-          const tableMaps=new Map();
+          const controlsByKey=new Map(controls.map(c=>[c.key,c]));const tableMaps=new Map();
           for(const table of all(document).filter(e=>e.matches('table,[role="table"],[role="grid"]'))){
             const grid=[];const rows=all(table).filter(e=>e.matches('tr,[role="row"]') && visible(e) && !e.closest('[aria-hidden="true"],[inert]') && e.closest('table,[role="table"],[role="grid"]')===table);
             rows.forEach((row,r)=>{grid[r]??=[];let c=0;const cells=[...row.querySelectorAll('th,td,[role="cell"],[role="gridcell"],[role="columnheader"],[role="rowheader"]')].filter(e=>visible(e) && !e.closest('[aria-hidden="true"],[inert]') && e.closest('tr,[role="row"]')===row && e.closest('table,[role="table"],[role="grid"]')===table);
@@ -125,15 +125,15 @@ SEMANTICS = r'''
             let role=e.getAttribute('role')||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
             if(/^h[1-6]$/.test(tag))role='heading';else if(tag==='a' && e.href)role='link';else if(tag==='button'||tag==='input'&&['submit','reset','button','image'].includes(type))role='button';else if(['input','textarea','select'].includes(tag)||editable)role='field';else if(tag==='table'||role==='grid')role='table';else if(tableMaps.has(e))role='cell';else if(['ul','ol'].includes(tag))role='list';else if(tag==='li')role='listitem';else if(tag==='p')role='paragraph';else if(['main','nav','aside','header','footer'].includes(tag))role='landmark';else if(tag==='img')role='graphic';
             if(tag==='label'){for(const child of all(e).filter(c=>c.matches(selector)))walk(child);return;}
-            if(['input','select','textarea'].includes(tag))newline();
-            const control=controls.find(c=>c.key===e.getAttribute('data-voice-companion-key'));
+            if(['input','select','textarea','a','button'].includes(tag))newline();
+            const control=controlsByKey.get(e.getAttribute('data-voice-companion-key'));
             const label=accessibleLabel(e);
-            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,level:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
+            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,href:tag==='a'?e.href:(control?.href||''),level:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
             if(['input','select','textarea'].includes(tag)){append(label);if(type!=='password' && e.value && !['checkbox','radio','submit','button'].includes(type))append(' '+(tag==='select'?e.selectedOptions[0]?.text:e.value));}
             else if(tag==='img')append(label);
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.childNodes))walk(child);
             if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);}
-            if(['input','select','textarea'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
+            if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
           walk(document.body);
           // JavaScript offsets count UTF-16 units; Companion reading uses code points.
