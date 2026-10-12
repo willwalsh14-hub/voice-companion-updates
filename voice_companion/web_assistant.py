@@ -11,7 +11,7 @@ import json
 import os
 import re
 from pathlib import Path
-from urllib.parse import urlsplit, quote
+from urllib.parse import urlsplit, quote, unquote
 
 from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
@@ -158,6 +158,14 @@ class BrowserBackend:
     def document_stamp(self):
         stamp=self.page.evaluate(DOCUMENT_STAMP)
         stamp['frames']=[frame.url for frame in self.page.frames]
+        stamp['frame_states']=[];stamp['frame_identity']=[]
+        for frame in self.page.frames[1:]:
+            try:
+                if not frame.frame_element().is_visible():continue
+                state=frame.evaluate(DOCUMENT_STAMP)
+                stamp['frame_states'].append({key:state.get(key) for key in ('url','epoch','revision','ready','busy')})
+                stamp['frame_identity'].append((state.get('url'),state.get('epoch')))
+            except Exception:continue
         return stamp
 
     def wait_ready(self):
@@ -214,12 +222,12 @@ class BrowserBackend:
           // Read the full visible page. Sites may put most content outside main.
           /*SEMANTICS*/
           const bodyText=output.trimEnd().slice(0,200000);
-          const challenge=/(captcha|recaptcha|hcaptcha|unusual traffic|just a moment)/i
-              .test((document.title || '')+' '+location.href) ||
-              /(verify (?:that )?you(?:'re| are) human|unusual traffic|complete the security check|checking your browser)/i
-              .test(bodyText.slice(0,1000));
+          const challenge=(['www.google.com','google.com'].includes(location.hostname)&&(location.pathname==='/sorry'||location.pathname.startsWith('/sorry/'))) ||
+              (/^captcha$/i.test((document.title||'').trim())&&bodyText.length<6000) ||
+              (/^(?:just a moment|checking your browser|verify you are human|human verification|security check)\\b/i.test(document.title||'')&&bodyText.length<6000) ||
+              (/our systems have detected unusual traffic from your computer network|complete the security check|checking your browser before accessing/i.test(bodyText.slice(0,1200))&&bodyText.length<6000);
           return {title:document.title || location.hostname, url:location.href,
-                  text:bodyText, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
+                  text:bodyText, anchors, document_epoch:performance.timeOrigin, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
         }'''
@@ -243,8 +251,11 @@ class BrowserBackend:
             if part['text']:
                 base=len(result['text'])+1
                 part['elements']=[e for e in part.get('elements',[]) if e.get('end',0)<=50000]
+                for bookmark in part.get('anchors',[]):
+                    bookmark.update(frame_index=index,frame_url=part['url'],frame_epoch=part.get('document_epoch'));bookmark['start']+=base;bookmark['end']+=base
+                result.setdefault('anchors',[]).extend(part.get('anchors',[]))
                 for element in part.get('elements',[]):
-                    element.update(frame_index=index,frame_url=part['url']);element['start']+=base;element['end']+=base
+                    element.update(frame_index=index,frame_url=part['url'],frame_epoch=part.get('document_epoch'));element['start']+=base;element['end']+=base
                     if element.get('table'):element['table']='frame'+str(index)+':'+element['table']
                     if element.get('role')=='table':element['key']='frame'+str(index)+':'+element['key']
                 result.setdefault('elements',[]).extend(part.get('elements',[]))
@@ -382,34 +393,72 @@ class BrowserBackend:
         if current['disabled']:raise WebError('That control is unavailable.')
         return element
 
+    def field_exists(self,item):
+        try:
+            frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
+            if 'frame_url' in item and frame.url!=item['frame_url']:return False
+            element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
+            return element.count()==1 and element.evaluate("(e,item)=>e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
+        except Exception:return False
+
     def activate(self,item):
+        import time
+        self.last_action_started=False
         element=self._element(item)
         before_page=self.page
-        self.document_stamp()
         frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
-        before_url=frame.url
-        before_text=self.page.evaluate("()=>document.body?.innerText.slice(0,2000)||''")
-        before_epoch=self.page.evaluate('()=>performance.timeOrigin')
-        before=list(self.context.pages) if self.context else []
-        if self.context and element.get_attribute('target')=='_blank':
-            with self.context.expect_page(timeout=15000) as opened:element.click(timeout=10000)
-            self.page=opened.value
-            self.page.wait_for_url(lambda url:str(url)!='about:blank',timeout=15000,wait_until='domcontentloaded')
-        else:
-            element.click(timeout=10000)
-            if self.context:
-                new=[page for page in self.context.pages if page not in before]
-                if new:self.page=new[-1]
-            if self.page is before_page and item.get('href') and item['href']!=before_url:
-                from playwright.sync_api import TimeoutError as BrowserTimeout
-                try:frame.wait_for_url(lambda url:str(url)!=before_url,timeout=5000,wait_until='domcontentloaded')
-                except BrowserTimeout:
-                    if self.page.evaluate("()=>document.body?.innerText.slice(0,2000)||''")==before_text:raise
-                if frame is self.page and urlsplit(before_url)._replace(fragment='')!=urlsplit(self.page.url)._replace(fragment=''):
-                    from playwright.sync_api import TimeoutError as BrowserTimeout
-                    try:self.page.wait_for_function("old=>performance.timeOrigin!==old.epoch||(document.body?.innerText.slice(0,2000)||'')!==old.text",arg={'epoch':before_epoch,'text':before_text},timeout=5000)
-                    except BrowserTimeout:pass
-        self.wait_ready()
+        before_url=frame.url;before_epoch=frame.evaluate('()=>performance.timeOrigin')
+        before_text=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")
+        before=self.document_stamp();before_pages=list(self.context.pages) if self.context else []
+        opened=[]
+        def new_page(page):opened.append(page)
+        if self.context:self.context.on('page',new_page)
+        try:
+            self.last_action_started=True;element.click(timeout=10000)
+            deadline=time.monotonic()+8
+            changed=False
+            while time.monotonic()<deadline:
+                candidates=[p for p in opened if not p.is_closed()]
+                if self.context:
+                    candidates.extend(p for p in self.context.pages if p not in before_pages and p not in candidates and not p.is_closed())
+                # Do not adopt tabs that were already open before the click.
+                candidates=[p for p in candidates if p.opener() is before_page]
+                if candidates:
+                    self.page=candidates[-1]
+                    self.page.wait_for_url(lambda url:str(url)!='about:blank',timeout=15000,wait_until='domcontentloaded')
+                    changed=True;break
+                try:
+                    now=self.document_stamp()
+                    navigation_changed=frame.url!=before_url or any(now.get(k)!=before.get(k) for k in ('url','epoch','frames','frame_identity'))
+                    needs_navigation=kind(item)=='link' and item.get('href')!=before_url
+                    changed=navigation_changed or (not needs_navigation and any(now.get(k)!=before.get(k) for k in ('revision','frame_states')))
+                    if changed:break
+                except Exception:
+                    # Navigation can briefly destroy the old JavaScript context.
+                    pass
+                if kind(item)!='link' and not item.get('href'):
+                    changed=True;break
+                before_page.wait_for_timeout(50)
+            if not changed:
+                try:changed=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text
+                except Exception:pass
+            if not changed:raise WebError('The link did not finish opening. The current page remains available; the link was not clicked again.')
+            fragment=None
+            if self.page is before_page:
+                try:
+                    frame.wait_for_load_state('domcontentloaded',timeout=15000)
+                    after_url=frame.url
+                    same_document=frame.evaluate('()=>performance.timeOrigin')==before_epoch
+                    fragment=unquote(urlsplit(after_url).fragment) if same_document and urlsplit(before_url)._replace(fragment='')==urlsplit(after_url)._replace(fragment='') and after_url!=before_url else None
+                    if same_document and not fragment and after_url!=before_url:
+                        from playwright.sync_api import TimeoutError as BrowserTimeout
+                        try:frame.wait_for_function("old=>(document.body?.innerText.slice(0,200000)||'')!==old",arg=before_text,timeout=5000)
+                        except BrowserTimeout:pass
+                except Exception:pass
+            self.wait_ready()
+            return {'fragment':fragment,'frame_index':item.get('frame_index')}
+        finally:
+            if self.context:self.context.remove_listener('page',new_page)
 
     def focus(self,item):
         element=self._element(item);element.focus()
@@ -467,7 +516,8 @@ EdgeBackend = BrowserBackend
 
 
 class WebSession:
-    def __init__(self, folder, backend=None):
+    def __init__(self, folder, backend=None, progress=None):
+        self.progress=progress or (lambda text:None)
         self.favorites = Favorites(folder)
         self.folder = Path(folder)
         self.browser = self._browser_preference()
@@ -553,7 +603,7 @@ class WebSession:
         self.backend.focus(item)
         if kind(item) in ('combobox','listbox') and item.get('tag')!='select':
             self._refresh_at(item);item=self.browse.current() or item
-        field=dict(item)
+        field=dict(item);field['_page_url']=self.snapshot.get('url');field['_document_epoch']=(self.document_state or {}).get('epoch')
         if kind(item)=='edit':
             value=self.backend.field_value(item) if hasattr(self.backend,'field_value') else item.get('value','')
             if not isinstance(value,str):
@@ -572,7 +622,7 @@ class WebSession:
     def page_boundary(self,bottom=False):
         if self.keyboard_field and self.keyboard_field.get('type')=='password':return 'Save the private field with Tab, or cancel field editing before moving to the page.'
         if self.keyboard_field:self.commit_keyboard_field()
-        self.list_focus=None;self.pending=None;self.submit_pending=None;self.form_index=None
+        self.list_focus=None;self.pending=None;self.submit_pending=None;self.form_index=None;self.preferred_column=None
         self.reading.position=max(0,len(self.reading.text)-1) if bottom else 0
         self.reading.continuation=self.reading.position
         self.browse.set_position(self.reading.position)
@@ -651,8 +701,10 @@ class WebSession:
                 if not item:return 'Move to a link or control first.'
                 role=kind(item)
                 if role=='heading':
+                    linked=next((e for e in self.browse.elements if e.get('key')==item.get('activation_key') and e.get('frame_index')==item.get('frame_index') and kind(e)=='link'),None)
+                    if linked:item=linked;role='link'
                     links=[e for e in self.browse.elements if kind(e)=='link' and e.get('start',0)<=item.get('start',0)<e.get('end',0)]
-                    if links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
+                    if role=='heading' and links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
                 if role in ('checkbox','radio'):
@@ -673,8 +725,8 @@ class WebSession:
             return str(exc) if isinstance(exc,WebError) else 'The page changed or the control could not be used. Press F5 to refresh it.'
 
     def _refresh_at(self,item):
-        snapshot=self.backend.snapshot();self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
-        self.document_state=self.backend.document_stamp() if hasattr(self.backend,'document_stamp') else None
+        snapshot,state=self._capture();self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
+        self.document_state=state
         self.browse=BrowseCursor(snapshot)
         target=next((e for e in self.browse.elements if e.get('key')==item.get('key') and e.get('frame_index')==item.get('frame_index') and e.get('tag')==item.get('tag')),None)
         if target:
@@ -685,6 +737,9 @@ class WebSession:
     def commit_keyboard_field(self,value=None):
         item=self.keyboard_field
         if item is None:return
+        state=self._stamp()
+        if state and (state.get('url')!=item.get('_page_url') or item.get('_document_epoch') is not None and state.get('epoch')!=item['_document_epoch']):
+            self.keyboard_field=None;raise WebError('The page changed. The old field edit was not saved or submitted.')
         text=item.get('value','') if value is None else value
         if kind(item)=='edit' and (item.get('type')=='password' or text!=item.get('_original_value')):
             self.backend.fill(item,text,private=item.get('type')=='password')
@@ -756,9 +811,29 @@ class WebSession:
             (self.folder / 'browser-choice.txt').write_text(name, encoding='utf-8')
         return 'Selected ' + name.capitalize() + '. Say open website followed by the address. This uses a separate browser profile.'
 
-    def _refresh(self,read=None):
+    def _stamp(self):
+        state=self.backend.document_stamp() if hasattr(self.backend,'document_stamp') else None
+        return state if isinstance(state,dict) else None
+
+    def _capture(self):
+        for _ in range(3):
+            before=self._stamp();snapshot=self.backend.snapshot();after=self._stamp()
+            if before and after:
+                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch','frames','frame_identity'))
+                changed=changed or bool(after.get('url') and snapshot.get('url')!=after['url'])
+                if changed:
+                    if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
+                    continue
+            # Store the pre-capture revision, so a mutation immediately after
+            # extraction will trigger another refresh instead of being swallowed.
+            return snapshot,before
+        raise WebError('The page is still changing. Its virtual view will update when it settles.')
+
+    def _refresh(self,read=None,preserve=False):
+        old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
         if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
-        self.snapshot = self.backend.snapshot()
+        self.snapshot,captured_state = self._capture()
+        self.preferred_column=None
         self.page_revision=getattr(self,'page_revision',0)+1
         self.cursor_changed()
         # DOMContentLoaded often precedes text inserted by the site's scripts.
@@ -767,11 +842,18 @@ class WebSession:
             for _ in range(12):
                 if not hasattr(self.backend, 'settle'): break
                 self.backend.settle()
-                self.snapshot = self.backend.snapshot()
+                self.snapshot,captured_state = self._capture()
                 if self.snapshot.get('challenge') or str(self.snapshot.get('text', '')).strip(): break
-        self.document_state=self.backend.document_stamp() if hasattr(self.backend,'document_stamp') else None
+        self.document_state=captured_state
         self.reading.set_text(self.snapshot.get('text', ''), reset=True)
         self.browse=BrowseCursor(self.snapshot);self.keyboard_field=None
+        if preserve:
+            self.browse.set_position(min(old_position,len(self.reading.text)))
+            if old_anchor:
+                index=next((i for i,e in enumerate(self.browse.elements) if e['key']==old_anchor['key'] and e.get('frame_index')==old_anchor.get('frame_index') and e.get('frame_url')==old_anchor.get('frame_url') and e.get('frame_epoch')==old_anchor.get('frame_epoch')),None)
+                if index is not None:
+                    self.browse.index=index;item=self.browse.current();self.browse.position=min(item.get('end',0),item.get('start',0)+max(0,old_position-old_anchor.get('start',0)))
+            self.reading.position=self.browse.position;self.reading.continuation=max(0,min(len(self.reading.text),old_continuation+self.reading.position-old_position))
         self.link_offset = 0
         self.link_position = None
         self.offset = 0
@@ -790,6 +872,10 @@ class WebSession:
         self.review_submission = None
         url = self.snapshot['url']
         if self.snapshot.get('challenge'):
+            if getattr(self,'active_search_engine',None) and self.last_search and urlsplit(url).hostname in ('www.google.com','google.com','search.brave.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'):
+                self.engine_choices=[e for e in ('brave','bing','duckduckgo','google') if e!=self.active_search_engine]
+                self.engine_index=0;self.list_focus='search_engines'
+                return 'This search engine requires human verification. Choose another engine for the same search. '+self.engine_notice()+' Use arrows and Enter, or say Try Bing, Try Brave Search, or Try DuckDuckGo. Escape returns to the page. Your default stays unchanged.'
             return 'This site is asking for human verification. I cannot complete that challenge by voice. A helper can inspect the browser, or you can try another search engine.'
         if urlsplit(url).scheme != 'https':
             return 'This page is not secure. Do not enter private information here.'
@@ -801,15 +887,21 @@ class WebSession:
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
-        if not self.snapshot or self.keyboard_field or getattr(self,'selection',None) or self.list_focus or self.form_index is not None or self.pending or self.submit_pending or not hasattr(self.backend,'document_stamp'):return ''
-        stamp=self.backend.document_stamp()
-        if not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh()
+        if not self.snapshot or not hasattr(self.backend,'document_stamp'):return ''
+        stamp=self._stamp()
+        if not stamp:return ''
         previous=self.document_state or {}
-        if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames')):return ''
+        if any(stamp.get(k)!=previous.get(k) for k in ('url','epoch')):
+            return self._refresh()
+        if self.keyboard_field and hasattr(self.backend,'field_exists') and not self.backend.field_exists(self.keyboard_field):return self._refresh()
+        if self.keyboard_field or getattr(self,'selection',None) or self.list_focus or self.form_index is not None or self.pending or self.submit_pending:return ''
+        if not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True)
+        if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames','frame_states')):return ''
         self.document_state=stamp
-        if any(stamp.get(key)!=previous.get(key) for key in ('url','epoch','frames')) or previous.get('ready')!='complete' and stamp.get('ready')=='complete' or previous.get('busy') and not stamp.get('busy'):return self._refresh()
-        snapshot=self.backend.snapshot()
-        if snapshot.get('title')!=self.snapshot.get('title'):return self._refresh()
+        if previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True)
+        snapshot,captured_state=self._capture()
+        self.document_state=captured_state
+        if snapshot.get('title')!=self.snapshot.get('title'):return self._refresh(read=False,preserve=True)
         position=self.reading.position;continuation=self.reading.continuation
         anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
@@ -817,7 +909,7 @@ class WebSession:
         if changed:self.page_revision+=1
         self.browse=BrowseCursor(snapshot);self.browse.set_position(min(position,len(self.reading.text)))
         if anchor and anchor.get('start',0)<=position<=anchor.get('end',0):
-            match=next((i for i,e in enumerate(self.browse.elements) if e['key']==anchor['key'] and e.get('frame_index')==anchor.get('frame_index')),None)
+            match=next((i for i,e in enumerate(self.browse.elements) if e['key']==anchor['key'] and e.get('frame_index')==anchor.get('frame_index') and e.get('frame_url')==anchor.get('frame_url') and e.get('frame_epoch')==anchor.get('frame_epoch')),None)
             if match is not None:
                 self.browse.index=match;target=self.browse.current()
                 self.browse.position=min(target.get('end',0),target.get('start',0)+position-anchor.get('start',0))
@@ -843,12 +935,23 @@ class WebSession:
         if engine not in urls:return 'Choose Google, Bing, Brave Search or DuckDuckGo as the search engine.'
         name,base=urls[engine]
         try:
+            self.last_search=query;self.active_search_engine=engine
             self.backend.goto(base + quote(query))
             result = self._refresh()
-            self.last_search = query
             return 'Searching with ' + name + '. ' + result
         except Exception:
             return name + ' could not open. Your search engine was not changed. Try again or choose another search engine.'
+
+    def engine_names(self):
+        return [{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[e] for e in self.engine_choices]
+
+    def engine_notice(self):
+        return announce_item(self.engine_names()[self.engine_index],self.engine_index,len(self.engine_choices))
+
+    def retry_search_engine(self,engine=None):
+        engine=engine or self.engine_choices[self.engine_index]
+        self.list_focus=None
+        return self.search(self.last_search,provider=engine)
 
     def _search_readable(self):
         if not self.snapshot: return False
@@ -1047,10 +1150,23 @@ class WebSession:
                 re.search(r'\b(pay|purchase|transfer|send|submit|delete|apply|confirm|place order)\b', _label(item), re.I)):
             return 'This action may submit information or move money. Ask your helper to review and complete it in the browser.'
         try:
-            self.backend.activate(item)
-            return self._refresh()
+            self.progress('Loading page.')
+            navigation=self.backend.activate(item)
+            fragment=navigation.get('fragment') if isinstance(navigation,dict) else None
+            message=self._refresh(read=False if fragment else None)
+            if fragment:
+                target=next((e for e in self.browse.elements+self.snapshot.get('anchors',[]) if e.get('id')==fragment and e.get('frame_index')==navigation.get('frame_index')),None)
+                if target:
+                    self.browse.set_position(target['start']);self.reading.position=target['start'];self.reading.continuation=target['start'];self.preferred_column=None
+                    text=self.reading.move('line',0);self.reading.position=target['start'];self.reading.continuation=target['start'];self.cursor_changed(True)
+                    return 'Moved within the page. '+text
+            return message
         except WebError as exc: return str(exc)
-        except Exception: return 'The page changed or the action did not complete. Say read page to check it.'
+        except Exception:
+            if getattr(self.backend,'last_action_started',False) is True:
+                try:return 'The link request did not finish cleanly. Current page: '+self._refresh(read=False)
+                except Exception:pass
+            return 'The page changed or the action did not complete. Its virtual view will refresh when navigation settles.'
 
     def fields(self, guided=False):
         if not self.snapshot: return 'Open a website first.'
@@ -1281,6 +1397,14 @@ class WebSession:
 
     def command(self, spoken):
         command = _plain(spoken).rstrip('.!?').lower()
+        if self.list_focus=='search_engines':
+            if command in ('cancel','escape','go back','back to page','close list'):self.list_focus=None;return 'Verification page. Escape leaves Web browser.'
+            if command in ('next','previous'):
+                self.engine_index=max(0,min(len(self.engine_choices)-1,self.engine_index+(-1 if command=='previous' else 1)));return self.engine_notice()
+            if command in ('okay','ok','yes','confirm','that one'):return self.retry_search_engine()
+            choice=re.fullmatch(r'(?:(?:try|use|choose|select|search with) )?(google|bing|brave(?: search)?|duck ?duck ?go)(?: for this search)?',command)
+            if choice:return self.retry_search_engine('brave' if choice[1].startswith('brave') else 'duckduckgo' if choice[1].startswith('duck') else choice[1])
+            return 'Choose an engine with arrows and Enter, or say its name.'
         boundary=command.replace('of the page','of page')
         boundary=re.sub(r'^(?:go|move|jump) (?:to )?(?:the )?','',boundary)
         if boundary in ('top of page','beginning of page','start of page'):return self.page_boundary()

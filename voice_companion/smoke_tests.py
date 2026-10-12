@@ -522,7 +522,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         class FakeWeb:
             opened = []
             snapshot = None
-            def __init__(self, folder): pass
+            def __init__(self, folder, progress=None): self.progress=progress
             def open(self, url):
                 self.opened.append(url)
                 self.snapshot = {'title': 'Example'}

@@ -103,7 +103,7 @@ class CompanionWindow:
         if self.context.get('media_input'):
             self.commands.put(('media_field',{'value':value,'next':'Enter'}));return True
         if self.context.get('web_private'):
-            self.commands.put(('web_private_value',{'value':value,'next':'Done'}));return True
+            self.commands.put(('web_private_value',dict(value=value,next='Done',**({'field_source':self.context['web_field_source']} if self.context.get('web_field_source') else {}))));return True
         value = value.strip()
         if value:
             self.commands.put(('web_search_query',value) if self.context.get('mode')=='search' else value)
@@ -184,7 +184,7 @@ class CompanionWindow:
                 elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and (event.widget==self.editor or event.widget==typed and (self.context.get('web_private') or not typed.get())):
                     field=self.context.get('web_field')
                     if field and self.context.get('web_private') and (key in ('Return','Tab','ISO_Left_Tab','Up','Down') or control and key in ('Home','End')):
-                        self.commands.put(('web_private_value',{'value':typed.get(),'next':('PageTop' if key=='Home' else 'PageBottom') if control and key in ('Home','End') else 'Leave:'+key if key in ('Up','Down') else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done'}));typed.delete(0,'end');return 'break'
+                        self.commands.put(('web_private_value',dict(value=typed.get(),next=('PageTop' if key=='Home' else 'PageBottom') if control and key in ('Home','End') else 'Leave:'+key if key in ('Up','Down') else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done',**({'field_source':self.context['web_field_source']} if self.context.get('web_field_source') else {}))));typed.delete(0,'end');return 'break'
                     elif key=='Escape':request='Web:Escape'
                     elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
                     elif self.context.get('web_choice') and key in ('Up','Down','Left','Right','Home','End'):request='Web:'+key

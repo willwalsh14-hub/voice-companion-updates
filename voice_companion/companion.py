@@ -44,7 +44,7 @@ from menu_navigation import next_match, menu_label, announce_item
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.113-test'
+APP_VERSION = '0.2.114-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -233,9 +233,10 @@ def app_context(mode):
         context['web_browse']=field is None
         context['web_choice']=bool(field and __import__('web_browse').kind(field) in ('combobox','listbox'))
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
+        if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(getattr(web_session,'page_revision',0))+':'+str(field.get('frame_index','main'))+':'+field['key']
         if field and field.get('type')=='password':context['web_private']=True;context['web_field']=field
         else:
-            source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key'] if field else ':page')
+            source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key']+':document:'+str(getattr(web_session,'page_revision',0)) if field else ':page')
             context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'],selection=getattr(web_session,'selection',None) if field is None else None,caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
             context['web_field']=field
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
@@ -337,6 +338,8 @@ def process_keyboard_batch(mode):
                     sync_app_context(mode,True)
                     continue
                 elif command[0]=='web_private_value':
+                    if command[1].get('field_source') and command[1]['field_source']!=app_context(SLEEP_RETURN_MODE if mode=='sleep' else mode).get('web_field_source'):
+                        speak('The page changed. The old private field was not saved.');continue
                     try:web_session.commit_keyboard_field(command[1]['value']);command='web key '+command[1].get('next','Done')
                     except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
                 elif command[0]=='media_field':
@@ -412,7 +415,7 @@ def settings_action(key,mode):
         speak(media_navigation().run(SETTINGS_ACTIONS[key]))
         return 'media'
     if key=='web_favorites':
-        web_session=web_session or WebSession(APP)
+        web_session=web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command('list favorites'))
@@ -444,6 +447,7 @@ def menu_state(mode):
     if mode in ('media','podcast') and MEDIA_HUB:return media_navigation().state()
     if mode=='web' and web_session and web_session.form_index is None and not web_session.submit_pending:
         web=web_session
+        if web.list_focus=='search_engines':return state(web.engine_names(),web,'engine_index')
         if web.list_focus=='favorites':return state([x[1]['name'] for x in web.favorite_items],web,'favorite_index')
         if web.list_focus=='fields':return state([x.get('name') or x.get('label') or x.get('text') or x['role'] for x in web.choices],web,'field_list_index')
         if web.list_focus=='headings':return state([__import__('web_browse').describe(x) for x in web.heading_items()],web,'heading_index')
@@ -523,6 +527,7 @@ def _navigation_key(key,mode):
             speak(mail_session._focus(1 if key=='Home' else len(mail_session.rows)));return None
     if mode=='help' and key=='Escape':return 'go back'
     if key.startswith('Letter:'):
+        if mode=='web' and web_session and not web_session.list_focus and key[-1] in __import__('web_browse').QUICK_KEYS:return 'web key Quick:'+key[-1]
         choose_menu_letter(key[-1],mode);return None
     if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
         return ('gmail','outlook','yahoo')[ACCOUNT_MENU_INDEX]
@@ -666,6 +671,7 @@ def web_feedback_control(text,mode):
     command=normalized_command(text)
     if web_session.pending or web_session.submit_pending:
         return command in ('yes','yes please','no','no thanks','cancel','okay','ok','confirm','confirm that')
+    if web_session.list_focus=='search_engines':return True
     if web_session.list_focus in ('links','headings'):
         return command in ('next','previous','open current link','open current heading','go to heading','that one','okay','ok','cancel','close list','back to page')
     from web_browse import voice_browse_key
@@ -1023,7 +1029,7 @@ def speak_web_result(text,previous_revision):
 def run_web_search(query):
     """Search-entry text is literal, even when it resembles an app command."""
     global web_session
-    web_session=web_session or WebSession(APP)
+    web_session=web_session or WebSession(APP,progress=speak_status)
     web_session.auto_read=PREFERENCES.get('web_auto_read',True)
     web_session.search_engine=PREFERENCES.get('web_search_engine','google')
     revision=getattr(web_session,'page_revision',0)
@@ -1892,7 +1898,7 @@ def _handle(text, mode, typed=False):
         address, host = pending_website
         pending_website = None
         if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
-            web_session = web_session or WebSession(APP)
+            web_session = web_session or WebSession(APP,progress=speak_status)
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             web_session.search_engine=PREFERENCES.get('web_search_engine','google')
             revision=getattr(web_session,'page_revision',0)
@@ -2171,7 +2177,7 @@ def _handle(text, mode, typed=False):
         speak(media().search_podcasts(text))
         return 'media'
     if mode == 'search':
-        web_session = web_session or WebSession(APP)
+        web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         revision=getattr(web_session,'page_revision',0)
@@ -2210,7 +2216,7 @@ def _handle(text, mode, typed=False):
         speak('Opened ' + provider + ' in your usual browser. Voice Companion is not connected to this account.')
         return 'awake'
     if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
-        web_session = web_session or WebSession(APP)
+        web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command(text))
@@ -2225,7 +2231,7 @@ def _handle(text, mode, typed=False):
         speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
         return mode
     if command in ('list favorites','my favorites') or command.startswith(('open favorite ', 'go to favorite ')):
-        web_session = web_session or WebSession(APP)
+        web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command(text))
@@ -2274,7 +2280,7 @@ def _handle(text, mode, typed=False):
         SEARCH_RETURN_MODE='awake';speak('Web search. Type your search and press Enter, or say what to search for. Escape cancels.');return 'search'
     direct_engine=re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)',text,re.I)
     if direct_engine:
-        web_session=web_session or WebSession(APP)
+        web_session=web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         revision=getattr(web_session,'page_revision',0)
@@ -2283,7 +2289,7 @@ def _handle(text, mode, typed=False):
     if re.search(r'\b(search|look up|google|bing|find|web)\b', command):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|bing|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:
-            web_session = web_session or WebSession(APP)
+            web_session = web_session or WebSession(APP,progress=speak_status)
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             web_session.search_engine=PREFERENCES.get('web_search_engine','google')
             revision=getattr(web_session,'page_revision',0)

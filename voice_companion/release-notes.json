@@ -1,24 +1,18 @@
 {
-  "version": "0.2.113-test",
+  "version": "0.2.114-test",
   "status": "Testing build",
-  "date": "October 11, 2026",
-  "baseline": "0.2.112-test",
-  "scope": "Unified virtual cursor, readable result headings, configurable Google-default search and main-menu labels.",
+  "date": "October 12, 2026",
+  "baseline": "0.2.113-test",
+  "scope": "Actual Brave result titles, reliable page refresh and accessible search verification alternatives.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Default search engine",
+          "title": "Search verification alternatives",
           "details": [
-            "Google is the initial default for typed searches, Search the web requests and follow-up searches. Options, Web browser includes Default search engine. Google, Bing, Brave Search and DuckDuckGo are retained choices; the installed browser selection remains separate.",
-            "Say Default search engine Google, Set default search engine Brave Search, or Search engine DuckDuckGo. Explicit engine-name searches use that engine for the request. The selected search engine is not silently replaced after unreadable results or human verification. The setting is saved with the other preferences."
-          ]
-        },
-        {
-          "title": "Word processor and Notepad",
-          "details": [
-            "Documents on the main menu is now Word processor, with W as its first-letter key. Notes is now Notepad, with N. Say Word processor, Open word processor, Notepad or Open Notepad to open them. Existing document and note commands, file locations and editing functions remain available."
+            "When the selected search engine requires human verification, an accessible engine menu offers another engine for the same query. Use arrows and Enter, first-letter menu navigation, or say Try Brave Search, Try Bing or Try DuckDuckGo. Escape returns to the verification page. Choosing an alternative applies only to that search and leaves the saved default unchanged.",
+            "Google controls its verification requirement. Companion does not solve or bypass it and does not silently change engines. A normal search about captcha help is no longer mistaken for a verification page."
           ]
         }
       ]
@@ -27,25 +21,23 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "One virtual cursor for page navigation",
+          "title": "Brave search headings and links",
           "details": [
-            "Quick element navigation, link/heading lists, keyboard reading and voice reading use the same virtual page position. After H, Shift+H, K, Tab or other element navigation, subsequent arrow reading continues from the selected element. The reading editor receives a cursor revision independently of outstanding caret acknowledgments. Stale read-only caret events are discarded rather than moving the cursor back.",
-            "Left/Right reads characters, Ctrl+Left/Right moves words, Up/Down reads lines while preserving the preferred column, Ctrl+Up/Down moves paragraphs, Home/End moves within the line and Page Up/Page Down makes longer jumps. Ctrl+Home/End reaches the page boundaries. Shift selection and Ctrl+C remain available in the read-only view; a new element jump clears the selection. Editable fields keep their ordinary typing/caret behavior.",
-            "Incidental DOM changes remap the selected element by its stable key when preceding text shifts. Active read-only selections are protected from background buffer replacement. Continue reading retains its continuation rather than restarting. Existing automatic field/choice handling and form review safeguards remain in place."
+            "Live Brave Search inspection in Chrome showed that result titles are DIV text blocks rather than HTML headings. These actual title blocks now appear as level-two headings for H, Shift+H, heading lists and voice navigation. Site names and URL breadcrumbs do not replace the title. Duplicate result headings and URL-only citation links for the same result are excluded.",
+            "Enter on a result heading activates its associated link. The original DOM identity remains checked before activation."
           ]
         },
         {
-          "title": "Result headings and link activation",
+          "title": "Reliable virtual page updates",
           "details": [
-            "Readable heading title text takes precedence over URL/breadcrumb metadata, including URL-only ARIA labels. URL-only metadata headings are excluded from heading destinations when no readable title is available. Heading and link positions point at their title text in the virtual buffer.",
-            "The original DOM identity is retained for validating link activation. Enter on a heading contained in a link opens that associated link; Enter in the separate headings list continues to move to the heading without opening it."
+            "Links wait for actual navigation or their delayed new tab even when a loading message changes the old page first. The destination is captured after readiness, and Loading page and Page loaded feedback accompany navigation. A link is never automatically clicked again after an uncertain result.",
+            "Snapshot capture retries when a document changes during extraction. Mutations immediately after extraction remain detectable. Child-frame updates are monitored, and incidental changes preserve the selected element instead of resetting reading to the top. Same-page fragment links move the virtual cursor to their target. External navigation cancels old field editing; stale staged field input cannot be applied to the new document."
           ]
         },
         {
-          "title": "Documentation and verification",
+          "title": "Help and regression checks",
           "details": [
-            "Built-in Help and every versioned What’s New format document the new menu labels, retained engines, default setting and virtual-reading behavior. Regression tests cover stale caret events, selection, search routing, voice/keyboard interchange and reading continuation.",
-            "Live browser fixtures cover result title metadata, headings/links, arrows after jumps, DOM reflow and safe activation. Windows integration checks actual editor caret positions and keyboard navigation across Firefox, Chrome, Edge and Brave. These checks do not replace beta testing on individual public websites."
+            "Built-in Help and versioned What’s New document these changes. Browser tests reproduce the Brave DOM structure observed in Chrome, delayed popups, fragments, frame changes, field cancellation and verification detection. Regression checks cover snapshot races and explicit voice engine selection. Windows checks exercise Firefox, Chrome, Edge and Brave; public websites still require beta testing."
           ]
         }
       ]

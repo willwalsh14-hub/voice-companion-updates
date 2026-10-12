@@ -310,6 +310,45 @@ class LiveWebTests(unittest.TestCase):
         self.session.refresh_changed();self.assertEqual(self.session.reading.position,self.session.reading.text.index('Actual result title'))
         self.assertIn('Destination',self.session.keyboard('Activate'))
 
+
+    def test_actual_brave_div_titles_are_unique_and_activate(self):
+        # Shape observed on live Brave Search in Chrome: DIV title after site/cite.
+        card='<a href="https://fixture.test/next"><div class="site-name-wrapper"><div class="site-name-content"><div>Example site</div><div class="url-wrapper"><cite class="snippet-url">fixture.test › home</cite></div></div></div><div class="title search-snippet-title line-clamp-1" title="Accessible result">Accessible result</div></a>'
+        self.context.route('https://search.brave.com/**',lambda r:r.fulfill(content_type='text/html',body='<title>Search</title>'+card+card+'<a href="https://fixture.test/next">https://fixture.test/next</a><h6>Resources</h6>'))
+        self.session.search('accessibility','brave')
+        headings=self.session.heading_items();self.assertEqual(sum(e['label']=='Accessible result' for e in headings),1)
+        result=self.session.keyboard('Quick:h');self.assertIn('Accessible result',result);self.assertNotIn('fixture.test',result)
+        self.assertEqual(sum(e.get('label')=='Accessible result' for e in self.session.snapshot['controls']),1)
+        self.assertIn('Destination',self.session.keyboard('Activate'))
+
+    def test_delayed_popup_after_early_dom_change_refreshes_once(self):
+        self.page.set_content("""<p id="status">Ready</p><a href="https://fixture.test/next" onclick="event.preventDefault();document.getElementById('status').textContent='Loading';setTimeout(()=>window.open(this.href),700)">Delayed result</a>""")
+        self.session._refresh();self.session.keyboard('Quick:k');self.session.keyboard('Activate')
+        self.addCleanup(self.backend.page.close)
+        self.assertIsNot(self.backend.page,self.page);self.assertIn('Destination',self.session.reading.text)
+
+    def test_fragment_navigation_and_frame_updates_preserve_cursor(self):
+        self.page.set_content('<a href="#section">Jump</a><p>Before</p><div id="section"><h2>Target heading</h2><p>Target text</p></div><iframe src="https://fixture.test/frame"></iframe>')
+        self.session._refresh();self.session.keyboard('Quick:k');self.session.keyboard('Activate')
+        self.assertEqual(self.session.reading.position,self.session.reading.text.index('Target heading'))
+        self.page.frames[1].evaluate("()=>document.body.prepend(Object.assign(document.createElement('p'),{textContent:'Fresh frame content'}))")
+        self.page.wait_for_timeout(30);self.session.refresh_changed()
+        self.assertIn('Fresh frame content',self.session.reading.text)
+        self.assertEqual(self.session.reading.position,self.session.reading.text.index('Target heading'))
+
+    def test_external_navigation_cancels_old_field(self):
+        self.session.keyboard('Quick:f');self.assertIsNotNone(self.session.keyboard_field)
+        self.page.goto('https://fixture.test/next');self.session.refresh_changed()
+        self.assertIsNone(self.session.keyboard_field);self.assertIn('Destination',self.session.reading.text)
+
+    def test_captcha_search_word_is_not_a_verification_page(self):
+        self.context.route('https://www.google.com/**',lambda r:r.fulfill(content_type='text/html',body='<title>captcha help - Google Search</title><h3>Captcha accessibility help</h3><p>Ordinary search results.</p>' if '/sorry/' not in r.request.url else '<title>Google</title><p>Our systems have detected unusual traffic from your computer network.</p>'))
+        self.session.search('captcha help','google');self.assertFalse(self.session.snapshot.get('challenge'))
+        self.backend.goto('https://www.google.com/sorry/index');message=self.session._refresh()
+        self.assertIn('human verification',message);self.assertEqual(self.session.list_focus,'search_engines')
+        self.assertEqual(self.session.engine_choices[0],'brave')
+        self.assertEqual(self.session.search_engine,'google')
+
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):
     browser_name='chrome'
