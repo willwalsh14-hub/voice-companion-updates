@@ -657,10 +657,12 @@ class WebSession:
         elif key=='End':index=len(options)-1
         elif key in ('Up','Down','Left','Right'):index=max(0,min(len(options)-1,current+(-1 if key in ('Up','Left') else 1)))
         else:return item.get('selected_label','')+'.'
-        label=options[index]['label'];self.backend.choose_form_option(item,label)
-        self._refresh_at(item);self.focus_current()
+        label=options[index]['label']
         from menu_navigation import boundary_notice
         boundary=boundary_notice(index,len(options))
+        if index!=current:
+            self.backend.choose_form_option(item,label)
+            self._refresh_at(item);self.focus_current()
         return label+'.'+(' '+boundary if boundary else '')
 
     def keyboard(self,key):
