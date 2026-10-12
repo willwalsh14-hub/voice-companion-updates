@@ -1,18 +1,17 @@
 {
-  "version": "0.2.114-test",
+  "version": "0.2.115-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.113-test",
-  "scope": "Actual Brave result titles, reliable page refresh and accessible search verification alternatives.",
+  "baseline": "0.2.114-test",
+  "scope": "SAPI synthesizer labels, finite lists, keyboard boundaries and confirmation accelerators.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Search verification alternatives",
+          "title": "Confirmation accelerators",
           "details": [
-            "When the selected search engine requires human verification, an accessible engine menu offers another engine for the same query. Use arrows and Enter, first-letter menu navigation, or say Try Brave Search, Try Bing or Try DuckDuckGo. Escape returns to the verification page. Choosing an alternative applies only to that search and leaves the saved default unchanged.",
-            "Google controls its verification requirement. Companion does not solve or bypass it and does not silently change engines. A normal search about captcha help is no longer mistaken for a verification page."
+            "Alt+Y immediately chooses Yes and Alt+N immediately chooses No in confirmation prompts, including exit, power actions, updates, sending mail and media actions. Existing Y/N and voice Yes/No remain available. Home selects Yes, End selects No, Enter activates the selected choice, and Escape cancels. Directional movement stops at Yes or No rather than cycling."
           ]
         }
       ]
@@ -21,23 +20,24 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Brave search headings and links",
+          "title": "SAPI synthesizer name",
           "details": [
-            "Live Brave Search inspection in Chrome showed that result titles are DIV text blocks rather than HTML headings. These actual title blocks now appear as level-two headings for H, Shift+H, heading lists and voice navigation. Site names and URL breadcrumbs do not replace the title. Duplicate result headings and URL-only citation links for the same result are excluded.",
-            "Enter on a result heading activates its associated link. The original DOM identity remains checked before activation."
+            "The synthesizer formerly displayed as Windows speech is now SAPI. Options uses SAPI and SAPI voice labels. Use SAPI and Use SAPI voice select it. Saved settings and selected voices remain compatible; existing Windows speech commands continue to work."
           ]
         },
         {
-          "title": "Reliable virtual page updates",
+          "title": "Finite list navigation",
           "details": [
-            "Links wait for actual navigation or their delayed new tab even when a loading message changes the old page first. The destination is captured after readiness, and Loading page and Page loaded feedback accompany navigation. A link is never automatically clicked again after an uncertain result.",
-            "Snapshot capture retries when a document changes during extraction. Mutations immediately after extraction remain detectable. Child-frame updates are monitored, and incidental changes preserve the selected element instead of resetting reading to the top. Same-page fragment links move the virtual cursor to their target. External navigation cancels old field editing; stale staged field input cannot be applied to the new document."
+            "Menus, synthesizer and voice pickers, Options categories and choices, email folders and messages, help topics, browser element lists, radio and podcast lists, email headers and document match pickers stop at their boundaries. Start of list and End of list identify the first and last items; a one-item list announces both. Empty lists remain distinguishable.",
+            "Home and End select the first and last item without opening it. Voice First item, Last item, Start of list, Beginning of list and End of list provide equivalent navigation in active menus. Repeated first-letter navigation stops at the last matching item; choosing a different letter can jump back. Editable text keeps normal caret commands and forms keep normal Tab navigation.",
+            "Email Home and End reach the first or last message in the current folder across fetched pages. Message navigation never wraps to the opposite end. A repeated server page cursor reports that the end could not be reached rather than looping. Document selection and replacement match lists also stop; Home/End previews their first/last candidate without applying the action.",
+            "Contacts, connected email accounts and saved document names now open navigable pickers instead of a truncated spoken report. Arrows, first letters, Home/End and voice equivalents browse them; Enter selects and Escape closes the picker without activating an item."
           ]
         },
         {
-          "title": "Help and regression checks",
+          "title": "Documentation and validation",
           "details": [
-            "Built-in Help and versioned What’s New document these changes. Browser tests reproduce the Brave DOM structure observed in Chrome, delayed popups, fragments, frame changes, field cancellation and verification detection. Regression checks cover snapshot races and explicit voice engine selection. Windows checks exercise Firefox, Chrome, Edge and Brave; public websites still require beta testing."
+            "Built-in Help, the attached HTML guide and all versioned What’s New formats document SAPI, list boundaries and confirmation keys. Regression checks cover singleton/empty lists, repeated letters, voice navigation, paginated email and preserved settings. Windows integration checks real Options controls and Alt+Y/Alt+N from editable fields; browser checks preserve focus and ordinary form editing."
           ]
         }
       ]

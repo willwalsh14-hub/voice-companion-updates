@@ -649,16 +649,19 @@ class WebSession:
         current=next((i for i,o in enumerate(options) if o['label']==item.get('selected_label')),-1)
         if key.startswith('ChoiceLetter:'):
             letter=key.split(':',1)[1].casefold()
-            order=list(range(current+1,len(options)))+list(range(0,current+1))
-            index=next((i for i in order if options[i]['label'].casefold().startswith(letter)),None)
-            if index is None:return 'No option starts with '+letter.upper()+'.'
+            matches=[i for i,o in enumerate(options) if o['label'].casefold().startswith(letter)]
+            index=matches[min(matches.index(current)+1,len(matches)-1)] if current in matches else matches[0] if matches else None
+            if index==current:return 'End of matching items.'
+            if index is None:return 'End of matching items.' if any(o['label'].casefold().startswith(letter) for o in options) else 'No option starts with '+letter.upper()+'.'
         elif key=='Home':index=0
         elif key=='End':index=len(options)-1
         elif key in ('Up','Down','Left','Right'):index=max(0,min(len(options)-1,current+(-1 if key in ('Up','Left') else 1)))
         else:return item.get('selected_label','')+'.'
         label=options[index]['label'];self.backend.choose_form_option(item,label)
         self._refresh_at(item);self.focus_current()
-        return label+'.'
+        from menu_navigation import boundary_notice
+        boundary=boundary_notice(index,len(options))
+        return label+'.'+(' '+boundary if boundary else '')
 
     def keyboard(self,key):
         if not self.snapshot:return 'Open a website first.'
@@ -1384,7 +1387,7 @@ class WebSession:
 
     def move_heading(self,step):
         items=self.heading_items();index=self.heading_index+step
-        if not 0<=index<len(items):return 'List boundary.'
+        if not 0<=index<len(items):return 'Start of list.' if index<0 else 'End of list.'
         self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items))
 
     def activate_list_item(self):

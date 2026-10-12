@@ -29,6 +29,25 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertTrue(condition(),self.notices)
     def tearDown(self):
         if hasattr(self,'panel') and not self.panel.closed.is_set():self.panel.cancel();self.panel.closed.wait(3)
+    def test_category_and_choice_home_end_stop_at_boundaries(self):
+        hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
+        self.u.PostMessageW(categories,0x100,0x23,0)
+        self.wait(lambda:self.session.category==10)
+        self.u.PostMessageW(categories,0x100,0x28,0)
+        self.wait(lambda:bool(self.notices) and 'End of list' in self.notices[-1])
+        self.assertEqual(self.session.category,10)
+        self.u.PostMessageW(categories,0x100,0x24,0);self.wait(lambda:self.session.category==0)
+        self.u.PostMessageW(categories,0x100,0x26,0)
+        self.wait(lambda:'Start of list' in self.notices[-1]);self.assertEqual(self.session.category,0)
+        self.u.PostMessageW(categories,0x100,0x0D,0)
+        self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
+        choice=self.u.GetDlgItem(hwnd,200)
+        self.u.PostMessageW(choice,0x100,0x23,0);self.wait(lambda:self.session.values['verbosity']=='low')
+        self.u.PostMessageW(choice,0x100,0x28,0)
+        self.wait(lambda:'End of list' in self.notices[-1]);self.assertEqual(self.session.values['verbosity'],'low')
+        self.u.PostMessageW(choice,0x100,0x24,0);self.wait(lambda:self.session.values['verbosity']=='high')
+        self.u.PostMessageW(choice,0x100,0x26,0)
+        self.wait(lambda:'Start of list' in self.notices[-1]);self.assertEqual(self.session.values['verbosity'],'high')
     def test_category_arrows_choose_enter_opens_then_checkbox_and_enter_save(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x28,0) # Choose only; Enter opens.

@@ -27,7 +27,7 @@ class AccessibilityFixTests(unittest.TestCase):
                 self.assertEqual(app.navigation_key('y',mode),'yes');self.assertEqual(app.navigation_key('N',mode),'no')
             self.assertIsNone(app.navigation_key('Control','awake'));self.assertEqual(stop.call_count,5)
     def test_message_home_end_and_no_addresses(self):
-        session=MailSession.__new__(MailSession);session.rows=[{'from':'Sam <sam@example.com>','subject':'One'},{'from':'other@example.com','subject':'Two'}]
+        session=MailSession.__new__(MailSession);session.next_cursor=None;session.previous_cursors=[];session.page_cursor=None;session.rows=[{'from':'Sam <sam@example.com>','subject':'One'},{'from':'other@example.com','subject':'Two'}]
         session.view='folder';session.folder_picker=None;session.pending=None;session.current=1
         with patch.object(app,'mail_session',session),patch.object(app,'speak') as say,patch.object(app,'interrupt_speech'),patch.object(app,'account_setup',False):
             app.navigation_key('End','mailbox');self.assertEqual(session.current,2);self.assertNotIn('@',say.call_args.args[0])

@@ -9,7 +9,7 @@ from menu_navigation import next_match
 from mail_voice import MailSession
 
 class MenuKeyboardTests(unittest.TestCase):
-    def test_repeated_letters_cycle_matching_main_items_without_activation(self):
+    def test_repeated_letters_stop_at_last_matching_main_item_without_activation(self):
         with patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'account_setup',False),patch.object(app,'speak') as say:
             app.navigation_key('Letter:e','awake')
             self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Email')
@@ -17,7 +17,8 @@ class MenuKeyboardTests(unittest.TestCase):
             app.navigation_key('Letter:e','awake')
             self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Exit Voice Companion')
             app.navigation_key('Letter:e','awake')
-            self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Email')
+            self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Exit Voice Companion')
+            say.assert_called_with('End of matching items.')
     def test_folder_letters_only_select_and_do_not_touch_messages(self):
         picker={'folders':[('Inbox','i'),('Sent','s'),('Stuff','x')],'index':0}
         session=SimpleNamespace(folder_picker=picker,pending=None,_spoken_folder=lambda x:x)
@@ -75,7 +76,7 @@ class MenuKeyboardTests(unittest.TestCase):
             self.assertEqual(mode,'exit_confirm');self.assertEqual(app.CONFIRM_CHOICE,'no')
             self.assertEqual(app._handle(app.navigation_key('Escape',mode),mode),'awake')
             finish.assert_not_called()
-            self.assertIsNone(app.navigation_key('Tab',mode));self.assertEqual(app.CONFIRM_CHOICE,'yes')
+            self.assertIsNone(app.navigation_key('Up',mode));self.assertEqual(app.CONFIRM_CHOICE,'yes')
             app._handle(app.navigation_key('Enter',mode),mode);finish.assert_called_once_with('awake')
     def test_disabled_exit_and_power_confirmation(self):
         with patch.object(app,'PREFERENCES',{'ask_before_exit':False,'ask_before_restart':False,'ask_before_shutdown':False}),patch.object(app,'document',None),patch.object(app,'email_draft',None),patch.object(app,'speak'),patch.object(app,'finish_exit',return_value='exit') as finish,patch.object(app,'flush_note'),patch('windows_actions.request_power') as power:

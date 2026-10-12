@@ -64,8 +64,9 @@ class MediaNavigation:
         return 'No items in this list. Tab returns to the actions menu.'
     def keyboard(self,key):
         if self.pending:
-            if key.lower() in ('y','n'):return self.command('yes' if key.lower()=='y' else 'no')
-            if key in ('Up','Down','Left','Right','Tab','ShiftTab'):self.confirm_choice='yes' if self.confirm_choice=='no' else 'no';return self.confirm_choice.capitalize()+'.'
+            if key.lower() in ('y','n','alt+y','alt+n'):return self.command('yes' if key.lower() in ('y','alt+y') else 'no')
+            if key in ('Up','Down','Left','Right','Tab','ShiftTab'):self.confirm_choice='yes' if key in ('Up','Left','ShiftTab') else 'no';return self.confirm_choice.capitalize()+'. '+('Start of list.' if self.confirm_choice=='yes' else 'End of list.')
+            if key in ('Home','End'):self.confirm_choice='yes' if key=='Home' else 'no';return self.confirm_choice.capitalize()+'. '+('Start of list.' if key=='Home' else 'End of list.')
             if key=='Enter':return self.command(self.confirm_choice)
             if key=='Escape':return self.command('no')
             return ''
@@ -97,6 +98,7 @@ class MediaNavigation:
         elif key.startswith('Letter:'):
             match=next_match(names,index,key[-1])
             if match is None:return 'No item starts with '+key[-1].upper()+'.'
+            if match==index:return 'End of matching items. '+self.announce()
             index=match
         else:return ''
         select(index);return self.announce()

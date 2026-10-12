@@ -300,6 +300,15 @@ class WindowKeyboardTests(unittest.TestCase):
             expected='Control' if key=='Control_L' else key
             self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.typed.get(),''))
+    def test_alt_yes_no_confirmations_override_editor_and_typed_fields(self):
+        for mode in ('exit_confirm','power_confirm','update_offer','email_draft'):
+            self.window.set_context(dict(mode=mode,source='confirm-'+mode,text='Preserved text',readonly=False,confirmation='no',caret=0,ack=0,focus=True))
+            self.wait(lambda:self.window.context.get('mode')==mode)
+            for key,expected in (('y','Alt+Y'),('n','Alt+N')):
+                self.call(lambda key=key:self.window.editor.event_generate('<KeyPress>',keysym=key,state=8))
+                self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
+            self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Preserved text'))
+            while not self.window.commands.empty():self.window.commands.get_nowait()
     def test_update_and_email_confirmation_override_nonempty_header(self):
         for mode in ('update_offer','email_draft'):
             self.window.set_context(dict(mode=mode,source=None,confirmation='yes',text='',caret=0,ack=0))

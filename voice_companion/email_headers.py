@@ -1,3 +1,4 @@
+from menu_navigation import boundary_notice
 """Staged keyboard and voice editing of enabled email headers and their order."""
 HEADERS=('from','subject','date','size')
 class HeaderEditor:
@@ -9,7 +10,7 @@ class HeaderEditor:
     def label(self,index=None):
         index=self.index if index is None else index
         name=self.order[index]
-        return name.capitalize()+', '+('enabled' if name in self.enabled else 'disabled')+', '+str(index+1)+' of 4'
+        return name.capitalize()+', '+('enabled' if name in self.enabled else 'disabled')+', '+str(index+1)+' of 4'+('. '+boundary_notice(index,4) if boundary_notice(index,4) else '')
     def save(self):
         self.session.set('email_header_order',', '.join(x for x in self.order if x in self.enabled))
     def toggle(self):
