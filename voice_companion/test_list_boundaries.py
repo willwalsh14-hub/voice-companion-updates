@@ -96,6 +96,11 @@ class BoundaryTests(unittest.TestCase):
             session.list_messages=fetch
             self.assertIn('could not reach the end',session.list_boundary(True))
 class EverydayWorkflowTests(unittest.TestCase):
+    def test_current_release_notes_match_build_version_and_required_sections(self):
+        from pathlib import Path
+        from release_documents import load_notes
+        self.assertEqual(load_notes(Path(__file__).parent)['version'],app.APP_VERSION)
+
     def test_new_email_keyboard_is_short_and_voice_remains_guided(self):
         from pathlib import Path
         from contextlib import ExitStack

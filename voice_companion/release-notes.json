@@ -6,14 +6,19 @@
   "scope": "Short new-email announcement, consistent list feedback and preserved email paging after connection failures. Named documents keep their filename when closing.",
   "sections": [
     {
-      "title": "Fixes and Enhancements",
+      "title": "New Apps and Features",
       "topics": [
         {
           "title": "New email announcement",
           "details": [
             "Starting a new email with the keyboard says New email. To field. Automatic draft names and the sending account are omitted. Voice commands retain the guided recipient, subject and message prompts. New email to sender starts in the Subject field."
           ]
-        },
+        }
+      ]
+    },
+    {
+      "title": "Fixes and Enhancements",
+      "topics": [
         {
           "title": "Consistent list boundaries",
           "details": [
