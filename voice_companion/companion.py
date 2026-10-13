@@ -2728,7 +2728,7 @@ def main():
                         mode=settings_action(values,SETTINGS_RETURN_MODE)
                     elif kind=='preview':
                         try:
-                            if SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():__import__('app_settings').preview_settings(sys.modules[__name__],*values)
+                            if SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set() and SETTINGS_PANEL.session.values==values[0]:__import__('app_settings').preview_settings(sys.modules[__name__],*values)
                         except Exception:speak('Voice preview could not play. Your saved settings are unchanged.')
                     settings_result=None
                 if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='sleep' and SLEEP_RETURN_MODE=='settings':

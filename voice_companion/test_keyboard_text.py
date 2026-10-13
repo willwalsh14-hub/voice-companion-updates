@@ -17,6 +17,16 @@ from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typ
 from settings_model import DEFAULTS,CATEGORIES,fields
 
 class KeyboardTextTests(unittest.TestCase):
+    def test_typed_document_name_is_literal_even_when_it_matches_an_app_command(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for title in ('Options','Exit companion','Go to sleep','Save as a title'):
+                doc=VoiceDocument(Path(folder))
+                window=CompanionWindow('test');window.context['mode']='document_name'
+                window.submit_entry(title);command=window.commands.get_nowait()
+                self.assertEqual(command,'name document '+title)
+                with patch.object(companion,'document',doc),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'speak'),patch.object(companion,'DOCUMENT_NAME_RETURN','document'),patch.object(companion,'sync_app_context'):
+                    self.assertEqual(companion.handle_keyboard(command,'document_name'),'document')
+                    self.assertEqual(doc.title,title)
     def test_builder_script_answers_document_save_question_before_email(self):
         import io
         source=(Path(companion.__file__).parent/'build-windows.ps1').read_text()
@@ -233,7 +243,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(values,['help'])
         self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Return'))
         self.wait(lambda:not self.window.commands.empty())
-        self.assertEqual(self.window.commands.get_nowait(),'help')
+        self.assertEqual(self.window.commands.get_nowait(),'name document help')
 
     def test_shutdown_discards_delayed_view_updates_and_readback(self):
         def close_with_pending_readback():

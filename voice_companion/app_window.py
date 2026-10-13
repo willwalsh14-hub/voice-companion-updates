@@ -110,7 +110,7 @@ class CompanionWindow:
             self.commands.put(('web_private_value',dict(value=value,next='Done',**({'field_source':self.context['web_field_source']} if self.context.get('web_field_source') else {}))));return True
         value = value.strip()
         if value:
-            self.commands.put(('web_search_query',value) if self.context.get('mode')=='search' else value)
+            self.commands.put(('web_search_query',value) if self.context.get('mode')=='search' else 'name document '+value if self.context.get('mode')=='document_name' else value)
             self.last_email_request = None
             return True
         return False
