@@ -72,6 +72,36 @@ class ConsumerWebTests(unittest.TestCase):
         self.assertIn('Thank you',self.session.command('yes'))
         self.assertEqual(self.page.evaluate('window.sent'),1)
 
+    def test_keyboard_send_bypasses_voice_review_and_submits_once(self):
+        import companion as app
+        from unittest.mock import patch
+        for key in ('Activate','Space'):
+            self.page.evaluate('window.sent=0')
+            self.load('<h1>Contact</h1><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1;document.querySelector(\'#result\').textContent=\'Message received\'"><label for="name">Name</label><input id="name" value="Test"><button type="submit">Send</button><p id="result"></p></form>')
+            self.session.keyboard('Quick:b')
+            with patch.object(app,'web_session',self.session),patch.object(app,'APP_WINDOW',None),patch.object(app,'speak') as spoken:
+                app.handle_keyboard('web key '+key,'web')
+                notices=' '.join(str(c.args[0]) for c in spoken.call_args_list)
+                self.assertNotIn('continue review',notices.lower());self.assertNotIn('Form review',notices)
+            self.assertEqual(self.page.evaluate('window.sent'),1)
+            self.assertIsNone(self.session.submit_pending)
+
+    def test_voice_submission_review_can_correct_a_field_before_sending(self):
+        self.load('<h1>Contact</h1><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1"><label for="name">Name</label><input id="name" value="Wrong"><label for="email">Email</label><input type="email" id="email" value="test@example.com"><button type="submit">Send</button></form>')
+        self.assertIn('change this field',self.session.command('review and submit form'))
+        self.assertIn('Changing Name',self.session.command('change this field'))
+        self.assertIn('Field updated',self.session.command('Corrected'))
+        self.assertEqual(self.page.locator('#name').input_value(),'Corrected')
+        self.assertIn('Corrected',self.session.reading.text)
+        self.assertEqual(self.page.evaluate('window.sent'),0)
+        while self.session.review_submission:self.session.command('continue review')
+        self.session.command('no')
+        self.assertIn('Changing Email',self.session.command('change Email'))
+        self.session.command('better at example dot com')
+        self.assertEqual(self.page.locator('#email').input_value(),'better@example.com')
+        while self.session.review_submission:self.session.command('continue review')
+        self.session.command('yes');self.assertEqual(self.page.evaluate('window.sent'),1)
+
     def test_numbered_password_dictation_does_not_echo_value_in_companion_feedback(self):
         import companion as app,io,contextlib
         from unittest.mock import patch

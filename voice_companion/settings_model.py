@@ -10,18 +10,20 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Documents', 'Web browser', 'Radio', 'Podcasts', 'Updates'))+('Startup and exit options',)
+CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Word processor', 'Notepad', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
 DEFAULTS = {'web_search_engine':'google','web_keep_open':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
     if category!='Startup and exit options':category=category.removesuffix(' options')
+    category={'Word processor':'Documents','Auto-update':'Updates','Notes':'Notepad'}.get(category,category)
     definitions = {
         'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2'))],
         'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('SAPI',)))),Field('windows_voice','SAPI voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation'))],
         'Email':[Field('email_format','Email format','choice',('plain text','html')),Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('add_account','Add an email account','action')],
+        'Notepad':[Field('open_notepad','Open Notepad','action')],
         'Documents':[Field('document_font','Font for new documents','text'),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify')),Field('open_documents','Open Documents folder','action')],
         'Web browser':[Field('web_search_engine','Default search engine','choice',('google','bing','brave','duckduckgo')),Field('web_keep_open','Keep browser window open','check'),Field('web_auto_read','Automatic page reading','check'),Field('browser','Guided browser','choice',('edge','chrome','brave','firefox')),Field('web_favorites','List website favorites','action')],
         'Radio':[Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],

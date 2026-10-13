@@ -681,7 +681,7 @@ class WebSession:
             self._refresh_at(item);self.focus_current()
         return label+'.'
 
-    def keyboard(self,key):
+    def keyboard(self,key,direct_submit=False):
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
@@ -730,7 +730,11 @@ class WebSession:
                     self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
-                if role=='button' and item.get('type')=='submit':return self.prepare_submit()
+                if role=='button' and item.get('type')=='submit':
+                    if direct_submit:
+                        self.backend.activate(item)
+                        return 'Pressed '+_label(item)+'. '+self._refresh()
+                    return self.prepare_submit()
                 if role in ('link','button'):
                     if item.get('href') and urlsplit(item['href']).scheme!='https':return 'Only secure HTTPS links can be opened.'
                     if role=='link':self.pending=item;return self.confirm()
@@ -911,6 +915,7 @@ class WebSession:
         self.review_parts = []
         self.review_cursor = 0
         self.review_submission = None
+        self.review_edit_active=False
         url = self.snapshot['url']
         if self.snapshot.get('challenge'):
             if getattr(self,'active_search_engine',None) and self.last_search and urlsplit(url).hostname in ('www.google.com','google.com','search.brave.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'):
@@ -1251,11 +1256,15 @@ class WebSession:
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
         if spoken.lower() in ('skip','skip field'):
+            if getattr(self,'review_edit_active',False):
+                self.review_edit_active=False;self.form_index=None
+                return 'Field unchanged. '+self.prepare_submit()
             self.form_index += 1
             return 'Skipped ' + _label(item) + '. ' + self._ask_field()
         if spoken.lower() in ('repeat','repeat question','what field'):
             return self._ask_field()
         if spoken.lower() in ('cancel form','stop form'):
+            self.review_edit_active=False
             self.form_index = None
             return 'Stopped filling the form. Entries already made remain on the page; nothing was submitted.'
         value = _plain(spoken)
@@ -1294,6 +1303,10 @@ class WebSession:
                 self.form_index=None;return 'The form changed after your answer. Nothing was submitted. Say read page, then fill out this form to continue.'
         except Exception:
             self.form_index=None;return 'Your answer was entered, but the form could not be checked again. Nothing was submitted. Say read page to retry.'
+        if getattr(self,'review_edit_active',False):
+            self.review_edit_active=False;self.form_index=None
+            self._refresh(read=False,wait=False)
+            return 'Field updated. '+self.prepare_submit()
         return ('Password entered. ' if item.get('type')=='password' else 'Recorded ' + value + ' for ' + _label(item) + '. ') + self._ask_field()
 
     def review_form(self):
@@ -1341,15 +1354,38 @@ class WebSession:
         result = ('Form review, fields ' + str(end - len(piece) + 1) + ' through ' + str(end) +
                   ' of ' + str(len(self.review_parts)) + ': ' + '. '.join(piece) + '. ')
         if end < len(self.review_parts):
-            return result + 'Say continue review for the remaining fields. Submission is not ready yet.'
+            return result + 'Say change this field to correct it, or continue review for the remaining fields. Submission is not ready yet.'
         if self.review_submission:
             pending = self.review_submission
             self.review_submission = None
             self.submit_pending = pending
             return (result + 'The button is ' + _label(pending['button']) + ' on ' +
                     (urlsplit(pending['url']).hostname or 'this site') +
-                    '. Is every field right? Say yes to submit, or no to cancel.')
+                    '. Is every field right? Say change this field to correct it, yes to submit, or no to cancel.')
         return result + 'End of form review. Nothing has been submitted.'
+
+    def edit_review_field(self,request='this field'):
+        current=self.backend.snapshot()
+        if current.get('url')!=self.snapshot.get('url'):return 'The page changed. Say read page before editing this form.'
+        fields=self._form_controls(current)
+        request=request.strip().casefold()
+        if request in ('this field','current field','field'):
+            index=max(0,self.review_cursor-1)
+            item=fields[index] if index<len(fields) else None
+        else:
+            number=re.fullmatch(r'(?:field )?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)',request)
+            if number:
+                values=dict(zip(('one','two','three','four','five','six','seven','eight','nine','ten'),range(1,11)))
+                index=int(number[1]) if number[1].isdigit() else values[number[1]]
+                item=fields[index-1] if 1<=index<=len(fields) else None
+            else:
+                matches=[f for f in fields if request==_label(f).casefold() or request in _label(f).casefold()]
+                item=matches[0] if len(matches)==1 else None
+        if not item:return 'Name one field, such as change field two or change Subject.'
+        if item.get('readonly') or item.get('disabled'):return 'That field cannot be edited.'
+        self.review_submission=None;self.submit_pending=None;self.review_edit_active=True
+        self.form_fields=[item];self.form_index=0;self.form_page=current['url']
+        return 'Changing '+_label(item)+'. '+self._ask_field()
 
     def prepare_submit(self):
         if not self.snapshot: return 'Open a website first.'
@@ -1532,11 +1568,14 @@ class WebSession:
             try: item = self.backend.focused_control()
             except Exception: item = None
             return self._describe_focus(item) if item else 'No readable field has keyboard focus. Press Tab or say list fields.'
+        if self.review_parts and command.startswith(('change ','edit ','correct ')):
+            request=re.sub(r'^(?:change|edit|correct) ','',spoken,flags=re.I)
+            return self.edit_review_field(request)
         if command in ('continue review','keep reviewing','read next fields'):
             return self._next_review()
         if self.submit_pending and command in ('no','no thanks','cancel','cancel submit'):
             self.submit_pending = None
-            return 'No. Form submission canceled. Nothing was submitted.'
+            return 'No. Form submission canceled. Nothing was submitted. Say change followed by a field name to correct it, or review and submit form to review again.'
         if self.submit_pending and command in ('yes','yes please'):
             return self.confirm_submit()
         if self.submit_pending and command not in ('submit this form','yes submit this form','confirm submit form'):

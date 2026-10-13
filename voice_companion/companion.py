@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.120-test'
+APP_VERSION = '0.2.121-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -376,7 +376,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Notepad', 'write a note'), ('Help', 'help'), ("What's new", 'what is new'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Restart computer', 'restart computer'), ('Shut down computer', 'shut down computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -1695,7 +1695,7 @@ def _handle(text, mode, typed=False):
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
             if MEDIA_SECTION == 'podcast': media().awaiting_radio_search = False
             else: media().awaiting_podcast_search = False
-            speak(media_navigation().enter(MEDIA_SECTION))
+            speak(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
             return 'media'
         try:
             speak(media_navigation().command(text));sync_app_context('media',True)
@@ -1992,7 +1992,9 @@ def _handle(text, mode, typed=False):
             speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
             return 'search'
         revision=getattr(web_session,'page_revision',0)
-        if text.startswith('web key '):speak_web_result(web_session.keyboard(text[8:]),revision);return mode
+        if text.startswith('web key '):
+            result=web_session.keyboard(text[8:],direct_submit=True) if KEYBOARD_NAVIGATION and text[8:] in ('Activate','Space') else web_session.keyboard(text[8:])
+            speak_web_result(result,revision);return mode
         web_session.input_mode = INPUT_MODE
         if command in ('leave website', 'close website','close browser','exit browser','leave web browser','close web browser','exit web browser', 'main menu', 'back to main menu'):
             try:web_session.leave(PREFERENCES.get('web_keep_open',False))
@@ -2311,12 +2313,12 @@ def _handle(text, mode, typed=False):
         return 'awake'
     if command in ('radio','internet radio'):
         MEDIA_SECTION = 'radio'
-        speak_prompt(media_navigation().enter(MEDIA_SECTION))
+        speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
         return 'media'
     if command in ('podcasts','listen to podcasts'):
         MEDIA_SECTION = 'podcast'
         media().awaiting_radio_search = False
-        speak_prompt(media_navigation().enter(MEDIA_SECTION))
+        speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
         return 'media'
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',

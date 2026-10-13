@@ -56,6 +56,19 @@ class ConsumerRegressionTests(unittest.TestCase):
             app.refresh_browser_view('web');app.refresh_browser_view('sleep')
             self.assertEqual(session.refresh_changed.call_count,2);sync.assert_called_with('sleep')
 
+    def test_main_menu_order_is_identical_for_voice_and_keyboard(self):
+        expected=['Word processor','Notepad','Email','Web browser','Radio','Podcasts','Options','Check for updates','Help','Shut down the computer','Restart the computer','Exit Voice Companion']
+        self.assertEqual([label for label,_ in app.MAIN_MENU_CHOICES],expected)
+        with patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'speak') as speak:
+            for label in expected:app.handle('next','awake');self.assertTrue(speak.call_args.args[0].startswith(label))
+            app.MAIN_MENU_INDEX=None
+            for label in expected:
+                request=app.navigation_key('Down','awake');app.handle_keyboard(request,'awake');self.assertTrue(speak.call_args.args[0].startswith(label))
+
+    def test_option_category_names_match_app_names(self):
+        for label in ('Auto-update options','Word processor options','Notepad options'):self.assertIn(label,CATEGORIES);self.assertTrue(fields(label,{}))
+        for label in ('Documents options','Updates options','Notes options'):self.assertNotIn(label,CATEGORIES)
+
     def test_default_microphone_accepts_jabra_usb_usbc_analog_and_internal_inputs(self):
         for name in ('Microphone (2- Jabra Evolve2 30', 'Jabra Engage 65', 'USB-C Headset', 'Microphone (Realtek Audio)', 'Microphone Array'):
             with self.subTest(name=name):

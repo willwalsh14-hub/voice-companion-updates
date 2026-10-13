@@ -16,13 +16,31 @@ class MediaNavigationTests(unittest.TestCase):
         self.hub.stations=[{'name':'Alpha','url':'https://radio.test/a'},{'name':'Bravo','url':'https://radio.test/b'},{'name':'Another','url':'https://radio.test/c'}];self.hub.station_index=0
         self.hub.shows=[{'name':'History One','feed':'https://pod.test/1'},{'name':'Science Two','feed':'https://pod.test/2'}];self.hub.show_index=0
         self.nav=MediaNavigation(self.hub)
+    def test_station_keyboard_actions_are_short_and_voice_menu_keeps_legacy_actions(self):
+        self.nav.enter('radio',keyboard=True)
+        self.assertEqual([a.label for a in self.nav.actions],['Add to favorites','Record current station','Schedule recording','Pause audio','Play','Stop recording','Cancel scheduled recordings'])
+        self.nav.command('radio menu')
+        self.assertIn('Resume audio',[a.label for a in self.nav.actions]);self.assertIn('Search stations',[a.label for a in self.nav.actions])
+        self.nav.keyboard('Tab');self.nav.keyboard('Tab')
+        self.assertEqual(len(self.nav.actions),7)
+        self.nav.index=4;self.nav.keyboard('Enter');self.player.open.assert_called_with('https://radio.test/a','Alpha','radio')
+        self.nav.keyboard('Escape');self.assertIn('Search stations',[a.label for a in self.nav.actions])
+
+    def test_keyboard_cancel_schedule_opens_list_and_enter_requests_confirmation(self):
+        self.hub._save('radio-schedule.json',[{'id':'one','station':self.hub.stations[0],'when':'2026-10-13T20:00:00','minutes':30}])
+        self.nav.enter('radio',keyboard=True);self.nav.index=6;self.nav.keyboard('Enter')
+        self.assertEqual(self.nav.view,'scheduled');self.assertEqual(len(self.nav.items()),1)
+        self.assertIn('Yes or no',self.nav.keyboard('Enter'))
+        self.nav.keyboard('y');self.assertEqual(self.nav.items(),[])
+
     def test_actions_results_letters_boundaries_and_activation(self):
         self.assertIn('Radio menu',self.nav.enter('radio'))
-        self.nav.keyboard('Letter:l');self.assertEqual(self.nav.actions[self.nav.index].label,'List stations')
+        self.nav.keyboard('Escape');self.nav.keyboard('Letter:l');self.assertEqual(self.nav.actions[self.nav.index].label,'List stations')
         self.nav.keyboard('Tab');self.nav.keyboard('Home');self.nav.keyboard('Letter:a');self.assertEqual(self.hub.station_index,2)
         self.assertIn('End of matching items',self.nav.keyboard('Letter:a'));self.assertEqual(self.hub.station_index,2)
         self.nav.keyboard('End');self.nav.keyboard('Enter');self.player.open.assert_called_with('https://radio.test/c','Another','radio')
-        self.assertEqual(self.nav.keyboard('Escape').split('.')[0],'List stations (L), 7 of 21')
+        self.assertEqual(self.nav.keyboard('Escape').split('.')[0],'Add to favorites (A), 1 of 7')
+        self.assertIn('Radio browsing menu',self.nav.keyboard('Escape'))
         self.assertEqual(self.nav.keyboard('Escape'),'__main__')
     def test_search_form_preserves_literal_text_and_voice_interoperates(self):
         self.nav.enter('radio');self.nav.keyboard('Ctrl+F')

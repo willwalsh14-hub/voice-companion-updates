@@ -34,9 +34,9 @@ class NativeSettingsTests(unittest.TestCase):
         def press(control,key,condition):
             before=len(self.notices);self.u.PostMessageW(control,0x100,key,0)
             self.wait(lambda:len(self.notices)>before and condition())
-        press(categories,0x23,lambda:self.session.category==10 and 'Startup and exit options' in self.notices[-1] and 'of list' not in self.notices[-1])
-        press(categories,0x23,lambda:self.session.category==10 and 'End of list' in self.notices[-1])
-        press(categories,0x28,lambda:self.session.category==10 and 'End of list' in self.notices[-1])
+        press(categories,0x23,lambda:self.session.category==11 and 'Startup and exit options' in self.notices[-1] and 'of list' not in self.notices[-1])
+        press(categories,0x23,lambda:self.session.category==11 and 'End of list' in self.notices[-1])
+        press(categories,0x28,lambda:self.session.category==11 and 'End of list' in self.notices[-1])
         press(categories,0x24,lambda:self.session.category==0 and 'Verbosity options' in self.notices[-1] and 'of list' not in self.notices[-1])
         press(categories,0x24,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
         press(categories,0x26,lambda:self.session.category==0 and 'Start of list' in self.notices[-1])
@@ -81,7 +81,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
     def test_category_letters_stop_enter_opens_and_alt_o_returns(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
-        for expected,notice in ((2,'Synthesizer'),(10,'Startup and exit options'),(10,'End of matching items')):
+        for expected,notice in ((2,'Synthesizer'),(11,'Startup and exit options'),(11,'End of matching items')):
             before=len(self.notices);self.u.PostMessageW(categories,0x100,ord('S'),0)
             self.wait(lambda:self.session.category==expected and len(self.notices)>before and notice in self.notices[-1])
         self.assertTrue(any('Startup and exit options (S)' in text for text in self.notices))

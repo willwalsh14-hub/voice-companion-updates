@@ -177,6 +177,7 @@ class NativeSettings:
             if cmd in ('cancel','back','settings menu','back to settings'):cancel_category();return
             cmd=cmd.replace('web browsing','web browser')
             name=cmd.removeprefix('go to ').removeprefix('settings ').removeprefix('select ')
+            name={'documents':'word processor','documents options':'word processor options','notes':'notepad','notes options':'notepad options','updates':'auto-update','updates options':'auto-update options','auto update':'auto-update','auto update options':'auto-update options'}.get(name,name)
             match=next((i for i,n in enumerate(CATEGORIES) if name in (n.lower(),n.removesuffix(' options').lower())),None)
             if match is not None:select_category(match);open_category();return
             if cmd in ('next setting','previous setting'):

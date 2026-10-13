@@ -1,17 +1,23 @@
 {
-  "version": "0.2.120-test",
+  "version": "0.2.121-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.119-test",
-  "scope": "Form navigation and inspection fixes, restored dictation and consistent list boundaries.",
+  "baseline": "0.2.120-test",
+  "scope": "Separate keyboard submission from voice review, editable voice review and simpler menus.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Address and password dictation restored",
+          "title": "Correct answers during voice form review",
           "details": [
-            "Website addresses, email addresses and passwords can again be dictated. Email and URL fields normalize spoken at, dot and slash. Passwords remain masked in page text, form review and recognized-input feedback. Guided forms include password and address fields."
+            "Say Change this field, Change field two or Change followed by a field name. Answer the guided correction question. Companion then builds a fresh review and submission signature. Saying No to submission leaves correction available."
+          ]
+        },
+        {
+          "title": "Compact radio keyboard actions",
+          "details": [
+            "Selected or playing stations have seven keyboard actions: Add to favorites, Record current station, Schedule recording, Pause audio, Play, Stop recording and Cancel scheduled recordings. Play starts a selected station when no audio is open. Scheduled recordings open as a list; Enter requests cancellation confirmation. Escape returns to broader station browsing. Legacy spoken commands and voice action menus remain available."
           ]
         }
       ]
@@ -20,27 +26,21 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Revisiting edited form fields",
+          "title": "Keyboard Send",
           "details": [
-            "Extraction and live control checks now use the same field labels. Unlabelled fields receive a nearby prompt or field-name fallback instead of using entered text as their identity. Control keys persist across captures when surrounding controls are added. Tab and Shift+Tab can revisit edited answers without a false page-changed warning."
+            "Keyboard Enter or Space on a submit button activates the website button directly. It does not require spoken field review or Continue review. Voice activation retains guided review and explicit final confirmation."
           ]
         },
         {
-          "title": "Readable form inspection and submission",
+          "title": "Main menu order",
           "details": [
-            "Previously skipped unlabelled fields are included in form review and required-field inspection. Regression tests reproduce the structure of the Blind MAST contact form, revisit all four answers and verify an isolated submission response. The live contact form is checked without sending a message."
+            "The shared keyboard and voice menu is Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Check for updates, Help, Shut down the computer, Restart the computer and Exit Voice Companion. Exit appears once, at the end. What is new remains available as a direct command."
           ]
         },
         {
-          "title": "Home and End at list boundaries",
+          "title": "Options names",
           "details": [
-            "Home and End announce the destination item when moving. Repeating the key at that endpoint announces Start of list or End of list, matching an additional arrow attempt. This applies to menus, email message lists, media lists and browser choices."
-          ]
-        },
-        {
-          "title": "Microphone rollback retained",
-          "details": [
-            "The default Windows microphone remains available without the external-only hardware safeguard removed in 0.2.119-test."
+            "Documents options is now Word processor options; Updates options is Auto-update options. A Notepad options category provides Open Notepad. Existing category voice names remain accepted as aliases."
           ]
         }
       ]
