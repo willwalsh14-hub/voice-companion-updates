@@ -72,6 +72,27 @@ class ConsumerWebTests(unittest.TestCase):
         self.assertIn('Thank you',self.session.command('yes'))
         self.assertEqual(self.page.evaluate('window.sent'),1)
 
+    def test_numbered_password_dictation_does_not_echo_value_in_companion_feedback(self):
+        import companion as app,io,contextlib
+        from unittest.mock import patch
+        self.load('<label for="secret">Password</label><input id="secret" type="password">')
+        self.session.command('list fields')
+        output=io.StringIO()
+        with patch.object(app,'web_session',self.session),patch.object(app,'APP_WINDOW',None),patch.object(app,'speak') as speak,contextlib.redirect_stdout(output):
+            app.handle('fill field 1 with FixtureSecret','web')
+            self.assertNotIn('FixtureSecret',output.getvalue())
+            self.assertNotIn('FixtureSecret',str(speak.call_args_list))
+        self.assertEqual(self.page.locator('#secret').input_value(),'FixtureSecret')
+
+    def test_password_review_masks_dictated_value_and_revisit_preserves_it(self):
+        self.load('<label for="secret">Password</label><input id="secret" type="password"><label for="comment">Comment</label><input id="comment">')
+        self.session.keyboard('Quick:e');self.session.command('type FixtureSecret')
+        for command in ('read current word','read current character','read current field','read selection'):
+            self.assertNotIn('FixtureSecret',self.session.command(command))
+        self.session.keyboard('Tab');self.session.keyboard('ShiftTab');self.session.keyboard('Tab')
+        self.assertEqual(self.page.locator('#secret').input_value(),'FixtureSecret')
+        self.assertNotIn('FixtureSecret',self.session.reading.text)
+
     def test_control_keys_survive_inserted_controls_before_current_field(self):
         self.load('<label for="first">First</label><input id="first"><label for="second">Second</label><input id="second">')
         self.session.keyboard('Quick:e');old=self.session.keyboard_field['key']
@@ -199,7 +220,7 @@ class ConsumerWebTests(unittest.TestCase):
         responses=[self.session.command('read current field'),self.session.command('read current word'),self.session.dictate_to_focus('dummy')]
         self.assertNotIn('fixture-secret',' '.join(responses))
         self.assertIn('Text entered',responses[-1])
-        self.session.keyboard('Tab');self.assertEqual(self.page.locator('#secret').input_value(),'dummy')
+        self.session.keyboard('Tab');self.assertEqual(self.page.locator('#secret').input_value(),'dummyfixture-secret')
         self.assertNotIn('fixture-secret',str(self.session.snapshot))
 
     def test_long_page_random_keyboard_voice_moves_keep_cursor_in_bounds(self):

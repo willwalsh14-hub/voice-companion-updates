@@ -1408,6 +1408,12 @@ def _handle(text, mode, typed=False):
         fields=getattr(web_session,'form_fields',None);index=getattr(web_session,'form_index',None)
         if not isinstance(field,dict) and isinstance(fields,list) and isinstance(index,int) and 0<=index<len(fields):field=fields[index]
         password_field=isinstance(field,dict) and field.get('type')=='password'
+        if mode=='web' and isinstance(web_session,WebSession) and not password_field:
+            target=re.match(r'fill field (\d+) with ',text,re.I)
+            if target and 0<int(target[1])<=len(web_session.choices):password_field=web_session.choices[int(target[1])-1].get('type')=='password'
+            if not password_field and web_session.snapshot:
+                try:password_field=(web_session.backend.focused_control() or {}).get('type')=='password'
+                except Exception:pass
         feedback='Password input' if password_field else text
         print('Heard:', feedback, flush=True)
         if APP_WINDOW is not None: APP_WINDOW.show('Heard: ' + feedback)

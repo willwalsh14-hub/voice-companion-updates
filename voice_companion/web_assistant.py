@@ -489,7 +489,6 @@ class BrowserBackend:
         element.evaluate('e=>e.blur()')
 
     def field_value(self,item):
-        if item.get('type')=='password':return ''
         return self._element(item).evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
 
     def fill(self,item,value,private=False):
@@ -763,7 +762,7 @@ class WebSession:
             self.keyboard_field=None;raise WebError('The page changed. The old field edit was not saved or submitted.')
         text=item.get('value','') if value is None else value
         if item.get('readonly') and text!=item.get('_original_value'):raise WebError('This field is read-only. Its contents were not changed.')
-        if kind(item)=='edit' and (item.get('type')=='password' or text!=item.get('_original_value')):
+        if kind(item)=='edit' and text!=item.get('_original_value'):
             self.backend.fill(item,text,private=item.get('type')=='password')
         if hasattr(self.backend,'blur_field'):self.backend.blur_field(item)
         self.keyboard_field=None;self.submit_pending=None;self.review_submission=None;self._refresh_at(item)
@@ -1150,7 +1149,7 @@ class WebSession:
     @staticmethod
     def _describe_focus(item):
         kind = item.get('type') or item.get('tag') or 'control'
-        if kind == 'password': state = 'Private field. Type it without speaking it aloud.'
+        if kind == 'password': state = 'Password field. Dictation or keyboard entry is available; its value is masked.'
         elif kind in ('checkbox','radio'): state = 'Checked.' if item.get('checked') else 'Not checked.'
         elif item.get('tag') == 'select': state = 'Selected ' + _plain(item.get('selected')) + '.'
         elif item.get('tag') in ('input','textarea'): state = 'Current value ' + (_plain(item.get('value')) or 'blank') + '.'
@@ -1512,6 +1511,7 @@ class WebSession:
         if command in ('new line','insert new line','line break','carriage return','insert carriage return'): return self.insert_line_break()
         request = reading_request(command)
         if request and self.keyboard_field and kind(self.keyboard_field)=='edit':
+            if self.keyboard_field.get('type')=='password':return 'Password field. Its value is masked.'
             unit,direction=request
             if unit=='line' and direction and self.keyboard_field.get('tag')!='textarea' and not self.keyboard_field.get('editable'):return self.leave_field('Up' if direction<0 else 'Down')
             reader=ReadingCursor();reader.set_text(self.keyboard_field.get('value',''));reader.position=getattr(self,'web_edit_caret',0)
