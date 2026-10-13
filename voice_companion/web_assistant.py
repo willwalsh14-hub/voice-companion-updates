@@ -730,11 +730,10 @@ class WebSession:
                     self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
-                if role=='button' and item.get('type')=='submit':
-                    if direct_submit:
-                        self.backend.activate(item)
-                        return 'Pressed '+_label(item)+'. '+self._refresh()
-                    return self.prepare_submit()
+                if role=='button' and direct_submit:
+                    self.backend.activate(item)
+                    return 'Pressed '+_label(item)+'. '+self._refresh()
+                if role=='button' and item.get('type')=='submit':return self.prepare_submit()
                 if role in ('link','button'):
                     if item.get('href') and urlsplit(item['href']).scheme!='https':return 'Only secure HTTPS links can be opened.'
                     if role=='link':self.pending=item;return self.confirm()

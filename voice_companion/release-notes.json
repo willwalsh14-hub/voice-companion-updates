@@ -17,7 +17,7 @@
         {
           "title": "Compact radio keyboard actions",
           "details": [
-            "Selected or playing stations have seven keyboard actions: Add to favorites, Record current station, Schedule recording, Pause audio, Play, Stop recording and Cancel scheduled recordings. Play starts a selected station when no audio is open. Scheduled recordings open as a list; Enter requests cancellation confirmation. Escape returns to broader station browsing. Legacy spoken commands and voice action menus remain available."
+            "Selected or playing stations have seven keyboard actions: Add to favorites, Record current station, Schedule recording, Pause audio, Play, Stop recording and Cancel scheduled recordings. Play starts the selected station, or resumes it when the same station is already open. Scheduled recordings open as a list; Enter requests cancellation confirmation. Escape returns to broader station browsing. Legacy spoken commands and voice action menus remain available."
           ]
         }
       ]

@@ -75,9 +75,9 @@ class ConsumerWebTests(unittest.TestCase):
     def test_keyboard_send_bypasses_voice_review_and_submits_once(self):
         import companion as app
         from unittest.mock import patch
-        for key in ('Activate','Space'):
+        for key,button in [('Activate','submit'),('Space','submit'),('Activate','button'),('Space','button')]:
             self.page.evaluate('window.sent=0')
-            self.load('<h1>Contact</h1><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1;document.querySelector(\'#result\').textContent=\'Message received\'"><label for="name">Name</label><input id="name" value="Test"><button type="submit">Send</button><p id="result"></p></form>')
+            self.load('<h1>Contact</h1><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1;document.querySelector(\'#result\').textContent=\'Message received\'"><label for="name">Name</label><input id="name" value="Test"><button type="'+button+'" onclick="'+('this.form.requestSubmit()' if button=='button' else '')+'">Send</button><p id="result"></p></form>')
             self.session.keyboard('Quick:b')
             with patch.object(app,'web_session',self.session),patch.object(app,'APP_WINDOW',None),patch.object(app,'speak') as spoken:
                 app.handle_keyboard('web key '+key,'web')

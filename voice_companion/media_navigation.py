@@ -131,11 +131,15 @@ class MediaNavigation:
     def activate(self):
         if self.focus=='actions':
             action=self.actions[self.index]
-            if self.section=='radio' and action.label=='Play' and not getattr(self.hub.player,'kind',None):
-                if self.hub.preset_browsing:return self.run('play preset')
-                if self.hub.stations and self.hub.station_index is not None:return self.run('play station '+str(self.hub.station_index+1))
-                if self.hub.current_station:
-                    station=self.hub.current_station;self.hub.player.open(station['url'],station['name'],'radio');return 'Playing '+station['name']+'.'
+            if self.section=='radio' and action.label=='Play':
+                h=self.hub
+                selected=h.presets()[h.preset_index] if h.preset_browsing and h.presets() and h.preset_index is not None else h.stations[h.station_index] if h.stations and h.station_index is not None else h.current_station
+                same=bool(selected and h.current_station and selected.get('url')==h.current_station.get('url') and getattr(h.player,'kind',None)=='radio')
+                if not same:
+                    if h.preset_browsing:return self.run('play preset')
+                    if h.stations and h.station_index is not None:return self.run('play station '+str(h.station_index+1))
+                    if selected:
+                        h.player.open(selected['url'],selected['name'],'radio');return 'Playing '+selected['name']+'.'
             return self.open_form(action.form) if action.form else self.run(action.command)
         if not self.items():return self.announce()
         self.item_index=max(0,min(self.item_index,len(self.items())-1));self.select_item(self.item_index)

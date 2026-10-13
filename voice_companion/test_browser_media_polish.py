@@ -26,6 +26,17 @@ class MediaNavigationTests(unittest.TestCase):
         self.nav.index=4;self.nav.keyboard('Enter');self.player.open.assert_called_with('https://radio.test/a','Alpha','radio')
         self.nav.keyboard('Escape');self.assertIn('Search stations',[a.label for a in self.nav.actions])
 
+    def test_keyboard_play_starts_focused_station_and_resumes_only_the_same_station(self):
+        self.nav.enter('radio',keyboard=True)
+        for kind in ('radio','podcast'):
+            self.player.kind=kind;self.hub.current_station=self.hub.stations[1];self.hub.station_index=0
+            self.nav.index=4;self.nav.keyboard('Enter')
+            self.assertEqual(self.player.open.call_args.args,('https://radio.test/a','Alpha','radio'))
+        self.player.kind='radio';self.hub.current_station=self.hub.stations[0]
+        self.player.control.reset_mock();self.nav.index=4;self.nav.keyboard('Enter')
+        self.player.control.assert_called_once_with('play')
+        self.nav.command('resume audio');self.assertIn('Resume audio',[a.label for a in self.nav.actions])
+
     def test_keyboard_cancel_schedule_opens_list_and_enter_requests_confirmation(self):
         self.hub._save('radio-schedule.json',[{'id':'one','station':self.hub.stations[0],'when':'2026-10-13T20:00:00','minutes':30}])
         self.nav.enter('radio',keyboard=True);self.nav.index=6;self.nav.keyboard('Enter')
