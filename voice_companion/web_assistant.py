@@ -1367,7 +1367,7 @@ class WebSession:
         current=self.backend.snapshot()
         if current.get('url')!=self.snapshot.get('url'):return 'The page changed. Say read page before editing this form.'
         fields=self._form_controls(current)
-        request=request.strip().casefold()
+        request=request.strip().rstrip('.!?').casefold()
         if request in ('this field','current field','field'):
             index=max(0,self.review_cursor-1)
             item=fields[index] if index<len(fields) else None
