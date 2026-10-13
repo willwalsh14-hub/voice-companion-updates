@@ -122,9 +122,12 @@ class BrowserLifecycleTests(unittest.TestCase):
     def test_escape_and_menu_resume_keep_preference_default_off(self):
         self.assertFalse(DEFAULTS['web_keep_open']);settings=SettingsSession({},{});settings.set('web_keep_open','on');self.assertTrue(settings.values['web_keep_open'])
         session=Mock(snapshot=True,list_focus=None,keyboard_field=None,pending=None,submit_pending=None);session.resume.return_value='Page loaded: Saved page.'
+        from browser_menu import BrowserMenu
+        session.menu=BrowserMenu(tempfile.gettempdir())
         with patch.object(app,'web_session',session),patch.object(app,'PREFERENCES',{'web_keep_open':False}),patch.object(app,'speak'),patch.object(app,'pending_website',None):
-            self.assertEqual(app.handle(app.navigation_key('Escape','web'),'web'),'awake');session.leave.assert_called_with(False)
-            app.PREFERENCES['web_keep_open']=True;self.assertEqual(app.handle('web browser','awake'),'web');session.resume.assert_called_once()
+            self.assertEqual(app.handle(app.navigation_key('Escape','web'),'web'),'browser_menu');session.leave.assert_called_with(False)
+            app.PREFERENCES['web_keep_open']=True;self.assertEqual(app.handle('web browser','awake'),'browser_menu');session.resume.assert_not_called()
+            self.assertEqual(app.handle('resume where you left off','browser_menu'),'web');session.resume.assert_called_once()
     def test_alt_f4_overrides_all_module_and_pending_confirmation_states(self):
         for mode in ('awake','sleep','web','media','email_draft','settings','power_confirm','exit_confirm','document_save'):
             self.assertEqual(app.navigation_key('Alt+F4',mode),'exit companion')

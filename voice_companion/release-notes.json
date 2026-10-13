@@ -1,18 +1,18 @@
 {
-  "version": "0.2.123-test",
+  "version": "0.2.124-test",
   "status": "Testing build",
   "date": "October 13, 2026",
-  "baseline": "0.2.122-test",
-  "scope": "Complete spoken tutorial and browser-wide virtual cursor reading and quick keys.",
+  "baseline": "0.2.123-test",
+  "scope": "Interruptible Help, faster keyboard speech, and browser menus, bookmarks, history and resume.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Rebuilt audio tutorial",
+          "title": "Browser menu and bookmarks",
           "details": [
-            "Nine courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates. Each offers task walkthroughs, a titled lesson index, detailed documented commands, Find lesson and Explain command. Options includes every control in all twelve categories. Fictional action simulations are removed.",
-            "Say Start tutorial, choose a course, then Next lesson, Previous lesson, Repeat, Lesson list, List commands, or Courses. Escape returns one level; Main menu leaves. Long command explanations support Continue reading. Tutorial requests explain app commands without changing real work."
+            "Web browser opens a menu with Search or type address, Go to bookmark, New bookmark, Delete bookmark, Rename bookmark, Go back, Go forward and Web history. Bookmark actions use saved lists, arrows, Home/End, Enter, first-letter and multiple-letter navigation. New bookmark and Rename bookmark accept a spoken name or typed name followed by Enter. Existing favorites are preserved.",
+            "Web history retains up to 200 recent secure page addresses across restarts. Alt Left and Alt Right navigate back and forward directly from pages. Escape from page reading opens the browser menu; with Keep browser window open on, Resume where you left off restores the retained page and reading position."
           ]
         }
       ]
@@ -21,21 +21,21 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Virtual cursor and form editing",
+          "title": "Help speech interruption",
           "details": [
-            "Arrows and quick keys stay in page reading mode when moving past fields. Tab, Enter, Edit current field or explicit dictation starts editing. Escape restores quick keys immediately. The virtual page surface is read-only so letters cannot alter its text."
+            "Opening Help and moving between Help topics, subtopics or reading positions interrupts previous speech before new feedback. The shared handler covers Help opened from Word processor, Email, Web browser, Notepad and other activities. Help navigation uses responsive local speech."
           ]
         },
         {
-          "title": "Keyboard focus and complete page text",
+          "title": "Keyboard speech responsiveness",
           "details": [
-            "Quick keys and page arrows are handled across Companion window controls even when focus has strayed to command entry. Alt T explicitly enables typed commands. Ordinary text between links is covered by regression tests across page layouts and all four supported browsers."
+            "Queued keyboard actions run before periodic browser page checks. Background checks wait briefly during active key navigation; quick-key visual scrolling occurs after spoken feedback is queued. These changes cover every supported browser."
           ]
         },
         {
-          "title": "Consumer verification",
+          "title": "Updated learning materials",
           "details": [
-            "Added complete tutorial navigation and reference coverage, real-work isolation, Windows keyboard focus regressions, immediate Escape then H, and plain-text arrow traversal. Control Alt Success live audit now verifies body-text coverage, with contact submissions kept unsubmitted."
+            "The browser tutorial, onboard Help, all six manual formats and all six versioned release-note formats describe the new menu, bookmark management, Web history and resume behavior."
           ]
         }
       ]

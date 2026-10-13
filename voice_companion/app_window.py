@@ -5,6 +5,7 @@ Closing the window requests a clean shutdown of the microphone loop.
 """
 import queue
 import threading
+import time
 from field_selection import FieldSelection
 from keyboard_text import caret_feedback,typing_feedback,phonetic,character as spoken_character
 
@@ -46,6 +47,7 @@ class CompanionWindow:
         self.keyboard_output = None
         self.last_name_request = None
         self.command_entry_active=False
+        self.last_navigation=0.0
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
     def _thread_main(self):
@@ -157,6 +159,7 @@ class CompanionWindow:
             def shortcut(event):
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
+                self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 if key.lower()=='t' and not control and event.state&(8|0x20000):
                     flush_pending_edit();self.command_entry_active=True;typed.focus_set();return 'break'
@@ -180,7 +183,7 @@ class CompanionWindow:
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
                 # A name is editable text, even when empty. Its letters must
                 # never select a main-menu item or become an app command.
-                if mode=='document_name' and event.widget==typed and key!='Escape':return
+                if (mode=='document_name' or self.context.get('browser_name_input')) and event.widget==typed and key!='Escape':return
                 if mode in ('media','podcast') and self.context.get('media_navigation'):
                     if self.context.get('media_input') and key in ('Tab','ISO_Left_Tab','Return'):
                         self.commands.put(('media_field',{'value':typed.get(),'next':'Enter' if key=='Return' else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab'}));typed.delete(0,'end');return 'break'
@@ -189,7 +192,9 @@ class CompanionWindow:
                     elif not control and not self.context.get('media_input') and key in ('Up','Down','Left','Right','Home','End','Return','space','Delete','F5') and not typed.get():request='Enter' if key=='Return' else 'Space' if key=='space' else key
                     elif control and key.lower() in ('f','p','r','s','d'):request='Ctrl+'+key.upper()
                     elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
-                if mode=='web' and key in ('F6','F7'):request=key
+                if mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
+                elif mode=='web' and not control and event.state&(8|0x20000) and key in ('Left','Right'):request='Web:Back' if key=='Left' else 'Web:Forward'
+                elif mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
                 elif mode=='web' and control and not shift and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
                 if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
@@ -241,7 +246,7 @@ class CompanionWindow:
                     if self.email_field:
                         self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'send':True}));return 'break'
                     request='Ctrl+Enter' if control else 'Alt+S'
-                elif self.context.get('menu_letters') and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
+                elif self.context.get('menu_letters') and not (mode=='browser_menu' and self.command_entry_active) and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
                 if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
                 if request:
@@ -297,7 +302,7 @@ class CompanionWindow:
                 if event.keysym=='Return' and isinstance(event.widget,tk.Button):
                     event.widget.invoke(); return 'break'
                 if event.widget==editor:return
-                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode') in ('document_name','search')):return
+                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode') in ('document_name','search') or self.context.get('browser_name_input')):return
                 if event.widget == typed or event.widget == history or event.widget == root or isinstance(event.widget,tk.Button):
                     self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
             def enter(event):
@@ -512,7 +517,7 @@ class CompanionWindow:
                     if action=='context':
                         old=self.context;self.context=field
                         mode=field['mode'];source=field.get('source')
-                        transition=old.get('mode')!=mode or old.get('source')!=source or field.get('focus',False)
+                        transition=old.get('mode')!=mode or old.get('source')!=source or old.get('browser_name_input')!=field.get('browser_name_input') or field.get('focus',False)
                         if transition and mode=='web':self.command_entry_active=False
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
@@ -572,7 +577,7 @@ class CompanionWindow:
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Bookmark name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()

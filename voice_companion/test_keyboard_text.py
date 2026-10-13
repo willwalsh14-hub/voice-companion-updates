@@ -311,6 +311,31 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(self.window.commands.get(),('keyboard','Web:Quick:h'))
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Original'))
 
+    def test_browser_menu_typeahead_and_literal_bookmark_name(self):
+        self.window.set_context(dict(mode='browser_menu',source=None,text='',menu_letters=True,browser_name_input=False))
+        self.wait(lambda:self.window.context.get('mode')=='browser_menu')
+        self.call(lambda:[self.window.typed.event_generate('<KeyPress>',keysym=letter) for letter in ('n','p')])
+        self.wait(lambda:self.window.commands.qsize()>=2)
+        self.assertEqual(self.window.commands.get(),('keyboard','Letter:n'))
+        self.assertEqual(self.window.commands.get(),('keyboard','Letter:p'))
+        self.call(lambda:self.assertEqual(self.window.typed.get(),''))
+        self.window.set_context(dict(mode='browser_menu',source=None,text='',menu_letters=False,browser_name_input=True))
+        self.wait(lambda:self.window.context.get('browser_name_input'))
+        self.call(lambda:[self.window.typed.event_generate('<KeyPress>',keysym=letter) for letter in 'help'])
+        self.call(lambda:self.assertEqual(self.window.typed.get(),'help'))
+        self.assertTrue(self.window.commands.empty())
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Return'))
+        self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),'help')
+
+    def test_browser_alt_arrows_never_become_reading_arrows(self):
+        for editing in (False,True):
+            self.window.set_context(dict(mode='web',source='page',text='Page text',caret=0,ack=0,readonly=not editing,web_browse=not editing,web_field={'key':'name','type':'text'} if editing else None))
+            self.wait(lambda:self.window.context.get('web_field') is not None if editing else self.window.context.get('web_browse'))
+            for key,request in (('Left','Web:Back'),('Right','Web:Forward')):
+                self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym=key,state=8))
+                self.wait(lambda:not self.window.commands.empty())
+                self.assertEqual(self.window.commands.get(),('keyboard',request))
+
     def test_explicit_alt_t_allows_a_command_and_escape_returns_to_page(self):
         self.window.set_context(dict(mode='web',source='page',text='Page text',caret=0,ack=0,readonly=True,web_browse=True))
         self.wait(lambda:self.window.context.get('web_browse'))

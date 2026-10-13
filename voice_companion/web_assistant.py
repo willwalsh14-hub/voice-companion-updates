@@ -97,6 +97,24 @@ class Favorites:
     def get(self, name):
         return self.all().get(_plain(name).casefold())
 
+    def delete(self, name):
+        data = self.all()
+        if data.pop(_plain(name).casefold(), None) is None:
+            raise ValueError('That bookmark no longer exists.')
+        temporary = self.path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+        temporary.replace(self.path)
+
+    def rename(self, name, replacement):
+        item = self.get(name)
+        if not item:
+            raise ValueError('That bookmark no longer exists.')
+        if self.get(replacement) and replacement.casefold() != name.casefold():
+            raise ValueError('That bookmark name already exists. Choose another name.')
+        self.add(replacement, item['url'])
+        if replacement.casefold() != name.casefold():
+            self.delete(name)
+
 
 class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one."""
@@ -551,6 +569,8 @@ class WebSession:
     def __init__(self, folder, backend=None, progress=None):
         self.progress=progress or (lambda text:None)
         self.favorites = Favorites(folder)
+        from browser_menu import BrowserMenu
+        self.menu = BrowserMenu(folder)
         self.folder = Path(folder)
         self.browser = self._browser_preference()
         self.backend = backend or BrowserBackend(self.folder / ('Browser Profile ' + self.browser), self.browser)
@@ -584,7 +604,11 @@ class WebSession:
     def cursor_changed(self,scroll=False):
         self.cursor_revision+=1;self.selection=None
         item=self.browse.current() if self.browse else None
-        if scroll and item and hasattr(self.backend,'scroll_to'):
+        if scroll and item:self.pending_scroll=item
+
+    def flush_scroll(self):
+        item=getattr(self,'pending_scroll',None);self.pending_scroll=None
+        if item and hasattr(self.backend,'scroll_to'):
             try:self.backend.scroll_to(item)
             except Exception:pass
 
@@ -725,11 +749,12 @@ class WebSession:
                 self.backend.page.reload(wait_until='domcontentloaded',timeout=30000)
                 return self._refresh()
             elif key=='Back':return self.command('go back')
+            elif key=='Forward':return self.command('go forward')
             elif key=='Done':
                 if self.keyboard_field:self.commit_keyboard_field()
                 return 'Page view.'
             elif key=='Escape':
-                if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the main menu.'
+                if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the browser menu.'
                 if (self.snapshot or {}).get('modal_key'):
                     self.backend.page.keyboard.press('Escape')
                     result=self._refresh(read=False,wait=False)
@@ -852,7 +877,7 @@ class WebSession:
     def resume(self):
         if not self.snapshot or not hasattr(self.backend,'refocus') or not self.backend.refocus():
             self.snapshot=None;return ''
-        return self._refresh(read=False)
+        return self._refresh(read=False,preserve=True)
 
     def _browser_preference(self):
         try:
@@ -901,6 +926,9 @@ class WebSession:
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
         if wait and hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
         self.snapshot,captured_state = self._capture()
+        self.pending_scroll=None
+        try:self.menu.record(self.snapshot)
+        except OSError:pass
         self.preferred_column=None
         self.page_revision=getattr(self,'page_revision',0)+1
         self.cursor_changed()
@@ -1521,7 +1549,7 @@ class WebSession:
         if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):
             self.list_focus=None;self.pending=None;return 'Virtual page view.'
         if self.list_focus=='search_engines':
-            if command in ('cancel','escape','go back','back to page','close list'):self.list_focus=None;return 'Verification page. Escape leaves Web browser.'
+            if command in ('cancel','escape','go back','back to page','close list'):self.list_focus=None;return 'Verification page. Escape returns to the browser menu.'
             if command in ('next','previous'):
                 self.engine_index=max(0,min(len(self.engine_choices)-1,self.engine_index+(-1 if command=='previous' else 1)));return self.engine_notice()
             if command in ('okay','ok','yes','confirm','that one'):return self.retry_search_engine()
@@ -1682,6 +1710,11 @@ class WebSession:
         if command in ('back','go back','previous page'):
             try: self.backend.back(); return self._refresh()
             except Exception: return 'There is no previous page to read.'
+        if command in ('forward','go forward','next page'):
+            try:
+                result = self.backend.page.go_forward(wait_until='domcontentloaded',timeout=30000)
+                return self._refresh() if result is not None else 'There is no next page to read.'
+            except Exception: return 'There is no next page to read.'
         if command in ('save favorite','add favorite','favorite this site'):
             if not self.snapshot: return 'Open a website first.'
             name = _plain(self.snapshot['title'])[:60]

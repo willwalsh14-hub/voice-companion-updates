@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.123-test'
+APP_VERSION = '0.2.124-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -202,6 +202,9 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
+    if logical=='browser_menu' and web_session:
+        context['browser_name_input']=web_session.menu.level=='name'
+        context['menu_letters']=not context['browser_name_input']
     if logical=='web' and web_session and web_session.list_focus in ('links','headings','fields'):context['menu_letters']=False
     if NAMED_LIST:context['named_list']=True;context['mode']='list';return context
     if logical in ('media','podcast') and MEDIA_HUB:
@@ -457,6 +460,7 @@ def menu_state(mode):
     if mode=='mailbox' and mail_session and mail_session.folder_picker and not mail_session.pending:
         picker=mail_session.folder_picker
         return ([mail_session._spoken_folder(x[0]) for x in picker['folders']],picker['index'],lambda index:picker.update(index=index))
+    if mode=='browser_menu' and web_session:return web_session.menu.menu(web_session,PREFERENCES.get('web_keep_open',False))
     if mode=='help' and help_session:
         if help_session.level=='topics':return state([x['name'] for x in help_session.topics],help_session,'topic_index')
         if help_session.level=='subtopics':return state([x[0] for x in help_session._subtopics()],help_session,'subtopic_index')
@@ -478,6 +482,8 @@ def choose_menu_letter(letter,mode):
     state=menu_state(mode)
     if state is None:return False
     names,current,select=state
+    if mode=='browser_menu':
+        speak(web_session.menu.letter(letter,names));return True
     index=next_match(names,current,letter)
     if index is None:speak('No menu item starts with '+letter.upper()+'.');return True
     select(index)
@@ -534,9 +540,13 @@ def _navigation_key(key,mode):
         if result:speak(result)
         sync_app_context(mode,True)
         return None
+    if mode=='browser_menu':
+        if key in ('Up','Down','Left','Right','Home','End','Enter','Escape'):
+            return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Home':'home','End':'end','Enter':'enter','Escape':'escape'}[key]
+        if key.startswith('Letter:'):return key
     if mode=='web' and key in ('Escape','Web:Escape') and web_session and isinstance(web_session.snapshot,dict) and web_session.snapshot.get('modal_key') and not web_session.list_focus:return 'web key Escape'
-    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'leave website'
-    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None:return 'leave website'
+    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'browser menu'
+    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus:return 'browser menu'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key=='Enter':return 'open current heading' if web_session.list_focus=='headings' else 'open current link'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
@@ -660,7 +670,7 @@ def fast_command_request(command, mode):
     if command in ('word processor','open word processor','notepad','open notepad'):return True
     if re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command):return True
     if command in POWER_COMMANDS:return True
-    if mode in ('settings','power_confirm','exit_confirm','media'): return True
+    if mode in ('settings','power_confirm','exit_confirm','media','help','browser_menu'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
@@ -1106,6 +1116,30 @@ def speak_web_result(text,previous_revision):
         finally:KEYBOARD_NAVIGATION=previous
     else:speak(text)
 
+def open_browser_menu():
+    global web_session
+    web_session=web_session or WebSession(APP,progress=speak_status)
+    speak(web_session.menu.start()+(' Resume where you left off is available.' if PREFERENCES.get('web_keep_open',False) and web_session.snapshot else ''))
+    return 'browser_menu'
+
+def handle_browser_menu(text):
+    global SEARCH_RETURN_MODE
+    notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
+    if notice:speak(notice)
+    if action=='main':return 'awake'
+    if action=='search':
+        SEARCH_RETURN_MODE='browser_menu'
+        speak('Search or type address. Say or type your search or address, then press Enter. Escape returns to the browser menu.');return 'search'
+    if action in ('back','forward','resume') or isinstance(action,tuple):
+        if action in ('back','forward') and not web_session.snapshot:
+            speak('No browser page is open. Use Web history to open an earlier page.');return 'browser_menu'
+        revision=web_session.page_revision
+        result=web_session.open(action[1]) if isinstance(action,tuple) else web_session.resume() if action=='resume' else web_session.command('go '+action)
+        if not result:speak('The page is no longer available.');return 'browser_menu'
+        speak_web_result(result,revision)
+        return 'web' if web_session.snapshot else 'browser_menu'
+    return 'browser_menu'
+
 def run_web_search(query):
     """Search-entry text is literal, even when it resembles an app command."""
     global web_session
@@ -1120,6 +1154,7 @@ def run_web_search(query):
 def refresh_browser_view(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     if logical!='web' or not web_session:return
+    web_session.flush_scroll()
     revision=getattr(web_session,'page_revision',0)
     notice=web_session.refresh_changed()
     sync_app_context(mode)
@@ -1218,7 +1253,11 @@ def _handle(text, mode, typed=False):
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
+    if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     command=normalized_command(text)
+    if mode=='web' and command in ('browser menu','leave website'):
+        web_session.leave(PREFERENCES.get('web_keep_open',False))
+        return open_browser_menu()
     if mode == 'tutorial':
         if change_speech_setting(text) or use_synthesizer(text) or voice_menu(command):return mode
         control=speech_control(text)
@@ -1243,6 +1282,8 @@ def _handle(text, mode, typed=False):
             tutorial_session=None
             return 'awake'
         return mode
+    if mode=='browser_menu' and command not in ('help','options','open options','main menu','back to main menu','exit companion','go to sleep') and not command.startswith(('help with ', 'help for ')) and (command=='resume' or not speech_control(command)) and speech_setting_request(text) is None and command not in VOICE_LIST_COMMANDS and command not in ('use sapi','use sapi voice','use windows voice','use ai voice','use espeak','document help','email help','web help','radio help','podcast help','commands help') and not spoken_control(command):
+        return handle_browser_menu(text)
     if command in ('next','previous'):
         state=menu_state(mode)
         if state and state[1] is not None and (state[1]==0 and command=='previous' or state[1]==len(state[0])-1 and command=='next'):
@@ -2025,6 +2066,9 @@ def _handle(text, mode, typed=False):
             speak_prompt('Website request canceled. Say open website followed by the address to try again.')
         return mode
     if mode == 'web':
+        if command in ('new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
+            web_session.menu.start()
+            return handle_browser_menu(text)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
@@ -2288,7 +2332,9 @@ def _handle(text, mode, typed=False):
         focus_email_entry()
         return 'email_draft'
     if mode in ('podcast', 'search') and command in ('go back', 'back', 'exit', 'main menu', 'back to main menu'):
-        if mode=='search' and command in ('go back','back','exit'):return SEARCH_RETURN_MODE
+        if mode=='search' and command in ('go back','back','exit'):
+            if SEARCH_RETURN_MODE=='browser_menu':return open_browser_menu()
+            return SEARCH_RETURN_MODE
         return 'awake'
     if mode == 'podcast':
         speak(media().search_podcasts(text))
@@ -2385,11 +2431,7 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError): speak('Podcast search could not connect. Try later.')
         return 'media'
     if command in ('web browser','open web browser','web browsing','open web browsing'):
-        if PREFERENCES.get('web_keep_open',False) and web_session:
-            try:result=web_session.resume()
-            except Exception:result=''
-            if result:speak(result);return 'web'
-        SEARCH_RETURN_MODE='awake';speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.');return 'search'
+        return open_browser_menu()
     direct_engine=re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)',text,re.I)
     if direct_engine:
         web_session=web_session or WebSession(APP,progress=speak_status)
@@ -2457,6 +2499,10 @@ def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
     previous_navigation=KEYBOARD_NAVIGATION
     quick_read=mode in ('document','email_draft','mailbox','help','web','note') and reading_request(text) is not None and not (mode in ('document','email_draft') and INPUT_MODE=='dictation')
+    help_navigation=mode=='help' or normalized_command(text) in ('help','user guide','open user guide','manual','open manual','document help','email help','web help','radio help','podcast help','commands help','release notes') or normalized_command(text).startswith(('help with ','help for '))
+    if help_navigation and not speech_control(text):
+        interrupt_speech()
+        KEYBOARD_NAVIGATION=True
     if quick_read:KEYBOARD_NAVIGATION=True
     old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
     old_send=pending_send
@@ -2698,8 +2744,12 @@ def main():
         settings_audio_blocked=False
         last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
         while True:
+            if APP_WINDOW is not None and not APP_WINDOW.commands.empty():
+                mode=process_keyboard_batch(mode)
+                if mode=='exit':return 0
+                continue
             logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
-            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.6:
+            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.6 and (APP_WINDOW is None or time.monotonic()-getattr(APP_WINDOW,'last_navigation',0)>.12):
                 last_web_refresh=time.monotonic()
                 try:
                     refresh_browser_view(mode)
