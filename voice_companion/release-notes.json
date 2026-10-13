@@ -1,41 +1,51 @@
 {
-  "version": "0.2.124-test",
+  "version": "0.2.125-test",
   "status": "Testing build",
   "date": "October 13, 2026",
-  "baseline": "0.2.123-test",
-  "scope": "Interruptible Help, faster keyboard speech, and browser menus, bookmarks, history and resume.",
+  "baseline": "0.2.124-test",
+  "scope": "A new guide, clearer lessons, and release notes written for the people who use the app.",
   "sections": [
     {
-      "title": "New Apps and Features",
+      "title": "New in this version",
       "topics": [
         {
-          "title": "Browser menu and bookmarks",
+          "title": "A new user guide",
           "details": [
-            "Web browser opens a menu with Search or type address, Go to bookmark, New bookmark, Delete bookmark, Rename bookmark, Go back, Go forward and Web history. Bookmark actions use saved lists, arrows, Home/End, Enter, first-letter and multiple-letter navigation. New bookmark and Rename bookmark accept a spoken name or typed name followed by Enter. Existing favorites are preserved.",
-            "Web history retains up to 200 recent secure page addresses across restarts. Alt Left and Alt Right navigate back and forward directly from pages. Escape from page reading opens the browser menu; with Keep browser window open on, Resume where you left off restores the retained page and reading position."
+            "The guide now has numbered chapters and short steps. It explains what to say or press, what happens next, and how to get help. Old build history has been removed from the instructions.",
+            "The chapters cover documents, notes, email, web pages, bookmarks, radio, podcasts, speech, settings, and updates. Voice and keyboard users can follow the same tasks.",
+            "Use the contents links in HTML or Word to find a chapter. Use the heading list in your reader to find a smaller part. The DAISY copy also has chapter and part choices."
+          ]
+        },
+        {
+          "title": "Clearer spoken lessons",
+          "details": [
+            "The tutorial uses the same new guide. Commands are explained with the steps and checks you need to use them. The lessons wait for you and leave your real work alone.",
+            "From the main menu, say Start tutorial. Choose a course, then use Next lesson, Repeat, or Lesson list. Say Explain command followed by the command to hear how to use it."
           ]
         }
       ]
     },
     {
-      "title": "Fixes and Enhancements",
+      "title": "What works better",
       "topics": [
         {
-          "title": "Help speech interruption",
+          "title": "Help follows the new chapters",
           "details": [
-            "Opening Help and moving between Help topics, subtopics or reading positions interrupts previous speech before new feedback. The shared handler covers Help opened from Word processor, Email, Web browser, Notepad and other activities. Help navigation uses responsive local speech."
+            "Help now lists the guide's chapters and smaller parts. Say Help with documents, Help with email, or Help with web to go straight to a task. Say Close help to return to your work."
           ]
         },
         {
-          "title": "Keyboard speech responsiveness",
+          "title": "Release notes explain the changes",
           "details": [
-            "Queued keyboard actions run before periodic browser page checks. Background checks wait briefly during active key navigation; quick-key visual scrolling occurs after spoken feedback is queued. These changes cover every supported browser."
+            "The notes now describe what changed and how it helps you use the app. They use everyday words and give the commands you need."
           ]
         },
         {
-          "title": "Updated learning materials",
+          "title": "The same guide in each format",
           "details": [
-            "The browser tutorial, onboard Help, all six manual formats and all six versioned release-note formats describe the new menu, bookmark management, Web history and resume behavior."
+            "The text, HTML, Word, EPUB, DAISY, and braille copies have the same instructions. The installer puts them in Documents, Voice Companion, User Guides.",
+            "Close and reopen a guide after updating to read the new copy. You can say Open user guides to open its folder.",
+            "This is still a test version. Speech can hear the wrong words. Some websites, mail services, and streams need help or may be unavailable. Check important text and actions before agreeing to them."
           ]
         }
       ]

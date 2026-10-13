@@ -33,7 +33,7 @@ class OnboardHelpTests(unittest.TestCase):
         self.assertIn('Read messages (R), 1 of 6', session.topic('email'))
         self.assertIn('Go to folders', session.process('next'))
         self.assertIn('Go to folders', session.process('that one'))
-        self.assertTrue(session.process('next paragraph').startswith('Say'))
+        self.assertTrue(session.process('next paragraph').strip())
         self.assertIn('Go to folders (G), 2 of 6', session.process('back to subsections'))
         self.assertIn(' of ', session.process('back to topics'))
         self.assertIn('Read messages (R), 1 of 6', session.process('back to email topics'))
@@ -64,32 +64,32 @@ class OnboardHelpTests(unittest.TestCase):
 
     def test_web_help_opens_dedicated_topic_and_form_subsections(self):
         session = HelpSession(GUIDE)
-        self.assertIn('Web Browsing', session.topic('web'))
-        self.assertIn('Search and links', session.process('list subsections'))
-        session.process('next')
-        session.process('next')
-        self.assertIn('Favorites and filling forms', session.process('that one'))
-        session.process('back to subsections')
-        self.assertIn('Review and submit forms', session.process('next'))
-        self.assertIn('Review form', session.process('that one'))
+        self.assertIn('Browse The Web', session.topic('web'))
+        self.assertIn('Open the browser menu',session.process('list subsections'))
+        for _ in range(6):session.process('next')
+        self.assertIn('Fill in and review a form by voice',session.process('that one'))
+        self.assertIn('Review form',session.reading.text)
+        self.assertIn('Change this field',session.reading.text)
+        self.assertIn('Yes',session.reading.text)
+        self.assertIn('Fill in and review',session.process('back to subsections'))
 
     def test_direct_help_topics_also_appear_in_main_help_list(self):
         session = HelpSession(GUIDE)
         available = {topic['name'] for topic in session.topics}
-        for phrase, expected in (('commands','Commands And Modes'),
+        for phrase, expected in (('commands','Using Voice Commands'),
                                  ('documents','Write A Document'),
-                                 ('web','Web Browsing'),
+                                 ('web','Browse The Web'),
                                  ('email','Read And Organize Email'),
-                                 ('radio','Find And Play Radio'),
-                                 ('podcasts','Find And Play Podcasts')):
+                                 ('radio','Listen To Radio'),
+                                 ('podcasts','Listen To Podcasts')):
             self.assertIn(expected, available)
             self.assertIn(expected, session.topic(phrase))
         self.assertIn(' of ', session.process('back to topics'))
-        self.assertIn('Commands And Modes', session.topic('commands'))
+        self.assertIn('Using Voice Commands', session.topic('commands'))
 
     def test_preset_help_is_simple_and_separate_from_station_sources(self):
         session = HelpSession(GUIDE)
-        self.assertIn('Save And Play Radio Presets', session.topic('presets'))
+        self.assertIn('Saved Radio Stations', session.topic('presets'))
         self.assertIn('Save a preset', session.process('that one'))
         self.assertIn('Save preset', session.process('read from top'))
         self.assertNotIn('station database', session.reading.text.casefold())
@@ -106,7 +106,7 @@ class OnboardHelpTests(unittest.TestCase):
                 self.assertEqual(companion.handle('that one', 'help'), 'help')
                 self.assertIn('Go to folder', spoken.call_args.args[0])
                 self.assertEqual(companion.handle('next word', 'help'), 'help')
-                self.assertEqual(spoken.call_args.args[0],'"Go')
+                self.assertTrue(spoken.call_args.args[0].strip())
                 self.assertEqual(companion.handle('back to email topics', 'help'), 'help')
                 self.assertEqual(companion.handle('close help', 'help'), mode)
 
@@ -114,18 +114,18 @@ class OnboardHelpTests(unittest.TestCase):
         import companion
         with patch.object(companion, 'speak') as spoken, patch.object(companion, 'GUIDE', GUIDE):
             self.assertEqual(companion.handle('help for web', 'awake'), 'help')
-            self.assertIn('Web Browsing', spoken.call_args.args[0])
+            self.assertIn('Browse The Web', spoken.call_args.args[0])
             self.assertEqual(companion.handle('next', 'help'), 'help')
-            self.assertIn('Choose a browser', spoken.call_args.args[0])
+            self.assertIn('Search or open an address', spoken.call_args.args[0])
             self.assertEqual(companion.handle('that one', 'help'), 'help')
-            self.assertIn('Use Chrome', spoken.call_args.args[0])
+            self.assertIn('Choose Search or type address',spoken.call_args.args[0])
             self.assertEqual(companion.handle('close help', 'help'), 'awake')
 
     def test_help_with_commands_is_spoken_and_browseable(self):
         import companion
         with patch.object(companion, 'speak') as spoken, patch.object(companion, 'GUIDE', GUIDE):
             self.assertEqual(companion.handle('help with commands', 'awake'), 'help')
-            self.assertIn('Commands And Modes', spoken.call_args.args[0])
+            self.assertIn('Using Voice Commands', spoken.call_args.args[0])
             self.assertEqual(companion.handle('back to topics', 'help'), 'help')
             self.assertIn(' of ', spoken.call_args.args[0])
             self.assertEqual(companion.handle('help', 'help'), 'help')

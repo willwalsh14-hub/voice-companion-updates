@@ -14,8 +14,8 @@ from braille_documents import validate_brf, build_brf
 def fixture(root):
     notes={'version':'1.2.3-test','status':'Testing build','date':'October 10, 2026','baseline':'1.2.2-test',
            'scope':'Fixture only.', 'sections':[
-               {'title':'New Apps and Features','topics':[{'title':'First topic','details':['First detail','Second detail']},{'title':'Second topic','details':['Restart lettering']}]},
-               {'title':'Fixes and Enhancements','topics':[{'title':'Restart numbering','details':['Final detail']}]}]}
+               {'title':'New in this version','topics':[{'title':'First topic','details':['First detail','Second detail']},{'title':'Second topic','details':['Restart lettering']}]},
+               {'title':'What works better','topics':[{'title':'Restart numbering','details':['Final detail']}]}]}
     (root/'release-notes.json').write_text(json.dumps(notes))
     with patch.object(release,'build_brf',side_effect=lambda source,target:Path(target).write_bytes(b',FIXTURE\r\n')):
         release.build(root)
@@ -30,9 +30,9 @@ class ReleaseDocumentTests(unittest.TestCase):
             text=(root/(release.STEM+'.txt')).read_text()
             self.assertIn('1. First topic\n\na. First detail\n\nb. Second detail',text)
             self.assertIn('2. Second topic\n\na. Restart lettering',text)
-            self.assertIn('Fixes and Enhancements\n\n1. Restart numbering',text)
+            self.assertIn('What works better\n\n1. Restart numbering',text)
             doc=Document(root/(release.STEM+'.docx'))
-            self.assertEqual([p.style.name for p in doc.paragraphs if p.style.name.startswith('Heading')],['Heading 1','Heading 2','Heading 2'])
+            self.assertEqual([p.style.name for p in doc.paragraphs if p.style.name.startswith('Heading')],['Heading 1','Heading 2','Heading 2','Heading 1','Heading 2'])
             topics=[p for p in doc.paragraphs if p.text in ('First topic','Restart numbering')]
             ids=[p._p.find(qn('w:pPr')).find(qn('w:numPr')).find(qn('w:numId')).get(qn('w:val')) for p in topics]
             self.assertNotEqual(ids[0],ids[1])

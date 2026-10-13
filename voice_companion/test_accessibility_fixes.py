@@ -35,13 +35,14 @@ class AccessibilityFixTests(unittest.TestCase):
         self.assertEqual(sender_address(session.rows[0]),'sam@example.com');self.assertEqual(sender_name({'sender_name':'Dana','from':'dana@example.com'}),'Dana')
     def test_help_reading_context_and_escape(self):
         with tempfile.TemporaryDirectory() as folder:
-            guide=Path(folder,'guide.txt');guide.write_text('Guide\nEXAMPLE\nFirst paragraph.\nSecond paragraph.')
-            help=HelpSession(guide);help.process('ok')
+            guide=Path(folder,'guide.txt');guide.write_text('Guide\n1. EXAMPLE\n1.1 Read text\nFirst paragraph.\nSecond paragraph.')
+            help=HelpSession(guide);help.topic('example');help.process('ok')
             with patch.object(app,'help_session',help):
                 context=app.app_context('help');self.assertTrue(context['readonly']);self.assertIn('First paragraph.',context['text'])
                 payload={'source':context['source'],'after':context['text'],'caret':3,'seq':1,'readonly':True}
                 with patch.object(app,'sync_app_context'):self.assertTrue(app.apply_keyboard_edit(payload,'help'))
                 self.assertEqual(help.reading.position,3)
+            help.process('go back');self.assertEqual(help.level,'subtopics')
             help.process('go back');self.assertEqual(help.level,'topics');help.process('go back');self.assertTrue(help.closed)
     def test_header_toggle_order_cancel_and_last_enabled(self):
         session=SettingsSession({},{});model=HeaderEditor(session);model.index=3;model.toggle();model.move(-1)

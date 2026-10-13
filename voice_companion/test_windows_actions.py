@@ -65,7 +65,7 @@ class WindowsActionTests(unittest.TestCase):
             power.assert_not_called()
     def test_whats_new_reads_same_packaged_release_notes_and_preserves_return(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder);guide=root/'guide.txt';guide.write_text('GUIDE\nSTART\nExisting help.\n')
+            root=Path(folder);guide=root/'guide.txt';guide.write_text('GUIDE\n1. GETTING STARTED\n1.1 Start\nExisting help.\n')
             (root/'Voice Companion Release Notes.txt').write_text('Release Notes for Voice Companion '+companion.APP_VERSION+'\n\nNew Apps and Features\n\n1. Test feature\n\na. Actual detail\n')
             with patch.object(companion,'GUIDE',guide),patch.object(companion,'speak') as speech,patch.object(companion,'help_session',None),patch.object(companion,'help_return_mode','awake'):
                 self.assertEqual(companion.handle('what is new','awake'),'help')

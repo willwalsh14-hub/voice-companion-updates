@@ -1,392 +1,898 @@
-VOICE COMPANION - SIMPLE TEST GUIDE
-
-Guide build: 0.2.124-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud. Voice commands use the default microphone selected in Windows; keyboard navigation works without a microphone. You do not need Microsoft Word to make a document.
-
-CURRENT KEYBOARD AND VOICE INPUT
-
-Keyboard Enter or Space on a web Submit or Send button activates it directly and uses the website validation. It does not start the voice-review workflow. For voice submission, Companion reviews each field. Say Change this field, Change field two, or Change Subject to correct an answer. Enter the replacement when asked; Companion then starts a fresh review before accepting Yes to send. Saying No sends nothing and leaves field correction available.
-
-Options categories include Word processor options, Notepad options and Auto-update options. Notepad options includes Open Notepad. When a radio station is selected or playing, the keyboard action menu offers Add to favorites, Record current station, Schedule recording, Pause audio, Play, Stop recording and Cancel scheduled recordings. Play starts the selected station, or resumes it when that same station is already open. Cancel scheduled recordings opens the schedule list; select a recording and press Enter, then confirm its cancellation. Escape from station actions returns to the broader radio browsing menu. Existing radio voice commands, including Resume audio, are unchanged.
-
-The browser entry box and Ctrl+L accept an address such as example.com without www or a scheme. You can also type www.example.com, https://example.com or http://example.com; HTTP is upgraded to HTTPS. Paths, queries and fragments are retained. Words without an address perform a search. Website addresses, email addresses and passwords can be dictated or typed. Say addresses using at, dot and slash as needed. Password values remain masked in page text and review feedback. You may also speak search terms, saved contact names and website favorites.
-
-Dynamic rendered pages update the virtual viewer while using only the keyboard. Quick-key heading and link navigation moves the same reading caret used by arrows. Arriving at a list item speaks that item. An additional attempt to move beyond the first or last item announces Start of list or End of list. Home and End announce the destination item when moving; pressing the same key again at its boundary announces Start of list or End of list.
-
-Voice commands use the default microphone selected in Windows. The external-only detection safeguard has been removed because it could reject working headsets. USB, USB-C, Bluetooth, analog jack and internal microphones can be used when Windows provides a usable input. If the microphone cannot open, keyboard navigation remains available. Check Windows input settings and microphone permissions, then restart Companion.
-
-START
-
-1. Open Voice Companion from the desktop icon or Start menu. A normal Voice Companion window shows the current prompt and recent responses. The app also speaks them aloud without JAWS or NVDA. The app checks for updates first. If an update is available, the microphone opens for your Yes or No answer. Otherwise wait for "Voice Companion," the version number, "is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Help is available." If you hear an older version or "email connection is still to come," you opened an old EXE. Ask your trainer to run the new Setup file and use its desktop shortcut.
-2. Say: "Wake up."
-3. Wait for "Main menu. What would you like to do?" Then say what you want. Say "Next" or "Previous" to browse Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Check for updates, Help, Shut down the computer, Restart the computer, and Exit Voice Companion; say "That one," "Confirm that," "Okay," or "OK" to open the announced option. Say Word processor or Notepad to open those activities directly. Direct commands such as "Write a document," "Create a document," and "Email" still work. Say "What version?" at any time to confirm the current test build.
-
-USING THE USER GUIDE
-
-After checking for updates, Companion says its version and that it is ready, followed by "Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Help is available." After you wake it, say "Help" to open this same complete guide inside the app. In the guide, say "Next" or "Previous" to hear one topic at a time, then "That one," "Okay," or "Confirm" to open it. Larger topics such as email and documents have subtopics. Radio presets, podcast playback, and email list size have separate topics. Move through them the same way, then say "That one" to read one. Say "Continue reading" for more, or "Read from top," "Next word," "Previous sentence," "Next paragraph," and the other reading commands to review. Say "Back to subsections," "Back to topics," or "Back to email topics" to navigate. Say "Close help" to return to what you were doing. Say "Main menu" to leave help and return to the start. Moving to another topic, subtopic or reading position interrupts the previous speech immediately. This also applies when you open Help from Word processor, Email, Notepad, Web browser or any other activity. Press Control to silence speech. To open a topic directly, say "Help with" followed by its name, such as "Help with documents," "Help with email," "Help with web," "Help with radio," "Help with presets," or "Help with podcasts."
-
-DEEPER WEB AND MEDIA TASKS
-
-In an editable web field, voice dictation now inserts where spoken character or word navigation placed the caret. Say Select all, Read selection, or Scratch to select, review or remove staged text. Dictation replaces selected text. Say Save field to apply the changes or Cancel field editing to leave the existing page value unchanged. Read-only fields identify themselves and do not accept dictation.
-Say Fill out this form for guided entry. Disabled and read-only fields are skipped. Labelled rich text fields and custom choice controls are included, and newly revealed conditional questions are checked after each answer. If a form changes ambiguously, Companion stops and asks you to read the page again. Passwords can be dictated; file uploads still need manual input. Website verification and CAPTCHA can still prevent a completely hands-free task.
-Say Close list to leave a web field or favorite list and return to the page. Radio and podcast result lists read the selected item first; subsequent attempts to move past a boundary announce Start of list or End of list. If audio cannot start or resume within twelve seconds, Companion returns an error so you can choose another station or episode.
-
-NEW EMAIL AND LIST FEEDBACK
-
-When you start a new email with the keyboard, Companion says "New email. To field." Type the recipient there. Starting an email by voice still asks who to send it to, then guides you through the subject and message. The automatic draft name and sending account are not read when creating the message.
-Lists read the selected item first. A subsequent movement beyond the first or last item announces "Start of list" or "End of list." These announcements remain at high, medium, and low verbosity. Entering an inbox and entering a settings choice also announce their boundaries. Home and End move to the first and last item. If an email page cannot load, your existing messages and position remain available so you can retry. When leaving a named document, answering Yes to save keeps its filename and closes the editor. Untitled documents still ask for a filename. A failed save leaves the document open for another attempt.
-
-COMMANDS AND MODES
-
-Say "Help" at any time after waking Companion to browse every guide topic, one at a time. Say "Help with commands" to return here. Say "Help with" followed by a topic name. For example, say "Help with documents" or "Help with presets." Say "Back to topics" for the full list and "Close help" to return to your task.
-Across Companion, say "Next" or "Previous" while browsing a list, then "That one," "Okay," or "Confirm" to choose the item. Say "Go back" to leave the current view, or "Main menu" to return to the start. Say "Be quiet" to stop Companion speech and "Resume" to continue. Say "Go to sleep" to pause requests while keeping your current folder, message, document, or draft. Say "Wake up" to continue in the same place. Sleep cancels a pending send confirmation; review it again before sending. Say "Shut down Companion" to close it. For reading text, say "Read from top," "Continue reading," "Next word," "Previous line," or "Next paragraph."
-
-SPEECH CONTROLS
-
-While the app is talking, say "Be quiet," "Stop," "Shut up," "Hush up," "Shut the hell up," or "Shut the fuck up." It stops speaking without answering back. Say "Resume," "Keep going," or "Keep talking" to continue at the same place. You can also say another command, such as "Next message," to stop the current reading and do that instead. These controls work in email, documents, web pages, and other parts of the app. A headset helps the microphone distinguish your voice from the app's voice.
-Say "Faster" or "Slower" to change speaking speed. Say "Louder," "Quieter," or "Softer" to change speech volume. Softer does exactly the same thing as Quieter. For an exact speech rate, say "Speed 2," "Rate 2," or "Set speech rate to 2." The range is minus ten through ten; zero is the normal rate. Say "Rate minus two" for a slower setting. For exact volume, say "Volume 50" or "Set volume to 50." Volume ranges from zero to one hundred percent; "Volume 5" means five percent. These controls work with SAPI speech, eSpeak, and configured AI speech throughout the app, including help and the tutorial. They keep your chosen synthesizer and voice. Say "Voice list" or "List voices" to select a synthesizer first: SAPI speech, eSpeak NG, or AI voice when configured. Say "Next" or "Previous," then "Okay," "Confirm that," or "That one" to choose the synthesizer. While browsing synthesizers, Companion briefly says the option number and synthesizer name. Next, hear its first voice. Use the same commands to choose a voice and keep it. "Next voice" and "Previous voice" still work. Say "Cancel voice" at either stage to restore your previous choice. Say "Select voice" to choose another voice in your current synthesizer. eSpeak offers six simple choices: US English, UK English, US English Male, UK English Male, US English Female, and UK English Female. Use Next or Previous to preview them, or say "Use voice eSpeak US English Female" directly. Narration needs no internet or API credits. You can also say "Use voice" followed by a full voice name. Say "Punctuation none," "Punctuation some," or "Punctuation all." The app remembers these choices for the next time you open it. Say "Check voices" to save a voice check for your helper. This diagnostic lists Windows SAPI 5 voices; it does not test AI voices. Legacy SAPI 4 voices and some Windows Narrator natural voices do not appear in the SAPI 5 picker.
-If it does not hear you, speak toward the computer and pause briefly between requests. A helper can check that Windows allows the program to use the microphone and that the correct microphone is selected.
-If it says speech files are missing or it cannot use the microphone, ask your helper to run check-setup.cmd in the same folder. If it does not speak at all, ask your helper to check the computer's sound and run check-setup.cmd.
-Keep the entire VoiceCompanion folder together. If the helper's check says VoiceCompanion.exe is missing, ask for the complete program folder.
-
-AI VOICES
-
-After your trainer completes AI voice setup, say "List voices." Choose the AI voice synthesizer using Next or Previous and Okay. Then say "Next voice" or "Previous voice" to hear a sample. AI choices announce their names as "AI voice" followed by the name. When you hear the voice you want, say "Okay," "That one," or "Confirm that." Companion saves the selection for the next launch. Say "Cancel voice" to restore your previous selection. Selecting a SAPI voice switches back to SAPI speech automatically.
-AI narration applies throughout Companion, including the tutorial, documents, email, web reading, and help. It requires internet access and a funded OpenAI API account. The text being read is sent to OpenAI. Generating a sample may take several seconds. Speech rate, volume, punctuation, Be quiet, and Resume speaking also apply to AI speech.
-If AI narration fails, Companion attempts to read the same text using SAPI speech. This fallback still needs testing on the client's Windows computer. If there are no AI choices in List voices, ask your trainer to complete setup. The voice list shows configured choices, not a guarantee that the API account has credits or that every voice will work.
-For your trainer: say "Set up AI voice" or choose the "AI voice setup (trainer)" button. Enter the API key in the hidden field, choose a voice, confirm permission to send narration text to OpenAI, and select "Save AI voice settings." Then use List voices to preview and select a voice. Cancel or Escape closes setup without saving. "Remove saved AI settings" deletes the saved credential and returns to SAPI speech. A separately configured Windows environment variable must be removed separately. API usage is billed separately from ChatGPT. The saved key is protected by the Windows user account.
-
-PRACTICE TUTORIAL
-
-Say "Start tutorial" from the main menu. The audio tutorial contains separate courses for Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates. Every course begins with original task walkthroughs: what you are trying to do, exact voice and keyboard commands, what feedback to expect, how to correct it, and how to leave. The advanced lessons include the complete documented command reference for that activity. Options also explains every current control in all twelve categories. This is narrated instruction, not a simulation of successful actions.
-Say the course name or use Up/Down and Enter to choose it. Each lesson waits: say "Next lesson" or press Enter to advance, and "Previous lesson" or Up to return. Say "Repeat" to hear the same instruction. Say "Lesson list" for the titled index; arrows, Home/End and Enter choose a lesson. Say "Lesson three" or "Lesson 3" to jump by number. Say "Find lesson" followed by a topic to search all courses. Browse its matching titles and choose That one. Say "Courses" to return to the app/course list. Escape returns to the lesson index, then courses, then the main menu. Say "Main menu" or "Close tutorial" to leave directly.
-Say "List commands" for a course's documented command list, then choose one to hear its full explanation. Say "Explain command" followed by its words, for example "Explain command send it" or "Explain command auto download 5 episodes." Long explanations support "Continue reading." Say "Back" to return to their list. Ordinary app commands spoken inside the tutorial are looked up and explained, never dispatched to mail, documents, media, browser forms or settings. Nothing claims that an imaginary message was sent or deleted. Leave the tutorial before doing a real task. Speech stop/resume, rate, volume and synthesizer controls remain available to make the instruction comfortable. Control silences narration; if voice navigation is not heard during narration, say "Stop talking" first, then give the tutorial request. The selected synthesizer reads every lesson at all verbosity levels.
-
-VOICE INPUT MODES
-
-Normal mode is on when the app opens. It recognizes commands and adds ordinary speech to an open document, email draft, note, or a focused text field in the guided browser. You never need to say start or stop dictation.
-Say "Commands only" when you want to navigate or review without adding ordinary speech as text. Say "Dictation only" when you want everything you say to become text in the current document, draft, note, or focused browser text field. In dictation only, even words like "send it" are typed; say "Normal mode" to use commands again. You can always say "What mode?" to hear the current setting. Sleep and shut down commands still work.
-In the browser, select a normal text field before speaking into it. Email addresses, website addresses and passwords accept dictation. Number and code fields may need precise keyboard entry. Review text and form answers before submitting.
-
-READING TEXT
-
-In a document, email draft, open message, web page, or note, say "Start reading" or "Read from top" to hear text from the beginning. Say "Continue reading" for more. Say "Next character," "Previous character," "Next word," "Previous word," "Next line," "Previous line," "Next sentence," "Previous sentence," "Next paragraph," or "Previous paragraph" to move one piece at a time. These are text lines and paragraphs as read by the app; they may differ from visual lines on a screen. In dictation only, switch to normal mode before giving reading commands.
-
-WRITE A DOCUMENT
-
-Say "Create a document."
-Say "Name document My Letter."
-Speak a sentence or two at a time. The app adds ordinary speech to your document.
-Say "New paragraph" when you want a new paragraph. You can give editing commands without pausing dictation.
-Say "Read paragraph" to hear the current paragraph.
-Say "New line" to move to the next line within the same paragraph. Say "New paragraph" to start a separate paragraph. Say "Next paragraph" or "Previous paragraph" to move.
-Say "Next sentence," "Previous sentence," "Next word," or "Spell word" to review.
-Say "Go to beginning of document," "Move to beginning of document," "Go to end of document," or "Move to end of document." Moving clears selected text, including a previous Select all. Later heading or alignment changes apply at your new paragraph. Next and previous word, line, sentence, paragraph, heading, and table-cell commands also clear selections. These movement commands work in document and email-body dictation-only mode too.
-After moving to a word, say "Replace word with" and the new word, or "Delete word."
-After moving to a sentence, say "Replace sentence with" and the new sentence, or "Delete sentence."
-Say "Change hello to goodbye" or "Replace hello with goodbye" to search the whole document or email body. One match is replaced immediately. For multiple matches, hear a brief sentence excerpt and browse with Next or Previous, then That one, Confirm that, or OK. Cancel replacement leaves the text unchanged. Replacement ignores punctuation added at the end of the command; say "period" or another punctuation name to include it deliberately.
-Say "Replace paragraph with" followed by the new paragraph to rewrite it. Say "Insert before red fox" or "Insert after red fox" to place the writing cursor. Repeated targets use the same match browsing. After confirming the target, dictate what to insert, or say "Type literally" followed by the text in commands-only mode.
-Say "Select word," "Select line," "Select sentence," "Select character," or "Select paragraph" to select the current unit. Say "Select all" for the whole document. Say "Select first paragraph," "Select next paragraph," "Select previous paragraph," or "Select paragraph 3." First, next, previous, last, current, and numbered selection commands also work for characters, words, lines, and sentences within the current paragraph. Lines use explicit line breaks. Say "Select cat," "Find the phrase same here Bob," or "Select cat through dog" to choose exact words; if there is more than one match, hear its number, paragraph, and brief sentence context. Say "Next" or "Previous," then "That one," "Confirm that," or "OK." "Read sentence" repeats the context. "First match," "Second match," and "Match 3" still work. "Cancel selection" leaves the text unchanged. You can also say "Selection start at cat," then "Selection end at dog." Say "What is selected" to hear it. Say "Bold cat," "Underline cat," "Italicize cat," or "Highlight cat" for those words. Say "Copy cat," "Cut cat," "Delete cat," or "Delete the sentence I will be there" to edit named text. Say "Paste" to put copied text at the selection or end of the current paragraph. Say "Delete current word," "Delete line," or "Delete paragraph" for the current place. Say "Scratch" or "Scratch that" to delete selected text. When nothing is selected, these commands remove your most recent dictated addition. Say "Undo" to restore the deletion or reverse the last edit. Review the paragraph after any change.
-Say "Undo" to reverse the last change during this session. If you notice a problem after reopening the app, ask your trainer for help with the saved recovery copies.
-Say "Heading 1" through "Heading 6," or "Apply heading 1" through "Apply heading 6" to set a heading level. Say "Make this a heading" for level one, or "Normal text" to remove a heading. Say "Make this bold," "Make this italic," or "Underline this" to format the whole paragraph. Say "Remove bold," "Remove italic," or "Remove underline" to turn those off. Say "Set font to Arial" or "Set font size to 14 points" to change selected text, or the current paragraph when nothing is selected. Alignment, heading, list, and line-spacing commands apply to selected paragraphs when there is a selection. Say "Align left," "Align center," "Align right," or "Align justified" to position the paragraph. Say "Say font" or "Read formatting" for the full summary: font, size, style, bold, italic, underline, alignment, and line spacing. For one setting, say "Say font name," "Say size," "Say line spacing," "Say alignment," or "Say heading." Selected text with different settings is announced as mixed. Say "Set size 14" for a short size command. Say "Set font Arial 14" or "Set font Times New Roman size 16" to set both in one command. These commands also work in email bodies and dictation-only mode. For one word, say "Next word" or "Previous word" until you hear the word, then say "Bold word," "Italic word," "Underline word," "Set word font to Arial," or "Set word size to 14 points." Say "Remove bold from word," "Remove italic from word," or "Remove underline from word" to undo that formatting.
-To change the space between lines, say "Single space" or "Double space." For another value, say "Custom spacing." The app asks what you want; say a number such as "One point seven five" or "Exactly eighteen points." The app repeats the value. Say "Yes" only when it is right. Say "No" to give another value, or "Cancel" to leave the spacing unchanged. You can also say "Line spacing 1.5" directly. Spacing changes the current paragraph, and the next new paragraph keeps it. Say "Set document line spacing to 1.25" to change every paragraph. Say "Read line spacing" to check the current paragraph, or "Read document line spacing" to check the whole document. Say "Reset line spacing" for the current paragraph, or "Reset document line spacing" for all paragraphs.
-Say "Bulleted list" or "Numbered list" for the current paragraph. Say "New paragraph" for the next list item; say "End list" on that item to return to normal text.
-Say "Create table with two rows and two columns." Speak to fill the first cell. Say "Next cell," "Previous cell," "Next row," "Previous row," "Next column," or "Previous column" to move. Say "Add row" or "Add column" to expand the table beside your current cell. Say "Delete row" or "Delete column" to remove one; say "Undo" immediately to restore it. Say "Read cell" or "Read table" to review. Say "Clear cell" to remove its words, "Leave table" to write after it, or "Delete table" to remove it. Say "Undo" immediately if a table was deleted accidentally. This test editor handles simple rectangular tables.
-Say "Save document" to save under the current filename. Say "Save as My Letter" or "Save document as My Letter" to save under a new filename while keeping the original. It also saves as you write.
-To name or rename the actual file, say "Name document My Letter." The name is not inserted into the body. To save a separate copy and keep the original, say "Save as My Letter"; "Save document as My Letter" also works. The app announces the saved .docx filename. If that filename already exists, choose another name. Write any title you want in the body separately. Say "Type literally" before body text that would otherwise be a naming command. Say "Undo" immediately after a rename to restore the previous filename.
-Say "Leave document" to answer the save question and return to the main menu. After saving, say "Resume document" to return to it while the program remains open. Choosing No discards it from the current session.
-To return to the main menu, say "Go back," "Exit document," or "Leave document," then answer Yes or No to saving. Yes asks for the filename; No discards changes. You can also say "Write an email" or "Write a note" directly. The document is saved before the new task starts.
-Documents are saved on this computer as Word-compatible .docx files in your Windows Documents folder, inside Voice Companion. Say "Open documents" to show them in File Explorer, or say "Where are my documents?" to hear the location. Older documents are copied there without deleting the originals. You can create them without Word installed. After you open the program again, say "Wake up," then "List documents." Say "Open document My Letter" to return to a saved document by name. This test can reopen simple documents it created. It may refuse a Word document with complex formatting so it does not damage that file.
-
-WRITE AN EMAIL DRAFT
-
-To connect email, say "Connect my Gmail," "Connect my Outlook," "Connect my Yahoo," or "Add account" in the normal app. It asks which type: Gmail, Outlook or Microsoft 365 Exchange, or Yahoo. Google and Microsoft open their normal sign-in in a browser; a trusted person can assist. Yahoo asks for an app password in a private keyboard entry window; a helper needs to create that password in Yahoo Account Security. Never say passwords or codes aloud. If setup says sign-in is not available, ask your helper to complete the one-time provider registration described in the helper guide.
-Say "Add another account" for another mailbox. Say "List email accounts" to hear each address. Say "Switch to Yahoo" or "Switch to Outlook" if there is only one such account. If there are two of the same type, say "Switch to" followed by the full email address. "Which email account?" reads the selection.
-From the main menu, say "Email" or "Check email" to open the selected inbox. While reading the mailbox, say "New message" to write an email. From a draft, say "Cancel," "Cancel draft," "Go back," or "Back to inbox" to discard it and return to Inbox without another save. These commands work from every field in new, reply, reply-all, and forward drafts, even in dictation-only mode. New drafts and their automatic save copies are removed; if you opened a previously saved draft, its original saved version remains. A previous send attempt cannot be undone by canceling; its local record is retained. Say "Write an email" to create a draft from the selected account. Listen to the sending address before confirming any message.
-When you start a new email, Companion asks, "Who do you want to send the email to?" Type the address into the Voice Companion window and press Enter, or say a saved contact name. You can dictate an address such as person at example dot com, or type it exactly. Review the address before sending. It then asks for the subject. Say the subject or type it and press Enter. Next it asks what the message should say. Speak naturally or type into the same window and press Enter. To return to a field, say "Go to To," "Go to Subject," "Go to CC," "Go to BCC," or "Go to Body." Companion tells you the current value and asks for the replacement or added address. You may also say "Email to..." or "Subject is..." directly.
-Say "CC" or "BCC" at any point in an email draft to add an optional copy recipient. Say or type one address, or say "Skip." Say "Read CC" or "Read BCC" to check. A BCC recipient is included in the private sending review.
-Say "Add contact Bob as bob@example.com" or type that command and press Enter. Say "List contacts" or "Find contact Bob" to check the address book. Contacts are kept separately for each selected email account. With Gmail selected, say "Connect Google Contacts" or "Sync Google Contacts" to open the normal Google permission screen and exchange contacts. A trusted helper can complete that permission step. Saved local contacts remain available without internet.
-To type or correct an address, say "Go to To," "Go to CC," or "Go to BCC." The typing box becomes ready automatically. When returning to To, your current address appears for editing. Left and Right Arrow review characters aloud; Backspace and Delete remove characters and announce the deletion. New characters are spoken as you type using your local synthesizer: eSpeak when selected, otherwise SAPI speech, including when an AI narration voice is selected. Quick Test opens the typing window too. Press Enter to save the corrected address. When a new email opens, To is ready automatically too. The To field can also be edited in forward, reply, and reply-all drafts; after recording an address in a response draft, Companion returns to the message body. Repeated prompts do not erase an address you are typing. Alt+T is only a fallback if another window has taken keyboard focus. Say "Email to friend@example.com" with the full email address. Say "Read recipient" to check it.
-Type "Email to friend@example.com" in the command box, or type the address directly into To. Website and email addresses and passwords accept dictation where an address or editable field is active; passwords are masked in narration and the virtual view. Saved contact names and website favorites can still be selected by voice.
-Say "Subject is Hello from me." Say "Read subject" to check it.
-These same select, find, bold, underline, italicize, highlight, copy, cut, paste, delete, and scratch that commands work in the email message body. Font, font size, alignment, headings one through six, line spacing, bulleted lists, numbered lists, and tables also work there, including in dictation-only mode. Use the document commands above. Formatting is preserved in saved drafts and outgoing Gmail, Outlook, and Yahoo messages, including replies and forwards. The receiving email program may display fonts and spacing differently. Selection commands also work in To, CC, BCC, and Subject; these fields contain plain text. In the typing window, selection uses your current entry, including characters you have not submitted yet. Say "What is selected" to hear it. Type to replace selected text, then press Enter to record the field.
-After the recipient and subject, just speak your message. The app adds ordinary speech to the draft and handles short commands such as "Read paragraph," "Undo," and "New paragraph." You do not need to start or stop dictation. The app turns spoken "period," "comma," "question mark," and "exclamation point" into punctuation marks within or at the end of an utterance, including when the next word is lowercase and removes a stray final "uh" or "um." Listen back before sending. To put exact command or punctuation words into your message, say "Type literally" followed by those words. Say "Save draft" when finished. Say "Cancel" or "Back to inbox" to discard the draft. Say "Save draft" to keep it before leaving; "Exit" or "Leave email" saves it and returns to the main menu.
-You can say "Create a document" or "Write a note" directly while in an email draft. The draft is saved before the new task starts.
-Later, say "List email drafts" and "Open email draft Untitled" (or the draft name you heard) to return to one after restarting.
-If it says a saved draft could not be opened, ask your trainer for help. The app leaves that saved file untouched.
-IMPORTANT: Ask your helper to connect and test an account before relying on email. Without a connected account, "Send email" saves a local draft and does NOT send it. With a connected account, say "Send it" or "Send that." Listen to the sender, recipient, subject, and whole message. Say "Cancel send" if anything is wrong. Say "Yes" only when all of it is correct. Nothing is sent before that review and confirmation. After the provider accepts it, the app first says "Email sent successfully" without reading technical reference codes. It finishes that announcement before refreshing the folder you were using. For a reply or forward, it returns to the original message if that message is still on the refreshed page; otherwise it returns to the folder list. Ask your helper to verify delivery during early tests. If the app says the result is uncertain, check with the recipient and your mail account before trying again.
-
-READ AND ORGANIZE EMAIL - HELPER MUST CONNECT AND TEST THE ACCOUNT FIRST
-
-Say "Email" or "Check email" for the selected inbox. You may also say "Check Gmail," "Check Outlook," or "Check Yahoo" when exactly one account of that type is connected. The app reads a numbered list in Inbox. For each message, it says only the sender, subject, and date. Say "Read message 1" or "Open message 1" to hear its body immediately. Say "Message details" if you want the sender, subject, and date repeated. For a long message, say "Continue reading" until you hear "End of message." Say "Read from beginning" to start it again. Say "Next" or "Previous" (or "Next message" and "Previous message") to hear one short message summary at a time. Say "That one," "Okay," "Confirm," or "Confirm that" to open the highlighted message and hear its body. "Open current message" also works. When Companion asks Yes or No to move or delete mail, answer that question first. Say "Back to folder" to hear the list again. "Go back" leaves an open message for its folder; say it again to leave email. Say "Back to inbox" from any folder. Say "Which folder" to hear where you are. Say "Next messages" or "Previous messages" to move between pages, or "List messages" to refresh this folder.
-Say "Go to folder" to hear a folder list. Say "Next" or "Previous" (or "Next folder" and "Previous folder") until you hear the one you want. Say "That one," "Okay," or "Confirm" to open it. Say "Cancel" to leave the list. You can also say "Go to Important," "Go to Receipts," "Go to folder Receipts," or "Open folder Receipts" directly. For a folder inside another, say just its name, such as "Go to 2026." If two folders share that name, the app says it found two and reads the first one. Say "Next" to hear the other, then "That one" to choose it. You can also say "2026 inside of Projects" directly. You can also use "Next folder" and "Okay." You may also say the full path, such as "Go to Projects slash 2026."
-To organize messages, say "Mark," "Select," "Mark message," or "Select message" while hearing its summary. Then move to another message and mark that one too. Marks stay in place when you move to the next page. Say "What is selected" for the total or "Clear selection" to start over. Say "Delete" to move marked messages to Trash; with no marks, it deletes the highlighted message. Say "Move" to choose a destination for marked messages or the highlighted message. "Delete message" and "Move message" always mean the highlighted message. Say "Move to Saved" if you know the folder name. Companion asks Yes or No before changing mail. After a successful move or deletion, Companion reloads the current folder and reads the first message on that page. If it cannot reload, say "List messages" to try again. If the result of a change is uncertain, check the folder before trying again.
-With a message open, say "Reply," "Reply all," or "Forward." The app saves a response draft. For a forward, type the address with "Email to". Just speak your reply or forward message. Then say "Send it," listen to the full review, and say "Yes" only if correct. For Gmail or Yahoo, forwarding does not include original attachments. Say "Cancel" or "Back to inbox" from the draft to discard it and return to Inbox. Say "Save draft" first if you want to keep it.
-To make a folder, say "Create folder Receipts." Say "Create folder 2026 inside" to choose a parent folder from the spoken list, or say "Create folder 2026 inside Receipts" directly. Say "Rename folder" to choose one, then "Rename to Bills." Say "Move folder" to choose the folder and then its destination. Say "Delete folder" to choose one; the folder list will say "that one to delete it." The folder must be empty. You can also give folder names directly, such as "Rename folder Receipts to Bills," "Move folder Bills into Archive," or "Delete folder Bills." The app reads the full path and repeats the action and asks if it is right. Say "Yes" to do it, or "No" to cancel. Standard folders such as Inbox are protected.
-With HTML email enabled, reading announces links and buttons, including donation links made from images with alternative text. Press K for the next link or B for the next button; add Shift to move backward. Tab and Shift+Tab move among both kinds of controls. Enter opens the current safe link. Say Next link, Previous link, Next button, Previous button, List links, List buttons, Activate current link, or Activate current button. Open link 1 and Open button 1 use their respective lists. A button with no safe link is announced but cannot run email scripts. Blank lines are announced as Blank. Plain text email remains available under Options, Email.
-
-WRITE A NOTE
-
-Say "Write a note." Speak your note, then say "Save note." If you say "Go to sleep" or "Shut down Companion" while writing a note, the words already heard are saved first.
-Say "Go back" to save an unfinished note and return to the main menu. "Go back" also leaves a waiting search or podcast request.
-
-WEB BROWSING
-
-Say "Search the web for the weather." Voice Companion searches with Google by default in its guided browser and reads the page in short pieces. Options, Web browser has Default search engine, initially Google. Google, Bing, Brave Search and DuckDuckGo remain available. Say Default search engine Google, Set default search engine Brave Search, or Search engine DuckDuckGo to change the default. An explicit Google weather, Bing weather, Brave Search weather or DuckDuckGo weather request uses that engine for that search. If a search engine asks you to prove you are human or does not provide readable results, Companion says so and keeps the selected search engine. The verification message opens an engine menu: use arrows and Enter, or say Try Brave Search, Try Bing, or Try DuckDuckGo for the same query. Escape returns to the verification page. Your saved default does not change. It cannot solve a verification challenge for you; ask your trainer if every search page is blocked. Say "Continue reading" repeatedly to hear the rest of a long page. "Read page" begins again at the top. Say "Read page," or "What does this page say about tomorrow?" You can ask a follow-up search with "What about Sunday?" Search results and pages may be wrong or incomplete; check the source before acting.
-Brave result title blocks are included as level-two headings; repeated result destinations and URL-only citation aliases are excluded. Delayed link navigation and new tabs refresh the virtual view after loading. Embedded-content changes preserve the current reading position. If you cannot find a link, say "List links." The app checks links in the page, open shadow content, and embedded frames, then waits briefly for late results. If it still cannot identify them, ask your trainer to check that site. It reads one numbered link at a time. Say "Next" or "Previous" to move through links, or "Open link 1" (also "Open link number one"). Ordinary links open when explicitly chosen; browsing the list does not ask for confirmation. Say "Open current link" or press Enter to open the selected link. Escape or "Close list" returns to the virtual page. You may also say "Next link" or "Previous link" one at a time, then "Okay" on the one you want. Say "Open website example dot com." Listen to the address, then say "Yes" to open it or "No" to cancel. Voice Companion reads the page in its own browser window. Say "I am looking for how to log in" or "I want to transfer between my accounts." It suggests a matching link and says which site it opens. Say "Yes" if correct, "No" for the next suggestion, or describe what you want differently. Say "Help me" whenever you need the current page and choices explained. For a bank, check the address and have your helper review any transfer before completing it. Do not speak passwords or verification codes aloud.
-Options, Web browser includes Keep browser window open, unchecked by default. With it off, leaving the browser activity closes all Companion-owned page windows, including tabs opened by results. With it on, the window stays open; choosing Web browser opens the browser menu, which includes Resume where you left off. Select Resume to return to the retained page and reading position. Say Keep browser window open on or off. Escape first cancels field editing or closes an element list; the next Escape opens the browser menu. Escape from that menu returns to the main menu. This does not close your ordinary browser windows. Guided websites use the included Firefox browser by default. Say "Use Chrome," "Use Brave," "Use Firefox," or "Use Edge" to pick another browser if it is installed. Say "Which browser?" to hear the choice. Each uses its own browser profile, so a helper may need to sign in there once. Voice Companion speaks its own page and form prompts; a separate screen reader is not required for those prompts.
-Say "Save favorite as News" on an open page, "List favorites," or "Open favorite News." Say "Fill out this form for me." It asks about each labeled field, including menus and yes/no choices. Say "Skip" or "Cancel form" if needed. You or a helper can also type directly in the browser. Press Tab for the next field, Shift+Tab for the previous field. Use Left/Right arrows to move through text, Ctrl+Left/Right to move a word, Space for a checkbox, and arrow keys for a radio group or menu. Say "Where am I?" to hear the focused field. The program announces a newly focused control when it can read its label. Password dictation is supported with masked feedback; use private keyboard entry when you prefer. Codes may require precise entry.
-Say "Review form" to hear the current values, including anything typed by keyboard. Say "Review and submit form" to hear each field again in groups. Say "Continue review" until it says "Submit this form" is ready. The app asks if everything is right. Say "Yes" only after every value and the named button are correct, or "No" to cancel. If a value changes after review, the pending submission is canceled. The app does not retry an uncertain submission. Financial actions, complex or unreadable forms, and pages with more than one possible final button require a helper. Say "Ask for help" to identify the open page. Say "Leave website" to return to the main menu. Say "Open Gmail," "Open Outlook," or "Open Yahoo Mail" to open those sites in your usual browser; connected mailbox commands are described above.
-
-In Companion page reading, quick keys move to the next element: K links, H headings, B buttons, X checkboxes, C combo boxes, E edit fields, F all form controls, T tables, R or A radio buttons, L lists, I list items, D landmarks, G graphics, P paragraphs, and 1 through 6 headings at that level. Hold Shift to move backward. Quick navigation, arrow reading and voice reading share one virtual cursor: after a heading or link jump, Up/Down reads from that selected position. Left/Right reads characters; Ctrl+Left/Right moves words, Ctrl+Up/Down moves paragraphs, Home/End moves within the line, and Page Up/Page Down makes longer jumps. Ctrl+Home/End reaches the page boundaries. Shift with ordinary reading keys selects text, and Ctrl+C copies the selection. Stale caret updates cannot move you back; incidental page changes follow the selected element if it remains on the page. Headings use readable title text instead of URL/breadcrumb-only metadata. Say next or previous followed by the element name, for example next heading, previous checkbox, next form control, or next heading level two. Next link and previous link retain their existing behavior while the numbered link picker is active.
-Press Tab or Shift+Tab to move through links and controls. Links announce Link before their label. Enter opens the current link directly, confirms a button when required, or selects a radio button. Tab makes edit fields ready for typing and combo/list boxes ready for choices. Arrows and quick keys keep the virtual page in reading mode, including when moving past form controls. After locating a field with a quick key, press Enter or say "Edit current field" to edit it. Explicit dictation into a selected text field also starts editing. Escape returns to page reading; quick keys then navigate instead of typing. Space toggles a checkbox. Up/Down changes a combo box or list box. Home/End selects the first/last available option, and first-letter keys advance through matching options and stop at the last match. Boundary keys keep an unchanged selection without retriggering its change event. Say first option, last option, or choose option beginning with a letter. Tab and Shift+Tab leave the choice field automatically. Say activate current element, edit current field, toggle checkbox, check checkbox, uncheck checkbox, select radio button, next option, previous option, or select option followed by its label. Say read current element for its name and state. In a nonprivate field say type followed by text; save field saves it. Tab saves and advances; Up/Down leaves a single-line edit field, and arrows leave a multiline field at its text boundaries. Outside the field, ordinary page reading resumes automatically. Escape or cancel field editing cancels staged edits and returns to the page; press Escape again to return to the browser menu. Enter saves a single-line field; Ctrl+Enter saves a multiline field. Passwords accept keyboard or voice entry and are masked in the virtual view and spoken feedback.
-Inside a table, Ctrl+Alt+Up/Down moves rows and Ctrl+Alt+Left/Right moves columns. Ctrl+Alt+Home/End moves to the first/last column; Ctrl+Alt+Page Up/Page Down moves to the first/last row. Say next row, previous row, next column, previous column, first row, last row, first column, or last column. Header text, cell text and row/column position are announced; merged cells retain their logical coordinates. Move to the table with T or next table first.
-The Companion page reading area supports ordinary character, word, line and paragraph reading, including arrow keys and the spoken reading commands. F5 or refresh page refreshes a changed page; Alt+Left or Go back returns to the previous page. Alt+Right or Go forward moves forward through browser history. Alt+T lets you type a command. Leave website returns to the browser menu. Dynamic or inaccessible custom widgets may still need direct browser interaction or help; this testing build does not claim complete NVDA or JAWS compatibility.
-Companion waits for the destination document, including a new tab or delayed content, then announces Page loaded, its title and site. Automatically reading the first piece of page text is on by default. In Options, Web browser, uncheck Automatic page reading to stop automatic narration. Say automatic page reading on or off, enable automatic page reading, or disable automatic page reading. The loaded message and keyboard reading remain available when narration is off. Ctrl+Home and Ctrl+End reach the exact top/bottom of the page; say top of page, beginning of page, bottom of page or end of page, with go to also accepted. Later document changes update the virtual view without requiring Read page. Escape from page reading returns to the browser menu. Companion returns keyboard focus to its page reading area. Keep keyboard reading in the Companion window; native browser windows use their own keyboard behavior. This applies to Firefox, Chrome, Edge and Brave. Press Ctrl to silence speech whether the microphone is awake or asleep; it also works while the guided browser has focus. Press F7 or Insert+F7 for the links list and F6 or Insert+F6 for the headings list. Say "List links" or "List headings." Use Up/Down, Home/End and first-letter navigation in a list. Enter opens a link or moves to a heading; say "Open current link" or "Go to heading." Escape or "Close list" returns to the virtual page. Press Ctrl+L from Companion web browsing, or choose Search or type address in the browser menu, to enter a typed search. Type your search, use Left/Right, Home/End, Ctrl+Left/Right, Backspace and Delete to edit it, then press Enter. Escape cancels. You can still say Search the web and speak the search. Alt+T lets you type a full search command while reading a page.
-
-WEB BROWSER MENU, BOOKMARKS AND HISTORY
-
-Choosing Web browser from the main menu always opens the browser menu. Its options are Search or type address, Go to bookmark, New bookmark, Delete bookmark, Rename bookmark, Go back, Go forward and Web history. Use Up/Down, Home/End and Enter, or say the option. Press Escape from the browser menu to return to the main menu. Search or type address accepts either a spoken search or a typed search or address; press Enter after typing. Escape cancels search and returns to the browser menu.
-Go to bookmark, Delete bookmark and Rename bookmark each open a list of saved bookmarks. Up/Down moves through the list, Home/End reaches its boundaries, and Enter performs the chosen action on the highlighted bookmark. Type the first letter to move among matching names; type several letters promptly to select a more specific prefix. Repeating the same first letter cycles among matching names. Pause before starting a new prefix. You may also say enough of a bookmark name to identify it uniquely. An empty list announces that it is empty. Escape cancels a list and returns to the browser menu.
-New bookmark saves the current page. Open a page first, then say New bookmark or choose it from the browser menu. Say the bookmark name, or type it and press Enter. Rename bookmark first asks you to select the saved bookmark, then asks for a new spoken or typed name. Names are limited to 60 characters; duplicate names are rejected so they do not replace another bookmark. Escape cancels naming. Delete bookmark removes only the selected saved bookmark; it does not remove a website or any of its data. Existing favorites remain available as bookmarks, and older Save favorite and Open favorite commands still work.
-Web history lists up to 200 recent secure page addresses, newest first, saved across restarts. Select a history item with arrows and Enter, first-letter or multiple-letter navigation, or by saying its name. Enter opens its saved address. The Go back and Go forward menu items use the currently open browser session; they announce when no browser page is open. Alt+Left and Alt+Right perform those actions directly from a page, including when editing a field.
-Escape once from ordinary page reading returns to the browser menu. Escape first cancels field editing, closes a website dialog or closes a links/headings/fields list when one is active. With Keep browser window open checked, the browser menu adds Resume where you left off; choosing it returns to the retained page and reading position. With the option unchecked, Escape from page reading closes Companion-owned browser windows and Resume is absent. Bookmarks and Web history remain saved. Choosing New bookmark while on a page keeps that page available for naming. Close browser and Main menu still leave the browser activity.
-Keyboard navigation takes priority over background page checks. Quick-key feedback is spoken before visual scrolling; repeated navigation interrupts older speech and announces the final position when keys arrive together.
-
-FIND AND PLAY RADIO
-
-Choose Radio on the main menu to open the radio actions menu. Arrows, Home/End and first-letter keys choose an action; Enter opens it. Tab or Shift+Tab switches between actions and results. In results, arrows and first-letter keys select a station, preset, recording or schedule; Enter plays a playable item. Escape backs out to actions, then the main menu. Ctrl+F opens search, Ctrl+P lists presets, and F5 refreshes directories. Space pauses or resumes audio; Ctrl+R resumes, Ctrl+S stops, Ctrl+Left/Right seeks 15 seconds when supported. Every action also accepts its spoken menu name; say Radio menu, Actions or Results to switch lists. Spoken answers to a search or browse question start the search immediately; no extra OK is required. Say "Radio," then "Search radio." Companion asks what station you want; answer with a name such as WGN. You can also say "Search WGN" directly. You can also say "Search radio for jazz" or "Browse genre jazz" in one request. You can search by station name, country, or state too. Hear the numbered results. Say "Play one," "Play station 1," or "Play the first one." Say "Next," "Previous," "Go forward," or "Go back" to hear another result. Say "That one," "Confirm," or "Confirm that" to play the one you just heard. You can also say "Play WJLB" or "Play 97.9 WJLB" to choose a result by name and frequency. If more than one result matches, Companion reads numbered choices. Answer "the first one," "1," or "station 1" for the first choice; "the second one," "2," or "station 2" for the second. You do not need to repeat "play." Say "Main menu" to leave Radio. The station plays in the Voice Companion Audio window. Companion lowers radio or podcast audio while speaking and brings it back afterward. Say "Pause," "Play," "Resume," or "Stop" to control the selected station or podcast, even while you are in another part of Companion. The longer commands "Pause radio" and "Stop podcast" also work. Say "Stop talking" to silence Companion speech. If a stream fails to start, Companion names the station so you can choose another result.
-
-SAVE AND PLAY RADIO PRESETS
-
-A preset is a saved radio station. First say "Radio" and search for a station. When you hear the station you want, say "Add preset," "Add favorite," "Save preset," or "Save favorite." To give it an easy name, say "Save preset as Jazz" or "Save favorite as Jazz." Companion tells you when it is saved. You can save a station that is already playing.
-To hear saved stations, say "List presets," "Preset list," "List favorites," or "Favorites list." Companion reads one station. Say "Next" or "Previous" until you hear the one you want. Say "That one," "Okay," or "Confirm" to play it. You can also say "Play preset Jazz" or "Play preset 1."
-To remove one, highlight it in the preset list and say "Delete preset," or say "Delete preset Jazz." Listen for its name. Say "Yes" to delete it, or "No" to keep it. Saved presets remain available after you close Companion. If a station no longer plays, try searching for it again and save its new result.
-
-CHOOSE A RADIO STATION SOURCE
-
-Say "Station database" to hear your current source. By default, All searches Radio Browser and saved IPRD and RadioSure entries together. Say "Choose station database Radio Browser" or "Choose station database IPRD" to use only one. Say "Choose station database All" to combine them again. A helper can import a RadioSure .rsd file by typing "Import RadioSure " followed by its full path, then you can say "Choose station database RadioSure." The choice stays set after closing the app. TuneIn and ooTunes are not connected station sources in this test build.
-Radio Browser is searched live. Companion checks for a newer IPRD catalog at most once each 24 hours while running; it keeps the last saved catalog if an update fails. RadioSure entries change when a helper imports a newer file. There is no daily limit on searches or listening in Companion. Internet access and individual station availability still matter.
-
-RECORD RADIO
-
-Choose Record selected station or Schedule selected station in radio actions. In each form, Tab/Shift+Tab moves through editable fields, choices, OK and Cancel. Arrow and first-letter keys change choices. Enter continues through fields and submits at the last field or OK; Escape or Cancel cancels. A schedule has day, time, minutes and a daily-repeat choice. Invalid lengths or times keep the form open. Say next field, previous field, go to Time, Time 8 PM, or OK for the same steps. List scheduled recordings exposes individual schedules; Delete or Cancel selected scheduled recording asks Yes or No. Y/N activates either answer immediately. Say "Record station 1 for 30 minutes." Say "Stop recording" to finish early, or "List recordings" to hear saved files. For a future recording, say "Schedule station 1 tomorrow at 8 PM for 30 minutes" or add "every day". Keep Companion running and the computer awake. The recorder accepts direct audio streams and cannot record every station format. Check the saved recording afterward.
-
-FIND AND PLAY PODCASTS
-
-Say "Search podcasts for history." It reads one show at a time. Say "Next" or "Previous," then "That one" to open the feed. It reads one episode at a time. Say "Next" or "Previous," then "That one" to play it. You can also say "Play 1" or "Play episode 1," and "Download this episode." Say "Subscribe to podcast 1" and "List subscriptions" to find it later. Streaming opens in the Voice Companion Audio player; downloads are kept in Podcast Downloads for offline use.
-Choose Podcasts on the main menu for its actions menu. Use arrows, Home/End, first-letter keys and Enter as in Radio. Tab/Shift+Tab switches between actions and results. Enter on a show opens its episodes; Enter on an episode or downloaded file plays it. Escape from episodes returns to shows, then actions, then the main menu. Ctrl+F searches, Ctrl+P lists subscriptions, Ctrl+D downloads the selected episode and F5 refreshes subscriptions. The action menu includes search/category forms, subscription actions, downloads, automatic/manual download choices, playback, seeking, chapters and previous/next episodes or shows. Form fields, OK and Cancel work as described under Radio. Remove selected subscription or Delete in a subscribed-show list asks Yes or No; Y/N answers immediately. Say Podcasts menu, Actions, Results, Next action, Previous action, First item, Last item or a menu action name for the same controls. Say "Podcasts," then "Search history" or "Search podcast history." You can also say "Search podcast" and answer the question with the show name. Say "Browse podcasts category science" to find shows by category. Companion reads one numbered feed at a time. Say "Next" or "Previous" to hear another feed. Say "That one," "Okay," or "Confirm" to open the selected feed and hear its episodes. Say "Open feed" to open it directly, or "Subscribe" to save the selected feed. To choose by number, say "Open podcast 2" or "Subscribe to podcast 2." Say "Browse podcasts" for current search results. Say "List podcasts," "Podcast list," "Podcasts list," or "Subscription list" to hear saved subscriptions. In an open feed, Companion reads one episode at a time. Say "Next," "Previous," "Next episode," or "Previous episode." Say "That one," "Confirm," "Confirm that," or "Okay" to play the highlighted episode. "Play 2" and "Play episode 2" also work. Say "Back to podcasts" to return to the feed results. Say "Pause," "Play," or "Stop" for either podcast or radio audio. Companion speaks one "Audio paused" response when you pause.
-
-PODCAST SUBSCRIPTIONS AND DOWNLOADS
-
-Subscribed shows check their feeds when Companion starts and about every six hours while it is running. Say "Refresh subscriptions" to check sooner, or "List subscriptions" to hear your shows and each download choice. If a feed cannot be reached, its saved episode list remains available. New searches and downloads need internet.
-A new subscription starts with manual downloads. Open and subscribe to a show, then say "Auto download 5 episodes" for the show you opened. Or say "List subscriptions," then "Auto download 205 episodes for podcast 2" to choose by number. You can say "Auto download" or "Auto-download" followed by any whole number from 1 to 10,000, or say "All." Spoken numbers such as "two hundred five" also work. Say "Manual downloads" to turn automatic downloading off for that show. "Auto download all episodes" downloads everything currently offered in that feed, which could use a lot of storage. Each episode has a 500 MB file limit. Companion pauses automatic downloads when disk space is low. If a podcast host refuses a download, Companion gives the HTTP error; some hosts restrict offline copies. Try another feed or ask your helper to copy the error from the build log.
-A number means Companion keeps the newest that many automatically downloaded episodes from that show. As newer episodes arrive, older automatic downloads beyond that limit are removed after the new downloads succeed. Files you downloaded by saying "Download episode" are not automatically removed. "Manual downloads" stops future automatic downloads and leaves files already saved. Keep Companion running for automatic checks and downloads.
-
-PODCAST PLAYBACK
-
-Say "Back 15 seconds," "Fast forward 30 minutes," or "Forward one hour and 20 minutes." You can give other amounts in seconds, minutes, or hours. Say "Next chapter" or "Previous chapter" when the episode supplies supported chapter markers. Live stations and some episodes cannot seek; Companion tells you when it cannot. Say "Download episode 1" or "Subscribe to podcast 1." Say "List downloads" and "Play download 1" to use a downloaded episode offline. Downloads are limited to 500 MB each and continue in the background while Companion runs. Say "List recordings" then "Play recording 1" for saved radio audio. Audio controls work even when you have moved to another part of Companion; a new spoken command interrupts Companion's speech.
-
-SLEEP OR STOP
-
-Say "Go to sleep" or "Stop listening." It stops handling requests. The local wake listener stays on so you can say "Wake up" again.
-Say "Shut down Companion" to close the program and stop its microphone stream. To use it again, open Voice Companion from the desktop icon or Start menu.
-
-IF IT HEARS THE WRONG WORDS
-
-Say "Read paragraph" to check the text. Use "Change OLD WORD to NEW WORD," "Replace paragraph with ...," or "Undo." Named replacement searches the entire document or email body. If the text occurs once, it replaces it immediately. If it occurs more than once, hear the match number, paragraph number, and a brief sentence excerpt. Say "Next" or "Previous" to browse, "Read sentence" to repeat the context, then "That one," "Confirm that," "Okay," or "OK" to replace that occurrence. Say "Cancel replacement" to leave the text unchanged. This replaces one chosen occurrence; "Undo" restores it. "Replace word with ..." still replaces the current word. If you need help, say "Help with documents." There is no list of commands you must memorize: start with the examples above.
-If it says "I fell behind and missed some words," wait for it to finish speaking, then repeat your last request. Check the paragraph or email draft afterward.
-
-EMAIL LIST SIZE AND PAGES
-
-Email folder navigation: Say "Back to inbox" at any time in email. Say "Go to Sent" for Sent Mail or Sent Items. Say "Go to Drafts" for your provider's Drafts folder; this is separate from "List email drafts," which lists drafts saved locally by Companion. Say "Next message" and "Previous message" to continue across all messages in a folder. By default the app loads 10 at a time, automatically loading the next group as you move. Say "Set list to 20," "List 20 messages," "20 messages," or simply "Set to 20" to choose 10, 20, 30, 40, 50, 100, or 1000 at a time. Larger lists can take longer to retrieve. Companion says when it starts and reports progress for 1000. Say "Set to all" to browse every message while loading 10 at a time for speed. Say "Email list size" to hear the current choice. Your choice is remembered when you close and reopen Companion. Say "Get more emails" or "Next list" to load the next group, and "Go back a list" or "Previous list" for the preceding group. Next message and Previous message also move across groups automatically. It announces one message at a time.
-
-NOT READY IN THIS TEST
-
-Reading and organizing mail, as well as sending, require provider registration, sign-in, and live tests with each service; this source build has not yet passed those tests. Yahoo folder moves require its server to support safe IMAP MOVE. Gmail uses labels rather than true folders, and labels with children cannot be renamed, moved, or deleted by voice in this build. Google Calendar and Drive are not connected. Google Contacts needs its own permission and live account testing. The guided browser is experimental and may not understand every website, form, or spoken request. It has not been tested on a Windows computer yet. A helper must review financial actions and forms the app cannot inspect completely. Ordinary forms can be submitted by voice only after a full spoken review. Please do not rely on this test program for essential messages or appointments yet.
-
-INSTALLATION TROUBLESHOOTING
-
-For the helper: extract the complete current source ZIP to a normal folder before opening BUILD INSTALLER - Double click.cmd. Do not run the builder from inside a ZIP or mix files from different versions. The double-click builder includes offline Parakeet recognition. After the builder successfully creates and installs VoiceCompanion-Setup.exe, copy that installer to other computers. Users of the finished installer do not need the source ZIP or Python.
-Version 0.2.54 corrects packaging arguments containing spaces and prevents the document test from opening a temporary folder in File Explorer. If an older build reports that a temporary Documents folder is unavailable, close the warning and use the complete updated package. That warning does not mean your real Documents folder is missing. If the builder stops, send VoiceCompanion-Build-Log.txt and the two PyInstaller output and error log files. Windows installation still requires testing on the target computer.
-
-If Gmail cannot load the Inbox, follow the spoken connection message. To reconnect, say add account, choose Gmail, and sign in to the same account again. If the internet connection or Google is temporarily unavailable, retry check email later. Version 0.2.55 explains Gmail sign-in refresh failures. Other unexpected email errors create Email-Error.txt in the Voice Companion settings folder for your helper; this diagnostic contains code locations and the error type, without message contents or sign-in tokens. Check the mailbox before repeating a move or delete after an error.
-
-Version 0.2.56 preserves your place through sleep and wake, recognizes Gmail Drafts, completes the send announcement before refreshing the current folder, handles spoken punctuation before lowercase words, and allows keyboard To-field editing in new messages and response drafts. These changes passed automated regression checks; Windows keyboard focus, live speech recognition, and real account sending still need testing on your computer.
-
-Version 0.2.57 adds draft cancellation before address entry and dictation, opens the typing window explicitly in Quick Test, uses local SAPI speech for character echo, and supports To, CC, and BCC entry in response drafts. Repeating a field command restores keyboard focus without clearing typed text. If the typing window cannot open, the app announces the failure and records window-error.txt in its settings folder. Live Windows keyboard and voice testing is still required.
-
-Version 0.2.58 fixes structural document selection. Say "Select all" for the whole document. Say "Select first paragraph," "Select next paragraph," "Select previous paragraph," "Select last paragraph," or "Select paragraph 3." The same first, next, previous, last, current, and numbered commands work for characters, words, lines, and sentences within the current paragraph. Lines use explicit line breaks, not visual wrapping. Next and previous start from the selection position. Say "What is selected," then "Bold that," "Copy selection," or "Delete selection." These commands also work in document dictation-only mode. To select the literal word all, say "Select the word all."
-
-Version 0.2.59 extends structural selection to email bodies in every input mode, To, CC, BCC, Subject, notes, and focused editable web fields. Say "Select all," "Select first word," "Select next sentence," or "Select character 3," followed by "What is selected." In notes and web fields, selection applies to the current note or focused field. Paragraphs in plain fields are separated by blank lines; lines follow explicit line breaks. Selection in web pages requires focus in an editable field; buttons, checkboxes, number controls, and read-only page text are not editable text fields. Password selection is confirmed without speaking its text. Email body formatting now uses the same output for saved drafts and sending, including fonts, sizes, underline, highlight, alignment, line spacing, headings, lists, and tables. Live Windows keyboard, microphone, browser, and real-account delivery checks are still required.
-
-Version 0.2.60 makes document navigation, line breaks, scratch, naming, and Save As commands take priority over dictation and pending text-match prompts. Say "Go to beginning of document" or "Beginning of document" to move to the start, and "Go to end of document" or "End of document" to move to the end. New writing begins at that position. Say "New line" for a real line break, including inside table cells; this also works in email bodies, notes, and multiline web fields. Line-break phrases within dictated text become line breaks too. Say "Type new line" to insert the words new line, or "Type literally" before a longer literal passage. Single-line email or web fields cannot contain line breaks and will say so. Say "Scratch" or "Scratch that" after selecting characters, words, lines, sentences, paragraphs, or all text to delete the selection. This also works in email fields, notes, and editable web fields. In documents and email bodies, say "Undo" to restore it. Deleting text across table cells keeps the cells themselves. Naming changes the actual .docx filename and leaves the body alone. Both "Save as" and "Save document as" followed by a filename keep the original file. Windows microphone, typing, browser, and installation checks still require a live test.
-
-Version 0.2.61 recognizes go, move, and jump document-navigation variants and clears selections before moving. A previous Select all no longer carries into heading, alignment, font, or spacing changes after navigation. Current-unit commands such as Select line, Select word, and Select paragraph use the current position. Say font reads the full formatting summary; Say font name, Say font size, Say size, Say line spacing, Say alignment, Say heading, Say bold, Say italic, and Say underline report individual settings. Set size followed by a number accepts digits or spoken whole numbers. Set font Arial 14 or Set font Arial size fourteen changes font and size together. These commands are checked in document and email-body normal, commands-only, and dictation-only modes. Live Windows microphone and controls still need verification.
-
-Version 0.2.62 supports singular point and plural points for font sizes. Say "Set font Times New Roman 16 point" to set the font and size together. For separate changes, say "Set font Times New Roman," then "Set size 16 point," "Set font size 16 point," or "Make it 16 point." Size-only commands keep the current font. Font-only commands keep the current size. These work in documents and email bodies in normal, commands-only, and dictation-only modes.
-
-Version 0.2.63 includes Microsoft sign-in setup. Say "Add account," choose Outlook or Microsoft 365, and complete sign-in in your normal browser. Personal Microsoft accounts and Microsoft 365 work or school accounts are supported when your organization allows access. Your helper may need IT approval for a work or school account. After connecting, test opening the inbox and sending a message. Traditional on-premises Exchange is not connected by this setup.
-
-Version 0.2.64 adds the synthesizer-first Voice list and local eSpeak NG US and UK English voices. Quick Test prepares eSpeak once; completed installers include it. Cancel voice restores the previous synthesizer and voice. Be quiet, Shut up, Shut the hell up, and Shut the fuck up pause narration; Resume speaking continues from the paused playback position. New action commands still interrupt the old narration. Silence commands can act on an unambiguous offline partial phrase before the sentence finishes. Microphone processing uses smaller blocks, cloud speech does not need to stop before pausing narration, and several completed navigation, selection and speech-setting commands skip a second dictation-model pass. Dictated text and consequential actions keep their existing processing and confirmation. Live Windows testing is needed to check response time and the new voice.
-
-Version 0.2.65 adds Softer as an exact alias for Quieter, and direct Speed, Rate, and Volume commands with digits or spoken whole numbers. Speech rate and volume controls work in every app area and with Windows, eSpeak, and configured AI speech. Settings are remembered. Speech rate ranges from minus ten to ten, with zero normal; volume ranges from zero to one hundred percent. Invalid direct values leave the previous setting unchanged. Font size commands remain separate. Live Windows audio verification is still required.
-
-Version 0.2.66 expands the eSpeak list to the two base voices and 101 bundled variants for each accent. Quick Test does not require building a new installer for eSpeak; it uses the bundled engine. Quick Test still requires an existing installation for the offline recognition model. Preparation now checks the Microsoft Visual C++ x64 runtime, including MSVCP140.dll, and generates test speech in both accents. If a required runtime file is missing, preparation downloads the signed Microsoft runtime installer; Windows may ask for administrator approval. The helper must approve that prompt for setup to finish. Setup failures are recorded in eSpeak-Setup-Log.txt beside the source files. Speech failures are recorded in espeak-error.txt in the app settings folder without message text. SAPI speech remains the fallback. If preparation still fails, give those logs to your helper. Live Windows playback verification is still required.
-
-Version 0.2.67 improves number recognition for Speed, Rate, and Volume. Say "Rate four," "Speed four," or "Volume forty four percent." The parser accepts common recognition spellings such as for or fore for four, to or too for two, won for one, ate for eight, and oh for zero only within these speech-setting commands. Whole-number transcripts such as 4.0 are accepted; fractional settings remain invalid. Unparsed offline setting numbers can be refined by the dictation model before the app rejects them. Every rate from minus ten through ten and every volume from zero through one hundred was checked with digits and spoken whole numbers. Settings still apply to Windows, eSpeak, and configured AI narration. Live microphone recognition still needs testing on Windows.
-
-USER GUIDE FILES
-The installer puts all six guide formats in your Documents folder, inside Voice Companion, then User Guides. This includes plain text, HTML, Word, EPUB, and the text-only DAISY 3 ZIP, and contracted UEB BRF. Open the Voice Companion User Guides shortcut on your desktop or in the Voice Companion Start menu folder. After waking the app, you can also say "Open user guides," "Open guides folder," or "Where are my user guides." These commands keep your current task. The app copies or updates the same guides on normal startup and when you ask to open the folder. It does not change your personal documents or other files in that folder. The guides remain available after uninstalling the app.
-
-For distributors: send the finished VoiceCompanion-Setup.exe from the builder output. It installs the app, speech files, dependencies, shortcuts, and guide files on each recipient computer. Do not distribute the inner VoiceCompanion.exe by itself; it depends on the other installed files. A recipient of the finished Setup file does not need the source ZIP, Python, or the installer builder. Quick Test remains a development check for computers with an existing installation. Version 0.2.68 adds the Documents guide folder, desktop and Start menu shortcuts, and voice commands for opening it. Live Windows installation and shortcut checks are still required.
-
-Version 0.2.69 corrects the Windows installer builder release tests. The eSpeak setup tests now simulate dependency preparation without launching a real installer or downloading a runtime. Genuine eSpeak preparation still runs after the automated tests pass and may require Windows administrator approval if the Microsoft runtime is missing. If an older build stops in test_setup_checks_real_speech_not_only_version, extract the complete corrected package into a new folder and run BUILD INSTALLER - Double click again. The guide-folder installation behavior is unchanged.
-
-Version 0.2.70 simplifies the public eSpeak voice list to six choices: US English, UK English, US English Male, UK English Male, US English Female, and UK English Female. Extra named, robotic, whisper, and numbered variants no longer appear in Next and Previous browsing. A previously saved variant remains usable until you choose a replacement; canceling voice selection restores it. Rate, volume, speech interruption, and the two-stage synthesizer and voice selection workflow remain available. The compact list uses the base voice and one male1 and female1 variant for each accent; listening tests on Windows are still needed to judge the sound.
-
-Version 0.2.71 searches the whole document or email body for named replacements, offers brief contextual match browsing, shortens synthesizer browsing announcements, and adds main-menu Next and Previous browsing with confirmation. Waking at the main menu says "Main menu. What do you want to do?" Sleep within a task still returns to that task. Completed document and email navigation commands skip the extra recognition pass in normal and commands-only modes; speech interruption is unchanged. Automated checks cover these changes; live microphone timing and Windows operation still need testing.
-
-Version 0.2.72 removes recognizer-added punctuation from the end of named replacement and current-word replacement commands. Existing punctuation around the original word remains. To put punctuation into the replacement deliberately, say its name, for example "Replace cat with dog period." Repeated named text selection, selection ranges, and insert-before or insert-after targets now use the same brief match browsing as replacement. For example, say "Select red fox," "Select red fox through sleeps," "Insert before red fox," or "Insert after red fox." Search covers the whole document or email body. Hear the match number, paragraph number, and a brief sentence excerpt. Say Next or Previous, Read sentence to repeat context, then That one, Confirm that, Okay, or OK. You may still say First match, Second match, or Match followed by its number. Cancel selection leaves the text unchanged. After confirming an insertion target, speak the text to insert there; in commands-only mode, say Type literally followed by that text. Selecting an insertion target does not add text itself. Automated checks cover punctuation, repeated targets, range browsing, insertion position, cancellation, and undo; Windows listening checks are still needed.
-
-APP UPDATES
-
-When your trainer has configured the update server, Voice Companion checks for updates before the startup ready announcement. If a newer version is available, it says, "A new update is available. Would you like to install it now? Say yes or no." At startup, an available update activates the microphone for your Yes or No answer. Later automatic offers wait until the main menu or sleep if you are already doing a task. Say "No" or "Not now" to keep using this version. Say "Check for updates" after waking to check again. Without a configured server, automatic checking is inactive; the app still opens normally.
-Say "Yes" to save your work and download the update. Say "Cancel update" during download to stop. The app verifies the download before installation. It then announces that it will close, installs the update, and reopens. Windows may still require your trainer's help because of security settings. Your account data and documents stay in their usual folders. The installer refreshes all six guide formats in Documents, inside Voice Companion and User Guides. No Windows restart is forced; if one is needed, Companion tells you. If the internet or update download fails, keep using the current version and try later.
-Quick Test can check a configured server but cannot install an update over the installed app. Your trainer must install the first update-enabled Setup normally once. Hosting is configured with SET UP UPDATES - Double click.cmd in the source folder; UPDATES - Trainer.txt explains preparing and publishing the finished installer and matching update information. This package is configured for the willwalsh14-hub/voice-companion-updates GitHub repository. Your trainer runs the installer builder, which publishes the checked installer and matching update information automatically. The builder checks GitHub sign-in before the long build. Later builds reuse that sign-in. If publishing fails, the trainer can run the installer builder again. Live Windows upgrading has not been verified here.
-Version 0.2.73 adds this spoken update check, Yes and No choices, cancelable installer download, size and checksum verification, installation handoff and reopening, and a GitHub release publishing helper. Automated tests cover simulated update requests, invalid manifests, failed downloads, cancellation, source-mode restrictions, and installer packaging. Real hosted downloads and Windows upgrade installation still require testing.
-
-Version 0.2.74 configures the update feed for https://github.com/willwalsh14-hub/voice-companion-updates and fills that repository into the release publishing helper. A configured address does not publish a release: the finished Setup file and its matching update manifest must still be uploaded. Until a valid newer release is available, users can continue opening and using the app normally.
-
-Version 0.2.75 adds automatic GitHub publishing after the Windows installer passes its checks. Uploads are checked while the release is a draft, then published as latest. Existing published versions are not overwritten. Quick Test and installing the app on a recipient computer never publish. Automated tests simulate publishing; a real Windows build and live GitHub upload still need testing.
-
-Version 0.2.76 fixes GitHub sign-in during the installer build on Windows PowerShell 5.1. The trainer runs only BUILD INSTALLER - Double click.cmd. It checks sign-in before the long build, then builds, installs, checks, and publishes automatically. A new build computer requires sign-in with a GitHub account allowed to publish to the repository. Recipients who only install Setup do not need GitHub sign-in.
-
-Version 0.2.77 adds clear publishing progress to both the installer builder and optional publishing helper. The window announces uploads, verification downloads, checksum checks, and publication. Long GitHub transfers show a waiting message every 20 seconds. Keep the window open until PUBLISHED AND VERIFIED appears. The builder also checks that the publishing confirmation matches this installer before announcing complete success. Progress is saved in VoiceCompanion-Publish-Log.txt.
-
-MENU PROMPTS AND LIST NAVIGATION
-At startup, Companion says Voice Companion followed by the version is ready, Say wake up to get started and launch the main menu, and Say help for the user guide. On waking at the main menu, and when returning there from another area, it says Main menu, What would you like to do, Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open. Direct requests such as Write a document, Email, or Radio still work. Sleeping within a task still keeps that task. Menu and list browsing announces the item name before its position, for example Radio, 4 of 13. Completed menu confirmations skip the additional dictation recognition pass in the main menu, media, web, mailbox, and help. This reduces extra processing without running partial navigation commands. Actual microphone and voice timing still depends on the computer and speech engine.
-
-UPDATE PROGRESS AND SILENT INSTALLATION
-At startup, Voice Companion checks for updates before its ready announcement. If an update is available, the microphone listens immediately for yes or no. Saying no gives the normal ready announcement. If no update is found or the check cannot finish, the normal ready announcement lets you start with Wake up. After accepting an update, the cancel instruction is spoken once, followed by download percentages in five-percent steps. Say Status or Update status for the current download percentage. After download verification, a checked helper takes over and Setup runs silently without needing Install or Finish buttons. Installation progress is spoken as percentages, and Status or Update status requests the current installation percentage through SAPI speech recognition. The helper uses the default microphone and a Windows English speech recognizer; if Windows cannot provide it, automatic percentage announcements continue and the helper reports that voice status is unavailable. Voice Companion reopens after successful installation. If the helper cannot start, Voice Companion stays open. If Setup fails after handoff, the helper logs the failure and attempts to reopen the current app. Install version 0.2.83 manually once to repair older updater file locking and microphone handoff problems. Future updates use the repaired helper.
-
-
-
-
-
-SELF-VOICING SETTINGS
-
-Press Alt+O or say "Open settings." The entire dialog speaks without a screen reader: categories, setting names, current values, changes, text editing, validation errors, and save or cancel results. Focus starts on the settings menu. Use Up and Down to choose a category, then press Enter to open it. Saying the category name opens it directly. The category name is spoken first, followed by its position in the menu. Settings are not opened just by moving past their category.
-Use Tab and Shift+Tab to move between controls. Use arrow keys to change a combo box, and Space to toggle a checkbox. Text fields speak characters and cursor feedback. API-key fields hide their contents and speak hidden-character feedback. Select OK or press Enter to save that category and return to the settings menu. Escape or Cancel discards changes in the open category and returns to the settings menu. Escape from the settings menu closes settings and returns to your previous app activity. Saved changes from another category remain saved. Enter saves settings from any field, including an expanded combo box. If a button has focus, Enter activates that button.
-Categories are Verbosity options, Voice options, Synthesizer options, Input options, Email options, Word processor options, Notepad options, Web browser options, Radio options, Podcasts options, Auto-update options, and Startup and exit options. Speech has rate, volume, and audio ducking. Synthesizer has available engines and voices and protected AI-key options. Email has sending account, list size, header-name announcements, spoken header order, and Add account. Word processor options has defaults for NEW documents; these do not change existing document or email text. Web browser has Default search engine (Google initially), Keep browser window open (off by default), Automatic page reading (on by default), browser and favorites. Radio has source, presets, and recordings. Podcasts has subscription download limits. Auto-update options has automatic startup checking and Check for updates. Startup and exit options has Start with Windows, unchecked by default, and independently checked confirmation options for app exit, shutdown, and restart. Enable it and choose OK to launch your installed Voice Companion automatically when your Windows account signs in. Disable it and choose OK to stop automatic launching. It applies only to your Windows account, requires the installed app, and does not turn on the microphone for dictation or bypass the usual wake-up and update prompts. Uninstalling Companion removes its startup registration.
-Within settings, say a category name, "Next setting," "Previous setting," "Next," "Previous," "Read setting," "On," "Off," "Toggle," "OK," or "Cancel." Say setting names followed by values, such as "Verbosity medium," "Punctuation most," "Rate 4," "Volume 50," "Default font Times New Roman," or "Default line spacing double." Settings remain staged until OK. At the settings menu, Next or Previous chooses a category; OK, Okay, Confirm, Confirm that, or That one opens it. In an open category those confirmation commands save settings. Say Cancel or Back to return to the settings menu without saving; say Close settings to leave settings. Choosing a different category directly by voice discards unconfirmed edits in the current category. Buttons that open another app area close settings and discard unsaved edits.
-Say "Verbosity high," "Verbosity medium," or "Verbosity low" outside settings to save that choice immediately. High reads the complete application guidance, including command hints. At the main menu it says: Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open. Medium says: Main menu. What would you like to do? Say next or previous, and OK to open. In other guidance prompts, Medium keeps the main message and the first command-hint sentence. Low says only Main menu at the main menu and removes the Say command-hint portion from other guidance prompts. These presets affect marked application guidance; they do not shorten document or email content, errors, confirmation results, or setting names and values. Punctuation, typing echo, and delayed phonetics are separate choices in Verbosity and are not changed by a verbosity preset.
-Say "Punctuation none," "Punctuation some," "Punctuation most," or "Punctuation all." Most speaks more symbols than Some while leaving periods as natural pauses; All also speaks periods. This changes speech, not stored punctuation.
-
-KEYBOARD NAVIGATION
-
-Use Up or Left for Previous, Down or Right for Next, and Enter to open or confirm menu and list choices. In an email list, Enter opens the highlighted message and reads its body from the beginning. Escape goes back or cancels the current choice. In an email draft Escape discards the draft. In a document or email body, type directly. Enter creates a new paragraph; typed words are literal text, so typing period or new line keeps those words. Left and Right move by character and immediately speak the character at the new caret. Control+Left and Control+Right move by word. Up and Down move by line, Control+Up and Control+Down move by paragraph, Home and End move within the line, and Control+Home and Control+End move to the beginning or end of the text. Hold Shift with movement keys to select text; Control+A selects all. These keyboard controls continue working while the microphone sleeps. While choosing a matching selection or replacement, arrows browse matches, Enter confirms, and Escape cancels that choice. Returning to a menu restores menu-key focus automatically. Alt+O opens Options. Contacts, connected email accounts and saved documents are navigable lists too. Every list stops at its first and last item and announces Start of list or End of list. Home selects the first item and End selects the last; say First item, Last item, Start of list or End of list for the same navigation. Repeated first-letter navigation stops at its last matching item; Home or a different letter lets you move back. Text fields retain normal caret movement. Email Home and End reach the first or last message in the folder, fetching other pages when necessary.
-
-TYPING ECHO AND PHONETICS
-
-In Alt+O, choose Verbosity and Tab to Typing echo. Characters speaks each inserted character; Words speaks a completed word when you type a space or Enter; Characters and words speaks both; None turns off typing feedback. Cursor navigation still speaks with any typing-echo setting. Say Typing echo words, Typing echo characters, Typing echo characters and words, or Typing echo none to save the choice outside settings. Feedback uses your local eSpeak or SAPI voice, including when AI narration is selected.
-In Verbosity, Delayed phonetic pronunciation is enabled by default. After Left or Right lands on a letter, the letter speaks immediately and its phonetic name follows after half a second, for example B followed by Bravo. Another key or focus change cancels the pending phonetic name. Toggle this checkbox off or choose a delay of 0.5, 1, or 2 seconds. Say Phonetics off, Phonetics on, or Phonetic delay 1 second outside settings. Phonetics applies to caret review, not every typed letter.
-
-Shut up and Pause also pause keyboard speech. Resume continues it. Silencing speech cancels a phonetic hint that has not yet spoken. Moving or typing again gives fresh feedback.
-
-KEYBOARD EMAIL READING AND DOCUMENT NAMING
-
-Opening a message reads its body and focuses a read-only text view. Use the same character, word, line, paragraph, and selection keys as in a document to review the received message. Copying selected text is allowed; typing cannot change received mail. Escape returns to the folder list, where arrow keys move through messages again.
-When you leave a document using Escape, main menu, close, or leave document, Companion asks whether to save it. Say Yes or No, or use arrow keys to choose Yes or No and press Enter. Yes starts the document name field, including for an already named document. Say the name to fill the field, then press Enter or say Okay; alternatively type the name and press Enter. The name is the filename, never body text. No discards changes since opening or your last explicit save or naming command; an existing file is restored, and a new unsaved file is removed. Escape at the save question or name field keeps editing. At Yes or No prompts, Alt+Y immediately chooses Yes and Alt+N immediately chooses No; Y and N without Alt and voice Yes or No also work. Home selects Yes and End selects No. Press F2 while writing to name or rename the file; type or say the name and press Enter. F2 naming keeps you in the document afterward.
-
-KEYBOARD MAIL AND EXIT
-The main menu includes Exit Voice Companion. Say close companion, exit companion, or return to Windows to close the app. Alt+F4 does the same from page reading, media, editable fields and confirmation prompts. In the Options window it requests app exit rather than merely closing Options; the exit and document-save preferences still apply. By default, the app asks Exit Voice Companion? Are you sure? Yes or no, with No selected; voice No or Escape cancels. If a document is open, the save question appears first.
-In email, Control+N starts a new message; Control+R replies; Control+Shift+R replies to all; Control+F forwards; Control+Y chooses a folder; F5 refreshes the list. Arrows move through folder and message lists and Enter opens the choice.
-In the message list, Space toggles the current message selection; Shift+Up and Shift+Down extend selection while moving; Control+A selects messages on the current loaded page. Delete deletes the current or selected messages after confirmation. Control+Shift+V chooses a destination to move them, then asks for confirmation. Use arrows to choose Yes or No and Enter to answer; Escape cancels. Inside a received message, Control+A selects its text for copying instead of selecting messages.
-F2 in email starts Rename folder: choose the folder with arrows and Enter, then type the new name and press Enter or say rename to followed by the new name. Control+Shift+D starts Delete folder. Only empty user-created folders without children can be deleted; standard provider folders remain protected. Folder changes require Yes or No confirmation. Control+Shift+E starts Create folder; type create folder followed by its name and press Enter. Voice commands create folder, rename folder, and delete folder remain available.
-In a draft, Control+Enter requests sending; the usual confirmation still applies. Escape cancels the draft. Editing text keeps the standard character, word, line, paragraph, selection, copy, and paste shortcuts.
-Across areas, arrows, Enter, Escape, and Alt+O provide navigation and settings, including in Dictation Only mode. Document exit commands still offer the save question in that mode. You may also type any available voice command in the command field and press Enter; Alt+T focuses that field, so every app command has a keyboard path.
-
-
-RELEASE NOTES AND BRAILLE
-Each installer includes the current manual and detailed release notes in TXT, HTML, DOCX, EPUB, text-only DAISY 3, and BRF. All editions of each publication come from the same source. The BRF copies use contracted Unified English Braille, 40 cells per line, and 25 lines per page. They are mechanically translated and have not been human Braille proofread. The app does not require a Braille translator to read its guides.
-Find the files under Documents, Voice Companion, User Guides. Say open user guides, or press Alt+T, type open user guides, and press Enter. Updates replace the manual copies with the current build editions and preserve personal files in this folder. Release notes use filenames such as Release Notes for Voice Companion 0.2.108-test.docx; the same version appears in TXT, HTML, EPUB, BRF, and the DAISY ZIP filename. Notes from earlier versions remain available if they were installed with versioned names. Documentation files are also separate downloads on each new GitHub release.
-Release notes follow the supplied reference structure: a level 1 release title, level 2 New Apps and Features and Fixes and Enhancements headings, numbered topics, and lettered details. Numbering starts over for each main section, and lettering starts over for each topic. TXT displays the same numbers and letters without heading styles. Official releases must have comprehensive notes describing actual changes since the named comparison release. Testing builds are labeled as testing builds.
-The current email shortcuts are Ctrl+N for new email, Ctrl+R for reply, Ctrl+Shift+R for reply all, Ctrl+F for forward, Ctrl+Y for folders, F5 for refresh, Ctrl+Enter in a draft for send with confirmation, and Escape in a draft for cancel without saving.
-In a message list, Space toggles the current message selection when the command field is empty. Shift+Up and Shift+Down extend selection. Ctrl+A selects messages on the loaded page. Delete requests deletion with confirmation. Ctrl+Shift+V chooses a destination folder and requests a confirmed move. Ctrl+A inside message or draft text selects text instead of messages.
-For folders, Ctrl+Shift+E starts Create Folder, F2 starts Rename Folder, and Ctrl+Shift+D starts Delete Folder. Delete in a folder chooser requests deletion of its highlighted folder. Use the arrows and Enter to choose a folder, type a name and Enter when requested, then answer the confirmation. Only empty user-created folders without children can be deleted; standard provider folders are protected.
-To choose a draft field by keyboard, press Alt+T, type go to to, go to cc, go to bcc, go to subject, or go to body, then press Enter. Type addresses and press Enter to accept them. Mail keyboard commands work while the microphone sleeps and in Dictation Only mode.
-
-After a silent automatic update, Setup runs a hidden guide refresh and the app verifies the documentation version and checksums at startup. The Open User Guides command repeats that refresh. The file documentation-version.json in User Guides records the version that was copied and verified. If a guide is open in Word or another reader, close and reopen it after updating. If copying fails, close guide readers and try Open User Guides again. A diagnostic named user-guide-update-error.txt is written under Local AppData, VoiceCompanion. An unavailable Documents folder or a locked file must be resolved before all copies can be replaced.
-
-MAIN MENU AND COMPUTER OPTIONS
-After Wake up, browse the main menu with Up or Down, or say Next or Previous. Press Enter, or say OK, Okay, Confirm, Confirm that, or That one to open the announced item. Check for updates is now a main-menu item. It performs the same check as the Check for updates voice command, even if automatic checks are off. Options is the main-menu settings choice. What's new is available by voice and inside Help. Alt+O opens the settings menu from any app area; Open settings, Settings, and Preferences remain voice commands.
-Choose Restart computer or Shut down computer from the main menu, or say Restart computer, Restart Windows, Reboot computer, Shut down computer, Shut down Windows, or Turn off the computer. By default, Companion asks Yes or No and initially selects No. Use arrows or Tab to choose Yes, then Enter, or say Yes. Escape or No cancels. These options affect the whole computer. Exit Voice Companion, Close companion, and Return to Windows only close Companion.
-If a document is open, Companion first asks whether to save it. Yes keeps an existing document name or requests a filename for an untitled document; type or say that name and confirm it as usual. No discards the document changes. Escape keeps the document open and cancels the computer-action sequence. After the save decision is completed, a separate Yes or No asks whether to restart or shut down the computer when its confirmation option is enabled. At the final Yes, the current email draft and note are saved before Windows is asked to act. If saving or the Windows request fails, Companion stays open and reports the problem. Windows may display another app's unsaved-work warning; Companion does not force other apps to close.
-Say What's new, What is new, or Release notes, or open Help and choose its What's new topic. Help also lists What's new as a topic. It reads the complete notes for this installed version, including the testing or official status and changes since the named prior build. Say Continue reading, Next paragraph, Previous paragraph, Next sentence, or the other reading commands to review them. Close help returns to your previous activity; Main menu returns to the start.
-The Windows startup setting does not make automatic restart or shutdown happen. Computer power actions require their own confirmation by default; you can disable the shutdown or restart prompt independently in Startup and exit options. Quick Test can show Startup and exit options, but enabling Start with Windows requires the installed Windows EXE.
-
-
-MENU LETTERS AND EMAIL KEYBOARD FIELDS
-
-Alt+O opens Options or Settings from anywhere inside Voice Companion, including document editing, email drafts, and the built-in help. The former Control+Comma shortcut is removed. The main menu includes Options (O). In the native settings window, Alt+O returns to its category menu; unsaved changes in an open category are canceled. OK saves that category, and Cancel discards it.
-
-Menus and named pickers announce their first-letter key: Email (E), Options (O), Word processor (W), and Notepad (N). Press the letter to highlight a matching item, then Enter to open it. Press the same letter again to advance through other matching names; it stops at the last match. Use Home or a different letter to move back. Arrows and voice commands still work. This applies to the main menu, settings categories, help topics and subtopics, synthesizers and voices, radio stations and presets, podcasts and episodes, website favorites and email-folder choices. Page links, headings and field lists do not add menu-letter labels; webpage letters perform virtual-cursor quick navigation. Text boxes remain editable; menu letters apply while browsing a menu with an empty command box. A letter with no match leaves the selection unchanged.
-
-Email message lists do not use first-letter navigation. Folder menus do. Message navigation speaks the sender, subject, and date, followed by position, without the labels From, Subject, or Date. For example: Sam. Meeting tomorrow. Today. 2 of 10. This applies in Inbox, Sent, and other folders; it does not change the message contents.
-
-In a new, reply, or forwarded email draft, Tab moves To, CC, BCC, Subject, Body, and back to To. Shift+Tab moves backward. Entering a field announces its name and current contents. Moving away commits the text in a header; comma-separated or semicolon-separated CC and BCC addresses are supported. An invalid address keeps focus in that field and preserves the previously saved address. The body saves its edits before focus changes. Tab is field navigation, not an inserted tab character. Reply and forward subjects remain protected from changes, but can be visited and read. Go to To, Go to CC, Go to BCC, Go to Subject, and Go to Body remain available by voice. Ctrl+Enter still reviews sending; Tab during a send-confirmation prompt changes its Yes/No choice.
-
-Additional computer commands include Shut off the computer, Turn the computer off, Shut down the computer, Shut the computer down, Restart the computer, Reboot the computer, Reboot, Restart, and Reboot the damn thing. These keep the existing document-save question and, by default, a separate Yes/No power confirmation that selects No. Turning off its confirmation option requests the Windows action immediately after any document-save question. Exit Voice Companion still closes only the app.
-
-STARTUP AND EXIT OPTIONS AND EMAIL HEADERS
-Alt+O announces Options menu. Open Startup and exit options with Enter. Start with Windows remains off by default. Ask before exiting Voice Companion, Ask before shutting down the computer, and Ask before restarting the computer are checked by default. Each can be turned off independently with Space or a voice setting command and saved with OK. Cancel discards changes.
-Escape at the main menu invokes Exit Voice Companion. With exit confirmation enabled, the prompt asks Exit Voice Companion? Are you sure? Yes or no. No is selected initially. Arrows or Tab select Yes or No, Enter activates, and Escape cancels. You can also say yes, no, or cancel. A second Escape returns to the main menu without exiting. When the exit option is unchecked, exiting is immediate. Document saving prompts still apply. Disabling a computer confirmation requests the corresponding Windows action immediately; Windows may still prompt about other unsaved applications.
-In Options, Email, Announce email header names is off by default. The Spoken email headers list shows From, Subject, Date, and Size with their enabled state and position. From, Subject, and Date start enabled; Size starts disabled. Use arrows to select a header, Space to enable or disable it, and Alt+Up or Alt+Down to move it. Tab reaches Enable / disable, Move up, and Move down buttons; Enter activates them. At least one header must stay enabled. Say next header, previous header, toggle header, move header up, or move header down. OK saves and Cancel discards. These settings apply across all folders. Size is in bytes, estimated for Gmail, RFC822.SIZE for Yahoo, and stored message size for Outlook when available.
-
-
-KEYBOARD RESPONSIVENESS AND VOICE PITCH
-
-Arrow, Tab, and first-letter navigation replace current feedback immediately. Hold no modifiers to use first letters in menus. Keyboard navigation uses local speech even with AI narration selected, avoiding online generation delays. Press either Control key to stop speech. Existing stop-talking voice commands remain. Home and End select the first and last item in lists and menus; in text they retain normal reading and editing behavior.
-
-Press Y or N to immediately answer exit, restart, and shutdown confirmations. Arrows and Tab select Yes or No; Enter activates the selected answer. Escape cancels. Alt+O opens Options and announces Options menu. The main menu item is Options; settings remains a voice alias. The Speech category is now Voice, with pitch, rate, volume, and audio ducking. Pitch ranges from minus ten to ten, with zero the default. Say higher pitch, lower pitch, pitch up, pitch down, or set voice pitch minus three. Pitch is also a keyboard combo box under Options, Voice. Windows and eSpeak use native pitch controls; AI narration uses higher/lower pitch guidance, so the exact audible result depends on the voice.
-
-Email lists speak sender names without addresses. If a message has no sender name, Companion says Sender name unavailable. Ctrl+Shift+C copies the current sender address to the Windows clipboard; say copy sender address. Ctrl+Shift+N starts a new message to that sender; say new email to sender or email sender. This creates a fresh subject and body rather than a reply. Ctrl+N still opens a blank new email.
-
-Help and What's new use the same read-only keyboard reading area as received email: Left/Right read characters, Ctrl+Left/Right read words, Up/Down read lines, Ctrl+Up/Down move between paragraphs, and Home/End move within text. Ctrl+Home/End reach the beginning/end. Escape backs out of an article to subsections or topics; Escape from topics closes Help and returns to the previous activity.
-
-
-READING AND RAPID NAVIGATION FIXES IN 0.2.103
-
-Keyboard reading in documents, received email, Help, and What's new now keeps speaking after cursor updates. Up/Down read the destination line; Left/Right read characters; Ctrl+Left/Right read words; Ctrl+Up/Down move between paragraphs; Home/End and Ctrl+Home/End retain normal text navigation. Rapid navigation applies all movements but discards intermediate speech so only the final destination is announced.
-
-Next and previous character, word, line, sentence, and paragraph commands read the text without unit numbers or totals. Read/current and read current unit commands use the same reading position. Characters include spoken spaces and new lines. Keyboard and voice movement share the cursor. Short voice reading feedback uses local speech even if AI narration is selected, avoiding online generation delays. Complete reading commands in email and Help also skip the second dictation-recognition pass. Explicit document dictation mode retains literal dictation handling.
-
-EMAIL READING AND SENDING - VERSION 0.2.105-test
-
-HTML is the default for opened email messages. Under Options, Email, choose Email format: HTML or plain text. You can also say "Email format HTML" or "Email format plain text." Changing format starts the open message at its beginning. Plain text uses the original plain-text part when the sender supplied one.
-
-HTML preserves links, headings, bold, italic, underline and lists. Use Tab or Shift+Tab to move among links; press Enter to open one in your browser. Say "List links," then "Open link 1" (or another number). Arrow reading and Escape still work. Scripts and remote images do not load, and complex browser layouts are simplified. Repeated empty lines are reduced; intentional blank lines say "Blank line."
-
-Press Alt+S or Ctrl+Enter, or say "Send it," to review the message. The current typed header is saved before shortcut review. Answer Yes to send or No to keep the draft. If sending fails, Companion now speaks the reason. Expired sign-in requires reconnecting the sending account; missing permissions require reconnecting and allowing email sending. A rejected request may be reviewed again after correction. A timeout or uncertain result still requires checking Sent Mail before trying again to avoid duplicates.
-
-Update installation and email send confirmation: press Y or N immediately; arrows or Tab/Shift+Tab choose Yes or No, Enter activates the spoken choice, and Escape cancels. Voice Yes and No still work. Test this with text left in an email header field.
-
-VERSION 0.2.105-test - EMAIL AND KEYBOARD FEEDBACK
-Email may have only a subject or only a body; the recipient is still required. The review says No subject or No message body for a blank part. To skip the subject by voice, say Skip subject, No subject, or Leave subject blank, then dictate the body. Send it, Alt+S and Ctrl+Enter still review first; Yes sends and No keeps the draft.
-Getting messages from the folder and Email sent successfully now speak during keyboard use. Routine rapid-navigation feedback still skips intermediate destinations.
-You can say Wake up or begin keyboard navigation during the startup announcement once initialization and the startup update check finish. The app no longer waits for that speech to finish.
-Tab announces the setting name and value. Arrowing through a setting choice or toggling a checkbox says just the new value.
-
-VERSION 0.2.108-test - WEB BROWSING AND EMPTY EMAIL
-
-A valid recipient can receive a new email with both subject and message body blank. Alt+S, Ctrl+Enter or send it still starts the review and Yes/No confirmation. No subject and no message body are announced. Provider errors and uncertain delivery safeguards remain.
-
-KEYBOARD DELETION FEEDBACK
-
-Backspace speaks the character it erased. Delete speaks the character now at the caret, immediately to the right of the character removed; at the end it says End of text. This applies to document and email body editing, email header fields, typed commands and typed searches. Typing echo Off remains silent. Password fields continue to hide the characters.
-
-CHANGES IN THIS BUILD
-
-The audio tutorial has been rebuilt as nine courses with task walkthroughs, indexed lessons, complete documented command references, lesson search, command lookup and field-by-field Options instruction. Notepad, Podcasts and Help/updates now have their own courses. Fictional action simulations have been removed. Tutorial commands cannot send or delete email, change documents, start media, submit a form or save app preferences; speech controls remain available.
-The browser's virtual cursor stays in reading mode when arrows or quick keys reach a field. Tab, Enter, Edit current field or explicit field dictation starts editing. Page reading is read-only. Heading and other quick keys are routed from the Companion page, entry and other window controls, and Escape immediately restores them after field editing. Arrows read page text between links as well as interactive elements. The same changes apply to Firefox, Chrome, Edge and Brave.
-Consumer regressions cover all nine tutorial courses and their references, tutorial isolation from real work, heading keys with stray entry focus, fast Escape followed by H, plain text in several page layouts, and deliberate field editing. The live-site audit checks arrow coverage of plain body text on Control Alt Success and its linked service pages; no live contact message is sent.
+VOICE COMPANION USER GUIDE
+
+Guide version: 0.2.125-test.
+Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
+This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
+
+Contents
+1 Getting Started
+2 Using Voice Commands
+3 Using Help And Lessons
+4 Speech And Voices
+5 Reading And Editing Text
+6 Write A Document
+7 Write A Note
+8 Set Up Email
+9 Write An Email
+10 Read And Organize Email
+11 Browse The Web
+12 Bookmarks And Web History
+13 Listen To Radio
+14 Saved Radio Stations
+15 Record Radio
+16 Listen To Podcasts
+17 Saved Podcasts And Downloads
+18 Change Your Options
+19 Sleep, Exit, And Computer Power
+20 Check For Updates
+21 Find Your Guide Files
+22 Fix A Problem
+
+1. GETTING STARTED
+
+1.1 Install Voice Companion
+Use the file named VoiceCompanion-Setup.exe. This is the installer. It puts the app and its guides on your computer.
+1. Open the installer.
+2. Follow its prompts.
+3. On the last page, leave Open Voice Companion now checked if you want to start the app.
+4. Choose Finish.
+You can open the app later from its desktop icon or the Windows Start menu. Use the installed app, not an older copy from a download folder.
+
+1.2 Open the app and wake it
+1. Open Voice Companion.
+2. Wait while it checks for updates.
+3. If it offers an update, say "Yes" or "No". You can also use the arrow keys and Enter.
+4. When it says it is ready, say "Wake up".
+5. Wait for the main menu. Say the name of the tool you want.
+For example, say "Word processor", "Notepad", "Email", "Web browser", "Radio", or "Podcasts".
+The keyboard works while the microphone is asleep. Press Down Arrow to hear a menu item. Press Enter to open it.
+Say "What version?" to hear the version you are using.
+
+1.3 Use the main menu
+The main menu has these choices:
+- Word processor
+- Notepad
+- Email
+- Web browser
+- Radio
+- Podcasts
+- Options
+- Check for updates
+- Help
+- Shut down the computer
+- Restart the computer
+- Exit Voice Companion
+Voice: Say "Next" or "Previous" to move. Say "That one", "Okay", or "Confirm" to open the item you hear.
+Keyboard: Use Up Arrow and Down Arrow to move. Press Enter to open an item. Home selects the first item. End selects the last item.
+You hear "Start of list" or "End of list" if you try to move past an end. The list does not wrap around.
+In most menus, press the first letter of a name to find a matching item. Press Enter to open it. Text boxes use those keys for typing instead.
+
+1.4 Set up your microphone
+Voice Companion uses the microphone selected in Windows. A built-in microphone or a working headset can be used.
+A headset helps keep the app's speech out of the microphone. It can also make your own voice easier to hear.
+If voice commands do not work, check the microphone in Windows sound settings. Check that apps can use it. Then close and reopen Companion.
+You can keep using the keyboard if the microphone is not available.
+
+2. USING VOICE COMMANDS
+
+2.1 Give a command
+Say a command, then wait for the reply. For example, say "Help" to open the guide.
+In a menu, say "Next", then "That one" to choose the item you hear. Say "Main menu" to return to the start.
+Names in examples are sample names. Replace them with your own document, contact, folder, or bookmark name.
+
+2.2 Speak text or give commands
+Normal mode lets you give commands and speak text. In a document, draft, note, or web text box, ordinary speech adds text.
+Say "Commands only" when you want to move around without adding text by mistake.
+Say "Dictation only" when you want your speech to become text. In this mode, some words that are usually commands become text.
+Say "Normal mode" to return to voice commands and text entry. Say "What mode?" to hear the current choice.
+You can still leave a document, cancel a draft, or put Companion to sleep in dictation-only mode. Some editing commands also remain available.
+When you are unsure, use Normal mode before giving an editing or reading command.
+
+2.3 Enter words that sound like commands
+Say "Type literally" before words you want to write exactly. For example, "Type literally new line" writes the words new line.
+Without that prefix, "New line" makes a line break. "New paragraph" starts a new paragraph.
+Say punctuation names while you speak. For example, "Hello comma Sam period" writes Hello, Sam.
+Listen to the result. Speech recognition can choose the wrong word or punctuation mark.
+Typed words are taken as text. Typing period does not make a period mark.
+
+2.4 Type a voice command
+1. Press Alt+T to reach the command box.
+2. Type the command. For example, type list documents.
+3. Press Enter.
+Use this path when you prefer the keyboard or a voice command is not heard correctly.
+In a web page, Alt+T lets you type an app command. Press Escape to return to page reading.
+
+2.5 Answer Yes or No
+When Companion asks a question, listen to the item name and the action first.
+Say "Yes" to do the action. Say "No" or "Cancel" to stop it.
+Keyboard: Use arrows or Tab to choose Yes or No, then press Enter. Alt+Y answers Yes. Alt+N answers No. Escape cancels.
+At a Yes or No prompt, Home selects Yes and End selects No.
+
+3. USING HELP AND LESSONS
+
+3.1 Open a Help topic
+Say "Help" to open the guide inside the app. Use "Next", "Previous", and "That one" to choose a topic.
+You can go straight to a topic. For example, say "Help with documents", "Help with email", or "Help with web".
+Other useful requests are "Help with radio", "Help with podcasts", "Help with presets", and "Help with commands".
+Keyboard: Use the arrows and Enter to choose. Home and End reach the ends of a list.
+
+3.2 Read part of a topic
+A large topic has a list of smaller parts. Choose the part you want, then listen.
+Say "Continue reading" for more. Say "Read from top" to start that part again.
+Say "Next paragraph", "Previous paragraph", "Next sentence", or "Next word" to move through the text.
+Choosing another Help item stops the old speech before the next item is read.
+Press Control to silence speech. Say "Back to subsections" to return to the smaller parts.
+Say "Back to topics" for the full topic list. Say "Close help" to return to your work.
+
+3.3 Start the audio tutorial
+The tutorial explains how to use the app. It waits for you between lessons. Commands given there are explained; they do not send mail or change your files.
+1. Return to the main menu.
+2. Say "Start tutorial".
+3. Say a course name, such as "Email" or "Web browser". You can also use arrows and Enter.
+4. Listen to the first lesson.
+5. Say "Next lesson" when you are ready.
+Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates.
+
+3.4 Find, repeat, and leave a lesson
+Say "Repeat" to hear the same lesson. Say "Previous lesson" to go back.
+Say "Lesson list" for the lesson names. Use arrows and Enter to choose one.
+Say "Find lesson" followed by a topic. For example, say "Find lesson bookmarks".
+Say "List commands" for the course's command list. Say "Explain command send it" to hear how that command works.
+Long explanations may need "Continue reading". Say "Courses" to return to the course list.
+Escape goes back one level. Say "Main menu" or "Close tutorial" to leave the tutorial.
+
+4. SPEECH AND VOICES
+
+4.1 Stop or pause speech
+Press Control to silence Companion. This works while the microphone is asleep too.
+By voice, say "Be quiet", "Stop talking", "Pause", or "Shut up". Say "Resume" or "Keep talking" to continue paused speech.
+A new command can stop the old reading and do something else. For example, say "Next message" while mail is being read.
+For audio such as radio or podcasts, use "Pause audio" or "Stop audio" to make your meaning clear.
+
+4.2 Change speed, volume, or pitch
+Say "Faster" or "Slower" to change speech speed. Say "Louder", "Quieter", or "Softer" to change volume.
+For a set value, say "Rate four", "Speed four", or "Volume fifty".
+Speech rate runs from minus ten to ten. Zero is the normal speed. Volume runs from zero to one hundred.
+Pitch changes how high or low a voice sounds. Say "Higher pitch", "Lower pitch", or "Pitch minus three".
+Pitch runs from minus ten to ten. These settings are separate from text size or music volume.
+Keyboard: Press Alt+O. Open Voice options. Use Tab to reach a setting, then use arrows to change it. Choose OK to save.
+
+4.3 Choose a voice
+1. Say "Voice list" or "List voices".
+2. Choose the speech system you want. The list calls this a synthesizer.
+3. Choose a voice from that system.
+4. Listen to the sample and confirm your choice.
+SAPI means the voices provided by Windows. eSpeak has US and UK English choices. AI voices need a separate setup and an internet connection.
+Use "Next voice", "Previous voice", and "Okay" to choose. Say "Cancel voice" to keep your earlier choice.
+The available voices depend on what is installed and set up on your computer.
+
+4.4 Use an AI voice
+An AI voice reads some app text through an online service. Your helper must set up access before you can use it.
+Open Options, then Synthesizer options. Your helper can enter the service key in the private AI API key box. This key is a code that gives the app access to the speech service.
+Choose whether to allow the text being read to be sent to OpenAI. Save the setting only when you agree.
+Say "Use AI voice" after setup. Say "Use SAPI" or "Use eSpeak" to use local speech instead.
+An AI voice needs internet access and may use paid service credit. Long reading may take longer to start.
+Typing and quick movement feedback use a local voice so each key can be heard promptly. If online speech fails, Companion uses local speech.
+
+5. READING AND EDITING TEXT
+
+5.1 Read from your current place
+These commands work in documents, email, web pages, and notes where text reading is available.
+Say "Read from top" or "Start reading" to start at the beginning. Say "Continue reading" for the next part.
+Say "Next character" or "Previous character" to move by letter or symbol.
+Say "Next word" or "Previous word" to move by word.
+Say "Next line" or "Previous line" to move by line.
+Say "Next sentence" or "Previous sentence" to move by sentence.
+Say "Next paragraph" or "Previous paragraph" to move by paragraph.
+A line here may follow a line break in the text. It may not match a line shown on the screen.
+
+5.2 Read with the keyboard
+Left Arrow and Right Arrow move by character. Control+Left Arrow and Control+Right Arrow move by word.
+Up Arrow and Down Arrow move by line. Control+Up Arrow and Control+Down Arrow move by paragraph.
+Home and End reach the start or end of a line. Control+Home and Control+End reach the start or end of the text.
+In web pages, Page Up and Page Down move a longer distance. Page reading starts from the place you last chose.
+The same keys can review a received email. You can read and copy received text, but you cannot rewrite that message.
+
+5.3 Select text
+Selected text is the part you have chosen to copy, change, or delete.
+Keyboard: Hold Shift with a movement key. Control+A selects all the text in an open text view.
+Voice: Say "Select word", "Select line", "Select sentence", "Select character", or "Select paragraph" for the current part.
+Say "Select all" for all the text. Say "What is selected" or "Read selection" to check your choice.
+In a document or draft, say "Select first paragraph", "Select next paragraph", "Select previous paragraph", or "Select paragraph 3".
+You can use first, next, previous, last, current, or a number with character, word, line, sentence, and paragraph.
+In email address and subject boxes, a note, or a web text box, selection applies to that box's text.
+Web page reading text is read-only. To change a web answer, enter its text box first.
+
+5.4 Choose named words
+Say "Select red fox" to choose those words. Say "Select red fox through sleeps" to choose a longer passage.
+You can also say "Selection start at cat", then "Selection end at dog".
+If the words appear more than once, Companion reads each matching place. Say "Next" or "Previous" to hear another match.
+Say "Read sentence" to hear the nearby sentence again. Say "That one", "Confirm that", or "Okay" to choose.
+Say "First match", "Second match", or "Match 3" to choose by number. Say "Cancel selection" to leave the text as it is.
+To select the word all rather than all the text, say "Select the word all".
+
+5.5 Copy, cut, paste, or remove text
+Say "Copy selection", "Cut selection", or "Paste". Keyboard: use Control+C, Control+X, or Control+V.
+In a document or draft, you can also name the words. For example, say "Copy cat", "Cut cat", or "Delete cat".
+Say "Delete word", "Delete line", "Delete sentence", or "Delete paragraph" to remove the current part.
+Say "Scratch" or "Scratch that" to remove selected text. With no selection, it removes the most recent spoken addition where supported.
+In documents and draft message bodies, say "Undo" to reverse an edit. Check the text after the change.
+Moving to a new place clears the old selection. Check your choice again before you change or remove text.
+
+5.6 Replace or insert words
+Say "Replace cat with dog" or "Change cat to dog" to find and change the words.
+One match is changed at once. With several matches, use "Next", "Previous", and "That one" to choose the right place.
+Say "Cancel replacement" to stop without changing the words. Say a punctuation name if you want it in the new text.
+For example, "Replace cat with dog period" includes a period. A period added to the end of a recognized command is not treated as your new text.
+Say "Replace word with hello", "Replace sentence with Thank you", or "Replace paragraph with I will call tomorrow".
+Say "Insert before red fox" or "Insert after red fox" to choose where to add text.
+Choose a matching place if asked. Then speak the words to add. In Commands only, use "Type literally" before the new words.
+
+6. WRITE A DOCUMENT
+
+6.1 Create and name a document
+The Word processor makes files that Microsoft Word can open. Word does not need to be installed.
+1. Say "Create a document" or choose Word processor.
+2. Say "Name document My Letter" to name the file.
+3. Speak a short sentence or type into the document.
+4. Say "Read paragraph" to check what you wrote.
+The file name and the title inside your letter are separate. Naming the file does not add a title to the page.
+You can also press F2 to reach the name box. Say the name, then say "Okay", or type the name and press Enter.
+
+6.2 Write and move through the document
+Say "New paragraph" to start a new paragraph. Say "New line" to start a line in the same paragraph.
+Say "Read paragraph", "Spell word", "Next word", or "Next sentence" to review your text.
+Say "Go to beginning of document" or "Go to end of document" to move to an end.
+"Move to beginning of document", "Move to end of document", and the matching jump commands also work.
+After moving, new words are added at that place. A previous selection is cleared.
+You can type directly too. Enter creates a paragraph. Use the reading and editing keys in chapter 5.
+
+6.3 Change the look of text
+Choose the text first if you want to change only part of it. With no selection, many commands change the current paragraph.
+Say "Make this bold", "Make this italic", or "Underline this". Say "Remove bold", "Remove italic", or "Remove underline" to turn a style off.
+To change named words, say "Bold cat", "Italicize cat", "Underline cat", or "Highlight cat".
+Say "Set font to Arial" to choose the letter style. Say "Set font size to 14 points" or "Set size 14" to choose its size.
+You can set both at once. For example, say "Set font Times New Roman 16 point".
+To change just the current word, say "Bold word", "Italic word", "Underline word", or "Set word size to 14 points".
+Say "Set word font to Arial" to change that word's font. "Remove bold from word" turns bold off for that word.
+Say "Say font" or "Read formatting" to hear the text settings. "Say font name", "Say size", "Say bold", "Say italic", and "Say underline" read one setting.
+If selected text has more than one setting, Companion tells you that the setting is mixed.
+
+6.4 Use headings and align text
+A heading names a part of your document. Heading levels run from 1 to 6.
+Say "Heading 1" or "Apply heading 1" for a main heading. Use another number for a smaller heading.
+"Make this a heading" uses level 1. "Normal text" removes the heading style.
+Say "Align left", "Align center", "Align right", or "Align justified" to place a paragraph on the page.
+Justified text lines up with both page edges. Say "Say alignment" or "Say heading" to check the setting.
+With selected text, these commands apply to the selected paragraphs.
+
+6.5 Change line spacing
+Line spacing is the space between the lines in a paragraph.
+Say "Single space", "Double space", or "Line spacing 1.5" to set it.
+For another value, say "Custom spacing". Give the value when asked, such as "One point seven five" or "Exactly eighteen points".
+Companion repeats the value. Say "Yes" to use it, "No" to give another value, or "Cancel" to stop.
+Say "Set document line spacing to 1.25" to change the whole document.
+Say "Read line spacing" for the current paragraph. Say "Read document line spacing" for the whole document.
+"Reset line spacing" resets the current paragraph. "Reset document line spacing" resets all paragraphs.
+A new paragraph keeps the spacing of the paragraph before it.
+
+6.6 Make a list
+1. Say "Bulleted list" or "Numbered list".
+2. Speak or type the first item.
+3. Say "New paragraph" for the next item.
+4. Say "End list" when you want to return to ordinary text.
+A bulleted list marks each item with a dot. A numbered list gives each item a number.
+
+6.7 Make a table
+1. Say "Create table with two rows and two columns".
+2. Speak the text for the first cell. A cell is one box in the table.
+3. Say "Next cell" to move to the next box.
+4. Say "Read table" to check your work.
+You can also use "Previous cell", "Next row", "Previous row", "Next column", and "Previous column".
+Say "Read cell" to hear the current cell. "Clear cell" removes its words.
+"Add row" and "Add column" make the table larger. "Delete row" and "Delete column" remove those parts.
+Say "Leave table" to write after the table. "Delete table" removes the table. Say "Undo" at once if that was a mistake.
+The editor makes simple tables with straight rows and columns. It may not open more complex tables from other programs.
+
+6.8 Save, copy, close, or reopen a document
+Companion saves as you write. Say "Save document" to save under the current name.
+Say "Save as My Letter Copy" or "Save document as My Letter Copy" to keep a second file. The first file stays in place.
+"Name document My Letter" changes the file name. "Undo" right after a rename restores the earlier name.
+Say "Leave document", "Exit document", or "Go back" when you are done. Companion asks whether to save.
+Yes keeps the current name if the file is already named. An untitled file needs a name. No discards changes since you last opened, saved, or named the file.
+Press Escape at the save or name prompt to keep editing. Check the file name Companion reads before leaving.
+Say "Resume document" to return to the current document while Companion remains open.
+After reopening the app, say "List documents", then choose a file. "Open document My Letter" opens a named file.
+Say "Open documents" to open the document folder in Windows. "Where are my documents?" reads its location.
+Files are kept in Documents, inside the Voice Companion folder. They use the .docx file type.
+Companion can reopen the simple files it creates. It may refuse a complex Word file to avoid changing it incorrectly.
+
+7. WRITE A NOTE
+
+7.1 Start and save a note
+Notepad is for a short plain text note. Use the Word processor when you need headings, fonts, or tables.
+1. Say "Write a note" or choose Notepad.
+2. Speak your note.
+3. Say "Read from top" to listen to it.
+4. Say "Save note" to save it.
+Say "Go back" to save the current note and return to the main menu. Going to sleep also saves the words already heard.
+
+7.2 Review or change a note
+Use "Next word", "Previous word", "Next line", and "Previous line" to review.
+Use "Next sentence", "Previous sentence", "Next paragraph", and "Previous paragraph" to move through longer text.
+"Select all", "Select word", and "Select paragraph" choose text. "Read selection" checks it. "Scratch" removes selected text.
+"Next character" and "Previous character" help you check a spelling. "New line" and "New paragraph" add breaks.
+Use "Commands only" to review without adding speech as text. Say "Normal mode" when you want to write again.
+To write the words new line, say "Type literally new line".
+The same selection and editing rules apply to the current note. Keep a saved copy of any note you need.
+
+8. SET UP EMAIL
+
+8.1 Connect an email account
+Connect an account before relying on Companion to send or organize email.
+1. Say "Add account".
+2. Choose Gmail, Outlook or Exchange, or Yahoo.
+3. Follow the sign-in prompts. Ask your helper if you need help with the sign-in page.
+4. Open the inbox and test a message with someone you know.
+Google and Microsoft use their usual sign-in pages. Work or school accounts may need your organization's approval.
+Yahoo needs an app password. This is a password made in Yahoo's account settings for an email app.
+Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
+If account setup is not available, ask your helper to check the app's email setup.
+
+8.2 Choose another account
+Say "Add another account" to connect a second address. Say "List email accounts" to hear the saved accounts.
+Say "Switch to Yahoo" or "Switch to Outlook" if only one account of that type is connected.
+With two accounts of the same type, say "Switch to" followed by the full address.
+Say "Which email account?" to hear the account in use. Check it before sending mail.
+"Check Gmail", "Check Outlook", and "Check Yahoo" open that account when exactly one of its type is connected.
+
+8.3 Add and find contacts
+A contact is a saved name and email address.
+Say "Add contact Bob as bob@example.com" to save one. Say "List contacts" to hear names.
+Say "Find contact Bob" to look for a name. Use the saved contact's name when Companion asks who to email.
+Each email account has its own contact list. Local contacts can be used without internet access.
+With Gmail selected, "Connect Google Contacts" or "Sync Google Contacts" asks for access to Google Contacts.
+Approve that access only if you want to link those contacts. A helper can assist with the permission page.
+Google Calendar and Google Drive are not connected in this version.
+
+9. WRITE AN EMAIL
+
+9.1 Start a new message
+1. Say "Write an email" from the main menu, or "New message" while reading email.
+2. Give the address or a saved contact name when asked.
+3. Give the subject when asked.
+4. Speak the message in short parts. Listen back before sending.
+Keyboard: In email, Control+N starts a new message. Type an address in To and press Enter. Continue through the subject and message.
+You can say an address using at and dot. For example, "sam at example dot com" means sam@example.com.
+
+9.2 Change To, CC, BCC, or Subject
+To names the person getting the message. CC sends a copy. BCC sends a copy without showing that address to the other people.
+Say "Go to To", "Go to CC", "Go to BCC", "Go to Subject", or "Go to Body" to reach a part of the draft.
+Type the address or subject and press Enter. Left Arrow and Right Arrow review characters. Backspace and Delete remove characters.
+Say "Email to sam@example.com" to set To. Say "Subject is Hello from me" to set the subject.
+Say "CC" or "BCC" to add a copy address. Say "Skip" if you do not want to add one.
+"Read recipient", "Read subject", "Read CC", and "Read BCC" let you check those parts.
+Tab moves to the next draft field. Shift+Tab moves to the previous field.
+
+9.3 Write and format the message
+Ordinary speech adds text to the message. "New paragraph" starts a paragraph. "Read paragraph" reads it back.
+The text selection and formatting commands in chapters 5 and 6 work in the message body too.
+You can change a font, text size, line spacing, heading, list, or table. Address and subject boxes use plain text.
+The person reading your mail may see different fonts or spacing in their email app.
+Use "Type literally" to write words that might be heard as commands. Use "Undo" to reverse an edit in the body.
+
+9.4 Save or cancel a draft
+Say "Save draft" to keep a message for later. Say "List email drafts" to find saved drafts.
+Say "Open email draft Untitled", or use the draft name you heard, to reopen one.
+Say "Cancel", "Cancel draft", "Go back", or "Back to inbox" to leave an unsent draft and discard its changes.
+These cancel commands work in a new message, reply, reply-all message, or forward. They work from each draft field.
+Save the draft first if you want to keep it. "Leave email" saves the draft and returns to the main menu.
+Canceling cannot take back a message already sent. If you reopened a saved draft, canceling keeps its earlier saved copy.
+
+9.5 Review and send
+1. Say "Send email", "Send it", or "Send that". Keyboard: press Control+Enter in the draft.
+2. Listen to the sending account, addresses, subject, and message.
+3. If something is wrong, say "Cancel send". Fix it, then start the review again.
+4. Say "Yes" only when the review is right.
+Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead of sending it.
+After the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.
+If it says the result is uncertain, check your mail account and ask the person before trying again.
+
+10. READ AND ORGANIZE EMAIL
+
+10.1 Read messages
+1. Say "Email" or "Check email" to open the chosen inbox.
+2. Listen to the sender, subject, and date of the selected message.
+3. Say "Next message" or "Previous message" to hear another summary.
+4. Say "That one" or "Open current message" to read its body.
+You can also say "Read message 1" or "Open message 1" to choose by number.
+Say "Message details" to repeat the sender, subject, and date. Say "Continue reading" for more of a long message.
+Say "Read from beginning" to read it again. "Back to folder" or "Go back" returns to the message list.
+Keyboard: Up Arrow and Down Arrow choose a message. Enter opens it. Escape returns to the list.
+
+10.2 Go to folders
+Say "Go to folder" to hear a folder list. Use "Next", "Previous", and "That one" to choose.
+You can also say "Go to folder Receipts", "Open folder Receipts", or "Go to Receipts".
+Use "Back to inbox" to return to Inbox. "Which folder" tells you where you are.
+For a folder within another folder, try "Go to Projects slash 2026" or "2026 inside of Projects".
+If two folders have the same name, listen to each full location. Choose the right one with "Next" and "That one".
+Keyboard: Control+Y opens folders. Use arrows and Enter. Escape cancels the folder list.
+
+10.3 Select, move, or delete messages
+Say "Mark", "Select", "Mark message", or "Select message" to mark the message you hear.
+Move to another summary and mark it too. "What is selected" reads the total. "Clear selection" removes the marks.
+Say "Delete" to move marked messages to Trash. With no marks, it acts on the current message.
+Say "Move" to choose a destination folder. "Move to Saved" uses a named folder.
+"Delete message" and "Move message" act on the current message even if other messages are marked.
+Listen to the action and names, then answer Yes or No. Check the folder before repeating an action with an uncertain result.
+Keyboard: Space marks or unmarks a message. Shift+Up Arrow and Shift+Down Arrow extend the selection.
+Control+A marks messages on the loaded page. Delete requests deletion. Control+Shift+V chooses a folder for moving mail.
+Inside an open message, Control+A selects text to copy; it does not mark other messages.
+
+10.4 Reply or forward
+Open the message first. Say "Reply", "Reply all", or "Forward".
+Keyboard: Control+R replies. Control+Shift+R replies to all. Control+F forwards.
+Reply all includes the other people listed on the message. Check the addresses before sending.
+For a forward, enter the new address when asked. Speak your added text, then use the review and send steps in chapter 9.
+Gmail and Yahoo forwarding do not include the original attachments in this version.
+Say "Cancel" or "Back to inbox" to discard the response draft. Say "Save draft" first if you want to keep it.
+
+10.5 Create and manage folders
+Say "Create folder Receipts" to make a folder. "Create folder 2026 inside Receipts" makes a folder within it.
+"Create folder 2026 inside" opens a parent-folder list so you can choose where it belongs.
+Say "Rename folder" to choose a folder, then say "Rename to Bills". You can also say "Rename folder Receipts to Bills".
+"Move folder" asks for a folder and its new location. "Move folder Bills into Archive" gives both names.
+"Delete folder" opens a folder list. "Delete folder Bills" names it directly.
+Listen to the full folder location and the action. Say "Yes" to go ahead or "No" to cancel.
+Only empty folders you made, with no folders inside them, can be deleted. Built-in folders such as Inbox are protected.
+Some email services restrict folder changes. For example, Gmail labels with child labels have limits on renaming, moving, or deleting.
+Keyboard: Control+Shift+E starts folder creation. F2 starts renaming. Control+Shift+D starts folder deletion.
+
+10.6 Read links and load more mail
+In email that keeps web-style formatting, links and buttons can be read with the message.
+K moves to the next link. B moves to the next button. Hold Shift to move backward. Tab moves through both.
+Press Enter to open a safe link. A button with no usable link is read but cannot run a script from the email.
+Voice choices include "Next link", "Previous link", "Next button", "Previous button", "List links", and "List buttons".
+Say "Activate current link", "Activate current button", "Open link 1", or "Open button 1" to use a listed item.
+Say "Next messages" or "Previous messages" for another page of mail. "List messages" or F5 refreshes the folder.
+Home and End reach the first and last messages in the folder. Messages from another page may need to load first.
+Messages per list is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
+
+11. BROWSE THE WEB
+
+11.1 Open the browser menu
+Choose Web browser on the main menu. It opens a browser menu, even if you used a page earlier.
+The browser menu has these choices:
+- Search or type address
+- Go to bookmark
+- New bookmark
+- Delete bookmark
+- Rename bookmark
+- Go back
+- Go forward
+- Web history
+When Keep browser window open is on and a page remains open, Resume where you left off is also shown.
+Use arrows and Enter, or say the menu name. Escape from this menu returns to the main menu.
+
+11.2 Search or open an address
+1. Choose Search or type address.
+2. Say your search, or type it and press Enter. For example, type weather in Houston.
+3. Wait for the page title and site name.
+4. Use the page reading commands to explore the result.
+For an address, you can type example.com. You do not need to type www or https.
+Voice: Say an address with dot or slash as needed. "Open website example dot com" asks you to check the address before it opens.
+Control+L opens the address and search box from a page. Escape cancels entry.
+Google is the default search engine. Options also offers Bing, Brave Search, and DuckDuckGo.
+You can say "Search engine Brave Search" or "Default search engine Google" to change the default.
+An explicit request such as "Bing weather" uses that engine for the current search.
+If a site asks you to prove you are human, Companion cannot solve that check. It may offer another search engine.
+Say "Try Brave Search", "Try Bing", or "Try DuckDuckGo" to repeat the search there. Your default stays the same.
+
+11.3 Read a page
+Companion reads the page in its own window. Use its page view for the keys below.
+Up Arrow and Down Arrow read lines, including text between links. Left Arrow and Right Arrow read characters.
+Control+Left Arrow and Control+Right Arrow read words. Control+Up Arrow and Control+Down Arrow read paragraphs.
+Control+Home and Control+End reach the page ends. Home and End reach the ends of the current line.
+"Read page" starts at the top. "Continue reading" reads the next part.
+The page view follows the place you choose. After you move to a heading, arrow reading continues from that heading.
+A newly loaded page may start reading on its own. Turn off Automatic page reading in Web browser options if you prefer.
+
+11.4 Move to headings, links, or controls
+H moves to the next heading. Shift+H moves to the previous heading. K moves to the next link.
+Use B for a button, X for a checkbox, C for a choice box, E for a text box, and F for any form control.
+Use T for a table, R or A for a radio button, L for a list, and I for a list item.
+Use D for a landmark, G for a picture, P for a paragraph, and S for a list box.
+A landmark is a named page area, such as main content or navigation. A radio button chooses one option from a group.
+Numbers 1 through 6 find headings at that level. Hold Shift with any quick key to move backward.
+Voice examples are "Next heading", "Previous link", "Next form control", and "Next heading level two".
+These keys move through the page. They do not type letters until you enter a text box for editing.
+
+11.5 Open links and use lists
+Move to a link or button, then press Enter. Say "Open current link" or "Activate current element" for the same task.
+Say "Find login" or "Find contact us" to look for a matching item. Listen to the choice before you accept it.
+F7 or Insert+F7 opens a link list. F6 or Insert+F6 opens a heading list.
+You can also say "List links", "List headings", or "List fields".
+Use arrows, Home, End, and Enter to choose. Escape or "Close list" returns to the page.
+A heading choice moves your reading place. A link choice opens its address.
+
+11.6 Enter or change a web answer
+1. Use Tab to reach the next control, or E to find a text box.
+2. If you found a text box with E, press Enter or say "Edit current field" to start editing.
+3. Type or speak the answer.
+4. Press Enter to save a single-line answer. Use Control+Enter for a box with several lines.
+5. Press Escape to cancel editing and return to page reading.
+Tab saves and moves to the next control. Shift+Tab moves backward. Letters now type text while you are editing.
+Voice: "Save field" keeps your entry. "Cancel field editing" leaves its earlier value unchanged.
+"Select all", "Read selection", and "Scratch" can review or remove text in the active box.
+For a checkbox, press Space or say "Check checkbox", "Uncheck checkbox", or "Toggle checkbox".
+In a choice box, arrows change the choice. Home and End choose the first and last options.
+You can say "Next option", "Previous option", "First option", "Last option", or "Select option" followed by its name.
+Read-only boxes cannot be changed. Passwords are hidden in the page text and spoken review.
+
+11.7 Fill in and review a form by voice
+Say "Fill out this form". Companion asks for one answer at a time.
+Speak the answer to a text question. Use the option name for a choice. Use Yes or No for a checkbox.
+Say "Skip" to leave an answer alone. Say "Cancel form" to stop the guided questions.
+Some forms reveal more questions after an answer. Companion checks for them as you go.
+Say "Review form" to hear the answers. Say "Review and submit form" to start the review before sending.
+Say "Continue review" to hear the next part. If an answer is wrong, say "Change this field" or name the field.
+You can also say "Change field two". Give the new answer, then review again.
+Say "Yes" only when all answers and the named button are right. "No" stops the submission.
+Changing an answer after review cancels the older Yes or No request. Review again before submitting.
+Keyboard: Enter or Space on a web Send or Submit button uses that website's own checks. It does not start the voice review.
+File uploads, some custom controls, and human-verification checks may need help. If a page cannot be read, do not guess at a final button.
+Say "Ask for help" to hear which page needs attention.
+
+11.8 Read a web table and leave a page
+Move to a table with T or "Next table".
+Control+Alt+Up Arrow and Control+Alt+Down Arrow move through rows. Control+Alt+Left Arrow and Control+Alt+Right Arrow move through columns.
+Control+Alt+Home and Control+Alt+End reach the first and last columns. Control+Alt+Page Up and Control+Alt+Page Down reach the first and last rows.
+Voice choices include "Next row", "Previous column", "First row", "Last row", "First column", and "Last column".
+Companion reads the cell text, its heading, and its row and column when available.
+Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same.
+F5 or "Refresh page" reloads the page. Alt+T lets you type an app command.
+Escape from ordinary page reading opens the browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
+"Leave website" also opens the browser menu. "Close browser" or "Main menu" leaves the browser activity.
+
+12. BOOKMARKS AND WEB HISTORY
+
+12.1 Save the current page
+A bookmark saves a page address so you can open it later. Older website favorites appear in the same saved list.
+1. Open the page you want to save.
+2. Say "New bookmark". You can also choose it from the browser menu.
+3. Say a short name, or type the name and press Enter.
+4. Listen for the saved name.
+A name can have up to 60 characters. Choose a new name if the one you gave is already used.
+"Save favorite as News" remains available as a voice shortcut.
+
+12.2 Open or find a bookmark
+Choose Go to bookmark. Use arrows and Enter to choose the saved page.
+Press the first letter of a name to move among matching names. Type several letters promptly to choose a closer match.
+For example, type n then p to find a name that starts with np. Pause before starting a different name.
+You can also say enough of the name to identify it. If two names match, say more or use the arrows.
+"Open favorite News" opens that saved name directly. "List bookmarks" opens the bookmark list.
+Home and End reach the first and last items. An empty list says it is empty. Escape returns to the browser menu.
+
+12.3 Rename or delete a bookmark
+Choose Rename bookmark, then select a name with arrows and Enter. Say the new name, or type it and press Enter.
+Choose Delete bookmark, then select a name with arrows and Enter. That removes the saved bookmark.
+Deleting a bookmark does not delete the website or its contents. Escape cancels naming or closes the list.
+Use first-letter or several-letter search in both lists, just as you do when opening a bookmark.
+
+12.4 Open a page from history
+Web history is a saved list of recent secure page addresses. It keeps up to 200 entries, newest first.
+1. Choose Web history in the browser menu.
+2. Use arrows to hear page names, or type letters to find a name.
+3. Press Enter to open the page.
+History stays saved when you close and reopen Companion. Back and Forward use the pages in the currently open browser session.
+
+12.5 Resume where you left off
+Open Options, then Web browser options. Check Keep browser window open if you want to keep a page for later.
+With it on, Escape from page reading opens the browser menu and leaves the page open.
+Choose Resume where you left off to return to that page and your reading place.
+With it off, leaving page reading closes Companion's browser windows. The Resume choice is then absent.
+If a retained page has been closed elsewhere, Companion removes Resume and keeps the menu usable.
+Bookmarks and history remain saved with either setting.
+
+13. LISTEN TO RADIO
+
+13.1 Find and play a station
+1. Choose Radio on the main menu.
+2. Say "Search radio".
+3. Give a station name, such as WGN, or a type of music.
+4. Use "Next" and "Previous" to hear the results.
+5. Say "That one" to play the chosen station.
+You can also say "Search radio for jazz", "Browse genre jazz", or "Play station 1".
+If a name matches more than one station, choose its number when asked. You do not need to say Play again.
+"Play WJLB" chooses a matching result by name. "Main menu" returns to the main menu.
+If a station fails, try another result. A station's stream may be unavailable even when its name is listed.
+
+13.2 Use the radio menus and keys
+The radio menu has an actions list and a results list. Tab or Shift+Tab moves between them.
+Use arrows, Home, End, and first-letter keys to choose an item. Enter opens an action or plays a station.
+Escape goes back to actions, then the main menu.
+Control+F opens search. Control+P lists saved stations. F5 refreshes the station lists.
+Say "Radio menu", "Actions", or "Results" to choose a list by voice.
+When a station is selected, actions include saving it, recording it, scheduling a recording, and playing or pausing audio.
+
+13.3 Control audio
+Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
+"Pause radio" and "Stop podcast" make clear which audio you mean. "Stop talking" silences the app's speech instead.
+Space pauses or resumes audio in the radio or podcast area. Control+R resumes. Control+S stops.
+Control+Left Arrow and Control+Right Arrow seek 15 seconds where the stream supports it.
+Companion can lower media volume while it speaks, then restore it. Change this choice in Voice options.
+Audio controls remain available after you move to another part of Companion.
+
+13.4 Choose a station list
+The Station database setting chooses which lists to search. All is the default. It searches all the lists the app can use.
+Say "Station database" to hear the current choice. "Choose station database Radio Browser" chooses that source.
+"Choose station database IPRD", "Choose station database RadioSure", and "Choose station database All" choose the other lists.
+Radio Browser is looked up online. IPRD is a saved list. The app checks it for new stations about once a day.
+A helper can import a RadioSure station file with "Import RadioSure" followed by its full file location.
+Companion has no daily limit on radio searches or listening. Internet access and each station's service still matter.
+TuneIn and ooTunes are not connected in this version. If you are unsure which list to use, keep All. You can change the choice later.
+
+14. SAVED RADIO STATIONS
+
+14.1 Save a preset
+A preset is a saved station. It lets you play a station again without a new search.
+1. Find or play the station you want.
+2. Say "Save preset" or "Add preset".
+3. To choose a short name, say "Save preset as Jazz".
+4. Listen for the saved name.
+"Add favorite", "Save favorite", and "Save favorite as Jazz" also work in Radio.
+
+14.2 Play saved stations
+Say "List presets", "Preset list", "List favorites", or "Favorites list" in Radio.
+Use "Next" and "Previous" to hear names. Say "That one", "Okay", or "Confirm" to play the chosen station.
+You can also say "Play preset Jazz" or "Play preset 1".
+Saved stations stay available after you close Companion. If one no longer plays, search for it again.
+
+14.3 Delete a saved station
+Choose a station in the preset list, then say "Delete preset". You can also say "Delete preset Jazz".
+Listen to the name. Say "Yes" to remove it or "No" to keep it.
+Removing a preset does not remove the station from the internet.
+
+15. RECORD RADIO
+
+15.1 Record a station now
+Choose a station first. Then choose Record selected station, or say "Record station 1 for 30 minutes".
+In a recording form, use Tab and Shift+Tab to reach the fields, OK, and Cancel. Arrows change a listed choice.
+Enter moves through fields and starts the action at OK or the last field. Escape cancels.
+Say "Stop recording" to finish early. "List recordings" reads saved recordings. "Play recording 1" plays one.
+Recording supports some direct audio streams. It cannot record every station format. Check the file after recording.
+
+15.2 Schedule a recording
+Say "Schedule station 1 tomorrow at 8 PM for 30 minutes". Add "Every day" for a daily recording.
+You can also choose Schedule selected station. Set the day, time, length in minutes, and daily-repeat choice.
+Use "Next field", "Previous field", "Go to Time", "Time 8 PM", and "Okay" for the same form steps.
+Keep Companion running and the computer awake until the recording is done. A sleeping or shut-down computer cannot record.
+
+15.3 Cancel a scheduled recording
+This list is for radio shows you plan to record later. Check the station and time before you remove one.
+1. Say "List scheduled recordings" or choose Cancel scheduled recordings in Radio.
+2. Use arrows to hear the station and time you want to cancel.
+3. Press Enter. Listen to the Yes or No question.
+4. Say "Yes" to cancel that plan, or "No" to keep it.
+Delete on a chosen item also asks this question. "Cancel selected scheduled recording" works by voice too.
+You can then check the list again. Other plans and saved audio stay in place.
+
+16. LISTEN TO PODCASTS
+
+16.1 Find a show and play an episode
+1. Choose Podcasts.
+2. Say "Search podcasts for history" or use Search podcasts in the actions list.
+3. Use "Next" and "Previous" to hear show names.
+4. Say "That one" to open the show.
+5. Use "Next episode" and "Previous episode" to hear episode names.
+6. Say "That one" to play the selected episode.
+"Search podcast" asks for a show name. "Browse podcasts category science" finds shows in that category.
+You can also say "Open podcast 2", "Open feed", "Play 2", or "Play episode 2".
+"Back to podcasts" returns from episodes to the show results.
+
+16.2 Use the podcast menus and keys
+Tab and Shift+Tab move between actions and results. Use arrows, Home, End, and first-letter keys to choose.
+Enter on a show opens its episodes. Enter on an episode or downloaded file plays it.
+Escape returns from episodes to shows, then actions, then the main menu.
+Control+F searches. Control+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes subscribed shows.
+Say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action" to move by voice.
+Actions also offer downloads, playback, chapters, and the previous or next episode or show.
+
+16.3 Pause, seek, or move by chapter
+Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
+Say "Back 15 seconds", "Fast forward 30 minutes", or "Forward one hour and 20 minutes" to move within audio.
+You can give another amount in seconds, minutes, or hours. Some live streams and episodes cannot move this way.
+Say "Next chapter" or "Previous chapter" when the episode has chapter marks.
+Space pauses or resumes audio in Podcasts. Control+Left Arrow and Control+Right Arrow seek where supported.
+A new voice request stops the app's current spoken message so it can answer your request.
+
+17. SAVED PODCASTS AND DOWNLOADS
+
+17.1 Subscribe to a show
+A subscription saves a show and checks for its new episodes.
+Open a show, then say "Subscribe". "Subscribe to podcast 1" chooses a show from the list by number.
+Say "List subscriptions", "List podcasts", "Podcast list", or "Subscription list" to hear saved shows.
+Choose a show with "Next", "Previous", and "That one". "Browse podcasts" returns to the current search results.
+Companion checks saved shows at startup and about every six hours while running. "Refresh subscriptions" checks sooner.
+If a show cannot be reached, its last saved episode list stays available.
+
+17.2 Download and play an episode
+Say "Download this episode" or "Download episode 1" to save audio for use without internet access.
+Say "List downloads", then "Play download 1" to play a saved file. Downloads are kept in Podcast Downloads.
+An episode has a 500 MB download limit. New searches and downloads need internet access.
+Some podcast hosts do not allow downloads. If one fails, try another episode or ask your helper about the message.
+
+17.3 Choose automatic downloads
+A new subscription starts with manual downloads. It does not download every new episode on its own.
+To keep the newest five episodes for the open show, say "Auto download 5 episodes".
+To choose a show by number, say "Auto download 205 episodes for podcast 2".
+Choose any whole number from 1 to 10,000. "Auto download all episodes" saves all the episodes offered by that show.
+All episodes may use a lot of space. Companion pauses automatic downloads when disk space is low.
+With a number set, older automatic downloads beyond that number are removed after new downloads succeed.
+Files you saved with "Download episode" are not removed by this limit.
+Say "Manual downloads" to stop future automatic downloads for that show. Files already saved remain in place.
+You can also set the limit in Podcasts options. Keep Companion running for automatic checks and downloads.
+
+17.4 Remove a subscription
+Choose Remove selected subscription in the podcast actions list, or use Delete on a selected saved show.
+Listen to the show name. Answer Yes to remove the subscription or No to keep it.
+Check the message before agreeing so you do not remove the wrong show.
+
+18. CHANGE YOUR OPTIONS
+
+18.1 Open, change, and save a setting
+Say "Options" or press Alt+O. The app opens the Options menu.
+1. Use arrows to choose a category, then press Enter.
+2. Use Tab or Shift+Tab to reach a setting, OK, or Cancel.
+3. Use arrows to change a listed choice. Press Space to check or uncheck a box.
+4. Type in a text box when needed.
+5. Choose OK to save your changes. Choose Cancel or press Escape to leave them unchanged.
+By voice, use "Next", "Previous", and "Okay" to open a category. Say the setting name and its value when supported.
+Say "Cancel" or "Back" to return to categories without saving. Say "Close settings" to leave Options.
+Opening another category or tool before choosing OK discards unsaved setting changes.
+
+18.2 Choose how much speech you hear
+Verbosity options controls how many hints the app reads. High gives full hints. Medium gives shorter hints. Low gives brief prompts.
+These choices do not shorten a document, email, error message, or Yes or No question.
+Spoken punctuation controls which marks are read. Choices are none, some, most, and all.
+Typing echo controls what you hear while typing. Choose words, characters, characters and words, or none.
+Delayed phonetic pronunciation adds a letter's spoken name after a short pause. For example, B is followed by Bravo.
+It is on by default. Choose a delay of 0.5, 1, or 2 seconds, or turn it off.
+Voice examples are "Verbosity medium", "Punctuation most", "Typing echo words", "Phonetics off", and "Phonetic delay 1 second".
+Moving again or stopping speech cancels a letter hint that has not yet been read.
+
+18.3 Voice and Synthesizer options
+Voice options has Voice pitch, Speech rate, Speech volume, and Lower media volume while Companion speaks.
+Listen to the voice sample before saving rate, volume, or pitch. Control silences the sample. Escape cancels the category.
+Synthesizer options chooses SAPI, eSpeak, or an AI voice when available. It also has the private AI service-key settings.
+The checkbox Allow narration text to be sent to OpenAI controls consent for online speech. A blank key box keeps the saved key.
+Remove saved AI key removes that setup when you save. Ask your helper if you need to set up an AI voice.
+
+18.4 Input and Email options
+Input options chooses Normal, Commands only, or Dictation only. The choice affects how spoken words are used.
+Email options chooses plain text or HTML. HTML keeps formatting such as bold text and links.
+Sending account chooses the address used for new mail. Messages per list sets how many summaries load at once.
+Announce email header names chooses whether words such as From and Subject are spoken before their values.
+Spoken email headers chooses From, Subject, Date, and Size. Keep at least one header.
+Space includes or removes a header. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
+Add an email account starts the account setup steps in chapter 8.
+
+18.5 Word processor and Notepad options
+Word processor options sets the font, size, line spacing, and alignment for new documents.
+These defaults do not change text in an existing document or draft. Font size choices run from 6 to 72 points.
+Open Documents folder opens your saved document folder in Windows.
+Notepad options has Open Notepad. It returns to your note or starts Notepad.
+
+18.6 Web browser options
+Default search engine chooses Google, Bing, Brave Search, or DuckDuckGo.
+Keep browser window open controls whether a page stays open when you leave page reading. It is off by default.
+Automatic page reading controls whether new pages start reading aloud. It is on by default.
+Guided browser chooses Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
+That means a site may ask you to sign in even if you already signed in in your usual browser.
+List website favorites opens the saved website list. New bookmark actions are also in the browser menu.
+
+18.7 Radio and Podcasts options
+Radio options has Station database, List radio presets, and List scheduled recordings.
+Station database chooses which station lists to search. Presets are saved stations. Scheduled recordings are future recordings.
+Podcasts options lets you choose a Podcast subscription and set Automatic downloads for this subscription.
+Choose manual, all, or a whole-number limit. List subscriptions opens the saved-show list.
+The number limit applies to the chosen show, not every show.
+
+18.8 Auto-update and Startup and exit options
+Auto-update options has Check automatically at startup and Check for updates now. Turning off automatic checks leaves the manual check available.
+Startup and exit options has Start with Windows. It is off by default. Turn it on to open the installed app when you sign in to Windows.
+It does not wake the microphone for ordinary dictation. Uninstalling Companion removes that startup choice.
+Ask before exiting Voice Companion, Ask before shutting down the computer, and Ask before restarting the computer are on by default.
+Each controls its own Yes or No prompt. Document save questions still apply when you turn off an exit prompt.
+
+19. SLEEP, EXIT, AND COMPUTER POWER
+
+19.1 Put the microphone to sleep
+Say "Go to sleep" to pause ordinary voice requests. Say "Wake up" to continue.
+Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
+A pending send approval is canceled. Review the message again before sending it.
+The keyboard still works while the microphone sleeps. Sleep is different from closing the app or putting Windows to sleep.
+
+19.2 Close Companion
+Say "Exit Companion", "Close Companion", "Shut down Companion", or "Return to Windows" to close the app.
+Keyboard: Alt+F4 requests exit. Escape at the main menu also requests exit.
+By default, No is selected in the exit question. Say "Yes" to exit or "No" to keep working.
+If a document is open, answer its save question first. Escape cancels the exit request and keeps the document open.
+Exiting Companion does not shut down Windows.
+
+19.3 Restart or shut down the computer
+These choices affect the whole computer. Save your work in other apps first.
+Choose Restart the computer or Shut down the computer on the main menu. You can also say "Restart computer" or "Shut down computer".
+Companion asks a separate Yes or No question by default. Listen to the action, then answer.
+An open document first gets a save question. Escape there cancels the computer action.
+Windows may ask about unsaved work in other apps. Companion does not force them to close.
+The startup choice and the computer power choices are separate settings.
+
+20. CHECK FOR UPDATES
+
+20.1 Find a newer version
+Choose Check for updates on the main menu, or say "Check for updates".
+Companion also checks at startup when automatic checks are on. If an update is offered, say "Yes" to install or "No" to keep working.
+A later update offer waits until you have returned to the main menu or a suitable pause in your work.
+If the check fails, you can keep using the current version and try again later.
+
+20.2 Install an update
+1. Accept the update with Yes.
+2. Let Companion save your current work and download the file.
+3. Listen to the progress messages. "Status" or "Update status" asks for progress.
+4. Wait while Companion closes, installs the update, and opens again.
+Say "Cancel update" while the download is in progress if you need to stop it.
+The app checks the downloaded file before using it. Windows may still need your helper for a security prompt.
+Your account data and documents stay in their normal folders. The installer also refreshes the guides.
+A Windows restart is not forced. Companion tells you if one is needed.
+
+20.3 Read the release notes
+Release notes explain what changed in a version and how to use the changes.
+Say "What's new", "What is new", or "Release notes". You can also choose What's new in Help.
+Use "Continue reading", "Next paragraph", "Previous paragraph", and the other reading commands to review them.
+Say "Close help" to return to your task. The notes identify the current version and the earlier version used for comparison.
+
+21. FIND YOUR GUIDE FILES
+
+21.1 Open the guide folder
+Say "Open user guides", "Open guides folder", or "Where are my user guides".
+You can also use the Voice Companion User Guides shortcut on the desktop or in the Start menu.
+The files are in Documents, inside Voice Companion, then User Guides. Opening this folder keeps your current task.
+After an update, close and reopen a guide that was already open so you see its new text.
+
+21.2 Choose a guide format
+Plain text works in a text reader. HTML opens in a browser and has links to its headings.
+Word is for a Word-compatible app. EPUB is for an ebook reader that supports it.
+The DAISY 3 copy contains text, not recorded speech. Unzip its files together, then open guide.opf in a compatible DAISY reader.
+BRF is the braille-ready copy. It uses contracted Unified English Braille, with 40 cells per line and 25 lines per page.
+The braille copy is made by software. It has not been checked by a human braille proofreader.
+Each format has the same instructions. Release notes include the version in their file names. Older versioned notes can stay in the folder.
+Updating the guides does not remove your personal files. The guides remain after you uninstall Companion.
+
+22. FIX A PROBLEM
+
+22.1 Companion hears the wrong words
+Speak one short sentence or command at a time. Wait for the reply before speaking again.
+Check the microphone choice and its position. Try a headset so the app is less likely to hear its own speech.
+Use "Commands only" while reviewing text. Switch to "Normal mode" before writing by voice.
+If a command still fails, press Alt+T, type it, and press Enter. Read the result before trying again.
+Do not repeat a send, move, or delete if the result was uncertain. Check what happened first.
+
+22.2 You cannot hear speech
+Check the computer's sound output and volume. Press Control to clear old speech, then give a new reading command.
+Try "Use SAPI" if an AI voice is unavailable. AI speech needs an internet connection and a working service setup.
+Use Voice options to check Speech volume and Speech rate. Ask your helper if no voice can be heard.
+
+22.3 Email or a website will not work
+For mail, check the selected account with "Which email account?". Ask your helper to check sign-in if needed.
+For a page, try "Refresh page" or F5. Use "List links" if its layout is hard to explore.
+If quick keys type letters, press Escape to leave text editing. Use the Companion page window for its reading keys.
+A site may ask for human verification or use a control Companion cannot read. Ask for help rather than guessing.
+Some email folder changes and forwarded attachments are limited by the service or this version. Review the related chapters before trying again.
+
+22.4 A guide or update will not open
+Close any open guide files, then say "Open user guides" again. This asks Companion to refresh its guide copies.
+If your Documents folder is not available, ask your helper to restore access to it.
+For a failed update, keep using the current app if it opens. Try Check for updates again later.
+Use the installed desktop icon. If it opens an older version, ask your helper to check the installation.
+Tell your helper the app version, what you tried, and the exact error message. This makes the problem easier to find.

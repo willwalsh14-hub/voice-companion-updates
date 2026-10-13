@@ -40,13 +40,13 @@ class PracticeTutorialTests(unittest.TestCase):
         session.process('lesson list');self.assertEqual(session.level,'lessons')
         session.process('next');session.process('that one');self.assertEqual(session.step,1)
         session.process('back');self.assertEqual(session.level,'lessons')
-        session.process('find lesson correct before sending');self.assertEqual(session.level,'matches')
-        result,_=session.process('that one');self.assertIn('Correct before sending',result)
+        session.process('find lesson review and send');self.assertEqual(session.level,'matches')
+        result,_=session.process('that one');self.assertIn('Review and send',result)
         session.process('list commands');self.assertEqual(session.level,'commands')
         session.process('that one');self.assertEqual(session.level,'reference')
         session.process('back');self.assertEqual(session.level,'commands')
         result,_=session.process('explain command send it');self.assertIn('nothing is sent before',' '.join(session.article).casefold())
-        self.assertIn('not executed',result)
+        self.assertIn('did not change your work',result)
         session.process('courses');self.assertIsNone(session.lesson)
 
     def test_long_explanation_preserves_conditions_and_reads_all_parts(self):

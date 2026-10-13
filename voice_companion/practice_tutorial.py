@@ -24,8 +24,8 @@ class PracticeTutorial:
         return message
 
     def start(self):
-        return self.say('Audio tutorial. Thorough spoken courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates. '
-                        'This is instruction, not a simulation. App commands are explained here, never executed. '
+        return self.say('Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates. '
+                        'These are lessons. Commands given here are explained and do not change your work. '
                         'Use Up and Down to select a course and Enter to open it, or say its name. '
                         'Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. '
                         'Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial.')
@@ -60,7 +60,7 @@ class PracticeTutorial:
     def _reference(self,entry):
         self.return_level=self.level if self.level in ('commands','matches') else 'commands'
         self.level='reference';self.article=split_instruction(entry['text']);self.article_index=0
-        return self.say('Command explanation: '+entry['title']+'. '+self.article[0]+(' Say continue reading for the rest of this explanation.' if len(self.article)>1 else '')+' This command was explained, not executed.')
+        return self.say('How to use this command: '+entry['title']+'. '+self.article[0]+(' Say continue reading for the rest of this explanation.' if len(self.article)>1 else '')+' This is a lesson. The command did not change your work.')
 
     def _find(self,query,commands=False):
         wanted=query.casefold().strip().rstrip('.!?')

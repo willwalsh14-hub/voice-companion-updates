@@ -1,8 +1,7 @@
 """One release outline generates all accessible release-note formats.
 
-Reference structure: title (H1), New Apps and Features / Fixes and
-Enhancements (H2), numbered topics, lettered details, Roman subdetails.
-Never copy product-specific HIMS content into Voice Companion documentation.
+User-facing structure: a title, New in this version, What works better,
+numbered topics and short details written for app users.
 """
 import html
 import json
@@ -31,7 +30,7 @@ def load_notes(root):
         raise ValueError('Release status must be Testing build or Official release.')
     if ('test' in version.lower()) != (notes['status'] == 'Testing build'):
         raise ValueError('Release notes must distinguish testing builds from official releases.')
-    if [s['title'] for s in notes['sections']] != ['New Apps and Features', 'Fixes and Enhancements']:
+    if [s['title'] for s in notes['sections']] != ['New in this version', 'What works better']:
         raise ValueError('Release sections must follow the reference heading structure.')
     for section in notes['sections']:
         if not section['topics']:
@@ -43,7 +42,7 @@ def load_notes(root):
 
 
 def blocks(notes):
-    output = [(None, [f"Version: {notes['version']}. {notes['status']}. Released {notes['date']}.",
+    output = [(None, [f"Version {notes['version']}. {'Test version' if notes['status']=='Testing build' else 'Official release'}. {notes['date']}.",
                        f"Changes since {notes['baseline']}. {notes['scope']}"])]
     for section in notes['sections']:
         paragraphs = []
@@ -84,13 +83,13 @@ def word(root, title, notes):
     doc = Document()
     section = doc.sections[0]
     section.top_margin = section.bottom_margin = Inches(.75)
-    for name, size in [('Normal',11),('Heading 1',20),('Heading 2',15)]:
+    for name, size in [('Normal',12),('Title',22),('Heading 1',18),('Heading 2',14)]:
         style = doc.styles[name]
-        style.font.name = 'Aptos'
+        style.font.name = 'Arial'
         style.font.size = Pt(size)
         style.font.color.rgb = RGBColor(0,0,0)
     doc.styles['Normal'].paragraph_format.space_after = Pt(5)
-    doc.add_heading(title, 1)
+    doc.add_paragraph(title,style='Title')
     for p in blocks(notes)[0][1]: doc.add_paragraph(p)
     numbering = doc.part.numbering_part.element
     abstract_id = max(int(e.get(qn('w:abstractNumId'))) for e in numbering.findall(qn('w:abstractNum'))) + 1
@@ -104,18 +103,20 @@ def word(root, title, notes):
         abstract.append(node)
     numbering.append(abstract)
     for s in notes['sections']:
-        doc.add_heading(s['title'],2)
+        doc.add_heading(s['title'],1)
         num=numbering.add_num(abstract_id)
         num.add_lvlOverride(0).add_startOverride(1)
         numid=num.get(qn('w:numId'))
         for topic in s['topics']:
             for level,text in [(0,topic['title'])]+[(1,d) for d in topic['details']]:
-                p=doc.add_paragraph(text)
+                p=doc.add_paragraph(text,style='Heading 2' if level==0 else 'Normal')
                 props=p._p.get_or_add_pPr();np=OxmlElement('w:numPr')
                 for tag,val in [('ilvl',str(level)),('numId',numid)]:
                     child=OxmlElement('w:'+tag);child.set(qn('w:val'),val);np.append(child)
                 props.append(np)
                 if level==0:p.paragraph_format.keep_with_next=True
+    for style_tree in (doc.element,doc.styles.element):
+        for border in style_tree.xpath('.//w:pBdr'):border.getparent().remove(border)
     doc.core_properties.title=title;doc.core_properties.language='en-US'
     doc.save(root/(STEM+'.docx'))
 
@@ -183,7 +184,7 @@ def validate(root,notes=None):
     texts=[''.join(e.text or '' for e in p.findall('.//w:t',wn)) for p in paragraphs]
     headings=[text for p,text in zip(paragraphs,texts)
               if p.find('w:pPr/w:pStyle',wn) is not None and
-              p.find('w:pPr/w:pStyle',wn).get('{'+wn['w']+'}val')=='Heading2']
+              p.find('w:pPr/w:pStyle',wn).get('{'+wn['w']+'}val')=='Heading1']
     if headings!=expected:raise ValueError('Word release outline differs.')
     page=(root/(STEM+'.html')).read_text(encoding='utf-8')
     if re.findall(r'<h2 id="section-\d+">([^<]+)</h2>',page)!=expected:
