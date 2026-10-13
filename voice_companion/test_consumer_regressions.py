@@ -65,6 +65,11 @@ class ConsumerRegressionTests(unittest.TestCase):
             for label in expected:
                 request=app.navigation_key('Down','awake');app.handle_keyboard(request,'awake');self.assertTrue(speak.call_args.args[0].startswith(label))
 
+    def test_notepad_options_return_to_existing_note_without_changing_it(self):
+        with patch.object(app,'note_buffer',['Keep my unfinished note']),patch.object(app,'speak'):
+            self.assertEqual(app.settings_action('open_notepad','note'),'note')
+            self.assertEqual(app.note_buffer,['Keep my unfinished note'])
+
     def test_option_category_names_match_app_names(self):
         for label in ('Auto-update options','Word processor options','Notepad options'):self.assertIn(label,CATEGORIES);self.assertTrue(fields(label,{}))
         for label in ('Documents options','Updates options','Notes options'):self.assertNotIn(label,CATEGORIES)

@@ -414,6 +414,8 @@ def open_settings(mode):
 def settings_action(key,mode):
     global MEDIA_SECTION,web_session
     if key=='exit_app':return handle('exit companion',SETTINGS_RETURN_MODE,typed=True)
+    if key=='open_notepad' and mode=='note':
+        speak('Notepad. Continue your note.');return 'note'
     if key in ('radio_presets','radio_recordings','podcast_subscriptions'):
         MEDIA_SECTION='podcast' if key=='podcast_subscriptions' else 'radio'
         speak(media_navigation().run(SETTINGS_ACTIONS[key]))
