@@ -53,6 +53,7 @@ class BrowserMenu:
         if self.level == 'name':
             return None
         names = [x[0] for x in self.choices(session, keep_open)] if self.level == 'menu' else [x['name'] for x in self.items]
+        if names and self.index is not None:self.index=max(0,min(self.index,len(names)-1))
         return (names, self.index, lambda index: setattr(self, 'index', index)) if names else None
 
     def notice(self, names):

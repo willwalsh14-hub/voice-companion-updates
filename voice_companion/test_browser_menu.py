@@ -51,6 +51,14 @@ class BrowserMenuTests(unittest.TestCase):
         other.menu.process('web history',other,False)
         self.assertEqual(other.menu.process('enter',other,False)[1],('open','https://example.com/two'))
 
+    def test_closed_retained_page_removes_resume_without_invalid_selection(self):
+        self.session.open('example.com');self.run_command('end')
+        self.assertEqual(self.menu.index,8)
+        self.session.snapshot=None
+        names,index,_=self.menu.menu(self.session,True)
+        self.assertEqual(index,7);self.assertEqual(names[index],'Web history')
+        self.assertIn('Web history',self.run_command('enter')[0])
+
     def test_empty_lists_and_name_cancel_do_not_change_page(self):
         self.assertIn('Open a page',self.run_command('new bookmark')[0])
         self.assertIn('empty',self.run_command('delete bookmark')[0])
