@@ -138,9 +138,9 @@ class NativeSettingsTests(unittest.TestCase):
 
     def test_every_category_tabs_without_invalid_value_and_escape_closes(self):
         hwnd=self.open_panel()
-        for name in ('Voice','Synthesizer','Input','Email','Documents','Web browser','Radio','Podcasts','Updates','Verbosity'):
+        for name,expected in [('Voice','Voice options'),('Synthesizer','Synthesizer options'),('Input','Input options'),('Email','Email options'),('Documents','Word processor options'),('Word processor options','Word processor options'),('Notes','Notepad options'),('Notepad options','Notepad options'),('Web browser','Web browser options'),('Radio','Radio options'),('Podcasts','Podcasts options'),('Updates','Auto-update options'),('Auto update options','Auto-update options'),('Verbosity','Verbosity options')]:
             self.panel.command(name)
-            self.wait(lambda:self.session.category_name()==name+' options')
+            self.wait(lambda:self.session.category_name()==expected)
             self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,9,0)
             time.sleep(.15)
             self.assertFalse(any('Choose one of' in n or 'Settings:' in n for n in self.notices),self.notices)
