@@ -538,7 +538,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertEqual(companion.handle('yes open website', 'awake'), 'web')
             self.assertEqual(FakeWeb.opened, ['https://example.com'])
 
-    def test_keyboard_remains_available_if_external_microphone_cannot_open(self):
+    def test_keyboard_remains_available_if_microphone_cannot_open(self):
         import queue
         from unittest.mock import Mock
         companion.TEXT_MODE = False
@@ -557,7 +557,6 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
               patch.object(companion,'KEYBOARD_SPEECH',None),patch.object(companion,'update_audio_ducking'),
               patch.object(companion,'startup_update_mode',ready),patch.object(companion,'poll_app_updates',side_effect=lambda mode:mode),
               patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'MAIN_MENU_INDEX',None),
-              patch('external_microphone.find_external_input',return_value=(0,{'name':'USB microphone'})),
               patch.object(companion, 'speak') as spoken,patch.object(sys,'argv',['VoiceCompanion.exe']),
               patch.dict(sys.modules, {'sounddevice': fake_audio})):
             self.assertEqual(companion.main(),0)
@@ -565,6 +564,38 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             notices=[str(call.args[0]) for call in spoken.call_args_list]
             self.assertTrue(any('is ready' in text for text in notices))
             self.assertTrue(any('Voice commands are disabled' in text for text in notices))
+            self.assertEqual(companion.MAIN_MENU_INDEX,0)
+            self.assertTrue(window.commands.empty())
+
+    def test_reported_jabra_default_input_enables_voice(self):
+        import queue
+        from unittest.mock import Mock
+        companion.TEXT_MODE = False
+        fake_audio = SimpleNamespace(
+            query_devices=lambda *args, **kwargs: {'name': 'Microphone (2- Jabra Evolve2 30', 'default_samplerate': 44100, 'max_input_channels': 1},
+            check_input_settings=lambda **kwargs: None,
+            RawInputStream=Mock(return_value=Mock()))
+        window=Mock(commands=queue.Queue(),settings_results=queue.Queue(),key_feedback=queue.Queue(),closed=Mock(is_set=Mock(return_value=False)))
+        for action in (('keyboard','Down'),('keyboard','Alt+F4'),'yes'):window.commands.put(action)
+        def ready():companion.speak(companion.startup_prompt());return 'sleep'
+        with (patch.object(companion, 'MODEL', self.root),
+              patch.object(companion, 'PARAKEET_MODEL', self.root / 'missing'),
+              patch.object(companion, 'Model', lambda path: object()),
+              patch.object(companion, 'KaldiRecognizer', lambda model, rate: object()),
+              patch.object(companion, 'SetLogLevel'),patch.object(companion,'APP_WINDOW',window),
+              patch.object(companion,'KEYBOARD_SPEECH',None),patch.object(companion,'update_audio_ducking'),
+              patch.object(companion,'startup_update_mode',ready),patch.object(companion,'poll_app_updates',side_effect=lambda mode:mode),
+              patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'MAIN_MENU_INDEX',None),
+              patch.object(companion, 'speak') as spoken,patch.object(sys,'argv',['VoiceCompanion.exe']),
+              patch.dict(sys.modules, {'sounddevice': fake_audio})):
+            self.assertEqual(companion.main(),0)
+            fake_audio.RawInputStream.assert_called_once()
+            notices=[str(call.args[0]) for call in spoken.call_args_list]
+            self.assertTrue(any('is ready' in text for text in notices))
+            self.assertFalse(any('Voice commands are disabled' in text for text in notices))
+            self.assertNotIn('device',fake_audio.RawInputStream.call_args.kwargs)
+            fake_audio.RawInputStream.return_value.start.assert_called_once()
+            fake_audio.RawInputStream.return_value.close.assert_called_once()
             self.assertEqual(companion.MAIN_MENU_INDEX,0)
             self.assertTrue(window.commands.empty())
 

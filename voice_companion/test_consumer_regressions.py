@@ -3,7 +3,6 @@ import unittest
 from unittest.mock import Mock,patch
 import companion as app
 from browser_navigation import prepare_address,looks_like_address,contains_address
-from external_microphone import external_input,find_external_input,ExternalMicrophoneGuard
 from menu_navigation import announce_item
 from settings_model import CATEGORIES,fields,prompt_text
 
@@ -51,27 +50,13 @@ class ConsumerRegressionTests(unittest.TestCase):
             app.refresh_browser_view('web');app.refresh_browser_view('sleep')
             self.assertEqual(session.refresh_changed.call_count,2);sync.assert_called_with('sleep')
 
-    def test_internal_and_unknown_inputs_cannot_enable_voice(self):
-        for name in ('Microphone Array (Realtek)','Internal microphone','USB Microphone','Virtual USB microphone'):
-            self.assertFalse(external_input({'name':name,'max_input_channels':2},[]))
-        external={'name':'Microphone (USB Audio)','max_input_channels':2,'hostapi':1}
-        endpoints=[{'name':external['name'],'connection':'USB\\VID_1234'}]
-        self.assertTrue(external_input(external,endpoints))
-        devices=[{'name':'Microphone Array (Realtek)','max_input_channels':2,'hostapi':0},external]
-        sd=Mock(query_devices=Mock(return_value=devices),query_hostapis=Mock(return_value={'name':'Windows WASAPI'}))
-        self.assertEqual(find_external_input(sd,endpoints)[0],1)
-        self.assertIsNone(find_external_input(sd,[]))
-
-    def test_disconnected_external_endpoint_disables_voice_even_if_audio_list_cached(self):
-        device={'name':'Microphone (USB Audio)','max_input_channels':2}
-        guard=ExternalMicrophoneGuard(Mock(query_devices=Mock(return_value=device)),0,device)
-        with patch('external_microphone.connected_external_endpoints',return_value=[{'name':device['name'],'connection':'USB\\VID_1234'}]):self.assertTrue(guard.check_connection())
-        with patch('external_microphone.connected_external_endpoints',return_value=[]):self.assertFalse(guard.check_connection())
-
-    def test_confirmed_windows_default_external_microphone_is_preferred(self):
-        devices=[{'name':'USB Desk Microphone','max_input_channels':2,'hostapi':0},{'name':'USB Headset Microphone','max_input_channels':2,'hostapi':0}]
-        endpoints=[{'name':d['name'],'connection':'USB\\VID_'+str(i)} for i,d in enumerate(devices)]
-        sd=Mock(query_devices=Mock(return_value=devices),query_hostapis=Mock(return_value={'name':'Windows WASAPI','default_input_device':1}))
-        self.assertEqual(find_external_input(sd,endpoints)[0],1)
+    def test_default_microphone_accepts_jabra_usb_usbc_analog_and_internal_inputs(self):
+        for name in ('Microphone (2- Jabra Evolve2 30', 'Jabra Engage 65', 'USB-C Headset', 'Microphone (Realtek Audio)', 'Microphone Array'):
+            with self.subTest(name=name):
+                device={'name':name,'default_samplerate':44100,'max_input_channels':1}
+                sd=Mock(query_devices=Mock(return_value=device),check_input_settings=Mock())
+                self.assertEqual(app.microphone_settings(sd),(device,44100,1))
+                sd.query_devices.assert_called_once_with(kind='input')
+                sd.check_input_settings.assert_called_once_with(samplerate=44100,channels=1,dtype='int16')
 
 if __name__=='__main__':unittest.main()

@@ -1,23 +1,17 @@
 {
-  "version": "0.2.118-test",
+  "version": "0.2.119-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.117-test",
-  "scope": "Keyboard browser fixes, rendered dynamic page updates, precise private entry and external microphone safeguards.",
+  "baseline": "0.2.118-test",
+  "scope": "Emergency removal of the microphone safeguard that rejected working headsets.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Private entry",
+          "title": "Microphone compatibility",
           "details": [
-            "Website addresses, email addresses and passwords require keyboard entry. Voice searches, saved contact names and saved website favorites remain available. Guided forms skip private address fields."
-          ]
-        },
-        {
-          "title": "External microphone required",
-          "details": [
-            "Voice commands require a present USB or Bluetooth microphone endpoint associated with external hardware. Internal, virtual and unconfirmed inputs do not enable voice. Keyboard navigation remains available without an external microphone. A lost external endpoint disables recognition. Connect an external microphone and restart Companion to enable voice after keyboard-only startup. Analog jack microphones cannot be reliably distinguished from an internal microphone and remain unconfirmed."
+            "Companion again uses the default microphone selected in Windows. USB, USB-C, Bluetooth, analog jack and internal microphones are eligible when Windows supplies a usable audio input."
           ]
         }
       ]
@@ -26,45 +20,21 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "List navigation",
+          "title": "Working headsets no longer blocked",
           "details": [
-            "Items are announced when reached. Start of list or End of list is announced only on an additional move beyond the boundary. This behavior applies regardless of verbosity."
+            "Removed the external-only hardware identification check. A submitted diagnostic confirmed a Jabra Evolve2 30 input could open at 44100 Hz even though the safeguard disabled voice commands. This change removes that false rejection; it does not claim to repair external hardware classification."
           ]
         },
         {
-          "title": "Dynamic browser pages and reading position",
+          "title": "Keyboard fallback and existing fixes",
           "details": [
-            "Rendered page updates refresh the virtual viewer independently of microphone audio, including keyboard use while asleep. Replaced document roots reconnect their observer. Live updates preserve staged field text, field selection and keyboard identity. Quick-key destinations and arrow movement share the same caret."
+            "Keyboard navigation remains available if the microphone cannot open. The previous browser, list navigation, startup guidance and typed-only website address, email address and password protections remain in place."
           ]
         },
         {
-          "title": "Brave result titles",
+          "title": "Validation",
           "details": [
-            "Additional result title layouts are recognized as headings. When an address is wrapped in a heading and the human title is a sibling, the heading label and virtual caret both target the result title."
-          ]
-        },
-        {
-          "title": "Web address or search",
-          "details": [
-            "Ctrl+L and the browser entry box accept a bare domain, a domain with www, or a full HTTP/HTTPS address. HTTP entry is upgraded to HTTPS. URL paths, queries and fragments retain their case. Ordinary words still perform a search."
-          ]
-        },
-        {
-          "title": "Options and startup",
-          "details": [
-            "Every options category includes the word options. Startup says Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Startup narration does not wake the app through its own microphone feedback."
-          ]
-        },
-        {
-          "title": "Regression coverage",
-          "details": [
-            "New checks cover result labels and exact text offsets, dynamic updates during selection and editing, typed addresses with optional prefixes, address dictation refusal, external endpoint selection and disconnect detection. Real browser suites cover Firefox, Chrome, Edge and Brave."
-          ]
-        },
-        {
-          "title": "Remaining limitations",
-          "details": [
-            "CAPTCHA and website verification can need assistance. Human microphone accuracy and external hardware identification on your own computer still need real-device testing. Artificial eSpeak command recognition misses reported in the prior audit remain a limitation."
+            "Regression checks cover the reported Jabra input and default input selection across microphone types. Windows build and consumer tests run before publication. Actual recognition accuracy depends on the selected microphone and environment."
           ]
         }
       ]

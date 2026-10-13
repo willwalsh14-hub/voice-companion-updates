@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.118-test'
+APP_VERSION = '0.2.119-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -2601,19 +2601,15 @@ def main():
     sample_rate = 16000
     global resampler, input_channels
     import contextlib
-    from external_microphone import find_external_input,ExternalMicrophoneGuard
-    input_stream=None;microphone_guard=None
+    input_stream=None
     try:
-        external=find_external_input(sd)
-        if external:
-            device_index,device=external
-            _,input_rate,channels=microphone_settings(sd,device_index)
-            resampler=PCM16Resampler(input_rate,sample_rate);input_channels=channels
-            input_stream=sd.RawInputStream(device=device_index,samplerate=input_rate,blocksize=max(1,input_rate//20),dtype='int16',channels=channels,callback=callback)
-            input_stream.start()
-            microphone_guard=ExternalMicrophoneGuard(sd,device_index,device).start()
+        _,input_rate,channels=microphone_settings(sd)
+        resampler=PCM16Resampler(input_rate,sample_rate);input_channels=channels
+        input_stream=sd.RawInputStream(samplerate=input_rate,blocksize=max(1,input_rate//20),dtype='int16',channels=channels,callback=callback)
+        input_stream.start()
     except Exception:
-        if input_stream:input_stream.close()
+        if input_stream:
+            with contextlib.suppress(Exception):input_stream.close()
         input_stream=None
     recognizer = KaldiRecognizer(model, sample_rate)
     mode = 'sleep'
@@ -2632,12 +2628,11 @@ def main():
     last_focus_check = 0.0
     with contextlib.ExitStack() as input_lifetime:
         if input_stream:input_lifetime.callback(input_stream.close)
-        if microphone_guard:input_lifetime.callback(microphone_guard.close)
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
         sync_app_context(mode,True)
-        if not microphone_guard:speak('No external microphone was detected. Voice commands are disabled. Keyboard navigation is available. Connect an external microphone and restart Companion to use voice commands.')
+        if input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
         # Listen and process keys while the asynchronous startup speech plays.
         result_file = APP / 'update-result.json'
         if result_file.exists():
@@ -2650,7 +2645,6 @@ def main():
         settings_quiet_until=0
         settings_audio_blocked=False
         last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
-        microphone_was_allowed=bool(microphone_guard)
         while True:
             logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
             if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.6:
@@ -2750,14 +2744,6 @@ def main():
                     cloud_failed = True
                 recover_audio_overflow(recognizer, utterance)
                 continue
-            microphone_allowed=bool(microphone_guard and microphone_guard.allowed)
-            if not microphone_allowed:
-                recognizer.Reset();utterance.clear()
-                if cloud:cloud.stop();cloud=None
-                if microphone_was_allowed:speak('The external microphone is no longer detected. Voice commands are disabled. You can continue with the keyboard.')
-                microphone_was_allowed=False
-                continue
-            microphone_was_allowed=True
             if startup_speaking:
                 if speech_busy():startup_quiet_until=time.monotonic()+.3
                 if time.monotonic()<startup_quiet_until:recognizer.Reset();utterance.clear();continue
