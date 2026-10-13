@@ -15,7 +15,7 @@ class DocumentControlTests(unittest.TestCase):
                 with patch.object(app,'document',doc),patch.object(app,'APP_WINDOW',None),patch.object(app,'INPUT_MODE',mode),patch.object(app,'speak') as spoken:
                     app.handle('An uninterrupted train of thought','document')
                     self.assertIn('uninterrupted',doc.paragraphs[0].text);spoken.assert_not_called()
-                    app.handle('read document','document');self.assertTrue(spoken.called)
+                    app.handle('read document','document',typed=True);self.assertTrue(spoken.called)
     def test_navigation_aliases_and_writing_position(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('First.'),Paragraph('Last words.')]

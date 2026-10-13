@@ -1802,7 +1802,7 @@ def _handle(text, mode, typed=False):
     if INPUT_MODE == 'dictation' and not typed:
         if mode in ('email_draft', 'document'):
             editor = email_draft if mode == 'email_draft' else document
-            if (mode == 'document' or mode == 'email_draft' and (email_draft.compose_step or 'body') == 'body') and (document_format_command(command) or editor.pending_spacing or command in ('read document','read from top','read from beginning')):
+            if (mode == 'document' or mode == 'email_draft' and (email_draft.compose_step or 'body') == 'body') and (document_format_command(command) or editor.pending_spacing):
                 speak(editor.process(text))
             elif mode == 'email_draft' and (email_draft.compose_step in ('subject','cc','bcc') or
                                           email_draft.compose_step == 'recipient' and
