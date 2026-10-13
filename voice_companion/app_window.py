@@ -158,6 +158,8 @@ class CompanionWindow:
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
                 control=bool(event.state&4);shift=bool(event.state&1)
+                if key.lower()=='t' and not control and event.state&(8|0x20000):
+                    flush_pending_edit();self.command_entry_active=True;typed.focus_set();return 'break'
                 if mode=='web' and self.command_entry_active and event.widget==typed and key=='Escape':
                     self.command_entry_active=False;typed.delete(0,'end');editor.focus_set();return 'break'
                 request=None
