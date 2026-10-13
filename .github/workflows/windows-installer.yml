@@ -54,8 +54,25 @@ jobs:
         shell: powershell
         run: |
           $env:VOICE_COMPANION_BUILD_PYTHON = (Get-Command python.exe).Source
-          choco install googlechrome brave --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw 'Chrome and Brave installation for browser checks failed.' }
+          # Hosted runners already include Chrome. Reuse it rather than
+          # downloading a moving installer through a stale package checksum.
+          $chromeCandidates = @(
+            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+          )
+          if (-not ($chromeCandidates | Where-Object { Test-Path -LiteralPath $_ })) {
+            choco install googlechrome --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Verified Chrome installation for browser checks failed.' }
+          }
+          $braveCandidates = @(
+            "$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe",
+            "${env:ProgramFiles(x86)}\BraveSoftware\Brave-Browser\Application\brave.exe",
+            "$env:LOCALAPPDATA\BraveSoftware\Brave-Browser\Application\brave.exe"
+          )
+          if (-not ($braveCandidates | Where-Object { Test-Path -LiteralPath $_ })) {
+            choco install brave --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Verified Brave installation for browser checks failed.' }
+          }
           $env:VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS = '1'
           & ./voice_companion/build-windows.ps1 -Parakeet -NoPublish -Unattended
       - name: Preserve checked installer before publishing
