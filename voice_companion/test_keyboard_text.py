@@ -513,7 +513,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(dict(mode='settings',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
         self.call(lambda:None);self.window.set_context(naming)
         self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Return'))
-        self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),'Edited report')
+        self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),'name document Edited report')
     def test_empty_naming_field_arrows_cannot_become_filenames(self):
         self.window.set_context(dict(mode='document_name',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
         self.call(lambda:self.window.typed.focus_force())

@@ -1020,6 +1020,16 @@ def dictation_feedback(result):
     speak(result)
 
 
+def discard_feedback_events(cloud):
+    """Drop narration transcripts, keeping connection errors for fallback."""
+    remaining=[]
+    while True:
+        try:event=cloud.events.get_nowait()
+        except queue.Empty:break
+        if event[0]!='text':remaining.append(event)
+    for event in remaining:cloud.events.put(event)
+
+
 def speak(text):
     global KEYBOARD_BATCH_TEXT
     if KEYBOARD_BATCH:
@@ -2805,9 +2815,7 @@ def main():
                 if cloud:
                     # Pause audio feeding rather than permanently dropping the
                     # cloud recognizer after each spoken app response.
-                    while not cloud.events.empty():
-                        try:cloud.events.get_nowait()
-                        except queue.Empty:break
+                    discard_feedback_events(cloud)
                 if narration_busy:settings_quiet_until=time.monotonic()+0.3
                 if time.monotonic()<settings_quiet_until:
                     settings_audio_blocked=True

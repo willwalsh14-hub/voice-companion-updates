@@ -6,6 +6,14 @@ from reading_navigation import ReadingCursor,reading_request
 from document_editor import VoiceDocument,Paragraph
 from keyboard_text import replace_keyboard_text
 class ReadingResponsivenessTests(unittest.TestCase):
+    def test_feedback_discards_narration_but_preserves_cloud_connection_errors(self):
+        cloud=Mock(active=True);cloud.events=queue.Queue()
+        cloud.events.put(('text','Spoken app feedback'))
+        cloud.events.put(('error','Connection lost'))
+        cloud.events.put(('text','More spoken app feedback'))
+        app.discard_feedback_events(cloud)
+        self.assertEqual(cloud.events.get_nowait(),('error','Connection lost'))
+        self.assertTrue(cloud.events.empty());self.assertTrue(cloud.active);cloud.stop.assert_not_called()
     def window(self,commands):
         window=Mock();window.commands=queue.Queue()
         for command in commands:window.commands.put(command)
