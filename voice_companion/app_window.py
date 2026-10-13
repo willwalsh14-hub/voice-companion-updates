@@ -45,6 +45,7 @@ class CompanionWindow:
         self.context = {'mode':'awake','source':None,'text':'','echo':'characters','phonetic':True,'delay':0.5,'ack':0}
         self.keyboard_output = None
         self.last_name_request = None
+        self.command_entry_active=False
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
     def _thread_main(self):
@@ -112,6 +113,7 @@ class CompanionWindow:
         if value:
             self.commands.put(('web_search_query',value) if self.context.get('mode')=='search' else 'name document '+value if self.context.get('mode')=='document_name' else value)
             self.last_email_request = None
+            self.command_entry_active=False
             return True
         return False
 
@@ -153,8 +155,11 @@ class CompanionWindow:
             previous = ['', 0]
             field_selection = FieldSelection()
             def shortcut(event):
+                if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
                 control=bool(event.state&4);shift=bool(event.state&1)
+                if mode=='web' and self.command_entry_active and event.widget==typed and key=='Escape':
+                    self.command_entry_active=False;typed.delete(0,'end');editor.focus_set();return 'break'
                 request=None
                 if self.context.get('confirmation') is not None and key.lower() in ('y','n') and event.state&(8|0x20000):
                     self.commands.put(('keyboard','Alt+'+key.upper()));return 'break'
@@ -191,14 +196,14 @@ class CompanionWindow:
                 elif self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Home','End','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
-                elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and (event.widget==self.editor or event.widget==typed and (self.context.get('web_private') or not typed.get())):
-                    field=self.context.get('web_field')
+                elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and not (event.widget==typed and self.command_entry_active):
+                    field=None if local.get('web_escape_pending') else self.context.get('web_field')
                     if field and self.context.get('web_private') and (key in ('Return','Tab','ISO_Left_Tab','Up','Down') or control and key in ('Home','End')):
                         self.commands.put(('web_private_value',dict(value=typed.get(),next=('PageTop' if key=='Home' else 'PageBottom') if control and key in ('Home','End') else 'Leave:'+key if key in ('Up','Down') else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done',**({'field_source':self.context['web_field_source']} if self.context.get('web_field_source') else {}))));typed.delete(0,'end');return 'break'
                     elif key=='Escape':request='Web:Escape'
                     elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
-                    elif self.context.get('web_choice') and key in ('Up','Down','Left','Right','Home','End'):request='Web:'+key
-                    elif self.context.get('web_choice') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalnum():request='Web:ChoiceLetter:'+event.char
+                    elif field and self.context.get('web_choice') and key in ('Up','Down','Left','Right','Home','End'):request='Web:'+key
+                    elif field and self.context.get('web_choice') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalnum():request='Web:ChoiceLetter:'+event.char
                     elif field and not self.context.get('web_private') and not control and not shift and key in ('Up','Down','Left','Right'):
                         value=editor.get('1.0','end-1c');caret=len(editor.get('1.0','insert'))
                         multiline=field.get('tag')=='textarea' or field.get('editable')
@@ -236,9 +241,11 @@ class CompanionWindow:
                     request='Ctrl+Enter' if control else 'Alt+S'
                 elif self.context.get('menu_letters') and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
+                if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
                 if request:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
+                    if request=='Web:Escape' and self.context.get('web_field'):local['web_escape_pending']=True
                     if self.context.get('web_browse') and request.startswith(('Web:Quick:','Web:Read:','Web:Table:','Web:Page')):
                         local['web_navigation_pending']=True
                         if local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
@@ -271,7 +278,9 @@ class CompanionWindow:
             def after_key(event):
                 self.report_entry_key(previous[0], typed.get(), previous[1], typed.index('insert'), event.keysym, event.char)
             typed.bind('<KeyPress>', before_key)
-            root.bind_all('<Alt-t>', lambda event: typed.focus_set())
+            def command_entry(event):
+                self.command_entry_active=True;typed.focus_set();return 'break'
+            root.bind_all('<Alt-t>',command_entry)
             root.after_idle(lambda:typed.focus_set() if self.context.get('source') is None and self.context.get('mode')!='settings' else None)
             def submit_typed(event=None):
                 if self.submit_entry(typed.get()):
@@ -327,7 +336,7 @@ class CompanionWindow:
             def link_at_caret():
                 caret=offset()
                 return next((span for span in self.context.get('rich_spans',[]) if span[2] in ('link','button') and span[0]<=caret<span[1]),None)
-            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None,'web_navigation_pending':False}
+            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None,'web_navigation_pending':False,'web_escape_pending':False}
             def offset(index='insert'):return len(editor.get('1.0',index))
             def selection():
                 try:return (offset('sel.first'),offset('sel.last'))
@@ -502,9 +511,11 @@ class CompanionWindow:
                         old=self.context;self.context=field
                         mode=field['mode'];source=field.get('source')
                         transition=old.get('mode')!=mode or old.get('source')!=source or field.get('focus',False)
+                        if transition and mode=='web':self.command_entry_active=False
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue
+                        if not field.get('web_field') or field.get('source')!=old.get('source'):local['web_escape_pending']=False
                         if mode in ('media','podcast') and field.get('media_revision')!=old.get('media_revision'):
                             form=field.get('media_form')
                             if form:
@@ -516,6 +527,7 @@ class CompanionWindow:
                         text_mode=source is not None and mode in ('document','email_draft','mailbox','help','web')
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:
+                            editor.configure(state='normal')
                             history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
                             web_cursor_changed=mode=='web' and old.get('web_cursor_revision')!=field.get('web_cursor_revision')
                             if web_cursor_changed or transition:local['web_navigation_pending']=False
@@ -529,6 +541,7 @@ class CompanionWindow:
                                 editor.tag_remove('sel','1.0','end')
                                 if field.get('selection'):editor.tag_add('sel',*('1.0 + '+str(i)+' chars' for i in field['selection']))
                                 editor.see('insert');local['applying']=False
+                            if mode=='web' and field.get('readonly'):editor.configure(state='disabled')
                             for tag in editor.tag_names():
                                 if tag in ('bold','italic','underline','heading') or tag.startswith('mail_link_'):editor.tag_remove(tag,'1.0','end')
                             for i,(start,end,style,url) in enumerate(field.get('rich_spans',[])):

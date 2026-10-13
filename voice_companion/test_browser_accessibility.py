@@ -193,10 +193,10 @@ class WebPolishTests(unittest.TestCase):
         self.session.keyboard('PageTop');self.session.keyboard('Quick:e');self.session.command('type Saved')
         self.session.keyboard('Leave:Up');self.assertIsNone(self.session.keyboard_field);self.assertEqual(self.backend.filled[-1],('name','Saved'))
     def test_combo_and_listbox_arrows_home_end_letters_and_voice(self):
-        self.session.keyboard('Quick:c');self.assertIsNotNone(self.session.keyboard_field)
+        self.session.keyboard('Quick:c');self.session.keyboard('Activate');self.assertIsNotNone(self.session.keyboard_field)
         self.assertEqual(self.session.keyboard('Down'),'Two.');self.assertEqual(self.session.keyboard('End'),'End of list.')
         self.assertEqual(self.session.keyboard('Home'),'One.');self.assertEqual(self.session.keyboard('ChoiceLetter:t'),'Two.')
-        self.session.keyboard('Quick:s');self.assertEqual(self.session.keyboard_field['key'],'list')
+        self.session.keyboard('Quick:s');self.session.keyboard('Activate');self.assertEqual(self.session.keyboard_field['key'],'list')
         self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Bravo.')
         self.assertEqual(self.session.command('first option'),'Alpha.');self.assertEqual(self.session.command('last option'),'Bravo.')
         self.assertEqual(self.session.command('select option Beta'),'Beta.')
@@ -222,14 +222,16 @@ class WebPolishTests(unittest.TestCase):
     def test_escape_from_page_exits_and_field_escape_can_return_then_exit(self):
         with patch.object(app,'web_session',self.session),patch.object(app,'pending_website',None),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None),patch.object(app,'interrupt_speech'):
             self.assertEqual(app.handle_keyboard(app.navigation_key('Web:Escape','web'),'web'),'awake')
-            self.session.keyboard('Quick:e');self.assertEqual(app.navigation_key('Web:Escape','web'),'web key Escape')
+            self.session.keyboard('Quick:e');self.session.keyboard('Activate');self.assertEqual(app.navigation_key('Web:Escape','web'),'web key Escape')
             self.session.keyboard('Escape');self.assertEqual(app.navigation_key('Web:Escape','web'),'leave website')
-    def test_arrowing_into_field_switches_display_to_edit_without_activation(self):
+    def test_arrowing_into_field_keeps_virtual_cursor_readonly_until_explicit_edit(self):
         position=next(item['start'] for item in self.session.browse.elements if item['key']=='name')
         with patch.object(app,'web_session',self.session),patch.object(app,'pending_website',None),patch.object(app,'sync_app_context'):
             context=app.app_context('web')
             app.apply_keyboard_edit({'source':context['source'],'before':context['text'],'after':context['text'],'caret':position,'readonly':True,'selection':None,'seq':1},'web')
-            self.assertEqual(self.session.keyboard_field['key'],'name');self.assertFalse(app.app_context('web')['readonly'])
+            self.assertIsNone(self.session.keyboard_field);self.assertTrue(app.app_context('web')['readonly'])
+            self.session.keyboard('Quick:e');self.assertIsNone(self.session.keyboard_field)
+            self.session.keyboard('Activate');self.assertEqual(self.session.keyboard_field['key'],'name');self.assertFalse(app.app_context('web')['readonly'])
     def test_link_role_is_first_and_main_menu_has_requested_name(self):
         from web_browse import describe
         self.assertEqual(describe({'role':'link','label':'Result'}),'Link Result.')

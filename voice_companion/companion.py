@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.122-test'
+APP_VERSION = '0.2.123-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -453,8 +453,7 @@ def menu_state(mode):
     if VOICE_PICK_INDEX is not None:
         return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
-    if mode=='tutorial' and tutorial_session and not tutorial_session.lesson:
-        return state([x[0] for x in PracticeTutorial.CHOICES],module,'MAIN_MENU_INDEX')
+    if mode=='tutorial' and tutorial_session:return tutorial_session.menu()
     if mode=='mailbox' and mail_session and mail_session.folder_picker and not mail_session.pending:
         picker=mail_session.folder_picker
         return ([mail_session._spoken_folder(x[0]) for x in picker['folders']],picker['index'],lambda index:picker.update(index=index))
@@ -564,12 +563,11 @@ def _navigation_key(key,mode):
         if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<3:speak('Start of list.' if step<0 else 'End of list.');return None
         ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,3)
         speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
-    if key=='Enter' and mode=='tutorial' and tutorial_session and not tutorial_session.lesson and MAIN_MENU_INDEX is not None:
-        return PracticeTutorial.CHOICES[MAIN_MENU_INDEX][1]
-    if mode=='tutorial' and key=='Escape':return 'main menu'
-    if mode=='tutorial' and tutorial_session and tutorial_session.lesson in ('basics','web'):
-        if key in ('Enter','Down','Right'):return 'next lesson'
-        if key in ('Up','Left'):return 'previous lesson'
+    if mode=='tutorial' and tutorial_session:
+        if key=='Escape':return 'go back'
+        if key=='Enter':return 'that one' if tutorial_session.menu() else 'next lesson'
+        if key in ('Down','Right'):return 'next' if tutorial_session.menu() else 'next lesson'
+        if key in ('Up','Left'):return 'previous' if tutorial_session.menu() else 'previous lesson'
     if mode=='email_draft' and key in ('Tab','ShiftTab') and email_draft:
         order=('recipient','cc','bcc','subject','body')
         current=email_draft.compose_step or 'body'
@@ -890,6 +888,31 @@ PICK_CONFIRM = frozenset(('that one', 'confirm that', 'okay', 'ok', 'use that vo
                          'use this voice', 'use that synthesizer', 'confirm', 'yes', 'yes please'))
 
 
+def use_synthesizer(text):
+    global SYNTH_PICK_INDEX, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_ENGINE
+    if normalized_command(text) not in ('use sapi','use sapi voice','use ai voice','use windows voice','use espeak','use espeak voice','use e speak'):return False
+    requested = normalized_command(text)
+    kind = 'windows' if requested in ('use windows voice','use sapi','use sapi voice') else 'ai' if requested == 'use ai voice' else 'espeak'
+    if TEXT_MODE:
+        choices = []
+    elif kind == 'windows':
+        choices = [('windows', voice.Voice.GetDescription(), voice.Voice)]
+    elif kind == 'ai' and AI_SPEECH is not None:
+        choices = [('ai', 'AI voice ' + AI_VOICE_NAME.title(), AI_VOICE_NAME)]
+    elif kind == 'espeak' and ESPEAK_SPEECH is not None:
+        from espeak_speech import ALL_VOICES
+        choices = [('espeak', 'eSpeak ' + name, code) for name, code in ALL_VOICES if code == ESPEAK_VOICE_NAME]
+    else: choices = []
+    if choices:
+        choose_voice(choices[0])
+        SYNTH_PICK_INDEX = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = VOICE_PICK_ENGINE = None
+        save_speech_settings()
+        speak('Using ' + choices[0][1] + '.')
+    else:
+        speak('That synthesizer is not configured. Ask your trainer to check setup.')
+    return True
+
+
 def voice_menu(command):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL
     global VOICE_PICK_CONFIRM, AI_VOICE_NAME, ESPEAK_VOICE_NAME
@@ -1196,6 +1219,30 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
+    if mode == 'tutorial':
+        if change_speech_setting(text) or use_synthesizer(text) or voice_menu(command):return mode
+        control=speech_control(text)
+        if control:
+            control_speech(control);return mode
+        if spoken_control(command)=='exit':
+            tutorial_session=None
+            return handle(text,'awake',typed)
+        if spoken_control(command)=='sleep':
+            SLEEP_RETURN_MODE=mode
+            speak('Going to sleep. Say wake up to continue here.')
+            return 'sleep'
+        if tutorial_session is None:
+            tutorial_session=PracticeTutorial(GUIDE)
+            speak(tutorial_session.start());return mode
+        if command in ('start of list','beginning of list','first item','end of list','last item') and tutorial_session.menu():
+            navigation_key('End' if command in ('end of list','last item') else 'Home',mode);return mode
+        interrupt_speech()
+        result,closed=tutorial_session.process(text)
+        speak(result)
+        if closed:
+            tutorial_session=None
+            return 'awake'
+        return mode
     if command in ('next','previous'):
         state=menu_state(mode)
         if state and state[1] is not None and (state[1]==0 and command=='previous' or state[1]==len(state[0])-1 and command=='next'):
@@ -1406,27 +1453,7 @@ def _handle(text, mode, typed=False):
         else:
             speak('AI voice setup requires the app window.')
         return mode
-    if normalized_command(text) in ('use sapi','use sapi voice', 'use ai voice', 'use windows voice', 'use espeak', 'use espeak voice', 'use e speak'):
-        requested = normalized_command(text)
-        kind = 'windows' if requested in ('use windows voice','use sapi','use sapi voice') else 'ai' if requested == 'use ai voice' else 'espeak'
-        if TEXT_MODE:
-            choices = []
-        elif kind == 'windows':
-            choices = [('windows', voice.Voice.GetDescription(), voice.Voice)]
-        elif kind == 'ai' and AI_SPEECH is not None:
-            choices = [('ai', 'AI voice ' + AI_VOICE_NAME.title(), AI_VOICE_NAME)]
-        elif kind == 'espeak' and ESPEAK_SPEECH is not None:
-            from espeak_speech import ALL_VOICES
-            choices = [('espeak', 'eSpeak ' + name, code) for name, code in ALL_VOICES if code == ESPEAK_VOICE_NAME]
-        else: choices = []
-        if choices:
-            choose_voice(choices[0])
-            SYNTH_PICK_INDEX = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = VOICE_PICK_ENGINE = None
-            save_speech_settings()
-            speak('Using ' + choices[0][1] + '.')
-        else:
-            speak('That synthesizer is not configured. Ask your trainer to check setup.')
-        return mode
+    if use_synthesizer(text):return mode
     bare_audio_control = normalized_command(text) in ('stop','resume') and MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind)
     control = None if bare_audio_control else speech_control(text)
     if control:
@@ -1462,40 +1489,13 @@ def _handle(text, mode, typed=False):
             speak('The user guide folder could not open or update. Say help for onboard instructions and ask your helper to check the installation.')
         return mode
     if voice_menu(command): return mode
-    if mode == 'tutorial':
-        if spoken_control(command) == 'exit':
-            tutorial_session = None
-            return handle(text, 'awake', typed)
-        if spoken_control(command) == 'sleep':
-            SLEEP_RETURN_MODE = mode
-            speak('Going to sleep. Say wake up to continue here.')
-            return 'sleep'
-        if tutorial_session is None:
-            tutorial_session = PracticeTutorial()
-            speak(tutorial_session.start())
-            return 'tutorial'
-        if not tutorial_session.lesson:
-            if command in ('next','previous'):
-                step=1 if command=='next' else -1
-                if MAIN_MENU_INDEX is not None and not 0<=MAIN_MENU_INDEX+step<len(PracticeTutorial.CHOICES):
-                    speak('End of list.' if step>0 else 'Start of list.');return mode
-                MAIN_MENU_INDEX=bounded_index(MAIN_MENU_INDEX,step,len(PracticeTutorial.CHOICES))
-                speak(announce_item(PracticeTutorial.CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(PracticeTutorial.CHOICES)));return mode
-            if command in ('ok','okay','confirm','confirm that','that one'):
-                text=PracticeTutorial.CHOICES[MAIN_MENU_INDEX if MAIN_MENU_INDEX is not None else 0][1]
-        result, closed = tutorial_session.process(text)
-        speak(result)
-        if closed:
-            tutorial_session = None
-            return 'awake'
-        return 'tutorial'
     if command in ('start tutorial', 'audio tutorial', 'practice tutorial', 'open tutorial'):
         if mode not in ('awake', 'help'):
             speak('Say main menu first, then start tutorial. This protects what you are working on.')
             return mode
         help_session = None
         MAIN_MENU_INDEX=None
-        tutorial_session = PracticeTutorial()
+        tutorial_session = PracticeTutorial(GUIDE)
         speak(tutorial_session.start())
         return 'tutorial'
     power_commands=POWER_COMMANDS

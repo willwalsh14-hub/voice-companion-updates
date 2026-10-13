@@ -647,8 +647,8 @@ class WebSession:
         return True
 
     def auto_focus_position(self):
-        item=self.browse.current() if self.browse else None
-        if item and item.get('start',0)<=self.reading.position<item.get('end',0):return self.focus_current()
+        # Reading never enters forms mode. Tab, Enter and explicit dictation
+        # are the only writing intents that activate a field.
         return False
 
     def page_boundary(self,bottom=False):
@@ -762,7 +762,7 @@ class WebSession:
                 return describe(item)
             else:return self.command({'Up':'previous line','Down':'next line','Left':'previous character','Right':'next character','Home':'read from beginning','End':'read current line'}.get(key,'read current line'))
             self.reading.position=self.browse.position;self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
-            if key.startswith('Quick:') or key in ('Tab','ShiftTab'):self.focus_current()
+            if key in ('Tab','ShiftTab'):self.focus_current()
             return message
         except Exception as exc:
             self.cursor_changed()
@@ -830,6 +830,9 @@ class WebSession:
         if not self.snapshot: return 'Open a website first.'
         self.submit_pending = None
         self.review_submission = None
+        if not self.keyboard_field and self.browse and self.browse.current():
+            if kind(self.browse.current())!='edit':return 'No text field is active. Move to a field and press Enter, or say edit current field.'
+            self.focus_current()
         if self.keyboard_field:
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             try:value=_voice_value(self.keyboard_field,spoken,literal)
@@ -1547,6 +1550,7 @@ class WebSession:
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
         browse_key=voice_browse_key(command)
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
+        if not self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')) and self.browse and self.browse.current() and kind(self.browse.current())=='edit':self.focus_current()
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]

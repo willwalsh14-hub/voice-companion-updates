@@ -13,6 +13,35 @@ class ConsumerWebTests(unittest.TestCase):
         self.page.set_content('<html><title>Consumer task</title><body>'+html+'</body></html>')
         self.session._refresh()
 
+    def test_arrow_reading_includes_plain_text_between_links_across_layouts(self):
+        for tag in ('p','div','section','span'):
+            with self.subTest(tag=tag):
+                self.load('<nav><a href="https://fixture.test/next">Navigation link</a></nav><h1>Training heading</h1><'+tag+'>Ordinary text before the form.</'+tag+'><label for="name">Name</label><input id="name"><'+tag+'>Ordinary text after the form.</'+tag+'><h2>Second heading</h2><a href="https://fixture.test/next">Contact link</a>')
+                self.session.keyboard('PageTop');notices=[]
+                for _ in range(30):
+                    position=self.session.reading.position
+                    notices.append(self.session.keyboard('Read:Down'))
+                    self.assertIsNone(self.session.keyboard_field)
+                    if self.session.reading.position==position:break
+                text=' '.join(notices)
+                self.assertIn('Ordinary text before the form.',text);self.assertIn('Ordinary text after the form.',text)
+                self.session.keyboard('PageTop');self.session.keyboard('Quick:e')
+                self.assertIsNone(self.session.keyboard_field)
+                self.assertIn('Second heading',self.session.keyboard('Quick:h'))
+                self.assertEqual(self.page.locator('#name').input_value(),'')
+
+    def test_quick_keys_and_voice_navigation_do_not_enter_fields_or_change_values(self):
+        self.load('<h1>Top</h1><label>Name<input id="name" value="Keep this"></label><label>Choice<select><option>One</option><option>Two</option></select></label><h2>After form</h2><p>Body after heading.</p>')
+        for key in ('Quick:e','Quick:h','Quick:c','Quick:h','Quick:f'):
+            self.session.keyboard('PageTop');self.session.keyboard(key)
+            self.assertIsNone(self.session.keyboard_field)
+        self.session.command('next heading');self.assertIsNone(self.session.keyboard_field)
+        self.assertEqual(self.page.locator('#name').input_value(),'Keep this');self.assertEqual(self.page.locator('select').input_value(),'One')
+        self.session.keyboard('PageTop');self.session.keyboard('Quick:e');self.session.keyboard('Activate')
+        self.assertEqual(self.session.keyboard_field['value'],'Keep this')
+        self.session.keyboard('Escape');self.assertIn('After form',self.session.keyboard('Quick:h'))
+        self.assertEqual(self.page.locator('#name').input_value(),'Keep this')
+
     def test_result_title_caret_and_arrows_do_not_land_on_address_metadata(self):
         html='<title>Search</title><a href="https://www.speedtest.net/"><h3>https://www.speedtest.net</h3><div class="snippet-title">Speedtest by Ookla - The Global Broadband Speed Test</div></a><p>Measure your connection.</p><a href="https://example.test/second"><div class="title">Another speed test</div></a><p>Second result details.</p>'
         self.context.route('https://search.brave.com/**',lambda r:r.fulfill(content_type='text/html',body=html))
@@ -165,7 +194,7 @@ class ConsumerWebTests(unittest.TestCase):
 
     def test_control_keys_survive_inserted_controls_before_current_field(self):
         self.load('<label for="first">First</label><input id="first"><label for="second">Second</label><input id="second">')
-        self.session.keyboard('Quick:e');old=self.session.keyboard_field['key']
+        self.session.keyboard('Quick:e');self.session.keyboard('Activate');old=self.session.keyboard_field['key']
         self.page.evaluate("()=>{let b=document.createElement('button');b.textContent='New action';document.body.prepend(b)}")
         self.session.refresh_changed();self.session.dictate_to_focus('Keep answer');self.session.keyboard('Tab')
         self.assertEqual(self.page.locator('#first').input_value(),'Keep answer')
@@ -244,7 +273,7 @@ class ConsumerWebTests(unittest.TestCase):
 
     def test_handsfree_editing_inserts_at_spoken_caret(self):
         self.load('<label for="notes">Notes</label><textarea id="notes">abc</textarea>')
-        self.session.command('next form control')
+        self.session.command('next form control');self.session.command('edit current field')
         self.session.command('next character');self.session.command('next character')
         self.session.dictate_to_focus('X',literal=True)
         self.session.command('save field')
@@ -277,7 +306,7 @@ class ConsumerWebTests(unittest.TestCase):
         import companion as app
         from unittest.mock import patch
         self.load('<label for="notes">Notes</label><textarea id="notes">abc</textarea>')
-        self.session.command('next form control');self.session.command('select all')
+        self.session.command('next form control');self.session.command('edit current field');self.session.command('select all')
         with patch.object(app,'web_session',self.session),patch.object(app,'APP_WINDOW',None),patch.object(app,'EDIT_ACK',{}):
             context=app.app_context('web')
             self.assertTrue(app.apply_keyboard_edit({'source':context['source'],'before':'abc','after':'abc','caret':1,'selection':None,'seq':1},'web'))

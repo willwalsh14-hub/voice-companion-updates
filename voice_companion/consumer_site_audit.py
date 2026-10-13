@@ -3,7 +3,7 @@
 Network, certificate and verification blocks are reported separately from
 navigation failures. This never signs in, enters real data or submits a form.
 """
-import argparse,json,os,tempfile,time
+import argparse,json,os,re,tempfile,time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from web_assistant import BrowserBackend,WebSession
@@ -64,6 +64,26 @@ def audit(timeout=20000):
                             message=session.command(command)
                             valid=0<=session.reading.position<=len(session.reading.text) and session.reading.position==session.browse.position
                             entry['checks'].append({'action':command,'passed':valid,'feedback':message[:160]})
+                            if not valid:entry['status']='failed'
+                        if name.startswith('Control Alt Success'):
+                            # Walk the page as a consumer using Down, not a
+                            # semantic links menu. Every noninteractive line
+                            # must be spoken, including ordinary div/span text.
+                            session.page_boundary();page_text=session.reading.text
+                            body_lines=[]
+                            interactive={'link','heading','button','edit','checkbox','radio','combobox','listbox','graphic'}
+                            for line in re.finditer(r'[^\n]+',page_text):
+                                if line.group().strip() and not any(kind(e) in interactive and e.get('start',0)<=line.start()<e.get('end',0) for e in session.browse.elements):
+                                    body_lines.append(line.group().strip())
+                            heard=[session.keyboard('Read:Home')]
+                            for _ in range(page_text.count('\n')+2):
+                                previous=session.reading.position;heard.append(session.keyboard('Read:Down'))
+                                if session.keyboard_field is not None:break
+                                if session.reading.position==previous:break
+                            spoken=' '.join(heard)
+                            missing=[line for line in body_lines if line not in spoken]
+                            valid=bool(body_lines) and not missing and session.keyboard_field is None
+                            entry['checks'].append({'action':'Arrow through ordinary page text without entering a field','passed':valid,'body_lines':len(body_lines),'missing_lines':missing[:5]})
                             if not valid:entry['status']='failed'
                         if entry['headings']>=2:
                             session._refresh(read=False);session.keyboard('Quick:h');first=session.browse.current()['key']

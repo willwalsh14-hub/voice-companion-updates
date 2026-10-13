@@ -281,6 +281,51 @@ class WindowKeyboardTests(unittest.TestCase):
             self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
             self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'abc def'))
+    def test_virtual_page_quick_keys_and_arrows_work_from_editor_entry_and_root(self):
+        self.window.set_context(dict(mode='web',source='page',text='Heading\nOrdinary body text\nLink',caret=0,ack=0,readonly=True,web_browse=True,web_revision=1))
+        self.wait(lambda:self.window.context.get('web_browse'))
+        for widget_name in ('editor','typed','root'):
+            for key,state,expected in [('h',0,'Web:Quick:h'),('h',1,'Web:Quick:Previous:h'),('Down',0,'Web:Read:Down'),('Up',0,'Web:Read:Up')]:
+                with self.subTest(widget=widget_name,key=key,state=state):
+                    def press():
+                        widget=getattr(self.window,widget_name);widget.focus_force()
+                        if widget_name=='typed':widget.insert(0,'stray entry')
+                        widget.event_generate('<KeyPress>',keysym=key,state=state)
+                    self.call(press)
+                    self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
+                    while not self.window.commands.empty():self.window.commands.get()
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Heading\nOrdinary body text\nLink'))
+        self.call(lambda:self.assertEqual(self.window.editor.cget('state'),'disabled'))
+
+    def test_escape_followed_immediately_by_h_leaves_editing_without_typing_h(self):
+        field={'key':'name','tag':'input','type':'text','value':'Original','label':'Name'}
+        self.window.set_context(dict(mode='web',source='field',text='Original',caret=0,ack=0,readonly=False,web_browse=False,web_field=field))
+        self.wait(lambda:self.window.context.get('web_field')==field)
+        def press():
+            self.window.editor.focus_force()
+            self.window.editor.event_generate('<KeyPress>',keysym='Escape')
+            self.window.editor.event_generate('<KeyPress>',keysym='h')
+        self.call(press)
+        self.wait(lambda:self.window.commands.qsize()>=2)
+        self.assertEqual(self.window.commands.get(),('keyboard','Web:Escape'))
+        self.assertEqual(self.window.commands.get(),('keyboard','Web:Quick:h'))
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Original'))
+
+    def test_explicit_alt_t_allows_a_command_and_escape_returns_to_page(self):
+        self.window.set_context(dict(mode='web',source='page',text='Page text',caret=0,ack=0,readonly=True,web_browse=True))
+        self.wait(lambda:self.window.context.get('web_browse'))
+        def enter_command():
+            self.window.editor.event_generate('<Alt-KeyPress-t>')
+            self.window.typed.event_generate('<KeyPress>',keysym='h')
+        self.call(enter_command)
+        self.assertTrue(self.window.command_entry_active)
+        self.call(lambda:self.assertEqual(self.window.typed.get(),'h'))
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Escape'))
+        self.assertFalse(self.window.command_entry_active)
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='h'))
+        self.wait(lambda:('keyboard','Web:Quick:h') in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.typed.get(),''))
+
     def test_delete_feedback_in_text_editor_and_typed_search(self):
         self.context()
         self.call(lambda:self.window.editor.mark_set('insert','1.2'))

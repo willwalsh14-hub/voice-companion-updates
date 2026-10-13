@@ -106,7 +106,7 @@ class LiveWebTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#name').input_value(),'')
     def test_checkbox_combo_and_table_navigation(self):
         cursor=self.session.browse;self.assertIn('Agree',cursor.move('x'));self.assertIn('checked',self.session.keyboard('Space'))
-        self.assertTrue(self.page.locator('#agree').is_checked());self.assertIn('Choice',self.session.keyboard('Quick:c'));self.session.keyboard('Down');self.assertEqual(self.page.locator('select').input_value(),'Two')
+        self.assertTrue(self.page.locator('#agree').is_checked());self.assertIn('Choice',self.session.keyboard('Quick:c'));self.session.keyboard('Activate');self.session.keyboard('Down');self.assertEqual(self.page.locator('select').input_value(),'Two')
         self.session.keyboard('Quick:t');self.session.keyboard('Table:Home');self.assertIn('Apple',self.session.keyboard('Table:Down'));self.assertIn('One dollar',self.session.keyboard('Table:Right'));self.assertIn('Summary',self.session.keyboard('Table:Down'))
     def test_keyboard_field_commit_cancel_and_no_auto_submit(self):
         self.session.keyboard('Quick:e');self.session.keyboard('Activate');self.session.keyboard_field['value']='Typed';self.session.keyboard('Tab')
@@ -147,7 +147,7 @@ class LiveWebTests(unittest.TestCase):
 
     def test_choice_boundaries_do_not_fire_repeated_change_events(self):
         self.page.set_content('<select aria-label="Choice" onchange="window.changes++"><option>One</option><option>Two</option></select><script>window.changes=0</script>')
-        self.session._refresh();self.session.keyboard('Quick:c')
+        self.session._refresh();self.session.keyboard('Quick:c');self.session.keyboard('Activate')
         self.assertNotIn('of list',self.session.keyboard('End'));self.assertEqual(self.page.evaluate('window.changes'),1)
         self.assertIn('End of list',self.session.keyboard('Down'));self.session.keyboard('End')
         self.assertEqual(self.page.evaluate('window.changes'),1)
@@ -357,7 +357,7 @@ class LiveWebTests(unittest.TestCase):
         self.assertEqual(self.session.reading.position,self.session.reading.text.index('Target heading'))
 
     def test_external_navigation_cancels_old_field(self):
-        self.session.keyboard('Quick:f');self.assertIsNotNone(self.session.keyboard_field)
+        self.session.keyboard('Quick:f');self.session.keyboard('Activate');self.assertIsNotNone(self.session.keyboard_field)
         self.page.goto('https://fixture.test/next');self.session.refresh_changed()
         self.assertIsNone(self.session.keyboard_field);self.assertIn('Destination',self.session.reading.text)
 

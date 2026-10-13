@@ -1,23 +1,18 @@
 {
-  "version": "0.2.122-test",
+  "version": "0.2.123-test",
   "status": "Testing build",
   "date": "October 13, 2026",
-  "baseline": "0.2.121-test",
-  "scope": "Uninterrupted writing, voice previews, virtual cursor dialogs and spoken onboarding.",
+  "baseline": "0.2.122-test",
+  "scope": "Complete spoken tutorial and browser-wide virtual cursor reading and quick keys.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Spoken getting-started and browser lessons",
+          "title": "Rebuilt audio tutorial",
           "details": [
-            "Say Start tutorial. Choose Getting started or Web browser with voice or arrows and Enter. Lessons wait for Next lesson or Enter, support Previous lesson and Repeat, and do not send real messages or create files."
-          ]
-        },
-        {
-          "title": "Voice settings previews",
-          "details": [
-            "Options demonstrate staged voice, rate, pitch and volume before saving. Escape cancels changes. SAPI and eSpeak previews use the staged settings; AI previews require a saved key and enabled permission."
+            "Nine courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates. Each offers task walkthroughs, a titled lesson index, detailed documented commands, Find lesson and Explain command. Options includes every control in all twelve categories. Fictional action simulations are removed.",
+            "Say Start tutorial, choose a course, then Next lesson, Previous lesson, Repeat, Lesson list, List commands, or Courses. Escape returns one level; Main menu leaves. Long command explanations support Continue reading. Tutorial requests explain app commands without changing real work."
           ]
         }
       ]
@@ -26,27 +21,21 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Word processor writing and naming",
+          "title": "Virtual cursor and form editing",
           "details": [
-            "Ordinary dictated document text is added silently. Explicit Read document remains available. Empty document-name entry accepts letters and editing keys without triggering menu actions."
+            "Arrows and quick keys stay in page reading mode when moving past fields. Tab, Enter, Edit current field or explicit dictation starts editing. Escape restores quick keys immediately. The virtual page surface is read-only so letters cannot alter its text."
           ]
         },
         {
-          "title": "Feedback and background behavior",
+          "title": "Keyboard focus and complete page text",
           "details": [
-            "App narration is excluded from ordinary recognition across synthesizers. Stop, sleep, exit and browser controls remain available. The cloud recognizer keeps its connection during feedback pauses. Dynamic virtual-view updates no longer force keyboard focus or raise the app."
+            "Quick keys and page arrows are handled across Companion window controls even when focus has strayed to command entry. Alt T explicitly enables typed commands. Ordinary text between links is covered by regression tests across page layouts and all four supported browsers."
           ]
         },
         {
-          "title": "Webpage navigation and dialogs",
+          "title": "Consumer verification",
           "details": [
-            "Page links, headings and fields no longer include menu letter labels. Quick navigation remains available. Visible modal dialogs scope the virtual cursor to their content. JavaScript links can complete without changing URLs, avoiding an unnecessary eight-second wait. Website alerts are announced, and website confirmation dialogs are canceled automatically rather than accepted."
-          ]
-        },
-        {
-          "title": "Consumer testing",
-          "details": [
-            "Added regression checks for naming, silent dictation, staged previews, tutorial navigation and contact dialogs. Expanded the read-only live audit to Control Alt Success home, services, training, assessment, custom training, resources, blog and the public portal page. Live contact messages are not sent."
+            "Added complete tutorial navigation and reference coverage, real-work isolation, Windows keyboard focus regressions, immediate Escape then H, and plain-text arrow traversal. Control Alt Success live audit now verifies body-text coverage, with contact submissions kept unsubmitted."
           ]
         }
       ]

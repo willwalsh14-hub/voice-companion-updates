@@ -42,10 +42,10 @@ class GuideFileTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             folder=Path(directory)/'User Guides'
             with patch('guide_files.publish_guides',return_value=folder) as publish,patch.object(companion.os,'startfile',create=True),patch.object(companion,'documents_folder',return_value=Path(directory)),patch.object(companion,'speak'),patch.object(companion,'interrupt_speech'),patch.object(companion,'voice_menu',return_value=False),patch.object(companion,'change_speech_setting',return_value=False):
-                for mode in ('awake','email_draft','document','help','tutorial'):
+                for mode in ('awake','email_draft','document','help'):
                     for phrase in ('open user guides','open guides folder','where are my user guides'):
                         self.assertEqual(companion.handle(phrase,mode),mode)
-                self.assertEqual(publish.call_count,15)
+                self.assertEqual(publish.call_count,12)
 
     def test_installer_includes_all_formats_and_accessible_shortcuts(self):
         root=Path(__file__).parent;installer=(root/'VoiceCompanion.iss').read_text();builder=(root/'build-windows.ps1').read_text()
