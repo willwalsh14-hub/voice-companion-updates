@@ -12,7 +12,7 @@
           "title": "A new user guide",
           "details": [
             "The guide now has numbered chapters and short steps. It explains what to say or press, what happens next, and how to get help. Old build history has been removed from the instructions.",
-            "The chapters cover documents, notes, email, web pages, bookmarks, radio, podcasts, speech, settings, and updates. Voice and keyboard users can follow the same tasks.",
+            "The guide covers all the main tasks. Learn to write, use email, browse the web, and save bookmarks. Other chapters explain radio, podcasts, speech, settings, and updates. Each task includes voice commands and keys.",
             "Use the contents links in HTML or Word to find a chapter. Use the heading list in your reader to find a smaller part. The DAISY copy also has chapter and part choices."
           ]
         },
@@ -43,7 +43,7 @@
         {
           "title": "The same guide in each format",
           "details": [
-            "The text, HTML, Word, EPUB, DAISY, and braille copies have the same instructions. The installer puts them in Documents, Voice Companion, User Guides.",
+            "Choose the format you prefer: text, HTML, Word, EPUB, DAISY, or braille. Each copy has the same steps. Find them in Documents. Open Voice Companion, then User Guides.",
             "Close and reopen a guide after updating to read the new copy. You can say Open user guides to open its folder.",
             "This is still a test version. Speech can hear the wrong words. Some websites, mail services, and streams need help or may be unavailable. Check important text and actions before agreeing to them."
           ]

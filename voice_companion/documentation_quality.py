@@ -56,6 +56,9 @@ def report(root):
             sections.append({'part':part['heading'],'words':len(text.split()),'estimated_grade':reading_level(text)})
     notes=json.loads((root/'release-notes.json').read_text())
     note_text=notes['scope']+' '+' '.join(detail for section in notes['sections'] for topic in section['topics'] for detail in topic['details'])
+    note_parts=[{'part':topic['title']+' detail '+str(index),'estimated_grade':reading_level(detail)}
+                for section in notes['sections'] for topic in section['topics']
+                for index,detail in enumerate(topic['details'],1)]
     from tutorial_curriculum import COURSES,option_explanation
     from settings_model import CATEGORIES,fields
     lessons=[{'part':name+' '+title,'estimated_grade':reading_level(text)} for _,name,_,intro,_ in COURSES for title,text in intro]
@@ -65,8 +68,8 @@ def report(root):
     return {'method':'Flesch-Kincaid estimate with a documented English syllable heuristic',
             'manual_estimated_grade':reading_level(all_text),
             'release_notes_estimated_grade':reading_level(note_text),
-            'manual_parts':sections,'tutorial_parts':lessons,
-            'over_target':[x for x in sections+lessons if x['estimated_grade']>8]}
+            'manual_parts':sections,'tutorial_parts':lessons,'release_note_parts':note_parts,
+            'over_target':[x for x in sections+lessons+note_parts if x['estimated_grade']>8]}
 
 
 if __name__=='__main__':
