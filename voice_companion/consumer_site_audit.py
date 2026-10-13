@@ -12,7 +12,15 @@ from companion import APP_VERSION
 from media_hub import MediaHub,_json,RADIO_ROOTS,APPLE_API
 from media_player import MediaPlayer,PLAYER_HTML
 
-SITES=(('Blind MAST contact form','https://blindmast.com/contact-us/'),
+SITES=(('Control Alt Success home and contact dialog','https://controlaltsuccess.com/'),
+       ('Control Alt Success services','https://controlaltsuccess.com/services.html'),
+       ('Control Alt Success training','https://controlaltsuccess.com/training-options.html'),
+       ('Control Alt Success assessment','https://controlaltsuccess.com/assessment.html'),
+       ('Control Alt Success custom training','https://controlaltsuccess.com/custom-training.html'),
+       ('Control Alt Success resources','https://controlaltsuccess.com/resource-hub.html'),
+       ('Control Alt Success blog','https://controlaltsuccess.com/blog.html'),
+       ('Control Alt Success portal public page','https://controlaltsuccess.com/portal.html'),
+       ('Blind MAST contact form','https://blindmast.com/contact-us/'),
        ('Simple page','https://example.org/'),
        ('Reference article','https://en.wikipedia.org/wiki/Assistive_technology'),
        ('Accessibility guidance','https://www.w3.org/WAI/'),
@@ -63,6 +71,31 @@ def audit(timeout=20000):
                             valid=session.browse.current()['key']==first
                             entry['checks'].append({'action':'H, H, Shift+H reversibility','passed':valid})
                             if not valid:entry['status']='failed'
+                        if name=='Control Alt Success home and contact dialog':
+                            session.find('Contact Us');session.choose(1);session.command('yes')
+                            valid=bool(session.snapshot.get('modal_key')) and len(session._form_controls(session.snapshot))==6
+                            entry['checks'].append({'action':'Open contact dialog and scope virtual cursor to its six fields','passed':valid})
+                            if not valid:entry['status']='failed'
+                            session.keyboard('Quick:e')
+                            for value in ('Accessibility Test','test@example.com','5550000000'):
+                                session.dictate_to_focus(value,literal=True);session.keyboard('Tab')
+                            session.keyboard('Down');session.keyboard('Tab');session.keyboard('Down');session.keyboard('Tab')
+                            session.dictate_to_focus('Read-only navigation test. Do not send.',literal=True);session.keyboard('Tab')
+                            for _ in range(6):session.keyboard('ShiftTab')
+                            valid=session.keyboard_field.get('value')=='Accessibility Test'
+                            entry['checks'].append({'action':'Type three fields, choose two drop-downs, fill message, and Shift Tab back six fields','passed':valid})
+                            if not valid:entry['status']='failed'
+                            session.commit_keyboard_field();session.keyboard_field=None
+                            message=session.command('review and submit form')
+                            valid='Form review' in message
+                            entry['checks'].append({'action':'Voice review is available after keyboard editing','passed':valid})
+                            if not valid:entry['status']='failed'
+                            if valid:
+                                message=session.command('change this field');session.command('Corrected Test')
+                                valid='Changing' in message and page.locator('#cf-name').input_value()=='Corrected Test'
+                                entry['checks'].append({'action':'Correct first field during voice review without sending','passed':valid})
+                                if not valid:entry['status']='failed'
+                            entry['submission']='Not submitted; no contact message sent.'
                         if name=='Blind MAST contact form':
                             session._refresh(read=False)
                             first=next(e for e in session.browse.elements if e.get('label')=='Your Name (required)' and kind(e)=='edit')

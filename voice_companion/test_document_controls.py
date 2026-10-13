@@ -7,6 +7,15 @@ from field_selection import FieldSelection
 from dictation_text import clean_dictation
 
 class DocumentControlTests(unittest.TestCase):
+    def test_ordinary_dictation_is_silent_but_read_document_speaks(self):
+        import companion as app
+        with tempfile.TemporaryDirectory() as folder:
+            for mode in ('mixed','dictation'):
+                doc=VoiceDocument(Path(folder));doc.dictating=True
+                with patch.object(app,'document',doc),patch.object(app,'APP_WINDOW',None),patch.object(app,'INPUT_MODE',mode),patch.object(app,'speak') as spoken:
+                    app.handle('An uninterrupted train of thought','document')
+                    self.assertIn('uninterrupted',doc.paragraphs[0].text);spoken.assert_not_called()
+                    app.handle('read document','document');self.assertTrue(spoken.called)
     def test_navigation_aliases_and_writing_position(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.paragraphs=[Paragraph('First.'),Paragraph('Last words.')]

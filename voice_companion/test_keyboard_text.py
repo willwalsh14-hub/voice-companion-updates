@@ -206,6 +206,35 @@ class WindowKeyboardTests(unittest.TestCase):
     def tearDown(self):
         if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
+    def test_dynamic_page_refresh_does_not_raise_window_or_force_focus(self):
+        initial=dict(mode='web',source='same-page',text='Initial page',caret=0,ack=0,readonly=True,web_browse=True,web_revision=1)
+        self.window.set_context(initial);self.wait(lambda:self.window.context.get('web_revision')==1)
+        calls=[]
+        def observe_focus():
+            self.window.root.lift=lambda:calls.append('raise')
+            self.window.root.deiconify=lambda:calls.append('restore')
+            self.window.editor.focus_force=lambda:calls.append('focus')
+        self.call(observe_focus)
+        self.window.set_context(initial|{'text':'Updated page','web_revision':2})
+        self.wait(lambda:self.window.context.get('web_revision')==2);self.call(lambda:None)
+        self.assertEqual(calls,[])
+    def test_empty_document_name_accepts_letters_and_editing_keys_without_commands(self):
+        self.window.set_context(dict(mode='document_name',source=None,text='',caret=0,menu_letters=True,echo='none',ack=0))
+        self.wait(lambda:self.window.context['mode']=='document_name')
+        def type_name():
+            entry=self.window.typed
+            entry.focus_force()
+            for key in ('h','e','l','p','Left','Right','Home','End'):
+                entry.event_generate('<KeyPress>',keysym=key)
+        self.call(type_name)
+        self.call(lambda:None)
+        self.assertTrue(self.window.commands.empty())
+        values=[];self.call(lambda:values.append(self.window.typed.get()))
+        self.assertEqual(values,['help'])
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Return'))
+        self.wait(lambda:not self.window.commands.empty())
+        self.assertEqual(self.window.commands.get_nowait(),'help')
+
     def test_shutdown_discards_delayed_view_updates_and_readback(self):
         def close_with_pending_readback():
             self.window.messages.put('Delayed readback')

@@ -4,6 +4,21 @@ import re
 
 
 class PracticeTutorial:
+    CHOICES=(('Getting started','getting started'),('Web browser','practice web browser'),('Word processor','practice documents'),('Email','practice email'),('Radio','practice radio'))
+    BASICS=(
+        'Getting started, lesson one. Companion speaks for itself. Say wake up to begin, and go to sleep when you want it to ignore ordinary speech. Sleep keeps your place. Say next lesson or press Enter to continue.',
+        'Moving around. In menus, say next or previous, then okay to open an item. With the keyboard, use Up or Down and Enter. Escape goes back. Control stops speech. Say next lesson or press Enter.',
+        'Writing. Open Word processor and speak a sentence. Companion adds it without reading it back. Say read document when you want to review. Say undo to undo your last change. Say next lesson or press Enter.',
+        'Naming and saving. In Word processor, press F2, type a name, and press Enter. By voice, say name document followed by the name. Say save document to save. Say next lesson or press Enter.',
+        'Options and help. Alt O opens Options. Choose Voice options to change rate, pitch, or volume and hear a sample before saving. Escape cancels the category. Say help with web browsing for instructions. Getting started is finished. Say practice web browser, practice documents, practice email, practice radio, or main menu.'
+    )
+    WEB=(
+        'Web browser lesson one. A page is read with a virtual cursor, not like an app menu. Press Control L, type a website such as controlaltsuccess dot com, and press Enter. A typed address needs dots, not the word dot. By voice, say go to control alt success dot com. Say next lesson or press Enter.',
+        'Finding your place. Press H for the next heading, or Shift H for the previous heading. K moves to the next link. By voice, say next heading or next link. Arrow keys then read from that new position. Say next lesson or press Enter.',
+        'Opening things. Press Enter on a link or button. If Companion asks for confirmation, answer yes or no. By voice, say find contact us and confirm the result. Say next lesson or press Enter.',
+        'Forms. Tab moves to the next field; Shift Tab goes back. Type or dictate your answer. Up and Down change a drop-down selection. Keyboard Send does not start voice review. By voice, say fill out this form for one question at a time. Say next lesson or press Enter.',
+        'Voice review. Say review and submit form. Say continue review to hear the next answer. To correct an answer, say change this field or change followed by its name. Answer the question, review again, and say yes only when ready. Web browser lesson finished. Say getting started, practice documents, practice email, practice radio, or main menu.'
+    )
     def __init__(self):
         self.lesson = None
         self.step = 0
@@ -17,7 +32,9 @@ class PracticeTutorial:
 
     def start(self):
         return self.say('Practice tutorial. Nothing here changes your real email, documents, or radio presets. '
-                        'Say practice radio, practice email, or practice documents. Say main menu to leave at any time.')
+                        'Choose Getting started, Web browser, Word processor, Email, or Radio with arrows and Enter. '
+                        'By voice, say getting started, practice web browser, practice documents, practice email, or practice radio. '
+                        'Lessons wait for you. Say repeat to hear the current instruction again, or main menu to leave.')
 
     def process(self, spoken):
         command = re.sub(r'[.!?]+$', '', spoken.casefold().strip())
@@ -25,6 +42,15 @@ class PracticeTutorial:
             return self.say('Practice ended. Back at the main menu.'), True
         if command in ('repeat', 'say that again', 'repeat instructions'):
             return self.previous, False
+        if command in ('getting started','practice basics','basics lesson','practice web browser','web browser lesson','practice browser'):
+            self.lesson='basics' if command in ('getting started','practice basics','basics lesson') else 'web'
+            self.step=0
+            return self.say((self.BASICS if self.lesson=='basics' else self.WEB)[0]),False
+        if self.lesson in ('basics','web') and command in ('next','next lesson','continue','continue lesson','ok','okay','confirm','previous','previous lesson'):
+            lessons=self.BASICS if self.lesson=='basics' else self.WEB
+            step=max(0,min(len(lessons)-1,self.step+(-1 if command.startswith('previous') else 1)))
+            if step==self.step:return self.say('Start of lesson.' if step==0 else 'End of lesson. Say main menu to leave.'),False
+            self.step=step;return self.say(lessons[step]),False
         if command in ('practice radio', 'radio lesson', 'radio'):
             self.lesson, self.step, self.preset_saved = 'radio', 0, False
             return self.say('Radio practice. Imagine a station called W G N. Say search W G N.'), False

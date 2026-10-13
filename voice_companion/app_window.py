@@ -171,6 +171,9 @@ class CompanionWindow:
                     self.commands.put(('keyboard',key));return 'break'
                 if key.lower()=='o' and event.state&(8|0x20000):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
+                # A name is editable text, even when empty. Its letters must
+                # never select a main-menu item or become an app command.
+                if mode=='document_name' and event.widget==typed and key!='Escape':return
                 if mode in ('media','podcast') and self.context.get('media_navigation'):
                     if self.context.get('media_input') and key in ('Tab','ISO_Left_Tab','Return'):
                         self.commands.put(('media_field',{'value':typed.get(),'next':'Enter' if key=='Return' else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab'}));typed.delete(0,'end');return 'break'
@@ -498,7 +501,7 @@ class CompanionWindow:
                     if action=='context':
                         old=self.context;self.context=field
                         mode=field['mode'];source=field.get('source')
-                        transition=old.get('mode')!=mode or old.get('source')!=source or (old.get('web_revision')!=field.get('web_revision') and not field.get('web_field')) or field.get('focus',False)
+                        transition=old.get('mode')!=mode or old.get('source')!=source or field.get('focus',False)
                         try:root.attributes('-disabled',mode=='settings')
                         except tk.TclError:pass
                         if mode=='settings':continue

@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.121-test'
+APP_VERSION = '0.2.122-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -201,7 +201,8 @@ def discard_document_changes():
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
-    context['menu_letters']=menu_state(logical) is not None
+    context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
+    if logical=='web' and web_session and web_session.list_focus in ('links','headings','fields'):context['menu_letters']=False
     if NAMED_LIST:context['named_list']=True;context['mode']='list';return context
     if logical in ('media','podcast') and MEDIA_HUB:
         nav=media_navigation();context['media_navigation']=True
@@ -373,7 +374,7 @@ def announce_main_menu():
     speak_prompt(MAIN_MENU_PROMPT)
 
 def startup_prompt():
-    return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Help is available.'
+    return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
 MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
@@ -453,7 +454,7 @@ def menu_state(mode):
         return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
     if mode=='tutorial' and tutorial_session and not tutorial_session.lesson:
-        return state(['Radio','Email','Documents'],module,'MAIN_MENU_INDEX')
+        return state([x[0] for x in PracticeTutorial.CHOICES],module,'MAIN_MENU_INDEX')
     if mode=='mailbox' and mail_session and mail_session.folder_picker and not mail_session.pending:
         picker=mail_session.folder_picker
         return ([mail_session._spoken_folder(x[0]) for x in picker['folders']],picker['index'],lambda index:picker.update(index=index))
@@ -483,7 +484,7 @@ def choose_menu_letter(letter,mode):
     select(index)
     if current==index:speak('End of matching items.');return True
     if VOICE_PICK_INDEX is not None:preview_voice(index)
-    else:speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)))
+    else:speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names),hotkey=not (mode=='web' and web_session and web_session.list_focus in ('links','headings','fields'))))
     return True
 
 def commit_email_field_tab(payload,mode):
@@ -534,6 +535,7 @@ def _navigation_key(key,mode):
         if result:speak(result)
         sync_app_context(mode,True)
         return None
+    if mode=='web' and key in ('Escape','Web:Escape') and web_session and isinstance(web_session.snapshot,dict) and web_session.snapshot.get('modal_key') and not web_session.list_focus:return 'web key Escape'
     if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'leave website'
     if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None:return 'leave website'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
@@ -548,7 +550,7 @@ def _navigation_key(key,mode):
             if current==index:speak('Start of list.' if key=='Home' else 'End of list.');return None
             select(index)
             if VOICE_PICK_INDEX is not None:preview_voice(index);return None
-            speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)));return None
+            speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names),hotkey=not (mode=='web' and web_session and web_session.list_focus in ('links','headings','fields'))));return None
         if mode=='mailbox' and mail_session and mail_session.view=='folder' and not mail_session.pending:
             speak(mail_session.list_boundary(key=='End'));return None
     if mode=='help' and key=='Escape':return 'go back'
@@ -562,8 +564,12 @@ def _navigation_key(key,mode):
         if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<3:speak('Start of list.' if step<0 else 'End of list.');return None
         ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,3)
         speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
-    if key=='Enter' and mode=='tutorial' and MAIN_MENU_INDEX in (0,1,2):
-        return ('practice radio','practice email','practice documents')[MAIN_MENU_INDEX]
+    if key=='Enter' and mode=='tutorial' and tutorial_session and not tutorial_session.lesson and MAIN_MENU_INDEX is not None:
+        return PracticeTutorial.CHOICES[MAIN_MENU_INDEX][1]
+    if mode=='tutorial' and key=='Escape':return 'main menu'
+    if mode=='tutorial' and tutorial_session and tutorial_session.lesson in ('basics','web'):
+        if key in ('Enter','Down','Right'):return 'next lesson'
+        if key in ('Up','Left'):return 'previous lesson'
     if mode=='email_draft' and key in ('Tab','ShiftTab') and email_draft:
         order=('recipient','cc','bcc','subject','body')
         current=email_draft.compose_step or 'body'
@@ -710,6 +716,8 @@ def interrupt_speech():
     global SPEECH_PAUSED
     if APP_WINDOW is not None:APP_WINDOW.ui_actions.put(('cancel_phonetic',None))
     if KEYBOARD_SPEECH is not None:KEYBOARD_SPEECH.interrupt(notify=False)
+    preview=globals().get('SETTINGS_PREVIEW_SPEECH')
+    if preview:preview.interrupt()
     if ESPEAK_SPEECH is not None:
         ESPEAK_SPEECH.interrupt()
     if AI_SPEECH is not None:
@@ -762,6 +770,8 @@ def speech_busy():
         return SPEECH_PAUSED
     if KEYBOARD_SPEECH is not None and KEYBOARD_SPEECH.busy():
         return True
+    preview=globals().get('SETTINGS_PREVIEW_SPEECH')
+    if preview and preview.busy():return True
     if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.busy():
         return True
     if AI_SPEECH is not None and AI_SPEECH.busy():
@@ -1000,6 +1010,14 @@ def configure_ai_speech():
 
 def speak_prompt(text):
     speak(prompt_text(text,VERBOSITY))
+
+
+def dictation_feedback(result):
+    """Keep ordinary writing uninterrupted; explicit reading still speaks."""
+    if str(result).startswith('Added: '):
+        if APP_WINDOW is not None:APP_WINDOW.show('Text added.')
+        return
+    speak(result)
 
 
 def speak(text):
@@ -1446,6 +1464,15 @@ def _handle(text, mode, typed=False):
             tutorial_session = PracticeTutorial()
             speak(tutorial_session.start())
             return 'tutorial'
+        if not tutorial_session.lesson:
+            if command in ('next','previous'):
+                step=1 if command=='next' else -1
+                if MAIN_MENU_INDEX is not None and not 0<=MAIN_MENU_INDEX+step<len(PracticeTutorial.CHOICES):
+                    speak('End of list.' if step>0 else 'Start of list.');return mode
+                MAIN_MENU_INDEX=bounded_index(MAIN_MENU_INDEX,step,len(PracticeTutorial.CHOICES))
+                speak(announce_item(PracticeTutorial.CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(PracticeTutorial.CHOICES)));return mode
+            if command in ('ok','okay','confirm','confirm that','that one'):
+                text=PracticeTutorial.CHOICES[MAIN_MENU_INDEX if MAIN_MENU_INDEX is not None else 0][1]
         result, closed = tutorial_session.process(text)
         speak(result)
         if closed:
@@ -1457,6 +1484,7 @@ def _handle(text, mode, typed=False):
             speak('Say main menu first, then start tutorial. This protects what you are working on.')
             return mode
         help_session = None
+        MAIN_MENU_INDEX=None
         tutorial_session = PracticeTutorial()
         speak(tutorial_session.start())
         return 'tutorial'
@@ -1774,7 +1802,7 @@ def _handle(text, mode, typed=False):
     if INPUT_MODE == 'dictation' and not typed:
         if mode in ('email_draft', 'document'):
             editor = email_draft if mode == 'email_draft' else document
-            if (mode == 'document' or mode == 'email_draft' and (email_draft.compose_step or 'body') == 'body') and (document_format_command(command) or editor.pending_spacing):
+            if (mode == 'document' or mode == 'email_draft' and (email_draft.compose_step or 'body') == 'body') and (document_format_command(command) or editor.pending_spacing or command in ('read document','read from top','read from beginning')):
                 speak(editor.process(text))
             elif mode == 'email_draft' and (email_draft.compose_step in ('subject','cc','bcc') or
                                           email_draft.compose_step == 'recipient' and
@@ -1782,7 +1810,7 @@ def _handle(text, mode, typed=False):
                 speak(email_draft.process(text))
                 focus_email_entry()
             else:
-                speak(editor.append_text(text))
+                dictation_feedback(editor.append_text(text))
         elif mode == 'note':
             cleaned = clean_dictation(text)
             if cleaned: note_buffer.append(cleaned)
@@ -2163,7 +2191,7 @@ def _handle(text, mode, typed=False):
             document.dictating = True
             result = document.append_text(text)
         if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
-        speak(result)
+        dictation_feedback(result)
         return 'document'
     if mode == 'note':
         request = reading_request(command)
@@ -2690,6 +2718,7 @@ def main():
                     kind,values=settings_result
                     if kind=='general':
                         try:
+                            __import__('app_settings').stop_preview(sys.modules[__name__])
                             apply_settings(values)
                             SETTINGS_PANEL.accepted()
                             speak('Settings saved.')
@@ -2697,11 +2726,17 @@ def main():
                             SETTINGS_PANEL.failed('Settings were not saved: '+str(exc))
                     elif kind=='action':
                         mode=settings_action(values,SETTINGS_RETURN_MODE)
+                    elif kind=='preview':
+                        try:
+                            if SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():__import__('app_settings').preview_settings(sys.modules[__name__],*values)
+                        except Exception:speak('Voice preview could not play. Your saved settings are unchanged.')
                     settings_result=None
                 if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='sleep' and SLEEP_RETURN_MODE=='settings':
+                    __import__('app_settings').stop_preview(sys.modules[__name__])
                     SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
                     sync_app_context(mode,True)
                 if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='settings':
+                    __import__('app_settings').stop_preview(sys.modules[__name__])
                     mode=SETTINGS_RETURN_MODE
                     sync_app_context(mode,True)
                 settings_notices=[]
@@ -2762,18 +2797,24 @@ def main():
                 if speech_busy():startup_quiet_until=time.monotonic()+.3
                 if time.monotonic()<startup_quiet_until:recognizer.Reset();utterance.clear();continue
                 startup_speaking=False
-            if mode=='settings' or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()) or settings_audio_blocked:
-                # Settings readback must not become another settings command.
+            narration_busy=not SPEECH_PAUSED and speech_busy()
+            if mode=='settings' or narration_busy or settings_audio_blocked:
+                # No synthesizer's readback may become another command or
+                # dictated paragraph, including while the app is in background.
                 # Keep local silence/sleep/exit controls available during feedback.
                 if cloud:
-                    cloud.stop();cloud=None
-                if (mode=='settings' and speech_busy()) or (KEYBOARD_SPEECH and KEYBOARD_SPEECH.busy()):settings_quiet_until=time.monotonic()+0.2
+                    # Pause audio feeding rather than permanently dropping the
+                    # cloud recognizer after each spoken app response.
+                    while not cloud.events.empty():
+                        try:cloud.events.get_nowait()
+                        except queue.Empty:break
+                if narration_busy:settings_quiet_until=time.monotonic()+0.3
                 if time.monotonic()<settings_quiet_until:
                     settings_audio_blocked=True
                     utterance.clear()
                     if recognizer.AcceptWaveform(audio):
                         control=json.loads(recognizer.Result()).get('text','').lower()
-                        if spoken_control(control) or web_feedback_control(control,mode):
+                        if spoken_control(control) or speech_control(control) or web_feedback_control(control,mode):
                             interrupt_speech()
                             mode=handle(control,mode)
                             if mode=='exit':return 0

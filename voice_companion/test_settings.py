@@ -8,6 +8,15 @@ from settings_model import SettingsSession,DEFAULTS,CATEGORIES,fields,prompt_tex
 import companion
 
 class SettingsTests(unittest.TestCase):
+    def test_staged_sapi_sample_does_not_change_saved_speech(self):
+        from app_settings import preview_settings
+        m=Mock(TEXT_MODE=False,SETTINGS_PREVIEW_SPEECH=None)
+        m.voice.Voice.Id='original';selected=Mock(Id='sample')
+        m.voice_choices.return_value=[('windows','Sample voice',selected)]
+        values={'engine':'SAPI','windows_voice':'Sample voice','rate':'7','volume':'60','pitch':'2'}
+        preview_settings(m,values,'Sample')
+        m.KEYBOARD_SPEECH.preview.assert_called_once_with('Sample',('sample',7,60,None,2))
+        self.assertEqual(m.voice.Voice.Id,'original');m.save_speech_settings.assert_not_called();m.choose_voice.assert_not_called()
     def setUp(self):self.context={'engines':('windows','espeak','ai'),'windows_voices':('Microsoft David',),'espeak_voices':('eSpeak UK English',),'ai_voices':('coral','nova'),'accounts':(),'podcasts':('1. First','2. Second'),'podcast_limits':{'1. First':'manual','2. Second':'all'}}
     def test_cancel_discards_all_staged_changes(self):
         original=DEFAULTS|{'volume':'100'};session=SettingsSession(original,self.context)

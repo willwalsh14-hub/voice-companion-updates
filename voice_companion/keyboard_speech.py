@@ -14,6 +14,10 @@ class KeyboardSpeech:
         if text:
             self.interrupt()
             self.narration_interrupt.set();self.active=True;self.queue.put(str(text))
+    def preview(self,text,settings):
+        """One utterance with staged settings; saved speech is untouched."""
+        self.interrupt();self.narration_interrupt.set();self.active=True
+        self.queue.put(('preview',str(text),settings))
     def busy(self):return (self.active and not getattr(self,'paused',False)) or time.monotonic()<self.quiet_until
     def control(self,action):self.queue.put((action,))
     def interrupt(self,notify=True):
@@ -48,6 +52,10 @@ class KeyboardSpeech:
                 if text is None:return
                 voice_id,rate,volume,espeak=self.settings[:4];pitch=self.settings[4] if len(self.settings)>4 else 0
                 try:
+                    preview=isinstance(text,tuple) and text[0]=='preview'
+                    if preview:
+                        _,text,settings=text
+                        voice_id,rate,volume,espeak,pitch=settings
                     if isinstance(text,tuple):
                         action=text[0]
                         if action=='pause':
@@ -64,7 +72,7 @@ class KeyboardSpeech:
                         continue
                     if getattr(self,'paused',False):voice.Resume();self.paused=False
                     self.active=True
-                    if espeak and espeak.enabled:espeak.interrupt();espeak.speak(text,rate,volume);continue
+                    if espeak and (preview or espeak.enabled):espeak.interrupt();espeak.speak(text,rate,volume);continue
                     if voice_id and voice_id!=chosen:
                         voices=voice.GetVoices()
                         token=next((voices.Item(i) for i in range(voices.Count) if voices.Item(i).Id==voice_id),None)

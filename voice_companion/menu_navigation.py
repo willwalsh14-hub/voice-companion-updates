@@ -17,8 +17,8 @@ def next_match(names, current, letter):
     return matches[0]
 
 
-def announce_item(name, index, count):
-    return f'{menu_label(name)}, {index + 1} of {count}.'
+def announce_item(name, index, count, hotkey=True):
+    return f'{menu_label(name) if hotkey else name}, {index + 1} of {count}.'
 
 
 def boundary_notice(index,count):

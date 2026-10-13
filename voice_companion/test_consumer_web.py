@@ -86,6 +86,46 @@ class ConsumerWebTests(unittest.TestCase):
             self.assertEqual(self.page.evaluate('window.sent'),1)
             self.assertIsNone(self.session.submit_pending)
 
+    def test_page_lists_have_no_menu_hotkeys(self):
+        self.load('<h1>Contact</h1><a href="https://fixture.test/next">About us</a><label for="answer">Name</label><input id="answer">')
+        for message in (self.session.list_links(),self.session.list_headings(),self.session.fields()):
+            self.assertNotRegex(message,r'\([A-Z]\)')
+        import companion as app
+        from unittest.mock import patch
+        with patch.object(app,'web_session',self.session):self.assertFalse(app.app_context('web')['menu_letters'])
+
+    def test_javascript_alert_is_announced_and_confirmation_is_canceled(self):
+        self.load('<button onclick="alert(\'Please enter a message\')">Send</button><button onclick="window.confirmed=confirm(\'Continue?\')">Confirm</button>')
+        self.session.keyboard('Quick:b')
+        self.assertIn('Page message: Please enter a message',self.session.keyboard('Activate',direct_submit=True))
+        self.session.keyboard('Quick:b');self.session.keyboard('Quick:b');message=self.session.keyboard('Activate',direct_submit=True)
+        self.assertIn('Website confirmation canceled: Continue?',message)
+        self.assertFalse(self.page.evaluate('window.confirmed'))
+
+    def test_escape_closes_modal_before_leaving_website(self):
+        import companion as app
+        from unittest.mock import patch
+        self.load('<h1>Background</h1><div role="dialog" aria-modal="true" id="dialog"><h2>Contact dialog</h2><button>Close</button></div><script>document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelector("#dialog").hidden=true})</script>')
+        with patch.object(app,'web_session',self.session),patch.object(app,'interrupt_speech'):
+            self.assertEqual(app.navigation_key('Web:Escape','web'),'web key Escape')
+        self.assertIn('Dialog closed',self.session.keyboard('Escape'))
+        self.assertIn('Background',self.session.reading.text)
+
+    def test_javascript_contact_link_opens_modal_without_eight_second_delay(self):
+        import time
+        self.load('<h1>Background page</h1><a href="#contact" onclick="event.preventDefault();document.querySelector(\'#contact\').hidden=false">Contact us</a><div hidden id="contact" role="dialog" aria-modal="true"><h2>Contact form</h2><label for="name">Name</label><input id="name"><button onclick="document.querySelector(\'#contact\').hidden=true">Close contact form</button></div>')
+        self.assertNotIn('Contact form',self.session.reading.text)
+        self.session.find('Contact us');self.session.choose(1)
+        started=time.monotonic();self.session.command('yes')
+        self.assertLess(time.monotonic()-started,5)
+        self.assertIn('Contact form',self.session.reading.text);self.assertNotIn('Background page',self.session.reading.text)
+        self.session.keyboard('Quick:e');self.session.dictate_to_focus('Retain answer',literal=True)
+        self.session.keyboard('Tab');self.session.keyboard('ShiftTab')
+        self.assertEqual(self.session.keyboard_field['value'],'Retain answer')
+        self.session.commit_keyboard_field();self.session.keyboard_field=None
+        self.session.keyboard('Quick:b');self.session.keyboard('Activate',direct_submit=True)
+        self.assertIn('Background page',self.session.reading.text)
+
     def test_voice_submission_review_can_correct_a_field_before_sending(self):
         self.load('<h1>Contact</h1><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1"><label for="name">Name</label><input id="name" value="Wrong"><label for="email">Email</label><input type="email" id="email" value="test@example.com"><button type="submit">Send</button></form>')
         self.assertIn('change this field',self.session.command('review and submit form'))

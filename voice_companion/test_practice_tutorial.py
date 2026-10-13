@@ -5,6 +5,23 @@ from practice_tutorial import PracticeTutorial
 
 
 class PracticeTutorialTests(unittest.TestCase):
+    def test_narrated_lessons_wait_repeat_and_move_back(self):
+        session=PracticeTutorial()
+        for lesson in ('getting started','practice web browser'):
+            first=session.process(lesson)[0]
+            self.assertEqual(session.process('repeat')[0],first)
+            self.assertNotEqual(session.process('next lesson')[0],first)
+            self.assertEqual(session.process('previous lesson')[0],first)
+            self.assertIn('Start of lesson',session.process('previous lesson')[0])
+            for _ in range(4):session.process('next lesson')
+            self.assertIn('End of lesson',session.process('next lesson')[0]);self.assertEqual(session.step,4)
+    def test_keyboard_and_voice_choose_same_tutorial_lesson(self):
+        import companion as app
+        with patch.object(app,'tutorial_session',PracticeTutorial()),patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'speak'),patch.object(app,'sync_app_context'):
+            app.handle_keyboard('next','tutorial');self.assertEqual(app.MAIN_MENU_INDEX,0)
+            command=app.navigation_key('Enter','tutorial');self.assertEqual(command,'getting started')
+            app.handle_keyboard(command,'tutorial');self.assertEqual(app.tutorial_session.lesson,'basics')
+            app.handle_keyboard(app.navigation_key('Enter','tutorial'),'tutorial');self.assertEqual(app.tutorial_session.step,1)
     def test_radio_lesson_uses_all_preset_save_phrases_without_writing(self):
         for phrase in ('add preset', 'add favorite', 'save preset', 'save favorite'):
             session = PracticeTutorial()

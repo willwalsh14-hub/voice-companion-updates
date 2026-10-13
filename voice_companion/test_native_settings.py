@@ -10,6 +10,13 @@ from settings_model import SettingsSession,DEFAULTS
 
 @unittest.skipUnless(sys.platform=='win32','Native Windows controls require Windows')
 class NativeSettingsTests(unittest.TestCase):
+    def test_rate_change_previews_staged_values_and_cancel_restores_original(self):
+        hwnd=self.open_panel();samples=[]
+        self.panel.preview=lambda values,text:samples.append((values,text))
+        self.panel.command('voice');self.wait(lambda:bool(self.u.GetDlgItem(hwnd,200)))
+        self.panel.command('speech rate 8');self.wait(lambda:bool(samples))
+        self.assertEqual(samples[-1][0]['rate'],'8');self.assertIn('sample',samples[-1][1]);self.assertEqual(self.saved,[])
+        self.panel.command('cancel');self.wait(lambda:self.session.values['rate']=='0');self.assertEqual(self.saved,[])
     def open_panel(self):
         self.saved=[];self.notices=[]
         context={'engines':('windows',),'windows_voices':('Test voice',),'espeak_voices':(),'ai_voices':('coral',),'accounts':(),'podcasts':(),'podcast_limits':{}}

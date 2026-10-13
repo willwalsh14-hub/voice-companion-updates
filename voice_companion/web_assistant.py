@@ -194,6 +194,7 @@ class BrowserBackend:
 
     def snapshot(self):
         self.start()
+        self._watch_dialogs()
         script = '''() => {
           const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&(!parent||visible(parent));visibility.set(e,result);return result;};
           const accessibleLabel=/*ACCESSIBLE_LABEL*/;
@@ -202,9 +203,11 @@ class BrowserBackend:
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
           const all = root => [...root.querySelectorAll('*')].flatMap(e =>
             [e, ...(e.shadowRoot ? all(e.shadowRoot) : [])]);
-          const priority=document.querySelector('#search,#main,main,[role="main"],article');
+          const modal=[...document.querySelectorAll('[role="dialog"][aria-modal="true"],dialog[open]')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).at(-1);
+          const readingRoot=modal||document.body;
+          const priority=modal||document.querySelector('#search,#main,main,[role="main"],article');
           const nodes=[...new Set([...(priority ? all(priority).filter(e=>e.matches(selector)) : []),
-                                   ...all(document).filter(e=>e.matches(selector))])];
+                                   ...all(modal||document).filter(e=>e.matches(selector))])];
           let controlSerial=1+all(document).reduce((m,e)=>Math.max(m,/^n\\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
           const controlKey=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+controlSerial++);return e.getAttribute('data-voice-companion-key');};
           const controls = [];
@@ -238,7 +241,7 @@ class BrowserBackend:
               (/^(?:just a moment|checking your browser|verify you are human|human verification|security check)\\b/i.test(document.title||'')&&bodyText.length<6000) ||
               (/our systems have detected unusual traffic from your computer network|complete the security check|checking your browser before accessing/i.test(bodyText.slice(0,1200))&&bodyText.length<6000);
           return {title:document.title || location.hostname, url:location.href,
-                  text:bodyText, anchors, document_epoch:String(performance.timeOrigin)+':'+window.__voiceCompanionDocument.epoch, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(document.body?.innerText || '').length>200000, controls, challenge,
+                  text:bodyText, modal_key:modal?controlKey(modal):'', anchors, document_epoch:String(performance.timeOrigin)+':'+window.__voiceCompanionDocument.epoch, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(readingRoot?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
         }'''
@@ -419,9 +422,19 @@ class BrowserBackend:
             return element.count()==1 and element.evaluate("(e,item)=>e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
         except Exception:return False
 
+    def _watch_dialogs(self):
+        if not hasattr(self.page,'on'):return
+        if getattr(self,'dialog_page',None) is self.page:return
+        self.dialog_page=self.page
+        def dialog_notice(dialog):
+            self.dialog_notice=('Page message: ' if dialog.type=='alert' else 'Website confirmation canceled: ')+dialog.message
+            dialog.dismiss()
+        self.page.on('dialog',dialog_notice)
+
     def activate(self,item):
         import time
         self.last_action_started=False
+        self._watch_dialogs()
         element=self._element(item)
         before_page=self.page
         frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
@@ -448,8 +461,12 @@ class BrowserBackend:
                 try:
                     now=self.document_stamp()
                     navigation_changed=frame.url!=before_url or any(now.get(k)!=before.get(k) for k in ('url','epoch','frames','frame_identity'))
+                    # A link may open a dialog or update content through
+                    # JavaScript without changing its URL.
                     needs_navigation=kind(item)=='link' and item.get('href')!=before_url
-                    changed=navigation_changed or (not needs_navigation and any(now.get(k)!=before.get(k) for k in ('revision','frame_states')))
+                    dom_changed=any(now.get(k)!=before.get(k) for k in ('revision','frame_states'))
+                    modal_ready=needs_navigation and dom_changed and frame.evaluate('()=>[...document.querySelectorAll(\'[role="dialog"][aria-modal="true"],dialog[open]\')].some(e=>!e.hidden&&getComputedStyle(e).display!=="none"&&getComputedStyle(e).visibility!=="hidden")')
+                    changed=navigation_changed or dom_changed and (not needs_navigation or modal_ready)
                     if changed:break
                 except Exception:
                     # Navigation can briefly destroy the old JavaScript context.
@@ -713,6 +730,10 @@ class WebSession:
                 return 'Page view.'
             elif key=='Escape':
                 if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the main menu.'
+                if (self.snapshot or {}).get('modal_key'):
+                    self.backend.page.keyboard.press('Escape')
+                    result=self._refresh(read=False,wait=False)
+                    return ('Dialog remains open. Move to its Close button.' if self.snapshot.get('modal_key') else 'Dialog closed. '+result)
                 self.pending=None;self.submit_pending=None;return 'Leave website.'
             elif key in ('Activate','Space'):
                 if self.keyboard_field:return describe(self.keyboard_field)
@@ -928,11 +949,17 @@ class WebSession:
             return ('I found controls but no readable page text. Say list links or try read page again.'
                     if self.snapshot.get('controls') else
                     'I could not read the page content after waiting for it to load. Try read page again or ask your helper to inspect the browser.')
-        return (('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
+        dialog_notice=getattr(self.backend,'dialog_notice','')
+        if not isinstance(dialog_notice,str):dialog_notice=''
+        if dialog_notice:self.backend.dialog_notice=''
+        return ((dialog_notice+'. ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
         if not self.snapshot or not hasattr(self.backend,'document_stamp'):return ''
+        notice=getattr(self.backend,'dialog_notice','')
+        if not isinstance(notice,str):notice=''
+        if notice:self.backend.dialog_notice='';return notice
         stamp=self._stamp()
         if not stamp:return ''
         previous=self.document_state or {}
@@ -945,6 +972,8 @@ class WebSession:
         self.document_state=stamp
         if not self.keyboard_field and previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True)
         snapshot,captured_state=self._capture()
+        if snapshot.get('modal_key','')!=self.snapshot.get('modal_key',''):
+            return self._refresh(read=False,wait=False)
         self.document_state=captured_state
         if not self.keyboard_field and snapshot.get('title')!=self.snapshot.get('title'):return self._refresh(read=False,preserve=True)
         position=self.reading.position;continuation=self.reading.continuation
@@ -1063,7 +1092,7 @@ class WebSession:
         self.link_position = 0
         self.list_focus = 'links'
         self.pending = None
-        return 'Links list. Link '+announce_item(_label(links[0]),0,len(links))+' Press Enter or say open current link to open. Escape returns to the page.'
+        return 'Links list. Link '+announce_item(_label(links[0]),0,len(links),hotkey=False)+' Press Enter or say open current link to open. Escape returns to the page.'
 
     def open_link(self, number):
         if not self.snapshot: return 'Open a website first.'
@@ -1084,7 +1113,7 @@ class WebSession:
         self.link_position = index
         self.list_focus = 'links'
         self.pending = None
-        return 'Link '+announce_item(_label(links[index]),index,len(links))
+        return 'Link '+announce_item(_label(links[index]),index,len(links),hotkey=False)
 
     def _suggest_link(self, item):
         host = urlsplit(item.get('href', '')).hostname or 'unknown site'
@@ -1228,7 +1257,7 @@ class WebSession:
         self.list_focus='fields'
         self.field_list_index=0
         self.pending=None
-        return ('Found '+str(len(self.choices))+' fields. '+announce_item(_label(self.choices[0]),0,len(self.choices))+
+        return ('Found '+str(len(self.choices))+' fields. '+announce_item(_label(self.choices[0]),0,len(self.choices),hotkey=False)+
                 ' Say next or previous, then that one to answer it.')
 
     def _ask_field(self):
@@ -1469,12 +1498,12 @@ class WebSession:
         items=self.heading_items()
         if not items:return 'No headings on this page.'
         self.list_focus='headings';self.heading_index=0;self.pending=None
-        return 'Headings list. '+announce_item(describe(items[0]).rstrip('.'),0,len(items))+' Enter moves to the heading. Escape returns to the page.'
+        return 'Headings list. '+announce_item(describe(items[0]).rstrip('.'),0,len(items),hotkey=False)+' Enter moves to the heading. Escape returns to the page.'
 
     def move_heading(self,step):
         items=self.heading_items();index=self.heading_index+step
         if not 0<=index<len(items):return 'Start of list.' if index<0 else 'End of list.'
-        self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items))
+        self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items),hotkey=False)
 
     def activate_list_item(self):
         if self.list_focus=='links':return self.open_link((self.link_position or 0)+1)
@@ -1609,7 +1638,7 @@ class WebSession:
                 index=self.field_list_index+step
                 if not 0<=index<len(self.choices): return ('Start of list. ' if step<0 else 'End of list. ')+'That is the '+('first' if step<0 else 'last')+' field.'
                 self.field_list_index=index
-                return name_first('Field '+str(index+1)+' of '+str(len(self.choices))+': '+_label(self.choices[index])+'. Say that one to answer it.')
+                return announce_item(_label(self.choices[index]),index,len(self.choices),hotkey=False)+' Say that one to answer it.'
             return self.move_link(step)
         if command in ('that one','okay','ok','confirm','confirm that') and self.list_focus=='favorites' and self.favorite_items:
             return self.open(self.favorite_items[self.favorite_index][1]['url'])

@@ -12,9 +12,10 @@ def choice_feedback(value,index,count):
     return str(value)
 
 class NativeSettings:
-    def __init__(self,session,announce,save,action,interrupt=None):
+    def __init__(self,session,announce,save,action,interrupt=None,preview=None):
         self.session=session;self.announce=announce;self.interrupt=interrupt or (lambda:None);self.save_callback=save;self.action_callback=action
         self.actions=queue.Queue();self.ready=threading.Event();self.closed=threading.Event();self.hwnd=None;self.pending=False
+        self.preview=preview
     def start(self):
         threading.Thread(target=self.run,name='Settings dialog',daemon=True).start()
         return self
@@ -83,6 +84,11 @@ class NativeSettings:
             if field.choices:
                 index=int(send(hwnd,0x147,0,0));notice=choice_feedback(notice,index,len(field.choices))
             return notice.strip()
+        def announce_value(hwnd):
+            field=controls[hwnd];notice=changed_value(hwnd)
+            if self.preview and field.key in ('rate','pitch','volume','engine','windows_voice','espeak_voice','ai_voice'):
+                self.preview(dict(self.session.values),field.label+' '+notice+'. This is a sample of your voice settings. Press Escape to cancel changes.')
+            else:self.announce(notice)
         def render(focus_key=None):
             for hwnd in children:destroy(hwnd)
             children.clear();controls.clear();buttons.clear();header_buttons.clear();headers[0]=None;last_focus[0]=None
@@ -188,7 +194,7 @@ class NativeSettings:
                 elif field and field.kind=='headers':
                     headers[0].index=3 if bottom else 0;send(hwnd,0x186,headers[0].index,0);self.announce(headers[0].label())
                 elif field and field.choices:
-                    index=len(field.choices)-1 if bottom else 0;send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(hwnd))
+                    index=len(field.choices)-1 if bottom else 0;send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);announce_value(hwnd)
                 return
             if cmd in ('next','previous','next category','previous category'):
                 delta=-1 if cmd.startswith('previous') else 1
@@ -197,7 +203,7 @@ class NativeSettings:
                 elif field and field.choices:
                     index=int(send(hwnd,0x147,0,0))
                     if not 0<=index+delta<len(field.choices):self.announce('Start of list.' if delta<0 else 'End of list.');return
-                    index+=delta;send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(hwnd))
+                    index+=delta;send(hwnd,0x14E,index,0);self.session.set(field.key,field.choices[index]);announce_value(hwnd)
                 else:focus(u.GetNextDlgTabItem(self.hwnd,hwnd,delta<0))
                 return
             setting=self.session.voice_setting(text_command)
@@ -206,11 +212,11 @@ class NativeSettings:
                 if not editing[0]:baseline[0]=copy.deepcopy(self.session.values);editing[0]=True
                 message=self.session.set(key,value)
                 self.session.category=next(i for i,name in enumerate(CATEGORIES) if any(f.key==key for f in __import__('settings_model').fields(name,self.session.context)))
-                send(category[0],0x186,self.session.category,0);render(key);self.announce(message);last_focus[0]=get_focus();return
+                send(category[0],0x186,self.session.category,0);render(key);announce_value(get_focus()) if key in ('rate','pitch','volume','engine','windows_voice','espeak_voice','ai_voice') else self.announce(message);last_focus[0]=get_focus();return
             if cmd in ('on','off','toggle'):
                 hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if field and field.kind=='check':
-                    value=not raw(hwnd,field) if cmd=='toggle' else cmd=='on';send(hwnd,0xF1,int(value),0);self.session.set(field.key,value);self.announce(changed_value(hwnd));return
+                    value=not raw(hwnd,field) if cmd=='toggle' else cmd=='on';send(hwnd,0xF1,int(value),0);self.session.set(field.key,value);announce_value(hwnd);return
             field=controls.get(get_focus())
             if field and field.kind=='action' and cmd in ('open','activate','click'):
                 self.action_callback(field.key);close();return
@@ -233,7 +239,7 @@ class NativeSettings:
                             headers[0].index=max(0,min(3,int(send(lp,0x188,0,0))));self.announce(describe(lp));return 0
                         if field.kind=='action' and notice==0:self.action_callback(field.key);close();return 0
                         if (field.kind=='check' and notice==0) or (field.kind in ('choice','combo') and notice==1):
-                            self.session.set(field.key,raw(lp,field));self.announce(changed_value(lp));last_focus[0]=lp
+                            self.session.set(field.key,raw(lp,field));announce_value(lp);last_focus[0]=lp
                             if field.key=='podcast_feed':render(field.key)
                         return 0
                 if msg==0x113:
@@ -302,7 +308,7 @@ class NativeSettings:
                 if index is None:self.announce('No matching option.');continue
                 if index==old and message.wParam in (0x26,0x28,0x24,0x23):self.announce('Start of list.' if message.wParam in (0x26,0x24) else 'End of list.');continue
                 if index==old and 65<=message.wParam<=90:self.announce('End of matching items.');continue
-                send(current,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(current));continue
+                send(current,0x14E,index,0);self.session.set(field.key,field.choices[index]);announce_value(current);continue
             if message.message==0x100 and message.wParam==0x1B:cancel_category();continue
             if message.message==0x100 and message.wParam in (0x26,0x28,0x25,0x27) and get_focus()==category[0] and not editing[0]:
                 select_category(self.session.category+(-1 if message.wParam in (0x26,0x25) else 1));continue

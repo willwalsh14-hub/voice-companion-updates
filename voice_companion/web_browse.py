@@ -159,7 +159,7 @@ SEMANTICS = r'''
             if(bookmark)bookmark.end=output.length;
             if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
           };
-          walk(document.body);
+          walk(readingRoot);
           // A result may put its URL in an H tag and its human title in a
           // sibling div. The heading's label and caret must target that title.
           for(const item of elements){if(item.role!=='heading'||!item.label||urlOnly(item.label))continue;

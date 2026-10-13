@@ -38,8 +38,42 @@ def open_settings(m,mode):
         m.speak('The settings panel requires the app window. Voice settings commands are still available.');return mode
     if m.SETTINGS_PANEL and not m.SETTINGS_PANEL.closed.is_set():return 'settings'
     values,context=snapshot(m);session=SettingsSession(values,context)
-    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.KEYBOARD_SPEECH.interrupt() if m.KEYBOARD_SPEECH else m.APP_WINDOW.commands.put(('keyboard','Control'))).start()
+    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.APP_WINDOW.commands.put(('keyboard','Control')),preview=lambda values,text:m.APP_WINDOW.settings_results.put(('preview',(values,text)))).start()
     return 'settings'
+
+def stop_preview(m):
+    player=getattr(m,'SETTINGS_PREVIEW_SPEECH',None)
+    if player:player.close();m.SETTINGS_PREVIEW_SPEECH=None
+
+def preview_settings(m,values,text):
+    """Play staged voice settings without changing or saving preferences."""
+    stop_preview(m);m.interrupt_speech()
+    if m.TEXT_MODE:return
+    engine=str(values['engine']).lower();engine='windows' if engine=='sapi' else engine
+    rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
+    if engine=='windows':
+        selected=next((v for v in m.voice_choices('windows') if v[1]==values['windows_voice']),None)
+        voice_id=selected[2].Id if selected else m.voice.Voice.Id
+        m.KEYBOARD_SPEECH.preview(text,(voice_id,rate,volume,None,pitch));return
+    from ai_speech import AISpeech,synthesize as ai_synthesize
+    def fallback():
+        import pythoncom,win32com.client
+        pythoncom.CoInitialize();return win32com.client.Dispatch('SAPI.SpVoice')
+    if engine=='espeak':
+        from espeak_speech import synthesize,executable
+        selected=next((v for v in m.voice_choices('espeak') if v[1]==values['espeak_voice']),None)
+        voice_name=selected[2] if selected else m.ESPEAK_VOICE_NAME
+        program=executable()
+        generator=lambda text,rate:synthesize(text,rate,voice=voice_name,program=program,pitch=pitch)
+    else:
+        from ai_voice_settings import load
+        # A preview must never silently grant cloud narration permission.
+        key=load(m.APP).get('key','')
+        if not key or not values.get('ai_consent'):
+            m.APP_WINDOW.feedback('Save the AI key and permission first to preview the AI voice.');return
+        generator=lambda text,rate:ai_synthesize(text,rate,key=key,voice=values['ai_voice'],pitch=pitch)
+    m.SETTINGS_PREVIEW_SPEECH=AISpeech(fallback,generator)
+    m.SETTINGS_PREVIEW_SPEECH.speak(text,rate,volume)
 
 def apply_settings(m,values):
     from ai_voice_settings import load,save,remove

@@ -1,23 +1,23 @@
 {
-  "version": "0.2.121-test",
+  "version": "0.2.122-test",
   "status": "Testing build",
-  "date": "October 12, 2026",
-  "baseline": "0.2.120-test",
-  "scope": "Separate keyboard submission from voice review, editable voice review and simpler menus.",
+  "date": "October 13, 2026",
+  "baseline": "0.2.121-test",
+  "scope": "Uninterrupted writing, voice previews, virtual cursor dialogs and spoken onboarding.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Correct answers during voice form review",
+          "title": "Spoken getting-started and browser lessons",
           "details": [
-            "Say Change this field, Change field two or Change followed by a field name. Answer the guided correction question. Companion then builds a fresh review and submission signature. Saying No to submission leaves correction available."
+            "Say Start tutorial. Choose Getting started or Web browser with voice or arrows and Enter. Lessons wait for Next lesson or Enter, support Previous lesson and Repeat, and do not send real messages or create files."
           ]
         },
         {
-          "title": "Compact radio keyboard actions",
+          "title": "Voice settings previews",
           "details": [
-            "Selected or playing stations have seven keyboard actions: Add to favorites, Record current station, Schedule recording, Pause audio, Play, Stop recording and Cancel scheduled recordings. Play starts the selected station, or resumes it when the same station is already open. Scheduled recordings open as a list; Enter requests cancellation confirmation. Escape returns to broader station browsing. Legacy spoken commands and voice action menus remain available."
+            "Options demonstrate staged voice, rate, pitch and volume before saving. Escape cancels changes. SAPI and eSpeak previews use the staged settings; AI previews require a saved key and enabled permission."
           ]
         }
       ]
@@ -26,21 +26,27 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Keyboard Send",
+          "title": "Word processor writing and naming",
           "details": [
-            "Keyboard Enter or Space on a submit button activates the website button directly. It does not require spoken field review or Continue review. Voice activation retains guided review and explicit final confirmation."
+            "Ordinary dictated document text is added silently. Explicit Read document remains available. Empty document-name entry accepts letters and editing keys without triggering menu actions."
           ]
         },
         {
-          "title": "Main menu order",
+          "title": "Feedback and background behavior",
           "details": [
-            "The shared keyboard and voice menu is Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Check for updates, Help, Shut down the computer, Restart the computer and Exit Voice Companion. Exit appears once, at the end. What is new remains available as a direct command."
+            "App narration is excluded from ordinary recognition across synthesizers. Stop, sleep, exit and browser controls remain available. The cloud recognizer keeps its connection during feedback pauses. Dynamic virtual-view updates no longer force keyboard focus or raise the app."
           ]
         },
         {
-          "title": "Options names",
+          "title": "Webpage navigation and dialogs",
           "details": [
-            "Documents options is now Word processor options; Updates options is Auto-update options. A Notepad options category provides Open Notepad. Existing category voice names remain accepted as aliases."
+            "Page links, headings and fields no longer include menu letter labels. Quick navigation remains available. Visible modal dialogs scope the virtual cursor to their content. JavaScript links can complete without changing URLs, avoiding an unnecessary eight-second wait. Website alerts are announced, and website confirmation dialogs are canceled automatically rather than accepted."
+          ]
+        },
+        {
+          "title": "Consumer testing",
+          "details": [
+            "Added regression checks for naming, silent dictation, staged previews, tutorial navigation and contact dialogs. Expanded the read-only live audit to Control Alt Success home, services, training, assessment, custom training, resources, blog and the public portal page. Live contact messages are not sent."
           ]
         }
       ]
