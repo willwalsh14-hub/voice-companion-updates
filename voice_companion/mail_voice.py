@@ -320,6 +320,8 @@ class MailSession:
 
     def _list_boundary(self,bottom=False):
         if not self.rows:return 'Empty list.'
+        if not bottom and self.page_cursor is None and self.current==1:return 'Start of list.'
+        if bottom and not self.next_cursor and self.current==len(self.rows):return 'End of list.'
         if not bottom:
             if self.page_cursor is not None:self.list_messages()
             self.previous_cursors=[]

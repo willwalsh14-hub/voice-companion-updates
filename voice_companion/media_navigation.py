@@ -69,7 +69,10 @@ class MediaNavigation:
                 choice='yes' if key in ('Up','Left','ShiftTab') else 'no'
                 if choice==self.confirm_choice:return 'Start of list.' if choice=='yes' else 'End of list.'
                 self.confirm_choice=choice;return choice.capitalize()+'.'
-            if key in ('Home','End'):self.confirm_choice='yes' if key=='Home' else 'no';return self.confirm_choice.capitalize()+'.'
+            if key in ('Home','End'):
+                choice='yes' if key=='Home' else 'no'
+                if choice==self.confirm_choice:return 'Start of list.' if key=='Home' else 'End of list.'
+                self.confirm_choice=choice;return choice.capitalize()+'.'
             if key=='Enter':return self.command(self.confirm_choice)
             if key=='Escape':return self.command('no')
             return ''
@@ -96,7 +99,10 @@ class MediaNavigation:
         state=self.state()
         if not state:return self.announce() if key in ('Home','End','Up','Down') and not self.form else ''
         names,index,select=state;index=index or 0
-        if key in ('Home','End'):index=0 if key=='Home' else len(names)-1
+        if key in ('Home','End'):
+            target=0 if key=='Home' else len(names)-1
+            if index==target:return 'Start of list.' if key=='Home' else 'End of list.'
+            index=target
         elif key in ('Up','Down','Left','Right'):
             step=-1 if key in ('Up','Left') else 1
             if not 0<=index+step<len(names):return 'Start of list.' if step<0 else 'End of list.'

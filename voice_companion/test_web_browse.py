@@ -21,13 +21,15 @@ class WebBrowseTests(unittest.TestCase):
         for level in range(1,7):self.assertEqual(voice_browse_key('next heading level '+str(level)),'Quick:'+str(level))
         for phrase,key in [('next row','Down'),('previous row','Up'),('next column','Right'),('previous column','Left'),('first column','Home'),('last column','End'),('first row','Prior'),('last row','Next')]:
             self.assertEqual(voice_browse_key(phrase),'Table:'+key)
-    def test_voice_navigation_cannot_erase_an_uncommitted_private_field(self):
+    def test_password_can_be_dictated_saved_or_canceled_without_readback(self):
         with tempfile.TemporaryDirectory() as folder:
-            backend=Mock();session=WebSession(folder,backend)
-            session.snapshot={'text':'Page','elements':[]};session.keyboard_field={'type':'password','label':'Password','value':''}
-            self.assertIn('keyboard',session.command('next form control'));backend.fill.assert_not_called()
-            self.assertIsNotNone(session.keyboard_field)
-            self.assertIn('canceled',session.command('cancel field editing'));self.assertIsNone(session.keyboard_field)
+            backend=Mock(document_stamp=Mock(return_value=None));session=WebSession(folder,backend)
+            session.snapshot={'text':'Page','elements':[]};session.keyboard_field={'key':'secret','type':'password','tag':'input','label':'Password','value':''}
+            self.assertIn('Text entered',session.dictate_to_focus('FixtureSecret'));backend.fill.assert_not_called()
+            item=dict(session.keyboard_field)
+            session._refresh_at=Mock(return_value='Password field.')
+            session.commit_keyboard_field();backend.fill.assert_called_once_with(item,'FixtureSecret',private=True)
+            self.assertIsNone(session.keyboard_field)
     def test_failed_live_value_read_never_leaves_a_partial_editor(self):
         with tempfile.TemporaryDirectory() as folder:
             backend=Mock();backend.field_value.side_effect=RuntimeError('Page changed')

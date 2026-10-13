@@ -72,7 +72,7 @@ class ConsumerWorkflowTests(unittest.TestCase):
             if request:self.say(request,'awake',typed=True)
             self.assertEqual(app.MAIN_MENU_INDEX,expected)
             notice=self.speech.call_args.args[0]
-            if before is not None and (key=='Up' and before==0 or key=='Down' and before==last):self.assertEqual(notice,'Start of list.' if key=='Up' else 'End of list.')
+            if before is not None and (key in ('Up','Home') and before==0 or key in ('Down','End') and before==last):self.assertEqual(notice,'Start of list.' if key in ('Up','Home') else 'End of list.')
             else:self.assertTrue(notice.startswith(app.MAIN_MENU_CHOICES[expected][0]));self.assertNotIn('of list',notice)
 
     def test_keyboard_and_voice_email_draft_switching_does_not_send(self):

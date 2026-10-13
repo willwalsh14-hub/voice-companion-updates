@@ -1,17 +1,17 @@
 {
-  "version": "0.2.119-test",
+  "version": "0.2.120-test",
   "status": "Testing build",
   "date": "October 12, 2026",
-  "baseline": "0.2.118-test",
-  "scope": "Emergency removal of the microphone safeguard that rejected working headsets.",
+  "baseline": "0.2.119-test",
+  "scope": "Form navigation and inspection fixes, restored dictation and consistent list boundaries.",
   "sections": [
     {
       "title": "New Apps and Features",
       "topics": [
         {
-          "title": "Microphone compatibility",
+          "title": "Address and password dictation restored",
           "details": [
-            "Companion again uses the default microphone selected in Windows. USB, USB-C, Bluetooth, analog jack and internal microphones are eligible when Windows supplies a usable audio input."
+            "Website addresses, email addresses and passwords can again be dictated. Email and URL fields normalize spoken at, dot and slash. Passwords remain masked in page text, form review and recognized-input feedback. Guided forms include password and address fields."
           ]
         }
       ]
@@ -20,21 +20,27 @@
       "title": "Fixes and Enhancements",
       "topics": [
         {
-          "title": "Working headsets no longer blocked",
+          "title": "Revisiting edited form fields",
           "details": [
-            "Removed the external-only hardware identification check. A submitted diagnostic confirmed a Jabra Evolve2 30 input could open at 44100 Hz even though the safeguard disabled voice commands. This change removes that false rejection; it does not claim to repair external hardware classification."
+            "Extraction and live control checks now use the same field labels. Unlabelled fields receive a nearby prompt or field-name fallback instead of using entered text as their identity. Control keys persist across captures when surrounding controls are added. Tab and Shift+Tab can revisit edited answers without a false page-changed warning."
           ]
         },
         {
-          "title": "Keyboard fallback and existing fixes",
+          "title": "Readable form inspection and submission",
           "details": [
-            "Keyboard navigation remains available if the microphone cannot open. The previous browser, list navigation, startup guidance and typed-only website address, email address and password protections remain in place."
+            "Previously skipped unlabelled fields are included in form review and required-field inspection. Regression tests reproduce the structure of the Blind MAST contact form, revisit all four answers and verify an isolated submission response. The live contact form is checked without sending a message."
           ]
         },
         {
-          "title": "Validation",
+          "title": "Home and End at list boundaries",
           "details": [
-            "Regression checks cover the reported Jabra input and default input selection across microphone types. Windows build and consumer tests run before publication. Actual recognition accuracy depends on the selected microphone and environment."
+            "Home and End announce the destination item when moving. Repeating the key at that endpoint announces Start of list or End of list, matching an additional arrow attempt. This applies to menus, email message lists, media lists and browser choices."
+          ]
+        },
+        {
+          "title": "Microphone rollback retained",
+          "details": [
+            "The default Windows microphone remains available without the external-only hardware safeguard removed in 0.2.119-test."
           ]
         }
       ]

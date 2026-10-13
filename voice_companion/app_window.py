@@ -509,7 +509,7 @@ class CompanionWindow:
                             else:typed.delete(0,'end')
                         typed.configure(show='*' if field.get('web_private') else '')
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
-                            typed.delete(0,'end');entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
+                            typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
                         text_mode=source is not None and mode in ('document','email_draft','mailbox','help','web')
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:

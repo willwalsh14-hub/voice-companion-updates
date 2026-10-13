@@ -1,12 +1,12 @@
 VOICE COMPANION - SIMPLE TEST GUIDE
 
-Guide build: 0.2.119-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud. Voice commands use the default microphone selected in Windows; keyboard navigation works without a microphone. You do not need Microsoft Word to make a document.
+Guide build: 0.2.120-test. This is an early test program. A helper double-clicks VoiceCompanion-Setup.exe once to install it. This is the Setup file from the builder folder, not the small source ZIP or a temporary application EXE. On the final Setup page, "Open Voice Companion now" is checked by default. Leave it checked and select Finish to open the app. A helper may uncheck it to open the app later. There are no separate Python or speech-model installs on your computer. It speaks aloud. Voice commands use the default microphone selected in Windows; keyboard navigation works without a microphone. You do not need Microsoft Word to make a document.
 
 CURRENT KEYBOARD AND VOICE INPUT
 
-The browser entry box and Ctrl+L accept an address such as example.com without www or a scheme. You can also type www.example.com, https://example.com or http://example.com; HTTP is upgraded to HTTPS. Paths, queries and fragments are retained. Words without an address perform a search. Website addresses, email addresses and passwords must be typed. You may speak search terms, saved contact names and website favorites.
+The browser entry box and Ctrl+L accept an address such as example.com without www or a scheme. You can also type www.example.com, https://example.com or http://example.com; HTTP is upgraded to HTTPS. Paths, queries and fragments are retained. Words without an address perform a search. Website addresses, email addresses and passwords can be dictated or typed. Say addresses using at, dot and slash as needed. Password values remain masked in page text and review feedback. You may also speak search terms, saved contact names and website favorites.
 
-Dynamic rendered pages update the virtual viewer while using only the keyboard. Quick-key heading and link navigation moves the same reading caret used by arrows. Arriving at a list item speaks that item. An additional attempt to move beyond the first or last item announces Start of list or End of list.
+Dynamic rendered pages update the virtual viewer while using only the keyboard. Quick-key heading and link navigation moves the same reading caret used by arrows. Arriving at a list item speaks that item. An additional attempt to move beyond the first or last item announces Start of list or End of list. Home and End announce the destination item when moving; pressing the same key again at its boundary announces Start of list or End of list.
 
 Voice commands use the default microphone selected in Windows. The external-only detection safeguard has been removed because it could reject working headsets. USB, USB-C, Bluetooth, analog jack and internal microphones can be used when Windows provides a usable input. If the microphone cannot open, keyboard navigation remains available. Check Windows input settings and microphone permissions, then restart Companion.
 
@@ -23,7 +23,7 @@ After checking for updates, Companion says its version and that it is ready, fol
 DEEPER WEB AND MEDIA TASKS
 
 In an editable web field, voice dictation now inserts where spoken character or word navigation placed the caret. Say Select all, Read selection, or Scratch to select, review or remove staged text. Dictation replaces selected text. Say Save field to apply the changes or Cancel field editing to leave the existing page value unchanged. Read-only fields identify themselves and do not accept dictation.
-Say Fill out this form for guided entry. Disabled and read-only fields are skipped. Labelled rich text fields and custom choice controls are included, and newly revealed conditional questions are checked after each answer. If a form changes ambiguously, Companion stops and asks you to read the page again. Password and file-upload fields still need private keyboard or manual input. Website verification and CAPTCHA can still prevent a completely hands-free task.
+Say Fill out this form for guided entry. Disabled and read-only fields are skipped. Labelled rich text fields and custom choice controls are included, and newly revealed conditional questions are checked after each answer. If a form changes ambiguously, Companion stops and asks you to read the page again. Passwords can be dictated; file uploads still need manual input. Website verification and CAPTCHA can still prevent a completely hands-free task.
 Say Close list to leave a web field or favorite list and return to the page. Radio and podcast result lists announce their first or last boundary on entry. If audio cannot start or resume within twelve seconds, Companion returns an error so you can choose another station or episode.
 
 NEW EMAIL AND LIST FEEDBACK
@@ -61,7 +61,7 @@ VOICE INPUT MODES
 
 Normal mode is on when the app opens. It recognizes commands and adds ordinary speech to an open document, email draft, note, or a focused text field in the guided browser. You never need to say start or stop dictation.
 Say "Commands only" when you want to navigate or review without adding ordinary speech as text. Say "Dictation only" when you want everything you say to become text in the current document, draft, note, or focused browser text field. In dictation only, even words like "send it" are typed; say "Normal mode" to use commands again. You can always say "What mode?" to hear the current setting. Sleep and shut down commands still work.
-In the browser, select a normal text field before speaking into it. Passwords and precise address, number, and code fields need private keyboard entry. Review text and form answers before submitting.
+In the browser, select a normal text field before speaking into it. Email addresses, website addresses and passwords accept dictation. Number and code fields may need precise keyboard entry. Review text and form answers before submitting.
 
 READING TEXT
 

@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.119-test'
+APP_VERSION = '0.2.120-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -236,7 +236,7 @@ def app_context(mode):
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
         document_identity=(web_session.document_state or {}).get('epoch',getattr(web_session,'page_revision',0))
         if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(document_identity)+':'+str(field.get('frame_index','main'))+':'+field['key']
-        if field and field.get('type')=='password':context['web_private']=True;context['web_field']=field
+        if field and field.get('type')=='password':context['web_private']=True;context['web_field']=dict(field)
         else:
             source='web:'+str(id(web_session))+(':field:'+str(field.get('frame_index','main'))+':'+field['key']+':document:'+str(document_identity) if field else ':page')
             context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'] or bool(field.get('readonly')),selection=getattr(web_session,'selection',None),caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
@@ -521,7 +521,9 @@ def _navigation_key(key,mode):
             if choice==CONFIRM_CHOICE:speak('Start of list.' if choice=='yes' else 'End of list.');return None
             CONFIRM_CHOICE=choice;speak(choice.capitalize()+'.');return None
         if key in ('Home','End'):
-            CONFIRM_CHOICE='yes' if key=='Home' else 'no';speak(CONFIRM_CHOICE.capitalize()+'.');return None
+            choice='yes' if key=='Home' else 'no'
+            if choice==CONFIRM_CHOICE:speak('Start of list.' if key=='Home' else 'End of list.');return None
+            CONFIRM_CHOICE=choice;speak(CONFIRM_CHOICE.capitalize()+'.');return None
         if key=='Enter':return CONFIRM_CHOICE
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode in ('media','podcast') and MEDIA_HUB:
@@ -541,6 +543,7 @@ def _navigation_key(key,mode):
         state=menu_state(mode)
         if state:
             names,current,select=state;index=0 if key=='Home' else len(names)-1
+            if current==index:speak('Start of list.' if key=='Home' else 'End of list.');return None
             select(index)
             if VOICE_PICK_INDEX is not None:preview_voice(index);return None
             speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names)));return None
@@ -1163,10 +1166,6 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
-    from browser_navigation import contains_address
-    if not typed and (contains_address(text) or command.startswith(('open website ','go to website '))):
-        speak('Website and email addresses must be typed on the keyboard. You can use a saved contact or website favorite by voice.')
-        return mode
     if command in ('next','previous'):
         state=menu_state(mode)
         if state and state[1] is not None and (state[1]==0 and command=='previous' or state[1]==len(state[0])-1 and command=='next'):
@@ -1405,8 +1404,13 @@ def _handle(text, mode, typed=False):
         return mode
     if text:
         interrupt_speech()
-        print('Heard:', text, flush=True)
-        if APP_WINDOW is not None: APP_WINDOW.show('Heard: ' + text)
+        field=getattr(web_session,'keyboard_field',None) if mode=='web' else None
+        fields=getattr(web_session,'form_fields',None);index=getattr(web_session,'form_index',None)
+        if not isinstance(field,dict) and isinstance(fields,list) and isinstance(index,int) and 0<=index<len(fields):field=fields[index]
+        password_field=isinstance(field,dict) and field.get('type')=='password'
+        feedback='Password input' if password_field else text
+        print('Heard:', feedback, flush=True)
+        if APP_WINDOW is not None: APP_WINDOW.show('Heard: ' + feedback)
     command = re.sub(r'[.!?]+$', '', text.lower()).strip().replace('auto-download','auto download')
     if change_speech_setting(command): return mode
     if command in ('open user guides', 'open user guides folder', 'open guides', 'open guides folder',

@@ -22,13 +22,19 @@ class ConsumerRegressionTests(unittest.TestCase):
             app.run_web_search('example.com/SpeedTest');session.open.assert_called_once_with('example.com/SpeedTest');session.search.assert_not_called()
             app.run_web_search('speed test');session.search.assert_called_once_with('speed test')
 
-    def test_spoken_addresses_do_not_enter_search_or_email(self):
+    def test_spoken_website_address_reaches_navigation_confirmation(self):
         session=Mock()
-        with patch.object(app,'web_session',session),patch.object(app,'speak') as speak,patch.object(app,'flush_keyboard_edits'):
-            for mode in ('search','email_draft','web','note'):
-                for text in ('example.com','person@example.com','person at example dot com','open website example dot com'):
-                    self.assertEqual(app.handle(text,mode),mode);self.assertIn('must be typed',speak.call_args.args[0])
-            session.open.assert_not_called();session.search.assert_not_called();session.dictate_to_focus.assert_not_called()
+        with patch.object(app,'web_session',session),patch.object(app,'speak') as speak,patch.object(app,'pending_website',None):
+            app.handle('open website example dot com','awake')
+            self.assertTrue(any('example.com' in str(c.args) for c in speak.call_args_list))
+            self.assertFalse(any('must be typed' in str(c.args) for c in speak.call_args_list))
+
+    def test_repeated_home_end_announce_list_boundary(self):
+        with patch.object(app,'MAIN_MENU_INDEX',1),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'speak') as speak:
+            app.navigation_key('Home','awake');self.assertNotIn('of list',speak.call_args.args[0])
+            app.navigation_key('Home','awake');speak.assert_called_with('Start of list.')
+            app.navigation_key('End','awake');self.assertNotIn('of list',speak.call_args.args[0])
+            app.navigation_key('End','awake');speak.assert_called_with('End of list.')
 
     def test_arriving_at_item_does_not_announce_boundary_at_any_verbosity(self):
         for level in ('high','medium','low'):

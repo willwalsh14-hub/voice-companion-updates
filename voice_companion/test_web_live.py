@@ -97,7 +97,7 @@ class LiveWebTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#shadow button').count(),1)
     def test_private_fill_never_exposes_password_in_snapshot(self):
         item=self.element('Password')
-        with self.assertRaises(WebError):self.backend.fill(item,'private')
+        self.backend.fill(item,'private')
         self.backend.fill(item,'private',private=True)
         snapshot=self.backend.snapshot();self.assertNotIn('private',snapshot['text']);self.assertEqual(next(c for c in snapshot['controls'] if c['type']=='password')['value'],'')
     def test_stale_label_cannot_fill_another_control(self):

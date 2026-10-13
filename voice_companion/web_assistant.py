@@ -39,6 +39,15 @@ def _label(item):
     return _plain(item.get('label') or item.get('text') or item.get('placeholder') or item.get('name'))
 
 
+def _voice_value(item,spoken,literal=False):
+    if literal or item.get('type')=='password':return spoken
+    if item.get('type')=='email':
+        from email_draft import normalize_recipient
+        return normalize_recipient(spoken)
+    if item.get('type')=='url':return prepare_address(spoken)[0]
+    return clean_dictation(spoken)
+
+
 def match_choices(items, request):
     intent = _tokens(request)
     if not intent:
@@ -187,7 +196,7 @@ class BrowserBackend:
         self.start()
         script = '''() => {
           const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&(!parent||visible(parent));visibility.set(e,result);return result;};
-          const accessibleLabel=e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\\s+/g,' ').slice(0,120);};
+          const accessibleLabel=/*ACCESSIBLE_LABEL*/;
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
@@ -196,6 +205,8 @@ class BrowserBackend:
           const priority=document.querySelector('#search,#main,main,[role="main"],article');
           const nodes=[...new Set([...(priority ? all(priority).filter(e=>e.matches(selector)) : []),
                                    ...all(document).filter(e=>e.matches(selector))])];
+          let controlSerial=1+all(document).reduce((m,e)=>Math.max(m,/^n\\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
+          const controlKey=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+controlSerial++);return e.getAttribute('data-voice-companion-key');};
           const controls = [];
           for (let i=0; i<nodes.length && controls.length<500; i++) {
             const e=nodes[i]; if (!visible(e) || e.closest('[aria-hidden="true"],[inert]')) continue;
@@ -207,8 +218,8 @@ class BrowserBackend:
             const role=(tag==='a' && e.href ? 'link' : e.getAttribute('role')) || (tag==='button'||tag==='input'&&['submit','button','reset','image'].includes(type)?'button':
                 e.isContentEditable?'textbox':['input','textarea','select'].includes(tag)?'field':'');
             if (!role) continue;
-            e.setAttribute('data-voice-companion-key', String(i));
-            controls.push({key:String(i), id:e.id||'', role, label, tag, type,
+            const identity=controlKey(e);
+            controls.push({key:identity, id:e.id||'', role, label, tag, type,
                 in_form:!!e.closest('form'),
                 required:!!e.required||e.getAttribute('aria-required')==='true', disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true', readonly:!!e.readOnly||e.getAttribute('aria-readonly')==='true', radio_group:e.name ? [...document.forms].indexOf(e.form)+':'+e.name : '', checked:!!e.checked||e.getAttribute('aria-checked')==='true',
                 tabindex:e.tabIndex,size:e.size||0,multiple:!!e.multiple,options:tag==='select'?[...e.options].map(o=>({label:o.text.trim().slice(0,120),value:o.value,disabled:o.disabled,selected:o.selected})): [...(e.querySelectorAll('[role="option"]')), ...((e.getAttribute('aria-controls')||e.getAttribute('aria-owns')||'').split(/\\s+/).filter(Boolean).flatMap(id=>[...(document.getElementById(id)?.querySelectorAll('[role="option"]')||[])]))].filter((o,i,a)=>a.indexOf(o)===i).map(o=>({label:accessibleLabel(o),value:o.getAttribute('data-value')||accessibleLabel(o),disabled:o.getAttribute('aria-disabled')==='true',selected:o.getAttribute('aria-selected')==='true'})),
@@ -231,7 +242,7 @@ class BrowserBackend:
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
         }'''
-        script=script.replace('/*SEMANTICS*/',SEMANTICS)
+        script=script.replace('/*SEMANTICS*/',SEMANTICS).replace('/*ACCESSIBLE_LABEL*/',ACCESSIBLE_LABEL)
         self.page.evaluate(DOCUMENT_STAMP)
         result = self.page.evaluate(script)
         # Playwright can inspect cross-origin frames without asking page JS to
@@ -285,8 +296,6 @@ class BrowserBackend:
         return None
 
     def dictate_focused(self, spoken, literal=False):
-        from browser_navigation import contains_address
-        if contains_address(spoken):return 'Website and email addresses must be typed on the keyboard.'
         self.start()
         for frame in self.page.frames:
             try:
@@ -300,15 +309,16 @@ class BrowserBackend:
             except Exception:
                 continue
             if not target: continue
-            if __import__('browser_navigation').private_address_field(target):return 'Use private keyboard entry for passwords, email addresses and website addresses.'
-            if target['type'] in ('password','hidden','file','number','email','url','tel'):
+            if target['type'] in ('hidden','file','number','tel'):
                 return 'That field needs private or precise keyboard entry. I did not type into it.'
             if not (target['editable'] or target['tag'] == 'textarea' or
-                    (target['tag'] == 'input' and target['type'] in ('text','search',''))):
+                    (target['tag'] == 'input' and target['type'] in ('text','search','email','url','password',''))):
                 continue
             # Browser keyboard inserts at the caret, retaining native input events.
-            self.page.keyboard.insert_text(spoken if literal else clean_dictation(spoken))
-            return 'Added text to ' + _plain(target['label']) + '. Review the field before submitting.'
+            try:value=_voice_value(target,spoken,literal)
+            except ValueError as exc:return str(exc)
+            self.page.keyboard.insert_text(value)
+            return ('Password entered.' if target['type']=='password' else 'Added text to ' + _plain(target['label']) + '. Review the field before submitting.')
         return 'No editable text field has focus. Select a field in the browser, or say normal mode.'
 
     def insert_line_break(self):
@@ -484,8 +494,6 @@ class BrowserBackend:
 
     def fill(self,item,value,private=False):
         element=self._element(item)
-        if item.get('type')=='password' and not private:
-            raise WebError('Password needs private keyboard entry.')
         element.fill(value,timeout=10000)
 
     def choose_form_option(self, item, answer):
@@ -666,7 +674,7 @@ class WebSession:
         elif key in ('Up','Down','Left','Right'):index=max(0,min(len(options)-1,current+(-1 if key in ('Up','Left') else 1)))
         else:return item.get('selected_label','')+'.'
         label=options[index]['label']
-        if index==current and key in ('Up','Down','Left','Right'):return 'Start of list.' if key in ('Up','Left') else 'End of list.'
+        if index==current and key in ('Up','Down','Left','Right','Home','End'):return 'Start of list.' if key in ('Up','Left','Home') else 'End of list.'
         from menu_navigation import boundary_notice
         boundary=boundary_notice(index,len(options))
         if index!=current:
@@ -682,8 +690,6 @@ class WebSession:
             if key in ('PageTop','PageBottom'):return self.page_boundary(key=='PageBottom')
             if key.startswith('Leave:'):return self.leave_field(key.split(':')[1])
             if self.keyboard_field and kind(self.keyboard_field) in ('combobox','listbox') and (key in ('Up','Down','Left','Right','Home','End','Activate','Space','Done') or key.startswith('ChoiceLetter:')):return self.choice_key(key)
-            if self.keyboard_field and self.keyboard_field.get('type')=='password' and (key.startswith(('Quick:','Table:')) or key in ('Tab','ShiftTab','Done','Activate')):
-                return 'Save this private field with Enter or Tab on the keyboard, or cancel field editing.'
             if self.keyboard_field and key.startswith(('Quick:','Table:')):self.commit_keyboard_field()
             if key.startswith('Quick:'):
                 parts=key.split(':');old_index=self.browse.index;message=self.browse.move(parts[-1],len(parts)>2)
@@ -802,10 +808,10 @@ class WebSession:
         self.submit_pending = None
         self.review_submission = None
         if self.keyboard_field:
-            from browser_navigation import private_address_field,contains_address
-            if private_address_field(self.keyboard_field) or contains_address(spoken):return 'Use private keyboard entry for passwords, email addresses and website addresses.'
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
-            self._insert_field_text(spoken if literal else clean_dictation(spoken))
+            try:value=_voice_value(self.keyboard_field,spoken,literal)
+            except ValueError as exc:return str(exc)
+            self._insert_field_text(value)
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
@@ -1220,12 +1226,12 @@ class WebSession:
         self.field_list_index=0
         self.pending=None
         return ('Found '+str(len(self.choices))+' fields. '+announce_item(_label(self.choices[0]),0,len(self.choices))+
-                ' Say next or previous, then that one to answer it. Passwords need private keyboard entry.')
+                ' Say next or previous, then that one to answer it.')
 
     def _ask_field(self):
         while self.form_index is not None and self.form_index < len(self.form_fields):
             item = self.form_fields[self.form_index]
-            if item['type']=='file' or __import__('browser_navigation').private_address_field(item):
+            if item['type']=='file':
                 self.form_index += 1
                 continue
             if kind(item) in ('combobox','listbox'):
@@ -1238,14 +1244,13 @@ class WebSession:
             return ('Field ' + str(self.form_index + 1) + ': ' + _label(item) +
                     '. What should I enter? Say skip to leave it blank, or cancel form to stop.')
         self.form_index = None
-        manual = [_label(item) for item in self.form_fields if item['type']=='file' or __import__('browser_navigation').private_address_field(item)]
+        manual = [_label(item) for item in self.form_fields if item['type']=='file']
         return ('That is the end of the text fields. ' +
                 ('These need private or manual entry: ' + ', '.join(manual) + '. ' if manual else '') +
                 'Say review form to hear the answers entered by voice. Review every answer and other controls in Edge with your helper before submitting.')
 
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
-        if __import__('browser_navigation').contains_address(spoken):return 'Website and email addresses must be typed on the keyboard. Say skip to continue the guided form.'
         if spoken.lower() in ('skip','skip field'):
             self.form_index += 1
             return 'Skipped ' + _label(item) + '. ' + self._ask_field()
@@ -1265,7 +1270,8 @@ class WebSession:
                 return 'I could not identify one choice. ' + self._ask_field()
             value = options[0]
         else:
-            value = clean_dictation(value)
+            try:value=_voice_value(item,spoken)
+            except ValueError as exc:return str(exc)
         try:
             if kind(item) in ('combobox','listbox','checkbox','radio'):
                 self.backend.choose_form_option(item, value)
@@ -1275,7 +1281,7 @@ class WebSession:
             self.form_index = None
             return 'The field changed. Stop and review the page before trying again.'
         self.form_index += 1
-        self.form_answers.append({'label': _label(item), 'value': value, 'key': item['key'],
+        self.form_answers.append({'label': _label(item), 'value': 'entered' if item.get('type')=='password' else value, 'key': item['key'],
                                   'tag': item['tag'], 'type': item['type']})
         try:
             latest=self.backend.snapshot()
@@ -1289,7 +1295,7 @@ class WebSession:
                 self.form_index=None;return 'The form changed after your answer. Nothing was submitted. Say read page, then fill out this form to continue.'
         except Exception:
             self.form_index=None;return 'Your answer was entered, but the form could not be checked again. Nothing was submitted. Say read page to retry.'
-        return 'Recorded ' + value + ' for ' + _label(item) + '. ' + self._ask_field()
+        return ('Password entered. ' if item.get('type')=='password' else 'Recorded ' + value + ' for ' + _label(item) + '. ') + self._ask_field()
 
     def review_form(self):
         if not self.snapshot: return 'Open a website first.'
@@ -1369,7 +1375,7 @@ class WebSession:
                     (not c.get('value')))]
         if missing:
             return 'Required fields appear empty: ' + ', '.join(_label(c) for c in missing) + '. Complete them before submitting.'
-        private = [c for c in controls if c['type'] in ('password','file') and c.get('required')]
+        private = [c for c in controls if c['type']=='file' and c.get('required')]
         if private and not self.private_fields_confirmed:
             return ('This form has required private fields: ' + ', '.join(_label(c) for c in private) +
                     '. Complete them privately in Edge. Then say private fields complete before reviewing submission.')
@@ -1414,13 +1420,12 @@ class WebSession:
         try:
             item = self._choice(number)
             if item['role'] != 'field': raise WebError('That number is not a field. Say list fields.')
-            if item['type'] == 'password':
-                raise WebError('Password needs private entry in Edge. Ask your helper if needed; do not say it aloud.')
-            if item['type'] in ('password','file','checkbox','radio','submit'):
+            if item['type'] in ('file','checkbox','radio','submit'):
                 raise WebError('This field needs direct interaction in Edge with your helper.')
+            value=_voice_value(item,value)
             self.backend.fill(item, value)
-            return 'Filled ' + _label(item) + ' with ' + value + '. Review the form before submitting it.'
-        except WebError as exc: return str(exc)
+            return 'Password entered.' if item['type']=='password' else 'Filled ' + _label(item) + ' with ' + value + '. Review the form before submitting it.'
+        except (WebError,ValueError) as exc: return str(exc)
         except Exception: return 'That field changed. Say list fields and try again.'
 
     def heading_items(self):
@@ -1480,9 +1485,10 @@ class WebSession:
         browse_key=voice_browse_key(command)
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
-            if self.keyboard_field.get('type')=='password':return 'Use private keyboard entry for this field.'
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]
+            try:value=_voice_value(self.keyboard_field,value)
+            except ValueError as exc:return str(exc)
             self.keyboard_field['value']=value;self.web_edit_caret=len(value);self.selection=None
             return 'Text entered. Say save field, next control, or cancel field editing.'
         if self.form_index is None and not self.list_focus and self.browse:
@@ -1665,4 +1671,6 @@ class WebSession:
 # The same accessible name is used for snapshot and stale-target validation.
 DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement){old?.observer?.disconnect();const state={revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+1};const observer=new MutationObserver(records=>{if(records.some(r=>r.type!=='attributes'||!r.attributeName.startsWith('data-voice-companion-'))){state.revision++;state.changed=Date.now();}});observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true});state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
 
-LIVE_IDENTITY=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');const label=(e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||e.innerText||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||'').trim().replace(/\s+/g,' ').slice(0,120);return {label,tag:e.tagName.toLowerCase(),type:(e.type||'').toLowerCase(),href:e.tagName==='A'?e.href:'',disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true'};}'''
+ACCESSIBLE_LABEL=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||(!e.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(e.tagName)?e.innerText:'')||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||(e.matches('input,textarea,select,[contenteditable="true"],[role="textbox"]')?(()=>{let n=e;while(n&&n.tagName!=='FORM'){const p=n.previousElementSibling;if(p&&!p.querySelector('input,textarea,select')&&p.innerText?.trim())return p.innerText.trim();n=n.parentElement;}return (e.name||e.id||e.type||'Text field').replace(/[-_]+/g,' ');})():'')).trim().replace(/\s+/g,' ').slice(0,120);}'''
+
+LIVE_IDENTITY='e=>{const label=('+ACCESSIBLE_LABEL+')(e);return {label,tag:e.tagName.toLowerCase(),type:(e.type||\'\').toLowerCase(),href:e.tagName===\'A\'?e.href:\'\',disabled:!!e.disabled||e.getAttribute(\'aria-disabled\')===\'true\'};}'

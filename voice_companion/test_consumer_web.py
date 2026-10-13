@@ -47,13 +47,38 @@ class ConsumerWebTests(unittest.TestCase):
         self.assertEqual(after['source'],before['source']);self.assertEqual(after['text'],'Keep this draft');self.assertEqual(after['caret'],4);self.assertEqual(after['selection'],(0,4))
         self.assertIn('Finished rendering',self.session.reading.text)
 
-    def test_email_and_url_fields_refuse_spoken_values_but_accept_keyboard_text(self):
-        for kind in ('email','url','password'):
+    def test_email_url_and_password_fields_accept_dictation_and_mask_password(self):
+        for kind,spoken,value in [('email','person at example dot com','person@example.com'),('url','example dot com','https://example.com'),('password','FixtureSecret','FixtureSecret')]:
             self.load('<label for="private">Private value</label><input id="private" type="'+kind+'">')
-            self.session.keyboard('Quick:e');self.assertIn('keyboard',self.session.dictate_to_focus('example value').lower())
-            self.assertEqual(self.page.locator('#private').input_value(),'')
-            self.session.commit_keyboard_field('example.com' if kind=='url' else 'person@example.com' if kind=='email' else 'FixtureSecret')
-            self.assertTrue(self.page.locator('#private').input_value())
+            self.session.keyboard('Quick:e');notice=self.session.dictate_to_focus(spoken)
+            self.assertNotIn('must be typed',notice)
+            self.session.keyboard('Tab')
+            self.assertEqual(self.page.locator('#private').input_value(),value)
+            if kind=='password':self.assertNotIn(value,self.session.reading.text)
+
+    def test_blindmast_unlabelled_contact_form_can_be_revisited_reviewed_and_submitted(self):
+        # Same field structure observed on blindmast.com/contact-us; isolated submit.
+        self.load('<h1>Contact Us</h1><form aria-label="Contact form" onsubmit="event.preventDefault();document.querySelector(\'#result\').textContent=\'Thank you. Your message has been received.\';window.sent=(window.sent||0)+1"><p>Your Name (required)</p><p><span><input type="text" name="your-name" aria-required="true"></span></p><p>Your Email (required)</p><p><span><input type="email" name="your-email" aria-required="true"></span></p><p>Subject</p><p><span><input type="text" name="your-subject"></span></p><p>Your Message</p><p><span><textarea name="your-message"></textarea></span></p><p><input type="submit" value="Send"></p><div id="result" role="status"></div></form>')
+        self.assertEqual(len(self.session._form_controls(self.session.snapshot)),4)
+        self.session.keyboard('Quick:e')
+        for value in ('Test User','test@example.com','Browser fixture','A test message'):
+            self.session.dictate_to_focus(value,literal=True)
+            message=self.session.keyboard('Tab');self.assertNotIn('changed',message.lower())
+        for _ in range(4):self.assertNotIn('changed',self.session.keyboard('ShiftTab').lower())
+        self.assertEqual(self.session.keyboard_field['value'],'Test User')
+        for _ in range(4):self.assertNotIn('changed',self.session.keyboard('Tab').lower())
+        notice=self.session.keyboard('Activate');self.assertIn('Form review',notice)
+        while self.session.review_submission:self.session.command('continue review')
+        self.assertIn('Thank you',self.session.command('yes'))
+        self.assertEqual(self.page.evaluate('window.sent'),1)
+
+    def test_control_keys_survive_inserted_controls_before_current_field(self):
+        self.load('<label for="first">First</label><input id="first"><label for="second">Second</label><input id="second">')
+        self.session.keyboard('Quick:e');old=self.session.keyboard_field['key']
+        self.page.evaluate("()=>{let b=document.createElement('button');b.textContent='New action';document.body.prepend(b)}")
+        self.session.refresh_changed();self.session.dictate_to_focus('Keep answer');self.session.keyboard('Tab')
+        self.assertEqual(self.page.locator('#first').input_value(),'Keep answer')
+        self.assertEqual(next(c['key'] for c in self.session.snapshot['controls'] if c.get('id')=='first'),old)
 
     def test_every_field_on_large_form_is_available(self):
         self.load(''.join(f'<label for="f{i}">Question {i}</label><input id="f{i}">' for i in range(45)))
@@ -168,12 +193,13 @@ class ConsumerWebTests(unittest.TestCase):
         self.session.dictate_to_focus('X',literal=True);self.session.command('save field')
         self.assertEqual(self.page.locator('#notes').input_value(),'aXbc')
 
-    def test_private_field_requires_private_entry_and_never_reads_value(self):
+    def test_password_dictation_never_reads_existing_or_entered_value(self):
         self.load('<label for="secret">Password</label><input id="secret" type="password" value="fixture-secret">')
         self.session.command('next form control')
         responses=[self.session.command('read current field'),self.session.command('read current word'),self.session.dictate_to_focus('dummy')]
         self.assertNotIn('fixture-secret',' '.join(responses))
-        self.assertIn('private',responses[-1].lower())
+        self.assertIn('Text entered',responses[-1])
+        self.session.keyboard('Tab');self.assertEqual(self.page.locator('#secret').input_value(),'dummy')
         self.assertNotIn('fixture-secret',str(self.session.snapshot))
 
     def test_long_page_random_keyboard_voice_moves_keep_cursor_in_bounds(self):

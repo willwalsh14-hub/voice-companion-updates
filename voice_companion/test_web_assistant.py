@@ -146,15 +146,15 @@ class WebTests(unittest.TestCase):
         self.assertIn('Full name', self.session.command('previous'))
         self.assertIn('Filled Full name', self.session.command('fill field 1 with David McKeehan'))
         self.assertEqual(self.backend.filled, [('2', 'David McKeehan')])
-        self.assertIn('private entry', self.session.command('fill field 2 with secret'))
-        self.assertEqual(len(self.backend.filled), 1)
+        self.assertIn('Password entered', self.session.command('fill field 2 with secret'))
+        self.assertEqual(len(self.backend.filled), 2)
         self.assertIn('What should I enter?', self.session.command('fill out this form for me'))
         self.assertIn('Full name', self.session.command('help me'))
         answer = self.session.command('David McKeehan')
         self.assertIn('Recorded David McKeehan for Full name', answer)
-        self.assertIn('Review every answer', answer)
-        self.assertEqual(len(self.backend.filled), 2)
         self.assertIn('Password', answer)
+        self.assertIn('Review every answer', self.session.command('skip'))
+        self.assertEqual(len(self.backend.filled), 3)
         self.assertIn('Full name: David McKeehan', self.session.command('review form'))
         handoff = self.session.command('ask for help')
         self.assertIn('example.com', handoff)
@@ -262,11 +262,11 @@ class WebTests(unittest.TestCase):
         frame = Frame({'tag':'input','type':'password','editable':False,'label':'Password'})
         backend.page = type('Page', (), {'frames':[frame], 'keyboard':Keyboard()})()
         backend.start = lambda: None
-        self.assertIn('private', backend.dictate_focused('secret'))
-        self.assertEqual(backend.page.keyboard.inserted, [])
+        self.assertIn('Password entered', backend.dictate_focused('secret'))
+        self.assertEqual(backend.page.keyboard.inserted, ['secret'])
         frame.field = {'tag':'textarea','type':'','editable':False,'label':'Comments'}
         self.assertIn('Added text to Comments', backend.dictate_focused('Hello there'))
-        self.assertEqual(backend.page.keyboard.inserted, ['Hello there'])
+        self.assertEqual(backend.page.keyboard.inserted, ['secret','Hello there'])
 
     def test_complete_text_choice_form_and_submit_after_review(self):
         self.backend.controls = [

@@ -12,7 +12,8 @@ from companion import APP_VERSION
 from media_hub import MediaHub,_json,RADIO_ROOTS,APPLE_API
 from media_player import MediaPlayer,PLAYER_HTML
 
-SITES=(('Simple page','https://example.org/'),
+SITES=(('Blind MAST contact form','https://blindmast.com/contact-us/'),
+       ('Simple page','https://example.org/'),
        ('Reference article','https://en.wikipedia.org/wiki/Assistive_technology'),
        ('Accessibility guidance','https://www.w3.org/WAI/'),
        ('JAWS enhancements','https://support.freedomscientific.com/downloads/jaws/JAWSWhatsNew'),
@@ -62,6 +63,24 @@ def audit(timeout=20000):
                             valid=session.browse.current()['key']==first
                             entry['checks'].append({'action':'H, H, Shift+H reversibility','passed':valid})
                             if not valid:entry['status']='failed'
+                        if name=='Blind MAST contact form':
+                            session._refresh(read=False)
+                            first=next(e for e in session.browse.elements if e.get('label')=='Your Name (required)' and kind(e)=='edit')
+                            session.browse.index=session.browse.elements.index(first);session.focus_current()
+                            for value in ('Companion navigation test','test@example.com','Unsubmitted browser test','This is an unsubmitted navigation test.'):
+                                session.dictate_to_focus(value,literal=True)
+                                feedback=session.keyboard('Tab')
+                                valid='changed' not in feedback.lower()
+                                entry['checks'].append({'action':'Enter field and Tab','passed':valid,'feedback':feedback[:160]})
+                                if not valid:entry['status']='failed'
+                            for _ in range(4):
+                                feedback=session.keyboard('ShiftTab');valid='changed' not in feedback.lower()
+                                entry['checks'].append({'action':'Shift+Tab review','passed':valid,'feedback':feedback[:160]})
+                                if not valid:entry['status']='failed'
+                            valid=bool(session.keyboard_field and session.keyboard_field.get('value')=='Companion navigation test')
+                            entry['checks'].append({'action':'First field retains its answer','passed':valid})
+                            if not valid:entry['status']='failed'
+                            entry['form_submission']='Not submitted; submit behavior tested only on isolated fixtures.'
                         if name in ('Brave speedtest search','Speedtest rendered page'):
                             entry['heading_labels']=[e.get('label','') for e in session.snapshot.get('elements',[]) if kind(e)=='heading'][:30]
                             entry['render_updates']=[]

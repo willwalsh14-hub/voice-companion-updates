@@ -273,7 +273,9 @@ class NativeSettings:
                     if message.wParam in (0x26,0x28) and u.GetKeyState(0x12)&0x8000:
                         change_header('up' if message.wParam==0x26 else 'down');continue
             if message.message==0x100 and message.wParam in (0x24,0x23) and get_focus()==category[0] and not editing[0]:
-                select_category(0 if message.wParam==0x24 else len(CATEGORIES)-1);continue
+                index=0 if message.wParam==0x24 else len(CATEGORIES)-1
+                if index==self.session.category:self.announce('Start of list.' if message.wParam==0x24 else 'End of list.');continue
+                select_category(index);continue
             if message.message==0x104 and message.wParam==ord('O'):
                 if editing[0]:cancel_category()
                 else:focus(category[0]);self.announce('Options menu. '+describe(category[0]))
@@ -289,7 +291,7 @@ class NativeSettings:
             if message.message==0x100 and field and field.kind=='headers' and message.wParam in (0x26,0x28,0x24,0x23):
                 model=headers[0];old=max(0,int(send(current,0x188,0,0)))
                 model.index=0 if message.wParam==0x24 else 3 if message.wParam==0x23 else max(0,min(3,old+(-1 if message.wParam==0x26 else 1)))
-                if model.index==old and message.wParam in (0x26,0x28):self.announce('Start of list.' if message.wParam==0x26 else 'End of list.');continue
+                if model.index==old and message.wParam in (0x26,0x28,0x24,0x23):self.announce('Start of list.' if message.wParam in (0x26,0x24) else 'End of list.');continue
                 send(current,0x186,model.index,0);self.announce(model.label());continue
             if message.message==0x100 and field and field.kind=='choice' and field.choices and (message.wParam in (0x26,0x28,0x24,0x23) or 65<=message.wParam<=90):
                 old=int(send(current,0x147,0,0))
@@ -297,7 +299,7 @@ class NativeSettings:
                 elif message.wParam in (0x26,0x28):index=max(0,min(len(field.choices)-1,old+(-1 if message.wParam==0x26 else 1)))
                 else:index=next_match(field.choices,old,chr(message.wParam))
                 if index is None:self.announce('No matching option.');continue
-                if index==old and message.wParam in (0x26,0x28):self.announce('Start of list.' if message.wParam==0x26 else 'End of list.');continue
+                if index==old and message.wParam in (0x26,0x28,0x24,0x23):self.announce('Start of list.' if message.wParam in (0x26,0x24) else 'End of list.');continue
                 if index==old and 65<=message.wParam<=90:self.announce('End of matching items.');continue
                 send(current,0x14E,index,0);self.session.set(field.key,field.choices[index]);self.announce(changed_value(current));continue
             if message.message==0x100 and message.wParam==0x1B:cancel_category();continue

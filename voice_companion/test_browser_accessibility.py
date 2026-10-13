@@ -194,7 +194,7 @@ class WebPolishTests(unittest.TestCase):
         self.session.keyboard('Leave:Up');self.assertIsNone(self.session.keyboard_field);self.assertEqual(self.backend.filled[-1],('name','Saved'))
     def test_combo_and_listbox_arrows_home_end_letters_and_voice(self):
         self.session.keyboard('Quick:c');self.assertIsNotNone(self.session.keyboard_field)
-        self.assertEqual(self.session.keyboard('Down'),'Two.');self.assertEqual(self.session.keyboard('End'),'Two.')
+        self.assertEqual(self.session.keyboard('Down'),'Two.');self.assertEqual(self.session.keyboard('End'),'End of list.')
         self.assertEqual(self.session.keyboard('Home'),'One.');self.assertEqual(self.session.keyboard('ChoiceLetter:t'),'Two.')
         self.session.keyboard('Quick:s');self.assertEqual(self.session.keyboard_field['key'],'list')
         self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Beta.');self.assertEqual(self.session.keyboard('ChoiceLetter:b'),'Bravo.')
