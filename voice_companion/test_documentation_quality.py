@@ -23,6 +23,7 @@ class DocumentationQualityTests(unittest.TestCase):
         self.assertEqual(result['over_target'],[])
         self.assertGreaterEqual(len(result['manual_parts']),90)
         self.assertGreaterEqual(len(result['release_note_parts']),10)
+        self.assertGreaterEqual(len(result['setup_parts']),40)
 
     def test_current_tasks_and_meaningful_limits_are_explained(self):
         text=(ROOT/'START HERE - Veteran.txt').read_text()

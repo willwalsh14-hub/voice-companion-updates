@@ -34,6 +34,11 @@ Source: "dist\VoiceCompanion\START HERE - Veteran.epub"; DestDir: "{userdocs}\Vo
 Source: "dist\VoiceCompanion\START HERE - Veteran - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
 
 Source: "dist\VoiceCompanion\START HERE - Veteran.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\README.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Quick Start.txt"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\EMAIL SETUP - Helper.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\AI VOICE SETUP - Trainer.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\UPDATES - Trainer.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
+Source: "dist\VoiceCompanion\TRAINER TEST CHECKLIST.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
 Source: "dist\VoiceCompanion\Voice Companion Release Notes.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.txt"; Flags: ignoreversion uninsneveruninstall
 Source: "dist\VoiceCompanion\Voice Companion Release Notes.html"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.html"; Flags: ignoreversion uninsneveruninstall
 Source: "dist\VoiceCompanion\Voice Companion Release Notes.docx"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.docx"; Flags: ignoreversion uninsneveruninstall

@@ -232,6 +232,8 @@ foreach ($guide in @('documentation-manifest.json', 'START HERE - Veteran.txt', 
 Copy-Item (Join-Path $PSScriptRoot 'TRAINER TEST CHECKLIST.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\TRAINER TEST CHECKLIST.txt') -Force
 Copy-Item (Join-Path $PSScriptRoot 'README.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\README.txt') -Force
 Copy-Item (Join-Path $PSScriptRoot 'EMAIL SETUP - Helper.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\EMAIL SETUP - Helper.txt') -Force
+Copy-Item (Join-Path $PSScriptRoot 'AI VOICE SETUP - Trainer.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\AI VOICE SETUP - Trainer.txt') -Force
+Copy-Item (Join-Path $PSScriptRoot 'UPDATES - Trainer.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\UPDATES - Trainer.txt') -Force
 $googleRegistration = Join-Path $PSScriptRoot 'google-client.json'
 if (Test-Path $googleRegistration) {
   & $python -c "import json,sys; c=json.load(open(sys.argv[1],encoding='utf-8')); allowed={'client_id','project_id','auth_uri','token_uri','auth_provider_x509_cert_url','client_secret','redirect_uris'}; assert set(c)=={'installed'} and set(c['installed']) <= allowed, 'Only a public Google Desktop OAuth registration may be packaged; user tokens and server credentials are forbidden'; assert all(isinstance(v,str) for k,v in c['installed'].items() if k!='redirect_uris'); assert c['installed']['client_id'] and c['installed']['client_secret'] and c['installed']['auth_uri'] and c['installed']['token_uri']" $googleRegistration

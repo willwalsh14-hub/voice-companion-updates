@@ -65,11 +65,19 @@ def report(root):
     lessons.extend({'part':category+' '+field.label,'estimated_grade':reading_level(option_explanation(field))}
                    for category in CATEGORIES for field in fields(category,{}))
     all_text=' '.join(front+[p for c in chapters for p in c['paragraphs']])
+    setup_parts=[]
+    for name in ('README.txt','AI VOICE SETUP - Trainer.txt','EMAIL SETUP - Helper.txt',
+                 'UPDATES - Trainer.txt','TRAINER TEST CHECKLIST.txt'):
+        parts=re.split(r'(?:\A|\n\n)\d+\. ([^\n]+)\n',(root/name).read_text())
+        for index in range(1,len(parts),2):
+            setup_parts.append({'part':name+' '+parts[index],
+                                'estimated_grade':reading_level(parts[index+1])})
     return {'method':'Flesch-Kincaid estimate with a documented English syllable heuristic',
             'manual_estimated_grade':reading_level(all_text),
             'release_notes_estimated_grade':reading_level(note_text),
             'manual_parts':sections,'tutorial_parts':lessons,'release_note_parts':note_parts,
-            'over_target':[x for x in sections+lessons+note_parts if x['estimated_grade']>8]}
+            'setup_parts':setup_parts,
+            'over_target':[x for x in sections+lessons+note_parts+setup_parts if x['estimated_grade']>8]}
 
 
 if __name__=='__main__':
