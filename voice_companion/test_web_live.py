@@ -24,8 +24,11 @@ class LiveWebTests(unittest.TestCase):
         if hasattr(self,'persistent_context'):self.addCleanup(lambda:self.context.unroute_all(behavior='wait'))
         else:self.addCleanup(self.context.close)
         self.context.route('https://fixture.test/**',lambda route:route.fulfill(content_type='text/html',body='<label for="f">Frame name</label><input id="f"><a href="https://fixture.test/next">Frame link</a>' if route.request.url.endswith('/frame') else '<h1>Destination</h1>' if route.request.url.endswith('/next') else PAGE))
-        self.page=self.context.new_page();self.page.set_default_timeout(5000);self.page.goto('https://fixture.test/')
+        self.page=self.context.new_page();self.page.set_default_timeout(5000)
         if hasattr(self,'persistent_context'):self.addCleanup(self.page.close)
+        # Allow browser startup and frame loading on busy Windows runners.
+        # Control responsiveness checks retain their five-second limit.
+        self.page.goto('https://fixture.test/',timeout=30000)
         self.backend=BrowserBackend(tempfile.gettempdir());self.backend.page=self.page;self.backend.context=self.context;self.backend.start=lambda:None
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.session=WebSession(self.temp.name,self.backend);self.session._refresh()
