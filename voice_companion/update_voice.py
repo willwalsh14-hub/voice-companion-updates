@@ -19,8 +19,8 @@ def status_request(text):
 
 class ProgressSpeech:
     """Native speech must never hold the microphone or stop request hostage."""
-    def __init__(self,folder):
-        self.folder=Path(folder);self.messages=queue.Queue(maxsize=1);self.stopped=threading.Event()
+    def __init__(self,folder,speech_file=None):
+        self.speech_file=speech_file;self.folder=Path(folder);self.messages=queue.Queue(maxsize=1);self.stopped=threading.Event()
         self.thread=threading.Thread(target=self._run,daemon=True);self.thread.start()
     def say(self,percent):
         try:self.messages.get_nowait()
@@ -30,10 +30,13 @@ class ProgressSpeech:
     def _run(self):
         import pythoncom
         pythoncom.CoInitialize()
-        voice=None
+        voice=None;stream=None
         try:
             import win32com.client
             voice=win32com.client.Dispatch('SAPI.SpVoice');voice.Volume=100
+            if self.speech_file:
+                stream=win32com.client.Dispatch('SAPI.SpFileStream')
+                stream.Open(str(self.speech_file),3);voice.AudioOutputStream=stream
             (self.folder/'speech-ready').write_text('ready')
             while not self.stopped.wait(.02):
                 pythoncom.PumpWaitingMessages()
@@ -46,7 +49,8 @@ class ProgressSpeech:
         except Exception as exc:
             (self.folder/'voice-speech-error.txt').write_text(str(exc))
         finally:
-            voice=None
+            if stream:stream.Close()
+            voice=None;stream=None
             pythoncom.CoUninitialize()
     def close(self):
         self.stopped.set();self.thread.join(timeout=2)
@@ -113,10 +117,10 @@ class Microphone:
         return requested
 
 
-def run(folder,headless=False,no_microphone=False):
+def run(folder,headless=False,no_microphone=False,speech_file=None):
     from vosk import Model, SetLogLevel
     folder=Path(folder);SetLogLevel(-1)
-    speech=ProgressSpeech(folder)
+    speech=ProgressSpeech(folder,speech_file)
     microphone=None;window=None;requested=queue.Queue()
     label=None
     if not headless:
@@ -158,13 +162,13 @@ def run(folder,headless=False,no_microphone=False):
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--folder',required=True)
     parser.add_argument('--headless',action='store_true');parser.add_argument('--no-microphone',action='store_true')
-    parser.add_argument('--recognize-file')
+    parser.add_argument('--recognize-file');parser.add_argument('--speech-file')
     args=parser.parse_args()
     # All input and window resources are released above. Native COM finalizers
     # can otherwise delay this isolated helper's exit after async speech.
     import os
     try:
-        code=recognize_file(args.recognize_file) if args.recognize_file else run(args.folder,args.headless,args.no_microphone)
+        code=recognize_file(args.recognize_file) if args.recognize_file else run(args.folder,args.headless,args.no_microphone,args.speech_file)
         os._exit(code)
     except Exception as exc:
         Path(args.folder,'voice-error.txt').write_text(str(exc));os._exit(1)
