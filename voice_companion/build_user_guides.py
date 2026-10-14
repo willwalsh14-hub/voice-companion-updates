@@ -34,7 +34,7 @@ def content_markup(blocks):
             step = STEP.fullmatch(value)
             bullet = value.startswith('- ')
             if bulleted and not bullet:output.append('</ul>');bulleted=False
-            if ordered and not step:
+            if ordered and (not step or step[1]=='1'):
                 output.append('</ol>'); ordered = False
             if subtitle(value):
                 output.append(f'<h3 id="part-{i}-{j}">{html.escape(value)}</h3>')
@@ -99,7 +99,9 @@ def number_list(doc):
     abstract.append(level);root.append(abstract)
     numid=max([int(n.get(qn('w:numId'))) for n in root.findall(qn('w:num'))]+[0])+1
     num=OxmlElement('w:num');num.set(qn('w:numId'),str(numid))
-    ref=OxmlElement('w:abstractNumId');ref.set(qn('w:val'),str(abstract_id));num.append(ref);root.append(num)
+    ref=OxmlElement('w:abstractNumId');ref.set(qn('w:val'),str(abstract_id));num.append(ref)
+    override=OxmlElement('w:lvlOverride');override.set(qn('w:ilvl'),'0')
+    start=OxmlElement('w:startOverride');start.set(qn('w:val'),'1');override.append(start);num.append(override);root.append(num)
     return numid
 
 
@@ -208,6 +210,13 @@ def validate(blocks):
     assert [p.text for p in doc.paragraphs if p.style.name=='Title']==['Voice Companion User Guide']
     assert [p.text for p in doc.paragraphs if p.style.name=='Heading 1' and p.text!='Contents']==chapters
     assert [p.text for p in doc.paragraphs if p.style.name=='Heading 2']==parts
+    from docx.oxml.ns import qn
+    numbering=doc.part.numbering_part.element
+    for paragraph in doc.paragraphs:
+        if paragraph.style.name!='List Number':continue
+        numid=paragraph._p.find(qn('w:pPr')).find(qn('w:numPr')).find(qn('w:numId')).get(qn('w:val'))
+        number=next(n for n in numbering.findall(qn('w:num')) if n.get(qn('w:numId'))==numid)
+        assert number.find(qn('w:lvlOverride')).find(qn('w:startOverride')).get(qn('w:val'))=='1', 'Step list must restart at 1'
     with ZipFile(ROOT / f'{STEM}.epub') as z:
         assert z.namelist()[0]=='mimetype' and z.getinfo('mimetype').compress_type==ZIP_STORED
         ns={'x':'http://www.w3.org/1999/xhtml'};content=ET.fromstring(z.read('OEBPS/content.xhtml'));nav=ET.fromstring(z.read('OEBPS/nav.xhtml'))

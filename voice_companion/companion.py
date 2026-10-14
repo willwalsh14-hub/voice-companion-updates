@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.126-test'
+APP_VERSION = '0.2.127-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -2610,7 +2610,7 @@ def main():
     global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE
     if '--check-browser-bookmarks' in sys.argv:
         from packaged_browser_check import check
-        return check()
+        return check(sys.modules[__name__])
     if '--check-update-environment' in sys.argv:
         from app_updates import check_update_environment
         return check_update_environment()

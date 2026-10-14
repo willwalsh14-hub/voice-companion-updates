@@ -1,25 +1,17 @@
 {
-  "version": "0.2.126-test",
+  "version": "0.2.127-test",
   "status": "Testing build",
   "date": "October 13, 2026",
-  "baseline": "0.2.125-test",
-  "scope": "Update progress, microphone recovery, and opening bookmarks.",
+  "baseline": "0.2.126-test",
+  "scope": "Opening a saved bookmark first and restarting manual step numbers.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Web browser menu",
+          "title": "Clear step numbers",
           "details": [
-          "The browser menu is now called Web browser menu. Say Web browser menu, or press Escape from a page, to return to it.",
-          "The guides, spoken Help, and lessons use the new menu name and update steps."
-          ]
-        },
-        {
-          "title": "Status during installation",
-          "details": [
-            "A separate update window stays open while setup runs. Say Status or Update status to hear progress. You can also press its Status button or Enter.",
-            "The update window uses the app's offline speech files. You do not need to set up Windows speech to ask for progress."
+            "Each set of steps in the Word manual starts at 1. You can follow one task at a time without numbers carrying over from earlier tasks."
           ]
         }
       ]
@@ -28,24 +20,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Voice commands after an update",
+          "title": "Open a bookmark first",
           "details": [
-            "Companion now opens with voice commands on after an update. You do not need to say Wake up again.",
-          "The update window lets go of the microphone first. Then Companion opens. If Windows keeps the device busy, the app tries again."
-          ]
-        },
-        {
-          "title": "Status while downloading",
-          "details": [
-            "Status now stops the old progress speech and reads the current progress. You can keep asking while the file downloads or setup is being prepared."
-          ]
-        },
-        {
-          "title": "Opening bookmarks",
-          "details": [
-            "Saved pages can open again after the browser closes. Browser problems leave you in the menu and keep your bookmarks saved.",
-            "If the chosen browser cannot start, Companion tries the included Firefox browser. Your saved browser choice stays the same.",
-            "An update closes the app's old browser before setup starts. This helps the browser open again after the update."
+            "Choose a saved bookmark with arrows and Enter. It now opens even when you have not visited a page yet.",
+            "This fixes a crash that asked your trainer to run Check setup. Your saved bookmarks stay in place."
           ]
         }
       ]

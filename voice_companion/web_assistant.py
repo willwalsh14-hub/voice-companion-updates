@@ -582,6 +582,8 @@ class WebSession:
         self.browser = self._browser_preference()
         self.backend = backend or BrowserBackend(self.folder / ('Browser Profile ' + self.browser), self.browser)
         self.injected_backend = backend is not None
+        self.page_revision = 0
+        self.navigation_succeeded = False
         self.snapshot = None
         self.offset = 0
         self.choices = []

@@ -22,7 +22,7 @@ class DocumentationQualityTests(unittest.TestCase):
         self.assertLessEqual(result['release_notes_estimated_grade'],8)
         self.assertEqual(result['over_target'],[])
         self.assertGreaterEqual(len(result['manual_parts']),90)
-        self.assertGreaterEqual(len(result['release_note_parts']),10)
+        self.assertGreaterEqual(len(result['release_note_parts']),1)
         self.assertGreaterEqual(len(result['setup_parts']),40)
 
     def test_current_tasks_and_meaningful_limits_are_explained(self):

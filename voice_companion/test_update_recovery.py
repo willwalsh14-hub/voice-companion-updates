@@ -12,6 +12,18 @@ from web_assistant import BrowserBackend,WebSession,WebError
 from test_web_assistant import FakeBackend
 
 class UpdateRecoveryTests(unittest.TestCase):
+    def test_first_page_opens_from_keyboard_bookmark_menu(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend())
+            session.favorites.add('News','https://fixture.test')
+            with patch.object(app,'web_session',session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',Mock()),patch.object(app,'KEYBOARD_SPEECH',None):
+                mode=app.open_browser_menu()
+                for key in ('Down','Down','Enter','Enter'):
+                    mode=app.handle(app.navigation_key(key,mode),mode)
+                self.assertEqual(mode,'web')
+                self.assertTrue(session.navigation_succeeded)
+                self.assertGreater(session.page_revision,0)
+
     def test_native_speech_cannot_block_listener_shutdown(self):
         import sys,time,types
         entered=threading.Event();release=threading.Event();voice=Mock()
