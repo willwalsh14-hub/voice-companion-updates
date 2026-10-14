@@ -14,11 +14,16 @@ def check(app=None):
                 if cycle==0:session.favorites.add('Saved news',url)
                 if app is not None:
                     from unittest.mock import patch,Mock
-                    with patch.object(app,'web_session',session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',Mock()),patch.object(app,'KEYBOARD_SPEECH',None):
+                    import win32com.client
+                    voice=win32com.client.Dispatch('SAPI.SpVoice')
+                    stream=win32com.client.Dispatch('SAPI.SpFileStream')
+                    stream.Open(folder+'/bookmark-speech.wav',3);voice.AudioOutputStream=stream
+                    with patch.object(app,'voice',voice),patch.object(app,'web_session',session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',Mock()),patch.object(app,'KEYBOARD_SPEECH',None):
                         mode=app.open_browser_menu()
                         for key in ('Down','Down','Enter','Enter'):
                             mode=app.handle(app.navigation_key(key,mode),mode)
                         if mode!='web' or not session.navigation_succeeded:raise AssertionError('App keyboard bookmark did not open')
+                    voice.WaitUntilDone(1000);stream.Close()
                 session.menu.start();session.menu.process('go to bookmark',session,False)
                 _,action=session.menu.process('enter',session,False)
                 if action!=('open',url):raise AssertionError('Bookmark address changed')
