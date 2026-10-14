@@ -113,5 +113,6 @@ jobs:
             voice_companion/VoiceCompanion-*.txt
             voice_companion/VoiceCompanion-Build-Passed.json
             voice_companion/VoiceCompanion-Published.json
+            voice_companion/security-dependency-audit.json
           retention-days: 7
           if-no-files-found: warn

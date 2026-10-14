@@ -71,6 +71,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Python 3.12 is required for the installer buil
 if (-not $NoPublish) {
   Invoke-BuildPublishing -PrepareOnly
 }
+# Replace the older pip bundled with Python before installing build dependencies.
+& $python -m pip install --disable-pip-version-check --upgrade 'pip==26.2.1'
+if ($LASTEXITCODE -ne 0) { throw 'Could not update the package installer securely.' }
 & $python -m pip install --disable-pip-version-check -r requirements.txt 'pyinstaller==6.22.3' 'pyinstaller-hooks-contrib==2026.7'
 if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
 & $python build_user_guides.py
@@ -93,7 +96,17 @@ if ($LASTEXITCODE -ne 0) { throw 'Source security checks failed.' }
 & $python -m pip install pip-audit==2.10.1
 if ($LASTEXITCODE -ne 0) { throw 'Could not prepare the dependency security audit.' }
 & $python -m pip_audit --strict --format json --output security-dependency-audit.json
-if ($LASTEXITCODE -ne 0) { throw 'Dependency security audit failed. Review security-dependency-audit.json.' }
+if ($LASTEXITCODE -ne 0) {
+  if (Test-Path 'security-dependency-audit.json') {
+    $audit = Get-Content -Raw 'security-dependency-audit.json' | ConvertFrom-Json
+    foreach ($dependency in $audit.dependencies) {
+      foreach ($finding in $dependency.vulns) {
+        Write-Output ('Security finding: ' + $dependency.name + ' ' + $dependency.version + '; ' + $finding.id + '; fixed versions: ' + ($finding.fix_versions -join ', '))
+      }
+    }
+  }
+  throw 'Dependency security audit failed. Review security-dependency-audit.json.'
+}
 & $python -m unittest test_security_privacy -v
 if ($LASTEXITCODE -ne 0) { throw 'Privacy or security checks failed.' }
 & $python -m unittest test_update_recovery -v
