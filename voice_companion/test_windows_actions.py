@@ -69,6 +69,8 @@ class WindowsActionTests(unittest.TestCase):
             (root/'Voice Companion Release Notes.txt').write_text('Release Notes for Voice Companion '+companion.APP_VERSION+'\n\nNew Apps and Features\n\n1. Test feature\n\na. Actual detail\n')
             with patch.object(companion,'GUIDE',guide),patch.object(companion,'speak') as speech,patch.object(companion,'help_session',None),patch.object(companion,'help_return_mode','awake'):
                 self.assertEqual(companion.handle('what is new','awake'),'help')
+                self.assertIn('Release Notes for Voice Companion',speech.call_args.args[0])
+                for _ in range(4):self.assertEqual(companion.handle('continue reading','help'),'help')
                 self.assertIn('Actual detail',' '.join(str(x) for x in speech.call_args_list))
                 self.assertEqual(companion.help_session.level,'article')
                 self.assertEqual(companion.handle('close help','help'),'awake')
