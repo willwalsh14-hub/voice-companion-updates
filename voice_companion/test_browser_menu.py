@@ -78,8 +78,8 @@ class BrowserMenuTests(unittest.TestCase):
             self.session.open('example.com');self.session.reading.position=4
             with patch.object(app,'web_session',self.session),patch.object(app,'PREFERENCES',{'web_keep_open':keep}),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None),patch.object(app,'pending_website',None):
                 self.assertEqual(app.handle('web browser','awake'),'browser_menu')
-                self.assertEqual(app.navigation_key('Web:Escape','web'),'browser menu')
-                self.assertEqual(app.handle('browser menu','web'),'browser_menu')
+                self.assertEqual(app.navigation_key('Web:Escape','web'),'web browser menu')
+                self.assertEqual(app.handle('web browser menu','web'),'browser_menu')
                 choices=[x[1] for x in self.menu.choices(self.session,keep)]
                 self.assertEqual('resume' in choices,keep)
                 if keep:

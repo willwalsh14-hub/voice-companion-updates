@@ -110,15 +110,15 @@ ___ Check links and buttons in received mail.
 ___ Check results in the email service itself.
 Result: ____________________
 
-10. Browser menus and bookmarks
-___ Choose Web browser. Check that the browser menu opens.
+10. Web browser menus and bookmarks
+___ Choose Web browser. Check that the web browser menu opens.
 ___ Search or type an address by voice and keyboard.
 ___ Save the page with New bookmark. Speak a name, then try typing a name.
 ___ Open the bookmark list. Try first-letter and several-letter search.
 ___ Rename and delete a spare bookmark from their lists.
 ___ Try Web history, Go back, and Go forward.
 ___ On a page, use Alt+Left Arrow and Alt+Right Arrow.
-___ With Keep browser window open checked, press Escape on a page. Check the browser menu and Resume where you left off.
+___ With Keep browser window open checked, press Escape on a page. Check the web browser menu and Resume where you left off.
 ___ Resume and check the same page and reading place.
 ___ Turn that setting off. Leave a page and check that Resume is absent.
 Result: ____________________
@@ -172,6 +172,9 @@ Result: ____________________
 15. Updates
 ___ Try update Yes and No, cancel, and a lost internet connection.
 ___ Check that the new version opens after setup.
+___ Say Status while download speech is playing. Check the current progress.
+___ During installation, try spoken Status and the update window's Status button.
+___ After setup, give a command without Wake up. Check that the microphone works.
 ___ Check accounts, settings, documents, notes, drafts, and guide copies.
 ___ Reopen a guide and the release notes. Check that they match the new version.
 Result: ____________________

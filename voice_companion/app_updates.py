@@ -79,7 +79,7 @@ def download_release(release, folder, canceled, progress=None):
         temporary.unlink(missing_ok=True)
 
 
-_EXTERNAL_PROCESS_LOCK = threading.Lock()
+from browser_process import LOCK as _EXTERNAL_PROCESS_LOCK
 
 
 def launch_update_process(arguments, working_folder):
@@ -179,16 +179,30 @@ class AppUpdates:
                         self.percent = percent
                         self.events.put(('progress', percent))
                 path = download_release(release,folder,self.canceled, report)
-                self.events.put(('downloaded',(path,release)))
-            except InterruptedError: self.events.put(('canceled',None))
-            except Exception: self.events.put(('download_failed',None))
-            finally: self.busy = False
+                event=('downloaded',(path,release))
+            except InterruptedError:event=('canceled',None)
+            except Exception:event=('download_failed',None)
+            self.busy=False
+            self.events.put(event)
         threading.Thread(target=work,daemon=True).start()
         return True
 
     def can_install(self):
         installed = Path(os.environ.get('LOCALAPPDATA',''))/'Programs'/'Voice Companion'/'VoiceCompanion.exe'
         return os.name == 'nt' and getattr(sys,'frozen',False) and Path(sys.executable).resolve() == installed.resolve()
+
+    def begin_install(self,path,release):
+        if self.busy:return False
+        self.busy=True;self.phase='preparing'
+        def work():
+            try:
+                self.launch(path,release)
+                event=('install_ready',None)
+            except Exception:event=('install_failed',None)
+            self.busy=False
+            self.events.put(event)
+        threading.Thread(target=work,daemon=True).start()
+        return True
 
     def launch(self, path, release):
         installed = Path(os.environ.get('LOCALAPPDATA',''))/'Programs'/'Voice Companion'/'VoiceCompanion.exe'
@@ -199,6 +213,7 @@ class AppUpdates:
             if hashlib.file_digest(source,'sha256').hexdigest() != release['sha256'].lower(): raise ValueError('Installer changed')
         helper = path.parent/'apply-update.ps1'
         shutil.copyfile(self.resources/'apply-update.ps1',helper)
+        shutil.copytree(self.resources/'update-voice-runtime',path.parent/'update-voice-runtime',dirs_exist_ok=True)
         ready = path.parent/'update-ready.json'
         ready.unlink(missing_ok=True)
         powershell = Path(os.environ.get('SystemRoot', r'C:\Windows'))/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe'

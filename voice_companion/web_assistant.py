@@ -136,7 +136,9 @@ class BrowserBackend:
             bundled = Path(getattr(__import__('sys'), '_MEIPASS', Path(__file__).parent)) / 'browser-runtime'
             if bundled.exists(): os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(bundled)
             self.folder.mkdir(parents=True, exist_ok=True)
-            self.playwright = sync_playwright().start()
+            from browser_process import browser_process_environment
+            with browser_process_environment(self.folder):
+                self.playwright = sync_playwright().start()
             if self.browser == 'firefox':
                 engine, kwargs = self.playwright.firefox, {}
             else:
@@ -149,21 +151,26 @@ class BrowserBackend:
                     executable = next((p for p in candidates if p.is_file()), None)
                     if not executable: raise WebError('Brave is not installed in a standard Windows location.')
                     kwargs = {'executable_path': str(executable)}
-            self.context = engine.launch_persistent_context(
-                str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
+            with browser_process_environment(self.folder):
+                self.context = engine.launch_persistent_context(
+                    str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.set_default_timeout(10000)
         except Exception as exc:
             self.close()
+            import traceback
+            try:(self.folder/'browser-error.txt').write_text(traceback.format_exc(),encoding='utf-8')
+            except OSError:pass
             raise WebError('The guided ' + self.browser.capitalize() +
                            ' browser could not start. Ask your helper to check that browser and the installation.') from exc
 
     def close(self):
-        try:
-            if self.context: self.context.close()
-        finally:
-            if self.playwright: self.playwright.stop()
-            self.page = self.context = self.playwright = None
+        context,playwright=self.context,self.playwright
+        self.page=self.context=self.playwright=None
+        for action in (context.close if context else None,playwright.stop if playwright else None):
+            if action:
+                try:action()
+                except Exception:pass
 
     def refocus(self):
         if not self.page or self.page.is_closed():return False
@@ -754,7 +761,7 @@ class WebSession:
                 if self.keyboard_field:self.commit_keyboard_field()
                 return 'Page view.'
             elif key=='Escape':
-                if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the browser menu.'
+                if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the web browser menu.'
                 if (self.snapshot or {}).get('modal_key'):
                     self.backend.page.keyboard.press('Escape')
                     result=self._refresh(read=False,wait=False)
@@ -890,7 +897,7 @@ class WebSession:
         name = name.lower()
         if name not in BrowserBackend.BROWSERS:
             return 'Choose Edge, Chrome, Brave, or Firefox.'
-        if self.browser != name:
+        if self.browser != name or getattr(self.backend,'browser',name)!=name:
             if not self.injected_backend:
                 try: self.backend.close()
                 except Exception: pass
@@ -1023,12 +1030,28 @@ class WebSession:
         self.reading.position=self.browse.position;self.reading.continuation=min(continuation,len(self.reading.text))
         return ''
 
+    def _navigate(self,url):
+        try:
+            self.backend.goto(url)
+            return ''
+        except WebError:
+            if self.injected_backend or self.backend.browser=='firefox':raise
+            self.backend.close()
+            self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
+            self.backend.goto(url)
+            return 'The chosen browser could not start. Using the included Firefox browser. '
+
     def open(self, url):
+        self.navigation_succeeded=False
         try:
             safe, _ = prepare_address(url)
-            self.backend.goto(safe)
-            return self._refresh()
-        except (ValueError, WebError) as exc:
+            notice=self._navigate(safe)
+            result=self._refresh()
+            self.navigation_succeeded=True
+            return notice+result
+        except WebError as exc:
+            return str(exc)
+        except ValueError as exc:
             return str(exc)
         except Exception:
             return 'The page did not open. Check the address and internet connection.'
@@ -1041,9 +1064,9 @@ class WebSession:
         name,base=urls[engine]
         try:
             self.last_search=query;self.active_search_engine=engine
-            self.backend.goto(base + quote(query))
+            notice=self._navigate(base + quote(query))
             result = self._refresh()
-            return 'Searching with ' + name + '. ' + result
+            return notice+'Searching with ' + name + '. ' + result
         except Exception:
             return name + ' could not open. Your search engine was not changed. Try again or choose another search engine.'
 
@@ -1549,7 +1572,7 @@ class WebSession:
         if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):
             self.list_focus=None;self.pending=None;return 'Virtual page view.'
         if self.list_focus=='search_engines':
-            if command in ('cancel','escape','go back','back to page','close list'):self.list_focus=None;return 'Verification page. Escape returns to the browser menu.'
+            if command in ('cancel','escape','go back','back to page','close list'):self.list_focus=None;return 'Verification page. Escape returns to the web browser menu.'
             if command in ('next','previous'):
                 self.engine_index=max(0,min(len(self.engine_choices)-1,self.engine_index+(-1 if command=='previous' else 1)));return self.engine_notice()
             if command in ('okay','ok','yes','confirm','that one'):return self.retry_search_engine()

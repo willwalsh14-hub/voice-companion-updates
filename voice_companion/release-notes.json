@@ -1,27 +1,25 @@
 {
-  "version": "0.2.125-test",
+  "version": "0.2.126-test",
   "status": "Testing build",
   "date": "October 13, 2026",
-  "baseline": "0.2.124-test",
-  "scope": "A new guide, clearer lessons, and release notes written for the people who use the app.",
+  "baseline": "0.2.125-test",
+  "scope": "Update progress, microphone recovery, and opening bookmarks.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "A new user guide",
+          "title": "Web browser menu",
           "details": [
-            "The guide now has numbered chapters and short steps. It explains what to say or press, what happens next, and how to get help. Old build history has been removed from the instructions.",
-            "The guide covers all the main tasks. Learn to write, use email, browse the web, and save bookmarks. Other chapters explain radio, podcasts, speech, settings, and updates. Each task includes voice commands and keys.",
-            "The short setup guides and test checklist have also been rewritten. They use the current steps and explain what to check.",
-            "Use the contents links in HTML or Word to find a chapter. Use the heading list in your reader to find a smaller part. The DAISY copy also has chapter and part choices."
+          "The browser menu is now called Web browser menu. Say Web browser menu, or press Escape from a page, to return to it.",
+          "The guides, spoken Help, and lessons use the new menu name and update steps."
           ]
         },
         {
-          "title": "Clearer spoken lessons",
+          "title": "Status during installation",
           "details": [
-            "The tutorial uses the same new guide. Commands are explained with the steps and checks you need to use them. The lessons wait for you and leave your real work alone.",
-            "From the main menu, say Start tutorial. Choose a course, then use Next lesson, Repeat, or Lesson list. Say Explain command followed by the command to hear how to use it."
+            "A separate update window stays open while setup runs. Say Status or Update status to hear progress. You can also press its Status button or Enter.",
+            "The update window uses the app's offline speech files. You do not need to set up Windows speech to ask for progress."
           ]
         }
       ]
@@ -30,23 +28,24 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Help follows the new chapters",
+          "title": "Voice commands after an update",
           "details": [
-            "Help now lists the guide's chapters and smaller parts. Say Help with documents, Help with email, or Help with web to go straight to a task. Say Close help to return to your work."
+            "Companion now opens with voice commands on after an update. You do not need to say Wake up again.",
+          "The update window lets go of the microphone first. Then Companion opens. If Windows keeps the device busy, the app tries again."
           ]
         },
         {
-          "title": "Release notes explain the changes",
+          "title": "Status while downloading",
           "details": [
-            "The notes now describe what changed and how it helps you use the app. They use everyday words and give the commands you need."
+            "Status now stops the old progress speech and reads the current progress. You can keep asking while the file downloads or setup is being prepared."
           ]
         },
         {
-          "title": "The same guide in each format",
+          "title": "Opening bookmarks",
           "details": [
-            "Choose the format you prefer: text, HTML, Word, EPUB, DAISY, or braille. Each copy has the same steps. Find them in Documents. Open Voice Companion, then User Guides.",
-            "Close and reopen a guide after updating to read the new copy. You can say Open user guides to open its folder.",
-            "This is still a test version. Speech can hear the wrong words. Some websites, mail services, and streams need help or may be unavailable. Check important text and actions before agreeing to them."
+            "Saved pages can open again after the browser closes. Browser problems leave you in the menu and keep your bookmarks saved.",
+            "If the chosen browser cannot start, Companion tries the included Firefox browser. Your saved browser choice stays the same.",
+            "An update closes the app's old browser before setup starts. This helps the browser open again after the update."
           ]
         }
       ]

@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.125-test.
+Guide version: 0.2.126-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -460,9 +460,9 @@ Messages per list is in Email options. Choices include 10, 20, 30, 40, 50, 100, 
 
 11. BROWSE THE WEB
 
-11.1 Open the browser menu
-Choose Web browser on the main menu. It opens a browser menu, even if you used a page earlier.
-The browser menu has these choices:
+11.1 Open the web browser menu
+Choose Web browser on the main menu. It opens a web browser menu, even if you used a page earlier.
+The web browser menu has these choices:
 - Search or type address
 - Go to bookmark
 - New bookmark
@@ -551,15 +551,15 @@ Voice choices include "Next row", "Previous column", "First row", "Last row", "F
 Companion reads the cell text, its heading, and its row and column when available.
 Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same.
 F5 or "Refresh page" reloads the page. Alt+T lets you type an app command.
-Escape from ordinary page reading opens the browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
-"Leave website" also opens the browser menu. "Close browser" or "Main menu" leaves the browser activity.
+Escape from ordinary page reading opens the web browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
+"Leave website" also opens the web browser menu. "Close browser" or "Main menu" leaves the browser activity.
 
 12. BOOKMARKS AND WEB HISTORY
 
 12.1 Save the current page
 A bookmark saves a page address so you can open it later. Older website favorites appear in the same saved list.
 1. Open the page you want to save.
-2. Say "New bookmark". You can also choose it from the browser menu.
+2. Say "New bookmark". You can also choose it from the web browser menu.
 3. Say a short name, or type the name and press Enter.
 4. Listen for the saved name.
 A name can have up to 60 characters. Choose a new name if the one you gave is already used.
@@ -571,7 +571,9 @@ Press the first letter of a name to move among matching names. Type several lett
 For example, type n then p to find a name that starts with np. Pause before starting a different name.
 You can also say enough of the name to identify it. If two names match, say more or use the arrows.
 "Open favorite News" opens that saved name directly. "List bookmarks" opens the bookmark list.
-Home and End reach the first and last items. An empty list says it is empty. Escape returns to the browser menu.
+Home and End reach the first and last items. An empty list says it is empty. Escape returns to the web browser menu.
+If your chosen browser cannot start, Companion tries the included Firefox browser. Your browser choice stays saved. Your bookmarks stay saved too.
+If a page cannot open, you stay in the web browser menu. Check internet access, then try the bookmark again.
 
 12.3 Rename or delete a bookmark
 Choose Rename bookmark, then select a name with arrows and Enter. Say the new name, or type it and press Enter.
@@ -581,14 +583,14 @@ Use first-letter or several-letter search in both lists, just as you do when ope
 
 12.4 Open a page from history
 Web history is a saved list of recent secure page addresses. It keeps up to 200 entries, newest first.
-1. Choose Web history in the browser menu.
+1. Choose Web history in the web browser menu.
 2. Use arrows to hear page names, or type letters to find a name.
 3. Press Enter to open the page.
 History stays saved when you close and reopen Companion. Back and Forward use the pages in the currently open browser session.
 
 12.5 Resume where you left off
 Open Options, then Web browser options. Check Keep browser window open if you want to keep a page for later.
-With it on, Escape from page reading opens the browser menu and leaves the page open.
+With it on, Escape from page reading opens the web browser menu and leaves the page open.
 Choose Resume where you left off to return to that page and your reading place.
 With it off, leaving page reading closes Companion's browser windows. The Resume choice is then absent.
 If a retained page has been closed elsewhere, Companion removes Resume and keeps the menu usable.
@@ -789,7 +791,7 @@ Keep browser window open controls whether a page stays open when you leave page 
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
 Guided browser chooses Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
-List website favorites opens the saved website list. New bookmark actions are also in the browser menu.
+List website favorites opens the saved website list. New bookmark actions are also in the web browser menu.
 
 18.7 Radio and Podcasts options
 Radio options has Station database, List radio presets, and List scheduled recordings.
@@ -843,6 +845,9 @@ If the check fails, you can keep using the current version and try again later.
 4. Wait while Companion closes, installs the update, and opens again.
 Say "Cancel update" while the download is in progress if you need to stop it.
 The app checks the downloaded file before using it. Windows may still need your helper for a security prompt.
+During the download, say "Status" or "Update status" to hear the current progress. This works while a progress message is being read.
+During installation, a separate update window appears. Its microphone listens for "Status" or "Update status". You can also press its Status button or Enter to hear progress.
+When setup finishes, Companion opens with voice commands on. You do not need to say "Wake up" again. If Windows takes time to release the microphone, the app tries to open it again.
 Your account data and documents stay in their normal folders. The installer also refreshes the guides.
 A Windows restart is not forced. Companion tells you if one is needed.
 

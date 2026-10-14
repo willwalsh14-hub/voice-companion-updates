@@ -88,6 +88,8 @@ if ($releaseTests.ExitCode -ne 0) {
 }
 & $python prepare_espeak.py (Join-Path $PSScriptRoot 'espeak')
 if ($LASTEXITCODE -ne 0) { throw 'The local eSpeak speech runtime could not be prepared.' }
+& $python -m unittest test_update_recovery -v
+if ($LASTEXITCODE -ne 0) { throw 'Updater recovery and bookmark opening checks failed.' }
 $browserRuntime = Join-Path $PSScriptRoot 'browser-runtime'
 $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
@@ -146,14 +148,14 @@ foreach ($oldBuild in @('dist\VoiceCompanion', 'dist\VoiceCompanion-Diagnostics'
 }
 $oldInstaller = Join-Path $PSScriptRoot 'dist\installer\VoiceCompanion-Setup.exe'
 if (Test-Path $oldInstaller) { Remove-Item $oldInstaller -Force }
-function Invoke-PyInstaller([string]$name, [string[]]$options) {
+function Invoke-PyInstaller([string]$name, [string[]]$options, [string]$entry = 'companion.py') {
   $outputLog = Join-Path $PSScriptRoot "VoiceCompanion-$name-PyInstaller-Output.txt"
   $errorLog = Join-Path $PSScriptRoot "VoiceCompanion-$name-PyInstaller-Errors.txt"
   Write-Output "Packaging $name. Detailed logs: $outputLog and $errorLog"
   $optionsFile = Join-Path $PSScriptRoot "VoiceCompanion-$name-Packaging-Options.json"
   try {
     ConvertTo-Json -InputObject @($options) -Compress | Set-Content -LiteralPath $optionsFile -Encoding UTF8
-    & $python (Join-Path $PSScriptRoot 'build_packaging.py') $optionsFile $outputLog $errorLog
+    & $python (Join-Path $PSScriptRoot 'build_packaging.py') $optionsFile $outputLog $errorLog $entry
     $packagingExitCode = $LASTEXITCODE
   } finally {
     Remove-Item -LiteralPath $optionsFile -Force -ErrorAction SilentlyContinue
@@ -175,9 +177,16 @@ $diagnosticSource = Join-Path $PSScriptRoot 'dist\VoiceCompanion-Diagnostics\Voi
 $diagnosticTarget = Join-Path $PSScriptRoot 'dist\VoiceCompanion\VoiceCompanion-Diagnostics.exe'
 if (-not (Test-Path $diagnosticSource)) { throw 'The diagnostic executable is missing.' }
 Copy-Item $diagnosticSource $diagnosticTarget -Force
+$updateVoiceArguments = @('--clean','--noconfirm','--onedir','--windowed','--contents-directory','.', '--name','VoiceCompanion-UpdateVoice', '--add-data','model:model','--collect-all','vosk','--collect-all','win32com','--hidden-import','sounddevice','--hidden-import','tkinter')
+Invoke-PyInstaller 'UpdateVoice' $updateVoiceArguments 'update_voice.py'
+Copy-Item (Join-Path $PSScriptRoot 'dist\VoiceCompanion-UpdateVoice') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\update-voice-runtime') -Recurse -Force
+& $python (Join-Path $PSScriptRoot 'check_update_voice.py') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\update-voice-runtime\VoiceCompanion-UpdateVoice.exe')
+if ($LASTEXITCODE -ne 0) { throw 'The packaged offline updater Status listener or microphone handoff failed.' }
 $exe = Join-Path $PSScriptRoot 'dist\VoiceCompanion\VoiceCompanion.exe'
 & $diagnosticTarget --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'A packaged runtime dependency is missing.' }
+& $diagnosticTarget --check-browser-bookmarks
+if ($LASTEXITCODE -ne 0) { throw 'Saved bookmarks failed in the actual packaged browser.' }
 & $exe --check-update-environment
 if ($LASTEXITCODE -ne 0) { throw 'The packaged updater inherited application files or its working directory.' }
 & $exe --check-runtime
@@ -290,14 +299,14 @@ if (Test-Path $googleRegistration) {
   }
 }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.125-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.126-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --refresh-guides
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.125-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.126-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -324,7 +333,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.125-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.126-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing

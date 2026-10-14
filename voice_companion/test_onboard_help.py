@@ -65,7 +65,7 @@ class OnboardHelpTests(unittest.TestCase):
     def test_web_help_opens_dedicated_topic_and_form_subsections(self):
         session = HelpSession(GUIDE)
         self.assertIn('Browse The Web', session.topic('web'))
-        self.assertIn('Open the browser menu',session.process('list subsections'))
+        self.assertIn('Open the web browser menu',session.process('list subsections'))
         for _ in range(6):session.process('next')
         self.assertIn('Fill in and review a form by voice',session.process('that one'))
         self.assertIn('Review form',session.reading.text)

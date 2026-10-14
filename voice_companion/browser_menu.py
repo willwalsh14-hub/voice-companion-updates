@@ -47,7 +47,7 @@ class BrowserMenu:
 
     def start(self):
         self.level = 'menu'; self.index = None; self.prefix = ''; self.target = None
-        return 'Browser menu. Search or type address, Go to bookmark, New bookmark, Delete bookmark, Rename bookmark, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
+        return 'Web browser menu. Search or type address, Go to bookmark, New bookmark, Delete bookmark, Rename bookmark, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
 
     def menu(self, session, keep_open):
         if self.level == 'name':
@@ -73,8 +73,9 @@ class BrowserMenu:
     def process(self, text, session, keep_open):
         from web_assistant import WebError
         command = text.strip().casefold()
-        if command in ('escape', 'cancel', 'close list', 'browser menu'):
-            if self.level == 'menu' and command != 'browser menu':
+        if command=='browser menu':command='web browser menu'
+        if command in ('escape', 'cancel', 'close list', 'web browser menu'):
+            if self.level == 'menu' and command != 'web browser menu':
                 return 'Main menu.', 'main'
             return self.start(), None
         if self.level == 'name':
@@ -91,7 +92,7 @@ class BrowserMenu:
                 return str(exc), None
             result = ('Renamed bookmark to ' if self.action == 'rename' else 'Saved bookmark ') + name + '.'
             self.start()
-            return result + ' Browser menu.', None
+            return result + ' Web browser menu.', None
         state = self.menu(session, keep_open)
         names = state[0] if state else []
         if command.startswith('letter:'):
@@ -123,8 +124,8 @@ class BrowserMenu:
                 self.action = action; self.level = 'list'; self.prefix = ''
                 self.items = self.history() if action == 'history' else list(session.favorites.all().values())
                 self.index = 0 if self.items else None
-                return ('Web history. ' if action == 'history' else 'Bookmarks. ') + (self.notice([x['name'] for x in self.items]) + ' Type letters to narrow the list, then Enter, or say the name.' if self.items else 'The list is empty. Escape returns to the browser menu.'), None
-            return 'Choose a browser menu option.', None
+                return ('Web history. ' if action == 'history' else 'Bookmarks. ') + (self.notice([x['name'] for x in self.items]) + ' Type letters to narrow the list, then Enter, or say the name.' if self.items else 'The list is empty. Escape returns to the web browser menu.'), None
+            return 'Choose a web browser menu option.', None
         if names:
             if command not in ('okay', 'ok', 'confirm', 'confirm that', 'that one', 'enter'):
                 matches = [i for i, name in enumerate(names) if name.casefold().startswith(command)]
@@ -143,4 +144,4 @@ class BrowserMenu:
                 return 'Deleted bookmark ' + item['name'] + '.' + (' ' + self.notice([x['name'] for x in self.items]) if self.items else ' The list is empty.'), None
             self.target = item['name']; self.level = 'name'
             return 'Rename bookmark ' + self.target + '. Say or type the new name, then press Enter. Escape cancels.', None
-        return 'The list is empty. Escape returns to the browser menu.', None
+        return 'The list is empty. Escape returns to the web browser menu.', None

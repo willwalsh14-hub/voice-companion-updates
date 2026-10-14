@@ -49,7 +49,7 @@ class UpdateTests(unittest.TestCase):
         with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as speech:
             for phrase in ('status','update status'):
                 self.assertEqual(companion.handle(phrase,'update_download'),'update_download')
-                speech.assert_called_with('37%')
+                speech.assert_called_with('Downloading the update. 37 percent.')
                 self.assertTrue(companion.fast_command_request(phrase,'update_download'))
     def test_fetch_rejects_oversize_and_insecure_redirect(self):
         for response in (Response(b'x'*65537),Response(b'{}','http://example.org/x')):
@@ -77,7 +77,8 @@ class UpdateTests(unittest.TestCase):
             companion.handle('cancel update','update_download');self.assertTrue(service.canceled.is_set())
             service.events.put(('downloaded',(Path('fake.exe'),self.release())));self.assertEqual(companion.poll_app_updates('update_download'),'update_download');service.launch.assert_not_called()
             service.canceled.clear();service.events.put(('downloaded',(Path('fake.exe'),self.release())))
-            self.assertEqual(companion.poll_app_updates('update_download'),'exit');service.launch.assert_called_once()
+            self.assertEqual(companion.poll_app_updates('update_download'),'update_download');service.begin_install.assert_called_once()
+            service.events.put(('install_ready',None));self.assertEqual(companion.poll_app_updates('update_download'),'exit')
     def test_automatic_offer_waits_until_task_is_finished(self):
         service=Mock();service.events=queue.Queue()
         with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'UPDATE_MANUAL',False),patch.object(companion,'speech_busy',return_value=False),patch.object(companion,'speak'):
@@ -99,6 +100,11 @@ class UpdateHandoffTests(unittest.TestCase):
             root=Path(folder);app=root/'Programs'/'Voice Companion'/'VoiceCompanion.exe';app.parent.mkdir(parents=True);app.write_bytes(b'MZapp')
             download=root/'download';download.mkdir();setup=download/'Setup.exe';setup.write_bytes(b'MZinstaller')
             service=AppUpdates(root,'1.2.2-test')
+            resources=root/'resources';resources.mkdir()
+            (resources/'apply-update.ps1').write_text('helper')
+            (resources/'update-voice-runtime').mkdir()
+            (resources/'update-voice-runtime'/'VoiceCompanion-UpdateVoice.exe').write_bytes(b'MZvoice')
+            service.resources=resources
             fake_os=types.SimpleNamespace(name='nt',environ={'LOCALAPPDATA':str(root)},getpid=lambda:123)
             fake_sys=types.SimpleNamespace(frozen=True,executable=str(app))
             with patch('app_updates.os',fake_os),patch('app_updates.sys',fake_sys),patch('app_updates.launch_update_process') as launch:
@@ -122,7 +128,7 @@ class UpdateHandoffTests(unittest.TestCase):
         service=Mock();service.events=queue.Queue();service.canceled=threading.Event();service.launch.side_effect=OSError('cannot start')
         with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_RETURN_MODE','email_draft'),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'speak'),patch.object(companion,'finish_mail_announcement'):
             service.events.put(('download_failed',None));self.assertEqual(companion.poll_app_updates('update_download'),'email_draft')
-            service.events.put(('downloaded',(Path('Setup.exe'),self.release())));self.assertEqual(companion.poll_app_updates('update_download'),'email_draft')
+            service.events.put(('install_failed',None));self.assertEqual(companion.poll_app_updates('update_download'),'email_draft')
     def test_installer_helper_does_not_force_restart_or_require_admin(self):
         root=Path(__file__).parent;helper=(root/'apply-update.ps1').read_text();installer=(root/'VoiceCompanion.iss').read_text()
         for value in ('WaitForExit(30000)','Get-FileHash','/VERYSILENT','/NORESTART','/RESTARTEXITCODE=3010','/NORESTARTAPPLICATIONS','update-result.json'):self.assertIn(value,helper)

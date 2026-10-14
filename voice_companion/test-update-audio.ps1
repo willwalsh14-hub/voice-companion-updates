@@ -7,32 +7,30 @@ foreach ($definition in $ast.FindAll({ param($node) $node -is [System.Management
   Invoke-Expression $definition.Extent.Text
 }
 $script:released = @()
-function New-TestRecognizer {
-  $fake = New-Object PSObject
-  $fake | Add-Member ScriptMethod RecognizeAsyncCancel { $script:released += 'cancel' }
-  $fake | Add-Member ScriptMethod SetInputToNull { $script:released += 'detach' }
-  $fake | Add-Member ScriptMethod Dispose { $script:released += 'dispose' }
-  return $fake
-}
+$fake = New-Object PSObject
+$fake | Add-Member ScriptMethod WaitForExit { param($timeout) $script:released += 'wait'; return $true }
+$fake | Add-Member ScriptMethod Dispose { $script:released += 'dispose' }
+$script:listener = $fake
 function Start-Process {
-  param($FilePath, $WorkingDirectory)
-  if ($script:recognizer) { throw 'Restart attempted before microphone release.' }
-  if (($script:released -join ',') -ne 'cancel,detach,dispose') { throw 'Microphone cleanup order is incorrect.' }
+  param($FilePath, $WorkingDirectory, $ArgumentList)
+  if ($script:listener) { throw 'Restart attempted before microphone release.' }
+  if (($script:released -join ',') -ne 'wait,dispose') { throw 'Microphone cleanup order is incorrect.' }
+  if ($ArgumentList -ne '--resume-after-update') { throw 'Restart would leave voice commands asleep.' }
   $script:restarted = $true
 }
-function Start-Sleep { param($Milliseconds) }
+$updateFolder = Join-Path $env:TEMP ('vc-update-audio-' + [guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Path $updateFolder | Out-Null
 $NoRestart = $false; $AppPath = 'C:\VoiceCompanion.exe'
-$script:recognizer = New-TestRecognizer
 $script:restarted = $false
-Restart-Companion
-if (-not $script:restarted) { throw 'Restart was not attempted.' }
-Close-UpdateAudio # Repeated cleanup must be safe.
-$voice = New-Object PSObject
-$voice | Add-Member ScriptMethod Speak { throw 'Simulated audio device failure' }
-$log = Join-Path $env:TEMP ('vc-update-audio-' + [guid]::NewGuid().ToString() + '.txt')
 try {
-  Say-Percent 5 # An audio error must not abort installation monitoring.
+  Restart-Companion
+  if (-not $script:restarted -or -not (Test-Path (Join-Path $updateFolder 'voice-stop'))) { throw 'Restart release handshake failed.' }
+  Close-UpdateAudio
+  $voice = New-Object PSObject
+  $voice | Add-Member ScriptMethod Speak { throw 'Simulated audio device failure' }
+  $log = Join-Path $updateFolder 'error.txt'
+  Say-Percent 5
   if (-not (Test-Path $log)) { throw 'Audio error was not logged.' }
-} finally { Remove-Item $log -ErrorAction SilentlyContinue }
-Write-Output 'Updater microphone release before restart and audio failure isolation checks passed.'
+} finally { Remove-Item $updateFolder -Recurse -Force }
+Write-Output 'Updater microphone release before awake restart and audio failure isolation checks passed.'
 exit 0

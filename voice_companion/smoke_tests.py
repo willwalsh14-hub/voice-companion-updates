@@ -560,7 +560,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
               patch.object(companion, 'speak') as spoken,patch.object(sys,'argv',['VoiceCompanion.exe']),
               patch.dict(sys.modules, {'sounddevice': fake_audio})):
             self.assertEqual(companion.main(),0)
-            fake_audio.RawInputStream.assert_called_once()
+            self.assertGreaterEqual(fake_audio.RawInputStream.call_count,2)
             notices=[str(call.args[0]) for call in spoken.call_args_list]
             self.assertTrue(any('is ready' in text for text in notices))
             self.assertTrue(any('Voice commands are disabled' in text for text in notices))

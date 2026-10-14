@@ -223,7 +223,7 @@ class WebPolishTests(unittest.TestCase):
         with patch.object(app,'web_session',self.session),patch.object(app,'pending_website',None),patch.object(app,'PREFERENCES',{'web_keep_open':True}),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None),patch.object(app,'interrupt_speech'):
             self.assertEqual(app.handle_keyboard(app.navigation_key('Web:Escape','web'),'web'),'browser_menu')
             self.session.keyboard('Quick:e');self.session.keyboard('Activate');self.assertEqual(app.navigation_key('Web:Escape','web'),'web key Escape')
-            self.session.keyboard('Escape');self.assertEqual(app.navigation_key('Web:Escape','web'),'browser menu')
+            self.session.keyboard('Escape');self.assertEqual(app.navigation_key('Web:Escape','web'),'web browser menu')
     def test_arrowing_into_field_keeps_virtual_cursor_readonly_until_explicit_edit(self):
         position=next(item['start'] for item in self.session.browse.elements if item['key']=='name')
         with patch.object(app,'web_session',self.session),patch.object(app,'pending_website',None),patch.object(app,'sync_app_context'):

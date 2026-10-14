@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.125-test'
+APP_VERSION = '0.2.126-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -392,7 +392,7 @@ def resume_from_sleep():
         announce_main_menu()
         sync_app_context(mode,True)
         return mode
-    speak('I am listening. Returning to ' + {'awake':'the main menu', 'mailbox':'your email folder', 'email_draft':'your email draft', 'document':'your document'}.get(mode, mode.replace('_', ' ')) + '.')
+    speak('I am listening. Returning to ' + {'awake':'the main menu', 'mailbox':'your email folder', 'email_draft':'your email draft', 'document':'your document','browser_menu':'the web browser menu'}.get(mode, mode.replace('_', ' ')) + '.')
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
     return mode
@@ -545,8 +545,8 @@ def _navigation_key(key,mode):
             return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Home':'home','End':'end','Enter':'enter','Escape':'escape'}[key]
         if key.startswith('Letter:'):return key
     if mode=='web' and key in ('Escape','Web:Escape') and web_session and isinstance(web_session.snapshot,dict) and web_session.snapshot.get('modal_key') and not web_session.list_focus:return 'web key Escape'
-    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'browser menu'
-    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus:return 'browser menu'
+    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'web browser menu'
+    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus:return 'web browser menu'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key=='Enter':return 'open current heading' if web_session.list_focus=='headings' else 'open current link'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
@@ -630,6 +630,24 @@ def microphone_settings(sd,device_index=None):
             continue
     raise OSError('No supported mono or stereo microphone format was found.')
 
+def open_microphone(sd,attempts=5):
+    """Drivers can need a moment after the installer listener releases input."""
+    global resampler,input_channels
+    for attempt in range(attempts):
+        stream=None
+        try:
+            _,rate,channels=microphone_settings(sd)
+            resampler=PCM16Resampler(rate,16000);input_channels=channels
+            stream=sd.RawInputStream(samplerate=rate,blocksize=max(1,rate//20),dtype='int16',channels=channels,callback=callback)
+            stream.start()
+            return stream
+        except Exception:
+            if stream:
+                try:stream.close()
+                except Exception:pass
+            if attempt+1<attempts:time.sleep(.3)
+    return None
+
 
 def spoken_control(value):
     """Only a complete utterance can put the app to sleep or shut it down."""
@@ -710,6 +728,8 @@ def fast_offline_silence(recognizer, utterance):
 
 
 def web_feedback_control(text,mode):
+    if mode in ('update_offer','update_download'):
+        return fast_command_request(normalized_command(text),mode)
     if mode!='web' or not web_session:return False
     command=normalized_command(text)
     if web_session.pending or web_session.submit_pending:
@@ -1129,12 +1149,17 @@ def handle_browser_menu(text):
     if action=='main':return 'awake'
     if action=='search':
         SEARCH_RETURN_MODE='browser_menu'
-        speak('Search or type address. Say or type your search or address, then press Enter. Escape returns to the browser menu.');return 'search'
+        speak('Search or type address. Say or type your search or address, then press Enter. Escape returns to the web browser menu.');return 'search'
     if action in ('back','forward','resume') or isinstance(action,tuple):
         if action in ('back','forward') and not web_session.snapshot:
             speak('No browser page is open. Use Web history to open an earlier page.');return 'browser_menu'
         revision=web_session.page_revision
-        result=web_session.open(action[1]) if isinstance(action,tuple) else web_session.resume() if action=='resume' else web_session.command('go '+action)
+        try:result=web_session.open(action[1]) if isinstance(action,tuple) else web_session.resume() if action=='resume' else web_session.command('go '+action)
+        except Exception:
+            speak('The page could not open. Your bookmarks are still saved. Try the bookmark again.');return 'browser_menu'
+        if isinstance(action,tuple) and not getattr(web_session,'navigation_succeeded',False):
+            speak(result)
+            return 'browser_menu'
         if not result:speak('The page is no longer available.');return 'browser_menu'
         speak_web_result(result,revision)
         return 'web' if web_session.snapshot else 'browser_menu'
@@ -1255,7 +1280,7 @@ def _handle(text, mode, typed=False):
     global SEARCH_RETURN_MODE,NAMED_LIST
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     command=normalized_command(text)
-    if mode=='web' and command in ('browser menu','leave website'):
+    if mode=='web' and command in ('web browser menu','browser menu','leave website'):
         web_session.leave(PREFERENCES.get('web_keep_open',False))
         return open_browser_menu()
     if mode == 'tutorial':
@@ -1454,7 +1479,8 @@ def _handle(text, mode, typed=False):
             if UPDATES.check(manual=True): speak('Checking for updates.')
         return mode
     if update_command in ('status', 'update status') and mode == 'update_download':
-        speak(str(UPDATES.percent) + '%')
+        interrupt_speech()
+        speak('Preparing installation.' if UPDATES.phase in ('preparing','installing') else 'Downloading the update. '+str(UPDATES.percent)+' percent.')
         return mode
     if mode == 'update_offer':
         if update_command in ('no', 'no thanks', 'not now', 'later', 'cancel'):
@@ -1481,6 +1507,9 @@ def _handle(text, mode, typed=False):
             speak('Say yes to install the update, or no to continue.')
             return mode
     if mode == 'update_download' and spoken_control(update_command) != 'exit':
+        if UPDATES.phase in ('preparing','installing'):
+            speak('Preparing installation. Voice Companion will reopen with the microphone on.')
+            return mode
         if update_command in ('cancel', 'cancel update', 'stop update', 'no'):
             UPDATES.canceled.set()
             speak('Update canceled. You can keep using the app.')
@@ -2477,6 +2506,11 @@ def startup_update_mode():
     """Check before readiness; the input stream is already open for yes/no."""
     global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE, CONFIRM_CHOICE
     STARTUP_UPDATE_PENDING = False
+    if '--resume-after-update' in sys.argv or (APP/'update-result.json').is_file():
+        UPDATE_RETURN_MODE='awake'
+        speak('The microphone is on.')
+        announce_main_menu()
+        return 'awake'
     if PREFERENCES.get('check_updates',True) and UPDATES.check():
         try:
             event, payload = UPDATES.events.get(timeout=10)
@@ -2548,11 +2582,21 @@ def poll_app_updates(mode):
             try:
                 speak('Installing the update. Voice Companion will close and reopen when installation finishes.')
                 finish_mail_announcement()
-                UPDATES.launch(path, release)
-                return 'exit'
+                if not UPDATES.begin_install(path, release):raise RuntimeError('Updater busy')
             except Exception:
                 speak('The update could not start. Your current app remains available.')
                 mode = return_from_update()
+        elif event == 'install_ready' and mode=='update_download':
+            if web_session:
+                try:web_session.leave(False)
+                except Exception:pass
+            if MEDIA_HUB is not None:
+                try:MEDIA_HUB.player.close()
+                except Exception:pass
+            return 'exit'
+        elif event == 'install_failed' and mode=='update_download':
+            speak('The update could not start. Your current app remains available.')
+            mode=return_from_update()
     if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
         UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
         UPDATE_OFFER = False
@@ -2564,6 +2608,9 @@ def poll_app_updates(mode):
 
 def main():
     global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE
+    if '--check-browser-bookmarks' in sys.argv:
+        from packaged_browser_check import check
+        return check()
     if '--check-update-environment' in sys.argv:
         from app_updates import check_update_environment
         return check_update_environment()
@@ -2700,15 +2747,7 @@ def main():
     global resampler, input_channels
     import contextlib
     input_stream=None
-    try:
-        _,input_rate,channels=microphone_settings(sd)
-        resampler=PCM16Resampler(input_rate,sample_rate);input_channels=channels
-        input_stream=sd.RawInputStream(samplerate=input_rate,blocksize=max(1,input_rate//20),dtype='int16',channels=channels,callback=callback)
-        input_stream.start()
-    except Exception:
-        if input_stream:
-            with contextlib.suppress(Exception):input_stream.close()
-        input_stream=None
+    input_stream=open_microphone(sd)
     recognizer = KaldiRecognizer(model, sample_rate)
     mode = 'sleep'
     media()  # Restore scheduled radio recordings after an app restart.
@@ -2743,7 +2782,18 @@ def main():
         settings_quiet_until=0
         settings_audio_blocked=False
         last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
+        microphone_retry_at=0
         while True:
+            if input_stream is not None and not input_stream.active:
+                with contextlib.suppress(Exception):input_stream.close()
+                input_stream=None
+            if input_stream is None and time.monotonic()>=microphone_retry_at:
+                microphone_retry_at=time.monotonic()+2
+                input_stream=open_microphone(sd,attempts=1)
+                if input_stream:
+                    input_lifetime.callback(input_stream.close)
+                    recognizer.Reset();utterance.clear()
+                    speak('The microphone is on.')
             if APP_WINDOW is not None and not APP_WINDOW.commands.empty():
                 mode=process_keyboard_batch(mode)
                 if mode=='exit':return 0
