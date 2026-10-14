@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.127-test'
+APP_VERSION = '0.2.128-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -518,6 +518,7 @@ def navigation_key(key,mode):
 def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
+    if key=='Ctrl+Alt+P':return 'toggle audio'
     if key=='Control':return None
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
     if key=='Alt+F4':return 'exit companion'
@@ -1156,7 +1157,7 @@ def handle_browser_menu(text):
         revision=web_session.page_revision
         try:result=web_session.open(action[1]) if isinstance(action,tuple) else web_session.resume() if action=='resume' else web_session.command('go '+action)
         except Exception:
-            speak('The page could not open. Your bookmarks are still saved. Try the bookmark again.');return 'browser_menu'
+            speak('The page could not open. Your favorites are still saved. Try the favorite again.');return 'browser_menu'
         if isinstance(action,tuple) and not getattr(web_session,'navigation_succeeded',False):
             speak(result)
             return 'browser_menu'
@@ -1259,7 +1260,8 @@ def podcast_search(topic):
 
 
 def finish_exit(mode):
-    global help_session, account_setup, pending_send, mail_session
+    global help_session, account_setup, pending_send, mail_session, KEYBOARD_BATCH_TEXT
+    KEYBOARD_BATCH_TEXT=None
     if email_draft is not None:email_draft.save()
     help_session=None;account_setup=False;pending_send=None;mail_session=None
     flush_note(mode)
@@ -1267,7 +1269,9 @@ def finish_exit(mode):
     if web_session:
         try:web_session.leave(False)
         except Exception:pass
-    speak('Shutting down. Goodbye.')
+    interrupt_speech()
+    speak_status('Shutting down. Goodbye.')
+    wait_for_speech(30000)
     return 'exit'
 
 
@@ -1278,8 +1282,16 @@ def _handle(text, mode, typed=False):
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
-    if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     command=normalized_command(text)
+    if command=='toggle audio':
+        speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Choose a station or episode first.')
+        return mode
+    if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
+    background_request=re.fullmatch(r'(?:set )?keep audio playing in (?:the )?background (on|off)',command)
+    if background_request and mode!='settings':
+        PREFERENCES['keep_audio_playing']=background_request[1]=='on';save_preferences()
+        speak('Keep audio playing in the background '+background_request[1]+'.');return mode
+
     if mode=='web' and command in ('web browser menu','browser menu','leave website'):
         web_session.leave(PREFERENCES.get('web_keep_open',False))
         return open_browser_menu()
@@ -1480,7 +1492,7 @@ def _handle(text, mode, typed=False):
         return mode
     if update_command in ('status', 'update status') and mode == 'update_download':
         interrupt_speech()
-        speak('Preparing installation.' if UPDATES.phase in ('preparing','installing') else 'Downloading the update. '+str(UPDATES.percent)+' percent.')
+        speak(str(UPDATES.percent)+' percent.')
         return mode
     if mode == 'update_offer':
         if update_command in ('no', 'no thanks', 'not now', 'later', 'cancel'):
@@ -2095,7 +2107,7 @@ def _handle(text, mode, typed=False):
             speak_prompt('Website request canceled. Say open website followed by the address to try again.')
         return mode
     if mode == 'web':
-        if command in ('new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
+        if command in ('new favorite','add favorite','go to favorite','delete favorite','rename favorite','new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
             web_session.menu.start()
             return handle_browser_menu(text)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
@@ -2549,6 +2561,7 @@ def handle(text, mode, typed=False):
         _HANDLE_DEPTH -= 1
         KEYBOARD_NAVIGATION=previous_navigation
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
+        if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
         announce_main_menu()
     if _HANDLE_DEPTH==0:sync_app_context(result,result!=mode)
     return result
@@ -2575,8 +2588,8 @@ def poll_app_updates(mode):
         elif event == 'progress' and mode == 'update_download':
             percentage = min(100, payload // 5 * 5)
             if percentage > UPDATE_LAST_PERCENT:
+                for step in range(UPDATE_LAST_PERCENT+5,percentage+1,5):speak(str(step)+' percent.')
                 UPDATE_LAST_PERCENT = percentage
-                speak(str(percentage) + '%')
         elif event == 'downloaded' and mode == 'update_download' and not UPDATES.canceled.is_set():
             path, release = payload
             try:

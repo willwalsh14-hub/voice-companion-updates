@@ -743,7 +743,7 @@ class MediaHub:
         return item['title']+'.'
 
     def audio_command(self, cmd):
-        action={'play':'play','resume':'play','pause':'pause','stop':'stop',
+        action={'toggle audio':'toggle','play':'play','resume':'play','pause':'pause','stop':'stop',
                 'play radio':'play','resume radio':'play','pause radio':'pause','stop radio':'stop',
                 'play podcast':'play','resume podcast':'play','pause podcast':'pause','stop podcast':'stop',
                 'play audio':'play','resume audio':'play','pause audio':'pause','stop audio':'stop'}.get(cmd)
@@ -751,8 +751,9 @@ class MediaHub:
             if not self.player.kind: return 'No audio is playing. Choose a station or episode first.'
             if 'radio' in cmd and self.player.kind!='radio': return 'A podcast is selected. Say '+action+' podcast.'
             if 'podcast' in cmd and self.player.kind!='podcast': return 'A station is selected. Say '+action+' radio.'
-            try: self.player.control(action)
+            try: state=self.player.control(action)
             except Exception: return 'The audio player could not respond. Try opening that audio again.'
+            if action=='toggle':return 'Audio paused.' if state else 'Playing audio.'
             return {'play':'Playing audio.','pause':'Audio paused.','stop':'Audio stopped.'}[action]
         match=re.fullmatch(r'(rewind|back|go back|fast forward|forward|skip ahead) (.+)',cmd)
         if match:

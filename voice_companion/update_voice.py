@@ -20,13 +20,16 @@ def status_request(text):
 class ProgressSpeech:
     """Native speech must never hold the microphone or stop request hostage."""
     def __init__(self,folder,speech_file=None):
-        self.speech_file=speech_file;self.folder=Path(folder);self.messages=queue.Queue(maxsize=1);self.stopped=threading.Event()
+        self.speech_file=speech_file;self.folder=Path(folder);self.messages=queue.Queue(maxsize=64);self.stopped=threading.Event()
         self.thread=threading.Thread(target=self._run,daemon=True);self.thread.start()
-    def say(self,percent):
-        try:self.messages.get_nowait()
-        except queue.Empty:pass
-        try:self.messages.put_nowait(percent)
-        except queue.Full:pass
+    def say(self,percent,interrupt=True):
+        if interrupt:
+            while True:
+                try:self.messages.get_nowait()
+                except queue.Empty:break
+        self.messages.put_nowait(('percent',percent,interrupt))
+    def finish(self):
+        self.messages.put_nowait(('complete',None,False))
     def _run(self):
         import pythoncom
         pythoncom.CoInitialize()
@@ -40,10 +43,15 @@ class ProgressSpeech:
             (self.folder/'speech-ready').write_text('ready')
             while not self.stopped.wait(.02):
                 pythoncom.PumpWaitingMessages()
-                try:percent=self.messages.get_nowait()
+                try:kind,percent,interrupt=self.messages.get_nowait()
                 except queue.Empty:continue
-                voice.Speak('Installing the update. '+str(percent)+' percent.',0 if stream else 3)
-                (self.folder/'speech-spoken').write_text(str(percent))
+                text='Installation complete, restarting Voice Companion.' if kind=='complete' else str(percent)+' percent.'
+                voice.Speak(text,0 if stream else 3 if interrupt else 1)
+                with (self.folder/'speech-log.txt').open('a',encoding='utf-8') as log:log.write(text+'\n')
+                if kind=='complete':
+                    if not voice.WaitUntilDone(30000):raise TimeoutError('Completion speech did not finish.')
+                    (self.folder/'completion-spoken').write_text('complete')
+                else:(self.folder/'speech-spoken').write_text(str(percent))
             voice.Speak('',3)
             voice.WaitUntilDone(500)
         except Exception as exc:
@@ -126,7 +134,7 @@ def run(folder,headless=False,no_microphone=False,speech_file=None):
     if not headless:
         import tkinter as tk
         window=tk.Tk();window.title('Voice Companion update')
-        label=tk.StringVar(value='Preparing installation.')
+        label=tk.StringVar(value='0 percent.')
         tk.Label(window,textvariable=label,font=('Arial',14)).pack(padx=24,pady=16)
         button=tk.Button(window,text='Status',command=lambda:requested.put(True));button.pack(pady=12);button.focus_set()
         window.bind('<Return>',lambda event:requested.put(True));window.bind('<Alt-s>',lambda event:requested.put(True))
@@ -137,19 +145,23 @@ def run(folder,headless=False,no_microphone=False,speech_file=None):
             try:microphone.open()
             except OSError:pass
         (folder/'voice-ready.json').write_text(json.dumps({'ready':True,'microphone':bool(microphone and microphone.stream)}))
-        announced=-5;retry_at=0
+        announced=0;retry_at=0;finishing=False
         while not (folder/'voice-stop').exists():
             if window:window.update()
             percent=progress(folder)
-            if label:label.set('Installing the update. '+str(percent)+' percent.')
+            if label:label.set(str(percent)+' percent.')
             if microphone and (not microphone.stream or not microphone.stream.active) and time.monotonic()>=retry_at:
                 retry_at=time.monotonic()+1
                 try:microphone.open()
                 except OSError:pass
             repeat=bool(microphone and microphone.stream and microphone.requested())
             while not requested.empty():requested.get_nowait();repeat=True
-            if repeat or percent>=announced+5:
-                speech.say(percent);announced=percent
+            if not finishing:
+                rounded=percent//5*5
+                for step in range(announced+5,rounded+1,5):speech.say(step,interrupt=False)
+                announced=max(announced,rounded)
+                if repeat:speech.say(percent)
+                if (folder/'install-complete').exists():speech.finish();finishing=True
             time.sleep(.02)
     finally:
         if microphone:microphone.close()

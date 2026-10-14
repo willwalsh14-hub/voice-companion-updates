@@ -100,8 +100,8 @@ class MediaNavigationTests(unittest.TestCase):
         self.nav.keyboard('Delete');self.nav.keyboard('y');self.assertEqual(self.nav.items(),[])
         self.hub._save('podcast-subscriptions.json',[{**self.hub.shows[0],'download_limit':'manual'}]);self.nav.enter('podcast');self.nav.run('list subscriptions');self.nav.keyboard('Delete');self.nav.keyboard('y');self.assertEqual(self.hub._load('podcast-subscriptions.json',[]),[])
     def test_audio_keyboard_and_voice_share_pause_seek_and_chapters(self):
-        self.player.kind='podcast';self.nav.enter('podcast');self.nav.keyboard('Space');self.player.control.assert_called_with('pause')
-        self.nav.keyboard('Space');self.player.control.assert_called_with('play')
+        self.player.kind='podcast';self.nav.enter('podcast');self.nav.keyboard('Space');self.player.control.assert_called_with('toggle')
+        self.nav.keyboard('Space');self.player.control.assert_called_with('toggle')
         self.nav.keyboard('Ctrl+Left');self.player.control.assert_called_with('seek',seconds=-15)
         self.nav.command('forward 30 seconds');self.player.control.assert_called_with('seek',seconds=30)
         self.nav.keyboard('Ctrl+S');self.player.control.assert_called_with('stop')

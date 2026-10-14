@@ -49,7 +49,7 @@ class UpdateTests(unittest.TestCase):
         with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as speech:
             for phrase in ('status','update status'):
                 self.assertEqual(companion.handle(phrase,'update_download'),'update_download')
-                speech.assert_called_with('Downloading the update. 37 percent.')
+                speech.assert_called_with('37 percent.')
                 self.assertTrue(companion.fast_command_request(phrase,'update_download'))
     def test_fetch_rejects_oversize_and_insecure_redirect(self):
         for response in (Response(b'x'*65537),Response(b'{}','http://example.org/x')):
@@ -211,4 +211,4 @@ class StartupUpdatePromptTests(unittest.TestCase):
             say.assert_not_called()
             for percentage in (1,4,5,7,10,12,15,99,100):service.events.put(('progress',percentage))
             companion.poll_app_updates('update_download')
-            self.assertEqual([c.args[0] for c in say.call_args_list],['5%','10%','15%','95%','100%'])
+            self.assertEqual([c.args[0] for c in say.call_args_list],[str(n)+' percent.' for n in range(5,101,5)])

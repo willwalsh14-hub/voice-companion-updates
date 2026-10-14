@@ -100,7 +100,7 @@ class Favorites:
     def delete(self, name):
         data = self.all()
         if data.pop(_plain(name).casefold(), None) is None:
-            raise ValueError('That bookmark no longer exists.')
+            raise ValueError('That favorite no longer exists.')
         temporary = self.path.with_suffix('.tmp')
         temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
         temporary.replace(self.path)
@@ -108,9 +108,9 @@ class Favorites:
     def rename(self, name, replacement):
         item = self.get(name)
         if not item:
-            raise ValueError('That bookmark no longer exists.')
+            raise ValueError('That favorite no longer exists.')
         if self.get(replacement) and replacement.casefold() != name.casefold():
-            raise ValueError('That bookmark name already exists. Choose another name.')
+            raise ValueError('That favorite name already exists. Choose another name.')
         self.add(replacement, item['url'])
         if replacement.casefold() != name.casefold():
             self.delete(name)
@@ -1760,6 +1760,9 @@ class WebSession:
             self.pending=None
             return ('Found '+str(len(self.favorite_items))+' favorites. '+announce_item(self.favorite_items[0][1]['name'],0,len(self.favorite_items))+
                     ' Say next or previous, then that one to open it.' if self.favorite_items else 'No favorites saved yet.')
+        if command.startswith('go to '):
+            item=self.favorites.get(spoken.strip()[6:])
+            if item:return self.open(item['url'])
         match = re.fullmatch(r'(?:open|go to) favorite (.+)', spoken, re.I)
         if match:
             item = self.favorites.get(match[1])

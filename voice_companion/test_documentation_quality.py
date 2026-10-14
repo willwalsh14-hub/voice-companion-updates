@@ -28,7 +28,7 @@ class DocumentationQualityTests(unittest.TestCase):
     def test_current_tasks_and_meaningful_limits_are_explained(self):
         text=(ROOT/'START HERE - Veteran.txt').read_text()
         for command in ('Cancel send','Review and submit form','Cancel field editing','Save as My Letter Copy',
-                        'Resume where you left off','Rename bookmark','Delete bookmark','Auto download 5 episodes',
+                        'Resume where you left off','Rename favorite','Delete favorite','Auto download 5 episodes',
                         'Cancel selected scheduled recording','Normal mode','What is selected','Undo','Go to folder'):
             self.assertIn(command,text)
         for explanation in ('Nothing is sent before the review and confirmation','Gmail and Yahoo forwarding do not include',

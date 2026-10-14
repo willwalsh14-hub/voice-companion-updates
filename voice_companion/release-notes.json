@@ -1,17 +1,30 @@
 {
-  "version": "0.2.127-test",
+  "version": "0.2.128-test",
   "status": "Testing build",
-  "date": "October 13, 2026",
-  "baseline": "0.2.126-test",
-  "scope": "Opening a saved bookmark first and restarting manual step numbers.",
+  "date": "October 14, 2026",
+  "baseline": "0.2.127-test",
+  "scope": "Clear update progress, favorites, and audio controls.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Clear step numbers",
+          "title": "Pause or play from any screen",
           "details": [
-            "Each set of steps in the Word manual starts at 1. You can follow one task at a time without numbers carrying over from earlier tasks."
+            "Press Control+Alt+P to pause or resume radio and podcasts. This works from any screen in Companion, including Options."
+          ]
+        },
+        {
+          "title": "Choose background audio",
+          "details": [
+            "Audio stops when you return to the main menu.",
+            "To keep listening, turn on Keep audio playing in the background in Radio or Podcasts options. It is off at first. The setting applies to both."
+          ]
+        },
+        {
+          "title": "Go straight to a favorite",
+          "details": [
+            "While browsing, say Go to and the saved name. For example, Go to My news opens that favorite. This also works in the web browser menu."
           ]
         }
       ]
@@ -20,10 +33,22 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Open a bookmark first",
+          "title": "Short update progress",
           "details": [
-            "Choose a saved bookmark with arrows and Enter. It now opens even when you have not visited a page yet.",
-            "This fixes a crash that asked your trainer to run Check setup. Your saved bookmarks stay in place."
+            "You hear progress in steps of five percent. Say Status or Update status to hear just the percent. This works while the file is saved and while setup runs.",
+            "When setup is done, the app says \"Installation complete, restarting Voice Companion.\" It reads all of this message. Then it opens the app again."
+          ]
+        },
+        {
+          "title": "Hear the full goodbye",
+          "details": [
+            "When you exit, the app says \"Shutting down. Goodbye.\" It waits for the full message to play. Then it closes."
+          ]
+        },
+        {
+          "title": "Favorites in the browser menu",
+          "details": [
+            "The menu now says Go to favorite, New favorite, Rename favorite, and Delete favorite. Your saved pages stay in place."
           ]
         }
       ]

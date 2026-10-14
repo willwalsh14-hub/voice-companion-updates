@@ -46,8 +46,8 @@ class UpdateRecoveryTests(unittest.TestCase):
             self.assertTrue(app.web_feedback_control('status','update_download'))
             self.assertTrue(app.web_feedback_control('no','update_offer'))
             self.assertFalse(app.web_feedback_control('thirty seven percent','update_download'))
-            app.handle('status','update_download');stop.assert_called_once();say.assert_called_with('Downloading the update. 37 percent.')
-            service.phase='preparing';app.handle('status','update_download');say.assert_called_with('Preparing installation.')
+            app.handle('status','update_download');stop.assert_called_once();say.assert_called_with('37 percent.')
+            service.phase='preparing';app.handle('status','update_download');say.assert_called_with('37 percent.')
             app.handle('cancel update','update_download');say.assert_called_with('Preparing installation. Voice Companion will reopen with the microphone on.')
 
     def test_update_restart_is_awake_without_another_update_offer(self):
@@ -107,3 +107,61 @@ class BookmarkRecoveryTests(unittest.TestCase):
             self.assertTrue(session.navigation_succeeded);self.assertEqual(session.browser,'edge');old.close.assert_called_once()
 
 if __name__=='__main__':unittest.main()
+
+class PlaybackAndExitTests(unittest.TestCase):
+    def test_shared_shortcut_preserves_every_app_mode(self):
+        hub=Mock();hub.command.return_value='Audio paused.'
+        for mode in ('awake','sleep','media','podcast','document','email_draft','web','browser_menu','settings','help','tutorial','update_download'):
+            with self.subTest(mode=mode),patch.object(app,'MEDIA_HUB',hub),patch.object(app,'APP_WINDOW',None),patch.object(app,'interrupt_speech'),patch.object(app,'speak'):
+                command=app.navigation_key('Ctrl+Alt+P',mode)
+                self.assertEqual(command,'toggle audio')
+                self.assertEqual(app.handle(command,mode),mode)
+                hub.command.assert_called_with('toggle audio')
+
+    def test_main_menu_stops_audio_unless_background_option_is_on(self):
+        from settings_model import DEFAULTS,fields
+        self.assertFalse(DEFAULTS['keep_audio_playing'])
+        for category in ('Radio','Podcasts'):
+            self.assertIn('keep_audio_playing',[f.key for f in fields(category,{})])
+        for keep in (False,True):
+            hub=Mock()
+            with patch.object(app,'MEDIA_HUB',hub),patch.object(app,'PREFERENCES',{'keep_audio_playing':keep}),patch.object(app,'APP_WINDOW',None),patch.object(app,'speak'),patch.object(app,'announce_main_menu'):
+                self.assertEqual(app.handle('main menu','media'),'awake')
+                if keep:hub.audio_command.assert_not_called()
+                else:hub.audio_command.assert_called_once_with('stop audio')
+
+    def test_shutdown_is_spoken_outside_keyboard_batch_and_waits(self):
+        seen=[]
+        with patch.object(app,'MEDIA_HUB',None),patch.object(app,'web_session',None),patch.object(app,'email_draft',None),patch.object(app,'flush_note'),patch.object(app,'interrupt_speech'),patch.object(app,'KEYBOARD_BATCH',True),patch.object(app,'speak',side_effect=lambda text:seen.append((text,app.KEYBOARD_BATCH))),patch.object(app,'wait_for_speech',return_value=True) as wait:
+            self.assertEqual(app.finish_exit('awake'),'exit')
+            self.assertEqual(seen,[('Shutting down. Goodbye.',False)])
+            wait.assert_called_once_with(30000)
+
+    @unittest.skipUnless(__import__('sys').platform=='win32','Actual Windows speech')
+    def test_exit_waits_for_complete_sapi_audio(self):
+        import win32com.client,wave
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'goodbye.wav'
+            voice=win32com.client.Dispatch('SAPI.SpVoice');stream=win32com.client.Dispatch('SAPI.SpFileStream')
+            stream.Open(str(path),3);voice.AudioOutputStream=stream
+            with patch.object(app,'voice',voice,create=True),patch.object(app,'TEXT_MODE',False),patch.object(app,'KEYBOARD_SPEECH',None),patch.object(app,'ESPEAK_SPEECH',None),patch.object(app,'AI_SPEECH',None),patch.object(app,'APP_WINDOW',None),patch.object(app,'MEDIA_HUB',None),patch.object(app,'web_session',None),patch.object(app,'email_draft',None),patch.object(app,'flush_note'),patch.object(app,'KEYBOARD_BATCH',True):
+                self.assertEqual(app.finish_exit('awake'),'exit')
+                self.assertTrue(voice.WaitUntilDone(0),'Exit returned before speech finished')
+            stream.Close()
+            with wave.open(str(path),'rb') as audio:
+                self.assertGreater(audio.getnframes()/audio.getframerate(),1,'Goodbye audio was cut short')
+
+    @unittest.skipUnless(__import__('sys').platform=='win32','Windows global hotkey')
+    def test_registered_hotkey_message_toggles_once_then_releases(self):
+        import ctypes
+        from media_shortcut import MediaShortcut
+        seen=[];received=threading.Event()
+        def toggled():seen.append('toggle');received.set()
+        shortcut=MediaShortcut(toggled)
+        try:
+            self.assertTrue(shortcut.register(),'Control+Alt+P could not register')
+            self.assertTrue(ctypes.windll.user32.PostThreadMessageW(shortcut.thread_id,shortcut.MESSAGE,shortcut.HOTKEY_ID,0))
+            self.assertTrue(received.wait(2),'Hotkey message was not received')
+            self.assertEqual(seen,['toggle'])
+        finally:shortcut.close()
+        self.assertFalse(shortcut.registered)

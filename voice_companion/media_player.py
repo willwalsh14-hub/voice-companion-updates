@@ -95,6 +95,11 @@ class MediaPlayer:
         if not self.page or self.page.is_closed() or not self.kind: return None
         return self.page.evaluate('''async ({action,seconds,position,timeout}) => {
             const a=document.getElementById('audio');
+            const toggling=action==='toggle';
+            if(toggling){
+                if(!a.paused){a.pause();return true}
+                action='play';
+            }
             if(action==='stop'){a.pause();try{a.currentTime=0}catch(e){};return 0}
             if(action==='pause'){a.pause();return a.currentTime}
             if(action==='play'){
@@ -102,7 +107,7 @@ class MediaPlayer:
                 try {
                     const started=await Promise.race([a.play().then(()=>true,()=>false),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),timeout)})]);
                     if(!started){a.pause();throw new Error('This audio could not resume. Choose the station or episode again.');}
-                    return a.currentTime;
+                    return toggling?false:a.currentTime;
                 }finally{clearTimeout(timer);}
             }
             if(action==='seek'){

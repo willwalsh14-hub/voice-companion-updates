@@ -48,11 +48,13 @@ class CompanionWindow:
         self.last_name_request = None
         self.command_entry_active=False
         self.last_navigation=0.0
+        self.media_shortcut=None
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
     def _thread_main(self):
         try:self._run()
         finally:
+            if self.media_shortcut:self.media_shortcut.close()
             # Tcl interpreters and widget cycles must be released on their owner thread.
             self.closed.set()
             while True:
@@ -138,6 +140,9 @@ class CompanionWindow:
             from tkinter import scrolledtext
             root = tk.Tk()
             self.root=root
+            from media_shortcut import MediaShortcut
+            self.media_shortcut=MediaShortcut(lambda:self.commands.put(('keyboard','Ctrl+Alt+P')))
+            self.media_shortcut.register()
             root.bind('<Destroy>',lambda event:self.closed.set() if event.widget==root else None)
             root.title('Voice Companion ' + self.version)
             root.geometry('660x430')
@@ -157,6 +162,9 @@ class CompanionWindow:
             previous = ['', 0]
             field_selection = FieldSelection()
             def shortcut(event):
+                if event.keysym.lower()=='p' and event.state&4 and event.state&(8|0x20000):
+                    if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+Alt+P'))
+                    return 'break'
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
                 self.last_navigation=time.monotonic()
@@ -577,7 +585,7 @@ class CompanionWindow:
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Bookmark name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()

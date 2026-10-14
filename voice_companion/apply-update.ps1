@@ -27,7 +27,7 @@ function Restart-Companion {
 }
 function Say-Percent([int]$percent) {
   # The independent listener owns progress speech while its microphone is on.
-  if (-not $listener -and $voice) { try { $voice.Speak('Installing the update. ' + [string]$percent + ' percent.', 3) | Out-Null } catch { Write-UpdateError $_ } }
+  if (-not $listener -and $voice) { try { $voice.Speak([string]$percent + ' percent.', 1) | Out-Null } catch { Write-UpdateError $_ } }
 }
 try {
   if (-not (Test-Path -LiteralPath $AppPath)) { throw 'The installed application path is missing.' }
@@ -60,7 +60,8 @@ try {
       $listener.Refresh()
       if ($listener.HasExited) { $listener.Dispose(); $listener=$null; Write-UpdateError 'Update speech listener stopped.' }
     }
-    if ($percent -ge $announced + 5) { Say-Percent $percent; $announced = $percent }
+    $rounded = [int]([Math]::Floor($percent / 5) * 5)
+    while ($announced + 5 -le $rounded) { $announced += 5; Say-Percent $announced }
     Start-Sleep -Milliseconds 100; $setup.Refresh()
   }
   $setup.WaitForExit()
@@ -69,6 +70,17 @@ try {
   } elseif ($setup.ExitCode -ne 0) { throw ('Setup did not finish successfully. Exit code ' + $setup.ExitCode) }
   else {
     '100' | Set-Content -LiteralPath $progressFile -Encoding ASCII
+    'complete' | Set-Content -LiteralPath (Join-Path $updateFolder 'install-complete') -Encoding ASCII
+    if ($listener) {
+      $deadline = (Get-Date).AddSeconds(35)
+      while (-not (Test-Path -LiteralPath (Join-Path $updateFolder 'completion-spoken'))) {
+        $listener.Refresh()
+        if ($listener.HasExited -or (Get-Date) -gt $deadline) { Write-UpdateError 'Installation completion speech did not finish.'; break }
+        Start-Sleep -Milliseconds 100
+      }
+    } elseif ($voice) {
+      try { $voice.Speak('100 percent. Installation complete, restarting Voice Companion.',1) | Out-Null; $voice.WaitUntilDone(30000) | Out-Null } catch { Write-UpdateError $_ }
+    }
     '{"succeeded":true}' | Set-Content -LiteralPath $result -Encoding UTF8
   }
   Restart-Companion

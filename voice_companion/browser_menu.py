@@ -37,9 +37,9 @@ class BrowserMenu:
         temporary.replace(self.path)
 
     def choices(self, session, keep_open):
-        items = [('Search or type address', 'search'), ('Go to bookmark', 'open'),
-                 ('New bookmark', 'new'), ('Delete bookmark', 'delete'),
-                 ('Rename bookmark', 'rename'), ('Go back', 'back'),
+        items = [('Search or type address', 'search'), ('Go to favorite', 'open'),
+                 ('New favorite', 'new'), ('Delete favorite', 'delete'),
+                 ('Rename favorite', 'rename'), ('Go back', 'back'),
                  ('Go forward', 'forward'), ('Web history', 'history')]
         if keep_open and session.snapshot:
             items.append(('Resume where you left off', 'resume'))
@@ -47,7 +47,7 @@ class BrowserMenu:
 
     def start(self):
         self.level = 'menu'; self.index = None; self.prefix = ''; self.target = None
-        return 'Web browser menu. Search or type address, Go to bookmark, New bookmark, Delete bookmark, Rename bookmark, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
+        return 'Web browser menu. Search or type address, Go to favorite, New favorite, Delete favorite, Rename favorite, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
 
     def menu(self, session, keep_open):
         if self.level == 'name':
@@ -81,18 +81,23 @@ class BrowserMenu:
         if self.level == 'name':
             name = text.strip()
             if not name:
-                return 'Say or type the bookmark name, then press Enter.', None
+                return 'Say or type the favorite name, then press Enter.', None
             try:
                 if self.action == 'rename':
                     session.favorites.rename(self.target, name)
                 else:
-                    if session.favorites.get(name):return 'That bookmark name already exists. Choose another name.', None
+                    if session.favorites.get(name):return 'That favorite name already exists. Choose another name.', None
                     session.favorites.add(name, session.snapshot['url'])
             except (ValueError, OSError, KeyError, WebError) as exc:
                 return str(exc), None
-            result = ('Renamed bookmark to ' if self.action == 'rename' else 'Saved bookmark ') + name + '.'
+            result = ('Renamed favorite to ' if self.action == 'rename' else 'Saved favorite ') + name + '.'
             self.start()
             return result + ' Web browser menu.', None
+        if command.startswith('go to ') and command not in ('go to favorite','go to bookmark'):
+            name=text.strip()[6:]
+            item=session.favorites.get(name)
+            if item:
+                self.start();return '',('open',item['url'])
         state = self.menu(session, keep_open)
         names = state[0] if state else []
         if command.startswith('letter:'):
@@ -107,7 +112,7 @@ class BrowserMenu:
             self.index = target
             return self.notice(names), None
         if self.level == 'menu':
-            aliases = {'search':'search', 'search or type address':'search', 'type address':'search', 'go to bookmark':'open', 'list bookmarks':'open', 'list favorites':'open', 'new bookmark':'new', 'add bookmark':'new', 'delete bookmark':'delete', 'rename bookmark':'rename', 'go back':'back', 'back':'back', 'go forward':'forward', 'forward':'forward', 'web history':'history', 'history':'history', 'resume':'resume', 'resume where you left off':'resume'}
+            aliases = {'go to favorite':'open','list favorites':'open','new favorite':'new','add favorite':'new','delete favorite':'delete','rename favorite':'rename','search':'search', 'search or type address':'search', 'type address':'search', 'go to bookmark':'open', 'list bookmarks':'open', 'list favorites':'open', 'new bookmark':'new', 'add bookmark':'new', 'delete bookmark':'delete', 'rename bookmark':'rename', 'go back':'back', 'back':'back', 'go forward':'forward', 'forward':'forward', 'web history':'history', 'history':'history', 'resume':'resume', 'resume where you left off':'resume'}
             action = aliases.get(command)
             if command in ('okay', 'ok', 'confirm', 'confirm that', 'that one', 'enter') and self.index is not None:
                 action = self.choices(session, keep_open)[self.index][1]
@@ -117,14 +122,14 @@ class BrowserMenu:
                 return ('', 'resume') if keep_open and session.snapshot else ('No page is available to resume.', None)
             if action == 'new':
                 if not session.snapshot:
-                    return 'Open a page before creating a bookmark.', None
+                    return 'Open a page before creating a favorite.', None
                 self.level = 'name'; self.action = 'new'
-                return 'New bookmark. Say or type the bookmark name, then press Enter. Escape cancels.', None
+                return 'New favorite. Say or type the favorite name, then press Enter. Escape cancels.', None
             if action in ('open', 'delete', 'rename', 'history'):
                 self.action = action; self.level = 'list'; self.prefix = ''
                 self.items = self.history() if action == 'history' else list(session.favorites.all().values())
                 self.index = 0 if self.items else None
-                return ('Web history. ' if action == 'history' else 'Bookmarks. ') + (self.notice([x['name'] for x in self.items]) + ' Type letters to narrow the list, then Enter, or say the name.' if self.items else 'The list is empty. Escape returns to the web browser menu.'), None
+                return ('Web history. ' if action == 'history' else 'Favorites. ') + (self.notice([x['name'] for x in self.items]) + ' Type letters to narrow the list, then Enter, or say the name.' if self.items else 'The list is empty. Escape returns to the web browser menu.'), None
             return 'Choose a web browser menu option.', None
         if names:
             if command not in ('okay', 'ok', 'confirm', 'confirm that', 'that one', 'enter'):
@@ -141,7 +146,7 @@ class BrowserMenu:
                 except (ValueError,OSError) as exc:return str(exc),None
                 self.items.pop(self.index)
                 self.index = min(self.index, len(self.items)-1) if self.items else None
-                return 'Deleted bookmark ' + item['name'] + '.' + (' ' + self.notice([x['name'] for x in self.items]) if self.items else ' The list is empty.'), None
+                return 'Deleted favorite ' + item['name'] + '.' + (' ' + self.notice([x['name'] for x in self.items]) if self.items else ' The list is empty.'), None
             self.target = item['name']; self.level = 'name'
-            return 'Rename bookmark ' + self.target + '. Say or type the new name, then press Enter. Escape cancels.', None
+            return 'Rename favorite ' + self.target + '. Say or type the new name, then press Enter. Escape cancels.', None
         return 'The list is empty. Escape returns to the web browser menu.', None

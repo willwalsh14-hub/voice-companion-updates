@@ -52,7 +52,7 @@ class HelpSession:
             'email':'read and organize email', 'mail':'read and organize email', 'email commands':'read and organize email',
             'documents':'write a document', 'document':'write a document', 'document commands':'write a document',
             'web':'browse the web', 'browser':'browse the web', 'web browser':'browse the web', 'web commands':'browse the web', 'forms':'browse the web',
-            'bookmarks':'bookmarks and web history', 'history':'bookmarks and web history',
+            'bookmarks':'favorites and web history', 'favorites':'favorites and web history', 'history':'favorites and web history',
             'radio':'listen to radio', 'podcasts':'listen to podcasts', 'podcast':'listen to podcasts',
             'writing email':'write an email', 'email draft':'write an email',
             'voice':'speech and voices', 'speech':'speech and voices', 'ai voice':'speech and voices', 'ai':'speech and voices',

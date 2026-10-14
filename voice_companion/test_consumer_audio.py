@@ -27,6 +27,19 @@ class ConsumerAudioTests(unittest.TestCase):
         self.page=self.context.new_page();self.page.add_init_script("addEventListener('DOMContentLoaded',()=>{const a=document.querySelector('audio');if(a)a.muted=true})")
         self.player=MediaPlayer(self.folder);self.player.start_timeout_ms=5000;self.player.context=self.context;self.player.page=self.page;self.player.start=lambda:None
         self.hub=MediaHub(self.folder,player=self.player)
+    @unittest.skipUnless(sys.platform=='win32','Actual decoding requires the Windows media environment')
+    def test_shared_toggle_uses_actual_player_state_for_radio_and_podcasts(self):
+        for kind in ('radio','podcast'):
+            with self.subTest(kind=kind):
+                self.player.open('https://audio.consumer.test/valid','Fixture audio',kind)
+                self.assertEqual(self.hub.command('toggle audio'),'Audio paused.')
+                self.assertTrue(self.page.evaluate("document.querySelector('audio').paused"))
+                self.assertEqual(self.hub.command('toggle audio'),'Playing audio.')
+                self.assertFalse(self.page.evaluate("document.querySelector('audio').paused"))
+                self.hub.command('pause audio')
+                self.assertEqual(self.hub.command('toggle audio'),'Playing audio.')
+                self.hub.command('stop audio')
+
     def audio_route(self,route):
         if route.request.url.endswith('/broken'):
             route.fulfill(status=404,body='Unavailable');return

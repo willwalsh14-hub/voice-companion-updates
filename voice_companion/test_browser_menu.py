@@ -18,11 +18,21 @@ class BrowserMenuTests(unittest.TestCase):
     def run_command(self, command, keep=True):
         return self.menu.process(command, self.session, keep)
 
+    def test_favorite_labels_aliases_and_go_to_saved_name(self):
+        self.assertIn('Go to favorite',self.session.menu.start())
+        self.assertNotIn('bookmark',self.session.menu.start())
+        self.session.favorites.add('My News','https://example.test/News')
+        self.assertEqual(self.run_command('go to My News')[1],('open','https://example.test/News'))
+        self.run_command('go to favorite')
+        self.assertEqual(self.run_command('enter')[1],('open','https://example.test/News'))
+        result=self.session.command('go to My News')
+        self.assertTrue(self.session.navigation_succeeded,result)
+
     def test_new_open_rename_delete_and_saved_bookmarks(self):
         self.session.open('example.com')
         self.run_command('new bookmark')
         self.assertEqual(self.menu.level, 'name')
-        self.assertIn('Saved bookmark My news', self.run_command('My news')[0])
+        self.assertIn('Saved favorite My news', self.run_command('My news')[0])
         self.run_command('go to bookmark')
         self.assertEqual(self.run_command('enter')[1], ('open','https://example.com'))
         self.run_command('rename bookmark');self.run_command('enter')
