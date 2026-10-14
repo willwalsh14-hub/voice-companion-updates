@@ -42,7 +42,7 @@ class ProgressSpeech:
                 pythoncom.PumpWaitingMessages()
                 try:percent=self.messages.get_nowait()
                 except queue.Empty:continue
-                voice.Speak('Installing the update. '+str(percent)+' percent.',3)
+                voice.Speak('Installing the update. '+str(percent)+' percent.',0 if stream else 3)
                 (self.folder/'speech-spoken').write_text(str(percent))
             voice.Speak('',3)
             voice.WaitUntilDone(500)
