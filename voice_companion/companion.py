@@ -44,7 +44,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.128-test'
+APP_VERSION = '0.2.129-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -630,6 +630,15 @@ def microphone_settings(sd,device_index=None):
         except (ValueError, OSError, getattr(sd, 'PortAudioError', OSError)):
             continue
     raise OSError('No supported mono or stereo microphone format was found.')
+
+def microphone_active(stream):
+    try:return bool(stream.active)
+    except Exception:return False
+
+def close_microphone(stream):
+    """A disconnected device must not prevent shutdown."""
+    try:stream.close()
+    except Exception:pass
 
 def open_microphone(sd,attempts=5):
     """Drivers can need a moment after the installer listener releases input."""
@@ -1265,11 +1274,14 @@ def finish_exit(mode):
     if email_draft is not None:email_draft.save()
     help_session=None;account_setup=False;pending_send=None;mail_session=None
     flush_note(mode)
-    if MEDIA_HUB is not None:MEDIA_HUB.player.close()
+    if MEDIA_HUB is not None:
+        try:MEDIA_HUB.player.close()
+        except Exception:pass
     if web_session:
         try:web_session.leave(False)
         except Exception:pass
-    interrupt_speech()
+    try:interrupt_speech()
+    except Exception:pass
     speak_status('Shutting down. Goodbye.')
     wait_for_speech(30000)
     return 'exit'
@@ -1520,7 +1532,7 @@ def _handle(text, mode, typed=False):
             return mode
     if mode == 'update_download' and spoken_control(update_command) != 'exit':
         if UPDATES.phase in ('preparing','installing'):
-            speak('Preparing installation. Voice Companion will reopen with the microphone on.')
+            speak('Preparing installation. Voice Companion will reopen in sleep mode.')
             return mode
         if update_command in ('cancel', 'cancel update', 'stop update', 'no'):
             UPDATES.canceled.set()
@@ -2519,10 +2531,9 @@ def startup_update_mode():
     global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE, CONFIRM_CHOICE
     STARTUP_UPDATE_PENDING = False
     if '--resume-after-update' in sys.argv or (APP/'update-result.json').is_file():
-        UPDATE_RETURN_MODE='awake'
-        speak('The microphone is on.')
-        announce_main_menu()
-        return 'awake'
+        UPDATE_RETURN_MODE='sleep'
+        speak(startup_prompt())
+        return 'sleep'
     if PREFERENCES.get('check_updates',True) and UPDATES.check():
         try:
             event, payload = UPDATES.events.get(timeout=10)
@@ -2563,7 +2574,7 @@ def handle(text, mode, typed=False):
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
         announce_main_menu()
-    if _HANDLE_DEPTH==0:sync_app_context(result,result!=mode)
+    if _HANDLE_DEPTH==0 and result!='exit':sync_app_context(result,result!=mode)
     return result
 
 
@@ -2777,7 +2788,7 @@ def main():
     utterance = bytearray()
     last_focus_check = 0.0
     with contextlib.ExitStack() as input_lifetime:
-        if input_stream:input_lifetime.callback(input_stream.close)
+        if input_stream:input_lifetime.callback(close_microphone,input_stream)
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
@@ -2797,16 +2808,16 @@ def main():
         last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
         microphone_retry_at=0
         while True:
-            if input_stream is not None and not input_stream.active:
-                with contextlib.suppress(Exception):input_stream.close()
+            if input_stream is not None and not microphone_active(input_stream):
+                close_microphone(input_stream)
                 input_stream=None
             if input_stream is None and time.monotonic()>=microphone_retry_at:
                 microphone_retry_at=time.monotonic()+2
                 input_stream=open_microphone(sd,attempts=1)
                 if input_stream:
-                    input_lifetime.callback(input_stream.close)
+                    input_lifetime.callback(close_microphone,input_stream)
                     recognizer.Reset();utterance.clear()
-                    speak('The microphone is on.')
+                    if mode!='sleep':speak('The microphone is on.')
             if APP_WINDOW is not None and not APP_WINDOW.commands.empty():
                 mode=process_keyboard_batch(mode)
                 if mode=='exit':return 0

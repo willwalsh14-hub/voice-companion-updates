@@ -48,13 +48,14 @@ class MediaPlayer:
             raise
 
     def close(self):
-        try:
-            if self.context: self.context.close()
-        finally:
-            if self.playwright: self.playwright.stop()
-            self.context=self.page=self.playwright=None
-            self.kind=None
-            self.ducked=False
+        context,driver=self.context,self.playwright
+        self.context=self.page=self.playwright=None
+        self.kind=None
+        self.ducked=False
+        for resource,method in ((context,'close'),(driver,'stop')):
+            if resource is not None:
+                try:getattr(resource,method)()
+                except Exception:pass
 
     def open(self, url, title, kind):
         self.start()

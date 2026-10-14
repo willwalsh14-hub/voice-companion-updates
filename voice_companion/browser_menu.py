@@ -72,7 +72,7 @@ class BrowserMenu:
 
     def process(self, text, session, keep_open):
         from web_assistant import WebError
-        command = text.strip().casefold()
+        command = text.strip().casefold().rstrip('.!?')
         if command=='browser menu':command='web browser menu'
         if command in ('escape', 'cancel', 'close list', 'web browser menu'):
             if self.level == 'menu' and command != 'web browser menu':

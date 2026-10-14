@@ -15,7 +15,7 @@ function Start-Process {
   param($FilePath, $WorkingDirectory, $ArgumentList)
   if ($script:listener) { throw 'Restart attempted before microphone release.' }
   if (($script:released -join ',') -ne 'wait,dispose') { throw 'Microphone cleanup order is incorrect.' }
-  if ($ArgumentList -ne '--resume-after-update') { throw 'Restart would leave voice commands asleep.' }
+  if ($ArgumentList -ne '--resume-after-update') { throw 'Restart is missing the update handoff flag.' }
   $script:restarted = $true
 }
 $updateFolder = Join-Path $env:TEMP ('vc-update-audio-' + [guid]::NewGuid().ToString())

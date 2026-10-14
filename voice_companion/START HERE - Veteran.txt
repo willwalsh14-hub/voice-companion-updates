@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.128-test.
+Guide version: 0.2.129-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -566,6 +566,7 @@ A name can have up to 60 characters. Choose a new name if the one you gave is al
 "Save favorite as News" remains available as a voice shortcut.
 
 12.2 Open or find a favorite
+A period added by speech does not change which saved name you mean.
 While browsing, say "Go to" and the saved name. For example, "Go to My news" opens that favorite. You can use this from the web browser menu too.
 Choose Go to favorite. Use arrows and Enter to choose the saved page.
 Press the first letter of a name to move among matching names. Type several letters promptly to choose a closer match.
@@ -613,7 +614,7 @@ If a station fails, try another result. A station's stream may be unavailable ev
 13.2 Use the radio menus and keys
 The radio menu has an actions list and a results list. Tab or Shift+Tab moves between them.
 Use arrows, Home, End, and first-letter keys to choose an item. Enter opens an action or plays a station.
-Escape goes back to actions, then the main menu.
+Escape from station results says "Station actions." The next Escape says "Radio menu." Press Escape again to reach the main menu.
 Control+F opens search. Control+P lists saved stations. F5 refreshes the station lists.
 Say "Radio menu", "Actions", or "Results" to choose a list by voice.
 When a station is selected, actions include saving it, recording it, scheduling a recording, and playing or pausing audio.
@@ -854,8 +855,9 @@ If the check fails, you can keep using the current version and try again later.
 Say "Cancel update" while the download is in progress if you need to stop it.
 The app checks the downloaded file before using it. Windows may still need your helper for a security prompt.
 Progress is spoken every five percent during download and installation. Say "Status" or "Update status" to hear just the current percentage. This works while a progress message is being read.
+If Windows cannot open the update microphone, the window stays open. Press Status or Enter for progress while it tries again.
 During installation, a separate update window appears. Its microphone listens for "Status" or "Update status". You can also press its Status button or Enter to hear progress.
-When setup finishes, you hear "Installation complete, restarting Voice Companion." The full message plays before the app restarts. Companion opens with voice commands on. You do not need to say "Wake up" again. If Windows takes time to release the microphone, the app tries to open it again.
+When setup finishes, you hear "Installation complete, restarting Voice Companion." The full message plays before the app restarts. Companion opens in sleep mode. Say "Wake up" or use the keyboard when you are ready. If Windows takes time to release the microphone, the app tries to open it again.
 Your account data and documents stay in their normal folders. The installer also refreshes the guides.
 A Windows restart is not forced. Companion tells you if one is needed.
 

@@ -18,6 +18,16 @@ class BrowserMenuTests(unittest.TestCase):
     def run_command(self, command, keep=True):
         return self.menu.process(command, self.session, keep)
 
+    def test_spoken_favorite_commands_accept_added_final_punctuation(self):
+        self.session.favorites.add('News','https://example.test/news')
+        self.run_command('Go to favorite.')
+        self.assertEqual(self.run_command('News.')[1],('open','https://example.test/news'))
+        self.session.command('Go to News.')
+        self.assertTrue(self.session.navigation_succeeded)
+        self.session.favorites.add('Other.','https://example.test/other')
+        self.assertEqual(self.run_command('Go to Other')[1],('open','https://example.test/other'))
+        self.assertEqual(self.session.favorites.get('Other.')['name'],'Other.')
+
     def test_favorite_labels_aliases_and_go_to_saved_name(self):
         self.assertIn('Go to favorite',self.session.menu.start())
         self.assertNotIn('bookmark',self.session.menu.start())

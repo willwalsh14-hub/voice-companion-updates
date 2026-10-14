@@ -50,8 +50,8 @@ class MediaNavigationTests(unittest.TestCase):
         self.nav.keyboard('Tab');self.nav.keyboard('Home');self.nav.keyboard('Letter:a');self.assertEqual(self.hub.station_index,2)
         self.assertIn('End of matching items',self.nav.keyboard('Letter:a'));self.assertEqual(self.hub.station_index,2)
         self.nav.keyboard('End');self.nav.keyboard('Enter');self.player.open.assert_called_with('https://radio.test/c','Another','radio')
-        self.assertEqual(self.nav.keyboard('Escape').split('.')[0],'Add to favorites (A), 1 of 7')
-        self.assertIn('Radio browsing menu',self.nav.keyboard('Escape'))
+        self.assertEqual(self.nav.keyboard('Escape').split('.')[0],'Station actions')
+        self.assertIn('Radio menu',self.nav.keyboard('Escape'))
         self.assertEqual(self.nav.keyboard('Escape'),'__main__')
     def test_search_form_preserves_literal_text_and_voice_interoperates(self):
         self.nav.enter('radio');self.nav.keyboard('Ctrl+F')

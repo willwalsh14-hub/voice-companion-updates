@@ -14,7 +14,7 @@ An update offered later waits for a suitable pause in your work.
 Say "Update status" to hear progress. Say "Cancel update" while the file is downloading to stop.
 Status works while download speech is playing. After the download is checked, the app prepares setup. A checked update cannot be canceled once setup is being prepared.
 During setup, a separate update window listens for "Status" or "Update status". Press its Status button or Enter for keyboard access.
-Companion opens again with voice commands on. You do not need to say "Wake up" again. It tries the microphone again if Windows is still releasing it.
+Companion opens again in sleep mode. Say "Wake up" or use the keyboard when ready. It tries the microphone again if Windows is still releasing it.
 A Windows security prompt may need help. A computer restart is not forced. Companion tells you if one is needed.
 The update keeps your account data and personal files. It also refreshes the user guides.
 

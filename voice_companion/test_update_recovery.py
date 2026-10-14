@@ -24,6 +24,16 @@ class UpdateRecoveryTests(unittest.TestCase):
                 self.assertTrue(session.navigation_succeeded)
                 self.assertGreater(session.page_revision,0)
 
+    def test_update_window_stays_ready_when_input_driver_is_temporarily_unavailable(self):
+        import json,update_voice
+        microphone=Mock();microphone.stream=None;microphone.open.side_effect=RuntimeError('Input driver busy')
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder)/'voice-stop').write_text('stop')
+            with patch('vosk.Model'),patch.object(update_voice,'Microphone',return_value=microphone),patch.object(update_voice,'ProgressSpeech'):
+                self.assertEqual(update_voice.run(folder,headless=True),0)
+            self.assertTrue(json.loads((Path(folder)/'voice-ready.json').read_text())['ready'])
+            microphone.open.assert_called_once();microphone.close.assert_called_once()
+
     def test_native_speech_cannot_block_listener_shutdown(self):
         import sys,time,types
         entered=threading.Event();release=threading.Event();voice=Mock()
@@ -48,12 +58,12 @@ class UpdateRecoveryTests(unittest.TestCase):
             self.assertFalse(app.web_feedback_control('thirty seven percent','update_download'))
             app.handle('status','update_download');stop.assert_called_once();say.assert_called_with('37 percent.')
             service.phase='preparing';app.handle('status','update_download');say.assert_called_with('37 percent.')
-            app.handle('cancel update','update_download');say.assert_called_with('Preparing installation. Voice Companion will reopen with the microphone on.')
+            app.handle('cancel update','update_download');say.assert_called_with('Preparing installation. Voice Companion will reopen in sleep mode.')
 
-    def test_update_restart_is_awake_without_another_update_offer(self):
+    def test_update_restart_stays_asleep_without_another_update_offer(self):
         service=Mock()
         with patch.object(app.sys,'argv',['companion','--resume-after-update']),patch.object(app,'UPDATES',service),patch.object(app,'speak'),patch.object(app,'announce_main_menu') as menu:
-            self.assertEqual(app.startup_update_mode(),'awake');service.check.assert_not_called();menu.assert_called_once()
+            self.assertEqual(app.startup_update_mode(),'sleep');service.check.assert_not_called();menu.assert_not_called()
 
     def test_handoff_preparation_is_async_and_reports_success_or_failure(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -165,3 +175,26 @@ class PlaybackAndExitTests(unittest.TestCase):
             self.assertEqual(seen,['toggle'])
         finally:shortcut.close()
         self.assertFalse(shortcut.registered)
+
+class ExitRecoveryTests(unittest.TestCase):
+    def test_disconnected_microphone_cleanup_can_run_twice(self):
+        stream=Mock();stream.close.side_effect=RuntimeError('device disconnected')
+        type(stream).active=__import__('unittest.mock',fromlist=['PropertyMock']).PropertyMock(side_effect=RuntimeError('device gone'))
+        self.assertFalse(app.microphone_active(stream))
+        app.close_microphone(stream);app.close_microphone(stream)
+        self.assertEqual(stream.close.call_count,2)
+
+    def test_audio_cleanup_continues_after_both_resources_fail(self):
+        from media_player import MediaPlayer
+        player=MediaPlayer('folder');player.context=Mock();player.playwright=Mock()
+        context,driver=player.context,player.playwright
+        context.close.side_effect=RuntimeError('closed');driver.stop.side_effect=RuntimeError('gone')
+        player.close();player.close()
+        context.close.assert_called_once();driver.stop.assert_called_once()
+        self.assertIsNone(player.context);self.assertIsNone(player.playwright)
+
+    def test_exit_speaks_goodbye_after_cleanup_errors(self):
+        hub=Mock();hub.player.close.side_effect=RuntimeError('gone')
+        with patch.object(app,'MEDIA_HUB',hub),patch.object(app,'web_session',None),patch.object(app,'email_draft',None),patch.object(app,'flush_note'),patch.object(app,'interrupt_speech',side_effect=RuntimeError('output changed')),patch.object(app,'speak_status') as say,patch.object(app,'wait_for_speech') as wait:
+            self.assertEqual(app.finish_exit('awake'),'exit')
+            say.assert_called_once_with('Shutting down. Goodbye.');wait.assert_called_once_with(30000)

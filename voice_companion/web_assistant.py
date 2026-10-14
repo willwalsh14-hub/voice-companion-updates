@@ -95,7 +95,10 @@ class Favorites:
         temporary.replace(self.path)
 
     def get(self, name):
-        return self.all().get(_plain(name).casefold())
+        data=self.all();key=_plain(name).casefold()
+        if key in data:return data[key]
+        matches=[item for stored,item in data.items() if stored.rstrip('.!?')==key.rstrip('.!?')]
+        return matches[0] if len(matches)==1 else None
 
     def delete(self, name):
         data = self.all()

@@ -143,7 +143,7 @@ def run(folder,headless=False,no_microphone=False,speech_file=None):
         if not no_microphone:
             microphone=Microphone(Model(str(Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'model')))
             try:microphone.open()
-            except OSError:pass
+            except Exception:pass
         (folder/'voice-ready.json').write_text(json.dumps({'ready':True,'microphone':bool(microphone and microphone.stream)}))
         announced=0;retry_at=0;finishing=False
         while not (folder/'voice-stop').exists():
@@ -153,7 +153,7 @@ def run(folder,headless=False,no_microphone=False,speech_file=None):
             if microphone and (not microphone.stream or not microphone.stream.active) and time.monotonic()>=retry_at:
                 retry_at=time.monotonic()+1
                 try:microphone.open()
-                except OSError:pass
+                except Exception:pass
             repeat=bool(microphone and microphone.stream and microphone.requested())
             while not requested.empty():requested.get_nowait();repeat=True
             if not finishing:

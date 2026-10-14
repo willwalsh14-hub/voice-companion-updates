@@ -1,30 +1,17 @@
 {
-  "version": "0.2.128-test",
+  "version": "0.2.129-test",
   "status": "Testing build",
   "date": "October 14, 2026",
-  "baseline": "0.2.127-test",
-  "scope": "Clear update progress, favorites, and audio controls.",
+  "baseline": "0.2.128-test",
+  "scope": "Safer exit, sleep mode after updates, and clearer Radio prompts.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Pause or play from any screen",
+          "title": "Use Status while the microphone retries",
           "details": [
-            "Press Control+Alt+P to pause or resume radio and podcasts. This works from any screen in Companion, including Options."
-          ]
-        },
-        {
-          "title": "Choose background audio",
-          "details": [
-            "Audio stops when you return to the main menu.",
-            "To keep listening, turn on Keep audio playing in the background in Radio or Podcasts options. It is off at first. The setting applies to both."
-          ]
-        },
-        {
-          "title": "Go straight to a favorite",
-          "details": [
-            "While browsing, say Go to and the saved name. For example, Go to My news opens that favorite. This also works in the web browser menu."
+            "If the update microphone is busy, the window stays open. Press Status or Enter to hear progress."
           ]
         }
       ]
@@ -33,22 +20,33 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Short update progress",
+          "title": "Exit without the setup warning",
           "details": [
-            "You hear progress in steps of five percent. Say Status or Update status to hear just the percent. This works while the file is saved and while setup runs.",
-            "When setup is done, the app says \"Installation complete, restarting Voice Companion.\" It reads all of this message. Then it opens the app again."
+            "An audio player or microphone that has already closed no longer stops the app from exiting. The full goodbye message still plays."
           ]
         },
         {
-          "title": "Hear the full goodbye",
+          "title": "Sleep mode after an update",
           "details": [
-            "When you exit, the app says \"Shutting down. Goodbye.\" It waits for the full message to play. Then it closes."
+            "After an update, Companion waits in sleep mode. Say \"Wake up\" or use the keyboard when you are ready. It no longer turns voice commands on by default."
           ]
         },
         {
-          "title": "Favorites in the browser menu",
+          "title": "Clearer Radio prompts",
           "details": [
-            "The menu now says Go to favorite, New favorite, Rename favorite, and Delete favorite. Your saved pages stay in place."
+            "The first Escape from station results says \"Station actions.\" The next says \"Radio menu.\" The menus work the same way as before."
+          ]
+        },
+        {
+          "title": "The update window keeps trying",
+          "details": [
+            "A brief error while opening the microphone no longer closes the update window. The app tries again so you can use voice commands once the device is ready."
+          ]
+        },
+        {
+          "title": "Spoken favorite names",
+          "details": [
+            "A period added by speech no longer gets in the way of opening a favorite. Your saved names stay the same."
           ]
         }
       ]

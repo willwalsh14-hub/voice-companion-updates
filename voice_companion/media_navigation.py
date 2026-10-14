@@ -101,9 +101,9 @@ class MediaNavigation:
             if key in ('Tab','ShiftTab'):self.focus='items' if self.focus=='actions' else 'actions';return ('Results. ' if self.focus=='items' else 'Actions. ')+self.announce()
             if key=='Escape':
                 if self.focus=='items' and self.view=='episodes':return self.run('back to podcasts')
-                if self.focus=='items':self.focus='actions';return self.announce()
+                if self.focus=='items':self.focus='actions';return ('Station actions. ' if self.section=='radio' and self.actions is RADIO_STATION else '')+self.announce()
                 if self.section=='radio' and self.actions is RADIO_STATION:
-                    self.full_radio_actions=True;self.index=0;return 'Radio browsing menu. '+self.announce()
+                    self.full_radio_actions=True;self.index=0;return 'Radio menu. '+self.announce()
                 return '__main__'
             if key=='Enter':return self.activate()
             shortcuts={'Ctrl+F':'search','Ctrl+P':'list presets' if self.section=='radio' else 'list subscriptions','F5':'refresh stations' if self.section=='radio' else 'refresh subscriptions','Space':'toggle audio' if getattr(self.hub.player,'kind',None) else '', 'Ctrl+R':'resume','Ctrl+S':'stop','Ctrl+Left':'rewind 15 seconds','Ctrl+Right':'forward 15 seconds','Ctrl+D':'download this episode' if self.section=='podcast' else 'save preset','Delete':'delete preset' if self.view=='presets' else 'cancel selected scheduled recording' if self.view=='scheduled' else 'remove selected subscription' if self.section=='podcast' and self.view=='shows' else ''}
