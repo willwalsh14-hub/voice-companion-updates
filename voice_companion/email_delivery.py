@@ -3,6 +3,7 @@
 Never retry a send automatically: a timeout can happen after acceptance.
 The local draft must remain available until a provider response is recorded.
 """
+from network_security import secure_service_open
 import base64
 import html
 import json
@@ -132,7 +133,7 @@ def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL):
     return 'accepted by Yahoo SMTP'
 
 
-def submit(provider, draft, access_token, opener=request.urlopen, sender=''):
+def submit(provider, draft, access_token, opener=secure_service_open, sender=''):
     """One attempt only. Return provider acceptance; never assert final delivery."""
     builders = {'gmail': gmail_request, 'outlook': microsoft_request,
                 'microsoft 365': microsoft_request, 'exchange online': microsoft_request}

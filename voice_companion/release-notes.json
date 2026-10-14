@@ -1,17 +1,17 @@
 {
-  "version": "0.2.129-test",
+  "version": "0.2.130-test",
   "status": "Testing build",
   "date": "October 14, 2026",
-  "baseline": "0.2.128-test",
-  "scope": "Safer exit, sleep mode after updates, and clearer Radio prompts.",
+  "baseline": "0.2.129-test",
+  "scope": "Clearer guides, stronger privacy controls, and more readable text.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Use Status while the microphone retries",
+          "title": "Choose whether to use online recognition",
           "details": [
-            "If the update microphone is busy, the window stays open. Press Status or Enter to hear progress."
+            "A new Input option asks whether audio may be sent to Azure. It is off by default. Web forms and settings use offline speech."
           ]
         }
       ]
@@ -20,33 +20,33 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Exit without the setup warning",
+          "title": "Clearer instructions in every guide",
           "details": [
-            "An audio player or microphone that has already closed no longer stops the app from exiting. The full goodbye message still plays."
+            "Grammar and sentence structure are corrected throughout the manual. Commands explain which words or numbers to add before giving an example. All guide formats use the same instructions."
           ]
         },
         {
-          "title": "Sleep mode after an update",
+          "title": "Keep private sign-in data out of saved pages",
           "details": [
-            "After an update, Companion waits in sleep mode. Say \"Wake up\" or use the keyboard when you are ready. It no longer turns voice commands on by default."
+            "History skips pages with private sign-in codes. Favorites cannot save those page addresses. The app also clears private codes from older saved addresses."
           ]
         },
         {
-          "title": "Clearer Radio prompts",
+          "title": "Permission for AI speech",
           "details": [
-            "The first Escape from station results says \"Station actions.\" The next says \"Radio menu.\" The menus work the same way as before."
+            "A service key alone does not allow online narration. Turning permission off clears pending AI speech. Older setups may ask you to confirm permission again."
           ]
         },
         {
-          "title": "The update window keeps trying",
+          "title": "Stronger service checks",
           "details": [
-            "A brief error while opening the microphone no longer closes the update window. The app tries again so you can use voice commands once the device is ready."
+            "Account and AI requests stop if a service tries to send them to a new address. This protects keys and account tokens. Routine logs no longer show what you said or read."
           ]
         },
         {
-          "title": "Spoken favorite names",
+          "title": "More readable text",
           "details": [
-            "A period added by speech no longer gets in the way of opening a favorite. Your saved names stay the same."
+            "Main-window labels wrap when the window gets narrower. Links and focus marks use readable colors. Settings notices are shown as text as well as spoken."
           ]
         }
       ]

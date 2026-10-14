@@ -1,4 +1,5 @@
 """Optional Google Contacts synchronization, separate from Gmail mail consent."""
+from network_security import secure_service_open
 import json
 from pathlib import Path
 from urllib import request, parse
@@ -36,7 +37,7 @@ def _token(folder, authorize=False):
             raise AccountError('The Google app registration is missing.')
         config = json.loads(Path(path).read_text(encoding='utf-8'))
         credentials = InstalledAppFlow.from_client_config(config, CONTACT_SCOPES).run_local_server(port=0)
-    with request.urlopen(request.Request('https://www.googleapis.com/oauth2/v3/userinfo',
+    with secure_service_open(request.Request('https://www.googleapis.com/oauth2/v3/userinfo',
             headers={'Authorization':'Bearer '+credentials.token}), timeout=30) as response:
         address = json.load(response).get('email', '')
     if address.casefold() != saved['address'].casefold():
@@ -50,7 +51,7 @@ def _api(url, token, data=None):
     req = request.Request(url, data=json.dumps(data).encode('utf-8') if data is not None else None,
                           headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'},
                           method='POST' if data is not None else 'GET')
-    with request.urlopen(req, timeout=30) as response:
+    with secure_service_open(req, timeout=30) as response:
         return json.load(response)
 
 

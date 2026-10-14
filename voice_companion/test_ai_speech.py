@@ -11,7 +11,7 @@ class AISpeechTests(unittest.TestCase):
         response.__exit__ = Mock(return_value=False)
         response.read.return_value = b'\x00\x00'
         with patch.dict('os.environ', {'VOICE_COMPANION_OPENAI_KEY':'test-secret'}), \
-             patch('urllib.request.urlopen', return_value=response) as request:
+             patch('ai_speech.secure_service_open', return_value=response) as request:
             self.assertEqual(synthesize('Hello', -1), b'\x00\x00')
         sent = request.call_args.args[0]
         body = json.loads(sent.data)

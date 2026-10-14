@@ -13,7 +13,10 @@ def choice_feedback(value,index,count):
 
 class NativeSettings:
     def __init__(self,session,announce,save,action,interrupt=None,preview=None):
-        self.session=session;self.announce=announce;self.interrupt=interrupt or (lambda:None);self.save_callback=save;self.action_callback=action
+        self.last_notice=""
+        def announce_notice(message):
+            self.last_notice=str(message);announce(message)
+        self.session=session;self.announce=announce_notice;self.interrupt=interrupt or (lambda:None);self.save_callback=save;self.action_callback=action
         self.actions=queue.Queue();self.ready=threading.Event();self.closed=threading.Event();self.hwnd=None;self.pending=False
         self.preview=preview
     def start(self):
@@ -243,6 +246,7 @@ class NativeSettings:
                             if field.key=='podcast_feed':render(field.key)
                         return 0
                 if msg==0x113:
+                    u.SetWindowTextW(status_handle,self.last_notice)
                     while not self.actions.empty():
                         action,payload=self.actions.get_nowait()
                         if action=='accepted':self.session.original=copy.deepcopy(self.session.values);show_menu();return 0
@@ -261,8 +265,13 @@ class NativeSettings:
         class_name='VoiceCompanionSettings'+uuid.uuid4().hex
         wc=WC(0,proc,0,0,instance,None,None,6,None,class_name)
         if not u.RegisterClassW(c.byref(wc)):raise c.WinError(c.get_last_error())
-        self.hwnd=create(0x10000,class_name,'Voice Companion Settings',0x10C80000,100,80,750,620,None,None,instance,None)
+        work=w.RECT(0,0,u.GetSystemMetrics(0),u.GetSystemMetrics(1))
+        u.SystemParametersInfoW(0x30,0,c.byref(work),0)
+        x=work.left+max(0,(work.right-work.left-750)//2)
+        y=work.top+max(0,(work.bottom-work.top-680)//2)
+        self.hwnd=create(0x10000,class_name,'Voice Companion Settings',0x10C80000,x,y,750,680,None,None,instance,None)
         if not self.hwnd:raise c.WinError(c.get_last_error())
+        status_handle=control('STATIC','',0,20,570,695,45,400)
         control('STATIC','Categories',0,15,15,185,22,0)
         category[0]=control('LISTBOX','',0x10000|0x200000|0x800000|1,15,45,185,475,100)
         for name in CATEGORIES:

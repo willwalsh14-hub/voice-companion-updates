@@ -80,7 +80,7 @@ class SpeechControlTests(unittest.TestCase):
         import ai_speech
         response=Mock();response.__enter__=Mock(return_value=response);response.__exit__=Mock(return_value=False)
         response.read.return_value=b'\x00\x00'
-        with patch('ai_speech.urllib.request.urlopen',return_value=response) as call:
+        with patch('ai_speech.secure_service_open',return_value=response) as call:
             ai_speech.synthesize('Hello',2,key='test-key',voice='coral')
         self.assertAlmostEqual(json.loads(call.call_args.args[0].data)['speed'],1.15)
         blocks=[]

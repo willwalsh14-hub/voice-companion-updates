@@ -1,0 +1,52 @@
+VOICE COMPANION SECURITY AND ACCESSIBILITY REVIEW
+
+Build reviewed: 0.2.130-test
+Date: October 14, 2026
+
+Review outcome
+This review found and fixed privacy and accessibility problems. It does not certify that the app is free of every security flaw or meets every WCAG requirement.
+
+Privacy fixes
+- Online recognition requires a separate permission setting. It is off by default. Web forms and settings use offline speech.
+- An AI service key does not grant permission to send text. Permission must be confirmed. Turning it off clears pending AI speech.
+- Routine app output no longer prints recognized speech or text read aloud. Explicit text-mode and microphone test tools still display their requested test output.
+- Service requests that carry account tokens or AI keys stop on redirects. A token cannot be forwarded to the new address.
+- History skips page addresses that contain private sign-in data. Private values are removed from older saved addresses. New favorites cannot save those addresses.
+
+Data the app uses
+Documents, notes, drafts, contacts, favorites, history, subscriptions, downloads, and recordings are kept for the tasks you choose. Documents and drafts are ordinary local files. Windows protects saved account tokens and AI keys for the signed-in user. That protection does not replace a secure Windows account or device.
+
+Microphone audio is processed from a bounded memory queue. Ordinary speech recognition does not save an audio recording. Online recognition sends audio to Azure only with permission. An AI voice sends narration text to OpenAI only with permission. Those providers apply their own data rules.
+
+Connected email, contact sync, web pages, media, and update checks contact their services. Websites and email services can keep their own records. No application advertising or user-tracking service was found in the reviewed source. This is not a promise that outside services collect no data.
+
+Security checks
+The review covered protected credential storage, TLS use, service redirects, mailbox paging addresses, update hashes and file sizes, safe document names, document-size limits, browser addresses, password masking, and confirmed sending and deletion.
+
+The local dependency audit resolved 27 packages and found no known listed vulnerabilities on the review date. Windows-only components were not included in that local result. The Windows build now runs a full environment audit and stops on findings or audit errors. Source checks and privacy regression tests also gate the build.
+
+Mailboxes already reject unexpected redirects. Yahoo uses encrypted IMAP and SMTP. The updater checks the file size and SHA-256 hash before install and checks the hash again at handoff. Those checks do not replace publisher identity verification.
+
+Remaining security work
+An independent security assessment has not been performed. Native browsers, speech models, and other bundled binaries need review beyond a Python package audit. A publisher signing certificate and a documented signing process still need to be established; checksum checks alone do not prove publisher identity. No security tool can promise the absence of unknown flaws.
+
+Accessibility fixes and evidence
+Main-window instructions and status text wrap to the available width. Link text is checked against its background and uses a readable fallback in dark themes. Keyboard focus uses a visible border. Settings notices are visible as text as well as spoken.
+
+The review also checked keyboard navigation, list boundaries, private entry, speech interruption, shared audio controls, clear confirmations, Help structure, heading links, and numbered lists. The corrected manual has text, HTML, Word, EPUB, DAISY text, and contracted UEB BRF copies. Braille translation is checked by software, not by a human braille proofreader.
+
+WCAG status
+Complete conformance is NOT claimed. WCAG 2.2 Level A and AA, interpreted for desktop software through WCAG2ICT, are the review target. Passing a reading-level check or an automated test is not a conformance certificate.
+
+Hands-on checks still required
+- JAWS, NVDA, and Narrator: names, roles, values, focus order, text editing, dialogs, and status notices in every app workflow.
+- High Contrast, large text, Windows scaling, Magnifier, and narrow displays: every control must remain readable and reachable. The fixed native settings layout still needs full scaling and small-screen testing.
+- Keyboard and speech: complete tasks without traps, unwanted actions, lost focus, or an audio-only error. Include account setup, installation, updates, web forms, and recovery.
+- Password managers, paste, and account sign-in: verify the complete authentication process. Provider CAPTCHA and sign-in pages cannot be certified from the app source.
+- Audio alternatives: outside podcasts may lack transcripts. The app does not provide a verified transcript for every episode. This prevents an unqualified claim covering all prerecorded media.
+- Human review of manuals, EPUB and DAISY readers, braille output, and the full accessibility criteria that automated checks cannot settle.
+
+Reference standards
+https://www.w3.org/TR/WCAG22/
+https://www.w3.org/TR/wcag2ict-22/
+https://www.w3.org/WAI/WCAG22/Understanding/conformance

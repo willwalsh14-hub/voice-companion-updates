@@ -1,4 +1,5 @@
 """Optional online narrator. No credentials or spoken content are saved to disk."""
+from network_security import secure_service_open
 import json
 import os
 import queue
@@ -19,7 +20,7 @@ def synthesize(text, rate=0, key=None, voice=None,pitch=0):
     request = urllib.request.Request('https://api.openai.com/v1/audio/speech',
         data=body, headers={'Authorization': 'Bearer ' + key,
                            'Content-Type': 'application/json'})
-    with urllib.request.urlopen(request, timeout=8) as response:
+    with secure_service_open(request, timeout=8) as response:
         audio = response.read(16 * 1024 * 1024)
     if not audio or len(audio) % 2:
         raise ValueError('Invalid speech audio')

@@ -27,6 +27,7 @@ from mail_accounts import AccountError, ProtectedStore, account_token, connect
 from mail_voice import MailSession
 from practice_tutorial import PracticeTutorial
 from cloud_recognition import CloudRecognition
+from privacy_controls import narration_allowed,cloud_recognition_allowed
 from parakeet_recognition import ParakeetRecognition
 from browser_navigation import prepare_address
 from web_assistant import WebSession
@@ -44,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.129-test'
+APP_VERSION = '0.2.130-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1056,7 +1057,8 @@ def configure_ai_speech():
     from ai_voice_settings import load
     from ai_speech import AISpeech, synthesize
     settings = load(APP)
-    if not settings.get('key'):
+    if not settings.get('key') or not narration_allowed(PREFERENCES,settings):
+        if AI_SPEECH:AI_SPEECH.close();AI_SPEECH=None
         return False
     if AI_SPEECH is None:
         def fallback():
@@ -1097,7 +1099,7 @@ def speak(text):
     global KEYBOARD_BATCH_TEXT
     if KEYBOARD_BATCH:
         KEYBOARD_BATCH_TEXT=str(text);return
-    print('Companion:', text, flush=True)
+    if TEXT_MODE:print('Companion:', text, flush=True)
     if APP_WINDOW is not None:
         APP_WINDOW.show(text)
     if TEXT_MODE:
@@ -1566,7 +1568,7 @@ def _handle(text, mode, typed=False):
                 try:password_field=(web_session.backend.focused_control() or {}).get('type')=='password'
                 except Exception:pass
         feedback='Password input' if password_field else text
-        print('Heard:', feedback, flush=True)
+        if TEXT_MODE and not password_field:print('Heard:', feedback, flush=True)
         if APP_WINDOW is not None: APP_WINDOW.show('Heard: ' + feedback)
     command = re.sub(r'[.!?]+$', '', text.lower()).strip().replace('auto-download','auto download')
     if change_speech_setting(command): return mode
@@ -2885,7 +2887,10 @@ def main():
                         if AI_SPEECH is not None: AI_SPEECH.close()
                         AI_SPEECH = None
                     try:
-                        if settings_result == 'saved': configure_ai_speech()
+                        if settings_result == 'saved':
+                            PREFERENCES['ai_consent']=True
+                            __import__('app_settings').save_preferences(sys.modules[__name__])
+                            configure_ai_speech()
                         save_speech_settings()
                         speak('AI voice settings saved. Say Use AI voice to test it.' if settings_result == 'saved'
                               else 'Saved AI voice settings removed. Using SAPI.')
@@ -2954,6 +2959,9 @@ def main():
                 if settings_audio_blocked:
                     recognizer.Reset();utterance.clear();settings_audio_blocked=False
                     continue
+            if cloud and not cloud_recognition_allowed(mode,PREFERENCES,account_setup):
+                cloud.stop();cloud=None
+                recognizer.Reset();utterance.clear()
             if cloud and cloud.active:
                 cloud.write(audio)
                 if recognizer.AcceptWaveform(audio):
@@ -2977,7 +2985,6 @@ def main():
                         cloud_failed = True
                         speak('Cloud dictation lost its connection. I am switching to offline speech.')
                         break
-                    print('Cloud heard:', payload, flush=True)
                     mode = handle(payload, mode)
                     if mode in ('sleep', 'exit'):
                         cloud.stop()
@@ -3031,13 +3038,15 @@ def main():
             heard = heard.lower() if mode == 'sleep' else heard
             if not heard:
                 continue
-            print('Offline heard:', heard, flush=True)
             if mode == 'sleep':
                 for wake in WAKE:
                     if wake in heard:
                         mode = resume_from_sleep()
-                        if not cloud_failed and not parakeet:
+                        if not cloud_failed and not parakeet and cloud_recognition_allowed(mode,PREFERENCES,account_setup):
                             try:
+                                while True:
+                                    try:AUDIO.get_nowait()
+                                    except queue.Empty:break
                                 cloud = CloudRecognition()
                                 cloud.start()
                                 speak('Cloud recognition is active.')

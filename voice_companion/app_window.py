@@ -79,6 +79,7 @@ class CompanionWindow:
 
     def feedback(self,text):
         if text:
+            self.show(text)
             if getattr(self,'keyboard_output',None) and not self.keyboard_output.problem:self.keyboard_output.speak(text)
             else:self.key_feedback.put(text)
 
@@ -145,15 +146,17 @@ class CompanionWindow:
             self.media_shortcut.register()
             root.bind('<Destroy>',lambda event:self.closed.set() if event.widget==root else None)
             root.title('Voice Companion ' + self.version)
-            root.geometry('660x430')
+            root.geometry('660x560')
+            root.option_add('*Font',('Segoe UI',12))
             root.minsize(470, 300)
             root.protocol('WM_DELETE_WINDOW', lambda: (flush_pending_edit(), self.commands.put(('keyboard','Alt+F4'))))
             heading = tk.Label(root, text='Voice Companion', font=('Segoe UI', 20, 'bold'))
             heading.pack(anchor='w', padx=18, pady=(16, 4))
-            tk.Label(root, text='Say “Wake up” to begin. Say “What version?” to check this build.',
-                     font=('Segoe UI', 11), wraplength=600, justify='left').pack(anchor='w', padx=18)
+            startup_label=tk.Label(root, text='Say “Wake up” to begin. Say “What version?” to check this build.',
+                     font=('Segoe UI', 11), wraplength=600, justify='left')
+            startup_label.pack(anchor='w', padx=18)
             entry_label = tk.Label(root, text='Type a command or email address, then press Enter:',
-                                   font=('Segoe UI', 11))
+                                   font=('Segoe UI', 11),wraplength=600,justify='left')
             entry_label.pack(anchor='w', padx=18, pady=(8, 0))
             typed = tk.Entry(root, font=('Segoe UI', 12))
             self.typed=typed
@@ -333,12 +336,19 @@ class CompanionWindow:
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
             self.current = tk.StringVar(value='Starting speech and microphone...')
-            tk.Label(root, textvariable=self.current, font=('Segoe UI', 12),
-                     wraplength=600, justify='left').pack(anchor='w', padx=18, pady=14)
+            status_label=tk.Label(root, textvariable=self.current, font=('Segoe UI', 12),
+                     wraplength=600, justify='left')
+            status_label.pack(anchor='w', padx=18, pady=14)
+            def resize_labels(event):
+                if event.widget==root:
+                    for label in (startup_label,entry_label,status_label):label.configure(wraplength=max(1,event.width-36))
+            root.bind('<Configure>',resize_labels,add='+')
             history = scrolledtext.ScrolledText(root, wrap='word', font=('Segoe UI', 11), state='disabled')
             history.pack(fill='both', expand=True, padx=18, pady=(0, 18))
             editor=tk.Text(root,wrap='word',font=('Segoe UI',12),undo=True,exportselection=False)
             self.editor=editor
+            from visual_accessibility import readable_color,focus_style
+            for widget in (typed,editor):focus_style(widget)
             editor.tag_configure('bold',font=('Segoe UI',12,'bold'))
             editor.tag_configure('italic',font=('Segoe UI',12,'italic'))
             editor.tag_configure('underline',underline=True)
@@ -562,7 +572,7 @@ class CompanionWindow:
                             for i,(start,end,style,url) in enumerate(field.get('rich_spans',[])):
                                 tag='mail_link_'+str(i) if style in ('link','button') else style
                                 if style in ('link','button'):
-                                    editor.tag_configure(tag,foreground='blue',underline=True)
+                                    editor.tag_configure(tag,foreground=readable_color(editor),underline=True)
                                     editor.tag_bind(tag,'<Button-1>',lambda event,u=url:open_link(u))
                                 editor.tag_add(tag,'1.0 + '+str(start)+' chars','1.0 + '+str(end)+' chars')
                             self.email_field=None

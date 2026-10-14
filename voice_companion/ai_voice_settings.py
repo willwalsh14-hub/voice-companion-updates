@@ -13,7 +13,7 @@ def load(folder):
         data = json.loads(win32crypt.CryptUnprotectData(path.read_bytes(), None, None, None, 0)[1])
         return data
     key = os.getenv('VOICE_COMPANION_OPENAI_KEY', '')
-    return {'key':key, 'voice':os.getenv('VOICE_COMPANION_AI_VOICE', 'coral')}
+    return {'key':key, 'voice':os.getenv('VOICE_COMPANION_AI_VOICE', 'coral'),'consent':False}
 
 
 def save(folder, key, voice, consent):
@@ -23,7 +23,7 @@ def save(folder, key, voice, consent):
     if not consent: raise ValueError('Confirm permission to send narration text to OpenAI.')
     import win32crypt
     sealed = win32crypt.CryptProtectData(
-        json.dumps({'key':key, 'voice':voice}).encode(), 'Voice Companion AI voice', None, None, None, 0)
+        json.dumps({'key':key, 'voice':voice,'consent':True}).encode(), 'Voice Companion AI voice', None, None, None, 0)
     path = Path(folder) / 'ai-voice.account'
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix('.tmp')

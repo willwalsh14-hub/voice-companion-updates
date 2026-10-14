@@ -30,7 +30,7 @@ def snapshot(m):
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
     context={'engines':('SAPI',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
     from windows_actions import startup_enabled
-    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',(m.APP/'ai-voice.account').exists() or bool(__import__('os').getenv('VOICE_COMPANION_OPENAI_KEY'))),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt','firefox'),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
+    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt','firefox'),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
 
 def open_settings(m,mode):
@@ -69,7 +69,8 @@ def preview_settings(m,values,text):
         from ai_voice_settings import load
         # A preview must never silently grant cloud narration permission.
         key=load(m.APP).get('key','')
-        if not key or not values.get('ai_consent'):
+        from privacy_controls import narration_allowed
+        if not key or not values.get('ai_consent') or not narration_allowed(m.PREFERENCES,load(m.APP)):
             m.APP_WINDOW.feedback('Save the AI key and permission first to preview the AI voice.');return
         generator=lambda text,rate:ai_synthesize(text,rate,key=key,voice=values['ai_voice'],pitch=pitch)
     m.SETTINGS_PREVIEW_SPEECH=AISpeech(fallback,generator)
@@ -103,6 +104,9 @@ def apply_settings(m,values):
         m.AI_SPEECH=None
     elif key and (values.get('api_key') or values['ai_voice']!=ai.get('voice','coral')):
         save(m.APP,key,values['ai_voice'],values.get('ai_consent',False))
+    m.PREFERENCES['ai_consent']=bool(values.get('ai_consent'))
+    if not values.get('ai_consent') and m.AI_SPEECH:
+        m.AI_SPEECH.close();m.AI_SPEECH=None
     if values['engine']=='ai' and m.AI_SPEECH is None:m.configure_ai_speech()
     m.SPEECH_PITCH=pitch;m.SPEECH_RATE=rate;m.SPEECH_VOLUME=volume;m.PUNCTUATION_LEVEL=values['punctuation'];m.VERBOSITY=values['verbosity'];m.INPUT_MODE=values['input_mode']
     if not m.TEXT_MODE:

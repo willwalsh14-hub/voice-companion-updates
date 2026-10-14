@@ -81,6 +81,9 @@ class MailboxClient:
                 and parse.urlsplit(url).hostname == 'graph.microsoft.com'
                 and parse.urlsplit(url).path.startswith('/v1.0/me/')):
             raise MailboxError('The mail service returned an unsafe address.')
+        destination=parse.urlsplit(url)
+        if destination.username or destination.password or destination.port not in (None,443):
+            raise MailboxError('The mail service returned an unsafe address.')
         data = None if payload is None else json.dumps(payload).encode('utf-8')
         outgoing = request.Request(url, data=data, method=method,
                                    headers={'Authorization': 'Bearer ' + self.token,

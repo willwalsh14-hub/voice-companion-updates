@@ -3,6 +3,7 @@ import json
 import time
 from pathlib import Path
 from menu_navigation import announce_item
+from privacy_controls import saved_address
 
 
 class BrowserMenu:
@@ -15,17 +16,21 @@ class BrowserMenu:
         self.prefix = ''
         self.last_letter = 0
         self.target = None
+        self.history()
 
     def history(self):
         try:
             data = json.loads(self.path.read_text(encoding='utf-8'))
-            return [x for x in data if isinstance(x, dict) and x.get('url') and x.get('name')] if isinstance(data, list) else []
+            clean=[x for x in data if isinstance(x,dict) and x.get('name') and saved_address(x.get('url'))==x.get('url') and x.get('url')] if isinstance(data,list) else []
+            if isinstance(data,list) and clean!=data:
+                temporary=self.path.with_suffix('.tmp');temporary.write_text(json.dumps(clean,ensure_ascii=False,indent=2),encoding='utf-8');temporary.replace(self.path)
+            return clean
         except (OSError, ValueError):
             return []
 
     def record(self, snapshot):
         url = snapshot.get('url', '')
-        if not isinstance(url,str) or not url.startswith('https://'):
+        if not url or saved_address(url)!=url:
             return
         data = self.history()
         if data and data[0]['url'] == url:

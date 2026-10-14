@@ -67,6 +67,7 @@ def split_instruction(text,limit=1000):
 
 
 def option_explanation(field):
+    if field.key=='cloud_consent':return 'This checkbox allows microphone audio to be sent to Azure for recognition. It is off by default. Turn it on only if you agree and the service is set up. The app uses offline speech in web forms and settings. OK saves; Cancel keeps the earlier choice.'
     if field.kind=='action':return 'Choose this button to '+field.label.lower()+'. It opens that task and leaves Options. Choose OK first if you want to save changed settings.'
     if field.kind=='password':return 'This is a private text box. Its contents are not read aloud. Leaving it blank keeps the saved key. A helper can enter a new key here. Choose OK to save or Cancel to leave it unchanged.'
     if field.kind=='check':return 'This is a checkbox. Press Space to turn it on or off. By voice, choose the setting and say on or off. Choose OK to save or Cancel to keep the earlier choice.'

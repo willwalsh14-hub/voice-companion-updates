@@ -10,6 +10,16 @@ from settings_model import SettingsSession,DEFAULTS
 
 @unittest.skipUnless(sys.platform=='win32','Native Windows controls require Windows')
 class NativeSettingsTests(unittest.TestCase):
+    def test_announcements_are_visible_in_the_settings_window(self):
+        hwnd=self.open_panel();status=self.u.GetDlgItem(hwnd,400)
+        self.assertTrue(status)
+        self.panel.command('read current setting')
+        def visible():
+            buffer=c.create_unicode_buffer(1024)
+            self.u.GetWindowTextW(status,buffer,len(buffer))
+            return bool(buffer.value) and buffer.value==self.panel.last_notice
+        self.wait(visible)
+
     def test_rate_change_previews_staged_values_and_cancel_restores_original(self):
         hwnd=self.open_panel();samples=[]
         self.panel.preview=lambda values,text:samples.append((values,text))
@@ -26,6 +36,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.panel=NativeSettings(self.session,self.notices.append,save,lambda key:None).start()
         self.assertTrue(self.panel.ready.wait(8));self.assertFalse(self.panel.closed.is_set(),self.notices)
         self.u=c.WinDLL('user32',use_last_error=True)
+        self.u.GetWindowTextW.restype=c.c_int;self.u.GetWindowTextW.argtypes=[w.HWND,w.LPWSTR,c.c_int]
         self.u.GetDlgItem.restype=w.HWND;self.u.GetDlgItem.argtypes=[w.HWND,c.c_int]
         self.u.SendMessageW.restype=c.c_ssize_t;self.u.SendMessageW.argtypes=[w.HWND,w.UINT,w.WPARAM,w.LPARAM]
         self.u.PostMessageW.restype=w.BOOL;self.u.PostMessageW.argtypes=[w.HWND,w.UINT,w.WPARAM,w.LPARAM]

@@ -43,9 +43,12 @@ class CloudRecognition:
 
     def stop(self):
         self.active = False
-        if self.recognizer:
-            self.recognizer.stop_continuous_recognition_async().get()
-        if self.stream:
-            self.stream.close()
-        self.recognizer = None
-        self.stream = None
+        recognizer,stream=self.recognizer,self.stream
+        self.recognizer=self.stream=None
+        try:
+            if recognizer:recognizer.stop_continuous_recognition_async().get()
+        except Exception:pass
+        finally:
+            if stream:
+                try:stream.close()
+                except Exception:pass

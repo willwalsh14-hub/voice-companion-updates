@@ -12,6 +12,7 @@ import os
 import re
 from pathlib import Path
 from urllib.parse import urlsplit, quote, unquote
+from privacy_controls import saved_address
 
 from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
@@ -76,7 +77,15 @@ class Favorites:
     def all(self):
         try:
             data = json.loads(self.path.read_text(encoding='utf-8'))
-            return data if isinstance(data, dict) else {}
+            if not isinstance(data,dict):return {}
+            clean={}
+            for key,item in data.items():
+                if not isinstance(item,dict) or not item.get('name'):continue
+                address=saved_address(item.get('url'))
+                if address:clean[key]=dict(item,url=address)
+            if clean!=data:
+                temporary=self.path.with_suffix('.tmp');temporary.write_text(json.dumps(clean,ensure_ascii=False,indent=2),encoding='utf-8');temporary.replace(self.path)
+            return clean
         except (OSError, ValueError):
             return {}
 
@@ -87,6 +96,8 @@ class Favorites:
         parsed = urlsplit(url)
         if parsed.scheme != 'https' or not parsed.hostname:
             raise WebError('Only secure HTTPS pages can be saved.')
+        if saved_address(url)!=url:
+            raise WebError('This address contains private sign-in data. Open and save the site main page instead.')
         data = self.all()
         data[name.casefold()] = {'name': name, 'url': url}
         self.path.parent.mkdir(parents=True, exist_ok=True)

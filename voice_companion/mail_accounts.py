@@ -4,6 +4,7 @@ Public OAuth client IDs must be registered by the distributor. Account data is
 encrypted for the signed-in Windows user using DPAPI. Yahoo uses an app password
 entered by a helper, never the normal account password.
 """
+from network_security import secure_service_open
 import json
 import hashlib
 import sys
@@ -216,7 +217,7 @@ def gmail_connect(store, client_file):
         credentials.refresh(Request())
     if not credentials.valid:
         raise AccountError('Gmail sign-in did not finish.')
-    with request.urlopen(request.Request('https://www.googleapis.com/oauth2/v3/userinfo',
+    with secure_service_open(request.Request('https://www.googleapis.com/oauth2/v3/userinfo',
                                        headers={'Authorization': 'Bearer ' + credentials.token}), timeout=30) as response:
         address = json.load(response).get('email')
     if not address:
@@ -268,7 +269,7 @@ def microsoft_connect(store, client_id):
     accounts = app.get_accounts()
     if len(accounts) != 1 or not accounts[0].get('username'):
         raise AccountError('The signed-in Microsoft account could not be identified.')
-    with request.urlopen(request.Request('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName',
+    with secure_service_open(request.Request('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName',
                                        headers={'Authorization': 'Bearer ' + result['access_token']}), timeout=30) as response:
         identity = json.load(response)
     address = identity.get('mail') or identity.get('userPrincipalName')
