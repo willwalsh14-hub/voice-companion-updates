@@ -16,6 +16,24 @@ ROOT=Path(__file__).parent
 
 
 class DocumentationQualityTests(unittest.TestCase):
+    def test_full_outline_plain_instructions_and_separate_step_lists(self):
+        text=(ROOT/'START HERE - Veteran.txt').read_text()
+        self.assertNotRegex(text,r'\b(?:Voice|Keyboard):')
+        _,_,chapters=read_guide(ROOT/'START HERE - Veteran.txt')
+        contents=text.split('Contents\n',1)[1].split('1. GETTING STARTED',1)[0]
+        for chapter in chapters:
+            for part in chapter['parts']:self.assertIn(part['heading'],contents)
+        main=chapters[0]['parts'][2]['paragraphs']
+        self.assertTrue(all('- '+name in main for name in ('Word processor','Email','Web browser','Radio','Help')))
+        for chapter in chapters:
+            for part in chapter['parts']:
+                expected=1
+                for value in part['paragraphs']:
+                    step=guides.STEP.fullmatch(value)
+                    if step:
+                        self.assertEqual(int(step[1]),expected,part['heading']);expected+=1
+                    else:expected=1
+
     def test_reading_level_stays_below_eighth_grade_for_every_part(self):
         result=report(ROOT)
         self.assertLessEqual(result['manual_estimated_grade'],8)

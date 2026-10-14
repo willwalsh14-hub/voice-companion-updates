@@ -45,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.130-test'
+APP_VERSION = '0.2.131-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -249,7 +249,7 @@ def app_context(mode):
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
     elif logical=='help' and help_session and help_session.level=='article':
         source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
-        context.update(source=source,text=help_session.reading.text,readonly=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
+        context.update(source=source,text=help_session.reading.text,readonly=True,help_reader=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
     elif logical=='mailbox' and mail_session and mail_session.view=='message':
         mail_session.set_format(PREFERENCES.get('email_format','html'))
         source='mail:'+str(id(mail_session))+':'+str(mail_session.current)
@@ -565,6 +565,9 @@ def _navigation_key(key,mode):
         if mode=='mailbox' and mail_session and mail_session.view=='folder' and not mail_session.pending:
             speak(mail_session.list_boundary(key=='End'));return None
     if mode=='help' and key=='Escape':return 'go back'
+    if mode=='help' and help_session and help_session.level=='article' and (key.startswith('Help:') or key in ('Up','Down','Left','Right','Home','End')):
+        return {'Up':'previous paragraph','Down':'next paragraph','Home':'first block','End':'last block',
+                'Left':'previous character','Right':'next character','Ctrl+Left':'previous word','Ctrl+Right':'next word'}[key[5:] if key.startswith('Help:') else key]
     if key.startswith('Letter:'):
         if mode=='web' and web_session and not web_session.list_focus and key[-1] in __import__('web_browse').QUICK_KEYS:return 'web key Quick:'+key[-1]
         choose_menu_letter(key[-1],mode);return None
@@ -1555,7 +1558,7 @@ def _handle(text, mode, typed=False):
     if control:
         control_speech(control)
         return mode
-    if text:
+    if text and (mode!='help' or HelpSession.accepts(text) or spoken_control(command)):
         interrupt_speech()
         field=getattr(web_session,'keyboard_field',None) if mode=='web' else None
         fields=getattr(web_session,'form_fields',None);index=getattr(web_session,'form_index',None)
@@ -1626,7 +1629,7 @@ def _handle(text, mode, typed=False):
             return help_return_mode
         result = help_session.process('back to topics' if command in (
             'help', 'user guide', 'open user guide', 'manual', 'open manual') else text)
-        speak(result)
+        if result is not None:speak(result)
         if help_session.closed:
             help_session = None
             return help_return_mode
@@ -2558,7 +2561,7 @@ def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
     previous_navigation=KEYBOARD_NAVIGATION
     quick_read=mode in ('document','email_draft','mailbox','help','web','note') and reading_request(text) is not None and not (mode in ('document','email_draft') and INPUT_MODE=='dictation')
-    help_navigation=mode=='help' or normalized_command(text) in ('help','user guide','open user guide','manual','open manual','document help','email help','web help','radio help','podcast help','commands help','release notes') or normalized_command(text).startswith(('help with ','help for '))
+    help_navigation=(mode=='help' and HelpSession.accepts(text)) or normalized_command(text) in ('help','user guide','open user guide','manual','open manual','document help','email help','web help','radio help','podcast help','commands help','release notes') or normalized_command(text).startswith(('help with ','help for '))
     if help_navigation and not speech_control(text):
         interrupt_speech()
         KEYBOARD_NAVIGATION=True
@@ -2951,7 +2954,7 @@ def main():
                     utterance.clear()
                     if recognizer.AcceptWaveform(audio):
                         control=json.loads(recognizer.Result()).get('text','').lower()
-                        if spoken_control(control) or speech_control(control) or web_feedback_control(control,mode):
+                        if spoken_control(control) or speech_control(control) or web_feedback_control(control,mode) or mode=='help' and HelpSession.accepts(control):
                             interrupt_speech()
                             mode=handle(control,mode)
                             if mode=='exit':return 0
@@ -3015,7 +3018,7 @@ def main():
                 if mode == 'exit':
                     return 0
                 continue
-            if mode != 'sleep' and speech_busy() and local_control:
+            if mode != 'sleep' and speech_busy() and local_control and (mode!='help' or HelpSession.accepts(local_control)):
                 # Stop the current readback as soon as the offline recognizer
                 # recognizes a new utterance. Its words can still be refined
                 # by Parakeet before executing the requested action.

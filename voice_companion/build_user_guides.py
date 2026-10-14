@@ -54,8 +54,13 @@ def content_markup(blocks):
 
 
 def navigation(blocks, prefix=''):
-    return ''.join(f'<li><a href="{prefix}#section-{i}">{html.escape(h.title())}</a></li>'
-                   for i, (h, _) in enumerate(blocks) if h)
+    output=[]
+    for i,(heading,paragraphs) in enumerate(blocks):
+        if not heading:continue
+        children=''.join(f'<li><a href="{prefix}#part-{i}-{j}">{html.escape(value)}</a></li>'
+                         for j,value in enumerate(paragraphs) if subtitle(value))
+        output.append(f'<li><a href="{prefix}#section-{i}">{html.escape(heading.title())}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
+    return ''.join(output)
 
 
 def build_html(title, blocks):
@@ -64,7 +69,7 @@ def build_html(title, blocks):
 <title>{html.escape(title.title())}</title>
 <style>body{{font:1.125rem/1.6 Arial,sans-serif;max-width:48rem;margin:auto;padding:1rem;color:#111;background:#fff}}h1,h2,h3{{line-height:1.3}}h2{{margin-top:2.5rem}}h3{{margin-top:1.5rem}}a{{color:#0645ad}}li{{margin-block:.4rem}}:focus-visible{{outline:3px solid #0645ad}}@media print{{nav{{break-after:page}}h2,h3{{break-after:avoid}}}}</style></head><body>
 <a href="#guide">Skip to the guide</a><header><h1>{html.escape(title.title())}</h1></header>
-<nav aria-label="Contents"><h2>Contents</h2><ol>{navigation(blocks)}</ol></nav>
+<nav aria-label="Contents"><h2>Contents</h2><ul>{navigation(blocks)}</ul></nav>
 <main id="guide">{content_markup(blocks)}</main></body></html>'''
     (ROOT / f'{STEM}.html').write_text(page, encoding='utf-8')
 
@@ -93,6 +98,7 @@ def number_list(doc):
     root=doc.part.numbering_part.element
     abstract_id=max([int(n.get(qn('w:abstractNumId'))) for n in root.findall(qn('w:abstractNum'))]+[-1])+1
     abstract=OxmlElement('w:abstractNum');abstract.set(qn('w:abstractNumId'),str(abstract_id))
+    kind=OxmlElement('w:multiLevelType');kind.set(qn('w:val'),'singleLevel');abstract.append(kind)
     level=OxmlElement('w:lvl');level.set(qn('w:ilvl'),'0')
     for tag,value in [('start','1'),('numFmt','decimal'),('lvlText','%1.'),('lvlJc','left')]:
         node=OxmlElement('w:'+tag);node.set(qn('w:val'),value);level.append(node)
@@ -126,17 +132,25 @@ def build_word(title, blocks):
     doc.add_paragraph(title.title(),style='Title')
     for value in blocks[0][1]:doc.add_paragraph(value)
     doc.add_paragraph('Contents',style='Heading 1')
-    for i,(heading,_) in enumerate(blocks):
-        if heading:word_link(doc.add_paragraph(),heading.title(),'chapter_'+str(i))
+    for i,(heading,paragraphs) in enumerate(blocks):
+        if not heading:continue
+        chapter_link=doc.add_paragraph();chapter_link.paragraph_format.keep_with_next=True
+        word_link(chapter_link,heading.title(),'chapter_'+str(i))
+        for j,value in enumerate(paragraphs):
+            if subtitle(value):
+                para=doc.add_paragraph();para.paragraph_format.left_indent=Inches(.25)
+                para.paragraph_format.space_after=Pt(2)
+                word_link(para,value,f'part_{i}_{j}')
     doc.add_page_break()
     for i,(heading,paragraphs) in enumerate(blocks):
         if not heading:continue
         para=doc.add_paragraph(heading.title(),style='Heading 1');word_bookmark(para,'chapter_'+str(i),i)
         number=None
-        for value in paragraphs:
+        for j,value in enumerate(paragraphs):
             step=STEP.fullmatch(value)
             if subtitle(value):
-                doc.add_paragraph(value,style='Heading 2');number=None
+                para=doc.add_paragraph(value,style='Heading 2')
+                word_bookmark(para,f'part_{i}_{j}',1000+i*1000+j);number=None
             elif value.startswith('- '):
                 doc.add_paragraph(value[2:],style='List Bullet');number=None
             elif step:
@@ -161,7 +175,7 @@ def build_word(title, blocks):
 def build_epub(title, blocks):
     esc=html.escape
     xhtml=f'''<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><title>{esc(title.title())}</title></head><body><h1>{esc(title.title())}</h1>{content_markup(blocks)}</body></html>'''
-    nav=f'''<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Contents</title></head><body><nav epub:type="toc" id="toc"><h1>Contents</h1><ol>{navigation(blocks,'content.xhtml')}</ol></nav></body></html>'''
+    nav=f'''<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Contents</title></head><body><nav epub:type="toc" id="toc"><h1>Contents</h1><ul>{navigation(blocks,'content.xhtml')}</ul></nav></body></html>'''
     modified=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     opf=f'''<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id" xml:lang="en"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="pub-id">{UID}</dc:identifier><dc:title>{esc(title.title())}</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">{modified}</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="content" href="content.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="content"/></spine></package>'''
     container='<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'
@@ -222,7 +236,7 @@ def validate(blocks):
         ns={'x':'http://www.w3.org/1999/xhtml'};content=ET.fromstring(z.read('OEBPS/content.xhtml'));nav=ET.fromstring(z.read('OEBPS/nav.xhtml'))
         assert [h.text for h in content.findall('.//x:h2',ns)]==chapters
         assert [h.text for h in content.findall('.//x:h3',ns)]==parts
-        assert [a.text for a in nav.findall('.//x:a',ns)]==chapters
+        assert [a.text for a in nav.findall('.//x:a',ns)]==[text for h,paragraphs in blocks if h for text in [h.title()]+[v for v in paragraphs if subtitle(v)]]
         for name in ('META-INF/container.xml','OEBPS/package.opf'):ET.fromstring(z.read(name))
     with ZipFile(ROOT / f'{STEM} - DAISY 3.zip') as z:
         ns={'d':'http://www.daisy.org/z3986/2005/dtbook/','n':'http://www.daisy.org/z3986/2005/ncx/'}

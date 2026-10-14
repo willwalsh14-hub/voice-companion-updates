@@ -21,6 +21,8 @@ def read_guide(path):
             continue
         chapter = CHAPTER.fullmatch(value)
         section = PART.fullmatch(value)
+        if contents and current is None and not chapter:
+            continue
         if chapter:
             current = {'number': int(chapter[1]), 'key': chapter[2], 'name': chapter[2].title(),
                        'heading': value, 'paragraphs': [], 'parts': []}

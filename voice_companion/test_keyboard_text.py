@@ -403,6 +403,17 @@ class WindowKeyboardTests(unittest.TestCase):
         self.wait(lambda:not self.window.key_feedback.empty());self.assertEqual(self.window.key_feedback.get(),'b')
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Escape'))
         self.wait(lambda:any(item==('keyboard','Escape') for item in self.window.commands.queue))
+
+    def test_help_arrows_dispatch_blocks_without_native_line_speech(self):
+        self.context(mode='help',readonly=True)
+        self.window.set_context(self.window.context|{'help_reader':True})
+        self.wait(lambda:self.window.context.get('help_reader'))
+        self.call(lambda:self.window.editor.focus_force())
+        for key in ('Down','Up','Home','End'):
+            self.call(lambda k=key:self.window.editor.event_generate('<KeyPress>',keysym=k))
+            self.wait(lambda k=key:('keyboard','Help:'+k) in self.window.commands.queue)
+        self.assertTrue(self.window.key_feedback.empty())
+        self.assertFalse(any(isinstance(item,tuple) and item[0]=='text_edit' for item in self.window.commands.queue))
     def test_menu_home_end_and_confirmation_letters_dispatch_immediately(self):
         self.window.set_context(dict(mode='awake',source=None,menu_letters=True,text='',caret=0,ack=0))
         self.wait(lambda:self.window.context.get('mode')=='awake')

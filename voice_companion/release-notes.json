@@ -1,17 +1,17 @@
 {
-  "version": "0.2.130-test",
+  "version": "0.2.131-test",
   "status": "Testing build",
   "date": "October 14, 2026",
-  "baseline": "0.2.129-test",
-  "scope": "Clearer guides, stronger privacy controls, and more readable text.",
+  "baseline": "0.2.130-test",
+  "scope": "Smoother Help reading and a clearer manual.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose whether to use online recognition",
+          "title": "A complete contents list",
           "details": [
-            "A new Input option asks whether audio may be sent to Azure. It is off by default. Web forms and settings use offline speech."
+            "The contents now include the smaller sections within every chapter. In Word, HTML, and EPUB, you can follow links to those sections."
           ]
         }
       ]
@@ -20,33 +20,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Clearer instructions in every guide",
+          "title": "Read Help without missing text",
           "details": [
-            "Grammar and sentence structure are corrected throughout the manual. Commands explain which words or numbers to add before giving an example. All guide formats use the same instructions."
+            "Up Arrow reads the previous paragraph or list item. Down Arrow reads the next one. Home and End reach the first and last blocks. Long paragraphs are read in full.",
+            "Unrecognized speech no longer stops Help to repeat a guidance prompt. Help uses the same text as the manual."
           ]
         },
         {
-          "title": "Keep private sign-in data out of saved pages",
+          "title": "Clearer instructions and lists",
           "details": [
-            "History skips pages with private sign-in codes. Favorites cannot save those page addresses. The app also clears private codes from older saved addresses."
-          ]
-        },
-        {
-          "title": "Permission for AI speech",
-          "details": [
-            "A service key alone does not allow online narration. Turning permission off clears pending AI speech. Older setups may ask you to confirm permission again."
-          ]
-        },
-        {
-          "title": "Stronger service checks",
-          "details": [
-            "Account and AI requests stop if a service tries to send them to a new address. This protects keys and account tokens. Routine logs no longer show what you said or read."
-          ]
-        },
-        {
-          "title": "More readable text",
-          "details": [
-            "Main-window labels wrap when the window gets narrower. Links and focus marks use readable colors. Settings notices are shown as text as well as spoken."
+            "Instructions use phrases such as \"you can say\" and \"from the keyboard.\" Menu choices use bullet points. Each separate set of steps starts at 1."
           ]
         }
       ]

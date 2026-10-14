@@ -7,6 +7,25 @@ from pathlib import Path
 from reading_navigation import ReadingCursor, reading_request
 
 
+class HelpReadingCursor(ReadingCursor):
+    """Read complete blocks without advancing past text that has not been requested."""
+    def read(self, from_top=False):
+        if from_top:self.position=self.continuation=0
+        spans=self._spans('paragraph')
+        span=next((s for s in spans if s.end()>self.continuation),None)
+        if span is None:return 'End of topic.'
+        self.position=span.start();self.continuation=span.end()
+        return span.group().strip()
+
+    def move(self,unit,direction):
+        spans=self._spans(unit)
+        if not spans:return 'There is no text to read.'
+        boundary='Start of topic. ' if direction<0 and self.position<=spans[0].start() else 'End of topic. ' if direction>0 and self.position>=spans[-1].start() else ''
+        value=super().move(unit,direction)
+        if unit=='paragraph':
+            self.continuation=next(s.end() for s in spans if s.start()==self.position)
+        return boundary+value
+
 
 
 
@@ -25,7 +44,7 @@ class HelpSession:
         self.topic_index = 0
         self.subtopic_index = 0
         self.level = 'topics'
-        self.reading = ReadingCursor()
+        self.reading = HelpReadingCursor()
         self.closed = False
 
     def _subtopics(self):
@@ -117,6 +136,12 @@ class HelpSession:
             name = re.sub(r'^(?:help (?:with|for)|(?:go to|open) help topic)\s+', '', command)
             return self.topic(name)
         if self.level == 'article':
+            command={'next':'next paragraph','down':'next paragraph','move down':'next paragraph',
+                     'previous':'previous paragraph','up':'previous paragraph','move up':'previous paragraph'}.get(command,command)
+            if command in ('first block','last block'):
+                spans=self.reading._spans('paragraph')
+                self.reading.position=spans[-1 if command=='last block' else 0].start() if spans else 0
+                return self.reading.move('paragraph',0)
             if command in ('read topic', 'read this topic', 'repeat topic'):
                 return self.reading.read(from_top=True)
             request = reading_request(command)
@@ -124,7 +149,7 @@ class HelpSession:
                 unit, direction = request
                 return (self.reading.read(direction == 'top') if unit == 'read'
                         else self.reading.move(unit, direction))
-            return 'Say continue reading, next paragraph, back to subsections, back to topics, or close help.'
+            return None
         if command in ('next', 'next topic', 'next subsection', 'move down', 'down',
                        'previous', 'previous topic', 'previous subsection', 'move up', 'up'):
             step = -1 if command.startswith(('previous', 'move up')) or command == 'up' else 1
@@ -139,5 +164,17 @@ class HelpSession:
             if self.level == 'topics': return self._open_topic()
             name, paragraphs = self._subtopics()[self.subtopic_index]
             return self._open_article(paragraphs, name)
-        return self._item()
+        return None
+
+    @staticmethod
+    def accepts(text):
+        command=text.casefold().strip().rstrip('.!?')
+        return bool(reading_request(command) or command.startswith(('help with ','help for ','go to help topic ','open help topic ')) or command in (
+            'main menu','back to main menu','close help','exit help','leave help','back to app',
+            'back to topics','help topics','list help topics','list topics','back to email topics','email topics',
+            'back to subsections','list subsections','subsections','go back','back',
+            'read topic','read this topic','repeat topic','first block','last block',
+            'next','next topic','next subsection','move down','down','previous','previous topic',
+            'previous subsection','move up','up','that one','okay','ok','confirm','confirm that','open topic','open it',
+            'help','user guide','open user guide','manual','open manual'))
 

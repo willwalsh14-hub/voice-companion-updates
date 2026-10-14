@@ -91,10 +91,54 @@ class OnboardHelpTests(unittest.TestCase):
         session = HelpSession(GUIDE)
         self.assertIn('Saved Radio Stations', session.topic('presets'))
         self.assertIn('Save a preset', session.process('that one'))
-        self.assertIn('Save preset', session.process('read from top'))
+        self.assertIn('A preset is a saved station', session.process('read from top'))
+        self.assertIn('Find or play', session.process('continue reading'))
+        self.assertIn('Save preset', session.process('continue reading'))
         self.assertNotIn('station database', session.reading.text.casefold())
         self.assertIn('Play saved stations', session.process('back to subsections') and session.process('next'))
-        self.assertIn('That one', session.process('that one'))
+        self.assertIn('List presets', session.process('that one'))
+        self.assertIn('That one', session.process('continue reading'))
+
+    def test_block_reading_never_splits_a_long_paragraph_or_skips_a_list_item(self):
+        session=HelpSession(GUIDE)
+        paragraphs=['First paragraph.','Long paragraph '+('word '*400)+'ends here.','- First choice','- Last choice']
+        first=session._open_article(paragraphs,'Example')
+        self.assertIn(paragraphs[0],first)
+        self.assertEqual(session.process('continue reading'),paragraphs[1])
+        self.assertEqual(session.process('next paragraph'),paragraphs[2])
+        self.assertEqual(session.process('continue reading'),paragraphs[3])
+        self.assertEqual(session.process('continue reading'),'End of topic.')
+        self.assertEqual(session.process('previous paragraph'),paragraphs[2])
+
+    def test_every_manual_block_can_be_read_forward_and_back_without_omissions(self):
+        session=HelpSession(GUIDE)
+        for i,topic in enumerate(session.topics):
+            session.topic_index=i
+            for name,paragraphs in session._subtopics():
+                session._open_article(paragraphs,name)
+                actual=[session.reading.move('paragraph',0)]
+                actual.extend(session.process('next paragraph') for _ in paragraphs[1:])
+                self.assertEqual(actual,paragraphs,name)
+                backwards=[session.process('previous paragraph') for _ in paragraphs[1:]]
+                self.assertEqual(backwards,list(reversed(paragraphs[:-1])),name)
+
+    def test_unrecognized_speech_does_not_interrupt_or_replace_help(self):
+        import companion as app
+        session=HelpSession(GUIDE);session.topic('documents');session.process('that one')
+        position=(session.reading.position,session.reading.continuation)
+        with patch.object(app,'help_session',session),patch.object(app,'speak') as say,patch.object(app,'interrupt_speech') as stop,patch.object(app,'sync_app_context'):
+            self.assertEqual(app.handle('unrelated background conversation','help'),'help')
+            stop.assert_not_called();say.assert_not_called()
+            self.assertEqual((session.reading.position,session.reading.continuation),position)
+
+    def test_keyboard_arrows_and_voice_share_complete_blocks_and_boundaries(self):
+        import companion as app
+        session=HelpSession(GUIDE);session._open_article(['First.','Second.','Third.'],'Example')
+        with patch.object(app,'help_session',session),patch.object(app,'interrupt_speech'),patch.object(app,'sync_app_context'),patch.object(app,'speak') as say:
+            for key,expected in [('Help:Down','Second.'),('Up','First.'),('Home','First.'),('Help:End','Third.'),('Help:Down','End of topic. Third.')]:
+                request=app.navigation_key(key,'help');app.handle_keyboard(request,'help')
+                say.assert_called_with(expected)
+            app.handle('previous paragraph','help');say.assert_called_with('Second.')
 
     def test_companion_help_preserves_mailbox_and_document_modes(self):
         import companion

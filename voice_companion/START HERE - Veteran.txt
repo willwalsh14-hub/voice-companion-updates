@@ -1,32 +1,130 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.130-test.
+Guide version: 0.2.131-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
 Contents
 1 Getting Started
+  1.1 Install Voice Companion
+  1.2 Open the app and wake it
+  1.3 Use the main menu
+  1.4 Set up your microphone
 2 Using Voice Commands
+  2.1 Give a command
+  2.2 Speak text or give commands
+  2.3 Enter words that sound like commands
+  2.4 Type a voice command
+  2.5 Answer Yes or No
 3 Using Help And Lessons
+  3.1 Open a Help topic
+  3.2 Read part of a topic
+  3.3 Start the audio tutorial
+  3.4 Find, repeat, and leave a lesson
 4 Speech And Voices
+  4.1 Stop or pause speech
+  4.2 Change speed, volume, or pitch
+  4.3 Choose a voice
+  4.4 Use an AI voice
 5 Reading And Editing Text
+  5.1 Read from your current place
+  5.2 Read with the keyboard
+  5.3 Select text
+  5.4 Choose named words
+  5.5 Copy, cut, paste, or remove text
+  5.6 Replace or insert words
 6 Write A Document
+  6.1 Create and name a document
+  6.2 Write and move through the document
+  6.3 Change the look of text
+  6.4 Use headings and align text
+  6.5 Change line spacing
+  6.6 Make a list
+  6.7 Make a table
+  6.8 Save, copy, close, or reopen a document
 7 Write A Note
+  7.1 Start and save a note
+  7.2 Review or change a note
 8 Set Up Email
+  8.1 Connect an email account
+  8.2 Choose another account
+  8.3 Add and find contacts
 9 Write An Email
+  9.1 Start a new message
+  9.2 Change To, CC, BCC, or Subject
+  9.3 Write and format the message
+  9.4 Save or cancel a draft
+  9.5 Review and send
 10 Read And Organize Email
+  10.1 Read messages
+  10.2 Go to folders
+  10.3 Select, move, or delete messages
+  10.4 Reply or forward
+  10.5 Create and manage folders
+  10.6 Read links and load more mail
 11 Browse The Web
+  11.1 Open the web browser menu
+  11.2 Search or open an address
+  11.3 Read a page
+  11.4 Move to headings, links, or controls
+  11.5 Open links and use lists
+  11.6 Enter or change a web answer
+  11.7 Fill in and review a form by voice
+  11.8 Read a web table and leave a page
 12 Favorites And Web History
+  12.1 Save the current page
+  12.2 Open or find a favorite
+  12.3 Rename or delete a favorite
+  12.4 Open a page from history
+  12.5 Resume where you left off
 13 Listen To Radio
+  13.1 Find and play a station
+  13.2 Use the radio menus and keys
+  13.3 Control audio
+  13.4 Choose a station list
 14 Saved Radio Stations
+  14.1 Save a preset
+  14.2 Play saved stations
+  14.3 Delete a saved station
 15 Record Radio
+  15.1 Record a station now
+  15.2 Schedule a recording
+  15.3 Cancel a scheduled recording
 16 Listen To Podcasts
+  16.1 Find a show and play an episode
+  16.2 Use the podcast menus and keys
+  16.3 Pause, seek, or move by chapter
 17 Saved Podcasts And Downloads
+  17.1 Subscribe to a show
+  17.2 Download and play an episode
+  17.3 Choose automatic downloads
+  17.4 Remove a subscription
 18 Change Your Options
+  18.1 Open, change, and save a setting
+  18.2 Choose how much speech you hear
+  18.3 Voice and Synthesizer options
+  18.4 Input and Email options
+  18.5 Word processor and Notepad options
+  18.6 Web browser options
+  18.7 Radio and Podcasts options
+  18.8 Auto-update and Startup and exit options
 19 Sleep, Exit, And Computer Power
+  19.1 Put the microphone to sleep
+  19.2 Close Companion
+  19.3 Restart or shut down the computer
 20 Check For Updates
+  20.1 Find a newer version
+  20.2 Install an update
+  20.3 Read the release notes
 21 Find Your Guide Files
+  21.1 Open the guide folder
+  21.2 Choose a guide format
 22 Fix A Problem
+  22.1 Companion hears the wrong words
+  22.2 You cannot hear speech
+  22.3 Email or a website will not work
+  22.4 A guide or update will not open
+  22.5 Understand privacy and online services
 
 1. GETTING STARTED
 
@@ -62,8 +160,8 @@ The main menu has these choices:
 - Shut down the computer
 - Restart the computer
 - Exit Voice Companion
-Voice: Say "Next" or "Previous" to move. Say "That one", "Okay", or "Confirm" to open the item you hear.
-Keyboard: Use Up Arrow and Down Arrow to move. Press Enter to open an item. Home selects the first item. End selects the last item.
+With your voice, say "Next" or "Previous" to move. Say "That one", "Okay", or "Confirm" to open the item you hear.
+From the keyboard, use Up Arrow and Down Arrow to move. Press Enter to open an item. Home selects the first item. End selects the last item.
 You hear "Start of list" or "End of list" if you try to move past the first or last item. The list does not wrap around.
 In most menus, press the first letter of a name to find a matching item. Press Enter to open it. Text boxes use those keys for typing instead.
 
@@ -105,7 +203,7 @@ In a web page, Alt+T lets you type an app command. Press Escape to return to pag
 2.5 Answer Yes or No
 When Companion asks a question, listen to the item name and the action first.
 Say "Yes" to do the action. Say "No" or "Cancel" to stop it.
-Keyboard: Use arrows or Tab to choose Yes or No, then press Enter. Alt+Y answers Yes. Alt+N answers No. Escape cancels.
+From the keyboard, use arrows or Tab to choose Yes or No, then press Enter. Alt+Y answers Yes. Alt+N answers No. Escape cancels.
 At a Yes or No prompt, Home selects Yes and End selects No.
 
 3. USING HELP AND LESSONS
@@ -114,12 +212,13 @@ At a Yes or No prompt, Home selects Yes and End selects No.
 Say "Help" to open the guide inside the app. Use "Next", "Previous", and "That one" to choose a topic.
 You can go straight to a topic. For example, say "Help with documents", "Help with email", or "Help with web".
 Other useful requests are "Help with radio", "Help with podcasts", "Help with presets", and "Help with commands".
-Keyboard: Use the arrows and Enter to choose. Home and End reach the ends of a list.
+From the keyboard, use the arrows and Enter to choose. Home and End reach the ends of a list.
 
 3.2 Read part of a topic
 Each Help topic has a list of smaller parts. Choose the part you want, then listen.
-Say "Continue reading" for more. Say "Read from top" to start that part again.
+Help reads one complete paragraph or list item at a time. Say "Continue reading" for the next block. Say "Read from top" to start that part again.
 Say "Next paragraph", "Previous paragraph", "Next sentence", or "Next word" to move through the text.
+From the keyboard, press Down Arrow for the next paragraph or list item. Press Up Arrow for the previous block. Home goes to the first block. End goes to the last block. Long paragraphs are read in full, even when they wrap across several screen lines.
 Choosing another Help item stops the old speech before the next item is read.
 Press Control to silence speech. Say "Back to subsections" to return to the smaller parts.
 Say "Back to topics" for the full topic list. Say "Close help" to return to your work.
@@ -155,7 +254,7 @@ To set a value, say "Rate" or "Speed", followed by a number. For example, say "R
 Speech rate runs from minus ten to ten. Zero is the normal speed. Volume runs from zero to one hundred.
 Pitch changes how high or low a voice sounds. Say "Higher pitch" or "Lower pitch" to change it one step at a time. To set a value, say "Pitch", followed by a number. For example, say "Pitch minus three".
 Pitch runs from minus ten to ten. Speech settings do not change text size or music volume.
-Keyboard: Press Alt+O. Open Voice options. Use Tab to reach a setting, then use arrows to change it. Choose OK to save.
+From the keyboard, press Alt+O. Open Voice options. Use Tab to reach a setting, then use arrows to change it. Choose OK to save.
 
 4.3 Choose a voice
 1. Say "Voice list" or "List voices".
@@ -188,15 +287,16 @@ A line may end at a line break in the text. It may differ from a line shown on t
 
 5.2 Read with the keyboard
 Left Arrow and Right Arrow move by character. Control+Left Arrow and Control+Right Arrow move by word.
-Up Arrow and Down Arrow move by line. Control+Up Arrow and Control+Down Arrow move by paragraph.
+In documents and email, Up Arrow and Down Arrow move by line. Control+Up Arrow and Control+Down Arrow move by paragraph.
+In Help, Up Arrow reads the previous paragraph or list item. Down Arrow reads the next one. Home and End reach the first and last blocks in the topic.
 Home and End reach the start or end of a line. Control+Home and Control+End reach the start or end of the text.
 In web pages, Page Up and Page Down move a longer distance. Page reading starts from the place you last chose.
 The same keys can review a received email. You can read and copy received text, but you cannot rewrite that message.
 
 5.3 Select text
 Selected text is the part you have chosen to copy, change, or delete.
-Keyboard: Hold Shift while pressing a movement key. Control+A selects all the text in an open text view.
-Voice: Say "Select word", "Select line", "Select sentence", "Select character", or "Select paragraph" for the current part.
+From the keyboard, hold Shift while pressing a movement key. Control+A selects all the text in an open text view.
+With your voice, say "Select word", "Select line", "Select sentence", "Select character", or "Select paragraph" for the current part.
 Say "Select all" for all the text. Say "What is selected" or "Read selection" to check your choice.
 In a document or draft, say "Select", followed by the part you want. You can use first, next, previous, last, current, or a number with character, word, line, sentence, or paragraph. For example, say "Select first paragraph", "Select next paragraph", "Select previous paragraph", or "Select paragraph 3".
 In an email address box, a subject box, a note, or a web text box, selection applies only to the text in that area.
@@ -212,7 +312,7 @@ To choose a match by number, say "Match", followed by its number. For example, s
 To select the word all rather than all the text, say "Select the word all".
 
 5.5 Copy, cut, paste, or remove text
-Say "Copy selection", "Cut selection", or "Paste". Keyboard: use Control+C, Control+X, or Control+V.
+Say "Copy selection", "Cut selection", or "Paste". From the keyboard, use Control+C, Control+X, or Control+V.
 In a document or draft, say "Copy", "Cut", or "Delete", followed by the words you want to change. For example, say "Copy cat", "Cut cat", or "Delete cat".
 Say "Delete word", "Delete line", "Delete sentence", or "Delete paragraph" to remove the current part.
 Say "Scratch" or "Scratch that" to remove selected text. If no text is selected, the command removes the most recent dictated text where this feature is supported.
@@ -363,7 +463,7 @@ Google Calendar and Google Drive are not connected in this version.
 2. Give the address or a saved contact name when asked.
 3. Give the subject when asked.
 4. Speak the message in short parts. Listen back before sending.
-Keyboard: In email, Control+N starts a new message. Type an address in To and press Enter. Continue through the subject and message.
+From the keyboard in email, press Control+N to start a new message. Type an address in To and press Enter. Continue through the subject and message.
 When speaking an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com.
 
 9.2 Change To, CC, BCC, or Subject
@@ -392,7 +492,7 @@ Save the draft first if you want to keep it. "Leave email" saves the draft and r
 Canceling cannot take back a message already sent. If you reopened a saved draft, canceling keeps its earlier saved copy.
 
 9.5 Review and send
-1. Say "Send email", "Send it", or "Send that". Keyboard: press Control+Enter in the draft.
+1. Say "Send email", "Send it", or "Send that". From the keyboard, press Control+Enter in the draft.
 2. Listen to the sending account, addresses, subject, and message.
 3. If something is wrong, say "Cancel send". Fix it, then start the review again.
 4. Say "Yes" only when the review is right.
@@ -410,7 +510,7 @@ If Companion says the result is uncertain, check your sent mail and ask the reci
 To choose a message by number, say "Read message" or "Open message", followed by its number. For example, say "Read message 1" or "Open message 1".
 Say "Message details" to repeat the sender, subject, and date. Say "Continue reading" for more of a long message.
 Say "Read from beginning" to read it again. "Back to folder" or "Go back" returns to the message list.
-Keyboard: Up Arrow and Down Arrow choose a message. Enter opens it. Escape returns to the list.
+From the keyboard, press Up Arrow or Down Arrow to choose a message. Enter opens it. Escape returns to the list.
 
 10.2 Go to folders
 Say "Go to folder" to hear a folder list. Use "Next", "Previous", and "That one" to choose.
@@ -418,7 +518,7 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 Use "Back to inbox" to return to Inbox. "Which folder" tells you where you are.
 To open a folder within another folder, give its full location. For example, say "Go to Projects slash 2026" or "2026 inside of Projects".
 If two folders have the same name, listen to each full location. Choose the right one with "Next" and "That one".
-Keyboard: Control+Y opens folders. Use arrows and Enter. Escape cancels the folder list.
+From the keyboard, press Control+Y to open folders. Use arrows and Enter. Escape cancels the folder list.
 
 10.3 Select, move, or delete messages
 Say "Mark", "Select", "Mark message", or "Select message" to mark the message you hear.
@@ -427,13 +527,13 @@ Say "Delete" to move marked messages to Trash. With no marks, it acts on the cur
 Say "Move" to choose a destination folder from a list. To name the folder directly, say "Move to", followed by its name. For example, say "Move to Saved".
 "Delete message" and "Move message" act on the current message even if other messages are marked.
 Listen to the action and names, then answer Yes or No. Check the folder before repeating an action with an uncertain result.
-Keyboard: Space marks or unmarks a message. Shift+Up Arrow and Shift+Down Arrow extend the selection.
+From the keyboard, press Space to mark or unmark a message. Shift+Up Arrow and Shift+Down Arrow extend the selection.
 Control+A marks messages on the loaded page. Delete requests deletion. Control+Shift+V chooses a folder for moving mail.
 Inside an open message, Control+A selects text to copy; it does not mark other messages.
 
 10.4 Reply or forward
 Open the message first. Say "Reply", "Reply all", or "Forward".
-Keyboard: Control+R replies. Control+Shift+R replies to all. Control+F forwards.
+From the keyboard, press Control+R to reply, Control+Shift+R to reply to all, or Control+F to forward.
 Reply all includes the sender and the other recipients listed on the message. Check the addresses before sending.
 For a forward, enter the new address when asked. Speak your added text, then use the review and send steps in chapter 9.
 Gmail and Yahoo forwarding do not include the original attachments in this version.
@@ -448,7 +548,7 @@ Say "Delete folder" to choose from a list. To name the folder directly, say "Del
 Listen to the full folder location and the action. Say "Yes" to go ahead or "No" to cancel.
 You can delete only folders you created that contain no messages or other folders. Built-in folders such as Inbox are protected.
 Some email services restrict folder changes. For example, Gmail labels with child labels have limits on renaming, moving, or deleting.
-Keyboard: Control+Shift+E starts folder creation. F2 starts renaming. Control+Shift+D starts folder deletion.
+From the keyboard, press Control+Shift+E to create a folder, F2 to rename one, or Control+Shift+D to delete one.
 
 10.6 Read links and load more mail
 In email that keeps web-style formatting, Companion reads links and buttons as part of the message.
@@ -482,7 +582,7 @@ Use arrows and Enter, or say the name of a menu item. Press Escape from this men
 3. Wait for the page title and site name.
 4. Use the page reading commands to explore the result.
 To open a website, enter its address. For example, type example.com. You do not need to type www or https.
-Voice: Say "Open website", followed by the address. Use "dot" for a period and "slash" for /. For example, say "Open website example dot com". Companion asks you to check the address before opening the site.
+With your voice, say "Open website", followed by the address. Use "dot" for a period and "slash" for /. For example, say "Open website example dot com". Companion asks you to check the address before opening the site.
 Control+L opens the address and search box from a page. Escape cancels entry.
 Google is the default search engine. In Web browser options, you can also choose Bing, Brave Search, or DuckDuckGo.
 To change the default, say "Search engine" or "Default search engine", followed by the engine name. For example, say "Search engine Brave Search" or "Default search engine Google".
@@ -492,7 +592,7 @@ Say "Try Brave Search", "Try Bing", or "Try DuckDuckGo" to repeat the search the
 
 11.3 Read a page
 Companion reads the page in its own window. Use the page view in the Companion window for the keys below.
-Up Arrow and Down Arrow read lines, including text between links. Left Arrow and Right Arrow read characters.
+Up Arrow and Down Arrow read blocks of page text, including paragraphs, list items, and text between links. Left Arrow and Right Arrow read characters.
 Control+Left Arrow and Control+Right Arrow read words. Control+Up Arrow and Control+Down Arrow read paragraphs.
 Control+Home and Control+End reach the page ends. Home and End reach the ends of the current line.
 "Read page" starts at the top. "Continue reading" reads the next part.
@@ -524,7 +624,7 @@ A heading choice moves your reading place. A link choice opens its address.
 4. Press Enter to save a single-line answer. Use Control+Enter for a box with several lines.
 5. Press Escape to cancel editing and return to page reading.
 Tab saves your entry and moves to the next control. Shift+Tab moves to the previous control. Letter keys enter text while you are editing.
-Voice: "Save field" keeps your entry. "Cancel field editing" leaves its earlier value unchanged.
+You can say "Save field" to keep your entry. Say "Cancel field editing" to leave its earlier value unchanged.
 Say "Select all" to select the text in the active box. Say "Read selection" to check it, or "Scratch" to remove it.
 For a checkbox, press Space or say "Check checkbox", "Uncheck checkbox", or "Toggle checkbox".
 In a choice box, arrows change the choice. Home and End choose the first and last options.
@@ -541,7 +641,7 @@ Say "Continue review" to hear the next part. If an answer is wrong, say "Change 
 To choose a field by number, say "Change field", followed by the number. For example, say "Change field two". Give the new answer, then review again.
 Say "Yes" only when all answers and the named button are right. "No" stops the submission.
 Changing an answer after review cancels the older Yes or No request. Review again before submitting.
-Keyboard: Enter or Space on a web Send or Submit button uses that website's own checks. It does not start the voice review.
+You can press Enter or Space on a web Send or Submit button. This uses that website's own checks. It does not start the voice review.
 File uploads, some custom controls, and human-verification checks may need help. If a page cannot be read, do not guess at a final button.
 Say "Ask for help" to hear which page needs attention.
 
@@ -831,7 +931,7 @@ The keyboard still works while voice commands are asleep. Sleep is different fro
 
 19.2 Close Companion
 Say "Exit Companion", "Close Companion", "Shut down Companion", or "Return to Windows" to close the app.
-Keyboard: Alt+F4 requests exit. Escape at the main menu also requests exit.
+You can press Alt+F4 to request exit. Escape at the main menu also requests exit.
 At the exit prompt, No is selected by default. Say "Yes" to exit or "No" to keep working.
 If a document is open, answer its save question first. Escape cancels the exit request and keeps the document open.
 Exiting Companion does not shut down Windows.

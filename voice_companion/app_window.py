@@ -234,6 +234,8 @@ class CompanionWindow:
                     elif not field and key=='space':request='Web:Space'
                     elif key=='Left' and event.state&(8|0x20000):request='Web:Back'
 
+                elif self.context.get('help_reader') and not shift and not event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End') and not (event.widget==typed and self.command_entry_active):
+                    request='Help:'+('Ctrl+' if control and key in ('Left','Right') else '')+key
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
                     if self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not event.state&(8|0x20000) and key.lower() in ('k','b'):
