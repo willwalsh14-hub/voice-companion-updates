@@ -7,11 +7,27 @@ from types import SimpleNamespace
 from unittest.mock import Mock,patch
 import companion as app
 from app_updates import AppUpdates
-from update_voice import Microphone,status_request,progress
+from update_voice import Microphone,ProgressSpeech,status_request,progress
 from web_assistant import BrowserBackend,WebSession,WebError
 from test_web_assistant import FakeBackend
 
 class UpdateRecoveryTests(unittest.TestCase):
+    def test_native_speech_cannot_block_listener_shutdown(self):
+        import sys,time,types
+        entered=threading.Event();release=threading.Event();voice=Mock()
+        def speak(*args):entered.set();release.wait(5)
+        voice.Speak.side_effect=speak
+        client=types.ModuleType('win32com.client');client.Dispatch=Mock(return_value=voice)
+        parent=types.ModuleType('win32com');parent.__path__=[];parent.client=client
+        with tempfile.TemporaryDirectory() as folder,patch.dict(sys.modules,{'pythoncom':Mock(),'win32com':parent,'win32com.client':client}):
+            speech=ProgressSpeech(folder)
+            try:
+                speech.say(37);self.assertTrue(entered.wait(1))
+                started=time.monotonic();speech.close()
+                self.assertLess(time.monotonic()-started,3)
+                self.assertTrue(speech.stopped.is_set())
+            finally:release.set();speech.thread.join(1)
+
     def test_status_interrupts_download_speech_and_preparing_remains_responsive(self):
         service=SimpleNamespace(percent=37,phase='downloading')
         with patch.object(app,'UPDATES',service),patch.object(app,'speak') as say,patch.object(app,'interrupt_speech') as stop:

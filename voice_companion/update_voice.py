@@ -4,6 +4,7 @@ import json
 import queue
 import sys
 import time
+import threading
 from pathlib import Path
 from audio_resample import PCM16Resampler, stereo_to_mono
 
@@ -15,6 +16,40 @@ def progress(folder):
 
 def status_request(text):
     return text.strip().lower().rstrip('.!?') in ('status','update status')
+
+class ProgressSpeech:
+    """Native speech must never hold the microphone or stop request hostage."""
+    def __init__(self,folder):
+        self.folder=Path(folder);self.messages=queue.Queue(maxsize=1);self.stopped=threading.Event()
+        self.thread=threading.Thread(target=self._run,daemon=True);self.thread.start()
+    def say(self,percent):
+        try:self.messages.get_nowait()
+        except queue.Empty:pass
+        try:self.messages.put_nowait(percent)
+        except queue.Full:pass
+    def _run(self):
+        import pythoncom
+        pythoncom.CoInitialize()
+        voice=None
+        try:
+            import win32com.client
+            voice=win32com.client.Dispatch('SAPI.SpVoice');voice.Volume=100
+            (self.folder/'speech-ready').write_text('ready')
+            while not self.stopped.wait(.02):
+                pythoncom.PumpWaitingMessages()
+                try:percent=self.messages.get_nowait()
+                except queue.Empty:continue
+                voice.Speak('Installing the update. '+str(percent)+' percent.',3)
+                (self.folder/'speech-spoken').write_text(str(percent))
+            voice.Speak('',3)
+            voice.WaitUntilDone(500)
+        except Exception as exc:
+            (self.folder/'voice-speech-error.txt').write_text(str(exc))
+        finally:
+            voice=None
+            pythoncom.CoUninitialize()
+    def close(self):
+        self.stopped.set();self.thread.join(timeout=2)
 
 def recognize_file(path):
     import wave
@@ -79,11 +114,9 @@ class Microphone:
 
 
 def run(folder,headless=False,no_microphone=False):
-    import win32com.client
     from vosk import Model, SetLogLevel
     folder=Path(folder);SetLogLevel(-1)
-    voice=win32com.client.Dispatch('SAPI.SpVoice')
-    voice.Volume=100
+    speech=ProgressSpeech(folder)
     microphone=None;window=None;requested=queue.Queue()
     label=None
     if not headless:
@@ -94,8 +127,6 @@ def run(folder,headless=False,no_microphone=False):
         button=tk.Button(window,text='Status',command=lambda:requested.put(True));button.pack(pady=12);button.focus_set()
         window.bind('<Return>',lambda event:requested.put(True));window.bind('<Alt-s>',lambda event:requested.put(True))
         window.protocol('WM_DELETE_WINDOW',lambda:window.iconify())
-    def say(percent):
-        voice.Speak('Installing the update. '+str(percent)+' percent.',3)
     try:
         if not no_microphone:
             microphone=Microphone(Model(str(Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'model')))
@@ -114,14 +145,12 @@ def run(folder,headless=False,no_microphone=False):
             repeat=bool(microphone and microphone.stream and microphone.requested())
             while not requested.empty():requested.get_nowait();repeat=True
             if repeat or percent>=announced+5:
-                say(percent);announced=percent
+                speech.say(percent);announced=percent
             time.sleep(.02)
-        if progress(folder)==100:
-            say(100);voice.WaitUntilDone(2000)
-        else:voice.Speak('',3)
     finally:
         if microphone:microphone.close()
         if window:window.destroy()
+        speech.close()
         (folder/'voice-closed').write_text('closed')
     return 0
 
@@ -131,6 +160,11 @@ if __name__=='__main__':
     parser.add_argument('--headless',action='store_true');parser.add_argument('--no-microphone',action='store_true')
     parser.add_argument('--recognize-file')
     args=parser.parse_args()
-    try:raise SystemExit(recognize_file(args.recognize_file) if args.recognize_file else run(args.folder,args.headless,args.no_microphone))
+    # All input and window resources are released above. Native COM finalizers
+    # can otherwise delay this isolated helper's exit after async speech.
+    import os
+    try:
+        code=recognize_file(args.recognize_file) if args.recognize_file else run(args.folder,args.headless,args.no_microphone)
+        os._exit(code)
     except Exception as exc:
-        Path(args.folder,'voice-error.txt').write_text(str(exc));raise
+        Path(args.folder,'voice-error.txt').write_text(str(exc));os._exit(1)
