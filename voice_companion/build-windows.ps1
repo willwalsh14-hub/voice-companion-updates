@@ -76,6 +76,11 @@ if (-not $NoPublish) {
 if ($LASTEXITCODE -ne 0) { throw 'Could not update the package installer securely.' }
 & $python -m pip install --disable-pip-version-check -r requirements.txt 'pyinstaller==6.22.3' 'pyinstaller-hooks-contrib==2026.7'
 if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
+$extensionTestRuntime = Join-Path $buildEnv 'extension-test-browser'
+$env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
+& $python -m playwright install chromium
+if ($LASTEXITCODE -ne 0) { throw 'The fixture browser for extension integration checks could not be prepared.' }
+Remove-Item Env:PLAYWRIGHT_BROWSERS_PATH
 & $python build_user_guides.py
 if ($LASTEXITCODE -ne 0) { throw 'The accessible user guides could not be generated or validated.' }
 $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
@@ -336,15 +341,17 @@ foreach ($browserKey in @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\com
 }
 & $python (Join-Path $PSScriptRoot 'check_browser_connection.py') (Join-Path $installedFolder 'VoiceCompanion-BrowserHost.exe')
 if ($LASTEXITCODE -ne 0) { throw 'The installed native browser connection failed its end-to-end pipe check.' }
+& $python (Join-Path $PSScriptRoot 'check_extension_browser.py') $installedFolder $extensionTestRuntime
+if ($LASTEXITCODE -ne 0) { throw 'The installed extension did not preserve the standard browser navigation and forms.' }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.137-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.138-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --refresh-guides
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.137-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.138-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -371,7 +378,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.137-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.138-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing

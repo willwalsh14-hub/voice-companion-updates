@@ -1,0 +1,56 @@
+name: Verify standard browser features through extension
+on:
+  pull_request:
+    branches: [main]
+    paths: ['voice_companion/**', '.github/workflows/extension-compatibility.yml']
+  push:
+    branches: [main]
+    paths: ['voice_companion/**', '.github/workflows/extension-compatibility.yml']
+permissions:
+  contents: read
+concurrency:
+  group: extension-compatibility-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  extension:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: voice_companion
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Check selected-tab protocol and routing
+        run: node regular_browser_extension/test-worker.cjs
+      - name: Prepare real extension fixture browser
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt pyinstaller==6.22.3 pyinstaller-hooks-contrib==2026.7
+          if ($LASTEXITCODE -ne 0) { throw 'Test dependency installation failed.' }
+          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $PWD 'extension-test-runtime'
+          python -m playwright install chromium
+          if ($LASTEXITCODE -ne 0) { throw 'Test browser installation failed.' }
+      - name: Package and register native test host
+        shell: pwsh
+        run: |
+          python -m PyInstaller --clean --noconfirm --onefile --console --name VoiceCompanion-BrowserHost --hidden-import win32com.client browser_bridge_host.py
+          if ($LASTEXITCODE -ne 0) { throw 'Native host packaging failed.' }
+          Copy-Item regular_browser_extension dist/regular_browser_extension -Recurse
+          & ./dist/VoiceCompanion-BrowserHost.exe --register
+          if ($LASTEXITCODE -ne 0) { throw 'Native host manifest generation failed.' }
+          $manifest = Join-Path $PWD 'dist/browser-native-host.json'
+          foreach ($key in @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.voicecompanion.browser', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\com.voicecompanion.browser')) {
+            New-Item -Path $key -Force | Out-Null
+            Set-Item -Path $key -Value $manifest
+          }
+      - name: Verify existing browser features through the real extension
+        shell: pwsh
+        run: |
+          python -u check_extension_browser.py (Join-Path $PWD 'dist') (Join-Path $PWD 'extension-test-runtime')
+          if ($LASTEXITCODE -ne 0) { throw 'Extension compatibility checks failed.' }

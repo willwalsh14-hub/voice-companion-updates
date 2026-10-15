@@ -45,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.137-test'
+APP_VERSION = '0.2.138-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -388,7 +388,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Regular browser connection', 'regular browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -1196,8 +1196,17 @@ def speak_web_result(text,previous_revision):
 
 def open_browser_menu():
     global web_session
+    if os.name=='nt':
+        try:
+            from browser_cdp_relay import prepare
+            prepare(APP)
+        except OSError:
+            speak('The browser extension connection could not start. Close other copies of Companion and try again.')
     web_session=web_session or WebSession(APP,progress=speak_status)
-    speak(web_session.menu.start(resume=PREFERENCES.get('web_keep_open',False) and bool(web_session.snapshot)))
+    try:web_session.adopt_connected_browser()
+    except Exception:
+        speak('The regular browser tab could not be read. Reconnect it using the extension, then open this menu again.')
+    speak(web_session.menu.start(resume=(PREFERENCES.get('web_keep_open',False) or getattr(web_session.backend,'regular',False)) and bool(web_session.snapshot)))
     return 'browser_menu'
 
 def handle_browser_menu(text):
@@ -1343,24 +1352,8 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
-    global REGULAR_BROWSER
     if command in ('regular browser','open regular browser','connect regular browser'):
-        from regular_browser import BrowserConnection, HELP
-        try:
-            if REGULAR_BROWSER is None: REGULAR_BROWSER = BrowserConnection(APP)
-            speak(HELP)
-            return 'regular_browser'
-        except OSError as exc:
-            speak('The regular browser connection could not start. Close other copies of Voice Companion and try again.')
-            return mode
-    if mode=='regular_browser':
-        from regular_browser import COMMANDS, HELP
-        if command in ('main menu','back to main menu','exit browser','leave browser'):
-            announce_main_menu();return 'awake'
-        if command in COMMANDS:
-            speak(REGULAR_BROWSER.request(COMMANDS[command]));return mode
-        if command in ('help','browser help','regular browser help'):
-            speak(HELP);return mode
+        return open_browser_menu()
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Choose a station or episode first.')
         return mode
@@ -3248,6 +3241,11 @@ if __name__ == '__main__':
             from keyboard_speech import KeyboardSpeech
             KEYBOARD_SPEECH=KeyboardSpeech();KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'));APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
             APP_WINDOW.start()
+            if os.name=='nt':
+                try:
+                    from browser_cdp_relay import prepare
+                    prepare(APP)
+                except OSError:pass
         except Exception:
             APP_WINDOW = None
             APP.mkdir(parents=True, exist_ok=True)

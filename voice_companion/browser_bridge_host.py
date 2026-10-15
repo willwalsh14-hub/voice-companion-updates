@@ -21,12 +21,12 @@ def read_exact(stream, length):
     return bytes(parts)
 
 
-def read_message(stream):
+def read_message(stream, max_size=MAX_MESSAGE):
     first = stream.read(1)
     if not first:
         return None
     size = struct.unpack('<I', first + read_exact(stream, 3))[0]
-    if not 0 < size <= MAX_MESSAGE:
+    if not 0 < size <= max_size:
         raise ValueError('Browser message is too large.')
     message = json.loads(read_exact(stream, size))
     if not isinstance(message, dict):
@@ -118,6 +118,10 @@ def main():
         try:
             message = read_message(sys.stdin.buffer)
             if message is None:
+                return
+            if message.get('protocol') == 2 and message.get('command') == 'cdp':
+                from browser_cdp_relay import native_stream
+                native_stream(message, sys.stdin.buffer, sys.stdout.buffer)
                 return
             # Synchronous speech keeps the process alive until speech ends.
             # No text from the page is ever evaluated as a command.
