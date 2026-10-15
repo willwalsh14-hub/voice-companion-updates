@@ -80,6 +80,10 @@ class CompanionCDP {
       this.autoAttach = !!params.autoAttach;
       if (this.autoAttach) await Promise.all([...this.tabs.values()].map(async item=>{
         await this.api.debugger.sendCommand({tabId:item.tabId},'Target.setAutoAttach',{autoAttach:false,waitForDebuggerOnStart:false,flatten:true});
+        // A new local driver needs fresh contexts and lifecycle events.
+        // Re-enabling an already enabled Runtime does not replay contexts.
+        for (const domain of ['Runtime','Page','Network','Log'])
+          await this.api.debugger.sendCommand({tabId:item.tabId},domain+'.disable');
         return this.attach(item);
       }));
       return {};
