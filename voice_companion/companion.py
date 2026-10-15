@@ -45,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.132-test'
+APP_VERSION = '0.2.133-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -730,6 +730,20 @@ def fast_command_request(command, mode):
         return bool(document_navigation_request(command)) or command in START_COMMANDS or command in END_COMMANDS or command in FORMAT_READ_COMMANDS or structural_selection_request(command)
     return False
 
+def navigation_feedback_control(value,mode):
+    command=normalized_command(value)
+    if mode in ('document','email_draft','note') and INPUT_MODE=='dictation':return False
+    if re.fullmatch(r'(?:next|previous|prior)(?: (?:item|option|voice|synthesizer|message|folder|preset|station|episode|podcast|lesson|topic|paragraph|line|word|sentence|character|heading|link|button|field|list|list item|region|frame))?',command):return True
+    return mode=='web' and web_feedback_control(command,mode)
+
+def interrupt_partial_navigation(recognizer,mode):
+    try:partial=json.loads(recognizer.PartialResult()).get('partial','')
+    except (ValueError,AttributeError):return False
+    if not navigation_feedback_control(partial,mode):return False
+    if speech_busy():interrupt_speech()
+    return True
+
+
 def fast_offline_silence(recognizer, utterance):
     """Act on an unambiguous partial phrase before endpoint silence expires."""
     try:
@@ -1119,6 +1133,8 @@ def speak(text):
     if AI_SPEECH is not None and AI_SPEECH.enabled:
         AI_SPEECH.speak(punctuation_for_speech(text), SPEECH_RATE, SPEECH_VOLUME)
         return
+    if KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem:
+        KEYBOARD_SPEECH.speak(punctuation_for_speech(text));return
     sapi_speak(voice,punctuation_for_speech(text),SPEECH_PITCH,flags=1)  # Async: microphone stays responsive.
 
 
@@ -1157,7 +1173,7 @@ def speak_web_result(text,previous_revision):
 def open_browser_menu():
     global web_session
     web_session=web_session or WebSession(APP,progress=speak_status)
-    speak(web_session.menu.start()+(' Resume where you left off is available.' if PREFERENCES.get('web_keep_open',False) and web_session.snapshot else ''))
+    speak(web_session.menu.start(resume=PREFERENCES.get('web_keep_open',False) and bool(web_session.snapshot)))
     return 'browser_menu'
 
 def handle_browser_menu(text):
@@ -2568,7 +2584,9 @@ def handle(text, mode, typed=False):
     if help_navigation and not speech_control(text):
         interrupt_speech()
         KEYBOARD_NAVIGATION=True
-    if quick_read:KEYBOARD_NAVIGATION=True
+    if quick_read or navigation_feedback_control(text,mode):
+        if not help_navigation:interrupt_speech()
+        KEYBOARD_NAVIGATION=True
     old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
     old_send=pending_send
     _HANDLE_DEPTH += 1
@@ -2831,7 +2849,7 @@ def main():
                 if mode=='exit':return 0
                 continue
             logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
-            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.6 and (APP_WINDOW is None or time.monotonic()-getattr(APP_WINDOW,'last_navigation',0)>.12):
+            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.6 and AUDIO.empty() and (APP_WINDOW is None or time.monotonic()-getattr(APP_WINDOW,'last_navigation',0)>.12):
                 last_web_refresh=time.monotonic()
                 try:
                     refresh_browser_view(mode)
@@ -2921,16 +2939,6 @@ def main():
                     notice = browser_focus_notice(mode)
                     if notice: speak(notice)
                 continue
-            if mode == 'web' and web_session and time.monotonic() - last_focus_check > 1.2:
-                last_focus_check = time.monotonic()
-                revision=getattr(web_session,'page_revision',0)
-                web_session.auto_read=PREFERENCES.get('web_auto_read',True)
-                web_session.search_engine=PREFERENCES.get('web_search_engine','google')
-                try:
-                    notice=web_session.refresh_changed()
-                    sync_app_context(mode)
-                    if notice:speak_web_result(notice,revision)
-                except Exception:pass
             if AUDIO_OVERFLOW:
                 if cloud:
                     cloud.stop()
@@ -2955,9 +2963,11 @@ def main():
                 if time.monotonic()<settings_quiet_until:
                     settings_audio_blocked=True
                     utterance.clear()
-                    if recognizer.AcceptWaveform(audio):
+                    if not recognizer.AcceptWaveform(audio):
+                        interrupt_partial_navigation(recognizer,mode)
+                    else:
                         control=json.loads(recognizer.Result()).get('text','').lower()
-                        if spoken_control(control) or speech_control(control) or web_feedback_control(control,mode) or mode=='help' and HelpSession.accepts(control):
+                        if spoken_control(control) or speech_control(control) or navigation_feedback_control(control,mode) or mode=='help' and HelpSession.accepts(control):
                             interrupt_speech()
                             mode=handle(control,mode)
                             if mode=='exit':return 0
@@ -3010,6 +3020,7 @@ def main():
                     speak('That was too long. Please speak in shorter passages.')
                     continue
             if not recognizer.AcceptWaveform(audio):
+                if mode!='sleep':interrupt_partial_navigation(recognizer,mode)
                 if mode != 'sleep' and fast_offline_silence(recognizer, utterance):
                     continue
                 continue

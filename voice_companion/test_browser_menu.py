@@ -18,6 +18,13 @@ class BrowserMenuTests(unittest.TestCase):
     def run_command(self, command, keep=True):
         return self.menu.process(command, self.session, keep)
 
+    def test_resume_is_first_only_when_a_page_is_kept(self):
+        self.session.open('https://example.test/')
+        self.assertEqual(self.menu.choices(self.session,True)[0],('Resume where you left off','resume'))
+        self.assertEqual(self.menu.choices(self.session,False)[0][1],'search')
+        self.session.snapshot=None
+        self.assertEqual(self.menu.choices(self.session,True)[0][1],'search')
+
     def test_spoken_favorite_commands_accept_added_final_punctuation(self):
         self.session.favorites.add('News','https://example.test/news')
         self.run_command('Go to favorite.')

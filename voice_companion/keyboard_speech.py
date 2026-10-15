@@ -21,17 +21,18 @@ class KeyboardSpeech:
     def busy(self):return (self.active and not getattr(self,'paused',False)) or time.monotonic()<self.quiet_until
     def control(self,action):self.queue.put((action,))
     def interrupt(self,notify=True):
-        if notify and hasattr(self,'narration_interrupt'):self.narration_interrupt.set()
+        if notify and hasattr(self,'narration_interrupt'):
+            self.narration_interrupt.set()
+            if getattr(self,'ai',None):self.ai.interrupt()
+            settings=getattr(self,'settings',())
+            if len(settings)>3 and settings[3]:settings[3].interrupt()
         while True:
             try:self.queue.get_nowait()
             except queue.Empty:break
         self.control('interrupt')
     def poll_control(self,pressed):
         # Control also silences Companion when the guided browser has focus.
-        if pressed and not getattr(self,'ctrl_down',False):
-            self.interrupt()
-            if getattr(self,'ai',None):self.ai.interrupt()
-            if len(self.settings)>3 and self.settings[3]:self.settings[3].interrupt()
+        if pressed and not getattr(self,'ctrl_down',False):self.interrupt()
         self.ctrl_down=pressed
 
     def run(self):

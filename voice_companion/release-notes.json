@@ -1,23 +1,17 @@
 {
-  "version": "0.2.132-test",
+  "version": "0.2.133-test",
   "status": "Testing build",
   "date": "October 14, 2026",
-  "baseline": "0.2.131-test",
-  "scope": "Clearer web page labels, easier link lists, and support for HTTP pages.",
+  "baseline": "0.2.132-test",
+  "scope": "Clearer web controls, working page buttons, and quicker navigation.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Open HTTP pages",
+          "title": "Use buttons to move through a website",
           "details": [
-            "HTTP links can now open and can be saved as favorites. Web history also keeps these pages. A bare address still starts with HTTPS. To request HTTP directly, enter the full address, such as http://example.com. HTTP does not encrypt the connection."
-          ]
-        },
-        {
-          "title": "Move between frames",
-          "details": [
-            "Press M or Shift+M, or say \"Next frame\" or \"Previous frame\". Frame names and readable content appear in page order. Hidden frames are skipped."
+            "Activate a button with Enter, Space, or \"Activate current button\". The website handles Next and other buttons using its own checks. Companion announces loading and reads required-field messages. \"Review and submit form\" still lets you ask for a spoken review."
           ]
         }
       ]
@@ -26,16 +20,21 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Hear clearer page labels",
+          "title": "Hear buttons and fields while reading a page",
           "details": [
-            "Companion uses the names supplied by the website. It identifies graphics, lists, list items, and page regions. Missing names are reported as missing.",
-            "K and Shift+K move between links. L and Shift+L move between lists. I and Shift+I move between list items. G moves to a graphic. D moves to a region. Hold Shift to move backward."
+            "Arrow reading now names buttons and form fields and says what type they are. Pictures used as buttons are announced as buttons. Checkboxes include their state. Passwords stay private."
           ]
         },
         {
-          "title": "Find a link by name",
+          "title": "Resume your page sooner",
           "details": [
-            "In the links list, type a first letter, several letters, or the full link name. Spaces and Backspace work too. Typing selects a match; Enter opens it. The headings list supports the same name search."
+            "Turn on Keep browser window open to keep a page. Resume where you left off then comes first in the web browser menu."
+          ]
+        },
+        {
+          "title": "Move without waiting for old speech",
+          "details": [
+            "Say Next or Previous to stop old speech and move. Replies use a local voice to start sooner. Key presses also stop online speech that is still being made. Page checks spend less time waiting, so the app can check your input sooner."
           ]
         }
       ]

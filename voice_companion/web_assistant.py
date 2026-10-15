@@ -497,7 +497,13 @@ class BrowserBackend:
         if self.context:self.context.on('page',new_page)
         try:
             self.last_action_started=True;element.click(timeout=10000)
-            deadline=time.monotonic()+8
+            if kind(item)=='button':
+                try:
+                    invalid=element.evaluate('e=>{const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('+ACCESSIBLE_LABEL+')(bad),message:bad.validationMessage}:null;}')
+                    if invalid:return {'validation':invalid['label']+'. '+invalid['message']}
+                except Exception:pass
+            clicked_at=time.monotonic()
+            deadline=clicked_at+8
             changed=False
             while time.monotonic()<deadline:
                 candidates=[p for p in opened if not p.is_closed()]
@@ -522,7 +528,7 @@ class BrowserBackend:
                 except Exception:
                     # Navigation can briefly destroy the old JavaScript context.
                     pass
-                if kind(item)!='link' and not item.get('href'):
+                if kind(item)!='link' and not item.get('href') and time.monotonic()-clicked_at>=.35:
                     changed=True;break
                 before_page.wait_for_timeout(50)
             if not changed:
@@ -541,7 +547,7 @@ class BrowserBackend:
                         try:frame.wait_for_function("old=>(document.body?.innerText.slice(0,200000)||'')!==old",arg=before_text,timeout=5000)
                         except BrowserTimeout:pass
                 except Exception:pass
-            self.wait_ready()
+            if self.page is not before_page or frame.url!=before_url or frame.evaluate('()=>performance.timeOrigin')!=before_epoch:self.wait_ready()
             return {'fragment':fragment,'frame_index':item.get('frame_index')}
         finally:
             if self.context:self.context.remove_listener('page',new_page)
@@ -672,7 +678,8 @@ class WebSession:
             self.reading.position=paragraph_destination(text,position,direction)
         else:
             from bisect import bisect_right
-            starts=[0]+[m.end() for m in re.finditer('\n',text)]
+            if 'web:line_starts' not in self.reading._cache:self.reading._cache['web:line_starts']=[0]+[m.end() for m in re.finditer('\n',text)]
+            starts=self.reading._cache['web:line_starts']
             index=max(0,bisect_right(starts,position)-1)
             column=getattr(self,'preferred_column',None)
             if column is None:column=position-starts[index]
@@ -819,10 +826,11 @@ class WebSession:
                     self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
-                if role=='button' and direct_submit:
-                    self.backend.activate(item)
-                    return 'Pressed '+_label(item)+'. '+self._refresh()
-                if role=='button' and item.get('type')=='submit':return self.prepare_submit()
+                if role=='button':
+                    self.progress('Loading page.')
+                    action=self.backend.activate(item)
+                    message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
+                    return action['validation'] if isinstance(action,dict) and action.get('validation') else 'Pressed '+_label(item)+'. '+message
                 if role in ('link','button'):
                     if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
                     if role=='link':self.pending=item;return self.confirm()
@@ -1037,19 +1045,19 @@ class WebSession:
         stamp=self._stamp()
         if not stamp:return ''
         previous=self.document_state or {}
-        if stamp.get('url')!=previous.get('url'):return self._refresh()
+        if stamp.get('url')!=previous.get('url'):return self._refresh(wait=False)
         if stamp.get('epoch')!=previous.get('epoch'):return self._refresh(read=False,wait=False)
-        if self.keyboard_field and hasattr(self.backend,'field_exists') and not self.backend.field_exists(self.keyboard_field):return self._refresh()
+        if self.keyboard_field and hasattr(self.backend,'field_exists') and not self.backend.field_exists(self.keyboard_field):return self._refresh(wait=False)
         if self.list_focus or self.form_index is not None or self.pending or self.submit_pending:return ''
-        if not self.keyboard_field and not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True)
+        if not self.keyboard_field and not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True,wait=False)
         if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames','frame_states')):return ''
         self.document_state=stamp
-        if not self.keyboard_field and previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True)
+        if not self.keyboard_field and previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True,wait=False)
         snapshot,captured_state=self._capture()
         if snapshot.get('modal_key','')!=self.snapshot.get('modal_key',''):
             return self._refresh(read=False,wait=False)
         self.document_state=captured_state
-        if not self.keyboard_field and snapshot.get('title')!=self.snapshot.get('title'):return self._refresh(read=False,preserve=True)
+        if not self.keyboard_field and snapshot.get('title')!=self.snapshot.get('title'):return self._refresh(read=False,preserve=True,wait=False)
         position=self.reading.position;continuation=self.reading.continuation
         anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
@@ -1336,8 +1344,7 @@ class WebSession:
         item = self.pending
         self.pending = None
         if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
-        if item.get('role') == 'button' and (item.get('in_form') or
-                re.search(r'\b(pay|purchase|transfer|send|submit|delete|apply|confirm|place order)\b', _label(item), re.I)):
+        if item.get('role') == 'button' and re.search(r'\b(pay|purchase|transfer|send|submit|delete|apply|confirm|place order)\b', _label(item), re.I):
             return 'This action may submit information or move money. Ask your helper to review and complete it in the browser.'
         try:
             self.progress('Loading page.')

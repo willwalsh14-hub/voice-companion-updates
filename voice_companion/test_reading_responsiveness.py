@@ -57,4 +57,19 @@ class ReadingResponsivenessTests(unittest.TestCase):
         self.assertEqual(paragraph_destination(text,0,1),10)
         self.assertEqual(paragraph_destination(text,15,-1),10)
         self.assertEqual(paragraph_destination(text,10,-1),0)
+    def test_navigation_can_interrupt_narration_in_each_app_area(self):
+        with patch.object(app,'INPUT_MODE','mixed'):
+            for mode in ('awake','document','email_draft','mailbox','help','web','note','media','podcast','tutorial','settings','browser_menu'):
+                for phrase in ('next','previous','next item','previous paragraph'):
+                    self.assertTrue(app.navigation_feedback_control(phrase,mode),(phrase,mode))
+        with patch.object(app,'INPUT_MODE','dictation'):
+            for mode in ('document','email_draft','note'):self.assertFalse(app.navigation_feedback_control('next',mode))
+        self.assertFalse(app.navigation_feedback_control('The next item is blue','document'))
+
+    def test_partial_navigation_interrupts_without_executing_or_resetting(self):
+        recognizer=Mock();recognizer.PartialResult.return_value='{"partial":"next"}'
+        with patch.object(app,'speech_busy',return_value=True),patch.object(app,'interrupt_speech') as stop,patch.object(app,'handle') as handle,patch.object(app,'INPUT_MODE','mixed'):
+            self.assertTrue(app.interrupt_partial_navigation(recognizer,'awake'))
+            stop.assert_called_once();handle.assert_not_called();recognizer.Reset.assert_not_called()
+
 if __name__=='__main__':unittest.main()

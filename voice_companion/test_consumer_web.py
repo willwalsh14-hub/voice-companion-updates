@@ -96,7 +96,7 @@ class ConsumerWebTests(unittest.TestCase):
         for _ in range(4):self.assertNotIn('changed',self.session.keyboard('ShiftTab').lower())
         self.assertEqual(self.session.keyboard_field['value'],'Test User')
         for _ in range(4):self.assertNotIn('changed',self.session.keyboard('Tab').lower())
-        notice=self.session.keyboard('Activate');self.assertIn('Form review',notice)
+        notice=self.session.command('review and submit form');self.assertIn('Form review',notice)
         while self.session.review_submission:self.session.command('continue review')
         self.assertIn('Thank you',self.session.command('yes'))
         self.assertEqual(self.page.evaluate('window.sent'),1)

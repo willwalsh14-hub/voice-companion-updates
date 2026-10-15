@@ -47,12 +47,12 @@ class BrowserMenu:
                  ('Rename favorite', 'rename'), ('Go back', 'back'),
                  ('Go forward', 'forward'), ('Web history', 'history')]
         if keep_open and session.snapshot:
-            items.append(('Resume where you left off', 'resume'))
+            items.insert(0,('Resume where you left off', 'resume'))
         return items
 
-    def start(self):
+    def start(self,resume=False):
         self.level = 'menu'; self.index = None; self.prefix = ''; self.target = None
-        return 'Web browser menu. Search or type address, Go to favorite, New favorite, Delete favorite, Rename favorite, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
+        return 'Web browser menu. '+('Resume where you left off, ' if resume else '')+'Search or type address, Go to favorite, New favorite, Delete favorite, Rename favorite, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
 
     def menu(self, session, keep_open):
         if self.level == 'name':
@@ -82,7 +82,7 @@ class BrowserMenu:
         if command in ('escape', 'cancel', 'close list', 'web browser menu'):
             if self.level == 'menu' and command != 'web browser menu':
                 return 'Main menu.', 'main'
-            return self.start(), None
+            return self.start(resume=keep_open and bool(session.snapshot)), None
         if self.level == 'name':
             name = text.strip()
             if not name:
@@ -96,13 +96,13 @@ class BrowserMenu:
             except (ValueError, OSError, KeyError, WebError) as exc:
                 return str(exc), None
             result = ('Renamed favorite to ' if self.action == 'rename' else 'Saved favorite ') + name + '.'
-            self.start()
+            self.start(resume=keep_open and bool(session.snapshot))
             return result + ' Web browser menu.', None
         if command.startswith('go to ') and command not in ('go to favorite','go to bookmark'):
             name=text.strip()[6:]
             item=session.favorites.get(name)
             if item:
-                self.start();return '',('open',item['url'])
+                self.start(resume=keep_open and bool(session.snapshot));return '',('open',item['url'])
         state = self.menu(session, keep_open)
         names = state[0] if state else []
         if command.startswith('letter:'):
@@ -144,7 +144,7 @@ class BrowserMenu:
                 self.index = matches[0]
             item = self.items[self.index]
             if self.action in ('open', 'history'):
-                self.start()
+                self.start(resume=keep_open and bool(session.snapshot))
                 return '', ('open', item['url'])
             if self.action == 'delete':
                 try:session.favorites.delete(item['name'])

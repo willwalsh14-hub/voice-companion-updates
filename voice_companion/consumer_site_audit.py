@@ -12,7 +12,10 @@ from companion import APP_VERSION
 from media_hub import MediaHub,_json,RADIO_ROOTS,APPLE_API
 from media_player import MediaPlayer,PLAYER_HTML
 
-SITES=(('Control Alt Success home and contact dialog','https://controlaltsuccess.com/'),
+SITES=(('Hartgen Word training','https://hartgenconsultancy.com/word/'),
+       ('Hartgen Chrome training','https://hartgenconsultancy.com/chromeplatedrevisited/'),
+       ('PayPal public sign-in','https://www.paypal.com/signin'),
+       ('Control Alt Success home and contact dialog','https://controlaltsuccess.com/'),
        ('Control Alt Success services','https://controlaltsuccess.com/services.html'),
        ('Control Alt Success training','https://controlaltsuccess.com/training-options.html'),
        ('Control Alt Success assessment','https://controlaltsuccess.com/assessment.html'),
@@ -65,6 +68,16 @@ def audit(timeout=20000):
                             valid=0<=session.reading.position<=len(session.reading.text) and session.reading.position==session.browse.position
                             entry['checks'].append({'action':command,'passed':valid,'feedback':message[:160]})
                             if not valid:entry['status']='failed'
+                        if name.startswith('Hartgen ') or name=='PayPal public sign-in':
+                            targets=[e for e in elements if kind(e)=='button' and ('paypal' in e.get('label','').lower() if name.startswith('Hartgen ') else e.get('label')=='Next')]
+                            valid=bool(targets)
+                            for control in targets:
+                                session.reading.position=max(0,control['start']-1)
+                                feedback=session.keyboard('Read:Down')
+                                valid=valid and 'button' in feedback.lower()
+                                entry['checks'].append({'action':'Arrow to native button','passed':'button' in feedback.lower(),'feedback':feedback[:160]})
+                            if not valid:entry['status']='failed'
+                            entry['submission']='No purchase or account sign-in submitted.'
                         if name.startswith('Control Alt Success'):
                             # Walk the page as a consumer using Down, not a
                             # semantic links menu. Every noninteractive line

@@ -126,8 +126,8 @@ class WebTests(unittest.TestCase):
         self.assertIn('Ask your helper', self.session.command('yes'))
         self.assertEqual(self.backend.activated, ['1'])
         self.session.command('find continue')
-        self.assertIn('Ask your helper', self.session.command('yes'))
-        self.assertEqual(self.backend.activated, ['1'])
+        self.assertIn('Page loaded', self.session.command('yes'))
+        self.assertEqual(self.backend.activated, ['1','5'])
 
     def test_favorites_and_form_fields(self):
         self.session.open('example.com')

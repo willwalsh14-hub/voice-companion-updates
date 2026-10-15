@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.132-test.
+Guide version: 0.2.133-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -246,7 +246,7 @@ Escape goes back one level. Say "Main menu" or "Close tutorial" to leave the tut
 4.1 Stop or pause speech
 Press Control to silence Companion. This works while the microphone is asleep too.
 By voice, say "Be quiet", "Stop talking", "Pause", or "Shut up". Say "Resume" or "Keep talking" to continue paused speech.
-A new command can stop the old reading and do something else. For example, say "Next message" while mail is being read.
+Say "Next" or "Previous" to interrupt a spoken menu item and move. These commands also work while Help or a lesson is being read. A new command can stop the old reading and do something else. For example, say "Next message" while mail is being read.
 For audio such as radio or podcasts, use "Pause audio" or "Stop audio" to make your meaning clear.
 
 4.2 Change speed, volume, or pitch
@@ -565,7 +565,8 @@ The Messages per list setting is in Email options. Choices include 10, 20, 30, 4
 
 11.1 Open the web browser menu
 Choose Web browser on the main menu. It opens a web browser menu, even if you used a page earlier.
-The web browser menu has these choices:
+When a page is kept open, Resume where you left off is the first choice.
+The web browser menu also has these choices:
 - Search or type address
 - Go to favorite
 - New favorite
@@ -574,7 +575,7 @@ The web browser menu has these choices:
 - Go back
 - Go forward
 - Web history
-When Keep browser window open is on and a page remains open, Resume where you left off is also shown.
+When Keep browser window open is on and a page remains open, Resume where you left off appears above Search or type address.
 Use arrows and Enter, or say the name of a menu item. Press Escape from this menu to return to the main menu.
 
 11.2 Search or open an address
@@ -593,7 +594,7 @@ Say "Try Brave Search", "Try Bing", or "Try DuckDuckGo" to repeat the search the
 
 11.3 Read a page
 Companion reads the page in its own window. Use the page view in the Companion window for the keys below.
-Up Arrow and Down Arrow read blocks of page text, including paragraphs, list items, and text between links. Left Arrow and Right Arrow read characters.
+Up Arrow and Down Arrow read blocks of page text, including paragraphs, list items, and text between links. Buttons and form fields include their names and types. A picture used as a button is read as a button. Checkboxes include their checked state. Password values are not read. Left Arrow and Right Arrow read characters.
 Control+Left Arrow and Control+Right Arrow read words. Control+Up Arrow and Control+Down Arrow read paragraphs.
 Control+Home and Control+End reach the page ends. Home and End reach the ends of the current line.
 "Read page" starts at the top. "Continue reading" reads the next part.
@@ -644,7 +645,7 @@ Say "Continue review" to hear the next part. If an answer is wrong, say "Change 
 To choose a field by number, say "Change field", followed by the number. For example, say "Change field two". Give the new answer, then review again.
 Say "Yes" only when all answers and the named button are right. "No" stops the submission.
 Changing an answer after review cancels the older Yes or No request. Review again before submitting.
-You can press Enter or Space on a web Send or Submit button. This uses that website's own checks. It does not start the voice review.
+You can press Enter or Space on a web button. You can also say "Activate current button" after moving to it. This uses that website's own checks. It does not start the voice review. Buttons such as Next can move to another sign-in step. Companion says "Loading page" when you activate a button or link. If a required field is empty, it reads the website's message. For a spoken review before sending a form, say "Review and submit form".
 File uploads, some custom controls, and human-verification checks may need help. If a page cannot be read, do not guess at a final button.
 Say "Ask for help" to hear which page needs attention.
 

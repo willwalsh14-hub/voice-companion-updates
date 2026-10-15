@@ -151,6 +151,43 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('/destination',reached)
         self.assertIn('HTTP content',self.session.reading.text)
 
+    def test_arrow_reading_names_native_image_buttons_and_form_controls(self):
+        self.load('<p>Before controls</p><form><input type="image" alt="Use PayPal or credit or debit card to buy Course" src="button.png"><label>Email<input name="email" required></label><label>Password<input type="password" value="never-speak-this"></label><label><input type="checkbox" checked>Remember me</label><select aria-label="Country"><option>UK</option></select></form>')
+        text=self.session.reading.text
+        self.assertIn('Course, button',text)
+        self.assertIn('Email, edit field, required',text)
+        self.assertIn('Password, password field',text)
+        self.assertIn('Remember me, checkbox, checked',text)
+        self.assertIn('Country, combo box',text)
+        self.assertNotIn('never-speak-this',text)
+        button=next(e for e in self.session.snapshot['elements'] if kind(e)=='button')
+        self.session.reading.position=button['start']-1
+        self.assertIn('button',self.session.keyboard('Read:Down'))
+        self.assertEqual(self.session.browse.current()['key'],button['key'])
+
+    def test_image_submit_opens_target_once_and_reports_loading(self):
+        self.context.route('https://fixture.test/checkout',lambda r:r.fulfill(content_type='text/html',body='<h1>Checkout page</h1>'))
+        self.load('<p>Course</p><form action="https://fixture.test/checkout" method="post"><input type="image" alt="Buy course" src="button.png"></form>')
+        notices=[];self.session.progress=notices.append
+        self.session.keyboard('Quick:b')
+        result=self.session.keyboard('Activate')
+        self.assertEqual(notices,['Loading page.'])
+        self.assertEqual(self.page.url,'https://fixture.test/checkout')
+        self.assertIn('Checkout page',self.session.reading.text)
+        self.assertNotIn('review',result.lower())
+
+    def test_next_submit_runs_native_validation_and_same_page_signin_step(self):
+        self.load('<p>Sign in</p><form onsubmit="event.preventDefault(); document.querySelector(\'#step\').innerHTML=\'<label>Password<input type=password></label><button>Log in</button>\'"><label>Email<input type=email required></label><span id=step><button>Next</button></span></form>')
+        self.session.keyboard('Quick:b');self.session.keyboard('Activate')
+        self.assertEqual(self.page.locator('input[type=password]').count(),0)
+        self.session.keyboard('Quick:e');self.session.keyboard('Activate')
+        self.session.keyboard_field['value']='person@example.com';self.session.keyboard('Tab')
+        # The current native submitter is activated through voice and keyboard alike.
+        result=self.session.command('activate current button')
+        self.assertEqual(self.page.locator('input[type=password]').count(),1,result)
+        self.assertIn('password field',self.session.reading.text)
+        self.assertIsNone(self.session.submit_pending)
+
 
 @unittest.skipUnless(sys.platform=='win32','Windows Chrome semantic checks')
 class ChromeSemanticWebTests(SemanticWebTests):
