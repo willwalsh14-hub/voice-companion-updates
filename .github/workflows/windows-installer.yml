@@ -27,6 +27,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Check experimental regular-browser message handling
+        run: node ./voice_companion/regular_browser_extension/test-worker.cjs
       - name: Install installer compiler
         shell: pwsh
         run: |

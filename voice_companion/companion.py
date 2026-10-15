@@ -45,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.136-test'
+APP_VERSION = '0.2.137-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -128,6 +128,7 @@ pending_send = None
 mail_session = None
 pending_website = None
 web_session = None
+REGULAR_BROWSER = None
 account_setup = False
 ACCOUNT_MENU_INDEX = None
 help_session = None
@@ -387,7 +388,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Regular browser connection', 'regular browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -527,6 +528,10 @@ def _navigation_key(key,mode):
     interrupt_speech()
     if key=='Ctrl+Alt+P':return 'toggle audio'
     if key=='Control':return None
+    if mode=='regular_browser':
+        if key=='Escape':return 'main menu'
+        if key in ('Up','Down','Home','End','Enter','Space'):return 'regular browser key '+key
+        return None
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key in ('Up','Down','Left','Right','Home','End','Enter','Escape'):
         web_session.list_prefix='';web_session.list_prefix_time=0
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
@@ -1338,6 +1343,24 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
+    global REGULAR_BROWSER
+    if command in ('regular browser','open regular browser','connect regular browser'):
+        from regular_browser import BrowserConnection, HELP
+        try:
+            if REGULAR_BROWSER is None: REGULAR_BROWSER = BrowserConnection(APP)
+            speak(HELP)
+            return 'regular_browser'
+        except OSError as exc:
+            speak('The regular browser connection could not start. Close other copies of Voice Companion and try again.')
+            return mode
+    if mode=='regular_browser':
+        from regular_browser import COMMANDS, HELP
+        if command in ('main menu','back to main menu','exit browser','leave browser'):
+            announce_main_menu();return 'awake'
+        if command in COMMANDS:
+            speak(REGULAR_BROWSER.request(COMMANDS[command]));return mode
+        if command in ('help','browser help','regular browser help'):
+            speak(HELP);return mode
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Choose a station or episode first.')
         return mode

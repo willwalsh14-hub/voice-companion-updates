@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Voice Companion Browser Connection",
+  "version": "0.2.0",
+  "description": "Connect a chosen Chrome or Edge tab to Voice Companion reading and control commands.",
+  "permissions": [
+    "activeTab",
+    "debugger",
+    "nativeMessaging"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Voice Companion browser connection"
+  },
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5CS5gLh0jmXh1AzSQ3Puvovz5VKXHIQvAwaEVJV9laewelfGj5XLJRDDZ4ZVWV0YInQpTPwwLHgr6MgTMMsLW06TnLnVM6JB7veCWl5flcDT2DlBaj15XGha/GAQnau6m3Ttp1WiIJdMaTQAeyKS8W0INJ2EDaL1cktE2vHuXMB94+DuDcignAYyPivJ8k60MdDXKWRAL+HpiyjuwjNy3FQQJq3pDRf0PPAexI2BfEyKLwYRcffu7i8ZsT2MYmslzj+KqMxsOZ98bgtyCNUf1UvyyGXHJtbaHI4SazVaL9X9vDg/QbytDxGSl9olbxm53m6Dw4F/B8+BrcnGYXmW9QIDAQAB"
+}

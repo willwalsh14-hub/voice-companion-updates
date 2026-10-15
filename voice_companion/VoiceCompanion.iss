@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.136-test"
+#define AppVersion "0.2.137-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}
@@ -46,11 +46,19 @@ Source: "dist\VoiceCompanion\Voice Companion Release Notes.epub"; DestDir: "{use
 Source: "dist\VoiceCompanion\Voice Companion Release Notes - DAISY 3.zip"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion} - DAISY 3.zip"; Flags: ignoreversion uninsneveruninstall
 Source: "dist\VoiceCompanion\Voice Companion Release Notes.brf"; DestDir: "{userdocs}\Voice Companion\User Guides"; DestName: "Release Notes for Voice Companion {#AppVersion}.brf"; Flags: ignoreversion uninsneveruninstall
 
+[Registry]
+Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.voicecompanion.browser"; ValueType: string; ValueName: ""; ValueData: "{app}\browser-native-host.json"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\com.voicecompanion.browser"; ValueType: string; ValueName: ""; ValueData: "{app}\browser-native-host.json"; Flags: uninsdeletekey
+
+[UninstallDelete]
+Type: files; Name: "{app}\browser-native-host.json"
+
 [Icons]
 Name: "{group}\Voice Companion"; Filename: "{app}\VoiceCompanion.exe"
 Name: "{group}\Start Here"; Filename: "{userdocs}\Voice Companion\User Guides\START HERE - Veteran.html"
 Name: "{group}\Start Here - Text"; Filename: "{userdocs}\Voice Companion\User Guides\START HERE - Veteran.txt"
 Name: "{group}\Voice Companion User Guides"; Filename: "{userdocs}\Voice Companion\User Guides"
+Name: "{group}\Browser Connection Setup"; Filename: "{app}\regular_browser_extension\SETUP.txt"
 Name: "{group}\Email Setup - Helper"; Filename: "{app}\EMAIL SETUP - Helper.txt"
 Name: "{userdesktop}\Voice Companion"; Filename: "{app}\VoiceCompanion.exe"
 Name: "{userdesktop}\Voice Companion User Guides"; Filename: "{userdocs}\Voice Companion\User Guides"
@@ -80,6 +88,10 @@ var
 begin
   if CurStep = ssPostInstall then
   begin
+    Diagnostic := ExpandConstant('{app}\VoiceCompanion-BrowserHost.exe');
+    if not Exec(Diagnostic, '--register', ExpandConstant('{app}'), SW_HIDE,
+      ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+      RaiseException('The browser connection could not be registered. Run Setup again.');
     Diagnostic := ExpandConstant('{app}\VoiceCompanion-Diagnostics.exe');
     if not FileExists(Diagnostic) then
       RaiseException('Voice Companion was not installed completely. Run Setup again.');

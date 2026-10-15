@@ -1,13 +1,21 @@
 {
-  "version": "0.2.136-test",
+  "version": "0.2.137-test",
   "status": "Testing build",
   "date": "October 15, 2026",
-  "baseline": "0.2.135-test",
-  "scope": "Web form keyboard changes and clearer capital-letter feedback.",
+  "baseline": "0.2.136-test",
+  "scope": "Radio button corrections and an integrated regular Chrome/Edge browser connection for testing.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
+        {
+          "title": "Use a regular Chrome or Edge tab",
+          "details": [
+            "Choose Regular browser connection in the main menu. Set up the included browser extension once. Connect your chosen Chrome or Edge tab. Then return to Voice Companion.",
+            "Read the page, move through controls and find headings by voice. You can also use the keyboard. Hear the results in your chosen Companion voice. You may close the extension popup.",
+            "Type in fields with your regular browser keyboard. This test connection has fewer page shortcuts than the guided browser. Voice typing in forms is not yet included. PayPal sign-in has not been tested."
+          ]
+        },
         {
           "title": "Type in web forms",
           "details": [
@@ -22,6 +30,13 @@
     {
       "title": "What works better",
       "topics": [
+        {
+          "title": "Reliable radio selection and state",
+          "details": [
+            "The guided browser reads the true checked state of each radio button. This works even when a site gives two different states for the same button. It also supports radio buttons that need the Space key.",
+            "Use Enter, Space or your voice to select a radio button. Hear its new state after one action. This also works in embedded frames and page sections."
+          ]
+        },
         {
           "title": "Hear one capital cue",
           "details": [

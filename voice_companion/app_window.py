@@ -204,7 +204,9 @@ class CompanionWindow:
                     elif not control and not self.context.get('media_input') and key in ('Up','Down','Left','Right','Home','End','Return','space','Delete','F5') and not typed.get():request='Enter' if key=='Return' else 'Space' if key=='space' else key
                     elif control and key.lower() in ('f','p','r','s','d'):request='Ctrl+'+key.upper()
                     elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
-                if mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
+                if mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
+                    request='Enter' if key=='Return' else 'Space' if key=='space' else key
+                elif mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
                 elif mode=='web' and not control and event.state&(8|0x20000) and key in ('Left','Right'):request='Web:Back' if key=='Left' else 'Web:Forward'
                 elif mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
