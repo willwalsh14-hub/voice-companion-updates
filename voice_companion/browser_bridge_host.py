@@ -84,7 +84,25 @@ def handle(message, speak):
     return {'protocol': PROTOCOL, 'ok': True}
 
 
+def register():
+    """Write the fixed-origin native host manifest in the installed app folder."""
+    import base64
+    import hashlib
+    from pathlib import Path
+    folder = Path(sys.executable).parent
+    extension = json.loads((folder / 'regular_browser_extension' / 'manifest.json').read_text(encoding='utf-8'))
+    digest = hashlib.sha256(base64.b64decode(extension['key'])).hexdigest()[:32]
+    identity = ''.join(chr(ord('a') + int(c, 16)) for c in digest)
+    manifest = {'name':'com.voicecompanion.browser', 'description':'Voice Companion browser connection',
+                'path':str(Path(sys.executable).resolve()), 'type':'stdio',
+                'allowed_origins':['chrome-extension://' + identity + '/']}
+    (folder / 'browser-native-host.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+
+
 def main():
+    if '--register' in sys.argv:
+        register()
+        return
     # Chrome native messages are binary even on Windows.
     if sys.platform != 'win32':
         raise RuntimeError('This experimental speech host requires Windows.')
@@ -93,6 +111,8 @@ def main():
     import win32com.client
     msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
     msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    from regular_browser import HostConnection
+    bridge = HostConnection()
     voice = win32com.client.Dispatch('SAPI.SpVoice')
     while True:
         try:
@@ -101,7 +121,7 @@ def main():
                 return
             # Synchronous speech keeps the process alive until speech ends.
             # No text from the page is ever evaluated as a command.
-            response = handle(message, lambda text: voice.Speak(text, 16))  # SVSFIsNotXML
+            response = bridge.poll(message) if message.get('command') == 'poll' else handle(message, lambda text: voice.Speak(text, 16))  # SVSFIsNotXML
             write_message(sys.stdout.buffer, response)
         except (ValueError, TypeError, KeyError, UnicodeError, struct.error):
             write_message(sys.stdout.buffer, {'protocol': PROTOCOL, 'ok': False, 'error': 'Invalid browser message.'})

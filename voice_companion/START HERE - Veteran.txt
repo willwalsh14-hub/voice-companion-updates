@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.136-test.
+Guide version: 0.2.137-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -127,6 +127,11 @@ Contents
   22.4 A guide or update will not open
   22.5 Understand privacy and online services
 
+23 Regular Browser Connection
+  23.1 Set up the extension
+  23.2 Read and use the connected tab
+  23.3 Understand this testing connection
+
 1. GETTING STARTED
 
 1.1 Install Voice Companion
@@ -153,6 +158,7 @@ The main menu has these choices:
 - Notepad
 - Email
 - Web browser
+- Regular browser connection
 - Radio
 - Podcasts
 - Options
@@ -1050,3 +1056,23 @@ To stop online narration, choose another voice, turn off Allow narration text to
 The app keeps the documents, drafts, contacts, favorites, and history you use. Account tokens and AI keys are protected for your Windows user account. Documents and drafts remain local files, so protect your computer and Windows account.
 Email, websites, audio streams, contacts sync, and update checks use the internet when you use those features. Service providers have their own data rules. The app does not include a user-tracking or advertising service.
 The app skips history entries with private sign-in data. It also removes sign-in token values from older saved addresses. If a favorite needs sign-in again, open the site and save its main page.
+
+
+23. REGULAR BROWSER CONNECTION
+
+23.1 Set up the extension
+1. Ask your trainer to open Browser Connection Setup in the Voice Companion Start menu folder. These steps enable the included Chrome or Edge extension once. The installer includes the local host; Python is not needed.
+2. In Voice Companion, choose Regular browser connection in the main menu, or say regular browser.
+3. Switch to an ordinary Chrome or Edge website tab. Open the Voice Companion extension and choose Connect this tab. Close the popup and return to Voice Companion.
+
+23.2 Read and use the connected tab
+1. Say read page to hear the page through your selected Companion voice.
+2. Say next control or previous control. You can also press Down or Up. Say first control or last control, or press Home or End, to reach the list boundaries.
+3. Say next heading or previous heading to hear headings. Say activate or press Enter to use the chosen control. Say select radio button or press Space to select a radio button or checkbox. Companion reads its checked state.
+4. Switch to your regular browser for normal keyboard typing. Return to Companion for reading and navigation. Password values are excluded from the connection's spoken output.
+5. Say main menu or press Escape to leave this Companion mode. The connection and tab stay open. Say disconnect browser while in this mode to detach the tab.
+
+23.3 Understand this testing connection
+1. Use this with an ordinary Chrome or Edge tab. The browser shows a notice while the tab is connected. Sites may still block access. PayPal sign-in has not been tested.
+2. This has fewer features than the guided Web browser. It does not yet offer all page shortcuts or voice typing in forms. Some frames may not be read. Use your browser keyboard to type. Firefox does not support this extension.
+3. If an action times out, check the page before you try again. Companion does not repeat it. If it stops, return to this Companion mode. Then connect the tab again with the extension.

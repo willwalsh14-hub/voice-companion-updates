@@ -82,7 +82,7 @@ $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
 $releaseErrors = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Errors.txt'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
   -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox',
-    'test_web_assistant','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge') `
+    'test_web_assistant','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge','test_regular_browser') `
   -RedirectStandardOutput $releaseOutput -RedirectStandardError $releaseErrors
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
 if ($releaseTests.ExitCode -ne 0) {
@@ -195,6 +195,10 @@ $consoleArguments = @('--console', '--name', 'VoiceCompanion-Diagnostics') + $ar
 Invoke-PyInstaller 'Diagnostics' $consoleArguments
 $windowArguments = @('--windowed', '--name', 'VoiceCompanion') + $arguments
 Invoke-PyInstaller 'Application' $windowArguments
+$browserHostArguments = @('--clean','--noconfirm','--onefile','--console','--name','VoiceCompanion-BrowserHost','--hidden-import','win32com.client')
+Invoke-PyInstaller 'BrowserHost' $browserHostArguments 'browser_bridge_host.py'
+Copy-Item (Join-Path $PSScriptRoot 'dist\VoiceCompanion-BrowserHost.exe') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\VoiceCompanion-BrowserHost.exe') -Force
+Copy-Item (Join-Path $PSScriptRoot 'regular_browser_extension') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\regular_browser_extension') -Recurse -Force
 $diagnosticSource = Join-Path $PSScriptRoot 'dist\VoiceCompanion-Diagnostics\VoiceCompanion-Diagnostics.exe'
 $diagnosticTarget = Join-Path $PSScriptRoot 'dist\VoiceCompanion\VoiceCompanion-Diagnostics.exe'
 if (-not (Test-Path $diagnosticSource)) { throw 'The diagnostic executable is missing.' }
@@ -320,15 +324,27 @@ if (Test-Path $googleRegistration) {
     throw 'The installed Gmail registration is missing or does not match this build.'
   }
 }
+$browserManifest = Join-Path $installedFolder 'browser-native-host.json'
+if (-not (Test-Path $browserManifest)) { throw 'The installed browser native host manifest is missing.' }
+$browserRegistration = Get-Content $browserManifest -Raw | ConvertFrom-Json
+if ($browserRegistration.path -ne (Join-Path $installedFolder 'VoiceCompanion-BrowserHost.exe') -or
+    $browserRegistration.allowed_origins[0] -ne 'chrome-extension://lmpkdmlehooibijenhkhpbjcgjehjbig/') {
+  throw 'The installed browser native host origin or executable is incorrect.'
+}
+foreach ($browserKey in @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.voicecompanion.browser', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\com.voicecompanion.browser')) {
+  if ((Get-Item $browserKey).GetValue('') -ne $browserManifest) { throw 'The installed browser native host registry entry is incorrect.' }
+}
+& $python (Join-Path $PSScriptRoot 'check_browser_connection.py') (Join-Path $installedFolder 'VoiceCompanion-BrowserHost.exe')
+if ($LASTEXITCODE -ne 0) { throw 'The installed native browser connection failed its end-to-end pipe check.' }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.136-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.137-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --refresh-guides
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.136-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.137-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -355,7 +371,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.136-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.137-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing

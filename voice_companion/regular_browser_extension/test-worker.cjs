@@ -5,9 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 let checked = false, keys = [], speech = [], attached = [], detached = [];
 let messageListener;
+let nativeListener, nativeRequests = [];
 const ax = () => [{nodeId: '1', backendDOMNodeId: 11, role: {value: 'radio'}, name: {value: 'Delivery'},
   value: {value: 'PRIVATE VALUE'}, properties: [{name: 'checked', value: {value: String(checked)}}, {name: 'value', value: {value: 'PRIVATE VALUE'}}]}];
-const context = vm.createContext({chrome: {
+const context = vm.createContext({setTimeout, chrome: {
   tabs: {query: async () => [{id: 7, url: 'https://fixture.test/'}]},
   debugger: {
     attach: async target => attached.push(target.tabId),
@@ -27,6 +28,7 @@ const context = vm.createContext({chrome: {
   },
   runtime: {id: 'test-extension', getURL: value => 'chrome-extension://test-extension/' + value,
     onMessage: {addListener: callback => {messageListener = callback;}},
+    connectNative: () => ({onMessage:{addListener: callback => {nativeListener = callback;}}, onDisconnect:{addListener:()=>{}}, postMessage: message => nativeRequests.push(message)}),
     sendNativeMessage: async (host, request) => {
       assert.equal(host, 'com.voicecompanion.browser');
       assert.ok(!JSON.stringify(request).includes('PRIVATE VALUE'));
@@ -48,6 +50,15 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, 'worker.js'), 'utf8'), cont
   await run('space');assert.equal(keys.length, 4);assert.ok(checked);
   assert.match(await run('next'), /End of controls/);
   await run('read');
+  assert.equal(nativeRequests[0].command, 'poll');
+  const priorSpeech = speech.length;
+  await nativeListener({action:'first'});
+  await new Promise(resolve => setTimeout(resolve, 300));
+  assert.match(nativeRequests.at(-1).result, /Delivery, radio button, checked/);
+  assert.equal(speech.length, priorSpeech, 'Companion actions must not duplicate SAPI speech');
+  await nativeListener({action:'activate'});
+  await new Promise(resolve => setTimeout(resolve, 300));
+  assert.match(nativeRequests.at(-1).result, /checked/);
   await run('disconnect');assert.deepEqual(detached, [7]);
   await assert.rejects(run('read'), /Connect this tab/);
   process.stdout.write('Regular-browser worker checks passed.\n');

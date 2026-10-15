@@ -1,0 +1,46 @@
+VOICE COMPANION REGULAR BROWSER CONNECTION
+Testing build 0.2.137-test
+
+One-time setup for a trainer or helper:
+1. Install this Voice Companion update, then open the app.
+2. Open Chrome or Edge. Go to chrome://extensions or edge://extensions.
+3. Enable Developer mode. Choose Load unpacked.
+4. Select the regular_browser_extension folder inside the installed Voice
+   Companion folder, normally %LOCALAPPDATA%\Programs\Voice Companion.
+5. Confirm the extension is Voice Companion Browser Connection. Its ID is
+   lmpkdmlehooibijenhkhpbjcgjehjbig. Pin it to the browser toolbar if helpful.
+The installer registers the local connection for your Windows account.
+No separate Python installation or command-line setup is needed.
+
+Each time you want to connect:
+1. In Voice Companion, choose Regular browser connection in the main menu,
+   or say regular browser.
+2. Switch to Chrome or Edge and open the website in an ordinary browser tab.
+3. Open the Voice Companion extension and choose Connect this tab.
+4. Close the popup and switch back to Voice Companion.
+5. Say read page, next control, previous control, next heading, previous
+   heading, activate, select radio button, first control, or last control.
+6. Keyboard: Up/Down move through controls; Enter activates; Space selects
+   a radio button or checkbox; Home/End reach the control list boundaries.
+7. Switch to your browser for normal keyboard typing into fields. Return
+   to Companion to read and navigate. Password values are not copied into
+   Companion's spoken output. Review the page before activating a submit.
+8. Escape or main menu returns to Companion's main menu. Your tab stays
+   connected. Say disconnect browser to detach it; the tab remains open.
+   The browser also lets you cancel the debugging connection at any time.
+
+Chrome or Edge displays its standard debugging notice while connected.
+Browser permissions and website security rules still apply. PayPal sign-in
+has not been verified. This is an integrated testing connection, with fewer
+navigation features than the guided browser: it does not yet provide full
+virtual cursor navigation, automatic reading while typing in the browser,
+voice typing into forms, or reliable traversal of cross-process frames.
+Firefox is not supported by this extension. The existing guided browser
+remains available in the Web browser menu.
+
+If connection stops: return to Companion's regular browser connection,
+then reconnect the chosen tab using the extension. If an action times out,
+check the page before trying again. Companion never retries it by itself.
+
+Removing Voice Companion removes its native-host registration. Remove the
+extension separately in your browser's Extensions settings.
