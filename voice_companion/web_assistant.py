@@ -497,6 +497,10 @@ class BrowserBackend:
         frame=self.page.frames[item.get('frame_index',0)]
         before_url=frame.url;before_epoch=frame.evaluate('()=>performance.timeOrigin')
         before_text=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")
+        # Compare visible control identities, never field values. A disabled
+        # submitter or an analytics/style mutation is not a new form step.
+        controls_signature="()=>JSON.stringify([...document.querySelectorAll('input,textarea,select,button,[role],[contenteditable]')].filter(e=>e.getClientRects().length&&!e.closest('[aria-hidden=\"true\"],[inert]')&&getComputedStyle(e).visibility!=='hidden').map(e=>[e.tagName,e.type||'',e.id,e.getAttribute('name')||'',e.getAttribute('role')||'']))"
+        before_controls=frame.evaluate(controls_signature)
         before=self.document_stamp();before_pages=list(self.context.pages) if self.context else []
         opened=[]
         request_errors=[]
@@ -550,7 +554,8 @@ class BrowserBackend:
                     needs_navigation=kind(item)=='link' and item.get('href')!=before_url
                     dom_changed=any(now.get(k)!=before.get(k) for k in ('revision','frame_states'))
                     modal_ready=needs_navigation and dom_changed and frame.evaluate('()=>[...document.querySelectorAll(\'[role="dialog"][aria-modal="true"],dialog[open]\')].some(e=>!e.hidden&&getComputedStyle(e).display!=="none"&&getComputedStyle(e).visibility!=="hidden")')
-                    changed=navigation_changed or dom_changed and (not needs_navigation or modal_ready)
+                    content_changed=dom_changed and (frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text or frame.evaluate(controls_signature)!=before_controls)
+                    changed=navigation_changed or content_changed and (not needs_navigation or modal_ready)
                     if changed and (navigation_changed or not pending_requests or time.monotonic()-clicked_at>=3):break
                 except Exception:
                     # Navigation can briefly destroy the old JavaScript context.

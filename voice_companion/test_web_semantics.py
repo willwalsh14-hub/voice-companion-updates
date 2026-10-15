@@ -103,8 +103,6 @@ class SemanticWebTests(unittest.TestCase):
         self.load("""<form onsubmit="event.preventDefault();this.querySelector('button').disabled=true;fetch('https://fixture.test/signin-step').then(()=>new Promise(resolve=>setTimeout(resolve,600))).then(()=>{document.body.innerHTML='<label>Password<input type=password></label><button>Log in</button>'})"><label>Email<input type=email value='person@example.com'></label><button>Next</button></form>""")
         self.session.keyboard('Quick:b')
         self.session.keyboard('Activate')
-        self.page.get_by_label('Password').wait_for(state='visible')
-        self.session.refresh_changed()
         self.assertIn('Password',self.session.reading.text)
         self.assertNotIn('Email',self.session.reading.text)
 
@@ -117,6 +115,14 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('has not moved',result)
         self.assertNotIn('FixtureOnly',result)
         self.assertNotIn('Page loaded',result)
+
+    def test_disabling_next_alone_does_not_count_as_a_new_form_step(self):
+        self.load('''<form onsubmit="event.preventDefault();this.querySelector('button').disabled=true"><label>Email<input type=email value="person@example.com"></label><button>Next</button></form>''')
+        self.session.keyboard('Quick:b')
+        result=self.session.keyboard('Activate')
+        self.assertIn('has not moved',result)
+        self.assertNotIn('Page loaded',result)
+        self.assertIn('Email',self.session.reading.text)
 
     def test_noop_button_does_not_claim_a_new_page_loaded_or_click_twice(self):
         self.load('<form><label>Email<input type=email></label><button type=button onclick="window.clicks=(window.clicks||0)+1">Next</button></form>')
