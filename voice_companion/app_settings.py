@@ -136,7 +136,6 @@ def apply_settings(m,values):
         m.email_draft.dictating=m.INPUT_MODE!='commands';m.email_draft.automatic_dictation=m.INPUT_MODE!='commands'
     if m.web_session:
         m.web_session.choose_browser(values['browser']);m.web_session.input_mode=m.INPUT_MODE
-        m.web_session.set_block_http(values['web_block_http'])
     else:(m.APP/'browser-choice.txt').write_text(values['browser'],encoding='utf-8')
     m.media().choose_source(values['radio_source'])
     limits=values.get('podcast_limits',{})

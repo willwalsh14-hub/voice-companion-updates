@@ -3,15 +3,15 @@
   "status": "Testing build",
   "date": "October 14, 2026",
   "baseline": "0.2.131-test",
-  "scope": "Clearer web page labels, easier link lists, and a choice about HTTP pages.",
+  "scope": "Clearer web page labels, easier link lists, and support for HTTP pages.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose whether to block HTTP pages",
+          "title": "Open HTTP pages",
           "details": [
-            "Block nonsecure HTTP pages is a new Web browser option. It is off by default. HTTP links can open and can be saved as favorites. Turn the setting on to block HTTP pages and redirects to HTTP."
+            "HTTP links can now open and can be saved as favorites. Web history also keeps these pages. A bare address still starts with HTTPS. To request HTTP directly, enter the full address, such as http://example.com. HTTP does not encrypt the connection."
           ]
         },
         {

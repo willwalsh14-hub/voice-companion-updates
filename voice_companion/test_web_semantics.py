@@ -11,13 +11,12 @@ from test_web_assistant import FakeBackend
 from web_assistant import WebSession, WebError
 from web_browse import kind
 from browser_navigation import prepare_address
-from settings_model import DEFAULTS,fields
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 
 
 class WebPolicyTests(unittest.TestCase):
-    def test_http_defaults_saves_and_private_values_stay_protected(self):
-        self.assertFalse(DEFAULTS['web_block_http'])
-        self.assertTrue(any(f.key=='web_block_http' for f in fields('Web browser',{})))
+    def test_http_saves_and_private_values_stay_protected(self):
         self.assertEqual(prepare_address('http://example.com:8080/Case?q=One')[0],'http://example.com:8080/Case?q=One')
         with tempfile.TemporaryDirectory() as folder:
             session=WebSession(folder,FakeBackend())
@@ -26,10 +25,6 @@ class WebPolicyTests(unittest.TestCase):
             self.assertEqual(session.favorites.get('Old site')['url'],'http://example.com/Case')
             self.assertEqual(session.menu.history()[0]['url'],'http://example.com/Case')
             with self.assertRaises(WebError):session.favorites.add('Private','http://example.com/?access_token=private')
-            session.set_block_http(True)
-            self.assertIn('blocked',session.open('http://example.com/Case'));self.assertFalse(session.navigation_succeeded)
-            (Path(folder)/'preferences.json').write_text(json.dumps({'web_block_http':True}))
-            self.assertTrue(WebSession(folder,FakeBackend()).block_http)
 
     def test_links_list_prefix_full_names_repeated_letters_and_backspace(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -135,17 +130,26 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('Account details',self.session.keyboard('Quick:Previous:m'))
         self.assertIn('End of frame Account details',text)
 
-    def test_http_navigation_and_redirect_policy_can_be_enabled_and_disabled(self):
+    def test_http_navigation_and_server_redirects_open_without_a_block(self):
         reached=[]
-        self.context.route('http://fixture.test/**',lambda r:(reached.append(r.request.url),r.fulfill(content_type='text/html',body='<title>HTTP page</title><p>HTTP content</p>'))[-1])
-        self.context.route('https://fixture.test/downgrade',lambda r:r.fulfill(status=302,headers={'location':'http://fixture.test/destination'}))
-        self.session.open('http://fixture.test/page');self.assertEqual(self.page.url,'http://fixture.test/page')
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                reached.append(self.path)
+                self.send_response(200);self.send_header('Content-Type','text/html');self.end_headers()
+                self.wfile.write(b'<title>HTTP page</title><p>HTTP content</p>')
+            def log_message(self,*args):pass
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        worker=Thread(target=server.serve_forever,daemon=True);worker.start()
+        self.addCleanup(server.server_close);self.addCleanup(server.shutdown)
+        address='http://127.0.0.1:'+str(server.server_address[1])
+        self.session.open(address+'/page');self.assertTrue(self.session.navigation_succeeded)
         self.assertIn('HTTP content',self.session.reading.text)
-        self.session.set_block_http(True);reached.clear()
-        self.assertIn('blocked',self.session.open('https://fixture.test/downgrade'))
-        self.assertEqual(reached,[])
-        self.session.set_block_http(False)
-        self.session.open('https://fixture.test/downgrade');self.assertEqual(self.page.url,'http://fixture.test/destination')
+        self.context.route('https://fixture.test/downgrade',lambda r:r.fulfill(status=302,headers={'location':address+'/destination'}))
+        self.session.open('https://fixture.test/downgrade')
+        self.assertTrue(self.session.navigation_succeeded)
+        self.assertEqual(self.page.url,address+'/destination')
+        self.assertIn('/destination',reached)
+        self.assertIn('HTTP content',self.session.reading.text)
 
 
 @unittest.skipUnless(sys.platform=='win32','Windows Chrome semantic checks')

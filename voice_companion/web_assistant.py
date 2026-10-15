@@ -141,17 +141,6 @@ class BrowserBackend:
         if self.browser not in self.BROWSERS:
             raise WebError('Choose Edge, Chrome, Brave, or Firefox.')
         self.playwright = self.context = self.page = None
-        self.block_http=False;self.http_blocked=False;self._policy_context=None
-
-    def set_block_http(self,enabled):
-        self.block_http=bool(enabled)
-        if self.block_http and self.context and self._policy_context is not self.context:
-            self.context.route('**/*',self._navigation_policy);self._policy_context=self.context
-
-    def _navigation_policy(self,route):
-        if self.block_http and route.request.is_navigation_request() and urlsplit(route.request.url).scheme=='http':
-            self.http_blocked=True;route.abort('blockedbyclient')
-        else:route.fallback()
 
     def start(self):
         if self.page and not self.page.is_closed(): return
@@ -180,7 +169,6 @@ class BrowserBackend:
                 self.context = engine.launch_persistent_context(
                     str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
-            self.set_block_http(self.block_http)
             self.page.set_default_timeout(10000)
         except Exception as exc:
             self.close()
@@ -192,7 +180,7 @@ class BrowserBackend:
 
     def close(self):
         context,playwright=self.context,self.playwright
-        self.page=self.context=self.playwright=None;self._policy_context=None
+        self.page=self.context=self.playwright=None
         for action in (context.close if context else None,playwright.stop if playwright else None):
             if action:
                 try:action()
@@ -210,8 +198,6 @@ class BrowserBackend:
 
     def goto(self, url):
         self.start()
-        self.http_blocked=False
-        if self.block_http and urlsplit(url).scheme=='http':raise WebError('HTTP pages are blocked in Web browser options.')
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
     def back(self):
@@ -498,7 +484,6 @@ class BrowserBackend:
 
     def activate(self,item):
         import time
-        self.http_blocked=False
         self.last_action_started=False
         self._watch_dialogs()
         element=self._element(item)
@@ -650,17 +635,11 @@ class WebSession:
         self.input_mode = 'mixed'
         self.reading = ReadingCursor()
         self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
-        try:self.set_block_http(json.loads((self.folder/'preferences.json').read_text()).get('web_block_http',False))
-        except (OSError,ValueError,TypeError,AttributeError):self.set_block_http(False)
-
-    def set_block_http(self,enabled):
-        self.block_http=bool(enabled)
-        if hasattr(self.backend,'set_block_http'):self.backend.set_block_http(self.block_http)
 
     def address_allowed(self,url):
         try:
             parsed=urlsplit(url)
-            return parsed.scheme in ('http','https') and bool(parsed.hostname) and not parsed.username and not parsed.password and (not self.block_http or parsed.scheme=='https')
+            return parsed.scheme in ('http','https') and bool(parsed.hostname) and not parsed.username and not parsed.password
         except ValueError:return False
 
     def cursor_changed(self,scroll=False):
@@ -845,7 +824,7 @@ class WebSession:
                     return 'Pressed '+_label(item)+'. '+self._refresh()
                 if role=='button' and item.get('type')=='submit':return self.prepare_submit()
                 if role in ('link','button'):
-                    if item.get('href') and not self.address_allowed(item['href']):return 'That address is blocked. Check Block nonsecure HTTP pages in Web browser options.'
+                    if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
                     if role=='link':self.pending=item;return self.confirm()
                     self.choices=[item];return self.choose(1)
                 return describe(item)
@@ -987,9 +966,6 @@ class WebSession:
         raise WebError('The page is still changing. Its virtual view will update when it settles.')
 
     def _refresh(self,read=None,preserve=False,wait=True):
-        if getattr(self.backend,'http_blocked',False) is True:
-            self.backend.http_blocked=False
-            return 'HTTP pages are blocked in Web browser options.'
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
         if wait and hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
         self.snapshot,captured_state = self._capture()
@@ -1042,7 +1018,7 @@ class WebSession:
                 return 'This search engine requires human verification. Choose another engine for the same search. '+self.engine_notice()+' Use arrows and Enter, or say Try Bing, Try Brave Search, or Try DuckDuckGo. Escape returns to the page. Your default stays unchanged.'
             return 'This site is asking for human verification. I cannot complete that challenge by voice. A helper can inspect the browser, or you can try another search engine.'
         if not self.address_allowed(url):
-            return 'HTTP pages are blocked in Web browser options.'
+            return 'Use an HTTP or HTTPS page address.'
         if not str(self.snapshot.get('text', '')).strip():
             return ('I found controls but no readable page text. Say list links or try read page again.'
                     if self.snapshot.get('controls') else
@@ -1091,7 +1067,6 @@ class WebSession:
         return ''
 
     def _navigate(self,url):
-        self.set_block_http(self.block_http)
         try:
             self.backend.goto(url)
             return ''
@@ -1099,7 +1074,6 @@ class WebSession:
             if self.injected_backend or self.backend.browser=='firefox':raise
             self.backend.close()
             self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
-            self.set_block_http(self.block_http)
             self.backend.goto(url)
             return 'The chosen browser could not start. Using the included Firefox browser. '
 
@@ -1107,7 +1081,7 @@ class WebSession:
         self.navigation_succeeded=False
         try:
             safe, _ = prepare_address(url)
-            if not self.address_allowed(safe):return 'HTTP pages are blocked in Web browser options.'
+            if not self.address_allowed(safe):return 'Use an HTTP or HTTPS page address.'
             notice=self._navigate(safe)
             result=self._refresh()
             self.navigation_succeeded=True
@@ -1117,9 +1091,6 @@ class WebSession:
         except ValueError as exc:
             return str(exc)
         except Exception:
-            if getattr(self.backend,'http_blocked',False) is True:
-                self.backend.http_blocked=False
-                return 'HTTP pages are blocked in Web browser options.'
             return 'The page did not open. Check the address and internet connection.'
 
     def search(self, query, provider=None):
@@ -1353,7 +1324,7 @@ class WebSession:
         except WebError as exc: return str(exc)
         destination = item.get('href', '')
         if destination and not self.address_allowed(destination):
-            return 'That address is blocked. Check Block nonsecure HTTP pages in Web browser options.'
+            return 'That link does not use an HTTP or HTTPS page address.'
         self.pending = item
         self.suggestion_index = int(number) - 1
         host = urlsplit(destination).hostname if destination else None
@@ -1364,7 +1335,7 @@ class WebSession:
         if not self.pending: return 'There is no web action waiting for confirmation.'
         item = self.pending
         self.pending = None
-        if item.get('href') and not self.address_allowed(item['href']):return 'That address is blocked in Web browser options.'
+        if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
         if item.get('role') == 'button' and (item.get('in_form') or
                 re.search(r'\b(pay|purchase|transfer|send|submit|delete|apply|confirm|place order)\b', _label(item), re.I)):
             return 'This action may submit information or move money. Ask your helper to review and complete it in the browser.'

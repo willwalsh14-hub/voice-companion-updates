@@ -523,7 +523,6 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             opened = []
             snapshot = None
             def __init__(self, folder, progress=None): self.progress=progress
-            def set_block_http(self, enabled): self.block_http=enabled
             def open(self, url):
                 self.opened.append(url)
                 self.snapshot = {'title': 'Example'}

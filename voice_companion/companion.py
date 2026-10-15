@@ -428,7 +428,6 @@ def settings_action(key,mode):
         return 'media'
     if key=='web_favorites':
         web_session=web_session or WebSession(APP,progress=speak_status)
-        web_session.set_block_http(PREFERENCES.get('web_block_http',False))
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command('list favorites'))
@@ -1188,7 +1187,6 @@ def run_web_search(query):
     """Search-entry text is literal, even when it resembles an app command."""
     global web_session
     web_session=web_session or WebSession(APP,progress=speak_status)
-    web_session.set_block_http(PREFERENCES.get('web_block_http',False))
     web_session.auto_read=PREFERENCES.get('web_auto_read',True)
     web_session.search_engine=PREFERENCES.get('web_search_engine','google')
     revision=getattr(web_session,'page_revision',0)
@@ -1491,7 +1489,7 @@ def _handle(text, mode, typed=False):
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|block nonsecure http pages|input mode|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
         from app_settings import snapshot
         values,context=snapshot(sys.modules[__name__])
         session=SettingsSession(values,context)
@@ -2119,7 +2117,6 @@ def _handle(text, mode, typed=False):
         pending_website = None
         if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
             web_session = web_session or WebSession(APP,progress=speak_status)
-            web_session.set_block_http(PREFERENCES.get('web_block_http',False))
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             web_session.search_engine=PREFERENCES.get('web_search_engine','google')
             revision=getattr(web_session,'page_revision',0)
@@ -2133,7 +2130,6 @@ def _handle(text, mode, typed=False):
         if command in ('new favorite','add favorite','go to favorite','delete favorite','rename favorite','new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
             web_session.menu.start()
             return handle_browser_menu(text)
-        web_session.set_block_http(PREFERENCES.get('web_block_http',False))
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
@@ -2440,7 +2436,6 @@ def _handle(text, mode, typed=False):
         return 'awake'
     if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
         web_session = web_session or WebSession(APP,progress=speak_status)
-        web_session.set_block_http(PREFERENCES.get('web_block_http',False))
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command(text))
@@ -2456,7 +2451,6 @@ def _handle(text, mode, typed=False):
         return mode
     if command in ('list favorites','my favorites') or command.startswith(('open favorite ', 'go to favorite ')):
         web_session = web_session or WebSession(APP,progress=speak_status)
-        web_session.set_block_http(PREFERENCES.get('web_block_http',False))
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         speak(web_session.command(text))
@@ -2502,7 +2496,6 @@ def _handle(text, mode, typed=False):
     direct_engine=re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)',text,re.I)
     if direct_engine:
         web_session=web_session or WebSession(APP,progress=speak_status)
-        web_session.set_block_http(PREFERENCES.get('web_block_http',False))
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         revision=getattr(web_session,'page_revision',0)
@@ -2512,7 +2505,6 @@ def _handle(text, mode, typed=False):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|bing|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:
             web_session = web_session or WebSession(APP,progress=speak_status)
-            web_session.set_block_http(PREFERENCES.get('web_block_http',False))
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             web_session.search_engine=PREFERENCES.get('web_search_engine','google')
             revision=getattr(web_session,'page_revision',0)
@@ -2932,7 +2924,6 @@ def main():
             if mode == 'web' and web_session and time.monotonic() - last_focus_check > 1.2:
                 last_focus_check = time.monotonic()
                 revision=getattr(web_session,'page_revision',0)
-                web_session.set_block_http(PREFERENCES.get('web_block_http',False))
                 web_session.auto_read=PREFERENCES.get('web_auto_read',True)
                 web_session.search_engine=PREFERENCES.get('web_search_engine','google')
                 try:

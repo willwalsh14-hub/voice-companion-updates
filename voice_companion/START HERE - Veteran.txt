@@ -915,8 +915,8 @@ In Notepad options, choose Open Notepad to return to your note or start a new on
 The Default search engine setting lets you choose Google, Bing, Brave Search, or DuckDuckGo.
 Keep browser window open controls whether a page stays open when you leave page reading. It is off by default.
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
-Block nonsecure HTTP pages is off by default. With it off, Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
-Turn this setting on to block HTTP pages and redirects to HTTP. You can say "Block nonsecure HTTP pages on" or "Block nonsecure HTTP pages off". HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
+Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
+HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
 The Guided browser setting lets you choose Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.
