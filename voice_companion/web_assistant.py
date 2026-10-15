@@ -1012,7 +1012,9 @@ class WebSession:
             self.backend=ConnectedBrowserBackend(self.folder/('Browser Profile '+self.browser),self.browser,relay)
             self.browser=self.backend.browser
             self.snapshot=None;self.pending=None;self.submit_pending=None;self.keyboard_field=None;self.form_index=None;self.list_focus=None
-        if self.snapshot is None:self._refresh(read=False)
+        if self.snapshot is None:
+            self.backend.start()
+            self._refresh(read=False)
         return True
 
     def _browser_preference(self):
