@@ -65,6 +65,9 @@ def check(installed, runtime):
                 def setUpClass(cls):cls.persistent_context=context
                 @classmethod
                 def tearDownClass(cls):pass
+                def setUp(self):
+                    super().setUp()
+                    self.backend.regular=True
             class ExtensionNavigation(ExtensionSetup,test_web_live.LiveWebTests):
                 # A regular browser can start a popup request before debugger
                 # attachment. Use a real local destination rather than relying
@@ -89,16 +92,9 @@ def check(installed, runtime):
                     self.assertFalse(self.page.is_closed())
             class ExtensionConsumer(ExtensionSetup,test_consumer_web.ConsumerWebTests):
                 def test_different_sites_and_back_do_not_keep_old_page_elements(self):
-                    original=self.backend.back
-                    def diagnostic_back():
-                        try:return original()
-                        except Exception as error:
-                            # Only synthetic fixture addresses exist in this test.
-                            print('FIXTURE BACK FAILURE:',repr(error),flush=True)
-                            print('FIXTURE BACK PAGE:',self.page.url,self.page.title(),flush=True)
-                            raise
-                    self.backend.back=diagnostic_back
                     super().test_different_sites_and_back_do_not_keep_old_page_elements()
+                    self.assertIn('Second site',self.session.command('go forward'))
+                    self.assertNotIn('First heading',self.session.reading.text)
             class ExtensionSemantics(ExtensionSetup,test_web_semantics.SemanticWebTests):pass
             suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls)
                                      for cls in (ExtensionNavigation,ExtensionConsumer,ExtensionSemantics))

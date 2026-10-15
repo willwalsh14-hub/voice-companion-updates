@@ -201,7 +201,7 @@ class BrowserBackend:
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
     def back(self):
-        self.page.go_back(wait_until='domcontentloaded', timeout=30000)
+        self.page.go_back(wait_until='commit' if getattr(self,'regular',False) else 'domcontentloaded', timeout=30000)
 
     def document_stamp(self):
         stamp=self.page.evaluate(DOCUMENT_STAMP)
@@ -218,9 +218,15 @@ class BrowserBackend:
 
     def wait_ready(self):
         from playwright.sync_api import TimeoutError as BrowserTimeout
-        self.page.wait_for_load_state('domcontentloaded',timeout=15000)
+        # CDP-attached profile tabs can restore from the back/forward cache
+        # without replaying lifecycle events. Inspect the restored document.
+        regular=getattr(self,'regular',False)
+        if regular:self.page.wait_for_function("()=>document.readyState!=='loading'",timeout=15000)
+        else:self.page.wait_for_load_state('domcontentloaded',timeout=15000)
         self.page_ready=True
-        try:self.page.wait_for_load_state('load',timeout=5000)
+        try:
+            if regular:self.page.wait_for_function("()=>document.readyState==='complete'",timeout=5000)
+            else:self.page.wait_for_load_state('load',timeout=5000)
         except BrowserTimeout:self.page_ready=False
         self.document_stamp()
         try:self.page.wait_for_function("()=>Date.now()-window.__voiceCompanionDocument.changed>=200&&!document.querySelector('[aria-busy=\"true\"]')",timeout=4000)
@@ -1903,8 +1909,9 @@ class WebSession:
             except Exception: return 'There is no previous page to read.'
         if command in ('forward','go forward','next page'):
             try:
-                result = self.backend.page.go_forward(wait_until='domcontentloaded',timeout=30000)
-                return self._refresh() if result is not None else 'There is no next page to read.'
+                previous_url=self.backend.page.url
+                result = self.backend.page.go_forward(wait_until='commit' if getattr(self.backend,'regular',False) else 'domcontentloaded',timeout=30000)
+                return self._refresh() if result is not None or self.backend.page.url!=previous_url else 'There is no next page to read.'
             except Exception: return 'There is no next page to read.'
         if command in ('save favorite','add favorite','favorite this site'):
             if not self.snapshot: return 'Open a website first.'
