@@ -302,7 +302,9 @@ class WebTests(unittest.TestCase):
         self.assertIn('Agree to terms: checked', self.session.command('continue review'))
         self.assertIn('State: Oregon', self.session.command('continue review'))
         self.assertEqual(self.backend.activated, [])
-        self.assertIn('I pressed Submit application', self.session.command('submit this form'))
+        result=self.session.command('submit this form')
+        self.assertIn('Page loaded',result)
+        self.assertNotIn('pressed',result.lower())
         self.assertEqual(self.backend.activated, ['4'])
         self.assertIn('no reviewed form', self.session.command('submit this form'))
 

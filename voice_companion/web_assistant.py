@@ -1657,9 +1657,10 @@ class WebSession:
                 return 'The submit button changed. Submission canceled; review the form again.'
             if self._form_signature(current) != pending['signature']:
                 return 'A form answer changed. Submission canceled; review the form again.'
-            self.backend.activate(button)
+            self.progress('Loading page.')
+            action=self.backend.activate(button)
             result = self._refresh()
-            return 'I pressed ' + _label(button) + '. Check the result before trying again. ' + result
+            return (action.get('validation') or action.get('notice') or result) if isinstance(action,dict) else result
         except Exception:
             return 'The submission result is uncertain. Do not repeat it until you or your helper checks the site.'
 
