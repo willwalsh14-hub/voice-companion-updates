@@ -79,9 +79,9 @@ def audit(timeout=20000):
                             if not valid:entry['status']='failed'
                             entry['submission']='No purchase or account sign-in submitted.'
                         if name.startswith('Control Alt Success'):
-                            # Walk the page as a consumer using Down, not a
-                            # semantic links menu. Every noninteractive line
-                            # must be spoken, including ordinary div/span text.
+                            # Down enters text fields automatically. Use the
+                            # same Leave:Down path as the app when leaving one,
+                            # and still require every ordinary text block.
                             session.page_boundary();page_text=session.reading.text
                             body_lines=[]
                             interactive={'link','heading','button','edit','checkbox','radio','combobox','listbox','graphic'}
@@ -90,13 +90,13 @@ def audit(timeout=20000):
                                     body_lines.append(line.group().strip())
                             heard=[session.keyboard('Read:Home')]
                             for _ in range(page_text.count('\n')+2):
-                                previous=session.reading.position;heard.append(session.keyboard('Read:Down'))
-                                if session.keyboard_field is not None:break
+                                previous=session.reading.position
+                                heard.append(session.keyboard('Leave:Down' if session.keyboard_field else 'Read:Down'))
                                 if session.reading.position==previous:break
                             spoken=' '.join(heard)
                             missing=[line for line in body_lines if line not in spoken]
                             valid=bool(body_lines) and not missing and session.keyboard_field is None
-                            entry['checks'].append({'action':'Arrow through ordinary page text without entering a field','passed':valid,'body_lines':len(body_lines),'missing_lines':missing[:5]})
+                            entry['checks'].append({'action':'Arrow through ordinary page text and text fields','passed':valid,'body_lines':len(body_lines),'missing_lines':missing[:5]})
                             if not valid:entry['status']='failed'
                         if entry['headings']>=2:
                             session._refresh(read=False);session.keyboard('Quick:h');first=session.browse.current()['key']
