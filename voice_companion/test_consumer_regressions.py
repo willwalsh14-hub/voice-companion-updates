@@ -8,12 +8,12 @@ from settings_model import CATEGORIES,fields,prompt_text
 
 class ConsumerRegressionTests(unittest.TestCase):
     def test_typed_addresses_preserve_path_query_and_accept_optional_prefix(self):
-        for address,expected in [('example.com/SpeedTest','https://example.com/SpeedTest'),('www.example.com','https://www.example.com'),('http://example.com/Test?x=One#Result','https://example.com/Test?x=One#Result'),('https://example.com/Test','https://example.com/Test')]:
+        for address,expected in [('example.com/SpeedTest','https://example.com/SpeedTest'),('www.example.com','https://www.example.com'),('http://example.com/Test?x=One#Result','http://example.com/Test?x=One#Result'),('https://example.com/Test','https://example.com/Test')]:
             self.assertTrue(looks_like_address(address));self.assertEqual(prepare_address(address)[0],expected)
         self.assertFalse(looks_like_address('speed test near me'))
         self.assertEqual(prepare_address('youtube.com/@ExampleChannel')[0],'https://youtube.com/@ExampleChannel')
         self.assertEqual(prepare_address('example.com/?email=person@example.com')[0],'https://example.com/?email=person@example.com')
-        for address in ('https://user:password@example.com','javascript:alert(1)','example.com:1234'):
+        for address in ('https://user:password@example.com','javascript:alert(1)','http://example.com:65536','http://example.com:0'):
             with self.assertRaises(ValueError):prepare_address(address)
 
     def test_address_box_opens_domains_but_searches_words(self):

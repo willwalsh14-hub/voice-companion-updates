@@ -214,6 +214,8 @@ class CompanionWindow:
                 elif self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Home','End','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
                 elif key=='F4' and event.state&8:request='Alt+F4'
+                elif mode=='web' and self.context.get('web_name_list') and not self.command_entry_active and not control and not event.state&(8|0x20000) and (event.char and event.char.isprintable() or key=='BackSpace'):
+                    request='Web:ListBackspace' if key=='BackSpace' else 'Web:ListText:'+event.char
                 elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and not (event.widget==typed and self.command_entry_active):
                     field=None if local.get('web_escape_pending') else self.context.get('web_field')
                     if field and self.context.get('web_private') and (key in ('Return','Tab','ISO_Left_Tab','Up','Down') or control and key in ('Home','End')):
@@ -228,7 +230,7 @@ class CompanionWindow:
                         if key=='Up' and (not multiline or '\n' not in value[:caret]) or key=='Down' and (not multiline or '\n' not in value[caret:]) or key=='Left' and caret==0 or key=='Right' and caret==len(value):request='Web:Leave:'+key
                     elif key=='F5':request='Web:Refresh'
                     elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
-                    elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
+                    elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgmps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
                     elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control):request='Web:Done' if field and not self.context.get('web_choice') else 'Web:Activate'
                     elif not field and not shift and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Read:'+('Control:' if control else '')+key
                     elif not field and key=='space':request='Web:Space'

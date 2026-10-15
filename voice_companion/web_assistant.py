@@ -94,8 +94,8 @@ class Favorites:
         if not name or len(name) > 60 or any(c in name for c in '\r\n'):
             raise WebError('Use a short name for the favorite.')
         parsed = urlsplit(url)
-        if parsed.scheme != 'https' or not parsed.hostname:
-            raise WebError('Only secure HTTPS pages can be saved.')
+        if parsed.scheme not in ('http','https') or not parsed.hostname:
+            raise WebError('Only HTTP and HTTPS pages can be saved.')
         if saved_address(url)!=url:
             raise WebError('This address contains private sign-in data. Open and save the site main page instead.')
         data = self.all()
@@ -141,6 +141,17 @@ class BrowserBackend:
         if self.browser not in self.BROWSERS:
             raise WebError('Choose Edge, Chrome, Brave, or Firefox.')
         self.playwright = self.context = self.page = None
+        self.block_http=False;self.http_blocked=False;self._policy_context=None
+
+    def set_block_http(self,enabled):
+        self.block_http=bool(enabled)
+        if self.block_http and self.context and self._policy_context is not self.context:
+            self.context.route('**/*',self._navigation_policy);self._policy_context=self.context
+
+    def _navigation_policy(self,route):
+        if self.block_http and route.request.is_navigation_request() and urlsplit(route.request.url).scheme=='http':
+            self.http_blocked=True;route.abort('blockedbyclient')
+        else:route.fallback()
 
     def start(self):
         if self.page and not self.page.is_closed(): return
@@ -169,6 +180,7 @@ class BrowserBackend:
                 self.context = engine.launch_persistent_context(
                     str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
+            self.set_block_http(self.block_http)
             self.page.set_default_timeout(10000)
         except Exception as exc:
             self.close()
@@ -180,7 +192,7 @@ class BrowserBackend:
 
     def close(self):
         context,playwright=self.context,self.playwright
-        self.page=self.context=self.playwright=None
+        self.page=self.context=self.playwright=None;self._policy_context=None
         for action in (context.close if context else None,playwright.stop if playwright else None):
             if action:
                 try:action()
@@ -198,6 +210,8 @@ class BrowserBackend:
 
     def goto(self, url):
         self.start()
+        self.http_blocked=False
+        if self.block_http and urlsplit(url).scheme=='http':raise WebError('HTTP pages are blocked in Web browser options.')
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
     def back(self):
@@ -235,13 +249,13 @@ class BrowserBackend:
         self.start()
         self._watch_dialogs()
         script = '''() => {
-          const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&(!parent||visible(parent));visibility.set(e,result);return result;};
+          const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.assignedSlot||e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&!e.inert&&e.getAttribute('aria-hidden')!=='true'&&(!parent||visible(parent));visibility.set(e,result);return result;};
           const accessibleLabel=/*ACCESSIBLE_LABEL*/;
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
           const all = root => [...root.querySelectorAll('*')].flatMap(e =>
-            [e, ...(e.shadowRoot ? all(e.shadowRoot) : [])]);
+            [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);
           const modal=[...document.querySelectorAll('[role="dialog"][aria-modal="true"],dialog[open]')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).at(-1);
           const readingRoot=modal||document.body;
           const priority=modal||document.querySelector('#search,#main,main,[role="main"],article');
@@ -255,7 +269,7 @@ class BrowserBackend:
             const tag=e.tagName.toLowerCase(), type=(e.type || '').toLowerCase();
             if (['hidden','submit-image'].includes(type)) continue;
             let label=accessibleLabel(e);
-            label=(label || '').trim().replace(/\\s+/g,' ').slice(0,120);
+            label=(label || '').trim().replace(/\\s+/g,' ').slice(0,1000);
             if (!label) continue;
             const role=(tag==='a' && e.href ? 'link' : e.getAttribute('role')) || (tag==='button'||tag==='input'&&['submit','button','reset','image'].includes(type)?'button':
                 e.isContentEditable?'textbox':['input','textarea','select'].includes(tag)?'field':'');
@@ -289,13 +303,20 @@ class BrowserBackend:
         result = self.page.evaluate(script)
         # Playwright can inspect cross-origin frames without asking page JS to
         # cross the browser's origin boundary.
+        active_frames={self.page.main_frame}
         for index, frame in enumerate(self.page.frames):
             if frame == self.page.main_frame: continue
+            if frame.parent_frame not in active_frames:continue
             try:
                 frame_element=frame.frame_element()
                 if not frame_element.is_visible() or frame_element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):continue
+                frame_key=frame_element.get_attribute('data-voice-companion-key')
+                parent_index=self.page.frames.index(frame.parent_frame) if frame.parent_frame!=self.page.main_frame else None
+                container=next((e for e in result.get('elements',[]) if e.get('role')=='frame' and e.get('key')==frame_key and e.get('frame_index')==parent_index),None)
+                if container is None:continue
                 frame.evaluate(DOCUMENT_STAMP)
                 part = frame.evaluate(script)
+                active_frames.add(frame)
             except Exception:
                 continue
             for control in part['controls']:
@@ -304,7 +325,11 @@ class BrowserBackend:
             result['controls'].extend(part['controls'])
             result['challenge'] = result.get('challenge', False) or (not result.get('text','').strip() and part.get('challenge', False))
             if part['text']:
-                base=len(result['text'])+1
+                insertion=container['end'];base=insertion+1
+                extra='\n'+part['text'][:50000]+'\nEnd of frame '+container['label']+'.\n'
+                for element in result.get('elements',[])+result.get('anchors',[]):
+                    if element['start']>=insertion:element['start']+=len(extra)
+                    if element['end']>=insertion:element['end']+=len(extra)
                 part['elements']=[e for e in part.get('elements',[]) if e.get('end',0)<=50000]
                 for bookmark in part.get('anchors',[]):
                     bookmark.update(frame_index=index,frame_url=part['url'],frame_epoch=part.get('document_epoch'));bookmark['start']+=base;bookmark['end']+=base
@@ -313,8 +338,9 @@ class BrowserBackend:
                     element.update(frame_index=index,frame_url=part['url'],frame_epoch=part.get('document_epoch'));element['start']+=base;element['end']+=base
                     if element.get('table'):element['table']='frame'+str(index)+':'+element['table']
                     if element.get('role')=='table':element['key']='frame'+str(index)+':'+element['key']
-                result.setdefault('elements',[]).extend(part.get('elements',[]))
-                result['text'] += '\n' + part['text'][:50000]
+                place=result['elements'].index(container)+1
+                result['elements'][place:place]=part.get('elements',[])
+                result['text']=result['text'][:insertion]+extra+result['text'][insertion:]
                 result['text_truncated'] = result.get('text_truncated', False) or part.get('text_truncated', False) or len(part['text']) > 50000
         return result
 
@@ -324,12 +350,12 @@ class BrowserBackend:
         script = '''() => {
           let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
           if (!e || e===document.body) return null;
-          const label=(e.getAttribute('aria-label') || (e.labels && [...e.labels].map(x=>x.innerText).join(' ')) ||
-            e.getAttribute('placeholder') || e.innerText || e.getAttribute('title') || e.tagName).trim().replace(/\\s+/g,' ').slice(0,120);
+          const label=(/*ACCESSIBLE_LABEL*/)(e);
           return {label, tag:e.tagName.toLowerCase(), type:(e.type || '').toLowerCase(),
             value:e.type==='password'?'':String(e.value || '').slice(0,300),
             checked:!!e.checked, selected:e.tagName==='SELECT'?(e.selectedOptions[0]?.text || ''):''};
         }'''
+        script=script.replace('/*ACCESSIBLE_LABEL*/',ACCESSIBLE_LABEL)
         for frame in reversed(self.page.frames):
             try:
                 item=frame.evaluate(script)
@@ -346,8 +372,8 @@ class BrowserBackend:
                   if (!e || e===document.body) return null;
                   const tag=e.tagName.toLowerCase(), type=(e.type || '').toLowerCase();
                   return {tag, type, editable:!!e.isContentEditable,
-                          label:(e.getAttribute('aria-label') || e.getAttribute('placeholder') || e.labels?.[0]?.innerText || e.tagName).slice(0,120)};
-                }''')
+                          label:(/*ACCESSIBLE_LABEL*/)(e)};
+                }'''.replace('/*ACCESSIBLE_LABEL*/',ACCESSIBLE_LABEL))
             except Exception:
                 continue
             if not target: continue
@@ -472,6 +498,7 @@ class BrowserBackend:
 
     def activate(self,item):
         import time
+        self.http_blocked=False
         self.last_action_started=False
         self._watch_dialogs()
         element=self._element(item)
@@ -623,6 +650,18 @@ class WebSession:
         self.input_mode = 'mixed'
         self.reading = ReadingCursor()
         self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
+        try:self.set_block_http(json.loads((self.folder/'preferences.json').read_text()).get('web_block_http',False))
+        except (OSError,ValueError,TypeError,AttributeError):self.set_block_http(False)
+
+    def set_block_http(self,enabled):
+        self.block_http=bool(enabled)
+        if hasattr(self.backend,'set_block_http'):self.backend.set_block_http(self.block_http)
+
+    def address_allowed(self,url):
+        try:
+            parsed=urlsplit(url)
+            return parsed.scheme in ('http','https') and bool(parsed.hostname) and not parsed.username and not parsed.password and (not self.block_http or parsed.scheme=='https')
+        except ValueError:return False
 
     def cursor_changed(self,scroll=False):
         self.cursor_revision+=1;self.selection=None
@@ -749,6 +788,8 @@ class WebSession:
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
+            if key.startswith('ListText:'):return self.list_name_input(key[9:])
+            if key=='ListBackspace':return self.list_name_input('',backspace=True)
             if key.startswith('Read:'):return self.read_key(key[5:])
             if key in ('PageTop','PageBottom'):return self.page_boundary(key=='PageBottom')
             if key.startswith('Leave:'):return self.leave_field(key.split(':')[1])
@@ -804,7 +845,7 @@ class WebSession:
                     return 'Pressed '+_label(item)+'. '+self._refresh()
                 if role=='button' and item.get('type')=='submit':return self.prepare_submit()
                 if role in ('link','button'):
-                    if item.get('href') and urlsplit(item['href']).scheme!='https':return 'Only secure HTTPS links can be opened.'
+                    if item.get('href') and not self.address_allowed(item['href']):return 'That address is blocked. Check Block nonsecure HTTP pages in Web browser options.'
                     if role=='link':self.pending=item;return self.confirm()
                     self.choices=[item];return self.choose(1)
                 return describe(item)
@@ -946,6 +987,9 @@ class WebSession:
         raise WebError('The page is still changing. Its virtual view will update when it settles.')
 
     def _refresh(self,read=None,preserve=False,wait=True):
+        if getattr(self.backend,'http_blocked',False) is True:
+            self.backend.http_blocked=False
+            return 'HTTP pages are blocked in Web browser options.'
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
         if wait and hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
         self.snapshot,captured_state = self._capture()
@@ -997,8 +1041,8 @@ class WebSession:
                 self.engine_index=0;self.list_focus='search_engines'
                 return 'This search engine requires human verification. Choose another engine for the same search. '+self.engine_notice()+' Use arrows and Enter, or say Try Bing, Try Brave Search, or Try DuckDuckGo. Escape returns to the page. Your default stays unchanged.'
             return 'This site is asking for human verification. I cannot complete that challenge by voice. A helper can inspect the browser, or you can try another search engine.'
-        if urlsplit(url).scheme != 'https':
-            return 'This page is not secure. Do not enter private information here.'
+        if not self.address_allowed(url):
+            return 'HTTP pages are blocked in Web browser options.'
         if not str(self.snapshot.get('text', '')).strip():
             return ('I found controls but no readable page text. Say list links or try read page again.'
                     if self.snapshot.get('controls') else
@@ -1047,6 +1091,7 @@ class WebSession:
         return ''
 
     def _navigate(self,url):
+        self.set_block_http(self.block_http)
         try:
             self.backend.goto(url)
             return ''
@@ -1054,6 +1099,7 @@ class WebSession:
             if self.injected_backend or self.backend.browser=='firefox':raise
             self.backend.close()
             self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
+            self.set_block_http(self.block_http)
             self.backend.goto(url)
             return 'The chosen browser could not start. Using the included Firefox browser. '
 
@@ -1061,6 +1107,7 @@ class WebSession:
         self.navigation_succeeded=False
         try:
             safe, _ = prepare_address(url)
+            if not self.address_allowed(safe):return 'HTTP pages are blocked in Web browser options.'
             notice=self._navigate(safe)
             result=self._refresh()
             self.navigation_succeeded=True
@@ -1070,6 +1117,9 @@ class WebSession:
         except ValueError as exc:
             return str(exc)
         except Exception:
+            if getattr(self.backend,'http_blocked',False) is True:
+                self.backend.http_blocked=False
+                return 'HTTP pages are blocked in Web browser options.'
             return 'The page did not open. Check the address and internet connection.'
 
     def search(self, query, provider=None):
@@ -1100,7 +1150,7 @@ class WebSession:
     def _search_readable(self):
         if not self.snapshot: return False
         links = [c for c in self.snapshot.get('controls', []) if c.get('role') == 'link'
-                 and urlsplit(c.get('href', '')).scheme == 'https']
+                 and self.address_allowed(c.get('href',''))]
         return bool(links and _plain(self.snapshot.get('text')))
 
     def read(self):
@@ -1138,11 +1188,12 @@ class WebSession:
     def link_items(self):
         snapshot=self.snapshot or {}
         items=snapshot.get('elements',snapshot.get('controls',[]))
-        return [c for c in items if kind(c)=='link' and (not c.get('href') or urlsplit(c['href']).scheme=='https')]
+        return [c for c in items if kind(c)=='link' and (not c.get('href') or self.address_allowed(c['href']))]
 
     def list_links(self, direction='first'):
         if not self.snapshot: return 'Open a website first.'
         if direction == 'first':
+            self.list_prefix='';self.list_prefix_time=0
             self.link_offset = 0
             self.link_position = None
             self.pending = None
@@ -1162,7 +1213,29 @@ class WebSession:
         self.link_position = 0
         self.list_focus = 'links'
         self.pending = None
-        return 'Links list. Link '+announce_item(_label(links[0]),0,len(links),hotkey=False)+' Press Enter or say open current link to open. Escape returns to the page.'
+        return 'Links list. Link '+announce_item(_label(links[0]),0,len(links),hotkey=False)+' Type the first letter or more of a link name to find it. Enter opens it. Escape returns to the page.'
+
+    def list_name_input(self,value,backspace=False,now=None):
+        import time
+        if self.list_focus not in ('links','headings'):return 'Open a links or headings list first.'
+        now=time.monotonic() if now is None else now
+        items=self.link_items() if self.list_focus=='links' else self.heading_items()
+        names=[_label(item).casefold() for item in items]
+        previous=getattr(self,'list_prefix','') if now-getattr(self,'list_prefix_time',0)<1.5 else ''
+        prefix=previous[:-1] if backspace else previous+value.casefold()
+        current=self.link_position if self.list_focus=='links' else self.heading_index
+        cycle=not backspace and len(value)==1 and previous==value.casefold() and not any(n.startswith(prefix) for n in names)
+        if cycle:prefix=value.casefold()
+        self.list_prefix=prefix;self.list_prefix_time=now
+        if not prefix:return 'Name search cleared.'
+        matches=[i for i,name in enumerate(names) if name.startswith(prefix)]
+        if not matches:return 'No item starts with '+prefix+'.'
+        index=next((i for i in matches if current is None or i>current),None) if cycle else matches[0]
+        if index is None:return 'End of matching items.'
+        if self.list_focus=='links':self.link_position=index
+        else:self.heading_index=index
+        self.pending=None
+        return ('Link ' if self.list_focus=='links' else 'Heading ')+announce_item(_label(items[index]),index,len(items),hotkey=False)
 
     def open_link(self, number):
         if not self.snapshot: return 'Open a website first.'
@@ -1174,6 +1247,7 @@ class WebSession:
         return self.confirm()
 
     def move_link(self, direction):
+        self.list_prefix='';self.list_prefix_time=0
         if not self.snapshot: return 'Open a website first.'
         links = self.link_items()
         if not links: return 'No links are listed. Say list links.'
@@ -1196,7 +1270,7 @@ class WebSession:
             return 'Those were all the matches I found. Describe what you want another way.'
         item = self.choices[self.suggestion_index]
         destination = item.get('href', '')
-        if destination and urlsplit(destination).scheme != 'https':
+        if destination and not self.address_allowed(destination):
             self.suggestion_index += 1
             return self._suggest()
         self.pending = item
@@ -1278,8 +1352,8 @@ class WebSession:
         try: item = self._choice(number)
         except WebError as exc: return str(exc)
         destination = item.get('href', '')
-        if destination and urlsplit(destination).scheme != 'https':
-            return 'That link does not use a secure web address. Ask your helper to inspect it.'
+        if destination and not self.address_allowed(destination):
+            return 'That address is blocked. Check Block nonsecure HTTP pages in Web browser options.'
         self.pending = item
         self.suggestion_index = int(number) - 1
         host = urlsplit(destination).hostname if destination else None
@@ -1290,6 +1364,7 @@ class WebSession:
         if not self.pending: return 'There is no web action waiting for confirmation.'
         item = self.pending
         self.pending = None
+        if item.get('href') and not self.address_allowed(item['href']):return 'That address is blocked in Web browser options.'
         if item.get('role') == 'button' and (item.get('in_form') or
                 re.search(r'\b(pay|purchase|transfer|send|submit|delete|apply|confirm|place order)\b', _label(item), re.I)):
             return 'This action may submit information or move money. Ask your helper to review and complete it in the browser.'
@@ -1567,10 +1642,11 @@ class WebSession:
     def list_headings(self):
         items=self.heading_items()
         if not items:return 'No headings on this page.'
-        self.list_focus='headings';self.heading_index=0;self.pending=None
+        self.list_focus='headings';self.heading_index=0;self.pending=None;self.list_prefix='';self.list_prefix_time=0
         return 'Headings list. '+announce_item(describe(items[0]).rstrip('.'),0,len(items),hotkey=False)+' Enter moves to the heading. Escape returns to the page.'
 
     def move_heading(self,step):
+        self.list_prefix='';self.list_prefix_time=0
         items=self.heading_items();index=self.heading_index+step
         if not 0<=index<len(items):return 'Start of list.' if index<0 else 'End of list.'
         self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items),hotkey=False)
@@ -1817,6 +1893,6 @@ class WebSession:
 # The same accessible name is used for snapshot and stale-target validation.
 DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement){old?.observer?.disconnect();const state={revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+1};const observer=new MutationObserver(records=>{if(records.some(r=>r.type!=='attributes'||!r.attributeName.startsWith('data-voice-companion-'))){state.revision++;state.changed=Date.now();}});observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true});state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
 
-ACCESSIBLE_LABEL=r'''e=>{const root=e.getRootNode();const refs=(e.getAttribute('aria-labelledby')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))?.textContent||'').join(' ');return (e.getAttribute('aria-label')||refs||(e.labels&&[...e.labels].map(x=>x.innerText).join(' '))||e.getAttribute('placeholder')||(e.tagName==='IMG'?e.alt:'')||(!e.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(e.tagName)?e.innerText:'')||[...e.querySelectorAll('img[alt]')].map(img=>img.alt).join(' ')||e.getAttribute('title')||(e.tagName==='INPUT'&&['submit','button','reset'].includes(e.type)?e.value:'')||(e.tagName==='A'&&e.href?new URL(e.href).hostname:'')||(e.matches('input,textarea,select,[contenteditable="true"],[role="textbox"]')?(()=>{let n=e;while(n&&n.tagName!=='FORM'){const p=n.previousElementSibling;if(p&&!p.querySelector('input,textarea,select')&&p.innerText?.trim())return p.innerText.trim();n=n.parentElement;}return (e.name||e.id||e.type||'Text field').replace(/[-_]+/g,' ');})():'')).trim().replace(/\s+/g,' ').slice(0,120);}'''
+from web_accessible_names import ACCESSIBLE_LABEL
 
 LIVE_IDENTITY='e=>{const label=('+ACCESSIBLE_LABEL+')(e);return {label,tag:e.tagName.toLowerCase(),type:(e.type||\'\').toLowerCase(),href:e.tagName===\'A\'?e.href:\'\',disabled:!!e.disabled||e.getAttribute(\'aria-disabled\')===\'true\'};}'

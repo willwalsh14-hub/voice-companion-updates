@@ -14,11 +14,11 @@ def saved_address(url):
     if not isinstance(url,str):return None
     try:
         parts=urlsplit(url)
-        if parts.scheme!='https' or not parts.hostname or parts.port not in (None,443):return None
+        if parts.scheme not in ('http','https') or not parts.hostname or parts.port is not None and not 1<=parts.port<=65535:return None
         def private(key):return key.casefold().replace('-','_') in PRIVATE_QUERY_KEYS
         query=parse_qsl(parts.query,keep_blank_values=True)
         private_query=any(private(key) for key,_ in query)
         private_fragment=any(private(key) for key,_ in parse_qsl(parts.fragment.split('?')[-1],keep_blank_values=True))
         if not parts.username and not parts.password and not private_query and not private_fragment:return url
-        return urlunsplit(('https',parts.hostname,parts.path,urlencode([(key,value) for key,value in query if not private(key)]),'' if private_fragment else parts.fragment))
+        return urlunsplit((parts.scheme,parts.netloc.rsplit('@',1)[-1],parts.path,urlencode([(key,value) for key,value in query if not private(key)]),'' if private_fragment else parts.fragment))
     except (ValueError,TypeError):return None

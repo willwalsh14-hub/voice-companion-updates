@@ -1,5 +1,5 @@
 """Screen-reader style browse cursor and logical table coordinates."""
-QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','p':'paragraph','s':'listbox'}
+QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','m':'frame','p':'paragraph','s':'listbox'}
 
 def voice_browse_key(command):
     """Translate spoken browsing actions to the same actions used by keys."""
@@ -10,7 +10,7 @@ def voice_browse_key(command):
            'button':'b','checkbox':'x','check box':'x','combo box':'c','combobox':'c',
            'list box':'s','listbox':'s','dropdown':'c','drop down':'c','edit field':'e','text field':'e','table':'t',
            'radio button':'r','list':'l','list item':'i','landmark':'d','graphic':'g',
-           'image':'g','paragraph':'p'}
+           'image':'g','region':'d','frame':'m','iframe':'m','paragraph':'p'}
     match=re.fullmatch(r'(next|previous|prior) (.+)',command)
     if match:
         direction,name=match.groups()
@@ -36,6 +36,7 @@ def voice_browse_key(command):
 def kind(item):
     role=item.get('role','');tag=item.get('tag','');type=item.get('type','')
     if role=='button':return role
+    if role in ('slider','spinbutton','progressbar','meter','scrollbar','switch','tab','menuitem','menuitemcheckbox','menuitemradio','treeitem','option'):return role
     if type in ('checkbox','radio'):return type
     if role=='listbox' or tag=='select' and (item.get('multiple') or item.get('size',0)>1):return 'listbox'
     if tag=='select' or role=='combobox':return 'combobox'
@@ -43,10 +44,19 @@ def kind(item):
     return role
 
 def describe(item):
-    name=item.get('label') or 'Unlabelled';role=kind(item)
+    name=item.get('label') or 'Unlabeled';role=kind(item)
+    if role=='landmark':return (name+', ' if name not in ('Unnamed','Unlabeled') else '')+{'contentinfo':'content information'}.get(item.get('landmark','region'),item.get('landmark','region'))+' region.'
+    if role=='list':return (name+', ' if name not in ('List','Unlabeled') else '')+('Ordered list' if item.get('ordered') else 'List')+', '+str(item.get('item_count',0))+' items.'
+    if role=='listitem':return name+', list item'+(' '+str(item['position'])+' of '+str(item['set_size']) if item.get('position') and item.get('set_size',0)>0 else '')+'.'
     if role=='heading':role+=' level '+str(item.get('level',1))
     state=''
     if role in ('checkbox','radio'):state=', '+('checked' if item.get('checked') else 'not checked')
+    if role in ('switch','menuitemcheckbox','menuitemradio'):state=', '+('on' if item.get('checked') else 'off')
+    if role in ('slider','spinbutton','progressbar','meter','scrollbar'):
+        state=', '+str(item.get('value_text') or item.get('value_now') or 'value not provided')
+    if item.get('expanded') is not None:state+=', '+('expanded' if item['expanded'] else 'collapsed')
+    if item.get('selected') is not None:state+=', '+('selected' if item['selected'] else 'not selected')
+    if item.get('pressed') is not None:state+=', '+('pressed' if item['pressed'] else 'not pressed')
     if role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
     if item.get('disabled'):state+=', unavailable'
     if item.get('readonly'):state+=', read-only'
@@ -114,7 +124,7 @@ class BrowseCursor:
 # Runs in the page's DOM; scripts, hidden subtrees and closed roots are not read.
 SEMANTICS = r'''
           const elements=[],anchors=[];let output='';let serial=1+all(document).reduce((maximum,e)=>Math.max(maximum,/^n\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
-          const block=new Set(['P','DIV','SECTION','ARTICLE','HEADER','FOOTER','MAIN','NAV','ASIDE','H1','H2','H3','H4','H5','H6','LI','UL','OL','TR','TABLE']);
+          const block=new Set(['P','DIV','SECTION','ARTICLE','HEADER','FOOTER','MAIN','NAV','ASIDE','H1','H2','H3','H4','H5','H6','LI','UL','OL','MENU','TR','TABLE']);
           const newline=()=>{output=output.replace(/ +$/,'');if(output && !output.endsWith('\n'))output+='\n';};
           const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output || /[ \n]$/.test(output))s=s.trimStart();output+=s;};
           const key=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+serial++);return e.getAttribute('data-voice-companion-key');};
@@ -133,31 +143,65 @@ SEMANTICS = r'''
             const lines=[...titles.flatMap(t=>String(t.innerText||'').split(/\n+/)),...String(e.innerText||'').split(/\n+/)].map(s=>String(s||'').trim()).filter(s=>s&&!urlOnly(s));
             return lines[0]||'';
           };
+          const ownedItems=new WeakMap(),ownerOf=new WeakMap();
+          for(const owner of all(document).filter(n=>n.matches('[role~="list"]'))){
+            const root=owner.getRootNode(),items=(owner.getAttribute('aria-owns')||'').split(/\s+/).filter(Boolean).map(id=>root.querySelector('#'+CSS.escape(id))).filter(n=>n&&n!==owner);
+            ownedItems.set(owner,items);for(const item of items)ownerOf.set(item,owner);
+          }
+          const ownList=e=>ownerOf.get(e)||(e.assignedSlot||e.parentElement||e.getRootNode()?.host)?.closest('ul,ol,menu,[role~="list"]');
+          const itemsFor=list=>[...new Set([...all(list.shadowRoot||list),...(ownedItems.get(list)||[])])].filter(n=>accessibleLabel.role(n)==='listitem'&&visible(n)&&ownList(n)===list);
           const walk=e=>{
             if(e.nodeType===3){append(e.textContent);return;}
             if(e.nodeType!==1 || !visible(e) || e.closest('[aria-hidden="true"],[inert]') || ['SCRIPT','STYLE','NOSCRIPT','HEAD'].includes(e.tagName))return;
             if(block.has(e.tagName))newline();if(e.tagName==='BR'){newline();return;}
-            let role=e.getAttribute('role')||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
-            if(/^h[1-6]$/.test(tag))role='heading';else if(tag==='a' && e.href)role='link';else if(tag==='button'||tag==='input'&&['submit','reset','button','image'].includes(type))role='button';else if(['input','textarea','select'].includes(tag)||editable)role='field';else if(tag==='table'||role==='grid')role='table';else if(tableMaps.has(e))role='cell';else if(['ul','ol'].includes(tag))role='list';else if(tag==='li')role='listitem';else if(tag==='p')role='paragraph';else if(['main','nav','aside','header','footer'].includes(tag))role='landmark';else if(tag==='img')role='graphic';
+            let role=accessibleLabel.role(e)||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
+            const explicit=e.getAttribute('role')||'', presentation=['none','presentation'].includes(role);
+            if(presentation)role='';
+            if(!presentation){
+              if(tableMaps.has(e))role='cell';else if(role==='grid')role='table';
+              else if(['img','graphics-document','graphics-symbol','graphics-object'].includes(role)||tag==='svg'&&(e.hasAttribute('aria-label')||e.hasAttribute('aria-labelledby')||e.querySelector('title')))role='graphic';
+              else if(['input','textarea','select'].includes(tag)||editable)role=role||'field';
+              else if(tag==='p'&&!role)role='paragraph';
+              else if(['iframe','frame'].includes(tag))role='frame';
+            }
+            const landmarkRoles=['main','navigation','complementary','banner','contentinfo','search','region','form'];
+            let landmark='';
+            if(landmarkRoles.includes(role)){
+              const named=!!accessibleLabel.nativeName(e);
+              const nestedHeader=['header','footer'].includes(tag)&&!explicit&&e.parentElement?.closest('article,aside,main,nav,section,[role="article"]');
+              if(nestedHeader||(['section','form'].includes(tag)&&!explicit&&!named))role='';
+              else{landmark=role;role='landmark';}
+            }
+            if(role==='generic'||role==='none'||role==='presentation')role='';
+            if(tag==='li'&&!explicit&&['none','presentation'].includes(accessibleLabel.role(e.closest('ul,ol,menu')||e)))role='';
             if(braveResult(e))role='heading';
-            if(['combobox','listbox','checkbox','radio','button','link','textbox'].includes(e.getAttribute('role')))role=e.getAttribute('role');
             if(tag==='label'){for(const child of all(e).filter(c=>c.matches(selector)))walk(child);return;}
             if(['input','select','textarea','a','button'].includes(tag))newline();
             const control=controlsByKey.get(e.getAttribute('data-voice-companion-key'));
             const resultHeading=e.querySelector('h1,h2,h3,h4,h5,h6,[role="heading"]')||e.closest('h1,h2,h3,h4,h5,h6,[role="heading"]');
             const braveTitle=location.hostname==='search.brave.com'?e.querySelector(titleSelector):null;
             const resultTitle=role==='link'?(braveTitle||e.querySelector('[class*="title"],[class*="heading"]')||resultHeading?.querySelector('[class*="title"],[class*="heading"]')||resultHeading):null;
-            let label=role==='link'&&resultTitle && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby')?accessibleLabel(resultTitle):accessibleLabel(e);
-            if(role==='heading'){label=contentTitle(e)||contentTitle(e.closest('a')||e)||label;}
-            if(role==='link'&&(resultHeading||braveTitle)){label=contentTitle(resultTitle||e)||contentTitle(e)||label;}
+            let label=role ? role==='link'&&resultTitle && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby')?accessibleLabel(resultTitle):accessibleLabel(e) : '';
+            if(role==='heading'&&(!e.hasAttribute('aria-label')&&!e.hasAttribute('aria-labelledby')||urlOnly(label))){label=contentTitle(e)||contentTitle(e.closest('a')||e)||label;}
+            if(role==='link'&&(resultHeading||braveTitle)&&!e.hasAttribute('aria-label')&&!e.hasAttribute('aria-labelledby')){label=contentTitle(resultTitle||e)||contentTitle(e)||label;}
+            const listItems=role==='list'?itemsFor(e):[];
+            const parentList=role==='listitem'?ownList(e):null;
+            const siblings=parentList?itemsFor(parentList):[];
+            if(role==='listitem'){const pieces=[];const own=n=>{if(n.nodeType===3){pieces.push(n.textContent);return;}if(n.nodeType!==1||n!==e&&n.matches('ul,ol,menu,[role~="list"]')||!visible(n)||n.closest('[aria-hidden="true"],[inert]'))return;for(const c of (n.shadowRoot?n.shadowRoot.childNodes:n.tagName==='SLOT'&&n.assignedNodes({flatten:true}).length?n.assignedNodes({flatten:true}):n.childNodes))own(c);};own(e);label=pieces.join(' ').trim().replace(/\s+/g,' ')||'Empty list item';}
+            if(role==='list'&&!label)label='List';
+            if(role==='landmark'&&!label)label='Unnamed';
+            if(['list','listitem','frame','landmark'].includes(role))newline();
             const bookmark=e.id?{id:e.id,key:key(e),start:output.length,end:output.length}:null;if(bookmark)anchors.push(bookmark);
             let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
+            if(item){item.landmark=landmark;if(role==='list'){item.item_count=Math.max(listItems.length,...listItems.map(n=>Number(n.getAttribute('aria-setsize'))||0));item.ordered=tag==='ol';}if(role==='listitem'){item.position=Number(e.getAttribute('aria-posinset'))||siblings.indexOf(e)+1;item.set_size=Number(e.getAttribute('aria-setsize'))||siblings.length;}}
+            if(item){item.tabindex=e.tabIndex;item.checked=!!e.checked||e.getAttribute('aria-checked')==='true';item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
             if(['input','select','textarea'].includes(tag)){append(label);if(type!=='password' && e.value && !['checkbox','radio','submit','button'].includes(type))append(' '+(tag==='select'?e.selectedOptions[0]?.text:e.value));}
-            else if(tag==='img')append(label);
-            else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.childNodes))walk(child);
+            else if(role==='graphic'||role==='frame')append((role==='frame'?'Frame ':'')+label);
+            else if(tag==='img'){}
+            else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.tagName==='SLOT'&&e.assignedNodes({flatten:true}).length?e.assignedNodes({flatten:true}):e.childNodes))walk(child);
             if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}
             if(bookmark)bookmark.end=output.length;
-            if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName))newline();
+            if(['input','select','textarea','a','button'].includes(tag))newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName)||['list','listitem','frame','landmark'].includes(role))newline();
           };
           walk(readingRoot);
           // A result may put its URL in an H tag and its human title in a

@@ -1,17 +1,23 @@
 {
-  "version": "0.2.131-test",
+  "version": "0.2.132-test",
   "status": "Testing build",
   "date": "October 14, 2026",
-  "baseline": "0.2.130-test",
-  "scope": "Smoother Help reading and a clearer manual.",
+  "baseline": "0.2.131-test",
+  "scope": "Clearer web page labels, easier link lists, and a choice about HTTP pages.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "A complete contents list",
+          "title": "Choose whether to block HTTP pages",
           "details": [
-            "The contents now include the smaller sections within every chapter. In Word, HTML, and EPUB, you can follow links to those sections."
+            "Block nonsecure HTTP pages is a new Web browser option. It is off by default. HTTP links can open and can be saved as favorites. Turn the setting on to block HTTP pages and redirects to HTTP."
+          ]
+        },
+        {
+          "title": "Move between frames",
+          "details": [
+            "Press M or Shift+M, or say \"Next frame\" or \"Previous frame\". Frame names and readable content appear in page order. Hidden frames are skipped."
           ]
         }
       ]
@@ -20,16 +26,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Read Help without missing text",
+          "title": "Hear clearer page labels",
           "details": [
-            "Up Arrow reads the previous paragraph or list item. Down Arrow reads the next one. Home and End reach the first and last blocks. Long paragraphs are read in full.",
-            "Unrecognized speech no longer stops Help to repeat a guidance prompt. Help uses the same text as the manual."
+            "Companion uses the names supplied by the website. It identifies graphics, lists, list items, and page regions. Missing names are reported as missing.",
+            "K and Shift+K move between links. L and Shift+L move between lists. I and Shift+I move between list items. G moves to a graphic. D moves to a region. Hold Shift to move backward."
           ]
         },
         {
-          "title": "Clearer instructions and lists",
+          "title": "Find a link by name",
           "details": [
-            "Instructions use phrases such as \"you can say\" and \"from the keyboard.\" Menu choices use bullet points. Each separate set of steps starts at 1."
+            "In the links list, type a first letter, several letters, or the full link name. Spaces and Backspace work too. Typing selects a match; Enter opens it. The headings list supports the same name search."
           ]
         }
       ]

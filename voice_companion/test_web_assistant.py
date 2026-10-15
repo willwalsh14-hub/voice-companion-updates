@@ -218,16 +218,18 @@ class WebTests(unittest.TestCase):
                 self.url, self.label = url, label
             def frame_element(self):
                 from unittest.mock import Mock
-                return Mock(is_visible=lambda:True,evaluate=lambda script:False)
+                return Mock(is_visible=lambda:True,evaluate=lambda script:False,get_attribute=lambda name:'frame-key')
             def evaluate(self, script):
                 self.script = script
                 return {'title':'Page', 'url':self.url, 'text':'Content',
+                        'elements':[dict(key='frame-key',role='frame',label='Account',start=7,end=7)] if self is main else [],'anchors':[],
                         'controls':[{'key':'0', 'role':'link', 'label':self.label,
                                      'href':self.url+'/login', 'tag':'a'}]}
         main = Frame('https://example.com', 'Top link')
         child = Frame('https://accounts.example.com', 'Sign in')
         main.main_frame = main
         main.frames = [main, child]
+        child.parent_frame=main
         backend = BrowserBackend(self.temp.name)
         backend.page = main
         backend.start = lambda: None

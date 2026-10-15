@@ -1,0 +1,15 @@
+{
+  "package": "dom-accessibility-api",
+  "version": "0.7.1",
+  "source": "https://github.com/eps1lon/dom-accessibility-api",
+  "license": "MIT",
+  "npm_integrity": "sha512-vdnCeZD+3wZ+8h8xXL/ZtBlvvoobOFyPzSiIfO6sGOZDqjFx4aLMAjZhl4rawj5xYz3UwP6Tgvyh0iH4IOCVnQ==",
+  "bundle_sha256": "7d274de519f912a71218dc1eb73df7c104ce0464a36d64ec159e02bfd68a158d",
+  "bundler": "esbuild 0.25.12",
+  "exports": [
+    "computeAccessibleName",
+    "computeAccessibleDescription",
+    "getRole",
+    "isInaccessible"
+  ]
+}

@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.131-test.
+Guide version: 0.2.132-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -71,6 +71,7 @@ Contents
   11.6 Enter or change a web answer
   11.7 Fill in and review a form by voice
   11.8 Read a web table and leave a page
+  11.9 Identify graphics, lists, regions, and frames
 12 Favorites And Web History
   12.1 Save the current page
   12.2 Open or find a favorite
@@ -603,7 +604,7 @@ A newly loaded page may start reading on its own. Turn off Automatic page readin
 H moves to the next heading. Shift+H moves to the previous heading. K moves to the next link.
 Use B for a button, X for a checkbox, C for a choice box, E for a text box, and F for any form control.
 Use T for a table, R or A for a radio button, L for a list, and I for a list item.
-Use D for a landmark, G for a picture, P for a paragraph, and S for a list box.
+Use D for a landmark or region, G for a picture, M for a frame, P for a paragraph, and S for a list box.
 A landmark is a named page area, such as main content or navigation. A radio button chooses one option from a group.
 Numbers 1 through 6 find headings at that level. Hold Shift with any quick key to move backward.
 You can also move by voice. Say "Next heading", "Previous link", or "Next form control". To choose a heading level, say "Next heading level", followed by the number. For example, say "Next heading level two".
@@ -615,6 +616,8 @@ Say "Find login" or "Find contact us" to look for a matching item. Listen to the
 F7 or Insert+F7 opens a link list. F6 or Insert+F6 opens a heading list.
 You can also say "List links", "List headings", or "List fields".
 Use arrows, Home, or End to choose an item, then press Enter. Press Escape or say "Close list" to return to the page.
+In a links or headings list, type the first letter of a name to find a match. Type more letters promptly to narrow the match. You can type the full name, including spaces. Backspace removes the last letter from your search.
+Repeat a first letter to move through matching names. The search stops at the last match. Pause before starting a new name. Typing chooses an item; it does not open it. Press Enter to open the chosen link or move to the chosen heading.
 A heading choice moves your reading place. A link choice opens its address.
 
 11.6 Enter or change a web answer
@@ -656,6 +659,16 @@ F5 or "Refresh page" reloads the page. Alt+T lets you type an app command.
 Escape from ordinary page reading opens the web browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
 "Leave website" also opens the web browser menu. "Close browser" or "Main menu" leaves the browser activity.
 
+11.9 Identify graphics, lists, regions, and frames
+Companion uses names supplied by the website. A name should tell you what an item is or what it does. If a useful name is missing, Companion says that the item is unlabeled. It does not guess what a picture shows.
+Press G for the next graphic or Shift+G for the previous graphic. You can also say "Next graphic", "Previous graphic", "Next image", or "Previous image". Pictures marked as decoration are skipped.
+Press L for the next list or Shift+L for the previous list. Say "Next list" or "Previous list" for the same task. Companion reads the list name when supplied and the number of items.
+Press I for the next list item or Shift+I for the previous item. You can say "Next list item" or "Previous list item". Nested lists have their own item counts.
+K and Shift+K move between links. L and I are for lists and list items, even when the list contains links.
+A region is an area such as navigation, main content, or a named section. Press D or Shift+D to move between regions. You can say "Next region", "Previous region", "Next landmark", or "Previous landmark". Companion reads the area's name and type.
+A frame holds another page inside the current page. Press M for the next frame or Shift+M for the previous frame. You can also say "Next frame" or "Previous frame". Companion uses the frame's title or label when supplied.
+Readable frame content appears where the frame occurs on the page. Companion marks the end of the frame. Hidden frames are skipped.
+
 12. FAVORITES AND WEB HISTORY
 
 12.1 Save the current page
@@ -686,7 +699,7 @@ Deleting a favorite does not delete the website or its contents. Escape cancels 
 In either list, type the first letter or several letters of a name to find it, just as you do when opening a favorite.
 
 12.4 Open a page from history
-Web history is a saved list of recent secure page addresses. It keeps up to 200 entries, newest first.
+Web history is a saved list of recent page addresses. It keeps up to 200 entries, newest first.
 1. Choose Web history in the web browser menu.
 2. Use arrows to hear page names, or type letters to find a name.
 3. Press Enter to open the page.
@@ -902,6 +915,8 @@ In Notepad options, choose Open Notepad to return to your note or start a new on
 The Default search engine setting lets you choose Google, Bing, Brave Search, or DuckDuckGo.
 Keep browser window open controls whether a page stays open when you leave page reading. It is off by default.
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
+Block nonsecure HTTP pages is off by default. With it off, Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
+Turn this setting on to block HTTP pages and redirects to HTTP. You can say "Block nonsecure HTTP pages on" or "Block nonsecure HTTP pages off". HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
 The Guided browser setting lets you choose Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.

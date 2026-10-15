@@ -116,7 +116,7 @@ $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
 if ($LASTEXITCODE -ne 0) { throw 'The guided Firefox runtime could not be installed.' }
 $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-& $python -m unittest -q test_web_live test_consumer_web test_consumer_audio
+& $python -m unittest -q test_web_live test_consumer_web test_consumer_audio test_web_semantics
 if ($LASTEXITCODE -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEB_TESTS
 $modelZip = Join-Path $PSScriptRoot 'vosk-model.zip'
@@ -133,6 +133,7 @@ $arguments = @('--clean', '--noconfirm', '--onedir', '--contents-directory', '.'
   '--add-data', 'update-settings.json:.', '--add-data', 'apply-update.ps1:.',
   '--add-data', 'model:model', '--add-data', 'browser-runtime:browser-runtime',
   '--add-data', 'documentation-manifest.json:.',
+  '--add-data', 'accessible_names.js:.', '--add-data', 'accessible_names.LICENSE.txt:.',
   '--add-data', 'START HERE - Veteran.txt:.',
   '--add-data', 'START HERE - Veteran.html:.',
   '--add-data', 'START HERE - Veteran.docx:.',
@@ -320,14 +321,14 @@ if (Test-Path $googleRegistration) {
   }
 }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.131-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.132-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --refresh-guides
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.131-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.132-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -354,7 +355,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.131-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.132-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing

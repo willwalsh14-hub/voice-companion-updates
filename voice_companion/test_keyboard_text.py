@@ -414,6 +414,23 @@ class WindowKeyboardTests(unittest.TestCase):
             self.wait(lambda k=key:('keyboard','Help:'+k) in self.window.commands.queue)
         self.assertTrue(self.window.key_feedback.empty())
         self.assertFalse(any(isinstance(item,tuple) and item[0]=='text_edit' for item in self.window.commands.queue))
+
+    def test_web_semantic_quick_keys_and_link_list_name_typing(self):
+        self.window.set_context(dict(mode='web',source='page',text='Page',caret=0,readonly=True,ack=0,web_browse=True))
+        self.wait(lambda:self.window.context.get('web_browse'))
+        for key in ('k','l','i','g','d','m'):
+            for state in (0,1):
+                self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
+                expected='Web:Quick:'+('Previous:' if state else '')+key
+                self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
+        self.window.set_context(dict(mode='web',source=None,text='',caret=0,ack=0,web_name_list='links'))
+        self.wait(lambda:self.window.context.get('web_name_list')=='links')
+        for key,char in [('a','a'),('c','c'),('space',' ')]:
+            self.call(lambda k=key:self.window.typed.event_generate('<KeyPress>',keysym=k))
+            self.wait(lambda c=char:('keyboard','Web:ListText:'+c) in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.typed.get(),''))
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='BackSpace'))
+        self.wait(lambda:('keyboard','Web:ListBackspace') in self.window.commands.queue)
     def test_menu_home_end_and_confirmation_letters_dispatch_immediately(self):
         self.window.set_context(dict(mode='awake',source=None,menu_letters=True,text='',caret=0,ack=0))
         self.wait(lambda:self.window.context.get('mode')=='awake')

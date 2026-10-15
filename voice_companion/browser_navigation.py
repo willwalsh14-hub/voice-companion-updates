@@ -1,10 +1,10 @@
-"""Validate spoken HTTPS addresses before guided browser navigation."""
+"""Validate spoken HTTP and HTTPS addresses before guided browser navigation."""
 import re
 import urllib.parse
 
 
 def prepare_address(spoken):
-    """Return (https URL, host) or raise ValueError for unsafe/ambiguous input."""
+    """Use HTTPS for bare addresses and preserve an explicit HTTP address."""
     address = re.sub(' dot ','.',spoken.strip(),flags=re.I)
     address = re.sub(' slash ','/',address,flags=re.I)
     address = re.sub(r'\s+', '', address)
@@ -13,7 +13,7 @@ def prepare_address(spoken):
     if '://' in address:
         parsed = urllib.parse.urlsplit(address)
         if parsed.scheme not in ('http','https'):
-            raise ValueError('Only secure HTTPS website addresses are supported.')
+            raise ValueError('Use an HTTP or HTTPS website address.')
     else:
         parsed = urllib.parse.urlsplit('https://' + address)
     host = parsed.hostname or ''
@@ -23,11 +23,11 @@ def prepare_address(spoken):
         raise ValueError('I could not understand that website address.') from exc
     if (not re.fullmatch(r'[a-z0-9-]+(?:\.[a-z0-9-]+)+', host)
             or any(not label or label.startswith('-') or label.endswith('-') for label in host.split('.'))
-            or len(host) > 253 or port is not None or parsed.username or parsed.password):
+            or len(host) > 253 or port is not None and not 1<=port<=65535 or parsed.username or parsed.password):
         raise ValueError('I could not understand that website address.')
     if not re.fullmatch(r'/[A-Za-z0-9._~!$&\x27()*+,;=:@%/-]*|', parsed.path):
         raise ValueError('Please type a simpler website address.')
-    return urllib.parse.urlunsplit(('https', host, parsed.path, parsed.query, parsed.fragment)), host
+    return urllib.parse.urlunsplit((parsed.scheme, host+(':'+str(port) if port is not None else ''), parsed.path, parsed.query, parsed.fragment)), host
 
 def looks_like_address(text):
     value=str(text).strip()
