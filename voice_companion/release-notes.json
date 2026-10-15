@@ -1,18 +1,20 @@
 {
-  "version": "0.2.135-test",
+  "version": "0.2.136-test",
   "status": "Testing build",
   "date": "October 15, 2026",
-  "baseline": "0.2.134-test",
-  "scope": "Keyboard access to human checks and a choice of capital-letter cues.",
+  "baseline": "0.2.135-test",
+  "scope": "Web form keyboard changes and clearer capital-letter feedback.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose how capital letters sound",
+          "title": "Type in web forms",
           "details": [
-            "In Options, open Verbosity and find When encountering capital letters. Choose with a sound, with a higher pitch, with a lower pitch, or do nothing. Choose OK to save. The choice works across the app and stays after restart.",
-            "The cue applies when you type or read one letter at a time. It also applies to delayed letter names. Whole words and sentences keep their usual voice. Do nothing is the default."
+            "Press E or Shift+E to reach a text box and start typing. You no longer need to press Enter first.",
+            "Enter in a single-line text box now uses the site\u2019s own default action, such as Next, Continue, or Log in. Tab saves your answer and moves to the next control. The website still checks required answers.",
+            "Buttons announce Loading page and then the page result. The extra Pressed announcement has been removed.",
+            "If a button leaves the page unchanged, Companion says so. If the site returns an error, it reports that error. It does not click again on its own."
           ]
         }
       ]
@@ -21,10 +23,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Use human checks with the keyboard",
+          "title": "Hear one capital cue",
           "details": [
-            "Press Enter or Space once on a check box, then wait. Holding the key no longer sends more clicks. Companion does not click again just because the site clears the box.",
-            "Use Tab and Shift+Tab to reach new challenge controls. Use the site\u2019s accessibility option when offered. The site still decides whether you pass. PayPal\u2019s live challenge has not yet been confirmed with this build."
+            "Open Verbosity in Options. Find When encountering capital letters. Choose raise pitch, lower pitch, play a sound, or do nothing. Your saved choice still works.",
+            "The cue happens once when you reach or type a capital letter. The delayed phonetic name uses your normal pitch and does not play a second tone."
+          ]
+        },
+        {
+          "title": "PayPal sign-in",
+          "details": [
+            "The keyboard changes are tested with forms that change from email to password. A successful live PayPal sign-in and human check inside Voice Companion have not been confirmed."
           ]
         }
       ]

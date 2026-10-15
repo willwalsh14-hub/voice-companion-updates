@@ -10,9 +10,10 @@ def preserve_character(original,text):
     return CharacterSpeech(text,True,getattr(original,'pitch_delta',0),getattr(original,'sound',False)) if is_capital(original) else text
 
 def prepare(text,mode='do nothing'):
+    mode={'with a higher pitch':'raise pitch','with a lower pitch':'lower pitch','with a sound':'play a sound'}.get(mode,mode)
     capital=is_capital(text)
-    delta=(4 if mode=='with a higher pitch' else -4 if mode=='with a lower pitch' else 0) if capital else 0
-    return CharacterSpeech(str(text),capital,delta,capital and mode=='with a sound')
+    delta=(4 if mode=='raise pitch' else -4 if mode=='lower pitch' else 0) if capital else 0
+    return CharacterSpeech(str(text),capital,delta,capital and mode=='play a sound')
 
 def pitch_for(text,base=0):return max(-10,min(10,int(base)+getattr(text,'pitch_delta',0)))
 

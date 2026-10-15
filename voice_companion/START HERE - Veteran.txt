@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.135-test.
+Guide version: 0.2.136-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -625,9 +625,9 @@ A heading choice moves your reading place. A link choice opens its address.
 
 11.6 Enter or change a web answer
 1. Use Tab to reach the next control, or use Up or Down to reach a text box. You can type as soon as you reach the box. You can also press E to find a text box.
-2. If you used E, press Enter or say "Edit current field" to start editing.
+2. Press E or Shift+E to move to a text box and start typing at once.
 3. Type or speak the answer.
-4. Press Enter to save a single-line answer. Use Control+Enter for a box with several lines.
+4. In a single-line box, press Enter to use the website's default button, such as Next, Continue, or Log in. Tab saves your answer and moves to the next control. Use Control+Enter for a box with several lines.
 5. Press Escape to cancel editing and return to page reading.
 Tab saves your entry and moves to the next control. Shift+Tab moves to the previous control. Letter keys enter text while you are editing.
 You can say "Save field" to keep your entry. Say "Cancel field editing" to leave its earlier value unchanged.
@@ -891,10 +891,10 @@ Delayed phonetic pronunciation adds a letter's spoken name after a short pause. 
 It is on by default. Choose a delay of 0.5, 1, or 2 seconds, or turn it off.
 To change a setting by voice, say its name, followed by the value you want. For example, say "Verbosity medium", "Punctuation most", "Typing echo words", "Phonetics off", or "Phonetic delay 1 second".
 Moving again or stopping speech cancels a letter hint that has not yet been read.
-When encountering capital letters controls how single capital letters sound while you type or read one character at a time. Choose with a sound, with a higher pitch, with a lower pitch, or do nothing. Do nothing is the default. The sound is a short tone before the letter.
+When encountering capital letters controls how single capital letters sound while you type or read one character at a time. Choose raise pitch, lower pitch, play a sound, or do nothing. Do nothing is the default. The sound is a short tone before the letter. The cue happens once when you reach or type the letter. The delayed phonetic name uses your normal pitch and does not play another tone.
 Open Options, then Verbosity. Tab to When encountering capital letters. Use the arrows to choose, then choose OK. This saves the choice for all parts of the app and keeps it after you close the app. Cancel keeps your old choice.
-You can also say "Capital letters with a sound", "Capital letters with a higher pitch", "Capital letters with a lower pitch", or "Capital letters do nothing". These commands save at once.
-The choice also applies to delayed letter hints, such as A followed by Alpha. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice for quick feedback. Private password text is not read aloud.
+You can also say "Capital letters play a sound", "Capital letters raise pitch", "Capital letters lower pitch", or "Capital letters do nothing". These commands save at once.
+Delayed letter hints, such as Alpha after A, use your normal voice. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice for quick feedback. Private password text is not read aloud.
 
 18.3 Voice and Synthesizer options
 In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Check Lower media volume while Companion speaks if you want audio to become quieter while the app speaks.

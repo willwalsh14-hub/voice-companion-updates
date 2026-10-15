@@ -113,7 +113,7 @@ class CapitalPreferenceTests(unittest.TestCase):
         from types import SimpleNamespace
         field=next(f for f in fields('Verbosity',{}) if f.key=='capital_letters')
         self.assertEqual(field.label,'When encountering capital letters')
-        self.assertEqual(field.choices,('with a sound','with a higher pitch','with a lower pitch','do nothing'))
+        self.assertEqual(field.choices,('raise pitch','lower pitch','play a sound','do nothing'))
         with tempfile.TemporaryDirectory() as folder:
             app=SimpleNamespace(APP=Path(folder),PREFERENCES=dict(DEFAULTS))
             for value in field.choices:
@@ -125,9 +125,16 @@ class CapitalPreferenceTests(unittest.TestCase):
                 self.assertEqual(reloaded.voice_setting('when encountering capital letters '+value),('capital_letters',value))
         with self.assertRaises(ValueError):session.set('capital_letters','invalid')
 
+    def test_old_capital_choices_migrate_to_the_new_names(self):
+        for old,new in (('with a sound','play a sound'),('with a higher pitch','raise pitch'),('with a lower pitch','lower pitch')):
+            session=SettingsSession({'capital_letters':old},{})
+            self.assertEqual(session.values['capital_letters'],new)
+            session.set('capital_letters',old)
+            self.assertEqual(session.values['capital_letters'],new)
+
     def test_spoken_setting_is_global_and_updates_immediate_feedback(self):
         with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'PREFERENCES',dict(DEFAULTS)),patch.object(companion,'KEYBOARD_SPEECH',Mock(problem=None)) as worker,patch.object(companion,'speak'):
-            for mode,value in zip(('web','document','help','awake'),('with a sound','with a higher pitch','with a lower pitch','do nothing')):
+            for mode,value in zip(('web','document','help','awake'),('raise pitch','lower pitch','play a sound','do nothing')):
                 self.assertEqual(companion.handle('capital letters '+value,mode),mode)
                 self.assertEqual(worker.capital_letters,value)
                 self.assertEqual(json.loads((Path(folder)/'preferences.json').read_text())['capital_letters'],value)

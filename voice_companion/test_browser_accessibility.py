@@ -231,7 +231,7 @@ class WebPolishTests(unittest.TestCase):
             app.apply_keyboard_edit({'source':context['source'],'before':context['text'],'after':context['text'],'caret':position,'readonly':True,'selection':None,'seq':1},'web')
             self.assertEqual(self.session.keyboard_field['key'],'name');self.assertFalse(app.app_context('web')['readonly'])
             self.session.keyboard('Escape');self.session.keyboard('PageTop')
-            self.session.keyboard('Quick:e');self.assertIsNone(self.session.keyboard_field)
+            self.session.keyboard('Quick:e');self.assertIsNotNone(self.session.keyboard_field)
             self.session.keyboard('Activate');self.assertEqual(self.session.keyboard_field['key'],'name');self.assertFalse(app.app_context('web')['readonly'])
     def test_link_role_is_first_and_main_menu_has_requested_name(self):
         from web_browse import describe

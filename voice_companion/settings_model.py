@@ -18,7 +18,7 @@ def fields(category, context):
     if category!='Startup and exit options':category=category.removesuffix(' options')
     category={'Word processor':'Documents','Auto-update':'Updates','Notes':'Notepad'}.get(category,category)
     definitions = {
-        'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2')),Field('capital_letters','When encountering capital letters','choice',('with a sound','with a higher pitch','with a lower pitch','do nothing'))],
+        'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2')),Field('capital_letters','When encountering capital letters','choice',('raise pitch','lower pitch','play a sound','do nothing'))],
         'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('SAPI',)))),Field('windows_voice','SAPI voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition','check')],
@@ -37,6 +37,7 @@ class SettingsSession:
     def __init__(self, values, context):
         self.original = copy.deepcopy(DEFAULTS | values)
         self.values = copy.deepcopy(DEFAULTS | values)
+        self.values['capital_letters']={'with a sound':'play a sound','with a higher pitch':'raise pitch','with a lower pitch':'lower pitch'}.get(self.values['capital_letters'],self.values['capital_letters'])
         self.context = context
         if self.values.get('engine')=='windows' and 'SAPI' in context.get('engines',('SAPI',)):self.values['engine']='SAPI'
         self.values.setdefault('podcast_limits',copy.deepcopy(context.get('podcast_limits',{})))
@@ -48,7 +49,7 @@ class SettingsSession:
         if key=='engine':
             available=next(f.choices for f in fields('Synthesizer',self.context) if f.key=='engine')
             if str(value).lower() in ('sapi','sapi voice','windows','windows speech','microsoft'):value='SAPI' if 'SAPI' in available else 'windows'
-        if key=='capital_letters':value={'sound':'with a sound','higher pitch':'with a higher pitch','lower pitch':'with a lower pitch','nothing':'do nothing','off':'do nothing'}.get(str(value).lower(),str(value).lower())
+        if key=='capital_letters':value={'sound':'play a sound','with a sound':'play a sound','higher pitch':'raise pitch','with a higher pitch':'raise pitch','with a lower pitch':'lower pitch','nothing':'do nothing','off':'do nothing'}.get(str(value).lower(),str(value).lower())
         if key=='web_search_engine':value={'brave search':'brave','duck duck go':'duckduckgo','google search':'google','bing search':'bing'}.get(str(value).lower(),str(value).lower())
         if key=='phonetic_delay':
             value=str(value).lower().replace(' seconds','').replace(' second','').strip()

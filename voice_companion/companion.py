@@ -45,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.135-test'
+APP_VERSION = '0.2.136-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -350,7 +350,12 @@ def process_keyboard_batch(mode):
                 elif command[0]=='web_private_value':
                     if command[1].get('field_source') and command[1]['field_source']!=app_context(SLEEP_RETURN_MODE if mode=='sleep' else mode).get('web_field_source'):
                         speak('The page changed. The old private field was not saved.');continue
-                    try:web_session.commit_keyboard_field(command[1]['value']);command='web key '+command[1].get('next','Done')
+                    try:
+                        next_key=command[1].get('next','Done')
+                        if next_key=='Done' and web_session.keyboard_field:
+                            web_session.keyboard_field['value']=command[1]['value']
+                        else:web_session.commit_keyboard_field(command[1]['value'])
+                        command='web key '+next_key
                     except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
                 elif command[0]=='media_field':
                     speak(media_navigation().field_value(command[1]['value'],command[1]['next']));sync_app_context(mode,True);continue

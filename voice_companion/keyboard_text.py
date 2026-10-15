@@ -15,7 +15,7 @@ def character(value):
     if value in NAMES:return NAMES[value]
     if value.isalnum() or len(value)!=1:return CharacterSpeech(value,True) if len(value)==1 and value.isalpha() and value.isupper() else value
     return unicodedata.name(value,'character '+str(ord(value))).lower()
-def phonetic(value):return preserve_character(value,PHONETICS.get(value.lower(),''))
+def phonetic(value):return PHONETICS.get(value.lower(),'')
 def document_text(doc):return '\n'.join(p.text for p in doc.paragraphs)
 def absolute(doc,position):return sum(len(p.text)+1 for p in doc.paragraphs[:position[0]])+position[1]
 

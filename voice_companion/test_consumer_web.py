@@ -26,7 +26,7 @@ class ConsumerWebTests(unittest.TestCase):
                 text=' '.join(notices)
                 self.assertIn('Ordinary text before the form.',text);self.assertIn('Ordinary text after the form.',text)
                 self.session.keyboard('PageTop');self.session.keyboard('Quick:e')
-                self.assertIsNone(self.session.keyboard_field)
+                self.assertIsNotNone(self.session.keyboard_field)
                 self.assertIn('Second heading',self.session.keyboard('Quick:h'))
                 self.assertEqual(self.page.locator('#name').input_value(),'')
 
@@ -34,7 +34,7 @@ class ConsumerWebTests(unittest.TestCase):
         self.load('<h1>Top</h1><label>Name<input id="name" value="Keep this"></label><label>Choice<select><option>One</option><option>Two</option></select></label><h2>After form</h2><p>Body after heading.</p>')
         for key in ('Quick:e','Quick:h','Quick:c','Quick:h','Quick:f'):
             self.session.keyboard('PageTop');self.session.keyboard(key)
-            self.assertIsNone(self.session.keyboard_field)
+            self.assertEqual(self.session.keyboard_field is not None,key=='Quick:e')
         self.session.command('next heading');self.assertIsNone(self.session.keyboard_field)
         self.assertEqual(self.page.locator('#name').input_value(),'Keep this');self.assertEqual(self.page.locator('select').input_value(),'One')
         self.session.keyboard('PageTop');self.session.keyboard('Quick:e');self.session.keyboard('Activate')

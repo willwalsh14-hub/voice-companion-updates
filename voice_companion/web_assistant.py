@@ -484,22 +484,47 @@ class BrowserBackend:
             dialog.dismiss()
         self.page.on('dialog',dialog_notice)
 
-    def activate(self,item):
+    def submit_default(self,item):
+        """Let the site's Enter handling select its native default submitter."""
+        return self.activate(item,key='Enter')
+
+    def activate(self,item,key=None):
         import time
         self.last_action_started=False
         self._watch_dialogs()
         element=self._element(item)
         before_page=self.page
-        frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
+        frame=self.page.frames[item.get('frame_index',0)]
         before_url=frame.url;before_epoch=frame.evaluate('()=>performance.timeOrigin')
         before_text=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")
         before=self.document_stamp();before_pages=list(self.context.pages) if self.context else []
         opened=[]
+        request_errors=[]
+        pending_requests=set()
         def new_page(page):opened.append(page)
+        def started_request(request):
+            try:
+                if request.frame==frame and request.resource_type in ('document','xhr','fetch'):pending_requests.add(request)
+            except Exception:pass
+        def finished_request(request):pending_requests.discard(request)
+        def failed_request(request):
+            pending_requests.discard(request)
+            try:
+                if request.frame==frame and request.resource_type in ('document','xhr','fetch'):request_errors.append('The browser reported a network error.')
+            except Exception:pass
+        def failed_response(response):
+            try:
+                if response.frame==frame and response.request.resource_type in ('document','xhr','fetch') and response.status>=400:
+                    request_errors.append('The website returned an error (HTTP '+str(response.status)+').')
+            except Exception:pass
         if self.context:self.context.on('page',new_page)
+        before_page.on('request',started_request);before_page.on('requestfinished',finished_request)
+        before_page.on('requestfailed',failed_request);before_page.on('response',failed_response)
         try:
-            self.last_action_started=True;element.click(timeout=10000)
-            if kind(item)=='button':
+            self.last_action_started=True
+            if key:element.press(key,timeout=10000)
+            else:element.click(timeout=10000)
+            if kind(item)=='button' or key:
                 try:
                     invalid=element.evaluate('e=>{const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('+ACCESSIBLE_LABEL+')(bad),message:bad.validationMessage}:null;}')
                     if invalid:return {'validation':invalid['label']+'. '+invalid['message']}
@@ -526,17 +551,25 @@ class BrowserBackend:
                     dom_changed=any(now.get(k)!=before.get(k) for k in ('revision','frame_states'))
                     modal_ready=needs_navigation and dom_changed and frame.evaluate('()=>[...document.querySelectorAll(\'[role="dialog"][aria-modal="true"],dialog[open]\')].some(e=>!e.hidden&&getComputedStyle(e).display!=="none"&&getComputedStyle(e).visibility!=="hidden")')
                     changed=navigation_changed or dom_changed and (not needs_navigation or modal_ready)
-                    if changed:break
+                    if changed and (navigation_changed or not pending_requests or time.monotonic()-clicked_at>=3):break
                 except Exception:
                     # Navigation can briefly destroy the old JavaScript context.
                     pass
                 if kind(item)!='link' and not item.get('href') and time.monotonic()-clicked_at>=.35:
-                    changed=True;break
+                    if not (key or item.get('in_form')) or time.monotonic()-clicked_at>=3:break
                 before_page.wait_for_timeout(50)
             if not changed:
                 try:changed=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text
                 except Exception:pass
-            if not changed:raise WebError('The link did not finish opening. The current page remains available; the link was not clicked again.')
+            if not changed:
+                if kind(item)=='link':raise WebError('The link did not finish opening. The current page remains available; the link was not clicked again.')
+                dialog_notice=getattr(self,'dialog_notice','')
+                return {'unchanged':True,'notice':(dialog_notice+'. ' if isinstance(dialog_notice,str) and dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
+            if request_errors and self.page is before_page and frame.url==before_url:
+                try:
+                    if frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")==before_text:
+                        return {'unchanged':True,'notice':request_errors[-1]+' The website has not moved to another step.'}
+                except Exception:pass
             fragment=None
             if self.page is before_page:
                 try:
@@ -553,6 +586,8 @@ class BrowserBackend:
             return {'fragment':fragment,'frame_index':item.get('frame_index')}
         finally:
             if self.context:self.context.remove_listener('page',new_page)
+            before_page.remove_listener('request',started_request);before_page.remove_listener('requestfinished',finished_request)
+            before_page.remove_listener('requestfailed',failed_request);before_page.remove_listener('response',failed_response)
 
     def focus(self,item):
         element=self._element(item);element.focus()
@@ -812,7 +847,14 @@ class WebSession:
             elif key=='Back':return self.command('go back')
             elif key=='Forward':return self.command('go forward')
             elif key=='Done':
-                if self.keyboard_field:self.commit_keyboard_field()
+                field=self.keyboard_field
+                if field:
+                    self.commit_keyboard_field()
+                    if field.get('tag')!='textarea' and not field.get('editable') and hasattr(self.backend,'submit_default'):
+                        self.progress('Loading page.')
+                        action=self.backend.submit_default(field)
+                        message=self._refresh(wait=False)
+                        return action.get('validation') or action.get('notice') or message
                 return 'Page view.'
             elif key=='Escape':
                 if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the web browser menu.'
@@ -844,7 +886,7 @@ class WebSession:
                     self.progress('Loading page.')
                     action=self.backend.activate(item)
                     message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
-                    return action['validation'] if isinstance(action,dict) and action.get('validation') else 'Pressed '+_label(item)+'. '+message
+                    return (action.get('validation') or action.get('notice') or message) if isinstance(action,dict) else message
                 if role in ('link','button'):
                     if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
                     if role=='link':self.pending=item;return self.confirm()
@@ -852,7 +894,7 @@ class WebSession:
                 return describe(item)
             else:return self.command({'Up':'previous line','Down':'next line','Left':'previous character','Right':'next character','Home':'read from beginning','End':'read current line'}.get(key,'read current line'))
             self.reading.position=self.browse.position;self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
-            if key in ('Tab','ShiftTab'):self.focus_current()
+            if key in ('Tab','ShiftTab') or key.startswith('Quick:') and key.split(':')[-1]=='e':self.focus_current()
             return message
         except Exception as exc:
             self.cursor_changed()
@@ -1677,7 +1719,9 @@ class WebSession:
         if boundary in ('bottom of page','end of page'):return self.page_boundary(True)
         if command in ('top of page','beginning of page','start of page','go to top of page','go to beginning of page','go to start of page'):return self.page_boundary()
         if command in ('bottom of page','end of page','go to bottom of page','go to end of page'):return self.page_boundary(True)
-        if command in ('leave field','finish field editing'):return self.keyboard('Done')
+        if command in ('leave field','finish field editing'):
+            if self.keyboard_field:self.commit_keyboard_field()
+            return 'Page view.'
         letter=re.fullmatch(r'(?:select|choose|find) (?:option )?(?:starting|beginning) with ([a-z])',command)
         if letter and self.keyboard_field and kind(self.keyboard_field) in ('combobox','listbox'):return self.keyboard('ChoiceLetter:'+letter[1])
         if command in ('list headings','show headings','headings list','heading list'):return self.list_headings()

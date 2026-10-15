@@ -58,6 +58,90 @@ class SemanticWebTests(unittest.TestCase):
         self.page.set_content('<html><title>Semantic page</title><body>'+markup+'</body></html>')
         self.session._refresh()
 
+    def test_edit_quick_key_types_immediately_and_enter_uses_native_default_button(self):
+        self.load('''<h1>Sign in</h1><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1;document.querySelector('#step').innerHTML='<label>Password<input type=password></label><button>Log in</button>'"><span id=step><label>Email or mobile number<input type=email required></label><button>Next</button></span></form>''')
+        self.session.keyboard('Quick:e')
+        self.assertIsNotNone(self.session.keyboard_field)
+        self.session.keyboard_field['value']='person@example.com'
+        notices=[];self.session.progress=notices.append
+        result=self.session.keyboard('Done')
+        self.assertEqual(self.page.evaluate('window.sent'),1,result)
+        self.assertIn('Password',self.session.reading.text)
+        self.assertNotIn('Email or mobile number',self.session.reading.text)
+        self.assertEqual(self.page.locator('input[type=password]').count(),1)
+        self.assertEqual(notices,['Loading page.'])
+        self.assertNotIn('Pressed',result)
+
+    def test_tab_saves_without_submitting_and_button_uses_the_entered_value(self):
+        self.load("""<form onsubmit="event.preventDefault();window.sentEmail=this.elements.email.value;document.body.innerHTML='<h1>Password step</h1>'"><label>Email<input name=email type=email required></label><button>Next</button></form>""")
+        self.session.keyboard('Quick:e')
+        self.session.keyboard_field['value']='person@example.com'
+        self.session.keyboard('Tab')
+        self.assertIsNone(self.page.evaluate('window.sentEmail'))
+        self.assertEqual(self.page.locator('input').input_value(),'person@example.com')
+        self.session.keyboard('Activate')
+        self.assertEqual(self.page.evaluate('window.sentEmail'),'person@example.com')
+        self.assertIn('Password step',self.session.reading.text)
+
+    def test_private_keyboard_queue_preserves_default_submit_action(self):
+        import queue
+        from unittest.mock import Mock,patch
+        from types import SimpleNamespace
+        import companion as app
+        self.load("""<form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1;document.body.innerHTML='<h1>Signed in fixture</h1>'"><label>Password<input type=password required></label><button>Log in</button></form>""")
+        self.session.keyboard('Quick:e')
+        window=Mock(commands=queue.Queue())
+        window.commands.put(('web_private_value',{'value':'FixtureOnly','next':'Done'}))
+        with patch.object(app,'APP_WINDOW',window),patch.object(app,'web_session',self.session),patch.object(app,'pending_website',None),patch.object(app,'sync_app_context'),patch.object(app,'interrupt_speech'),patch.object(app,'speak_web_result'),patch.object(app,'KEYBOARD_BATCH_TEXT',None):
+            self.assertEqual(app.process_keyboard_batch('web'),'web')
+        self.assertEqual(self.page.evaluate('window.sent'),1)
+        self.assertIn('Signed in fixture',self.session.reading.text)
+        self.assertNotIn('FixtureOnly',self.session.reading.text)
+
+    def test_next_waits_for_async_response_after_button_state_changes(self):
+        self.context.route('https://fixture.test/signin-step',lambda route:route.fulfill(content_type='application/json',body='{}'))
+        self.load("""<form onsubmit="event.preventDefault();this.querySelector('button').disabled=true;fetch('https://fixture.test/signin-step').then(()=>new Promise(resolve=>setTimeout(resolve,600))).then(()=>{document.body.innerHTML='<label>Password<input type=password></label><button>Log in</button>'})"><label>Email<input type=email value='person@example.com'></label><button>Next</button></form>""")
+        self.session.keyboard('Quick:b')
+        self.session.keyboard('Activate')
+        self.page.get_by_label('Password').wait_for(state='visible')
+        self.session.refresh_changed()
+        self.assertIn('Password',self.session.reading.text)
+        self.assertNotIn('Email',self.session.reading.text)
+
+    def test_rejected_next_request_is_reported_without_exposing_private_data(self):
+        self.context.route('https://fixture.test/signin-rejected',lambda route:route.fulfill(status=403,body='Forbidden'))
+        self.load("""<form onsubmit="event.preventDefault();fetch('https://fixture.test/signin-rejected',{method:'POST',body:'FixtureOnly'}).then(()=>{})"><label>Email<input type=email value='person@example.com'></label><button>Next</button></form>""")
+        self.session.keyboard('Quick:b')
+        result=self.session.keyboard('Activate')
+        self.assertIn('HTTP 403',result)
+        self.assertIn('has not moved',result)
+        self.assertNotIn('FixtureOnly',result)
+        self.assertNotIn('Page loaded',result)
+
+    def test_noop_button_does_not_claim_a_new_page_loaded_or_click_twice(self):
+        self.load('<form><label>Email<input type=email></label><button type=button onclick="window.clicks=(window.clicks||0)+1">Next</button></form>')
+        self.session.keyboard('Quick:b')
+        result=self.session.keyboard('Activate')
+        self.assertIn('has not moved',result)
+        self.assertNotIn('Page loaded',result)
+        self.assertEqual(self.page.evaluate('window.clicks'),1)
+
+    def test_enter_keeps_native_required_field_validation(self):
+        self.load('<form onsubmit="event.preventDefault();window.sent=1"><label>Email<input type=email required></label><button>Continue</button></form>')
+        self.session.keyboard('Quick:e')
+        result=self.session.keyboard('Done')
+        self.assertFalse(self.page.evaluate('window.sent'))
+        self.assertIn('Email',result)
+
+    def test_button_activation_omits_pressed_announcement(self):
+        self.load('<button onclick="document.body.innerHTML=\'<h1>Course page</h1>\'">Buy Catching up with Leasey</button>')
+        self.session.keyboard('Quick:b')
+        notices=[];self.session.progress=notices.append
+        result=self.session.keyboard('Activate')
+        self.assertEqual(notices,['Loading page.'])
+        self.assertNotIn('Pressed',result)
+        self.assertIn('Course page',self.session.reading.text)
+
     def test_verification_frame_activates_once_and_refreshes_new_accessible_controls(self):
         # A provider may clear its checkbox while opening a separate challenge.
         # Companion must expose that challenge, never retry to force it checked.

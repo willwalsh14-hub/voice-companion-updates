@@ -300,6 +300,17 @@ class WindowKeyboardTests(unittest.TestCase):
             self.assertEqual(self.window.commands.get_nowait(),('keyboard',command))
             self.call(lambda:self.window.editor.event_generate('<KeyRelease>',keysym=key))
 
+    def test_enter_in_single_line_web_field_queues_one_default_action(self):
+        self.window.set_context(dict(mode='web',source='default-submit',text='person@example.com',caret=0,readonly=False,web_field={'key':'email','role':'field','tag':'input','type':'email'},echo='none',phonetic=False,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='default-submit')
+        self.call(self.window.editor.focus_force)
+        self.call(lambda:[self.window.editor.event_generate('<KeyPress>',keysym='Return') for _ in range(3)])
+        self.wait(lambda:('keyboard','Web:Done') in self.window.commands.queue)
+        events=[]
+        while not self.window.commands.empty():events.append(self.window.commands.get_nowait())
+        self.assertEqual(events.count(('keyboard','Web:Done')),1)
+        self.call(lambda:self.window.editor.event_generate('<KeyRelease>',keysym='Return'))
+
     def test_web_quick_keys_tables_and_reading_editor(self):
         self.context(mode='web',readonly=True)
         self.window.set_context({**self.window.context,'web_browse':True})

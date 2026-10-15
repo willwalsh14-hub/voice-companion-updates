@@ -220,6 +220,9 @@ class CompanionWindow:
                 elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and not (event.widget==typed and self.command_entry_active):
                     field=None if local.get('web_escape_pending') else self.context.get('web_field')
                     if field and self.context.get('web_private') and (key in ('Return','Tab','ISO_Left_Tab','Up','Down') or control and key in ('Home','End')):
+                        if key=='Return':
+                            if key in activation_keys:return 'break'
+                            activation_keys.add(key)
                         self.commands.put(('web_private_value',dict(value=typed.get(),next=('PageTop' if key=='Home' else 'PageBottom') if control and key in ('Home','End') else 'Leave:'+key if key in ('Up','Down') else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done',**({'field_source':self.context['web_field_source']} if self.context.get('web_field_source') else {}))));typed.delete(0,'end');return 'break'
                     elif key=='Escape':request='Web:Escape'
                     elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
@@ -266,7 +269,7 @@ class CompanionWindow:
                     request='Letter:'+event.char.lower()
                 if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
                 if request:
-                    if request in ('Web:Activate','Web:Space'):
+                    if request in ('Web:Activate','Web:Space','Web:Done'):
                         if key in activation_keys:return 'break'
                         activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()

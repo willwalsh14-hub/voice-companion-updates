@@ -153,15 +153,27 @@ class CapitalFeedbackTests(unittest.TestCase):
     def test_character_echo_and_phonetic_keep_case_but_words_are_unchanged(self):
         from keyboard_text import character,phonetic,typing_feedback
         from capital_feedback import is_capital,prepare,pitch_for
-        for text in (character('A'),phonetic('A'),typing_feedback('','A',1,'characters')):
+        for text in (character('A'),typing_feedback('','A',1,'characters')):
             self.assertTrue(is_capital(text))
             for mode,delta in (('with a higher pitch',4),('with a lower pitch',-4),('do nothing',0)):
                 cue=prepare(companion.punctuation_for_speech(text),mode)
                 self.assertEqual(pitch_for(cue,1),1+delta)
                 self.assertEqual(str(cue),str(text))
-        for text in (character('a'),phonetic('a'),'Apple','123',''):
+        for text in (character('a'),phonetic('a'),phonetic('A'),'Apple','123',''):
             self.assertFalse(is_capital(text))
             self.assertEqual(pitch_for(prepare(text,'with a higher pitch'),1),1)
+
+    def test_delayed_phonetic_never_repeats_capital_cue(self):
+        from keyboard_text import character,phonetic
+        from capital_feedback import prepare
+        for mode in ('raise pitch','lower pitch','play a sound','do nothing'):
+            initial=prepare(character('B'),mode)
+            delayed=prepare(phonetic('B'),mode)
+            self.assertEqual(str(delayed),'Bravo')
+            self.assertEqual(delayed.pitch_delta,0)
+            self.assertFalse(delayed.sound)
+            self.assertEqual(initial.sound,mode=='play a sound')
+            self.assertEqual(initial.pitch_delta,4 if mode=='raise pitch' else -4 if mode=='lower pitch' else 0)
 
     def test_native_voice_pitch_resets_and_markup_remains_escaped(self):
         from capital_feedback import prepare
