@@ -65,7 +65,14 @@ def check(installed, runtime):
                 def setUpClass(cls):cls.persistent_context=context
                 @classmethod
                 def tearDownClass(cls):pass
-            class ExtensionNavigation(ExtensionSetup,test_web_live.LiveWebTests):pass
+            class ExtensionNavigation(ExtensionSetup,test_web_live.LiveWebTests):
+                def test_leave_closes_all_owned_pages_and_keep_open_reuses_context(self):
+                    # Dedicated-profile ownership is different for an existing
+                    # user tab. Keep-open is checked here; disconnect/reconnect
+                    # and preserving the selected tab are checked after the suite.
+                    regular_session.leave(True)
+                    self.assertIs(regular_session.backend.context,context)
+                    self.assertFalse(self.page.is_closed())
             class ExtensionConsumer(ExtensionSetup,test_consumer_web.ConsumerWebTests):pass
             class ExtensionSemantics(ExtensionSetup,test_web_semantics.SemanticWebTests):pass
             suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls)

@@ -84,7 +84,8 @@ class BrowserRelay:
         finally:
             with self.state_lock:
                 if self.pipe is pipe: self.pipe = None; self.connected.clear()
-            pipe.close()
+            try:pipe.close()
+            except OSError:pass
             if self.websocket is not None:
                 try:self.websocket.close(1011, 'Browser extension disconnected.')
                 except Exception:pass

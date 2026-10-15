@@ -15,9 +15,9 @@ class CompanionCDP {
   async attach(item) {
     if (!item.attached) { await this.api.debugger.attach({tabId:item.tabId},'1.3'); item.attached = true; }
     const {targetInfo} = await this.api.debugger.sendCommand({tabId:item.tabId},'Target.getTargetInfo');
-    item.info = {...targetInfo, attached:true};
-    // The connection is restricted to this browser's normal default context.
-    delete item.info.browserContextId;
+    // Playwright requires a nonempty context label even for the normal profile.
+    // This is protocol metadata; it grants no access to other tabs or contexts.
+    item.info = {...targetInfo, browserContextId:targetInfo.browserContextId || 'voice-companion-default', attached:true};
     if (!item.announced) {
       item.announced = true;
       this.emit({method:'Target.attachedToTarget',params:{sessionId:item.sessionId,targetInfo:item.info,waitingForDebugger:false}});

@@ -36,6 +36,8 @@ jobs:
           $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $PWD 'extension-test-runtime'
           python -m playwright install chromium
           if ($LASTEXITCODE -ne 0) { throw 'Test browser installation failed.' }
+      - name: Check authenticated transport and reconnects
+        run: python -m unittest test_browser_cdp_relay -v
       - name: Package and register native test host
         shell: pwsh
         run: |

@@ -22,7 +22,7 @@ const Model=vm.runInContext('CompanionCDP',context);
  await model.command({id:2,method:'Target.setAutoAttach',params:{autoAttach:true}});
  const event=replies.find(r=>r.method==='Target.attachedToTarget');
  assert.equal(event.params.targetInfo.targetId,'target-7');
- assert.ok(!('browserContextId' in event.params.targetInfo));
+ assert.equal(event.params.targetInfo.browserContextId,'PRIVATE-CONTEXT');
  const sessionId=event.params.sessionId;
  await model.command({id:3,sessionId,method:'DOM.getDocument'});
  assert.equal(calls.at(-1).source.tabId,7);
