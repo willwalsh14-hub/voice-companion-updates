@@ -55,7 +55,7 @@ class ConnectionTests(unittest.TestCase):
             executable=Path(folder)/'VoiceCompanion-BrowserHost.exe'
             with patch('sys.executable',str(executable)):browser_bridge_host.register()
             manifest=json.loads((Path(folder)/'browser-native-host.json').read_text())
-            self.assertEqual(manifest['path'],str(executable))
+            self.assertEqual(Path(manifest['path']).resolve(),executable.resolve())
             identity=(source.parent/'extension-id.txt').read_text().strip()
             self.assertEqual(manifest['allowed_origins'],['chrome-extension://'+identity+'/'])
 
