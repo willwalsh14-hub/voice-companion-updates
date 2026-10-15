@@ -1369,14 +1369,14 @@ class WebSession:
         try: item = self.backend.focused_control()
         except Exception: return ''
         if not item: return ''
-        identity = (item.get('label'), item.get('tag'), item.get('type'))
+        identity = (item.get('label'), item.get('tag'), item.get('type'), item.get('role'), item.get('checked'))
         if identity == self.last_focus: return ''
         self.last_focus = identity
         return self._describe_focus(item)
 
     @staticmethod
     def _describe_focus(item):
-        kind = item.get('type') or item.get('tag') or 'control'
+        kind = item.get('role') if item.get('role') in ('radio','checkbox') else item.get('type') or item.get('tag') or 'control'
         if kind == 'password': state = 'Password field. Dictation or keyboard entry is available; its value is masked.'
         elif kind in ('checkbox','radio'): state = 'Checked.' if item.get('checked') else 'Not checked.'
         elif item.get('tag') == 'select': state = 'Selected ' + _plain(item.get('selected')) + '.'

@@ -218,6 +218,7 @@ class SemanticWebTests(unittest.TestCase):
             self.assertNotIn('not checked',result)
             focused=self.backend.focused_control()
             self.assertEqual(focused['role'],'radio');self.assertTrue(focused['checked'])
+            self.assertIn('radio. Checked.',self.session._describe_focus(focused))
         self.session.keyboard('Quick:r')
         self.assertFalse(self.session.browse.current()['checked'])
 
