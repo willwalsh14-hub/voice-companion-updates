@@ -24,7 +24,7 @@ import test_web_semantics
 
 class Fixture(BaseHTTPRequestHandler):
     def do_GET(self):
-        body=b'<!doctype html><title>Connection fixture</title><h1>Connection fixture</h1>'
+        body=b'<!doctype html><title>Destination</title><h1>Destination</h1>' if self.path=='/next' else b'<!doctype html><title>Connection fixture</title><h1>Connection fixture</h1>'
         self.send_response(200);self.send_header('Content-Type','text/html');self.end_headers();self.wfile.write(body)
     def log_message(self,*args):pass
 
@@ -66,6 +66,20 @@ def check(installed, runtime):
                 @classmethod
                 def tearDownClass(cls):pass
             class ExtensionNavigation(ExtensionSetup,test_web_live.LiveWebTests):
+                # A regular browser can start a popup request before debugger
+                # attachment. Use a real local destination rather than relying
+                # on interception of an otherwise nonexistent DNS name.
+                def test_new_tab_result_is_loaded_before_virtual_view_capture(self):
+                    self.page.set_content('<a target="_blank" href="'+url+'next">New tab result</a>')
+                    self.session._refresh();self.session.keyboard('Quick:k');notice=self.session.keyboard('Activate')
+                    self.addCleanup(self.backend.page.close)
+                    self.assertIsNot(self.backend.page,self.page)
+                    self.assertIn('Destination',self.session.reading.text);self.assertIn('Page loaded:',notice)
+                def test_delayed_popup_after_early_dom_change_refreshes_once(self):
+                    self.page.set_content('<p id="status">Ready</p><a href="'+url+'next" onclick="event.preventDefault();document.getElementById(\'status\').textContent=\'Loading\';setTimeout(()=>window.open(this.href),700)">Delayed result</a>')
+                    self.session._refresh();self.session.keyboard('Quick:k');self.session.keyboard('Activate')
+                    self.addCleanup(self.backend.page.close)
+                    self.assertIsNot(self.backend.page,self.page);self.assertIn('Destination',self.session.reading.text)
                 def test_leave_closes_all_owned_pages_and_keep_open_reuses_context(self):
                     # Dedicated-profile ownership is different for an existing
                     # user tab. Keep-open is checked here; disconnect/reconnect
