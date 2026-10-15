@@ -165,6 +165,14 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('button',self.session.keyboard('Read:Down'))
         self.assertEqual(self.session.browse.current()['key'],button['key'])
 
+    def test_arrow_from_long_paragraph_targets_short_next_button(self):
+        self.load('<p>A long paragraph before the short button.</p><button onclick="document.querySelector(\'#result\').textContent=\'Next step\'">Next</button><p id=result>Not yet</p>')
+        self.session.reading.position=25
+        self.assertIn('Next, button',self.session.keyboard('Read:Down'))
+        self.assertEqual(kind(self.session.browse.current()),'button')
+        self.session.keyboard('Activate')
+        self.assertEqual(self.page.locator('#result').inner_text(),'Next step')
+
     def test_image_submit_opens_target_once_and_reports_loading(self):
         self.context.route('https://fixture.test/checkout',lambda r:r.fulfill(content_type='text/html',body='<h1>Checkout page</h1>'))
         self.load('<p>Course</p><form action="https://fixture.test/checkout" method="post"><input type="image" alt="Buy course" src="button.png"></form>')

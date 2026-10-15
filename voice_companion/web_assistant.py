@@ -686,7 +686,9 @@ class WebSession:
             self.preferred_column=column
             index=max(0,min(len(starts)-1,index+direction*(20 if key in ('Prior','Next') else 1)))
             end=text.find('\n',starts[index]);end=len(text) if end<0 else end
-            self.reading.position=min(starts[index]+column,end)
+            # Browse blocks start at their first character, so a short control
+            # remains the active target after a longer paragraph.
+            self.reading.position=starts[index]
         if key not in ('Up','Down','Prior','Next') or control:self.preferred_column=None
         self.reading.continuation=self.reading.position
         self.browse.set_position(self.reading.position);self.cursor_changed()
