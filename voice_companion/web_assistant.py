@@ -264,7 +264,7 @@ class BrowserBackend:
             const identity=controlKey(e);
             controls.push({key:identity, id:e.id||'', role, label, tag, type,
                 in_form:!!e.closest('form'),
-                required:!!e.required||e.getAttribute('aria-required')==='true', disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true', readonly:!!e.readOnly||e.getAttribute('aria-readonly')==='true', radio_group:e.name ? [...document.forms].indexOf(e.form)+':'+e.name : '', checked:!!e.checked||e.getAttribute('aria-checked')==='true',
+                required:!!e.required||e.getAttribute('aria-required')==='true', disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true', readonly:!!e.readOnly||e.getAttribute('aria-readonly')==='true', radio_group:e.name ? [...document.forms].indexOf(e.form)+':'+e.name : '', checked:accessibleLabel.checked(e),
                 tabindex:e.tabIndex,size:e.size||0,multiple:!!e.multiple,options:tag==='select'?[...e.options].map(o=>({label:o.text.trim().slice(0,120),value:o.value,disabled:o.disabled,selected:o.selected})): [...(e.querySelectorAll('[role="option"]')), ...((e.getAttribute('aria-controls')||e.getAttribute('aria-owns')||'').split(/\\s+/).filter(Boolean).flatMap(id=>[...(document.getElementById(id)?.querySelectorAll('[role="option"]')||[])]))].filter((o,i,a)=>a.indexOf(o)===i).map(o=>({label:accessibleLabel(o),value:o.getAttribute('data-value')||accessibleLabel(o),disabled:o.getAttribute('aria-disabled')==='true',selected:o.getAttribute('aria-selected')==='true'})),
                 selected_label:type==='password'?'':tag==='select'?(e.selectedOptions[0]?.text.trim().slice(0,120) || ''):(e.getAttribute('aria-valuetext')||e.querySelector('[role="option"][aria-selected="true"]')?.innerText||e.value||''),
                 href:tag==='a'?e.href:'', value:type==='password'?'':
@@ -338,10 +338,10 @@ class BrowserBackend:
         script = '''() => {
           let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
           if (!e || e===document.body) return null;
-          const label=(/*ACCESSIBLE_LABEL*/)(e);
-          return {label, tag:e.tagName.toLowerCase(), type:(e.type || '').toLowerCase(),
+          const accessibleLabel=/*ACCESSIBLE_LABEL*/;const label=accessibleLabel(e);
+          return {label, role:accessibleLabel.role(e)||'', tag:e.tagName.toLowerCase(), type:(e.type || '').toLowerCase(),
             value:e.type==='password'?'':String(e.value || '').slice(0,300),
-            checked:!!e.checked, selected:e.tagName==='SELECT'?(e.selectedOptions[0]?.text || ''):''};
+            checked:accessibleLabel.checked(e), selected:e.tagName==='SELECT'?(e.selectedOptions[0]?.text || ''):''};
         }'''
         script=script.replace('/*ACCESSIBLE_LABEL*/',ACCESSIBLE_LABEL)
         for frame in reversed(self.page.frames):
@@ -615,7 +615,13 @@ class BrowserBackend:
         """One user action sends one native activation, with no state retries."""
         element=self._element(item)
         if element.get_attribute('aria-busy')=='true':return 'This control is busy. Wait for its result.'
-        element.click(timeout=10000)
+        # Native choices and button-backed widgets already have click activation.
+        # Generic ARIA radios rely on the standard Space keyboard handler.
+        custom_radio=element.evaluate("e=>e.getAttribute('role')==='radio'&&!e.matches('input,button')")
+        if custom_radio:element.press('Space',timeout=10000)
+        else:element.click(timeout=10000)
+        # Wait for event handlers/rendering without repeating the action.
+        element.evaluate('e=>new Promise(resolve=>{setTimeout(resolve,80);requestAnimationFrame(()=>requestAnimationFrame(resolve));})')
         return ''
 
     def choose_form_option(self, item, answer):

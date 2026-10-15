@@ -193,6 +193,55 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('Section name',self.session.keyboard('Quick:h'))
         self.assertIn('Open account',self.session.keyboard('Quick:k'))
 
+    def test_native_radio_state_overrides_stale_aria_in_every_reading_path(self):
+        self.load('<label><input id=a type=radio name=plan aria-checked=true>Plan A</label><label><input id=b type=radio name=plan checked aria-checked=false>Plan B</label>')
+        self.assertIn('Plan A, radio button, not checked',self.session.reading.text)
+        self.assertIn('Plan B, radio button, checked',self.session.reading.text)
+        controls={c['label']:c for c in self.session.snapshot['controls']}
+        self.assertFalse(controls['Plan A']['checked']);self.assertTrue(controls['Plan B']['checked'])
+        self.assertIn('not checked',self.session.keyboard('Quick:r'))
+        for key in ('Activate','Space'):
+            result=self.session.keyboard(key)
+            self.assertTrue(self.page.locator('#a').is_checked(),result)
+            self.assertFalse(self.page.locator('#b').is_checked(),result)
+            self.assertNotIn('not checked',result)
+        self.page.locator('#b').focus()
+        self.assertFalse(self.backend.focused_control()['checked'])
+
+    def test_keyboard_only_aria_radio_selects_once_and_reports_new_state(self):
+        self.load('''<div role=radiogroup aria-label=Delivery><div id=a role=radio tabindex=0 aria-label=Standard aria-checked=false></div><div id=b role=radio tabindex=-1 aria-label=Express aria-checked=true></div></div><script>window.actions=0;document.querySelector('#a').onkeydown=e=>{if(e.code==='Space'){e.preventDefault();window.actions++;requestAnimationFrame(()=>{document.querySelector('#a').setAttribute('aria-checked','true');document.querySelector('#b').setAttribute('aria-checked','false');});}};</script>''')
+        self.session.keyboard('Quick:r')
+        for index,key in enumerate(('Activate','Space'),1):
+            result=self.session.keyboard(key)
+            self.assertEqual(self.page.evaluate('window.actions'),index,result)
+            self.assertEqual(self.page.locator('#a').get_attribute('aria-checked'),'true')
+            self.assertNotIn('not checked',result)
+            focused=self.backend.focused_control()
+            self.assertEqual(focused['role'],'radio');self.assertTrue(focused['checked'])
+        self.session.keyboard('Quick:r')
+        self.assertFalse(self.session.browse.current()['checked'])
+
+    def test_radio_selection_in_shadow_root_and_frame_keeps_its_own_state(self):
+        self.load('''<div id=host></div><iframe title="Choices" src="https://fixture.test/frame-radio"></iframe><script>document.querySelector('#host').attachShadow({mode:'open'}).innerHTML='<label><input type=radio name=plan>Shadow plan</label>';</script>''')
+        frame=next(f for f in self.page.frames if f.url.endswith('/frame-radio'))
+        frame.set_content('<label><input type=radio name=plan>Frame plan</label>')
+        self.session._refresh()
+        self.assertIn('Shadow plan',self.session.keyboard('Quick:r'))
+        self.assertNotIn('not checked',self.session.keyboard('Activate'))
+        self.assertTrue(self.page.locator('#host input').is_checked())
+        self.assertIn('Frame plan',self.session.keyboard('Quick:r'))
+        self.assertNotIn('not checked',self.session.keyboard('Space'))
+        self.assertTrue(frame.locator('input').is_checked())
+        self.assertTrue(self.page.locator('#host input').is_checked())
+
+    def test_button_backed_radio_uses_one_native_click_and_voice_reads_result(self):
+        self.load('''<button role=radio aria-checked=false onclick="window.actions=(window.actions||0)+1;this.setAttribute('aria-checked','true')">Premium plan</button>''')
+        self.session.command('next radio button')
+        result=self.session.command('select radio button')
+        self.assertEqual(self.page.evaluate('window.actions'),1,result)
+        self.assertNotIn('not checked',result)
+        self.assertEqual(self.session.browse.current()['checked'],True)
+
     def test_graphics_native_aria_svg_and_decorative_exclusions(self):
         self.load('<img alt="Company logo"><img alt="" src="decorative.png"><div role="img" aria-label="Sales chart"><span>Internal chart labels</span></div><svg><title>Revenue diagram</title><circle r="5"/></svg><img src="missing-name.png">')
         labels=[e['label'] for e in self.session.snapshot['elements'] if kind(e)=='graphic']

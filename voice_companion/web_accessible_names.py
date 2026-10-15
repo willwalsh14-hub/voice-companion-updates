@@ -19,5 +19,8 @@ const label=e=>{
 label.role=VoiceCompanionAccessibility.getRole;
 label.nativeName=VoiceCompanionAccessibility.computeAccessibleName;
 label.description=VoiceCompanionAccessibility.computeAccessibleDescription;
+// HTML checked state wins over a stale, conflicting ARIA attribute.
+// Custom ARIA widgets expose their state through aria-checked instead.
+label.checked=e=>e.matches('input[type="checkbox"],input[type="radio"]')?e.checked:e.getAttribute('aria-checked')==='true';
 return label;
 })()'''
