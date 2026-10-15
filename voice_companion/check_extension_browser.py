@@ -87,11 +87,22 @@ def check(installed, runtime):
                     regular_session.leave(True)
                     self.assertIs(regular_session.backend.context,context)
                     self.assertFalse(self.page.is_closed())
-            class ExtensionConsumer(ExtensionSetup,test_consumer_web.ConsumerWebTests):pass
+            class ExtensionConsumer(ExtensionSetup,test_consumer_web.ConsumerWebTests):
+                def test_different_sites_and_back_do_not_keep_old_page_elements(self):
+                    original=self.backend.back
+                    def diagnostic_back():
+                        try:return original()
+                        except Exception as error:
+                            # Only synthetic fixture addresses exist in this test.
+                            print('FIXTURE BACK FAILURE:',repr(error),flush=True)
+                            print('FIXTURE BACK PAGE:',self.page.url,self.page.title(),flush=True)
+                            raise
+                    self.backend.back=diagnostic_back
+                    super().test_different_sites_and_back_do_not_keep_old_page_elements()
             class ExtensionSemantics(ExtensionSetup,test_web_semantics.SemanticWebTests):pass
             suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls)
                                      for cls in (ExtensionNavigation,ExtensionConsumer,ExtensionSemantics))
-            result=unittest.TextTestRunner(verbosity=2,failfast=True).run(suite)
+            result=unittest.TextTestRunner(verbosity=2,failfast=False).run(suite)
             if not result.wasSuccessful():raise RuntimeError('Standard browser features failed through the real extension.')
             regular_session.leave(False)
             assert relay.connected.is_set(), 'Leaving the website must keep the selected extension connection.'
@@ -108,7 +119,10 @@ def check(installed, runtime):
             print('INSTALLED EXTENSION PASSED: standard navigation, fields, tables, lists, forms, frames, popups and disconnect checks.')
         finally:
             backend.close();relay.close();fixture.shutdown();fixture.server_close()
-            if browser.poll() is None:browser.kill();browser.wait()
+            if browser.poll() is None:
+                if sys.platform=='win32':subprocess.run(['taskkill','/PID',str(browser.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                else:browser.kill()
+                browser.wait()
             browser_cdp_relay._RELAY=None
 
 if __name__=='__main__':check(Path(sys.argv[1]),Path(sys.argv[2]))
