@@ -216,6 +216,15 @@ class WindowKeyboardTests(unittest.TestCase):
     def tearDown(self):
         if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
+    def test_page_revision_replaces_stale_view_despite_pending_caret_ack(self):
+        initial=dict(mode='web',source='page',text='Email screen',caret=0,ack=0,readonly=True,web_browse=True,web_revision=1,web_cursor_revision=1)
+        self.window.set_context(initial);self.call(lambda:self.window.editor.focus_force())
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='a',state=4))
+        self.wait(lambda:not self.window.commands.empty());self.window.commands.get()
+        self.window.set_context(initial|{'text':'Password screen','web_revision':2})
+        self.wait(lambda:self.window.context.get('web_revision')==2)
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Password screen'))
+
     def test_dynamic_page_refresh_does_not_raise_window_or_force_focus(self):
         initial=dict(mode='web',source='same-page',text='Initial page',caret=0,ack=0,readonly=True,web_browse=True,web_revision=1)
         self.window.set_context(initial);self.wait(lambda:self.window.context.get('web_revision')==1)

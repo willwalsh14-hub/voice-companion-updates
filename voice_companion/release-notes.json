@@ -1,17 +1,17 @@
 {
-  "version": "0.2.133-test",
+  "version": "0.2.134-test",
   "status": "Testing build",
   "date": "October 14, 2026",
-  "baseline": "0.2.132-test",
-  "scope": "Clearer web controls, working page buttons, and quicker navigation.",
+  "baseline": "0.2.133-test",
+  "scope": "Fresh web form steps, simpler lists, and faster key response.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Use buttons to move through a website",
+          "title": "Type when you reach a text box",
           "details": [
-            "Activate a button with Enter, Space, or \"Activate current button\". The website handles Next and other buttons using its own checks. Companion announces loading and reads required-field messages. \"Review and submit form\" still lets you ask for a spoken review."
+            "Use Up or Down to reach a text box. You can start typing at once, just as you can after Tab. Escape leaves editing. Passwords stay hidden."
           ]
         }
       ]
@@ -20,21 +20,21 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Hear buttons and fields while reading a page",
+          "title": "Read the current form step",
           "details": [
-            "Arrow reading now names buttons and form fields and says what type they are. Pictures used as buttons are announced as buttons. Checkboxes include their state. Passwords stay private."
+            "When a site moves from an email box to a password box, the page view updates. Hidden old boxes no longer stay active. Page checks also run while the microphone listens."
           ]
         },
         {
-          "title": "Resume your page sooner",
+          "title": "Hear simple names in page lists",
           "details": [
-            "Turn on Keep browser window open to keep a page. Resume where you left off then comes first in the web browser menu."
+            "The links list reads each link name in the page’s Tab order. The headings list reads each name followed by its level number. Type a name to find it."
           ]
         },
         {
-          "title": "Move without waiting for old speech",
+          "title": "Move through pages with less waiting",
           "details": [
-            "Say Next or Previous to stop old speech and move. Replies use a local voice to start sooner. Key presses also stop online speech that is still being made. Page checks spend less time waiting, so the app can check your input sooner."
+            "Page checks use less repeated work. A fresh page view replaces old text even when an earlier cursor update is still waiting. Keyboard input still stops old speech."
           ]
         }
       ]

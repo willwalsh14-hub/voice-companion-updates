@@ -240,8 +240,9 @@ class BrowserBackend:
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
-          const all = root => [...root.querySelectorAll('*')].flatMap(e =>
-            [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);
+          const allCache=new WeakMap();
+          const all = root => {if(allCache.has(root))return allCache.get(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
+            [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);allCache.set(root,nodes);return nodes;};
           const modal=[...document.querySelectorAll('[role="dialog"][aria-modal="true"],dialog[open]')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).at(-1);
           const readingRoot=modal||document.body;
           const priority=modal||document.querySelector('#search,#main,main,[role="main"],article');
@@ -300,6 +301,7 @@ class BrowserBackend:
                 parent_index=self.page.frames.index(frame.parent_frame) if frame.parent_frame!=self.page.main_frame else None
                 container=next((e for e in result.get('elements',[]) if e.get('role')=='frame' and e.get('key')==frame_key and e.get('frame_index')==parent_index),None)
                 if container is None:continue
+                container['child_frame_index']=index
                 frame.evaluate(DOCUMENT_STAMP)
                 part = frame.evaluate(script)
                 active_frames.add(frame)
@@ -470,7 +472,7 @@ class BrowserBackend:
             if 'frame_url' in item and frame.url!=item['frame_url']:return False
             if item.get('frame_epoch') is not None and frame.evaluate(DOCUMENT_STAMP)['epoch']!=item['frame_epoch']:return False
             element=frame.locator('[data-voice-companion-key="'+item['key']+'"]')
-            return element.count()==1 and element.evaluate("(e,item)=>e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
+            return element.count()==1 and element.is_visible() and element.evaluate("(e,item)=>!e.closest('[aria-hidden=\"true\"],[inert]')&&e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
         except Exception:return False
 
     def _watch_dialogs(self):
@@ -721,9 +723,10 @@ class WebSession:
         return True
 
     def auto_focus_position(self):
-        # Reading never enters forms mode. Tab, Enter and explicit dictation
-        # are the only writing intents that activate a field.
-        return False
+        item=self.browse.current() if self.browse else None
+        if not item or kind(item)!='edit' or item.get('disabled') or item.get('readonly'):return False
+        if not item.get('start',0)<=self.reading.position<item.get('end',0):return False
+        return self.focus_current()
 
     def page_boundary(self,bottom=False):
         if self.keyboard_field and self.keyboard_field.get('type')=='password':return 'Save the private field with Tab, or cancel field editing before moving to the page.'
@@ -1049,11 +1052,10 @@ class WebSession:
         previous=self.document_state or {}
         if stamp.get('url')!=previous.get('url'):return self._refresh(wait=False)
         if stamp.get('epoch')!=previous.get('epoch'):return self._refresh(read=False,wait=False)
-        if self.keyboard_field and hasattr(self.backend,'field_exists') and not self.backend.field_exists(self.keyboard_field):return self._refresh(wait=False)
-        if self.list_focus or self.form_index is not None or self.pending or self.submit_pending:return ''
+        if self.form_index is not None or self.pending or self.submit_pending:return ''
         if not self.keyboard_field and not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True,wait=False)
         if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames','frame_states')):return ''
-        self.document_state=stamp
+        if self.keyboard_field and hasattr(self.backend,'field_exists') and not self.backend.field_exists(self.keyboard_field):return self._refresh(wait=False)
         if not self.keyboard_field and previous.get('ready')!='complete' and stamp.get('ready')=='complete':return self._refresh(read=False,preserve=True,wait=False)
         snapshot,captured_state=self._capture()
         if snapshot.get('modal_key','')!=self.snapshot.get('modal_key',''):
@@ -1064,7 +1066,9 @@ class WebSession:
         anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
-        if changed:self.page_revision+=1
+        if changed:
+            self.page_revision+=1
+            self.list_focus=None;self.link_position=None
         self.browse=BrowseCursor(snapshot);self.browse.set_position(min(position,len(self.reading.text)))
         if anchor and anchor.get('start',0)<=position<=anchor.get('end',0):
             match=next((i for i,e in enumerate(self.browse.elements) if e['key']==anchor['key'] and e.get('frame_index')==anchor.get('frame_index') and e.get('frame_url')==anchor.get('frame_url') and e.get('frame_epoch')==anchor.get('frame_epoch')),None)
@@ -1169,7 +1173,9 @@ class WebSession:
     def link_items(self):
         snapshot=self.snapshot or {}
         items=snapshot.get('elements',snapshot.get('controls',[]))
-        return [c for c in items if kind(c)=='link' and (not c.get('href') or self.address_allowed(c['href']))]
+        from web_browse import focus_order
+        links=[c for c in items if kind(c)=='link' and (not c.get('href') or self.address_allowed(c['href']))]
+        return focus_order(links,items)
 
     def list_links(self, direction='first'):
         if not self.snapshot: return 'Open a website first.'
@@ -1194,7 +1200,7 @@ class WebSession:
         self.link_position = 0
         self.list_focus = 'links'
         self.pending = None
-        return 'Links list. Link '+announce_item(_label(links[0]),0,len(links),hotkey=False)+' Type the first letter or more of a link name to find it. Enter opens it. Escape returns to the page.'
+        return 'Links list. '+(_label(links[0])+'.')+' Type the first letter or more of a link name to find it. Enter opens it. Escape returns to the page.'
 
     def list_name_input(self,value,backspace=False,now=None):
         import time
@@ -1216,7 +1222,7 @@ class WebSession:
         if self.list_focus=='links':self.link_position=index
         else:self.heading_index=index
         self.pending=None
-        return ('Link ' if self.list_focus=='links' else 'Heading ')+announce_item(_label(items[index]),index,len(items),hotkey=False)
+        return (self.list_item_name(items[index])+'.')
 
     def open_link(self, number):
         if not self.snapshot: return 'Open a website first.'
@@ -1238,7 +1244,7 @@ class WebSession:
         self.link_position = index
         self.list_focus = 'links'
         self.pending = None
-        return 'Link '+announce_item(_label(links[index]),index,len(links),hotkey=False)
+        return (_label(links[index])+'.')
 
     def _suggest_link(self, item):
         host = urlsplit(item.get('href', '')).hostname or 'unknown site'
@@ -1616,6 +1622,9 @@ class WebSession:
         except (WebError,ValueError) as exc: return str(exc)
         except Exception: return 'That field changed. Say list fields and try again.'
 
+    def list_item_name(self,item):
+        return _label(item)+(' '+str(item.get('level',1)) if kind(item)=='heading' else '')
+
     def heading_items(self):
         return [e for e in (self.snapshot or {}).get('elements',[]) if kind(e)=='heading']
 
@@ -1623,13 +1632,13 @@ class WebSession:
         items=self.heading_items()
         if not items:return 'No headings on this page.'
         self.list_focus='headings';self.heading_index=0;self.pending=None;self.list_prefix='';self.list_prefix_time=0
-        return 'Headings list. '+announce_item(describe(items[0]).rstrip('.'),0,len(items),hotkey=False)+' Enter moves to the heading. Escape returns to the page.'
+        return 'Headings list. '+(self.list_item_name(items[0])+'.')+' Enter moves to the heading. Escape returns to the page.'
 
     def move_heading(self,step):
         self.list_prefix='';self.list_prefix_time=0
         items=self.heading_items();index=self.heading_index+step
         if not 0<=index<len(items):return 'Start of list.' if index<0 else 'End of list.'
-        self.heading_index=index;return announce_item(describe(items[index]).rstrip('.'),index,len(items),hotkey=False)
+        self.heading_index=index;return (self.list_item_name(items[index])+'.')
 
     def activate_list_item(self):
         if self.list_focus=='links':return self.open_link((self.link_position or 0)+1)

@@ -63,6 +63,18 @@ def describe(item):
     if item.get('required'):state+=', required'
     return ('Link '+name+state+'.') if role=='link' else name+', '+role+state+'.'
 
+def focus_order(items,elements=None):
+    """Keep frame contents inside their owner while honoring HTML tabindex."""
+    owners={e['child_frame_index']:e for e in (elements or items) if 'child_frame_index' in e}
+    def rank(item):
+        tab=item.get('tabindex',0)
+        return (0 if tab>0 else 2 if tab<0 else 1,tab if tab>0 else 0,item.get('start',0))
+    def scope_path(scope,seen=()):
+        owner=owners.get(scope)
+        if owner is None or scope in seen:return ()
+        return scope_path(owner.get('frame_index'),seen+(scope,))+(rank(owner),)
+    return sorted(items,key=lambda e:scope_path(e.get('frame_index'))+(rank(e),))
+
 class BrowseCursor:
     def __init__(self,snapshot):
         self.elements=snapshot.get('elements',snapshot.get('controls',[]));self.index=-1;self.position=0;self.table=None;self.row=self.column=0
@@ -85,8 +97,19 @@ class BrowseCursor:
             if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button')
             if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button') and not e.get('disabled') and e.get('tabindex',0)>=0
             return role==wanted
-        candidates=range(self.index-1,-1,-1) if backward else range(self.index+1,len(self.elements))
-        index=next((i for i in candidates if match(self.elements[i])),None)
+        if tab:
+            ordered=focus_order([e for e in self.elements if match(e)],self.elements)
+            current=self.current()
+            if current in ordered:
+                offset=ordered.index(current)+(-1 if backward else 1)
+                target=ordered[offset] if 0<=offset<len(ordered) else None
+            else:
+                candidates=[e for e in ordered if e.get('start',0)<self.position] if backward else [e for e in ordered if self.index<0 or e.get('start',0)>self.position]
+                target=(candidates[-1] if backward else candidates[0]) if candidates else None
+            index=next((i for i,e in enumerate(self.elements) if e is target),None)
+        else:
+            candidates=range(self.index-1,-1,-1) if backward else range(self.index+1,len(self.elements))
+            index=next((i for i in candidates if match(self.elements[i])),None)
         if index is None:return ('Start of list. ' if backward else 'End of list. ')+'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else wanted)+'.'
         self.index=index;item=self.current();self.position=item.get('start',0)
         if kind(item)=='table':self.table=item['key'];self.row=self.column=0

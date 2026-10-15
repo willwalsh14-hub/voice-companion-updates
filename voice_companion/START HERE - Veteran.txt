@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.133-test.
+Guide version: 0.2.134-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -599,6 +599,7 @@ Control+Left Arrow and Control+Right Arrow read words. Control+Up Arrow and Cont
 Control+Home and Control+End reach the page ends. Home and End reach the ends of the current line.
 "Read page" starts at the top. "Continue reading" reads the next part.
 The page view follows the place you choose. After you move to a heading, arrow reading continues from that heading.
+When a website changes a form without opening a new page, the page view updates. For example, after an email step, you can move through the new password step. A hidden old field is no longer active.
 A newly loaded page may start reading on its own. Turn off Automatic page reading in Web browser options if you prefer.
 
 11.4 Move to headings, links, or controls
@@ -615,6 +616,7 @@ These keys move through the page. They do not type letters until you enter a tex
 Move to a link or button, then press Enter. Say "Open current link" or "Activate current element" for the same task.
 Say "Find login" or "Find contact us" to look for a matching item. Listen to the choice before you accept it.
 F7 or Insert+F7 opens a link list. F6 or Insert+F6 opens a heading list.
+The links list follows the page's Tab order. Each item says the link name. The headings list says each heading name and its level number.
 You can also say "List links", "List headings", or "List fields".
 Use arrows, Home, or End to choose an item, then press Enter. Press Escape or say "Close list" to return to the page.
 In a links or headings list, type the first letter of a name to find a match. Type more letters promptly to narrow the match. You can type the full name, including spaces. Backspace removes the last letter from your search.
@@ -622,8 +624,8 @@ Repeat a first letter to move through matching names. The search stops at the la
 A heading choice moves your reading place. A link choice opens its address.
 
 11.6 Enter or change a web answer
-1. Use Tab to reach the next control, or E to find a text box.
-2. If you found a text box with E, press Enter or say "Edit current field" to start editing.
+1. Use Tab to reach the next control, or use Up or Down to reach a text box. You can type as soon as you reach the box. You can also press E to find a text box.
+2. If you used E, press Enter or say "Edit current field" to start editing.
 3. Type or speak the answer.
 4. Press Enter to save a single-line answer. Use Control+Enter for a box with several lines.
 5. Press Escape to cancel editing and return to page reading.

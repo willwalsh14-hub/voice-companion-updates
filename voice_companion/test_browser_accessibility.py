@@ -224,12 +224,13 @@ class WebPolishTests(unittest.TestCase):
             self.assertEqual(app.handle_keyboard(app.navigation_key('Web:Escape','web'),'web'),'browser_menu')
             self.session.keyboard('Quick:e');self.session.keyboard('Activate');self.assertEqual(app.navigation_key('Web:Escape','web'),'web key Escape')
             self.session.keyboard('Escape');self.assertEqual(app.navigation_key('Web:Escape','web'),'web browser menu')
-    def test_arrowing_into_field_keeps_virtual_cursor_readonly_until_explicit_edit(self):
+    def test_arrowing_into_field_enters_editing_while_quick_key_only_finds_it(self):
         position=next(item['start'] for item in self.session.browse.elements if item['key']=='name')
         with patch.object(app,'web_session',self.session),patch.object(app,'pending_website',None),patch.object(app,'sync_app_context'):
             context=app.app_context('web')
             app.apply_keyboard_edit({'source':context['source'],'before':context['text'],'after':context['text'],'caret':position,'readonly':True,'selection':None,'seq':1},'web')
-            self.assertIsNone(self.session.keyboard_field);self.assertTrue(app.app_context('web')['readonly'])
+            self.assertEqual(self.session.keyboard_field['key'],'name');self.assertFalse(app.app_context('web')['readonly'])
+            self.session.keyboard('Escape');self.session.keyboard('PageTop')
             self.session.keyboard('Quick:e');self.assertIsNone(self.session.keyboard_field)
             self.session.keyboard('Activate');self.assertEqual(self.session.keyboard_field['key'],'name');self.assertFalse(app.app_context('web')['readonly'])
     def test_link_role_is_first_and_main_menu_has_requested_name(self):

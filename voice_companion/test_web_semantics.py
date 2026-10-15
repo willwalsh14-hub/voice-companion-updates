@@ -151,6 +151,52 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('/destination',reached)
         self.assertIn('HTTP content',self.session.reading.text)
 
+    def test_delayed_same_document_signin_hides_old_field_and_updates_view(self):
+        self.load("""<p>Sign in</p><form><section id=emailstep><label>Email<input name=email></label><button type=button onclick="setTimeout(()=>{document.querySelector('#emailstep').hidden=true;document.querySelector('#passwordstep').hidden=false},450)">Next</button></section><section id=passwordstep hidden><label>Password<input type=password></label></section></form>""")
+        self.session.keyboard('Quick:e');self.session.keyboard('Activate')
+        self.assertIsNotNone(self.session.keyboard_field)
+        self.page.locator('button').click()
+        self.page.wait_for_function("()=>document.querySelector('#emailstep').hidden")
+        self.assertFalse(self.backend.field_exists(self.session.keyboard_field))
+        self.session.refresh_changed()
+        self.assertIsNone(self.session.keyboard_field)
+        self.assertNotIn('Email, edit field',self.session.reading.text)
+        self.assertIn('Password, password field',self.session.reading.text)
+        self.session.keyboard('PageTop')
+        for _ in range(4):
+            self.session.keyboard('Read:Down')
+            if self.session.keyboard_field:break
+        self.assertEqual(self.session.keyboard_field['type'],'password')
+
+    def test_arrows_enter_text_fields_and_leave_without_losing_text(self):
+        self.load('<p>Before</p><label>Name<input id=name></label><p>After</p>')
+        for _ in range(4):
+            self.session.keyboard('Read:Down')
+            if self.session.keyboard_field:break
+        self.assertEqual(self.session.keyboard_field['id'],'name')
+        self.session.keyboard_field['value']='Typed answer'
+        self.session.keyboard('Leave:Down')
+        self.assertEqual(self.page.locator('#name').input_value(),'Typed answer')
+        self.assertIsNone(self.session.keyboard_field)
+        self.assertIn('After',self.session.reading.move('line',0))
+
+    def test_positive_tabindex_inside_frame_stays_with_frame_owner(self):
+        self.load('<a href="/a">Before frame</a><iframe src="https://fixture.test/frame"></iframe><a href="/b" tabindex=1>First on page</a><a href="/c">After frame</a>')
+        self.page.frames[1].set_content('<a href="https://fixture.test/a" tabindex=2>Frame second</a><a href="https://fixture.test/b" tabindex=1>Frame first</a>')
+        self.session._refresh(wait=False)
+        self.assertEqual([e['label'] for e in self.session.link_items()],['First on page','Before frame','Frame first','Frame second','After frame'])
+
+    def test_named_lists_use_plain_names_and_native_tabindex_order(self):
+        self.load('<a href="/a">Ordinary</a><a href="/b" tabindex=2>Second</a><a href="/c" tabindex=1>First</a><h2>Details</h2><h3>More</h3>')
+        self.assertEqual([i['label'] for i in self.session.link_items()],['First','Second','Ordinary'])
+        self.session.keyboard('Tab');self.assertEqual(self.session.browse.current()['label'],'First')
+        self.session.keyboard('Tab');self.assertEqual(self.session.browse.current()['label'],'Second')
+        self.assertNotIn('Link First',self.session.list_links())
+        self.assertNotIn('Link Second',self.session.move_link(1))
+        self.assertIn('Details 2',self.session.list_headings())
+        self.assertNotIn('heading level',self.session.move_heading(1))
+        self.assertIn('More 3',self.session.list_name_input('M',now=100))
+
     def test_arrow_reading_names_native_image_buttons_and_form_controls(self):
         self.load('<p>Before controls</p><form><input type="image" alt="Use PayPal or credit or debit card to buy Course" src="button.png"><label>Email<input name="email" required></label><label>Password<input type="password" value="never-speak-this"></label><label><input type="checkbox" checked>Remember me</label><select aria-label="Country"><option>UK</option></select></form>')
         text=self.session.reading.text

@@ -21,7 +21,7 @@ class ConsumerWebTests(unittest.TestCase):
                 for _ in range(30):
                     position=self.session.reading.position
                     notices.append(self.session.keyboard('Read:Down'))
-                    self.assertIsNone(self.session.keyboard_field)
+                    if self.session.keyboard_field:notices.append(self.session.keyboard('Leave:Down'))
                     if self.session.reading.position==position:break
                 text=' '.join(notices)
                 self.assertIn('Ordinary text before the form.',text);self.assertIn('Ordinary text after the form.',text)

@@ -558,7 +558,7 @@ class CompanionWindow:
                         if text_mode:
                             editor.configure(state='normal')
                             history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
-                            web_cursor_changed=mode=='web' and old.get('web_cursor_revision')!=field.get('web_cursor_revision')
+                            web_cursor_changed=mode=='web' and (old.get('web_cursor_revision')!=field.get('web_cursor_revision') or old.get('web_revision')!=field.get('web_revision'))
                             if web_cursor_changed or transition:local['web_navigation_pending']=False
                             if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
                             if old.get('source')!=source or web_cursor_changed or field.get('ack',0)>=local['seq']:

@@ -36,6 +36,20 @@ class FakeBackend:
 
 
 class WebTests(unittest.TestCase):
+    def test_failed_dynamic_capture_retries_the_same_revision(self):
+        from web_assistant import WebError
+        backend=FakeBackend();backend.revision=0
+        backend.document_stamp=lambda:{'url':backend.url,'epoch':1,'revision':backend.revision,'ready':'complete','busy':False,'frames':[]}
+        session=WebSession(self.temp.name,backend);session._refresh()
+        backend.revision=1;original=backend.snapshot
+        backend.snapshot=lambda:(_ for _ in ()).throw(WebError('Changing document'))
+        with self.assertRaises(WebError):session.refresh_changed()
+        self.assertEqual(session.document_state['revision'],0)
+        def updated():
+            result=original();result['text']='Password step';return result
+        backend.snapshot=updated;session.refresh_changed()
+        self.assertEqual(session.reading.text,'Password step')
+
     def test_capture_does_not_swallow_mutation_after_extraction(self):
         backend=FakeBackend();backend.revision=0
         backend.document_stamp=lambda:{'url':backend.url,'epoch':1,'revision':backend.revision,'ready':'complete','busy':False,'frames':[]}
@@ -170,7 +184,7 @@ class WebTests(unittest.TestCase):
 
     def test_numbered_links_and_late_search_results(self):
         self.session.open('example.com')
-        self.assertIn('Log in, 1 of 2', self.session.command('list links'))
+        self.assertIn('Log in.', self.session.command('list links'))
         self.assertIn('Page loaded: Example account', self.session.command('open link 1'))
         self.assertIsNone(self.session.pending)
         self.assertEqual(self.backend.activated, ['0'])
