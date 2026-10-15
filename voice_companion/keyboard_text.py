@@ -2,6 +2,7 @@
 import copy
 import re
 import unicodedata
+from capital_feedback import CharacterSpeech,preserve_character
 from document_editor import Paragraph,TextRun,TextSelection
 
 PHONETICS=dict(zip('abcdefghijklmnopqrstuvwxyz',('Alpha','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliett','Kilo','Lima','Mike','November','Oscar','Papa','Quebec','Romeo','Sierra','Tango','Uniform','Victor','Whiskey','X-ray','Yankee','Zulu')))
@@ -12,9 +13,9 @@ NAMES.update({'#':'hash sign','$':'dollar sign','%':'percent sign','&':'ampersan
 def character(value):
     if not value:return 'End of text.'
     if value in NAMES:return NAMES[value]
-    if value.isalnum() or len(value)!=1:return value
+    if value.isalnum() or len(value)!=1:return CharacterSpeech(value,True) if len(value)==1 and value.isalpha() and value.isupper() else value
     return unicodedata.name(value,'character '+str(ord(value))).lower()
-def phonetic(value):return PHONETICS.get(value.lower(),'')
+def phonetic(value):return preserve_character(value,PHONETICS.get(value.lower(),''))
 def document_text(doc):return '\n'.join(p.text for p in doc.paragraphs)
 def absolute(doc,position):return sum(len(p.text)+1 for p in doc.paragraphs[:position[0]])+position[1]
 
@@ -85,4 +86,5 @@ def typing_feedback(before,after,caret,echo,key=None,old_caret=None):
     if echo in ('words','characters and words') and inserted and inserted[-1].isspace():
         match=re.search(r'(\S+)\s+$',after[:caret])
         if match:parts.append(match[1])
-    return '. '.join(parts) or None
+    result='. '.join(parts) or None
+    return preserve_character(inserted,result) if result else None

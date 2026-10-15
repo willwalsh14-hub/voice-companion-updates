@@ -103,6 +103,9 @@ class AISpeech:
                 # Small requests let silence commands take effect between audio blocks.
                 for start in range(0, len(text), 1800):
                     part = text[start:start + 1800]
+                    if hasattr(text,'pitch_delta'):
+                        from capital_feedback import CharacterSpeech
+                        part=CharacterSpeech(part,getattr(text,'capital',False),text.pitch_delta)
                     if not self._wait(generation): break
                     try:
                         audio = self.synthesizer(part, rate)

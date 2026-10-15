@@ -11,14 +11,14 @@ class Field:
     choices: tuple = ()
 
 CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Word processor', 'Notepad', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
-DEFAULTS = {'cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+DEFAULTS = {'cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 
 def fields(category, context):
     if category!='Startup and exit options':category=category.removesuffix(' options')
     category={'Word processor':'Documents','Auto-update':'Updates','Notes':'Notepad'}.get(category,category)
     definitions = {
-        'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2'))],
+        'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2')),Field('capital_letters','When encountering capital letters','choice',('with a sound','with a higher pitch','with a lower pitch','do nothing'))],
         'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('SAPI',)))),Field('windows_voice','SAPI voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition','check')],
@@ -48,6 +48,7 @@ class SettingsSession:
         if key=='engine':
             available=next(f.choices for f in fields('Synthesizer',self.context) if f.key=='engine')
             if str(value).lower() in ('sapi','sapi voice','windows','windows speech','microsoft'):value='SAPI' if 'SAPI' in available else 'windows'
+        if key=='capital_letters':value={'sound':'with a sound','higher pitch':'with a higher pitch','lower pitch':'with a lower pitch','nothing':'do nothing','off':'do nothing'}.get(str(value).lower(),str(value).lower())
         if key=='web_search_engine':value={'brave search':'brave','duck duck go':'duckduckgo','google search':'google','bing search':'bing'}.get(str(value).lower(),str(value).lower())
         if key=='phonetic_delay':
             value=str(value).lower().replace(' seconds','').replace(' second','').strip()

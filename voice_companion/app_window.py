@@ -162,6 +162,7 @@ class CompanionWindow:
             self.typed=typed
             typed.pack(fill='x', padx=18)
             self.email_field = None
+            activation_keys=set()
             previous = ['', 0]
             field_selection = FieldSelection()
             def shortcut(event):
@@ -265,6 +266,9 @@ class CompanionWindow:
                     request='Letter:'+event.char.lower()
                 if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
                 if request:
+                    if request in ('Web:Activate','Web:Space'):
+                        if key in activation_keys:return 'break'
+                        activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
                     if request=='Web:Escape' and self.context.get('web_field'):local['web_escape_pending']=True
@@ -281,6 +285,8 @@ class CompanionWindow:
             root.bind_all('<Tab>',shortcut)
             root.bind_all('<Shift-Tab>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')
+            root.bind_all('<KeyRelease>',lambda event:activation_keys.discard(event.keysym),add='+')
+            root.bind('<FocusOut>',lambda event:activation_keys.clear() if event.widget==root else None,add='+')
             for sequence in ('<F2>','<F5>','<F6>','<F7>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
                 root.bind_all(sequence,shortcut)
             def before_key(event):

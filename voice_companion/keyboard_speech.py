@@ -9,11 +9,12 @@ class KeyboardSpeech:
         self.narration_interrupt=threading.Event();self.ctrl_down=False;self.ai=None
         self.queue=queue.Queue();self.settings=('',0,100,None,0);self.problem=None;self.active=False;self.paused=False;self.quiet_until=0
         self.thread=threading.Thread(target=self.run,name='Immediate keyboard speech',daemon=True);self.thread.start()
-    def configure(self,voice_id,rate,volume,espeak=None,pitch=0,ai=None):self.settings=(voice_id,rate,volume,espeak,pitch);self.ai=ai
+    def configure(self,voice_id,rate,volume,espeak=None,pitch=0,ai=None,capital_letters='do nothing'):
+        self.capital_letters=capital_letters;self.settings=(voice_id,rate,volume,espeak,pitch);self.ai=ai
     def speak(self,text):
         if text:
             self.interrupt()
-            self.narration_interrupt.set();self.active=True;self.queue.put(str(text))
+            self.narration_interrupt.set();self.active=True;self.queue.put(text)
     def preview(self,text,settings):
         """One utterance with staged settings; saved speech is untouched."""
         self.interrupt();self.narration_interrupt.set();self.active=True
@@ -73,6 +74,8 @@ class KeyboardSpeech:
                         continue
                     if getattr(self,'paused',False):voice.Resume();self.paused=False
                     self.active=True
+                    from capital_feedback import prepare,play_sound
+                    text=prepare(text,getattr(self,'capital_letters','do nothing'));play_sound(text)
                     if espeak and (preview or espeak.enabled):espeak.interrupt();espeak.speak(text,rate,volume);continue
                     if voice_id and voice_id!=chosen:
                         voices=voice.GetVoices()

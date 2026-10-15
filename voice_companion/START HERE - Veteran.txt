@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.134-test.
+Guide version: 0.2.135-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -648,7 +648,9 @@ To choose a field by number, say "Change field", followed by the number. For exa
 Say "Yes" only when all answers and the named button are right. "No" stops the submission.
 Changing an answer after review cancels the older Yes or No request. Review again before submitting.
 You can press Enter or Space on a web button. You can also say "Activate current button" after moving to it. This uses that website's own checks. It does not start the voice review. Buttons such as Next can move to another sign-in step. Companion says "Loading page" when you activate a button or link. If a required field is empty, it reads the website's message. For a spoken review before sending a form, say "Review and submit form".
-File uploads, some custom controls, and human-verification checks may need help. If a page cannot be read, do not guess at a final button.
+Some sites ask you to prove you are human. Use Tab and Shift+Tab to reach the check box and other controls. Press Enter or Space once, then wait for the result. Holding the key does not send more clicks.
+The check box may clear while the site opens another challenge. Move through its controls with Tab. Use the site's accessibility option when offered. Companion reads the new controls as the page changes. The site decides whether you pass. If the challenge cannot be used, ask the site for help.
+File uploads and some custom controls may need help. If a page cannot be read, do not guess at a final button.
 Say "Ask for help" to hear which page needs attention.
 
 11.8 Read a web table and leave a page
@@ -889,6 +891,10 @@ Delayed phonetic pronunciation adds a letter's spoken name after a short pause. 
 It is on by default. Choose a delay of 0.5, 1, or 2 seconds, or turn it off.
 To change a setting by voice, say its name, followed by the value you want. For example, say "Verbosity medium", "Punctuation most", "Typing echo words", "Phonetics off", or "Phonetic delay 1 second".
 Moving again or stopping speech cancels a letter hint that has not yet been read.
+When encountering capital letters controls how single capital letters sound while you type or read one character at a time. Choose with a sound, with a higher pitch, with a lower pitch, or do nothing. Do nothing is the default. The sound is a short tone before the letter.
+Open Options, then Verbosity. Tab to When encountering capital letters. Use the arrows to choose, then choose OK. This saves the choice for all parts of the app and keeps it after you close the app. Cancel keeps your old choice.
+You can also say "Capital letters with a sound", "Capital letters with a higher pitch", "Capital letters with a lower pitch", or "Capital letters do nothing". These commands save at once.
+The choice also applies to delayed letter hints, such as A followed by Alpha. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice for quick feedback. Private password text is not read aloud.
 
 18.3 Voice and Synthesizer options
 In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Check Lower media volume while Companion speaks if you want audio to become quieter while the app speaks.

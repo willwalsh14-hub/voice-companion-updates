@@ -33,6 +33,8 @@ def executable():
     return Path(found) if found else None
 
 def synthesize(text, rate=0, voice='en-us', program=None,pitch=0):
+    from capital_feedback import pitch_for
+    pitch=pitch_for(text,pitch)
     if voice not in {code for _, code in ALL_VOICES}: raise ValueError('Unsupported eSpeak voice')
     program = program or executable()
     if not program: raise OSError('eSpeak NG is not installed')

@@ -282,6 +282,24 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(dict(mode=mode,source='test',text='abc def',caret=0,selection=None,echo='characters',phonetic=True,delay=.5,ack=0,readonly=readonly))
         self.wait(lambda:self.window.context.get('source')=='test')
         self.call(lambda:self.window.editor.focus_force())
+    def test_web_activation_ignores_held_key_repeats_but_allows_the_next_press(self):
+        self.context(mode='web',readonly=True)
+        self.window.set_context({**self.window.context,'web_browse':True})
+        self.wait(lambda:self.window.context.get('web_browse'))
+        for key,command in (('space','Web:Space'),('Return','Web:Activate')):
+            def held():
+                for _ in range(4):self.window.editor.event_generate('<KeyPress>',keysym=key)
+            self.call(held)
+            self.wait(lambda:('keyboard',command) in self.window.commands.queue)
+            events=[]
+            while not self.window.commands.empty():events.append(self.window.commands.get_nowait())
+            self.assertEqual(events.count(('keyboard',command)),1)
+            self.call(lambda:self.window.editor.event_generate('<KeyRelease>',keysym=key))
+            self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym=key))
+            self.wait(lambda:('keyboard',command) in self.window.commands.queue)
+            self.assertEqual(self.window.commands.get_nowait(),('keyboard',command))
+            self.call(lambda:self.window.editor.event_generate('<KeyRelease>',keysym=key))
+
     def test_web_quick_keys_tables_and_reading_editor(self):
         self.context(mode='web',readonly=True)
         self.window.set_context({**self.window.context,'web_browse':True})

@@ -1,17 +1,18 @@
 {
-  "version": "0.2.134-test",
+  "version": "0.2.135-test",
   "status": "Testing build",
-  "date": "October 14, 2026",
-  "baseline": "0.2.133-test",
-  "scope": "Fresh web form steps, simpler lists, and faster key response.",
+  "date": "October 15, 2026",
+  "baseline": "0.2.134-test",
+  "scope": "Keyboard access to human checks and a choice of capital-letter cues.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Type when you reach a text box",
+          "title": "Choose how capital letters sound",
           "details": [
-            "Use Up or Down to reach a text box. You can start typing at once, just as you can after Tab. Escape leaves editing. Passwords stay hidden."
+            "In Options, open Verbosity and find When encountering capital letters. Choose with a sound, with a higher pitch, with a lower pitch, or do nothing. Choose OK to save. The choice works across the app and stays after restart.",
+            "The cue applies when you type or read one letter at a time. It also applies to delayed letter names. Whole words and sentences keep their usual voice. Do nothing is the default."
           ]
         }
       ]
@@ -20,21 +21,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Read the current form step",
+          "title": "Use human checks with the keyboard",
           "details": [
-            "When a site moves from an email box to a password box, the page view updates. Hidden old boxes no longer stay active. Page checks also run while the microphone listens."
-          ]
-        },
-        {
-          "title": "Hear simple names in page lists",
-          "details": [
-            "The links list reads each link name in the page’s Tab order. The headings list reads each name followed by its level number. Type a name to find it."
-          ]
-        },
-        {
-          "title": "Move through pages with less waiting",
-          "details": [
-            "Page checks use less repeated work. A fresh page view replaces old text even when an earlier cursor update is still waiting. Keyboard input still stops old speech."
+            "Press Enter or Space once on a check box, then wait. Holding the key no longer sends more clicks. Companion does not click again just because the site clears the box.",
+            "Use Tab and Shift+Tab to reach new challenge controls. Use the site\u2019s accessibility option when offered. The site still decides whether you pass. PayPal\u2019s live challenge has not yet been confirmed with this build."
           ]
         }
       ]

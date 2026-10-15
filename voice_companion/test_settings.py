@@ -106,3 +106,28 @@ class SettingsTests(unittest.TestCase):
 if __name__=='__main__':unittest.main()
 
 
+
+class CapitalPreferenceTests(unittest.TestCase):
+    def test_each_capital_choice_saves_and_reloads_without_changing_other_preferences(self):
+        from app_settings import save_preferences
+        from types import SimpleNamespace
+        field=next(f for f in fields('Verbosity',{}) if f.key=='capital_letters')
+        self.assertEqual(field.label,'When encountering capital letters')
+        self.assertEqual(field.choices,('with a sound','with a higher pitch','with a lower pitch','do nothing'))
+        with tempfile.TemporaryDirectory() as folder:
+            app=SimpleNamespace(APP=Path(folder),PREFERENCES=dict(DEFAULTS))
+            for value in field.choices:
+                session=SettingsSession(app.PREFERENCES,{})
+                session.set('capital_letters',value);app.PREFERENCES=session.values;save_preferences(app)
+                reloaded=SettingsSession(DEFAULTS|json.loads((app.APP/'preferences.json').read_text()),{})
+                self.assertEqual(reloaded.values['capital_letters'],value)
+                self.assertEqual(reloaded.values['typing_echo'],DEFAULTS['typing_echo'])
+                self.assertEqual(reloaded.voice_setting('when encountering capital letters '+value),('capital_letters',value))
+        with self.assertRaises(ValueError):session.set('capital_letters','invalid')
+
+    def test_spoken_setting_is_global_and_updates_immediate_feedback(self):
+        with tempfile.TemporaryDirectory() as folder,patch.object(companion,'APP',Path(folder)),patch.object(companion,'PREFERENCES',dict(DEFAULTS)),patch.object(companion,'KEYBOARD_SPEECH',Mock(problem=None)) as worker,patch.object(companion,'speak'):
+            for mode,value in zip(('web','document','help','awake'),('with a sound','with a higher pitch','with a lower pitch','do nothing')):
+                self.assertEqual(companion.handle('capital letters '+value,mode),mode)
+                self.assertEqual(worker.capital_letters,value)
+                self.assertEqual(json.loads((Path(folder)/'preferences.json').read_text())['capital_letters'],value)

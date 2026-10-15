@@ -571,6 +571,13 @@ class BrowserBackend:
         element=self._element(item)
         element.fill(value,timeout=10000)
 
+    def activate_choice(self,item):
+        """One user action sends one native activation, with no state retries."""
+        element=self._element(item)
+        if element.get_attribute('aria-busy')=='true':return 'This control is busy. Wait for its result.'
+        element.click(timeout=10000)
+        return ''
+
     def choose_form_option(self, item, answer):
         element=self._element(item)
         if item['tag'] == 'select':
@@ -592,13 +599,12 @@ class BrowserBackend:
                 raise WebError('Say yes or no for this choice.')
             if item['type'] == 'radio' and answer == 'no':
                 return
-            if answer == 'yes': element.check(timeout=10000)
-            else: element.uncheck(timeout=10000)
+            if element.is_checked() != (answer == 'yes'):self.activate_choice(item)
         elif item.get('role') in ('checkbox','radio'):
             if answer not in ('yes','no'):raise WebError('Say yes or no for this choice.')
             if item.get('role')=='radio' and answer=='no':return
             checked=element.get_attribute('aria-checked')=='true'
-            if checked!=(answer=='yes'):element.click(timeout=10000)
+            if checked!=(answer=='yes'):self.activate_choice(item)
         else:
             raise WebError('That is not a choice field.')
 
@@ -828,7 +834,10 @@ class WebSession:
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
                 if role in ('checkbox','radio'):
-                    self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
+                    if hasattr(self.backend,'activate_choice'):
+                        notice=self.backend.activate_choice(item)
+                        if notice:return notice
+                    else:self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
                 if role=='button':
@@ -850,7 +859,9 @@ class WebSession:
             return str(exc) if isinstance(exc,WebError) else 'The page changed or the control could not be used. Press F5 to refresh it.'
 
     def _refresh_at(self,item):
-        snapshot,state=self._capture();self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
+        snapshot,state=self._capture()
+        if snapshot.get('text','')!=self.reading.text:self.page_revision=getattr(self,'page_revision',0)+1
+        self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
         self.document_state=state
         self.browse=BrowseCursor(snapshot)
         target=next((e for e in self.browse.elements if e.get('key')==item.get('key') and e.get('frame_index')==item.get('frame_index') and e.get('tag')==item.get('tag')),None)
@@ -1029,7 +1040,7 @@ class WebSession:
                 self.engine_choices=[e for e in ('brave','bing','duckduckgo','google') if e!=self.active_search_engine]
                 self.engine_index=0;self.list_focus='search_engines'
                 return 'This search engine requires human verification. Choose another engine for the same search. '+self.engine_notice()+' Use arrows and Enter, or say Try Bing, Try Brave Search, or Try DuckDuckGo. Escape returns to the page. Your default stays unchanged.'
-            return 'This site is asking for human verification. I cannot complete that challenge by voice. A helper can inspect the browser, or you can try another search engine.'
+            return 'This site is asking for human verification. Use Tab and Shift Tab to reach its controls. Enter or Space activates the chosen control. Use the site’s accessibility challenge option when available. The website decides whether verification passes.'
         if not self.address_allowed(url):
             return 'Use an HTTP or HTTPS page address.'
         if not str(self.snapshot.get('text', '')).strip():

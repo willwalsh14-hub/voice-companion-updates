@@ -58,6 +58,42 @@ class SemanticWebTests(unittest.TestCase):
         self.page.set_content('<html><title>Semantic page</title><body>'+markup+'</body></html>')
         self.session._refresh()
 
+    def test_verification_frame_activates_once_and_refreshes_new_accessible_controls(self):
+        # A provider may clear its checkbox while opening a separate challenge.
+        # Companion must expose that challenge, never retry to force it checked.
+        markup = """<label><input id=box type=checkbox onclick="window.clicks=(window.clicks||0)+1;this.checked=false;parent.postMessage('challenge','*')">I am not a robot</label>"""
+        challenge = '<label for=answer>Accessibility answer</label><input id=answer><button>Verify answer</button>'
+        self.context.route('https://verify.test/checkbox',lambda r:r.fulfill(content_type='text/html',body=markup))
+        self.context.route('https://verify.test/challenge',lambda r:r.fulfill(content_type='text/html',body=challenge))
+        self.load("""<p>Sign in</p><iframe title="Verification checkbox" src="https://verify.test/checkbox"></iframe><iframe id=challenge hidden title="Verification challenge" src="https://verify.test/challenge"></iframe><button>Continue sign in</button><script>addEventListener('message',e=>{if(e.origin==='https://verify.test'&&e.data==='challenge')document.querySelector('#challenge').hidden=false})</script>""")
+        self.session.keyboard('Quick:x')
+        self.assertEqual(self.session.browse.current()['label'],'I am not a robot')
+        result=self.session.keyboard('Space')
+        frame=next(f for f in self.page.frames if f.url.endswith('/checkbox'))
+        self.assertEqual(frame.evaluate('window.clicks'),1)
+        self.assertFalse(frame.locator('#box').is_checked())
+        self.assertNotIn('could not be used',result)
+        self.page.locator('#challenge').wait_for(state='visible')
+        self.session._refresh(read=False,preserve=True,wait=False)
+        self.assertIn('Accessibility answer',self.session.reading.text)
+        self.assertIn('Verify answer',self.session.reading.text)
+        self.assertIn('Accessibility answer',self.session.keyboard('Tab'))
+        self.assertTrue(self.session.keyboard_field)
+        self.assertIn('Verify answer',self.session.keyboard('Tab'))
+        self.assertIn('Accessibility answer',self.session.keyboard('ShiftTab'))
+        self.assertEqual(frame.evaluate('window.clicks'),1)
+
+    def test_busy_checkbox_waits_without_another_activation_and_native_controls_still_work(self):
+        self.load('<div role="checkbox" tabindex="0" aria-label="Human verification" aria-checked="false" aria-busy="true" onclick="window.clicks=(window.clicks||0)+1"></div><label><input type=checkbox id=ordinary>Remember me</label><label><input type=radio name=plan id=plan>Plan</label>')
+        self.session.keyboard('Quick:x')
+        self.assertIn('busy',self.session.keyboard('Activate'))
+        self.assertIsNone(self.page.evaluate('window.clicks'))
+        self.session.keyboard('Quick:x');self.session.keyboard('Space')
+        self.assertTrue(self.page.locator('#ordinary').is_checked())
+        self.session.keyboard('Space');self.assertFalse(self.page.locator('#ordinary').is_checked())
+        self.session.keyboard('Quick:r');self.session.keyboard('Activate')
+        self.assertTrue(self.page.locator('#plan').is_checked())
+
     def test_names_use_labelledby_before_label_and_keep_author_names(self):
         self.load('<span id="first" hidden>Account</span><span id="last">settings</span><button aria-labelledby="first last" aria-label="Wrong name">Go</button><h1 aria-label="Section name">Visible title</h1><a href="http://fixture.test/next" aria-label="Open account">Different visible text</a>')
         elements=self.session.snapshot['elements']

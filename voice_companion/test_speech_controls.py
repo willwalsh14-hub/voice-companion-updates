@@ -148,3 +148,82 @@ class SpeechControlTests(unittest.TestCase):
             self.assertIsNone(request(phrase)[2])
         self.assertFalse(companion.fast_command_request('rate apples','document'))
         self.assertTrue(companion.fast_command_request('rate for','document'))
+
+class CapitalFeedbackTests(unittest.TestCase):
+    def test_character_echo_and_phonetic_keep_case_but_words_are_unchanged(self):
+        from keyboard_text import character,phonetic,typing_feedback
+        from capital_feedback import is_capital,prepare,pitch_for
+        for text in (character('A'),phonetic('A'),typing_feedback('','A',1,'characters')):
+            self.assertTrue(is_capital(text))
+            for mode,delta in (('with a higher pitch',4),('with a lower pitch',-4),('do nothing',0)):
+                cue=prepare(companion.punctuation_for_speech(text),mode)
+                self.assertEqual(pitch_for(cue,1),1+delta)
+                self.assertEqual(str(cue),str(text))
+        for text in (character('a'),phonetic('a'),'Apple','123',''):
+            self.assertFalse(is_capital(text))
+            self.assertEqual(pitch_for(prepare(text,'with a higher pitch'),1),1)
+
+    def test_native_voice_pitch_resets_and_markup_remains_escaped(self):
+        from capital_feedback import prepare
+        from voice_pitch import sapi_speak
+        voice=Mock()
+        sapi_speak(voice,prepare('A','with a higher pitch'),1)
+        self.assertIn('absmiddle="5"',voice.Speak.call_args.args[0])
+        sapi_speak(voice,prepare('A','with a lower pitch'),1)
+        self.assertIn('absmiddle="-3"',voice.Speak.call_args.args[0])
+        sapi_speak(voice,prepare('a','with a higher pitch'),1)
+        self.assertIn('absmiddle="1"',voice.Speak.call_args.args[0])
+        sapi_speak(voice,'<&',2)
+        self.assertIn('&lt;&amp;',voice.Speak.call_args.args[0])
+
+    def test_sound_occurs_only_for_capitals_in_sound_mode(self):
+        import sys
+        from capital_feedback import prepare,play_sound
+        sound=Mock()
+        with patch.dict(sys.modules,{'winsound':sound}),patch.object(sys,'platform','win32'):
+            for text,mode in (('A','with a sound'),('a','with a sound'),('Apple','with a sound'),('A','do nothing'),('A','with a higher pitch')):
+                play_sound(prepare(text,mode))
+        sound.Beep.assert_called_once_with(1100,45)
+
+    def test_espeak_receives_capital_pitch_then_restores_normal_pitch(self):
+        import io,wave,espeak_speech
+        from capital_feedback import prepare
+        buffer=io.BytesIO()
+        with wave.open(buffer,'wb') as wav:
+            wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(24000);wav.writeframes(b'\x00\x00'*4)
+        with patch('espeak_speech.subprocess.run',return_value=SimpleNamespace(stdout=buffer.getvalue())) as run:
+            for text,mode,expected in (('A','with a higher pitch','70'),('A','with a lower pitch','30'),('a','with a higher pitch','50'),('A','do nothing','50')):
+                espeak_speech.synthesize(prepare(text,mode),program='engine.exe')
+                args=run.call_args.args[0];self.assertEqual(args[args.index('-p')+1],expected)
+
+    def test_global_character_speech_uses_local_feedback_even_with_ai_voice(self):
+        from keyboard_text import character
+        worker=Mock(problem=None);ai=Mock(enabled=True)
+        with patch.object(companion,'KEYBOARD_SPEECH',worker),patch.object(companion,'AI_SPEECH',ai),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'TEXT_MODE',False),patch.object(companion,'KEYBOARD_BATCH',False),patch.object(companion,'KEYBOARD_NAVIGATION',False),patch.object(companion,'update_audio_ducking'):
+            companion.speak(character('A'))
+        worker.speak.assert_called_once();self.assertTrue(worker.speak.call_args.args[0].capital)
+        ai.speak.assert_not_called()
+
+    def test_keyboard_worker_applies_saved_mode_without_pitch_leaking_to_next_letter(self):
+        import queue,sys
+        from keyboard_speech import KeyboardSpeech
+        worker=KeyboardSpeech.__new__(KeyboardSpeech)
+        worker.queue=queue.Queue();worker.settings=('',0,100,None,1);worker.capital_letters='with a higher pitch';worker.paused=False
+        worker.queue.put('A');worker.queue.put('a');worker.queue.put(None)
+        voice=Mock();com=Mock()
+        with patch.dict(sys.modules,{'pythoncom':com,'win32com':Mock(),'win32com.client':SimpleNamespace(Dispatch=lambda name:voice)}),patch.object(sys,'platform','linux'):
+            worker.run()
+        utterances=[c.args[0] for c in voice.Speak.call_args_list]
+        self.assertEqual(utterances,['<pitch absmiddle="5">A</pitch>','<pitch absmiddle="1">a</pitch>'])
+        com.CoUninitialize.assert_called_once()
+
+    def test_espeak_shared_player_keeps_character_pitch_when_chunking(self):
+        import queue
+        from ai_speech import AISpeech
+        from capital_feedback import prepare
+        engine=AISpeech.__new__(AISpeech);engine.pending=queue.Queue();engine.lock=threading.RLock();engine.generation=0;engine.paused=False
+        engine.error_callback=None;engine.synthesizer=Mock(return_value=b'');engine._play=Mock()
+        engine.pending.put((0,prepare('A','with a lower pitch'),0,100));engine.pending.put(None)
+        engine._run()
+        text=engine.synthesizer.call_args.args[0]
+        self.assertEqual(text,'A');self.assertEqual(text.pitch_delta,-4)

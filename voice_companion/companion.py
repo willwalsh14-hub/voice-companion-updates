@@ -45,7 +45,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.134-test'
+APP_VERSION = '0.2.135-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -263,7 +263,7 @@ def sync_app_context(mode,focus=False):
     if APP_WINDOW is None:return
     context=app_context(mode)
     if KEYBOARD_SPEECH and not TEXT_MODE:
-        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH)
+        KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
     if focus or context!=UI_CONTEXT_CACHE:
         UI_CONTEXT_CACHE=dict(context);context['focus']=focus;APP_WINDOW.set_context(context)
 
@@ -810,6 +810,11 @@ def control_speech(action):
 
 
 def punctuation_for_speech(text):
+    from capital_feedback import preserve_character
+    return preserve_character(text,_punctuation_for_speech(text))
+
+
+def _punctuation_for_speech(text):
     if PUNCTUATION_LEVEL == 'some':
         return text
     names = {',': ' comma ', '.': ' period ', ':': ' colon ', ';': ' semicolon ',
@@ -890,7 +895,7 @@ def change_speech_setting(command):
         SPEECH_VOLUME = value
         if not TEXT_MODE: voice.Volume = value
     save_speech_settings()
-    if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH)
+    if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
     speak('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')
     return True
 
@@ -1118,7 +1123,7 @@ def discard_feedback_events(cloud):
 def speak(text):
     global KEYBOARD_BATCH_TEXT
     if KEYBOARD_BATCH:
-        KEYBOARD_BATCH_TEXT=str(text);return
+        KEYBOARD_BATCH_TEXT=text;return
     if TEXT_MODE:print('Companion:', text, flush=True)
     if APP_WINDOW is not None:
         APP_WINDOW.show(text)
@@ -1127,6 +1132,11 @@ def speak(text):
     update_audio_ducking(True)
     if KEYBOARD_NAVIGATION and KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem:
         KEYBOARD_SPEECH.speak(punctuation_for_speech(text));return
+    from capital_feedback import is_capital,prepare,play_sound
+    if is_capital(text):
+        if KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem:
+            KEYBOARD_SPEECH.speak(punctuation_for_speech(text));return
+        text=prepare(text,PREFERENCES.get('capital_letters','do nothing'));play_sound(text)
     if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.enabled:
         ESPEAK_SPEECH.speak(punctuation_for_speech(text), SPEECH_RATE, SPEECH_VOLUME)
         return
@@ -1143,9 +1153,13 @@ def speak_keyboard_feedback(text):
     if APP_WINDOW is not None: APP_WINDOW.show(text)
     if not TEXT_MODE:
         update_audio_ducking(True)
+        if KEYBOARD_SPEECH and not KEYBOARD_SPEECH.problem:
+            KEYBOARD_SPEECH.speak(text);return
+        from capital_feedback import prepare,play_sound
+        text=prepare(text,PREFERENCES.get('capital_letters','do nothing'));play_sound(text)
         if ESPEAK_SPEECH is not None and ESPEAK_SPEECH.enabled:
-            ESPEAK_SPEECH.speak(str(text), SPEECH_RATE, SPEECH_VOLUME)
-        else: sapi_speak(voice,str(text),SPEECH_PITCH)
+            ESPEAK_SPEECH.speak(text, SPEECH_RATE, SPEECH_VOLUME)
+        else: sapi_speak(voice,text,SPEECH_PITCH)
 
 
 def speak_status(text):
@@ -1492,14 +1506,16 @@ def _handle(text, mode, typed=False):
         speak('Verbosity '+VERBOSITY+'.')
         return mode
     update_command = normalized_command(text)
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|when encountering capital letters|capital letters)\b.+',update_command):
         session=SettingsSession(PREFERENCES,{})
         request=session.voice_setting(text)
-        if request and request[0] in ('typing_echo','phonetic_enabled','phonetic_delay'):
+        if request and request[0] in ('typing_echo','phonetic_enabled','phonetic_delay','capital_letters'):
             try:
                 message=session.set(*request)
                 PREFERENCES[request[0]]=session.values[request[0]]
-                save_preferences();speak(message+'.')
+                save_preferences()
+                if request[0]=='capital_letters' and KEYBOARD_SPEECH:KEYBOARD_SPEECH.capital_letters=session.values['capital_letters']
+                speak(message+'.')
             except (ValueError,OSError) as exc:speak(str(exc))
             return mode
     if mode=='awake' and update_command in ('main menu','back to main menu'):
@@ -3202,7 +3218,7 @@ if __name__ == '__main__':
         try:
             APP_WINDOW = CompanionWindow(APP_VERSION, APP)
             from keyboard_speech import KeyboardSpeech
-            KEYBOARD_SPEECH=KeyboardSpeech();KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH);APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
+            KEYBOARD_SPEECH=KeyboardSpeech();KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'));APP_WINDOW.keyboard_output=KEYBOARD_SPEECH
             APP_WINDOW.start()
         except Exception:
             APP_WINDOW = None
