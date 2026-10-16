@@ -109,12 +109,23 @@ class BookmarkRecoveryTests(unittest.TestCase):
 
     def test_missing_selected_browser_uses_included_firefox_without_changing_preference(self):
         with tempfile.TemporaryDirectory() as folder:
-            session=WebSession(folder,FakeBackend());old=Mock(browser='edge');old.goto.side_effect=WebError('not installed')
+            session=WebSession(folder,FakeBackend());old=Mock(browser='edge',regular=False);old.goto.side_effect=WebError('not installed')
             session.backend=old;session.injected_backend=False;session.browser='edge'
             fallback=FakeBackend();fallback.browser='firefox'
             with patch('web_assistant.BrowserBackend',return_value=fallback):
                 self.assertIn('included Firefox',session.open('example.com'))
             self.assertTrue(session.navigation_succeeded);self.assertEqual(session.browser,'edge');old.close.assert_called_once()
+
+    def test_disconnected_extension_never_falls_back_to_another_browser(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend())
+            connected=Mock(browser='edge',regular=True)
+            connected.goto.side_effect=WebError('Reconnect the selected tab.')
+            session.backend=connected;session.injected_backend=False
+            with patch('web_assistant.BrowserBackend') as fallback:
+                self.assertIn('Reconnect',session.open('example.com'))
+            fallback.assert_not_called();connected.close.assert_not_called()
+            self.assertFalse(session.navigation_succeeded)
 
 if __name__=='__main__':unittest.main()
 
