@@ -1,48 +1,45 @@
 importScripts('cdp.js');
-let connection = null;
-let model = null;
-let busy = false;
-
+let connection=null, model=null, busy=false, enabled=true;
+const eligible=tab=>Number.isInteger(tab?.id)&&/^https?:\/\//i.test(tab.url||'');
 async function disconnect() {
-  const old = connection;connection = null;
-  if (old) old.disconnect();
-  if (model) await model.detachAll();model = null;
+  const old=connection;connection=null;
+  if(old)old.disconnect();
+  const previous=model;model=null;if(previous)await previous.detachAll();
 }
-
+async function ensureConnection() {
+  if(!enabled||connection||busy)return;
+  busy=true;
+  try {
+    const port=chrome.runtime.connectNative('com.voicecompanion.browser');connection=port;
+    const current=new CompanionCDP(chrome,message=>{if(connection===port)port.postMessage(message);});
+    current.allTabs=true;model=current;
+    port.onMessage.addListener(message=>{if(connection===port)void current.command(message);});
+    port.onDisconnect.addListener(()=>{void chrome.runtime.lastError;if(connection!==port)return;connection=null;model=null;void current.detachAll();});
+    // Register every normal tab before exposing the connection to the driver.
+    const tabs=await chrome.tabs.query({});
+    for(const tab of tabs.filter(eligible))current.remember(tab);
+    port.postMessage({protocol:2,command:'cdp',browser:/Edg\//.test(navigator.userAgent)?'edge':navigator.brave?'brave':'chrome'});
+  } finally {busy=false;}
+}
 async function run(command) {
-  if (command === 'status') return model ? 'Connected. Use the Web browser menu in Voice Companion.' : 'Choose Connect this tab to begin.';
-  if (command === 'disconnect') { await disconnect();return 'Disconnected. Your browser tabs remain open.'; }
-  if (command !== 'connect') throw new Error('Unknown browser connection action.');
-  const [tab] = await chrome.tabs.query({active:true,currentWindow:true});
-  if (!Number.isInteger(tab?.id) || !/^https?:\/\//i.test(tab.url || '')) throw new Error('Open a website tab first.');
-  return connectTab(tab);
+  if(command==='status')return !enabled?'Browser connection paused.':connection?'Browser linked. Use the usual Web browser menu. Sites and tabs connect automatically.':'Waiting for Voice Companion. The browser will reconnect automatically.';
+  if(command==='disconnect'){enabled=false;await chrome.storage.local.set({enabled:false});await disconnect();return 'Browser connection paused. Your tabs stay open.';}
+  if(command!=='connect')throw new Error('Unknown connection action.');
+  enabled=true;await chrome.storage.local.set({enabled:true});await ensureConnection();return run('status');
 }
-
-async function connectTab(tab) {
-  await disconnect();
-  await chrome.debugger.attach({tabId:tab.id},'1.3');
-  const port = chrome.runtime.connectNative('com.voicecompanion.browser');connection = port;
-  model = new CompanionCDP(chrome,message=>{if (connection === port)port.postMessage(message);});
-  model.remember(tab,true);
-  port.onMessage.addListener(message=>{if(connection === port && model)void model.command(message);});
-  port.onDisconnect.addListener(()=>{
-    if (connection !== port)return;
-    connection = null;
-    const previous = model;model = null;
-    if (previous)void previous.detachAll();
-  });
-  port.postMessage({protocol:2,command:'cdp',browser:/Edg\//.test(navigator.userAgent)?'edge':navigator.brave?'brave':'chrome'});
-  return 'Connected. Return to Voice Companion and open Web browser. All reading, forms, tables, lists and keyboard controls use its usual interface.';
-}
-
+// Kept as a test entry point; production linking never requires a tab action.
+async function connectTab(tab){await ensureConnection();if(model&&eligible(tab))await model.created(tab);}
+async function startup(){const saved=await chrome.storage.local.get('enabled');enabled=saved.enabled!==false;await chrome.alarms.create('companion-reconnect',{periodInMinutes:0.5});await ensureConnection();}
+chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name==='companion-reconnect')void ensureConnection();});
+chrome.runtime.onStartup.addListener(()=>{void startup();});
+chrome.runtime.onInstalled.addListener(()=>{void startup();});
 chrome.debugger.onEvent.addListener((source,method,params)=>model?.event(source,method,params));
 chrome.debugger.onDetach.addListener(source=>model?.removed(source.tabId));
 chrome.tabs.onCreated.addListener(tab=>{if(model)void model.created(tab).catch(()=>{});});
-chrome.tabs.onRemoved.addListener(tabId=>model?.removed(tabId));
+chrome.tabs.onUpdated.addListener((id,change,tab)=>{if(eligible(tab)&&model&&!model.tabs.has(id))void model.created(tab).catch(()=>{});else if(model&&change.url&&/^(chrome|edge|devtools|chrome-extension):/i.test(change.url))model.removed(id);});
+chrome.tabs.onRemoved.addListener(id=>model?.removed(id));
 chrome.runtime.onMessage.addListener((message,sender,respond)=>{
-  if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('popup.html'))return false;
-  if (busy) {respond({ok:false,error:'Wait for the current connection action.'});return false;}
-  busy = true;
-  run(message.command).then(message=>respond({ok:true,message}),()=>respond({ok:false,error:'The connection could not be completed. Open Web browser in Voice Companion, then reconnect this tab.'})).finally(()=>{busy = false;});
-  return true;
+  if(sender.id!==chrome.runtime.id||sender.url!==chrome.runtime.getURL('popup.html'))return false;
+  run(message.command).then(message=>respond({ok:true,message}),()=>respond({ok:false,error:'Open Voice Companion. The browser will reconnect automatically.'}));return true;
 });
+void startup();

@@ -3,7 +3,7 @@
 class CompanionCDP {
   constructor(api, emit) {
     this.api = api; this.emit = emit; this.tabs = new Map(); this.children = new Map();
-    this.autoAttach = false; this.serial = 0;
+    this.autoAttach = false; this.serial = 0; this.aliases = new Map(); this.browserSessions = new Set(); this.allTabs = false;
   }
   remember(tab, attached = false) {
     if (!Number.isInteger(tab?.id)) throw new Error('No browser tab is available.');
@@ -13,6 +13,11 @@ class CompanionCDP {
     this.tabs.set(tab.id,item); return item;
   }
   async attach(item) {
+    if(item.attaching)return item.attaching;
+    item.attaching=this._attach(item);
+    try{return await item.attaching;}finally{item.attaching=null;}
+  }
+  async _attach(item) {
     if (!item.attached) { await this.api.debugger.attach({tabId:item.tabId},'1.3'); item.attached = true; }
     const {targetInfo} = await this.api.debugger.sendCommand({tabId:item.tabId},'Target.getTargetInfo');
     // Playwright requires a nonempty context label even for the normal profile.
@@ -25,6 +30,8 @@ class CompanionCDP {
     return item;
   }
   source(sessionId) {
+    const alias=this.aliases.get(sessionId);
+    if (alias !== undefined) return {tabId:alias};
     const item = [...this.tabs.values()].find(t=>t.sessionId === sessionId);
     if (item) return {tabId:item.tabId};
     const tabId = this.children.get(sessionId);
@@ -46,12 +53,12 @@ class CompanionCDP {
     if (item.announced) this.emit({method:'Target.detachedFromTarget',params:{sessionId:item.sessionId,targetId:item.info?.targetId}});
   }
   async created(tab) {
-    if (!this.tabs.has(tab.openerTabId)) return; // Never attach unrelated tabs.
+    if (!this.tabs.has(tab.openerTabId) && !(this.allTabs && /^https?:\/\//i.test(tab.url || ''))) return;
     const item = this.remember(tab);
     if (this.autoAttach) await this.attach(item);
   }
   reset() {
-    this.autoAttach = false;this.children.clear();
+    this.autoAttach = false;this.children.clear();this.aliases.clear();this.browserSessions.clear();
     for (const item of this.tabs.values()) item.announced = false;
   }
   async command(message) {
@@ -67,9 +74,31 @@ class CompanionCDP {
     }
   }
   async dispatch(method,params,sessionId) {
+    if (this.browserSessions.has(sessionId)) sessionId=undefined;
+    if (!sessionId && method === 'Target.attachToBrowserTarget') {
+      const id='vc-browser-'+(++this.serial);this.browserSessions.add(id);return {sessionId:id};
+    }
+    if (!sessionId && method === 'Target.attachToTarget') {
+      const item=[...this.tabs.values()].find(t=>t.info?.targetId===params.targetId);
+      if (!item)throw new Error('Unknown browser tab.');
+      const id='vc-inspect-'+(++this.serial);this.aliases.set(id,item.tabId);return {sessionId:id};
+    }
+    if (method === 'Target.detachFromTarget' && this.aliases.has(params.sessionId)) {
+      this.aliases.delete(params.sessionId);return {};
+    }
+    if (!sessionId && method === 'VoiceCompanion.getActiveTarget') {
+      const [tab]=await this.api.tabs.query({active:true,lastFocusedWindow:true});
+      const item=this.tabs.get(tab?.id);
+      return {targetId:item?.info?.targetId || ''};
+    }
     if (!sessionId && method === 'Browser.getVersion') {
-      const item = this.tabs.values().next().value;
-      if (!item) throw new Error('Connect a browser tab first.');
+      if (!this.tabs.size && this.allTabs)for(const tab of await this.api.tabs.query({}))if(/^https?:\/\//i.test(tab.url||''))this.remember(tab);
+      let item;
+      for(const candidate of this.tabs.values()) {
+        try {if(!candidate.attached){await this.api.debugger.attach({tabId:candidate.tabId},'1.3');candidate.attached=true;}item=candidate;break;}
+        catch {this.removed(candidate.tabId);}
+      }
+      if (!item) throw new Error('Open a normal website tab first.');
       const reply = await this.api.debugger.sendCommand({tabId:item.tabId},'Runtime.evaluate',{expression:'navigator.userAgent',returnByValue:true});
       const agent = String(reply.result?.value || '');
       const version = /(?:Chrome|Chromium)\/([\d.]+)/.exec(agent)?.[1] || '140.0.0.0';
@@ -79,13 +108,14 @@ class CompanionCDP {
     if (!sessionId && method === 'Target.setAutoAttach') {
       this.autoAttach = !!params.autoAttach;
       if (this.autoAttach) await Promise.all([...this.tabs.values()].map(async item=>{
+        if(!item.attached){await this.api.debugger.attach({tabId:item.tabId},'1.3');item.attached=true;}
         await this.api.debugger.sendCommand({tabId:item.tabId},'Target.setAutoAttach',{autoAttach:false,waitForDebuggerOnStart:false,flatten:true});
         // A new local driver needs fresh contexts and lifecycle events.
         // Re-enabling an already enabled Runtime does not replay contexts.
         for (const domain of ['Runtime','Page','Network','Log'])
           await this.api.debugger.sendCommand({tabId:item.tabId},domain+'.disable');
         return this.attach(item);
-      }));
+      }).map(promise=>promise.catch(()=>{})));
       return {};
     }
     if (!sessionId && method === 'Target.getTargetInfo') {
@@ -115,7 +145,7 @@ class CompanionCDP {
     return await this.api.debugger.sendCommand(this.source(sessionId),method,params);
   }
   async detachAll() {
-    const items = [...this.tabs.values()];this.tabs.clear();this.children.clear();
+    const items = [...this.tabs.values()];this.tabs.clear();this.children.clear();this.aliases.clear();this.browserSessions.clear();
     await Promise.all(items.filter(t=>t.attached).map(t=>this.api.debugger.detach({tabId:t.tabId}).catch(()=>{})));
   }
 }

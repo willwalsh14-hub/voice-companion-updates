@@ -621,13 +621,23 @@ class BrowserBackend:
         """One user action sends one native activation, with no state retries."""
         element=self._element(item)
         if element.get_attribute('aria-busy')=='true':return 'This control is busy. Wait for its result.'
-        # Native choices and button-backed widgets already have click activation.
-        # Generic ARIA radios rely on the standard Space keyboard handler.
-        custom_radio=element.evaluate("e=>e.getAttribute('role')==='radio'&&!e.matches('input,button')")
-        if custom_radio:element.press('Space',timeout=10000)
+        # Choose one event path. Native/button widgets have click defaults;
+        # generic widgets with explicit keyboard handlers need Space instead.
+        keyboard=element.evaluate("""e=>!e.matches('input,button')&&!!e.closest('[role="radio"],[role="checkbox"]')&&
+          [e,...(function*(n){while(n.parentElement){n=n.parentElement;yield n;}})(e)].some(n=>typeof n.onkeydown==='function'||typeof n.onkeyup==='function'||n.hasAttribute('onkeydown')||n.hasAttribute('onkeyup'))""")
+        before=element.evaluate("e=>({checked:'checked' in e?e.checked:e.getAttribute('aria-checked'),busy:e.getAttribute('aria-busy')})")
+        if keyboard:element.press('Space',timeout=10000)
         else:element.click(timeout=10000)
-        # Wait for event handlers/rendering without repeating the action.
-        element.evaluate('e=>new Promise(resolve=>{setTimeout(resolve,80);requestAnimationFrame(()=>requestAnimationFrame(resolve));})')
+        # Wait for delayed rendering without activating the control again.
+        try:
+            delay=600 if re.search(r'robot|human|verif|captcha',_label(item),re.I) else 150
+            element.evaluate("""(e,arg)=>new Promise(resolve=>{const start=Date.now();let last=JSON.stringify(arg.before),changed=false,changedAt=start;const poll=()=>{
+              const state={checked:'checked' in e?e.checked:e.getAttribute('aria-checked'),busy:e.getAttribute('aria-busy')};
+              const now=Date.now(),value=JSON.stringify(state);
+              if(value!==last){last=value;changed=true;changedAt=now;}
+              if(!e.isConnected||(changed&&now-start>=arg.delay&&now-changedAt>=120)||now-start>=1000)resolve();
+              else setTimeout(poll,25);};poll();})""",{'before':before,'delay':delay})
+        except Exception:pass # An activation may replace its frame or document.
         return ''
 
     def choose_form_option(self, item, answer):
@@ -835,7 +845,18 @@ class WebSession:
             self._refresh_at(item);self.focus_current()
         return label+'.'
 
+    def _sync_browser_tab(self):
+        if not self.injected_backend and not getattr(self.backend,'regular',False):
+            self.adopt_connected_browser()
+        sync=getattr(type(self.backend),'sync_active_tab',None)
+        if sync and sync(self.backend):
+            self.keyboard_field=None;self.form_index=None;self.pending=None;self.submit_pending=None
+            self.list_focus=None;self.browse=None
+            self._refresh(read=False)
+
     def keyboard(self,key,direct_submit=False):
+        try:self._sync_browser_tab()
+        except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
@@ -920,6 +941,7 @@ class WebSession:
             return str(exc) if isinstance(exc,WebError) else 'The page changed or the control could not be used. Press F5 to refresh it.'
 
     def _refresh_at(self,item):
+        previous={(e.get('frame_url'),e.get('key'),e.get('label')) for e in (self.snapshot or {}).get('elements',[])}
         snapshot,state=self._capture()
         if snapshot.get('text','')!=self.reading.text:self.page_revision=getattr(self,'page_revision',0)+1
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
@@ -928,7 +950,11 @@ class WebSession:
         target=next((e for e in self.browse.elements if e.get('key')==item.get('key') and e.get('frame_index')==item.get('frame_index') and e.get('tag')==item.get('tag')),None)
         if target:
             self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0);self.reading.position=self.browse.position;self.cursor_changed()
-            return describe(target)
+            notice=describe(target)
+            if kind(item)=='checkbox' and re.search(r'robot|human|verif|captcha',_label(item),re.I):
+                new_controls=[e for e in snapshot.get('elements',[]) if kind(e) in ('edit','button','checkbox','radio','combobox') and (e.get('frame_url'),e.get('key'),e.get('label')) not in previous]
+                if new_controls:notice+=' Verification options opened. Use Tab to reach the next control.'
+            return notice
         return 'The page changed. Press F5 to refresh.'
 
     def commit_keyboard_field(self,value=None):
@@ -1740,6 +1766,8 @@ class WebSession:
         return 'Move to a link or heading first.'
 
     def command(self, spoken):
+        try:self._sync_browser_tab()
+        except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         command = _plain(spoken).rstrip('.!?').lower()
         if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):
             self.list_focus=None;self.pending=None;return 'Virtual page view.'

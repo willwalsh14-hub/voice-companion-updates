@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.138-test.
+Guide version: 0.2.139-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -129,7 +129,7 @@ Contents
 
 23 Regular Browser Connection
   23.1 Set up the extension
-  23.2 Read and use the connected tab
+  23.2 Read and use your browser
   23.3 Understand this testing connection
 
 1. GETTING STARTED
@@ -1063,15 +1063,15 @@ The app skips history entries with private sign-in data. It also removes sign-in
 23.1 Set up the extension
 1. Ask your trainer to open Browser Connection Setup in the Voice Companion Start menu folder. Set up the included Chrome or Edge extension once. The installer includes the local host. Python is not needed.
 2. If you used the earlier test connection, reload the extension on your browser's Extensions page after this update. Its name and ID stay the same.
-3. Open Companion. In Chrome or Edge, open the page you want. Open the Voice Companion extension and choose Connect this tab. Close the popup and return to Companion.
+3. Open Companion. Open a website in Chrome or Edge. The browser links on its own. No Connect button is needed for each site or tab. Return to Companion.
 
-23.2 Read and use the connected tab
-1. Open Web browser from Companion's main menu. Choose Resume where you left off to read your connected tab. Search, favorites, web history, Go back and Go forward remain in this menu.
+23.2 Read and use your browser
+1. Open Web browser from Companion's main menu. Choose Resume where you left off to read the active browser tab. Search, favorites, web history, Go back and Go forward remain in this menu.
 2. Use your usual web keys and voice commands. Element keys, arrow reading, link and heading lists, table commands and forms use the same engine as the guided browser. See the Web browser chapters in this guide for each task.
 3. Type and dictate in fields from Companion as usual. Tab moves among controls. Enter activates a control. Space selects a radio button or checkbox. Field editing, text selection, choices and form review keep their usual commands.
 4. Escape returns to the Web browser menu as usual. From there, Escape returns to the main menu. You do not need to use a separate connection menu or switch to your browser to type.
 
 23.3 Understand this testing connection
 1. This uses your ordinary Chrome or Edge tab. The browser shows its normal notice while connected. Sites may still block access. PayPal sign-in has not been tested.
-2. Companion controls only the tab you chose and new tabs opened from that page. It does not import your cookies or attach to unrelated tabs. Firefox uses the existing guided browser.
-3. If the extension stops, reconnect your tab. Companion does not open a separate guided browser in its place. Closing the connection leaves your regular browser tabs open.
+2. Companion links normal website tabs in this browser. New tabs and sites link on their own. When you switch tabs, Companion uses the active tab. Browser settings pages stay outside the link. It does not import your cookies. Firefox uses the existing guided browser.
+3. If the link stops, keep Companion open. The extension tries again on its own. Companion does not open a separate guided browser in its place. Closing the connection leaves your regular browser tabs open.

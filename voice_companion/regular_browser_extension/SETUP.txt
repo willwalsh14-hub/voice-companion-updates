@@ -1,38 +1,27 @@
 VOICE COMPANION BROWSER CONNECTION
-Testing build 0.2.138-test
+Testing build 0.2.139-test
 
-One-time setup for a trainer or helper:
-1. Install this Voice Companion update and open the app.
-2. In Chrome or Edge, go to chrome://extensions or edge://extensions.
-3. Enable Developer mode. Choose Load unpacked.
-4. Choose the regular_browser_extension folder in the installed Companion
-   folder, normally %LOCALAPPDATA%\Programs\Voice Companion.
-5. The extension is Voice Companion Browser Connection. Its ID is
-   lmpkdmlehooibijenhkhpbjcgjehjbig. You may pin it to the toolbar.
-The installer registers the local host. You do not need Python or commands.
-If already installed, use Reload on that extension's card after this update.
-The extension's ID and folder have not changed.
+One-time setup:
+1. Install this update and open Voice Companion.
+2. In Chrome or Edge, open chrome://extensions or edge://extensions.
+3. Turn on Developer mode. Choose Load unpacked.
+4. Select %LOCALAPPDATA%\Programs\Voice Companion\regular_browser_extension.
+If you loaded an older version, choose Reload on its extension card once.
+Its name is Voice Companion Browser Connection. Its ID stays the same.
+The installer sets up the local host. No Python or commands are needed.
 
-Use your usual browser interface:
-1. Open Companion. Open a website in an ordinary Chrome or Edge tab.
-2. Open the extension and choose Connect this tab.
-3. Close the popup. Return to Companion and choose Web browser.
-4. Choose Resume where you left off to read the connected page.
-5. Use all your usual Companion browser commands and keys: arrow reading,
-   element keys, link and heading lists, tables, field editing, text selection,
-   typing, dictation, choices, form review and submission.
-6. Search, favorites, history, Go back and Go forward remain in the same menu.
-7. Escape returns to the Web browser menu as usual. Escape there returns to
-   the main menu. There is no separate limited connection mode.
-8. Use Disconnect in the extension to detach. Your browser tabs stay open.
+Use your usual Web browser menu:
+The extension links automatically when Companion is open. You do not need to
+open its popup or connect each tab or site. New tabs link on their own. After
+a browser or app restart, it tries again on its own within about 30 seconds.
+Open Web browser in Companion and choose Resume where you left off. When you
+switch browser tabs, Companion reads the active website tab. Search, favorites,
+history, Back, Forward, element keys, arrow reading, lists, tables, typing,
+dictation and forms keep the same menu and commands.
 
-The standard Companion engine now handles reading and editing through the
-extension. You do not need to switch to the browser to type in form fields.
-Companion controls only the chosen tab and new tabs opened from it. The browser
-shows its usual debugging notice. Site security checks still apply. PayPal
-sign-in has not been verified. Firefox uses the existing guided browser.
-
-If the connection stops, reconnect the tab and reopen Web browser in Companion.
-It does not silently switch to a separate guided browser after a disconnect.
-Removing Companion removes the local host registration. Remove the extension
-separately through your browser's Extensions settings.
+The popup is only for status or pausing the browser connection. Pausing is
+saved until you choose Enable browser connection. Your tabs stay open.
+The browser shows its normal debugging notice. Settings pages are not linked.
+Site security checks still apply. PayPal sign-in remains unverified. Human
+verification must still be completed by the user; Companion does not force a
+verification box to stay checked or solve the challenge for you.

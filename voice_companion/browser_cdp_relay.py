@@ -39,6 +39,7 @@ class BrowserRelay:
         if family != 'AF_PIPE': key_file.chmod(0o600)
         self.token = secrets.token_urlsafe(32)
         self.browser = 'chrome'
+        self.generation = 0
         self.pipe = self.websocket = None
         self.connected = threading.Event()
         self.client_closed = threading.Event();self.client_closed.set()
@@ -73,6 +74,7 @@ class BrowserRelay:
                 message = decode(pipe.recv_bytes(MAX_FRAME))
                 if message.get('method') == 'VoiceCompanion.ready':
                     if message.get('browser') in ('chrome','edge','brave'):self.browser=message['browser']
+                    self.generation += 1
                     self.connected.set(); continue
                 websocket = self.websocket
                 if websocket is not None:
@@ -83,11 +85,12 @@ class BrowserRelay:
             pass
         finally:
             with self.state_lock:
+                closing = self.websocket if self.pipe is pipe else None
                 if self.pipe is pipe: self.pipe = None; self.connected.clear()
             try:pipe.close()
             except OSError:pass
-            if self.websocket is not None:
-                try:self.websocket.close(1011, 'Browser extension disconnected.')
+            if closing is not None:
+                try:closing.close(1011, 'Browser extension disconnected.')
                 except Exception:pass
 
     def _websocket(self, websocket):
