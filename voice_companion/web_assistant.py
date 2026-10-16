@@ -621,13 +621,20 @@ class BrowserBackend:
         """One user action sends one native activation, with no state retries."""
         element=self._element(item)
         if element.get_attribute('aria-busy')=='true':return 'This control is busy. Wait for its result.'
-        # Native choices and button-backed widgets already have click activation.
-        # Generic ARIA radios rely on the standard Space keyboard handler.
-        custom_radio=element.evaluate("e=>e.getAttribute('role')==='radio'&&!e.matches('input,button')")
-        if custom_radio:element.press('Space',timeout=10000)
+        # Choose one event path. Native/button widgets have click defaults;
+        # generic widgets with explicit keyboard handlers need Space instead.
+        keyboard=element.evaluate("""e=>!e.matches('input,button')&&!!e.closest('[role="radio"],[role="checkbox"]')&&
+          [e,...(function*(n){while(n.parentElement){n=n.parentElement;yield n;}})(e)].some(n=>typeof n.onkeydown==='function'||typeof n.onkeyup==='function'||n.hasAttribute('onkeydown')||n.hasAttribute('onkeyup'))""")
+        before=element.evaluate("e=>({checked:'checked' in e?e.checked:e.getAttribute('aria-checked'),busy:e.getAttribute('aria-busy')})")
+        if keyboard:element.press('Space',timeout=10000)
         else:element.click(timeout=10000)
-        # Wait for event handlers/rendering without repeating the action.
-        element.evaluate('e=>new Promise(resolve=>{setTimeout(resolve,80);requestAnimationFrame(()=>requestAnimationFrame(resolve));})')
+        # Wait for delayed rendering without activating the control again.
+        try:
+            element.evaluate("""(e,before)=>new Promise(resolve=>{const start=Date.now();const poll=()=>{
+              const checked='checked' in e?e.checked:e.getAttribute('aria-checked');
+              if(!e.isConnected||checked!==before.checked||e.getAttribute('aria-busy')!==before.busy||Date.now()-start>=1000)resolve();
+              else setTimeout(poll,25);};poll();})""",before)
+        except Exception:pass # An activation may replace its frame or document.
         return ''
 
     def choose_form_option(self, item, answer):
@@ -835,7 +842,16 @@ class WebSession:
             self._refresh_at(item);self.focus_current()
         return label+'.'
 
+    def _sync_browser_tab(self):
+        sync=getattr(type(self.backend),'sync_active_tab',None)
+        if sync and sync(self.backend):
+            self.keyboard_field=None;self.form_index=None;self.pending=None;self.submit_pending=None
+            self.list_focus=None;self.browse=None
+            self._refresh(read=False)
+
     def keyboard(self,key,direct_submit=False):
+        try:self._sync_browser_tab()
+        except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
@@ -1740,6 +1756,8 @@ class WebSession:
         return 'Move to a link or heading first.'
 
     def command(self, spoken):
+        try:self._sync_browser_tab()
+        except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         command = _plain(spoken).rstrip('.!?').lower()
         if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):
             self.list_focus=None;self.pending=None;return 'Virtual page view.'

@@ -184,6 +184,28 @@ class SemanticWebTests(unittest.TestCase):
         self.session.keyboard('Quick:r');self.session.keyboard('Activate')
         self.assertTrue(self.page.locator('#plan').is_checked())
 
+    def test_click_only_aria_radio_and_delayed_state_activate_once(self):
+        self.load("""<div id=a role=radio tabindex=0 aria-label=Standard aria-checked=false onclick="window.actions=(window.actions||0)+1;setTimeout(()=>{this.setAttribute('aria-checked','true');document.querySelector('#b').setAttribute('aria-checked','false')},350)"></div><div id=b role=radio tabindex=0 aria-label=Express aria-checked=true onclick="window.actions=(window.actions||0)+1;this.setAttribute('aria-checked','true');document.querySelector('#a').setAttribute('aria-checked','false')"></div>""")
+        self.session.keyboard('Quick:r');notice=self.session.keyboard('Space')
+        self.assertEqual(self.page.evaluate('window.actions'),1,notice)
+        self.assertTrue(self.session.browse.current()['checked'],notice)
+        self.session.keyboard('Quick:r');self.session.keyboard('Activate')
+        self.assertEqual(self.page.evaluate('window.actions'),2)
+        self.assertEqual(self.page.locator('#a').get_attribute('aria-checked'),'false')
+        self.assertEqual(self.page.locator('#b').get_attribute('aria-checked'),'true')
+
+    def test_nested_keyboard_checkbox_updates_once_after_delayed_render(self):
+        self.context.route('https://outer.test/**',lambda route:route.fulfill(content_type='text/html',body='<iframe title="Inner verification" src="https://inner.test/choice"></iframe>'))
+        self.context.route('https://inner.test/**',lambda route:route.fulfill(content_type='text/html',body="""<div id=box role=checkbox tabindex=0 aria-label="Human verification" aria-checked=false onkeyup="if(event.code==='Space'){window.actions=(window.actions||0)+1;setTimeout(()=>this.setAttribute('aria-checked',this.getAttribute('aria-checked')==='true'?'false':'true'),250)}"></div>"""))
+        self.load('<iframe title="Outer verification" src="https://outer.test/"></iframe>')
+        frame=next(f for f in self.page.frames if f.url.startswith('https://inner.test/'))
+        self.session.keyboard('Quick:x');notice=self.session.keyboard('Space')
+        self.assertEqual(frame.evaluate('window.actions'),1,notice)
+        self.assertTrue(self.session.browse.current()['checked'],notice)
+        self.session.keyboard('Space')
+        self.assertEqual(frame.evaluate('window.actions'),2)
+        self.assertFalse(self.session.browse.current()['checked'])
+
     def test_names_use_labelledby_before_label_and_keep_author_names(self):
         self.load('<span id="first" hidden>Account</span><span id="last">settings</span><button aria-labelledby="first last" aria-label="Wrong name">Go</button><h1 aria-label="Section name">Visible title</h1><a href="http://fixture.test/next" aria-label="Open account">Different visible text</a>')
         elements=self.session.snapshot['elements']

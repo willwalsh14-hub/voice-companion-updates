@@ -1,39 +1,26 @@
 {
-  "version": "0.2.138-test",
+  "version": "0.2.139-test",
   "status": "Testing build",
   "date": "October 15, 2026",
-  "baseline": "0.2.137-test",
-  "scope": "Use the regular browser connection through the complete standard Web browser interface.",
+  "baseline": "0.2.138-test",
+  "scope": "One-time browser linking and choice-control updates.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Keep your usual web controls",
+          "title": "Link your browser once",
           "details": [
-            "After you connect a Chrome or Edge tab, open Web browser in Companion. Use Resume where you left off to read the connected page. The separate limited connection menu is gone.",
-            "Use the same element keys, arrow reading, forms, table commands, link and heading lists, and browser menus. You can type and dictate in fields from Companion. You do not need to switch to your browser to type.",
-            "The connection uses the same reading and editing engine as the guided browser. It reads frames and page changes. It also handles new tabs opened from your connected page."
-          ]
-        }
-      ]
-    },
-    {
-      "title": "What works better",
-      "topics": [
-        {
-          "title": "Stay with the connected tab",
-          "details": [
-            "The connection sends actions and page updates right away. It no longer waits for a timed check after each action.",
-            "If the link stops, Companion asks you to reconnect it. It does not open a separate guided browser in its place. Closing the link leaves your regular browser tabs open.",
-            "The test suite runs the standard browser tests through the real installed extension and host. It checks navigation, typing, choices, tables, frames, lists and new tabs.",
-            "Website security checks still apply. This release does not claim that PayPal sign-in has been verified."
+            "Set up or reload the extension once. Keep Companion open. Normal website tabs link on their own. You do not need to press Connect for each tab or site.",
+            "The extension tries again after a browser or app restart. It follows the active tab. The usual Web browser menu, element keys, lists, tables, typing and dictation remain in place.",
+            "Use the extension popup only to check status or pause the link. Browser settings pages are not linked."
           ]
         },
         {
-          "title": "Load the updated extension",
+          "title": "Use choices with one action",
           "details": [
-            "If you already set up the extension, reload it on the Chrome or Edge Extensions page after installing this update. Its name and ID stay the same. Connect your tab, then use the usual Web browser menu."
+            "Click-based radio widgets use one click. Widgets with keyboard handlers use Space. The reader waits briefly for delayed choice updates without clicking again.",
+            "The tests include nested keyboard checkboxes, delayed radio state changes, active tab changes and browser reconnects. Live PayPal sign-in has not been verified. Site security checks still apply."
           ]
         }
       ]

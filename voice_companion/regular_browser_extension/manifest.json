@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Voice Companion Browser Connection",
-  "version": "0.3.0",
-  "description": "Use Voice Companion\u2019s usual web navigation, forms, tables and lists with a browser tab you choose.",
+  "version": "0.4.0",
+  "description": "One-time browser link for Voice Companion\u2019s usual reading, forms, tables, lists and keyboard controls.",
   "permissions": [
-    "activeTab",
+    "tabs",
+    "storage",
+    "alarms",
     "debugger",
     "nativeMessaging"
   ],

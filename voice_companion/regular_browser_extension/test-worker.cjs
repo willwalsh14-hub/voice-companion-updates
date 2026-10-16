@@ -15,6 +15,7 @@ const context=vm.createContext({console});
 vm.runInContext(fs.readFileSync(path.join(__dirname,'cdp.js'),'utf8'),context);
 const Model=vm.runInContext('CompanionCDP',context);
 (async()=>{
+ api.tabs.query=async()=>[{id:7,active:true,url:'https://fixture.test/'}];
  const model=new Model(api,message=>replies.push(message));
  model.remember({id:7},true);
  await model.command({id:1,method:'Browser.getVersion'});
@@ -47,6 +48,38 @@ const Model=vm.runInContext('CompanionCDP',context);
  assert.ok(replies.filter(r=>r.method==='Target.attachedToTarget').length>=6);
  assert.ok(calls.filter(c=>c.method==='Runtime.disable').length>disableCount);
  assert.ok(calls.some(c=>c.method==='Page.disable')); 
+ await model.command({id:11,method:'Target.attachToBrowserTarget'});
+ const browserSession=replies.at(-1).result.sessionId;
+ await model.command({id:12,sessionId:browserSession,method:'VoiceCompanion.getActiveTarget'});
+ assert.equal(replies.at(-1).result.targetId,'target-7');
+ await model.command({id:13,sessionId:browserSession,method:'Target.attachToTarget',params:{targetId:'target-7'}});
+ const inspectSession=replies.at(-1).result.sessionId;
+ await model.command({id:14,sessionId:inspectSession,method:'Target.getTargetInfo'});
+ assert.equal(replies.at(-1).result.targetInfo.targetId,'target-7');
+ await model.command({id:15,sessionId:browserSession,method:'Target.detachFromTarget',params:{sessionId:inspectSession}});
+ assert.ok(!model.aliases.has(inspectSession));assert.ok(model.tabs.has(7));
+ model.allTabs=true;
+ await model.created({id:55,url:'https://another.test/'});assert.ok(model.tabs.has(55));
+ await model.created({id:56,url:'chrome://settings/'});assert.ok(!model.tabs.has(56));
  await model.detachAll();assert.equal(model.tabs.size,0);
- process.stdout.write('Selected-tab CDP routing, frames, popups and access-boundary checks passed.\n');
+ // Exercise the actual worker's one-time startup, saved pause and retry.
+ let saved={},ports=0;
+ const listenerStub=()=>({addListener:()=>{}});
+ const runtime={id:'fixture',getURL:name=>'extension://fixture/'+name,onStartup:listenerStub(),onInstalled:listenerStub(),onMessage:listenerStub(),
+  connectNative:()=>{ports++;return {postMessage:()=>{},disconnect:()=>{},onMessage:listenerStub(),onDisconnect:listenerStub()};}};
+ const chrome={...api,runtime,storage:{local:{get:async()=>saved,set:async value=>Object.assign(saved,value)}},
+  alarms:{create:async()=>{},onAlarm:listenerStub()}};
+ chrome.debugger={...api.debugger,onEvent:listenerStub(),onDetach:listenerStub()};
+ chrome.tabs={...api.tabs,onCreated:listenerStub(),onUpdated:listenerStub(),onRemoved:listenerStub()};
+ const workerContext=vm.createContext({chrome,navigator:{userAgent:'Chrome/140.0.0.0'}});
+ workerContext.importScripts=()=>vm.runInContext(fs.readFileSync(path.join(__dirname,'cdp.js'),'utf8'),workerContext);
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'worker.js'),'utf8'),workerContext);
+ await vm.runInContext('startup()',workerContext);
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(ports,1);assert.equal(vm.runInContext('model.allTabs',workerContext),true);
+ await vm.runInContext('run("disconnect")',workerContext);assert.equal(saved.enabled,false);
+ await vm.runInContext('startup()',workerContext);assert.equal(ports,1);
+ await vm.runInContext('run("connect")',workerContext);assert.equal(saved.enabled,true);assert.equal(ports,2);
+ await vm.runInContext('disconnect();ensureConnection()',workerContext);assert.equal(ports,3);
+ process.stdout.write('Browser startup, persistent pause, retry, tabs, CDP routing and frame checks passed.\n');
 })().catch(error=>{process.stderr.write(error.stack+'\n');process.exitCode=1;});

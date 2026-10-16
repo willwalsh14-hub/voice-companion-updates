@@ -44,7 +44,7 @@ def check(installed, runtime):
         extension=root/'extension';shutil.copytree(Path(installed)/'regular_browser_extension',extension)
         url='http://127.0.0.1:'+str(fixture.server_port)+'/'
         # This file exists only in the temporary test copy, never the installer.
-        (extension/'test-harness.js').write_text('chrome.tabs.create({url:'+json.dumps(url)+',active:true}).then(tab=>connectTab({...tab,url:'+json.dumps(url)+'}));',encoding='utf-8')
+        (extension/'test-harness.js').write_text('chrome.tabs.create({url:'+json.dumps(url)+',active:true});',encoding='utf-8')
         with (extension/'worker.js').open('a',encoding='utf-8') as file:file.write('\nimportScripts("test-harness.js");\n')
         environment=dict(os.environ,VOICE_COMPANION_DATA_DIR=str(root/'app'))
         browser=subprocess.Popen([executable,'--headless=new','--no-sandbox','--no-first-run','--disable-default-apps',
@@ -60,6 +60,16 @@ def check(installed, runtime):
             assert regular_session.menu.choices(regular_session,False)[0][1]=='resume'
             assert backend.regular and backend.context.pages, 'The standard backend did not adopt the extension tab.'
             context=backend.context
+            # No popup/connect action: normal tabs and new sites link themselves.
+            selected=backend.page
+            extra=context.new_page();extra.goto(url+'next')
+            extra.bring_to_front()
+            assert backend.sync_active_tab() and backend.page is extra, 'The linked browser did not follow a new active tab.'
+            regular_session._refresh()
+            assert 'Destination' in regular_session.reading.text
+            selected.bring_to_front()
+            assert backend.sync_active_tab() and backend.page is selected, 'An existing tab needed a separate connection.'
+            extra.close()
             class ExtensionSetup:
                 @classmethod
                 def setUpClass(cls):cls.persistent_context=context

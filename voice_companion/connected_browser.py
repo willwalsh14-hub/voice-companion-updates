@@ -8,6 +8,8 @@ class ConnectedBrowserBackend(BrowserBackend):
         super().__init__(folder,relay.browser)
         self.relay = relay
         self.remote_browser = None
+        self.target_ids = {}
+        self.root_session = None
 
     def start(self):
         if not self.relay.connected.is_set():
@@ -23,11 +25,29 @@ class ConnectedBrowserBackend(BrowserBackend):
             if not pages:raise WebError('No connected browser tab is available. Reconnect the tab.')
             self.page = pages[0]
             self.page.set_default_timeout(10000)
+            self.root_session=self.remote_browser.new_browser_cdp_session()
+            self.sync_active_tab()
         except Exception as exc:
             self.close()
             raise WebError('The regular browser connection could not open. Reconnect the tab, then open the Web browser menu again.') from exc
 
+    def sync_active_tab(self):
+        if not self.root_session or not self.context:return False
+        target=self.root_session.send('VoiceCompanion.getActiveTarget').get('targetId')
+        if not target:return False
+        for page in self.context.pages:
+            if page not in self.target_ids:
+                session=self.context.new_cdp_session(page)
+                try:self.target_ids[page]=session.send('Target.getTargetInfo')['targetInfo']['targetId']
+                finally:session.detach()
+            if self.target_ids[page]==target:
+                changed=self.page is not page
+                self.page=page;self.page.set_default_timeout(10000)
+                return changed
+        return False
+
     def close(self):
+        self.root_session=None;self.target_ids.clear()
         remote,driver = self.remote_browser,self.playwright
         self.page = self.context = self.playwright = self.remote_browser = None
         # Closing a CDP connection disconnects the driver; it must not close

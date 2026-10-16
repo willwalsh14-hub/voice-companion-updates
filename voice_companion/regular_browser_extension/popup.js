@@ -6,7 +6,9 @@ for (const button of document.querySelectorAll('button')) {
       const result = await chrome.runtime.sendMessage({command: button.id});
       status.textContent = result.ok ? result.message : result.error;
     } catch (_) {
-      status.textContent = 'The browser connection stopped. Connect this tab again.';
+      status.textContent = 'The browser connection stopped. Open Voice Companion; the browser will reconnect automatically.';
     }
   });
 }
+
+chrome.runtime.sendMessage({command:"status"}).then(result=>{document.getElementById("status").textContent=result.message;});
