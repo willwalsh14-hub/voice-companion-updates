@@ -14,7 +14,7 @@ class RelayTests(unittest.TestCase):
             native=Client(relay.listener.address,family='AF_INET',authkey=relay.key)
             try:
                 native.send_bytes(encode({'method':'VoiceCompanion.ready','browser':'edge'}))
-                self.assertTrue(relay.connected.wait(2));self.assertEqual(relay.browser,'edge')
+                self.assertTrue(relay.connected.wait(2));self.assertEqual(relay.browser,'edge');self.assertEqual(relay.generation,1)
                 for url,origin in [(relay.endpoint,'https://untrusted.test'),(relay.endpoint+'wrong',None)]:
                     with self.assertRaises(InvalidStatus) as rejected:
                         with connect(url,origin=origin,open_timeout=2):pass
@@ -32,6 +32,16 @@ class RelayTests(unittest.TestCase):
                     driver.send('{"id":2,"method":"Page.getFrameTree"}')
                     self.assertEqual(decode(native.recv_bytes())['id'],2)
                     native.send_bytes(encode({'id':2,'result':{}}));self.assertEqual(decode(driver.recv())['id'],2)
+                native.close()
+                deadline=time.monotonic()+2
+                while relay.connected.is_set() and time.monotonic()<deadline:time.sleep(.01)
+                self.assertFalse(relay.connected.is_set())
+                native=Client(relay.listener.address,family='AF_INET',authkey=relay.key)
+                native.send_bytes(encode({'method':'VoiceCompanion.ready','browser':'edge'}))
+                self.assertTrue(relay.connected.wait(2));self.assertEqual(relay.generation,2)
+                with connect(relay.endpoint,open_timeout=2):
+                    self.assertEqual(decode(native.recv_bytes()),{'method':'VoiceCompanion.reset'})
+                    self.assertFalse(native.poll(.03),'A browser restart replayed an old action.')
             finally:native.close();relay.close()
 
 if __name__=='__main__':unittest.main()

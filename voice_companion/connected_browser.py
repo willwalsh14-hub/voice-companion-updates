@@ -10,6 +10,7 @@ class ConnectedBrowserBackend(BrowserBackend):
         self.remote_browser = None
         self.target_ids = {}
         self.root_session = None
+        self.generation = -1
 
     def start(self):
         if not self.relay.connected.is_set():
@@ -20,6 +21,7 @@ class ConnectedBrowserBackend(BrowserBackend):
         try:
             self.playwright = sync_playwright().start()
             self.remote_browser = self.playwright.chromium.connect_over_cdp(self.relay.endpoint,timeout=15000,no_defaults=True)
+            self.generation=self.relay.generation
             self.context = self.remote_browser.contexts[0]
             pages = self.context.pages
             if not pages:raise WebError('Open a normal website tab in your browser. It will link automatically.')
@@ -33,7 +35,7 @@ class ConnectedBrowserBackend(BrowserBackend):
 
     def sync_active_tab(self):
         if not self.relay.connected.is_set():raise WebError('The browser is reconnecting. Keep Companion open.')
-        if self.remote_browser and not self.remote_browser.is_connected():
+        if self.remote_browser and (self.generation!=self.relay.generation or not self.remote_browser.is_connected()):
             self.close();self.start();return True
         if not self.root_session or not self.context:return False
         target=self.root_session.send('VoiceCompanion.getActiveTarget').get('targetId')
