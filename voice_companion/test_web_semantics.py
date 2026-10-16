@@ -186,7 +186,7 @@ class SemanticWebTests(unittest.TestCase):
         self.assertTrue(self.page.locator('#plan').is_checked())
 
     def test_click_only_aria_radio_and_delayed_state_activate_once(self):
-        self.load("""<div id=a role=radio tabindex=0 aria-label=Standard aria-checked=false onclick="window.actions=(window.actions||0)+1;setTimeout(()=>{this.setAttribute('aria-checked','true');document.querySelector('#b').setAttribute('aria-checked','false')},350)"></div><div id=b role=radio tabindex=0 aria-label=Express aria-checked=true onclick="window.actions=(window.actions||0)+1;this.setAttribute('aria-checked','true');document.querySelector('#a').setAttribute('aria-checked','false')"></div>""")
+        self.load("""<div id=a role=radio tabindex=0 aria-label=Standard aria-checked=false onclick="window.actions=(window.actions||0)+1;setTimeout(()=>{this.setAttribute('aria-checked','true');document.querySelector('#b').setAttribute('aria-checked','false')},350)">Standard</div><div id=b role=radio tabindex=0 aria-label=Express aria-checked=true onclick="window.actions=(window.actions||0)+1;this.setAttribute('aria-checked','true');document.querySelector('#a').setAttribute('aria-checked','false')">Express</div>""")
         self.session.keyboard('Quick:r');notice=self.session.keyboard('Space')
         self.assertEqual(self.page.evaluate('window.actions'),1,notice)
         self.assertTrue(self.session.browse.current()['checked'],notice)
