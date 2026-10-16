@@ -151,7 +151,7 @@ class SemanticWebTests(unittest.TestCase):
     def test_verification_frame_activates_once_and_refreshes_new_accessible_controls(self):
         # A provider may clear its checkbox while opening a separate challenge.
         # Companion must expose that challenge, never retry to force it checked.
-        markup = """<label><input id=box type=checkbox onclick="window.clicks=(window.clicks||0)+1;this.checked=false;parent.postMessage('challenge','*')">I am not a robot</label>"""
+        markup = """<label><input id=box type=checkbox onclick="window.clicks=(window.clicks||0)+1;setTimeout(()=>{this.checked=false;parent.postMessage('challenge','*')},250)">I am not a robot</label>"""
         challenge = '<label for=answer>Accessibility answer</label><input id=answer><button>Verify answer</button>'
         self.context.route('https://verify.test/checkbox',lambda r:r.fulfill(content_type='text/html',body=markup))
         self.context.route('https://verify.test/challenge',lambda r:r.fulfill(content_type='text/html',body=challenge))

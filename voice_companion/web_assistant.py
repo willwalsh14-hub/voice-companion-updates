@@ -630,10 +630,13 @@ class BrowserBackend:
         else:element.click(timeout=10000)
         # Wait for delayed rendering without activating the control again.
         try:
-            element.evaluate("""(e,before)=>new Promise(resolve=>{const start=Date.now();const poll=()=>{
-              const checked='checked' in e?e.checked:e.getAttribute('aria-checked');
-              if(!e.isConnected||checked!==before.checked||e.getAttribute('aria-busy')!==before.busy||Date.now()-start>=1000)resolve();
-              else setTimeout(poll,25);};poll();})""",before)
+            delay=600 if re.search(r'robot|human|verif|captcha',_label(item),re.I) else 150
+            element.evaluate("""(e,arg)=>new Promise(resolve=>{const start=Date.now();let last=JSON.stringify(arg.before),changed=false,changedAt=start;const poll=()=>{
+              const state={checked:'checked' in e?e.checked:e.getAttribute('aria-checked'),busy:e.getAttribute('aria-busy')};
+              const now=Date.now(),value=JSON.stringify(state);
+              if(value!==last){last=value;changed=true;changedAt=now;}
+              if(!e.isConnected||(changed&&now-start>=arg.delay&&now-changedAt>=120)||now-start>=1000)resolve();
+              else setTimeout(poll,25);};poll();})""",{'before':before,'delay':delay})
         except Exception:pass # An activation may replace its frame or document.
         return ''
 
