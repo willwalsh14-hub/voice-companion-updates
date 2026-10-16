@@ -17,6 +17,18 @@
           ]
         }
       ]
+    },
+    {
+      "title": "What works better",
+      "topics": [
+        {
+          "title": "Keep existing connections available",
+          "details": [
+            "The native host accepts only the existing development identity and the assigned Chrome Web Store identity. Existing users can keep their current extension while the store version is prepared.",
+            "The installer checks both approved extension identities during its Windows validation."
+          ]
+        }
+      ]
     }
   ]
 }
