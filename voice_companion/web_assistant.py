@@ -843,6 +843,8 @@ class WebSession:
         return label+'.'
 
     def _sync_browser_tab(self):
+        if not self.injected_backend and not getattr(self.backend,'regular',False):
+            self.adopt_connected_browser()
         sync=getattr(type(self.backend),'sync_active_tab',None)
         if sync and sync(self.backend):
             self.keyboard_field=None;self.form_index=None;self.pending=None;self.submit_pending=None
@@ -936,6 +938,7 @@ class WebSession:
             return str(exc) if isinstance(exc,WebError) else 'The page changed or the control could not be used. Press F5 to refresh it.'
 
     def _refresh_at(self,item):
+        previous={(e.get('frame_url'),e.get('key'),e.get('label')) for e in (self.snapshot or {}).get('elements',[])}
         snapshot,state=self._capture()
         if snapshot.get('text','')!=self.reading.text:self.page_revision=getattr(self,'page_revision',0)+1
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
@@ -944,7 +947,11 @@ class WebSession:
         target=next((e for e in self.browse.elements if e.get('key')==item.get('key') and e.get('frame_index')==item.get('frame_index') and e.get('tag')==item.get('tag')),None)
         if target:
             self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0);self.reading.position=self.browse.position;self.cursor_changed()
-            return describe(target)
+            notice=describe(target)
+            if kind(item)=='checkbox' and re.search(r'robot|human|verif|captcha',_label(item),re.I):
+                new_controls=[e for e in snapshot.get('elements',[]) if kind(e) in ('edit','button','checkbox','radio','combobox') and (e.get('frame_url'),e.get('key'),e.get('label')) not in previous]
+                if new_controls:notice+=' Verification options opened. Use Tab to reach the next control.'
+            return notice
         return 'The page changed. Press F5 to refresh.'
 
     def commit_keyboard_field(self,value=None):

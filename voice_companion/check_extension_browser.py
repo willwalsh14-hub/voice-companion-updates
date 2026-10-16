@@ -54,15 +54,17 @@ def check(installed, runtime):
         try:
             if not relay.connected.wait(30):raise RuntimeError('The real browser extension did not connect to the installed host.')
             from web_assistant import WebSession
+            print('EXTENSION CHECK: adopting automatic browser link.',flush=True)
             regular_session=WebSession(root/'app')
             assert regular_session.adopt_connected_browser(), 'The normal Web browser did not adopt the connected tab.'
             backend=regular_session.backend
             assert regular_session.menu.choices(regular_session,False)[0][1]=='resume'
             assert backend.regular and backend.context.pages, 'The standard backend did not adopt the extension tab.'
+            print('EXTENSION CHECK: reader connected; checking tab switches.',flush=True)
             context=backend.context
             # No popup/connect action: normal tabs and new sites link themselves.
             selected=backend.page
-            extra=context.new_page();extra.goto(url+'next')
+            extra=context.new_page();print('EXTENSION CHECK: new tab created.',flush=True);extra.goto(url+'next')
             extra.bring_to_front()
             assert backend.sync_active_tab() and backend.page is extra, 'The linked browser did not follow a new active tab.'
             regular_session._refresh()
@@ -108,7 +110,7 @@ def check(installed, runtime):
             class ExtensionSemantics(ExtensionSetup,test_web_semantics.SemanticWebTests):pass
             suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls)
                                      for cls in (ExtensionNavigation,ExtensionConsumer,ExtensionSemantics))
-            result=unittest.TextTestRunner(verbosity=2,failfast=False).run(suite)
+            result=unittest.TextTestRunner(verbosity=2,failfast=True).run(suite)
             if not result.wasSuccessful():raise RuntimeError('Standard browser features failed through the real extension.')
             regular_session.leave(False)
             assert relay.connected.is_set(), 'Leaving the website must keep the selected extension connection.'
@@ -122,7 +124,13 @@ def check(installed, runtime):
             try:backend.start()
             except Exception:pass
             else:raise AssertionError('A disconnected extension was treated as a live browser.')
-            print('INSTALLED EXTENSION PASSED: standard navigation, fields, tables, lists, forms, frames, popups and disconnect checks.')
+            # Restart the browser with its saved extension profile. No popup or
+            # connection action is allowed during restart recovery.
+            browser=subprocess.Popen(browser.args[:-1]+[url],env=environment,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            if not relay.connected.wait(35):raise AssertionError('The browser did not relink after restart.')
+            self_healed=regular_session.keyboard('Quick:h')
+            assert 'Connection fixture' in self_healed, 'The normal reader did not recover after browser restart: '+self_healed
+            print('INSTALLED EXTENSION PASSED: automatic tabs, active-tab switching, normal browser features, choices, nested frames and restart recovery.')
         finally:
             backend.close();relay.close();fixture.shutdown();fixture.server_close()
             if browser.poll() is None:

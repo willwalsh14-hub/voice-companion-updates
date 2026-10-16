@@ -15,7 +15,12 @@
             "The extension tries again after a browser or app restart. It follows the active tab. The usual Web browser menu, element keys, lists, tables, typing and dictation remain in place.",
             "Use the extension popup only to check status or pause the link. Browser settings pages are not linked."
           ]
-        },
+        }
+      ]
+    },
+    {
+      "title": "What works better",
+      "topics": [
         {
           "title": "Use choices with one action",
           "details": [

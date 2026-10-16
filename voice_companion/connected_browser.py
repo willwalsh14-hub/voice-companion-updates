@@ -13,7 +13,7 @@ class ConnectedBrowserBackend(BrowserBackend):
 
     def start(self):
         if not self.relay.connected.is_set():
-            raise WebError('The browser extension disconnected. Reconnect the tab, then return to the Web browser menu. Your tab stays open.')
+            raise WebError('The browser connection is restarting. Keep Companion open; it will reconnect automatically. Your tabs stay open.')
         if self.page is not None and not self.page.is_closed():return
         self.close()
         from playwright.sync_api import sync_playwright
@@ -22,16 +22,19 @@ class ConnectedBrowserBackend(BrowserBackend):
             self.remote_browser = self.playwright.chromium.connect_over_cdp(self.relay.endpoint,timeout=15000,no_defaults=True)
             self.context = self.remote_browser.contexts[0]
             pages = self.context.pages
-            if not pages:raise WebError('No connected browser tab is available. Reconnect the tab.')
+            if not pages:raise WebError('Open a normal website tab in your browser. It will link automatically.')
             self.page = pages[0]
             self.page.set_default_timeout(10000)
             self.root_session=self.remote_browser.new_browser_cdp_session()
             self.sync_active_tab()
         except Exception as exc:
             self.close()
-            raise WebError('The regular browser connection could not open. Reconnect the tab, then open the Web browser menu again.') from exc
+            raise WebError('The browser link is not ready. Open a website tab and keep Companion open, then return to the Web browser menu.') from exc
 
     def sync_active_tab(self):
+        if not self.relay.connected.is_set():raise WebError('The browser is reconnecting. Keep Companion open.')
+        if self.remote_browser and not self.remote_browser.is_connected():
+            self.close();self.start();return True
         if not self.root_session or not self.context:return False
         target=self.root_session.send('VoiceCompanion.getActiveTarget').get('targetId')
         if not target:return False

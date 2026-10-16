@@ -52,6 +52,7 @@ jobs:
             Set-Item -Path $key -Value $manifest
           }
       - name: Verify existing browser features through the real extension
+        timeout-minutes: 8
         shell: pwsh
         run: |
           python -u check_extension_browser.py (Join-Path $PWD 'dist') (Join-Path $PWD 'extension-test-runtime')

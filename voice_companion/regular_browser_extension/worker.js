@@ -36,7 +36,7 @@ chrome.runtime.onInstalled.addListener(()=>{void startup();});
 chrome.debugger.onEvent.addListener((source,method,params)=>model?.event(source,method,params));
 chrome.debugger.onDetach.addListener(source=>model?.removed(source.tabId));
 chrome.tabs.onCreated.addListener(tab=>{if(model)void model.created(tab).catch(()=>{});});
-chrome.tabs.onUpdated.addListener((id,change,tab)=>{if(eligible(tab)&&model&&!model.tabs.has(id))void model.created(tab).catch(()=>{});else if(model&&!eligible(tab)&&change.url)model.removed(id);});
+chrome.tabs.onUpdated.addListener((id,change,tab)=>{if(eligible(tab)&&model&&!model.tabs.has(id))void model.created(tab).catch(()=>{});else if(model&&change.url&&/^(chrome|edge|devtools|chrome-extension):/i.test(change.url))model.removed(id);});
 chrome.tabs.onRemoved.addListener(id=>model?.removed(id));
 chrome.runtime.onMessage.addListener((message,sender,respond)=>{
   if(sender.id!==chrome.runtime.id||sender.url!==chrome.runtime.getURL('popup.html'))return false;

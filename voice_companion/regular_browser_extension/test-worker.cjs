@@ -70,13 +70,16 @@ const Model=vm.runInContext('CompanionCDP',context);
  const chrome={...api,runtime,storage:{local:{get:async()=>saved,set:async value=>Object.assign(saved,value)}},
   alarms:{create:async()=>{},onAlarm:listenerStub()}};
  chrome.debugger={...api.debugger,onEvent:listenerStub(),onDetach:listenerStub()};
- chrome.tabs={...api.tabs,onCreated:listenerStub(),onUpdated:listenerStub(),onRemoved:listenerStub()};
+ let updated;
+ chrome.tabs={...api.tabs,onCreated:listenerStub(),onUpdated:{addListener:handler=>{updated=handler;}},onRemoved:listenerStub()};
  const workerContext=vm.createContext({chrome,navigator:{userAgent:'Chrome/140.0.0.0'}});
  workerContext.importScripts=()=>vm.runInContext(fs.readFileSync(path.join(__dirname,'cdp.js'),'utf8'),workerContext);
  vm.runInContext(fs.readFileSync(path.join(__dirname,'worker.js'),'utf8'),workerContext);
  await vm.runInContext('startup()',workerContext);
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(ports,1);assert.equal(vm.runInContext('model.allTabs',workerContext),true);
+ updated(7,{url:'about:blank'},{id:7,url:'about:blank'});assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),true);
+ updated(7,{url:'chrome://settings/'},{id:7,url:'chrome://settings/'});assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),false);
  await vm.runInContext('run("disconnect")',workerContext);assert.equal(saved.enabled,false);
  await vm.runInContext('startup()',workerContext);assert.equal(ports,1);
  await vm.runInContext('run("connect")',workerContext);assert.equal(saved.enabled,true);assert.equal(ports,2);

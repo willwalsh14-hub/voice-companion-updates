@@ -163,6 +163,7 @@ class SemanticWebTests(unittest.TestCase):
         self.assertEqual(frame.evaluate('window.clicks'),1)
         self.assertFalse(frame.locator('#box').is_checked())
         self.assertNotIn('could not be used',result)
+        self.assertIn('Verification options opened',result)
         self.page.locator('#challenge').wait_for(state='visible')
         self.session._refresh(read=False,preserve=True,wait=False)
         self.assertIn('Accessibility answer',self.session.reading.text)
