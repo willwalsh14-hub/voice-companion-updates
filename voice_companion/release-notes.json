@@ -3,17 +3,17 @@
   "status": "Testing build",
   "date": "October 16, 2026",
   "baseline": "0.2.139-test",
-  "scope": "Prepare the Chrome Web Store connection.",
+  "scope": "Get ready for the Chrome store.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Chrome Web Store preparation",
+          "title": "Get ready for the Chrome store",
           "details": [
-            "The desktop app now accepts the assigned Chrome Web Store extension identity as well as the existing development extension.",
-            "The store listing is still a draft. Store installation and automatic setup are not available yet. Continue using the current browser extension until the store release is approved.",
-            "Your existing browser connection, menus and controls continue to use the same browser engine."
+            "The app can now link to our Chrome store add-on. The store must approve it first.",
+            "The store version is not ready to use yet. Keep your current add-on for now.",
+            "Your menus, keys, and web tools work as before."
           ]
         }
       ]
@@ -22,10 +22,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Keep existing connections available",
+          "title": "Keep your current browser link",
           "details": [
-            "The native host accepts only the existing development identity and the assigned Chrome Web Store identity. Existing users can keep their current extension while the store version is prepared.",
-            "The installer checks both approved extension identities during its Windows validation."
+            "You can keep the add-on you use now. You do not need to set it up again.",
+            "The app checks the IDs for both our test add-on and our store add-on. Other IDs cannot use this link."
           ]
         }
       ]
