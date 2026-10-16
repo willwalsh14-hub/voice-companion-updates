@@ -1,5 +1,5 @@
 VOICE COMPANION BROWSER CONNECTION
-Testing build 0.2.139-test
+Testing build 0.2.140-test
 
 One-time setup:
 1. Install this update and open Voice Companion.

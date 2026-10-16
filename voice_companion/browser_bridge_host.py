@@ -9,6 +9,7 @@ import sys
 
 MAX_MESSAGE = 1024 * 1024
 PROTOCOL = 1
+CHROME_STORE_EXTENSION_ID = 'ijojiipjhcfaajafdbinnbehcenfchcc'
 
 
 def read_exact(stream, length):
@@ -95,7 +96,8 @@ def register():
     identity = ''.join(chr(ord('a') + int(c, 16)) for c in digest)
     manifest = {'name':'com.voicecompanion.browser', 'description':'Voice Companion browser connection',
                 'path':str(Path(sys.executable).resolve()), 'type':'stdio',
-                'allowed_origins':['chrome-extension://' + identity + '/']}
+                'allowed_origins':['chrome-extension://' + item + '/'
+                                   for item in (identity, CHROME_STORE_EXTENSION_ID)]}
     (folder / 'browser-native-host.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
 
 

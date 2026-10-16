@@ -1,31 +1,19 @@
 {
-  "version": "0.2.139-test",
+  "version": "0.2.140-test",
   "status": "Testing build",
-  "date": "October 15, 2026",
-  "baseline": "0.2.138-test",
-  "scope": "One-time browser linking and choice-control updates.",
+  "date": "October 16, 2026",
+  "baseline": "0.2.139-test",
+  "scope": "Prepare the Chrome Web Store connection.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Link your browser once",
+          "title": "Chrome Web Store preparation",
           "details": [
-            "Set up or reload the extension once. Keep Companion open. Normal website tabs link on their own. You do not need to press Connect for each tab or site.",
-            "The extension tries again after a browser or app restart. It follows the active tab. The usual Web browser menu, element keys, lists, tables, typing and dictation remain in place.",
-            "Use the extension popup only to check status or pause the link. Browser settings pages are not linked."
-          ]
-        }
-      ]
-    },
-    {
-      "title": "What works better",
-      "topics": [
-        {
-          "title": "Use choices with one action",
-          "details": [
-            "Click-based radio widgets use one click. Widgets with keyboard handlers use Space. The reader waits briefly for delayed choice updates without clicking again.",
-            "The tests include nested keyboard checkboxes, delayed radio state changes, active tab changes and browser reconnects. Live PayPal sign-in has not been verified. Site security checks still apply."
+            "The desktop app now accepts the assigned Chrome Web Store extension identity as well as the existing development extension.",
+            "The store listing is still a draft. Store installation and automatic setup are not available yet. Continue using the current browser extension until the store release is approved.",
+            "Your existing browser connection, menus and controls continue to use the same browser engine."
           ]
         }
       ]

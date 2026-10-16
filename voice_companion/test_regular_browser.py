@@ -50,6 +50,8 @@ class ConnectionTests(unittest.TestCase):
             manifest=json.loads((Path(folder)/'browser-native-host.json').read_text())
             self.assertEqual(Path(manifest['path']).resolve(),executable.resolve())
             identity=(source.parent/'extension-id.txt').read_text().strip()
-            self.assertEqual(manifest['allowed_origins'],['chrome-extension://'+identity+'/'])
+            self.assertEqual(manifest['allowed_origins'],[
+                'chrome-extension://'+identity+'/',
+                'chrome-extension://ijojiipjhcfaajafdbinnbehcenfchcc/'])
 
 if __name__=='__main__':unittest.main()

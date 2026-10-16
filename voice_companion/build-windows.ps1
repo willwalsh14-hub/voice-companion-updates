@@ -333,7 +333,9 @@ $browserManifest = Join-Path $installedFolder 'browser-native-host.json'
 if (-not (Test-Path $browserManifest)) { throw 'The installed browser native host manifest is missing.' }
 $browserRegistration = Get-Content $browserManifest -Raw | ConvertFrom-Json
 if ($browserRegistration.path -ne (Join-Path $installedFolder 'VoiceCompanion-BrowserHost.exe') -or
-    $browserRegistration.allowed_origins[0] -ne 'chrome-extension://lmpkdmlehooibijenhkhpbjcgjehjbig/') {
+    $browserRegistration.allowed_origins.Count -ne 2 -or
+    $browserRegistration.allowed_origins[0] -ne 'chrome-extension://lmpkdmlehooibijenhkhpbjcgjehjbig/' -or
+    $browserRegistration.allowed_origins[1] -ne 'chrome-extension://ijojiipjhcfaajafdbinnbehcenfchcc/') {
   throw 'The installed browser native host origin or executable is incorrect.'
 }
 foreach ($browserKey in @('HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.voicecompanion.browser', 'HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\com.voicecompanion.browser')) {
@@ -351,7 +353,7 @@ if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice C
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.139-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.140-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -378,7 +380,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.139-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.140-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing
