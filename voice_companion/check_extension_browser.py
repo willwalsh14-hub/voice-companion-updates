@@ -66,11 +66,15 @@ def check(installed, runtime):
             selected=backend.page
             extra=context.new_page();print('EXTENSION CHECK: new tab created.',flush=True);extra.goto(url+'next')
             extra.bring_to_front()
-            assert backend.sync_active_tab() and backend.page is extra, 'The linked browser did not follow a new active tab.'
-            regular_session._refresh()
-            assert 'Destination' in regular_session.reading.text
+            assert 'Destination' in regular_session.keyboard('Quick:h'), 'The reader did not follow a new active tab.'
+            assert backend.page is extra
             selected.bring_to_front()
-            assert backend.sync_active_tab() and backend.page is selected, 'An existing tab needed a separate connection.'
+            regular_session.resume()
+            assert backend.page is selected and 'Connection fixture' in regular_session.reading.text, 'Resume brought forward the previous tab.'
+            extra.bring_to_front()
+            regular_session.open(url+'next')
+            assert backend.page is extra, 'Opening an address navigated the previous tab.'
+            selected.bring_to_front();regular_session.resume()
             extra.close()
             class ExtensionSetup:
                 @classmethod

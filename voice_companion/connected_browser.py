@@ -15,7 +15,8 @@ class ConnectedBrowserBackend(BrowserBackend):
     def start(self):
         if not self.relay.connected.is_set():
             raise WebError('The browser connection is restarting. Keep Companion open; it will reconnect automatically. Your tabs stay open.')
-        if self.page is not None and not self.page.is_closed():return
+        if self.page is not None and not self.page.is_closed():
+            self.sync_active_tab();return
         self.close()
         from playwright.sync_api import sync_playwright
         try:
@@ -50,6 +51,10 @@ class ConnectedBrowserBackend(BrowserBackend):
                 self.page=page;self.page.set_default_timeout(10000)
                 return changed
         return False
+
+    def refocus(self):
+        self.start()
+        return super().refocus()
 
     def close(self):
         self.root_session=None;self.target_ids.clear()
