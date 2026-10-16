@@ -32,19 +32,12 @@ class ConnectionTests(unittest.TestCase):
             finally:
                 client.close();server.listener.close()
 
-    def test_app_menu_voice_keyboard_and_speech_use_same_connection(self):
+    def test_regular_browser_alias_opens_the_unchanged_browser_menu(self):
         import companion
-        connection = Mock()
-        connection.request.return_value = 'Express, radio button, checked.'
-        with patch.object(companion,'REGULAR_BROWSER',connection), patch.object(companion,'speak') as speak:
-            self.assertIn(('Regular browser connection','regular browser'),companion.MAIN_MENU_CHOICES)
-            self.assertEqual(companion._handle('regular browser','awake'),'regular_browser')
-            for key, action in [('Down','next'),('Up','previous'),('Enter','activate'),('Space','space'),('Home','first'),('End','last')]:
-                command=companion.navigation_key(key,'regular_browser')
-                self.assertEqual(companion._handle(command,'regular_browser'),'regular_browser')
-                connection.request.assert_called_with(action)
-                speak.assert_called_with('Express, radio button, checked.')
-            self.assertEqual(companion._handle(companion.navigation_key('Escape','regular_browser'),'regular_browser'),'awake')
+        with patch.object(companion,'open_browser_menu',return_value='browser_menu') as menu:
+            self.assertEqual(companion._handle('regular browser','awake'),'browser_menu')
+            menu.assert_called_once()
+        self.assertNotIn(('Regular browser connection','regular browser'),companion.MAIN_MENU_CHOICES)
 
     def test_native_manifest_origin_matches_packaged_extension(self):
         import browser_bridge_host

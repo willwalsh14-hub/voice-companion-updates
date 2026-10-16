@@ -201,7 +201,7 @@ class BrowserBackend:
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
     def back(self):
-        self.page.go_back(wait_until='domcontentloaded', timeout=30000)
+        self.page.go_back(wait_until='commit' if getattr(self,'regular',False) else 'domcontentloaded', timeout=30000)
 
     def document_stamp(self):
         stamp=self.page.evaluate(DOCUMENT_STAMP)
@@ -218,9 +218,15 @@ class BrowserBackend:
 
     def wait_ready(self):
         from playwright.sync_api import TimeoutError as BrowserTimeout
-        self.page.wait_for_load_state('domcontentloaded',timeout=15000)
+        # CDP-attached profile tabs can restore from the back/forward cache
+        # without replaying lifecycle events. Inspect the restored document.
+        regular=getattr(self,'regular',False)
+        if regular:self.page.wait_for_function("()=>document.readyState!=='loading'",timeout=15000)
+        else:self.page.wait_for_load_state('domcontentloaded',timeout=15000)
         self.page_ready=True
-        try:self.page.wait_for_load_state('load',timeout=5000)
+        try:
+            if regular:self.page.wait_for_function("()=>document.readyState==='complete'",timeout=5000)
+            else:self.page.wait_for_load_state('load',timeout=5000)
         except BrowserTimeout:self.page_ready=False
         self.document_stamp()
         try:self.page.wait_for_function("()=>Date.now()-window.__voiceCompanionDocument.changed>=200&&!document.querySelector('[aria-busy=\"true\"]')",timeout=4000)
@@ -666,7 +672,9 @@ class WebSession:
         self.menu = BrowserMenu(folder)
         self.folder = Path(folder)
         self.browser = self._browser_preference()
-        self.backend = backend or BrowserBackend(self.folder / ('Browser Profile ' + self.browser), self.browser)
+        from connected_browser import create_backend
+        self.backend = backend or create_backend(self.folder / ('Browser Profile ' + self.browser), self.browser)
+        if getattr(self.backend,'regular',False):self.browser=self.backend.browser
         self.injected_backend = backend is not None
         self.page_revision = 0
         self.navigation_succeeded = False
@@ -999,6 +1007,22 @@ class WebSession:
             self.snapshot=None;return ''
         return self._refresh(read=False,preserve=True)
 
+    def adopt_connected_browser(self):
+        if self.injected_backend:return False
+        from browser_cdp_relay import current
+        from connected_browser import ConnectedBrowserBackend
+        relay=current()
+        if relay is None:return False
+        if not isinstance(self.backend,ConnectedBrowserBackend):
+            self.backend.close()
+            self.backend=ConnectedBrowserBackend(self.folder/('Browser Profile '+self.browser),self.browser,relay)
+            self.browser=self.backend.browser
+            self.snapshot=None;self.pending=None;self.submit_pending=None;self.keyboard_field=None;self.form_index=None;self.list_focus=None
+        if self.snapshot is None:
+            self.backend.start()
+            self._refresh(read=False)
+        return True
+
     def _browser_preference(self):
         try:
             choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
@@ -1014,7 +1038,8 @@ class WebSession:
             if not self.injected_backend:
                 try: self.backend.close()
                 except Exception: pass
-                self.backend = BrowserBackend(self.folder / ('Browser Profile ' + name), name)
+                from connected_browser import create_backend
+                self.backend = create_backend(self.folder / ('Browser Profile ' + name), name)
             self.browser = name
             self.snapshot = None
             self.submit_pending = None
@@ -1022,6 +1047,7 @@ class WebSession:
         if not self.injected_backend:
             self.folder.mkdir(parents=True, exist_ok=True)
             (self.folder / 'browser-choice.txt').write_text(name, encoding='utf-8')
+        if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+name.capitalize()+'.'
         return 'Selected ' + name.capitalize() + '. Say open website followed by the address. This uses a separate browser profile.'
 
     def _stamp(self):
@@ -1149,7 +1175,7 @@ class WebSession:
             self.backend.goto(url)
             return ''
         except WebError:
-            if self.injected_backend or self.backend.browser=='firefox':raise
+            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser=='firefox':raise
             self.backend.close()
             self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
             self.backend.goto(url)
@@ -1883,8 +1909,9 @@ class WebSession:
             except Exception: return 'There is no previous page to read.'
         if command in ('forward','go forward','next page'):
             try:
-                result = self.backend.page.go_forward(wait_until='domcontentloaded',timeout=30000)
-                return self._refresh() if result is not None else 'There is no next page to read.'
+                previous_url=self.backend.page.url
+                result = self.backend.page.go_forward(wait_until='commit' if getattr(self.backend,'regular',False) else 'domcontentloaded',timeout=30000)
+                return self._refresh() if result is not None or self.backend.page.url!=previous_url else 'There is no next page to read.'
             except Exception: return 'There is no next page to read.'
         if command in ('save favorite','add favorite','favorite this site'):
             if not self.snapshot: return 'Open a website first.'

@@ -1,65 +1,52 @@
-// Run with node. No real sites, accounts, browser permissions or submissions.
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-let checked = false, keys = [], speech = [], attached = [], detached = [];
-let messageListener;
-let nativeListener, nativeRequests = [];
-const ax = () => [{nodeId: '1', backendDOMNodeId: 11, role: {value: 'radio'}, name: {value: 'Delivery'},
-  value: {value: 'PRIVATE VALUE'}, properties: [{name: 'checked', value: {value: String(checked)}}, {name: 'value', value: {value: 'PRIVATE VALUE'}}]}];
-const context = vm.createContext({setTimeout, chrome: {
-  tabs: {query: async () => [{id: 7, url: 'https://fixture.test/'}]},
-  debugger: {
-    attach: async target => attached.push(target.tabId),
-    detach: async target => detached.push(target.tabId),
-    onDetach: {addListener: () => {}},
-    sendCommand: async (target, method, params) => {
-      assert.equal(target.tabId, 7);
-      if (method === 'Accessibility.getFullAXTree') return {nodes: ax()};
-      if (method === 'DOM.focus') {assert.equal(params.backendNodeId, 11); return {};}
-      if (method === 'Input.dispatchKeyEvent') {
-        keys.push(params);
-        if (params.type === 'keyUp') checked = true;
-        return {};
-      }
-      throw new Error('Unexpected command: ' + method);
-    }
-  },
-  runtime: {id: 'test-extension', getURL: value => 'chrome-extension://test-extension/' + value,
-    onMessage: {addListener: callback => {messageListener = callback;}},
-    connectNative: () => ({onMessage:{addListener: callback => {nativeListener = callback;}}, onDisconnect:{addListener:()=>{}}, postMessage: message => nativeRequests.push(message)}),
-    sendNativeMessage: async (host, request) => {
-      assert.equal(host, 'com.voicecompanion.browser');
-      assert.ok(!JSON.stringify(request).includes('PRIVATE VALUE'));
-      speech.push(request);
-      return {protocol: 1, ok: true};
-    }
-  }
-}});
-vm.runInContext(fs.readFileSync(path.join(__dirname, 'worker.js'), 'utf8'), context);
-(async () => {
-  const run = command => vm.runInContext(`run(${JSON.stringify(command)})`, context);
-  assert.equal(messageListener({command: 'connect'}, {id: 'evil', url: 'https://fixture.test/'}, () => {throw new Error('Should reject website messages');}), false);
-  await assert.rejects(run('read'), /Connect this tab/);
-  await run('connect');assert.deepEqual(attached, [7]);
-  await run('next');assert.equal(speech.at(-1).nodes[0].properties[0].value.value, 'false');
-  await run('activate');
-  assert.equal(keys.length, 2);assert.equal(keys[0].key, ' ');assert.equal(keys[0].type, 'keyDown');assert.equal(keys[1].type, 'keyUp');
-  assert.equal(speech.at(-1).nodes[0].properties[0].value.value, 'true');
-  await run('space');assert.equal(keys.length, 4);assert.ok(checked);
-  assert.match(await run('next'), /End of controls/);
-  await run('read');
-  assert.equal(nativeRequests[0].command, 'poll');
-  const priorSpeech = speech.length;
-  await nativeListener({action:'first'});
-  await new Promise(resolve => setTimeout(resolve, 300));
-  assert.match(nativeRequests.at(-1).result, /Delivery, radio button, checked/);
-  assert.equal(speech.length, priorSpeech, 'Companion actions must not duplicate SAPI speech');
-  await nativeListener({action:'activate'});
-  await new Promise(resolve => setTimeout(resolve, 300));
-  assert.match(nativeRequests.at(-1).result, /checked/);
-  await run('disconnect');assert.deepEqual(detached, [7]);
-  await assert.rejects(run('read'), /Connect this tab/);
-  process.stdout.write('Regular-browser worker checks passed.\n');
-})().catch(error => {process.stderr.write(error.stack + '\n');process.exitCode = 1;});
+const replies=[], calls=[], attached=[], removed=[];
+const api={debugger:{
+  attach:async source=>attached.push(source),detach:async()=>{},
+  sendCommand:async(source,method,params)=>{
+    calls.push({source,method,params});
+    if(method==='Target.getTargetInfo')return {targetInfo:{targetId:'target-'+source.tabId,type:'page',url:'https://fixture.test/',title:'Fixture',browserContextId:'PRIVATE-CONTEXT'}};
+    if(method==='Runtime.evaluate')return {result:{value:'Mozilla/5.0 Chrome/140.0.0.0'}};
+    return {};
+  }},tabs:{create:async()=>({id:9}),remove:async id=>removed.push(id),update:async()=>{}}};
+const context=vm.createContext({console});
+vm.runInContext(fs.readFileSync(path.join(__dirname,'cdp.js'),'utf8'),context);
+const Model=vm.runInContext('CompanionCDP',context);
+(async()=>{
+ const model=new Model(api,message=>replies.push(message));
+ model.remember({id:7},true);
+ await model.command({id:1,method:'Browser.getVersion'});
+ assert.equal(replies.at(-1).result.product,'Chrome/140.0.0.0');
+ await model.command({id:2,method:'Target.setAutoAttach',params:{autoAttach:true}});
+ const event=replies.find(r=>r.method==='Target.attachedToTarget');
+ assert.equal(event.params.targetInfo.targetId,'target-7');
+ assert.equal(event.params.targetInfo.browserContextId,'PRIVATE-CONTEXT');
+ const sessionId=event.params.sessionId;
+ await model.command({id:3,sessionId,method:'DOM.getDocument'});
+ assert.equal(calls.at(-1).source.tabId,7);
+ assert.ok(!calls.at(-1).source.sessionId);
+ model.event({tabId:7},'Target.attachedToTarget',{sessionId:'child-frame',targetInfo:{type:'iframe'}});
+ await model.command({id:4,sessionId:'child-frame',method:'Runtime.evaluate',params:{expression:'document.title'}});
+ assert.equal(calls.at(-1).source.sessionId,'child-frame');
+ model.event({tabId:7,sessionId:'child-frame'},'Runtime.executionContextCreated',{context:{id:22}});
+ assert.equal(replies.at(-1).sessionId,'child-frame');
+ const count=replies.length;model.event({tabId:99},'Page.frameNavigated',{});assert.equal(replies.length,count);
+ await model.created({id:88,openerTabId:99});assert.ok(!model.tabs.has(88));
+ await model.created({id:8,openerTabId:7});assert.ok(model.tabs.has(8));assert.equal(attached.at(-1).tabId,8);
+ await model.command({id:5,method:'Target.createTarget',params:{url:'https://fixture.test/new'}});
+ assert.equal(replies.at(-1).result.targetId,'target-9');
+ await model.command({id:6,method:'Target.closeTarget',params:{targetId:'unknown'}});assert.equal(replies.at(-1).result.success,false);
+ await model.command({id:7,sessionId,method:'Network.getAllCookies'});assert.ok(replies.at(-1).error);
+ await model.command({id:8,method:'Storage.getCookies'});assert.ok(replies.at(-1).error);
+ await model.command({id:9,sessionId:'unrelated-tab',method:'DOM.getDocument'});assert.ok(replies.at(-1).error);
+ const disableCount=calls.filter(c=>c.method==='Runtime.disable').length;
+ model.reset();assert.equal(model.children.size,0);
+ await model.command({id:10,method:'Target.setAutoAttach',params:{autoAttach:true}});
+ assert.ok(replies.filter(r=>r.method==='Target.attachedToTarget').length>=6);
+ assert.ok(calls.filter(c=>c.method==='Runtime.disable').length>disableCount);
+ assert.ok(calls.some(c=>c.method==='Page.disable')); 
+ await model.detachAll();assert.equal(model.tabs.size,0);
+ process.stdout.write('Selected-tab CDP routing, frames, popups and access-boundary checks passed.\n');
+})().catch(error=>{process.stderr.write(error.stack+'\n');process.exitCode=1;});

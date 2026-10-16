@@ -1,23 +1,34 @@
-# Integrated regular-browser connection (testing)
+# Standard browser engine through a selected regular tab
 
-See SETUP.txt for installation, commands and current limits. The Windows
-installer includes a console-mode native host and registers its exact extension
-origin for Chrome and Edge under HKCU. The browser still requires the user to
-load/enable the extension; this package does not silently install an extension.
+SETUP.txt explains setup and use. The extension is a transport for the existing
+BrowserBackend/WebSession engine, not a second accessibility implementation.
+All page reading, element navigation, field editing, forms, tables, lists and
+menus remain in the standard app code. The limited 0.2.137 connection menu is
+removed. CDP messages use full duplex native messaging and an authenticated
+Windows named pipe. A token-protected, origin-rejecting WebSocket bound only
+to 127.0.0.1 connects the local Playwright driver to that pipe. No debugging
+port is opened on the user's browser and no browser is launched by the app.
 
-The service worker retains a native-messaging port after the popup closes.
-The host passes JSON over a local authenticated Windows named pipe to the
-running Companion app. Page data stays in memory, with no TCP listener, saved
-page content, cookies, history APIs or imported browser profiles. Only control
-names, roles and state are used for feedback, excluding input field values.
-The app uses its current synthesizer for commands sent from Companion. Popup
-reading uses the native host's SAPI voice. Native actions are sent once.
+The extension exposes only the selected tab and its own popup tabs. It tracks
+child debugger sessions for cross-process frames. Unrelated tabs and browser
+cookie storage are not exposed. Browser-global operations outside the needed
+connection protocol are rejected. Page messages cannot invoke the bridge.
+Protocol contents and tokens are not logged. Private field handling uses the
+existing standard browser protections. The app does not import a browser
+profile, change browser identity or bypass site security.
 
-The extension attaches only to the user-selected regular tab through the
-supported debugger API. It does not launch a controlled browser, change browser
-identity or bypass website security. PayPal sign-in has not been verified.
+The installer packages the native host and extension with a fixed origin.
+The user enables the extension once and selects the tab to connect. Existing
+unpacked installations need Reload after this update. Disconnecting leaves
+normal browser tabs open. A lost extension never silently falls back to a
+controlled browser. Live PayPal sign-in remains unverified.
 
-References:
+check_extension_browser.py launches a disposable browser without a debugging
+port, adds a fixture-only startup harness to a temporary extension copy, then
+runs the existing navigation, consumer and semantic suites through the real
+installed native host. The test harness is never shipped in the extension.
+
+Protocol design references:
 https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging
 https://developer.chrome.com/docs/extensions/reference/api/debugger
-https://www.w3.org/WAI/ARIA/apg/patterns/radio/
+Playwright's installed browserModel/CDP relay source in its coreBundle.js.

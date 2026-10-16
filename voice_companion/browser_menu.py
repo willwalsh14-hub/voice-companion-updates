@@ -46,7 +46,7 @@ class BrowserMenu:
                  ('New favorite', 'new'), ('Delete favorite', 'delete'),
                  ('Rename favorite', 'rename'), ('Go back', 'back'),
                  ('Go forward', 'forward'), ('Web history', 'history')]
-        if keep_open and session.snapshot:
+        if (keep_open or getattr(getattr(session,'backend',None),'regular',False)) and session.snapshot:
             items.insert(0,('Resume where you left off', 'resume'))
         return items
 

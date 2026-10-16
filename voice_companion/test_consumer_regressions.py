@@ -57,7 +57,7 @@ class ConsumerRegressionTests(unittest.TestCase):
             self.assertEqual(session.refresh_changed.call_count,2);sync.assert_called_with('sleep')
 
     def test_main_menu_order_is_identical_for_voice_and_keyboard(self):
-        expected=['Word processor','Notepad','Email','Web browser','Regular browser connection','Radio','Podcasts','Options','Check for updates','Help','Shut down the computer','Restart the computer','Exit Voice Companion']
+        expected=['Word processor','Notepad','Email','Web browser','Radio','Podcasts','Options','Check for updates','Help','Shut down the computer','Restart the computer','Exit Voice Companion']
         self.assertEqual([label for label,_ in app.MAIN_MENU_CHOICES],expected)
         with patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'speak') as speak:
             for label in expected:app.handle('next','awake');self.assertTrue(speak.call_args.args[0].startswith(label))
