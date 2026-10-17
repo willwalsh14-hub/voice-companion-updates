@@ -232,7 +232,9 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(context);self.wait(lambda:self.window.context.get('mode')=='files')
         self.call(lambda:self.window.file_list.focus_force())
         self.call(lambda:self.assertEqual(tuple(self.window.file_list.curselection()),(0,2)))
-        self.window.command_entry_active=True
+        self.call(lambda:self.window.file_list.event_generate('<KeyPress>',keysym='t',state=8))
+        self.wait(lambda:self.window.command_entry_active)
+        self.call(lambda:self.window.typed.focus_force())
         self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Escape'))
         self.assertFalse(self.window.command_entry_active)
         for key,state,expected in [('Down',0,'Down'),('space',0,'Space'),('c',4,'Ctrl+C'),('x',4,'Ctrl+X'),('v',4,'Ctrl+V'),('a',5,'Ctrl+Shift+A'),('Alt_L',0,'Alt'),('F2',0,'F2')]:
