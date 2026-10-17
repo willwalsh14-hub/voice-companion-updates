@@ -38,8 +38,7 @@ def clean_disfluencies(text):
                   lambda m: m[2] if len(m[2])>len(m[1]) and m[2].lower().startswith(m[1].lower()) else m[0], text)
     # Only a narrow set of repeated starts is unambiguous enough to remove.
     # Preserve "had had", "that that", emphasis, negation, names and numbers.
-    text = re.sub(r'(?i)\b(I|we|you|he|she|they|please)(?:[ \t]+|,[ \t]+)\1\b', r'\1', text)
-    text = re.sub(r'(?i)\b(I|we|you|he|she|they|please)(?:[ \t]+|,[ \t]+)\1\b', r'\1', text)
+    text = re.sub(r'(?i)\b(I|we|you|he|she|they|please)(?:(?:[ \t]+|,[ \t]+)\1\b)+', r'\1', text)
     return text
 
 

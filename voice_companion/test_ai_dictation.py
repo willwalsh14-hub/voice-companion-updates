@@ -23,6 +23,7 @@ class AIDictationTests(unittest.TestCase):
                          'Say "um" in the example.', 'uh-huh', 'no-no', 'ha-ha', 'Um@example.com', '... Wait.'):
                 self.assertEqual(prepare_dictation(text), text)
             self.assertEqual(prepare_dictation('I, um, need 22.50 dollars.'),'I need 22.50 dollars.')
+            self.assertEqual(prepare_dictation('I I I I I want this.'),'I want this.')
             self.assertEqual(prepare_dictation('I I need a new line here period'),
                              'I need a\nhere.')
 
