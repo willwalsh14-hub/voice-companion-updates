@@ -1562,7 +1562,7 @@ def _handle(text, mode, typed=False):
     if re.match(r'^(?:set )?(?:echo dictated text|typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|when encountering capital letters|capital letters)\b.+',update_command):
         session=SettingsSession(PREFERENCES,{})
         request=session.voice_setting(text)
-        if request and request[0] in ('typing_echo','phonetic_enabled','phonetic_delay','capital_letters'):
+        if request and request[0] in ('dictation_echo','typing_echo','phonetic_enabled','phonetic_delay','capital_letters'):
             try:
                 message=session.set(*request)
                 PREFERENCES[request[0]]=session.values[request[0]]

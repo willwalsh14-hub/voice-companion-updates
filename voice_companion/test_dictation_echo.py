@@ -42,6 +42,16 @@ class DictationRecoveryTests(unittest.TestCase):
                         self.assertTrue(c.apply_keyboard_edit(dict(source=source,before=expected,after='X'+expected,caret=1,seq=3),mode))
                         self.assertEqual(document_text(editor),'X'+expected)
 
+    def test_echo_setting_voice_save_and_reload_without_engine_changes(self):
+        import json
+        import companion as c
+        from settings_model import DEFAULTS, SettingsSession
+        with tempfile.TemporaryDirectory() as folder,patch.object(c,'APP',Path(folder)),patch.object(c,'APP_WINDOW',None),patch.object(c,'PREFERENCES',dict(DEFAULTS)),patch.object(c,'speak'),patch.object(c,'apply_settings',side_effect=AssertionError('Do not change engines')):
+            for choice in ('phrase by phrase','at the end of a sentence','do not echo dictated text'):
+                c.handle('echo dictated text '+choice,'awake')
+                saved=json.loads((Path(folder)/'preferences.json').read_text())
+                self.assertEqual(SettingsSession(saved,{}).values['dictation_echo'],choice)
+
     def test_echo_has_no_added_prefix(self):
         import companion as c
         echo=DictationEcho(lambda:0)
