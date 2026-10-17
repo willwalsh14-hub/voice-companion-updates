@@ -1935,10 +1935,10 @@ def _handle(text, mode, typed=False):
     if literal_text is not None and mode == 'note':
         note_buffer.append(literal_text)
         note_selection.text = None
-        speak('Added literal text.')
+        dictation_feedback('Added: '+literal_text)
         return mode
     if literal_text is not None and mode == 'web' and web_session is not None:
-        speak(web_session.dictate_to_focus(literal_text,literal=True))
+        web_dictation_feedback(web_session.dictate_to_focus(literal_text,literal=True))
         return mode
     if command in LINE_BREAK_COMMANDS:
         if mode == 'note':
