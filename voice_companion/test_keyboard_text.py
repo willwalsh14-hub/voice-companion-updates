@@ -27,6 +27,17 @@ class KeyboardTextTests(unittest.TestCase):
                 with patch.object(companion,'document',doc),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'speak'),patch.object(companion,'DOCUMENT_NAME_RETURN','document'),patch.object(companion,'sync_app_context'):
                     self.assertEqual(companion.handle_keyboard(command,'document_name'),'document')
                     self.assertEqual(doc.title,title)
+    def test_file_list_widget_is_released_on_its_owner_thread(self):
+        released=[]
+        class WidgetReference:
+            def __del__(self):released.append(threading.get_ident())
+        window=CompanionWindow('cleanup test')
+        window._run=lambda:setattr(window,'file_list',WidgetReference())
+        window.thread.start();window.thread.join(5)
+        self.assertFalse(window.thread.is_alive())
+        self.assertEqual(released,[window.thread.ident])
+        self.assertIsNone(window.file_list)
+
     def test_builder_script_answers_document_save_question_before_email(self):
         import io
         source=(Path(companion.__file__).parent/'build-windows.ps1').read_text()

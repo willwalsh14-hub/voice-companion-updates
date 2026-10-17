@@ -60,7 +60,7 @@ class CompanionWindow:
             while True:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
-            self.root=self.typed=self.editor=self.current=None
+            self.root=self.typed=self.editor=self.current=self.file_list=None
             import gc
             gc.collect()
 
