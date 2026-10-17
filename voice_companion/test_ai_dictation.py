@@ -20,8 +20,9 @@ class AIDictationTests(unittest.TestCase):
             for text in ('I had had enough.', 'That that happened is clear.',
                          'It is very, very good.', 'No, no, do not do that.',
                          'I like this, you know.', 'The total is 22.50.',
-                         'Say "um" in the example.', 'uh-huh', 'Um@example.com'):
+                         'Say "um" in the example.', 'uh-huh', 'no-no', 'ha-ha', 'Um@example.com'):
                 self.assertEqual(prepare_dictation(text), text)
+            self.assertEqual(prepare_dictation('I, um, need 22.50 dollars.'),'I need 22.50 dollars.')
             self.assertEqual(prepare_dictation('I I need a new line here period'),
                              'I need a\nhere.')
 

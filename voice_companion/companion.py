@@ -1543,7 +1543,7 @@ def _handle(text, mode, typed=False):
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|dictation type|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
         from app_settings import snapshot
         values,context=snapshot(sys.modules[__name__])
         session=SettingsSession(values,context)

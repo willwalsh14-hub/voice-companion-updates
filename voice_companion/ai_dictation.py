@@ -21,7 +21,7 @@ def dictation_scope(style='old school', typed=False):
 
 def clean_disfluencies(text):
     # Quoted examples, identifiers, and codes must retain their exact wording.
-    if re.search(r'[@/\\]|https?:|["“”]|\b\d', text):
+    if re.search(r'[@/\\]|https?:|["“”]', text):
         return text
     # "Um" can be a unit or part of an identifier. Restrict filler matches to
     # isolated words; never discard discourse words such as like or you know.
@@ -33,7 +33,7 @@ def clean_disfluencies(text):
     text = re.sub(r'[ \t]+', ' ', text).strip()
     # Collapse partial-word stammers, e.g. "w-w-want" or "th-th-this".
     text = re.sub(r'(?i)\b([a-z]{1,3})-(?:\1-)*([a-z]+)\b',
-                  lambda m: m[2] if m[2].lower().startswith(m[1].lower()) else m[0], text)
+                  lambda m: m[2] if len(m[2])>len(m[1]) and m[2].lower().startswith(m[1].lower()) else m[0], text)
     # Only a narrow set of repeated starts is unambiguous enough to remove.
     # Preserve "had had", "that that", emphasis, negation, names and numbers.
     text = re.sub(r'(?i)\b(I|we|you|he|she|they|please)(?:[ \t]+|,[ \t]+)\1\b', r'\1', text)
