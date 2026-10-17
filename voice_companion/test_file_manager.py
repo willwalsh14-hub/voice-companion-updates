@@ -74,6 +74,18 @@ class FileManagerTests(unittest.TestCase):
             with self.assertRaises(ValueError):valid_name(name)
         self.fm.items=[Item('Local disk (C:)','C:\\',True,True)]
         self.fm.choose('c drive');self.assertEqual(self.fm.index,0)
+    def test_open_file_manager_saves_note_and_existing_email(self):
+        import companion as app
+        manager=Mock(refresh=Mock(return_value='Loading drive list.'))
+        with patch.object(app,'FILE_MANAGER',manager),patch.object(app,'APP_WINDOW',None),patch.object(app,'speak'),patch.object(app,'sync_app_context'),patch.object(app,'note_buffer',['Keep this note']),patch.object(app,'save_note') as save:
+            self.assertEqual(app.handle('file manager','note'),'files')
+            save.assert_called_once_with('Keep this note')
+            self.assertEqual(app.note_buffer,[])
+        email=Mock()
+        with patch.object(app,'FILE_MANAGER',manager),patch.object(app,'APP_WINDOW',None),patch.object(app,'speak'),patch.object(app,'sync_app_context'),patch.object(app,'email_draft',email):
+            self.assertEqual(app.handle('file manager','email_draft'),'files')
+            email.save.assert_called_once()
+
     def test_real_dispatch_options_return_and_delete_keyboard_confirmation(self):
         import companion as app
         self.fm.command('enter');settle(self.fm)

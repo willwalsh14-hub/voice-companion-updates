@@ -1851,6 +1851,9 @@ def _handle(text, mode, typed=False):
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
         if mode=='document' and document is not None:document.save()
+        elif mode=='email_draft' and email_draft is not None:email_draft.save()
+        else:flush_note(mode)
+        pending_send=None
         if FILE_MANAGER is None:FILE_MANAGER=FileManager()
         FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
         speak('File manager. '+FILE_MANAGER.refresh())
