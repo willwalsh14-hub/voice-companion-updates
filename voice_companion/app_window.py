@@ -630,11 +630,11 @@ class CompanionWindow:
                             editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18)) if mode!='files' else None
                             if mode!='email_draft' or not self.email_field:
                                 self.email_field=None;self.last_email_request=None
-                                if transition and not field.get('media_form') and not (mode=='document_name' and old.get('mode')=='settings'):typed.delete(0,'end')
+                                if transition and not field.get('media_form') and not ((mode=='document_name' or field.get('file_name_input')) and old.get('mode')=='settings'):typed.delete(0,'end')
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if field.get('file_name_input') and field.get('file_rename_value')!=old.get('file_rename_value'):
+                            if field.get('file_name_input') and old.get('mode')!='settings' and field.get('file_rename_value')!=old.get('file_rename_value'):
                                 typed.delete(0,'end');typed.insert(0,field['file_rename_value']);typed.selection_range(0,'end')
                             if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'New file name, including extension; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
                             if transition:

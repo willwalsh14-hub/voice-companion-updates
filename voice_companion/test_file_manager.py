@@ -45,6 +45,7 @@ class FileManagerTests(unittest.TestCase):
         self.fm.command('enter');settle(self.fm)
         for command in ('select a.txt','mark b.txt','uncheck a.txt','check a.txt','unmark b.txt','select b.txt'):self.fm.command(command)
         self.assertEqual(len(self.fm.selected),2)
+        self.assertIn('Unselected',self.fm.command('unselect a.txt'));self.fm.command('select a.txt')
         self.fm.command('copy');settle(self.fm)
         self.assertEqual(set(self.backend.clip[0]),self.fm.selected)
         self.fm.command('delete');self.fm.command('no');self.assertEqual(self.backend.actions,[])

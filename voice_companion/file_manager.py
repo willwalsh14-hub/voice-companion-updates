@@ -256,7 +256,7 @@ class FileManager:
             selected=item.path not in self.selected if cmd=='toggle selection' else match[1].lower() in ('select','mark','check')
             if selected:self.selected.add(item.path)
             else:self.selected.discard(item.path)
-            return self.say_current()
+            return ('' if selected else 'Unselected. ')+self.say_current()
         if cmd in ('copy','copy selected','cut','cut selected'):
             paths=[i.path for i in self.targets()];cut=cmd.startswith('cut')
             return self.start_job(lambda:self.backend.clipboard(paths,cut),lambda _:str(len(paths))+' items '+('cut. Open the destination and paste to move them.' if cut else 'copied.'),'Preparing file clipboard.',mutating=True)

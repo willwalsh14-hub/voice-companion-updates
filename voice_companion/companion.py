@@ -555,8 +555,8 @@ def _navigation_key(key,mode):
     if key=='Control':return None
     if mode=='files':
         if FILE_MANAGER and FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':
-            if key in ('Up','Left','Home','ShiftTab'):CONFIRM_CHOICE='yes';speak('Yes.');return None
-            if key in ('Down','Right','End','Tab'):CONFIRM_CHOICE='no';speak('No.');return None
+            if key in ('Up','Left','Home','ShiftTab'):CONFIRM_CHOICE='yes';sync_app_context(mode);speak('Yes.');return None
+            if key in ('Down','Right','End','Tab'):CONFIRM_CHOICE='no';sync_app_context(mode);speak('No.');return None
             return {'Enter':CONFIRM_CHOICE,'Space':CONFIRM_CHOICE,'Escape':'no','y':'yes','Y':'yes','n':'no','N':'no'}.get(key)
         return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+Home':'drive list','Ctrl+M':'main menu'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
     if mode=='file_reader' and key=='Escape':return 'back to files'
