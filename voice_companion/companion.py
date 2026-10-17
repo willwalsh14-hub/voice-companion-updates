@@ -46,7 +46,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.141-test'
+APP_VERSION = '0.2.142-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -264,6 +264,7 @@ def sync_app_context(mode,focus=False):
     global UI_CONTEXT_CACHE
     if APP_WINDOW is None:return
     context=app_context(mode)
+    if UI_CONTEXT_CACHE and context.get('source')!=UI_CONTEXT_CACHE.get('source'):DICTATION_ECHO.clear()
     if KEYBOARD_SPEECH and not TEXT_MODE:
         KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
     if focus or context!=UI_CONTEXT_CACHE:
@@ -272,6 +273,14 @@ def sync_app_context(mode,focus=False):
 def apply_keyboard_edit(payload,mode):
     context=app_context(mode)
     if payload['source']!=context['source']:return False
+    if not payload.get('readonly') and payload['before']!=context['text']:
+        # A voice insertion won the race. Never replace it with an old UI snapshot.
+        # Acknowledge the stale sequence so the UI can accept the current text.
+        EDIT_ACK[payload['source']]=max(EDIT_ACK.get(payload['source'],0),payload['seq'])
+        sync_app_context(mode,True)
+        if payload['before']!=payload['after']:
+            speak('The text changed. The latest text is ready. Please try that edit again.')
+        return False
     if payload.get('readonly'):
         if context['mode']=='web' and payload.get('web_cursor_revision',context.get('web_cursor_revision'))!=context.get('web_cursor_revision'):return False
         if payload['after']!=context['text']:return False
@@ -784,6 +793,7 @@ def web_feedback_control(text,mode):
 
 def interrupt_speech():
     global SPEECH_PAUSED
+    DICTATION_ECHO.clear()
     if APP_WINDOW is not None:APP_WINDOW.ui_actions.put(('cancel_phonetic',None))
     if KEYBOARD_SPEECH is not None:KEYBOARD_SPEECH.interrupt(notify=False)
     preview=globals().get('SETTINGS_PREVIEW_SPEECH')
@@ -1113,12 +1123,23 @@ def speak_prompt(text):
     speak(prompt_text(text,VERBOSITY))
 
 
+from dictation_echo import DictationEcho
+DICTATION_ECHO=DictationEcho()
+
 def dictation_feedback(result):
-    """Keep ordinary writing uninterrupted; explicit reading still speaks."""
     if str(result).startswith('Added: '):
+        if TEXT_MODE:
+            if PREFERENCES.get('dictation_echo')!='do not echo dictated text':speak(str(result)[7:])
+            return
+        DICTATION_ECHO.add(str(result)[7:], PREFERENCES.get('dictation_echo','phrase by phrase'))
         if APP_WINDOW is not None:APP_WINDOW.show('Text added.')
         return
     speak(result)
+
+def poll_dictation_echo():
+    if DICTATION_ECHO.choice is not None and DICTATION_ECHO.choice!=PREFERENCES.get('dictation_echo','phrase by phrase'):DICTATION_ECHO.clear()
+    text=DICTATION_ECHO.take(busy=speech_busy())
+    if text:speak(text)
 
 
 def discard_feedback_events(cloud):
@@ -1193,7 +1214,17 @@ def speak_web_result(text,previous_revision):
         previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
         try:speak_status(text)
         finally:KEYBOARD_NAVIGATION=previous
-    else:speak(text)
+    else:web_dictation_feedback(text)
+
+def web_dictation_feedback(result):
+    text=None
+    if web_session:
+        for owner in (web_session,getattr(web_session,'backend',None)):
+            value=getattr(owner,'last_dictated_text',None)
+            if value is not None:
+                text=value;owner.last_dictated_text=None
+    if text is None:speak(result)
+    elif text:dictation_feedback('Added: '+text)
 
 def open_browser_menu():
     global web_session
@@ -1528,7 +1559,7 @@ def _handle(text, mode, typed=False):
         speak('Verbosity '+VERBOSITY+'.')
         return mode
     update_command = normalized_command(text)
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|when encountering capital letters|capital letters)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:echo dictated text|typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|when encountering capital letters|capital letters)\b.+',update_command):
         session=SettingsSession(PREFERENCES,{})
         request=session.voice_setting(text)
         if request and request[0] in ('typing_echo','phonetic_enabled','phonetic_delay','capital_letters'):
@@ -1543,7 +1574,7 @@ def _handle(text, mode, typed=False):
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
-    if re.match(r'^(?:set )?(?:typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|dictation type|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
+    if re.match(r'^(?:set )?(?:echo dictated text|typing echo|phonetics|phonetic pronunciation|phonetic enabled|delayed phonetic pronunciation|phonetic delay|audio ducking|duck audio|automatic updates|check updates|document font|document size|document spacing|document alignment|default font|default line spacing|default alignment|browser|input mode|dictation type|email format|email list size|sending account|station database|podcast limit|ask before exiting voice companion|ask before shutting down the computer|ask before restarting the computer|announce email header names|email header names|email header order|spoken headers in order)\b.+',update_command):
         from app_settings import snapshot
         values,context=snapshot(sys.modules[__name__])
         session=SettingsSession(values,context)
@@ -1843,7 +1874,7 @@ def _handle(text, mode, typed=False):
         return 'awake'
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
-        speak(email_draft.process(text))
+        dictation_feedback(email_draft.process(text))
         focus_email_entry()
         return mode
     if mode == 'mailbox' and mail_session is not None and (
@@ -1919,7 +1950,7 @@ def _handle(text, mode, typed=False):
             speak(web_session.insert_line_break())
             return mode
         if mode == 'email_draft' and email_draft is not None:
-            if (email_draft.compose_step or 'body') == 'body': speak(email_draft.process(text))
+            if (email_draft.compose_step or 'body') == 'body': dictation_feedback(email_draft.process(text))
             else: speak_prompt('This email field is single-line. Say go to body to insert a new line in the message.')
             return mode
     if mode=='document' and command in ('leave document', 'close document', 'back to main menu',
@@ -1947,7 +1978,7 @@ def _handle(text, mode, typed=False):
                     email_draft.apply_field_selection_edit(*edit)
                 speak(result)
             else:
-                speak(email_draft.process(text))
+                dictation_feedback(email_draft.process(text))
             return mode
         if mode == 'document' and document is not None:
             speak(document.process(text))
@@ -1973,16 +2004,16 @@ def _handle(text, mode, typed=False):
             elif mode == 'email_draft' and (email_draft.compose_step in ('subject','cc','bcc') or
                                           email_draft.compose_step == 'recipient' and
                                           (typed or '@' in text or ' at ' in text.lower())):
-                speak(email_draft.process(text))
+                dictation_feedback(email_draft.process(text))
                 focus_email_entry()
             else:
                 dictation_feedback(editor.append_text(text))
         elif mode == 'note':
             cleaned = prepare_dictation(text)
             if cleaned: note_buffer.append(cleaned)
-            speak('Added to note.')
+            if cleaned:dictation_feedback('Added: '+cleaned)
         elif mode == 'web' and web_session:
-            speak(web_session.dictate_to_focus(text))
+            web_dictation_feedback(web_session.dictate_to_focus(text))
         else:
             speak_prompt('No text field is active. Say normal mode to choose a task.')
         return mode
@@ -2348,7 +2379,7 @@ def _handle(text, mode, typed=False):
                 return 'mailbox'
             speak('Email draft saved locally. Check whether it was sent before sending it again.')
             return 'awake'
-        speak(email_draft.process(text))
+        dictation_feedback(email_draft.process(text))
         focus_email_entry()
         return 'email_draft'
     if mode == 'document':
@@ -2385,7 +2416,9 @@ def _handle(text, mode, typed=False):
             speak_prompt('Commands only is on. Say normal mode or dictation mode to add to the note.')
             return mode
         cleaned = prepare_dictation(text)
-        if cleaned: note_buffer.append(cleaned)
+        if cleaned:
+            note_buffer.append(cleaned)
+            dictation_feedback('Added: '+cleaned)
         return 'note'
     if command in ('list documents', 'what documents do i have', 'my documents'):
         folder = documents_folder()
@@ -2616,6 +2649,9 @@ _HANDLE_DEPTH = 0
 
 def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
+    if not typed and _HANDLE_DEPTH==0 and APP_WINDOW is not None and not APP_WINDOW.commands.empty():
+        mode=process_keyboard_batch(mode)
+        if mode=='exit':return mode
     previous_navigation=KEYBOARD_NAVIGATION
     quick_read=mode in ('document','email_draft','mailbox','help','web','note') and reading_request(text) is not None and not (mode in ('document','email_draft') and INPUT_MODE=='dictation')
     help_navigation=(mode=='help' and HelpSession.accepts(text)) or normalized_command(text) in ('help','user guide','open user guide','manual','open manual','document help','email help','web help','radio help','podcast help','commands help','release notes') or normalized_command(text).startswith(('help with ','help for '))
@@ -2639,6 +2675,7 @@ def handle(text, mode, typed=False):
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
         announce_main_menu()
+    if result!=mode:DICTATION_ECHO.clear()
     if _HANDLE_DEPTH==0 and result!='exit':sync_app_context(result,result!=mode)
     return result
 
@@ -2875,6 +2912,7 @@ def main():
         last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
         microphone_retry_at=0
         while True:
+            poll_dictation_echo()
             if input_stream is not None and not microphone_active(input_stream):
                 close_microphone(input_stream)
                 input_stream=None

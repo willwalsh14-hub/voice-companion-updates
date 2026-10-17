@@ -188,3 +188,8 @@ Record the app version, Windows version, microphone, speaker or headset, step, s
 Say what you expected and what happened. Mark any missed tests as NOT TESTED.
 Keep a failed test result for the person fixing the app. Do not send them passwords, private keys, or personal mail.
 Check all tasks the person needs before relying on the app for important work.
+
+Dictation and keyboard checks
+Choose each Dictation type in Input options, save, and restart. Dictate I I um will call in text and mail. AI-based should trim the clear false start; Old school should keep it.
+In Verbosity, try all three Echo dictated text choices. Check the short pause and no Added label. In sentence mode, pause mid-sentence, then finish it. Check quiet mode.
+Dictate in a text file, mail, and a web field. Use arrows, Home, End, Shift plus arrows, and type a change. Keep all new text. Repeat with fast typing just before speech ends.

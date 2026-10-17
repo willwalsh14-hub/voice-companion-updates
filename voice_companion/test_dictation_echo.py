@@ -1,0 +1,52 @@
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+from dictation_echo import DictationEcho
+from document_editor import VoiceDocument
+from email_draft import VoiceEmail
+from keyboard_text import document_text
+
+class DictationRecoveryTests(unittest.TestCase):
+    def test_delayed_phrase_sentence_and_off(self):
+        now=[0];echo=DictationEcho(lambda:now[0])
+        echo.add('Hello.', 'phrase by phrase')
+        self.assertIsNone(echo.take());now[0]=.36
+        self.assertIsNone(echo.take(busy=True));self.assertEqual(echo.take(),'Hello.')
+        echo.add('I will','at the end of a sentence');now[0]=1
+        self.assertIsNone(echo.take())
+        echo.add('call. Next','at the end of a sentence');now[0]=2
+        self.assertEqual(echo.take(),'I will call.')
+        echo.add('day.','at the end of a sentence');now[0]=3
+        self.assertEqual(echo.take(),'Next day.')
+        echo.add('Secret.','do not echo dictated text');now[0]=4
+        self.assertIsNone(echo.take())
+        echo.add('Old.','phrase by phrase');echo.clear();now[0]=5
+        self.assertIsNone(echo.take())
+
+    def test_real_dictation_type_and_keyboard_recovery_in_document_and_mail(self):
+        import companion as c
+        with tempfile.TemporaryDirectory() as folder:
+            for kind,mode in ((VoiceDocument,'document'),(VoiceEmail,'email_draft')):
+                for choice,expected in (('old school','I I, um, will call.'),('ai-based','I will call.')):
+                    editor=kind(Path(folder)/mode);editor.dictating=True
+                    if mode=='email_draft':editor.compose_step='body'
+                    with patch.object(c,'document',editor),patch.object(c,'email_draft',editor),patch.object(c,'APP_WINDOW',None),patch.object(c,'INPUT_MODE','dictation'),patch.object(c,'EDIT_ACK',{}),patch.object(c,'KEYBOARD_DIRTY',{}),patch.object(c,'sync_app_context'),patch.object(c,'speak'),patch.object(c,'focus_email_entry'),patch.dict(c.PREFERENCES,{'dictation_type':choice}):
+                        c.handle('I I, um, will call.',mode)
+                        self.assertEqual(document_text(editor),expected)
+                        source=c.app_context(mode)['source']
+                        self.assertFalse(c.apply_keyboard_edit(dict(source=source,before='',after='',caret=0,seq=1),mode))
+                        self.assertEqual(c.EDIT_ACK[source],1)
+                        self.assertEqual(document_text(editor),expected)
+                        self.assertTrue(c.apply_keyboard_edit(dict(source=source,before=expected,after=expected,caret=0,seq=2),mode))
+                        self.assertTrue(c.apply_keyboard_edit(dict(source=source,before=expected,after='X'+expected,caret=1,seq=3),mode))
+                        self.assertEqual(document_text(editor),'X'+expected)
+
+    def test_echo_has_no_added_prefix(self):
+        import companion as c
+        echo=DictationEcho(lambda:0)
+        with patch.object(c,'TEXT_MODE',False),patch.object(c,'APP_WINDOW',None),patch.object(c,'DICTATION_ECHO',echo),patch.dict(c.PREFERENCES,{'dictation_echo':'phrase by phrase'}):
+            c.dictation_feedback('Added: Hello world.')
+            self.assertEqual(list(echo.pending),['Hello world.'])
+
+if __name__=='__main__':unittest.main()

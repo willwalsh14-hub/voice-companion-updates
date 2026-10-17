@@ -1,19 +1,18 @@
 {
-  "version": "0.2.141-test",
+  "version": "0.2.142-test",
   "status": "Testing build",
-  "date": "October 16, 2026",
-  "baseline": "0.2.140-test",
-  "scope": "Choose how spoken text is cleaned.",
+  "date": "October 17, 2026",
+  "baseline": "0.2.141-test",
+  "scope": "Hear spoken text and keep the keyboard ready.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose a dictation type",
+          "title": "Choose when to hear your text",
           "details": [
-            "Open Input options. Choose Dictation type. Old school keeps the speech entry you used before. It is the default.",
-            "AI-based uses the local AI speech model for stops and capital letters. It also removes um, uh, and clear repeated starts. It works in text, notes, mail, and web text boxes.",
-            "This mode works offline. It needs no account or extra fee. It does not send your voice or text to a new online service."
+            "Open Verbosity, then Echo dictated text. Choose phrase by phrase, at the end of a sentence, or do not echo dictated text.",
+            "Phrase by phrase is the default. Readback starts after a short pause. It speaks your text with no Added label. Typing echo has its own choice."
           ]
         }
       ]
@@ -22,11 +21,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Keep control of your words",
+          "title": "Keep editing after speech",
           "details": [
-            "Commands and typed text keep their normal role. Say Type literally to keep words as spoken. You can still use Undo in text and mail.",
-            "Cleanup is light. It does not fix every stumble or guess missing words. It keeps grammar as spoken. Read your text to check it.",
-            "The app uses the speech model it has already loaded. There is no second AI request. Text still waits for a pause. Speed depends on the PC. Live speech speed has not been measured on your PC."
+            "Old cursor updates no longer block the text window after speech adds words. The app keeps the latest text and makes the keyboard ready again.",
+            "Both Dictation type choices have tests for text and mail. AI-based trims clear false starts. Old school keeps the usual words. Both use the current saved choice."
           ]
         }
       ]

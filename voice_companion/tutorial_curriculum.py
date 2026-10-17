@@ -67,6 +67,7 @@ def split_instruction(text,limit=1000):
 
 
 def option_explanation(field):
+    if field.key=='dictation_echo':return 'Choose phrase by phrase to hear each bit of text after a short pause. Choose at the end of a sentence to wait for a full stop. Choose do not echo dictated text for quiet speech entry. This does not change typing echo.'
     if field.key=='dictation_type':return 'Choose Old school to keep the usual speech entry. Choose AI-based for local AI speech and light cleanup of um, uh, and clear repeated starts. It works in text, notes, mail, and web text boxes. It does not fix every stumble. Say type literally to keep your words. It needs no online account. OK saves; Cancel keeps the old choice.'
     if field.key=='capital_letters':return 'Choose raise pitch, lower pitch, play a sound, or do nothing. This marks single capital letters as you type or read by character. The cue happens once on the letter. The delayed phonetic name has no extra cue. Whole sentences keep their usual voice. OK saves this choice across the app and after restart. Cancel keeps your earlier choice. You can also say Capital letters play a sound to save at once.'
     if field.key=='cloud_consent':return 'This checkbox allows microphone audio to be sent to Azure for recognition in Old school mode. It is off by default. Turn it on only if you agree and the service is set up. AI-based mode, web forms, and settings use offline speech. OK saves; Cancel keeps the earlier choice.'

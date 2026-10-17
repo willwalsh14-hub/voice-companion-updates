@@ -225,6 +225,21 @@ class WindowKeyboardTests(unittest.TestCase):
         self.wait(lambda:self.window.context.get('web_revision')==2)
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Password screen'))
 
+    def test_forced_text_refresh_recovers_unacknowledged_edit_then_arrows(self):
+        self.context()
+        self.call(lambda:self.window.editor.insert('end',' old pending'))
+        self.wait(lambda:not self.window.commands.empty())
+        self.window.set_context(dict(self.window.context,text='New dictated sentence.',caret=22,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('text')=='New dictated sentence.')
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'New dictated sentence.'))
+        while not self.window.commands.empty():self.window.commands.get_nowait()
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Left'))
+        self.wait(lambda:not self.window.commands.empty())
+        action,payload=self.window.commands.get_nowait()
+        self.assertEqual(action,'text_edit')
+        self.assertEqual(payload['before'],'New dictated sentence.')
+        self.assertEqual(payload['after'],'New dictated sentence.')
+
     def test_dynamic_page_refresh_does_not_raise_window_or_force_focus(self):
         initial=dict(mode='web',source='same-page',text='Initial page',caret=0,ack=0,readonly=True,web_browse=True,web_revision=1)
         self.window.set_context(initial);self.wait(lambda:self.window.context.get('web_revision')==1)

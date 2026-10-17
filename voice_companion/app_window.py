@@ -572,7 +572,7 @@ class CompanionWindow:
                             web_cursor_changed=mode=='web' and (old.get('web_cursor_revision')!=field.get('web_cursor_revision') or old.get('web_revision')!=field.get('web_revision'))
                             if web_cursor_changed or transition:local['web_navigation_pending']=False
                             if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
-                            if old.get('source')!=source or web_cursor_changed or field.get('ack',0)>=local['seq']:
+                            if old.get('source')!=source or web_cursor_changed or field.get('focus',False) or field.get('ack',0)>=local['seq']:
                                 local['applying']=True
                                 if editor.get('1.0','end-1c')!=field.get('text',''):
                                     editor.delete('1.0','end');editor.insert('1.0',field.get('text',''));editor.edit_reset()

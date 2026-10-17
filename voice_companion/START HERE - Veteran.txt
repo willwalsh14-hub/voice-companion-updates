@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.141-test.
+Guide version: 0.2.142-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -892,6 +892,8 @@ Opening another category or tool before choosing OK discards unsaved setting cha
 In Verbosity options, you can choose how many hints the app reads. High gives full hints. Medium gives shorter hints. Low gives brief prompts.
 These choices do not shorten a document, email, error message, or Yes or No question.
 The Spoken punctuation setting controls which marks are read. Choices are none, some, most, and all.
+Echo dictated text is in Verbosity. Choose phrase by phrase to hear each bit after a short pause. Choose at the end of a sentence to wait for a full stop. Choose do not echo dictated text for quiet speech entry. You hear the text without an Added label. A new task or a speech stop clears queued readback. This choice does not change typing echo.
+
 The Typing echo setting controls what you hear while typing. Choose words, characters, characters and words, or none.
 Delayed phonetic pronunciation adds a letter's spoken name after a short pause. For example, B is followed by Bravo.
 It is on by default. Choose a delay of 0.5, 1, or 2 seconds, or turn it off.

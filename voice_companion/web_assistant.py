@@ -365,6 +365,7 @@ class BrowserBackend:
         return None
 
     def dictate_focused(self, spoken, literal=False):
+        self.last_dictated_text=None
         self.start()
         for frame in self.page.frames:
             try:
@@ -387,6 +388,7 @@ class BrowserBackend:
             try:value=_voice_value(target,spoken,literal)
             except ValueError as exc:return str(exc)
             self.page.keyboard.insert_text(value)
+            self.last_dictated_text='' if target['type']=='password' else value
             return ('Password entered.' if target['type']=='password' else 'Added text to ' + _plain(target['label']) + '. Review the field before submitting.')
         return 'No editable text field has focus. Select a field in the browser, or say normal mode.'
 
@@ -1013,6 +1015,7 @@ class WebSession:
         self.web_edit_caret=start+len(text);self.selection=None
 
     def dictate_to_focus(self, spoken, literal=False):
+        self.last_dictated_text=None
         if not self.snapshot: return 'Open a website first.'
         self.submit_pending = None
         self.review_submission = None
@@ -1024,6 +1027,7 @@ class WebSession:
             try:value=_voice_value(self.keyboard_field,spoken,literal)
             except ValueError as exc:return str(exc)
             self._insert_field_text(value)
+            self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
