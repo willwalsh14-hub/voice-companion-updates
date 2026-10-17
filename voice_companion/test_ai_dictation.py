@@ -20,7 +20,7 @@ class AIDictationTests(unittest.TestCase):
             for text in ('I had had enough.', 'That that happened is clear.',
                          'It is very, very good.', 'No, no, do not do that.',
                          'I like this, you know.', 'The total is 22.50.',
-                         'Say "um" in the example.', 'uh-huh', 'no-no', 'ha-ha', 'Um@example.com'):
+                         'Say "um" in the example.', 'uh-huh', 'no-no', 'ha-ha', 'Um@example.com', '... Wait.'):
                 self.assertEqual(prepare_dictation(text), text)
             self.assertEqual(prepare_dictation('I, um, need 22.50 dollars.'),'I need 22.50 dollars.')
             self.assertEqual(prepare_dictation('I I need a new line here period'),
@@ -47,6 +47,8 @@ class AIDictationTests(unittest.TestCase):
             self.assertEqual(doc.paragraphs[0].text, 'I want this.')
             email=VoiceEmail(Path(folder)/'email')
             email.process('subject is I I, um, need help')
+            self.assertEqual(email.subject, 'I need help')
+            self.assertIn('one line',email.process('subject is Hello new line private'))
             self.assertEqual(email.subject, 'I need help')
             email.process('I I, uh, will call you.')
             self.assertEqual(email.paragraphs[0].text,'I will call you.')

@@ -292,8 +292,11 @@ class VoiceEmail(VoiceDocument):
                 return 'This subject comes from the original message. Start a new email for a different subject.'
             if '\n' in text or '\r' in text:
                 return 'Please say the subject on one line.'
+            subject = prepare_dictation(text[len('subject is '):], old_school_cleanup=False)
+            if '\n' in subject or '\r' in subject:
+                return 'Please say the subject on one line.'
             self.checkpoint()
-            self.subject = prepare_dictation(text[len('subject is '):], old_school_cleanup=False)
+            self.subject = subject
             self.save()
             self.compose_step = 'body'
             return 'Subject recorded as ' + self.subject + '. What would you like the message to say?'

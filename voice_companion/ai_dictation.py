@@ -26,10 +26,12 @@ def clean_disfluencies(text):
     # "Um" can be a unit or part of an identifier. Restrict filler matches to
     # isolated words; never discard discourse words such as like or you know.
     text = re.sub(r'(?i)(?<![\w-])(?:um|uh|erm)(?![\w-])', '\x00FILLER\x00', text)
+    removed_filler = '\x00FILLER\x00' in text
     text = re.sub(r'[ \t]*[,;:]?[ \t]*\x00FILLER\x00[,;:]?[ \t]*', ' ', text)
     text = re.sub(r'[ \t]+([,.;!?])', r'\1', text)
     text = re.sub(r'([,;:])[ \t]*[,;:]+', r'\1', text)
-    text = re.sub(r'^[,;:.!? \t]+', '', text)
+    if removed_filler:
+        text = re.sub(r'^[,;:.!? \t]+', '', text)
     text = re.sub(r'[ \t]+', ' ', text).strip()
     # Collapse partial-word stammers, e.g. "w-w-want" or "th-th-this".
     text = re.sub(r'(?i)\b([a-z]{1,3})-(?:\1-)*([a-z]+)\b',
