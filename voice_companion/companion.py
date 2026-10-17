@@ -213,6 +213,7 @@ def app_context(mode):
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':context['confirmation']=CONFIRM_CHOICE
         context['file_revision']=FILE_MANAGER.revision
         context['file_items']=FILE_MANAGER.labels()
+        if not FILE_MANAGER.menu and not FILE_MANAGER.pending and not FILE_MANAGER.busy:context['file_selected_indices']=[i for i,item in enumerate(FILE_MANAGER.items) if item.path in FILE_MANAGER.selected]
         context['file_index']=(0 if CONFIRM_CHOICE=='yes' else 1) if context.get('confirmation') is not None else FILE_MANAGER.menu_index if FILE_MANAGER.menu else FILE_MANAGER.index
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'

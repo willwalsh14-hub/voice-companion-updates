@@ -162,7 +162,7 @@ class CompanionWindow:
             self.typed=typed
             typed.pack(fill='x', padx=18)
             self.email_field = None
-            file_list=tk.Listbox(root,font=('Segoe UI',12),exportselection=False)
+            file_list=tk.Listbox(root,font=('Segoe UI',12),exportselection=False,selectmode='multiple')
             self.file_list=file_list
             activation_keys=set()
             previous = ['', 0]
@@ -183,8 +183,8 @@ class CompanionWindow:
                 if mode=='files' and self.context.get('file_name_input') and event.widget==typed and key!='Escape':return
                 if key.lower()=='t' and not control and event.state&(8|0x20000):
                     flush_pending_edit();self.command_entry_active=True;typed.focus_set();return 'break'
-                if mode=='web' and self.command_entry_active and event.widget==typed and key=='Escape':
-                    self.command_entry_active=False;typed.delete(0,'end');editor.focus_set();return 'break'
+                if mode in ('web','files') and self.command_entry_active and event.widget==typed and key=='Escape':
+                    self.command_entry_active=False;typed.delete(0,'end');(file_list if mode=='files' else editor).focus_set();return 'break'
                 request=None
                 if self.context.get('confirmation') is not None and key.lower() in ('y','n') and event.state&(8|0x20000):
                     self.commands.put(('keyboard','Alt+'+key.upper()));return 'break'
@@ -584,7 +584,9 @@ class CompanionWindow:
                                 for value in values:file_list.insert('end',value)
                             file_list.selection_clear(0,'end')
                             index=min(field.get('file_index',0),max(0,len(values)-1))
-                            if values:file_list.selection_set(index);file_list.activate(index);file_list.see(index)
+                            for selected_index in field.get('file_selected_indices',[index]):
+                                if 0<=selected_index<len(values):file_list.selection_set(selected_index)
+                            if values:file_list.activate(index);file_list.see(index)
                             if field.get('focus'):
                                 if field.get('file_name_input'):typed.focus_force()
                                 else:file_list.focus_force()

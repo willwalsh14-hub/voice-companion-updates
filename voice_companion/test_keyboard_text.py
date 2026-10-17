@@ -228,9 +228,13 @@ class WindowKeyboardTests(unittest.TestCase):
         if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
     def test_file_list_routes_selection_clipboard_menu_and_rename_keys(self):
-        context=dict(mode='files',source=None,text='',file_items=['C drive, drive','Documents, folder','notes.txt, file'],file_index=1,echo='none',phonetic=False,ack=0,focus=True)
+        context=dict(mode='files',source=None,text='',file_items=['C drive, drive','Documents, folder','notes.txt, file'],file_index=1,file_selected_indices=[0,2],echo='none',phonetic=False,ack=0,focus=True)
         self.window.set_context(context);self.wait(lambda:self.window.context.get('mode')=='files')
         self.call(lambda:self.window.file_list.focus_force())
+        self.call(lambda:self.assertEqual(tuple(self.window.file_list.curselection()),(0,2)))
+        self.window.command_entry_active=True
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Escape'))
+        self.assertFalse(self.window.command_entry_active)
         for key,state,expected in [('Down',0,'Down'),('space',0,'Space'),('c',4,'Ctrl+C'),('x',4,'Ctrl+X'),('v',4,'Ctrl+V'),('a',5,'Ctrl+Shift+A'),('Alt_L',0,'Alt'),('F2',0,'F2')]:
             self.call(lambda k=key,s=state:self.window.file_list.event_generate('<KeyPress>',keysym=k,state=s))
             self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
