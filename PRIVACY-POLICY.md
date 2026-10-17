@@ -28,7 +28,7 @@ The extension stores its enabled or paused preference in Chrome local extension 
 
 Local browser communication does not mean every desktop feature operates offline. If the user enables the desktop application's optional OpenAI AI voice and grants permission to send narration text, text spoken through that voice can be sent to OpenAI for speech generation. That text may include webpage content. Users can use local speech engines instead and disable AI narration consent in the desktop application's speech settings.
 
-The desktop application also offers optional online speech recognition subject to its consent settings; the current application disables cloud recognition in web mode. The extension does not itself upload microphone audio.
+The desktop application also offers optional online speech recognition subject to its consent settings; the current application disables cloud recognition in web mode and when AI-based dictation is selected. AI-based dictation uses the bundled offline speech model and local cleanup of fillers and clear repeated starts. It does not make an additional online text-cleanup request. The extension does not itself upload microphone audio.
 
 When a user navigates to a website or submits a form, Chrome communicates with that website as part of normal browsing. Those websites and any optional online providers apply their own privacy policies. This policy does not cover unrelated desktop features such as email account synchronization.
 

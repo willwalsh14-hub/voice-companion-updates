@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.140-test.
+Guide version: 0.2.141-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -911,7 +911,13 @@ Check Remove saved AI key and choose OK to remove the saved key. Ask your helper
 
 18.4 Input and Email options
 In Input options, you can choose Normal, Commands only, or Dictation only. The choice affects how spoken words are used.
-Allow microphone audio to be sent to Azure for recognition is off by default. Turn it on only if you agree to send audio and your helper has set up that service. It stays off in web forms and settings.
+Dictation type is a separate choice. Old school keeps the speech entry you used before. It is the default.
+Choose AI-based to use the local AI speech model and light cleanup. The model adds stops and capital letters as you speak. Cleanup removes um, uh, and clear repeated starts. For example, "I I, um, want to go" becomes "I want to go".
+Open Options with Alt+O. Choose Input options. Tab to Dictation type. Use the arrows to choose Old school or AI-based. Choose OK to save. Cancel keeps the old choice.
+This choice works for spoken text in documents, notes, email, and web text boxes. Typed text and commands keep their normal role. Names, passwords, codes, and web addresses are not cleaned as prose. Say "Type literally" before words you want to keep as spoken.
+AI-based works offline. It needs no account or extra fee. It adds no second online step. Text appears after a short pause at the end of each phrase. Speed depends on the PC. Keep phrases short. We have not set a fixed speed promise for live speech.
+Cleanup does not fix every stumble or guess words you left out. It keeps grammar and meaning as spoken. It leaves "very, very" and "had had" alone. Read your text and use Undo if needed. If the AI model fails, the app tells you and uses basic offline speech.
+Allow microphone audio to be sent to Azure for recognition is off by default. Turn it on only if you agree to send audio and your helper has set up that service. It stays off in web forms, settings, and AI-based dictation.
 After changing this choice, say "Go to sleep", then "Wake up" to start a new voice session.
 In Email options, you can choose plain text or HTML. HTML keeps formatting such as bold text and links.
 The Sending account setting chooses the address used for new mail. The Messages per list setting controls how many summaries load at once.

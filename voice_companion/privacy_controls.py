@@ -4,7 +4,7 @@ def narration_allowed(preferences,settings):
     return preferences.get('ai_consent',settings.get('consent',False)) is True
 
 def cloud_recognition_allowed(mode,preferences,account_setup=False):
-    return preferences.get('cloud_consent',False) is True and mode not in ('sleep','exit','web','settings') and not account_setup
+    return preferences.get('dictation_type','old school') != 'ai-based' and preferences.get('cloud_consent',False) is True and mode not in ('sleep','exit','web','settings') and not account_setup
 
 PRIVATE_QUERY_KEYS=frozenset(('access_token','refresh_token','id_token','token','auth','authorization','code','state','password','passwd','pass','secret','client_secret','api_key','apikey','key','session','sessionid','sid','oauth_token','oauth_verifier','samlrequest','samlresponse','ticket','signature','sig','x_amz_signature','x_amz_credential','x_amz_security_token'))
 

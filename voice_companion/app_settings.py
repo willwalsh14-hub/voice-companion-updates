@@ -78,7 +78,7 @@ def preview_settings(m,values,text):
 
 def apply_settings(m,values):
     from ai_voice_settings import load,save,remove
-    values=dict(values)
+    values=DEFAULTS | dict(values)
     if str(values.get('engine','')).lower()=='sapi':values['engine']='windows'
     rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
     if not -10<=pitch<=10:raise ValueError('Voice pitch must be from minus ten to ten.')

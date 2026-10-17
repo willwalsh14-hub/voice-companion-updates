@@ -47,6 +47,10 @@ ___ Create and name a test document. Speak two sentences without Start dictation
 ___ Use Commands only. Speak another sentence and check that it was not added.
 ___ Use Dictation only. Say "Read document" and check that those words become text.
 ___ Use Normal mode. Check that "Read document" now reads the text.
+___ Open Input options. Set Dictation type to AI-based and save. Restart and check that the choice is kept.
+___ In a document, note, email body, and web text box, say "I I, um, want to go." Check the text. Try a short pause and a long pause. Note the time until the text appears.
+___ Say "Very, very good" and "I had had enough." Check that these words are kept. Try "Type literally I I um". Use Undo in the document.
+___ Check that passwords, email addresses, and typed text are not cleaned. Set Old school and check that the prior speech entry still works. Cancel an Input options change and check that it is not saved.
 ___ Save, close, reopen, and check the name and text.
 ___ Try Save as with a new name. Check both copies.
 ___ Try a rename, then Undo. Check the old name returns.

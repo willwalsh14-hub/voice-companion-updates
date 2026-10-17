@@ -18,6 +18,7 @@ from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
 from reading_navigation import ReadingCursor, reading_request
 from dictation_text import clean_dictation
+from ai_dictation import prepare_dictation
 
 
 class WebError(Exception):
@@ -46,7 +47,13 @@ def _voice_value(item,spoken,literal=False):
         from email_draft import normalize_recipient
         return normalize_recipient(spoken)
     if item.get('type')=='url':return prepare_address(spoken)[0]
-    return clean_dictation(spoken)
+    if item.get('type') in ('number','tel','search','date','time','datetime-local','month','week'):
+        return clean_dictation(spoken)
+    # Names, codes and account identifiers are not prose.
+    identity = ' '.join(str(item.get(k) or '') for k in ('label','name','autocomplete','placeholder'))
+    if re.search(r'(?i)\b(?:name|address|user|username|login|code|pin|account|zip|postal)\b',identity):
+        return clean_dictation(spoken)
+    return prepare_dictation(spoken)
 
 
 def match_choices(items, request):

@@ -36,6 +36,7 @@ from app_window import CompanionWindow
 from reading_navigation import ReadingCursor, reading_request
 from voice_pitch import sapi_speak
 from dictation_text import clean_dictation
+from ai_dictation import dictation_scope, prepare_dictation
 from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
 from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_request
@@ -45,7 +46,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.140-test'
+APP_VERSION = '0.2.141-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1977,7 +1978,7 @@ def _handle(text, mode, typed=False):
             else:
                 dictation_feedback(editor.append_text(text))
         elif mode == 'note':
-            cleaned = clean_dictation(text)
+            cleaned = prepare_dictation(text)
             if cleaned: note_buffer.append(cleaned)
             speak('Added to note.')
         elif mode == 'web' and web_session:
@@ -2383,7 +2384,7 @@ def _handle(text, mode, typed=False):
         if INPUT_MODE == 'commands':
             speak_prompt('Commands only is on. Say normal mode or dictation mode to add to the note.')
             return mode
-        cleaned = clean_dictation(text)
+        cleaned = prepare_dictation(text)
         if cleaned: note_buffer.append(cleaned)
         return 'note'
     if command in ('list documents', 'what documents do i have', 'my documents'):
@@ -2629,7 +2630,8 @@ def handle(text, mode, typed=False):
     _HANDLE_DEPTH += 1
     try:
         if _HANDLE_DEPTH==1:flush_keyboard_edits(True)
-        result = _handle(text, mode, typed)
+        with dictation_scope(PREFERENCES.get('dictation_type','old school'), typed=typed):
+            result = _handle(text, mode, typed)
         if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"
     finally:
         _HANDLE_DEPTH -= 1
@@ -2849,6 +2851,8 @@ def main():
             print('Parakeet initialization failed:', exc, file=sys.stderr)
             speak('Parakeet could not start. Using basic offline speech.')
     utterance = bytearray()
+    if PREFERENCES.get('dictation_type')=='ai-based' and parakeet is None:
+        speak('AI dictation is not available. Using basic offline speech. Reinstall the full app to restore the AI speech model.')
     last_focus_check = 0.0
     with contextlib.ExitStack() as input_lifetime:
         if input_stream:input_lifetime.callback(close_microphone,input_stream)

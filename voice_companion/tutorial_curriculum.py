@@ -67,8 +67,9 @@ def split_instruction(text,limit=1000):
 
 
 def option_explanation(field):
+    if field.key=='dictation_type':return 'Choose Old school to keep the usual speech entry. Choose AI-based for local AI speech and light cleanup of um, uh, and clear repeated starts. It works in text, notes, mail, and web text boxes. It does not fix every stumble. Say type literally to keep your words. It needs no online account. OK saves; Cancel keeps the old choice.'
     if field.key=='capital_letters':return 'Choose raise pitch, lower pitch, play a sound, or do nothing. This marks single capital letters as you type or read by character. The cue happens once on the letter. The delayed phonetic name has no extra cue. Whole sentences keep their usual voice. OK saves this choice across the app and after restart. Cancel keeps your earlier choice. You can also say Capital letters play a sound to save at once.'
-    if field.key=='cloud_consent':return 'This checkbox allows microphone audio to be sent to Azure for recognition. It is off by default. Turn it on only if you agree and the service is set up. The app uses offline speech in web forms and settings. OK saves; Cancel keeps the earlier choice.'
+    if field.key=='cloud_consent':return 'This checkbox allows microphone audio to be sent to Azure for recognition in Old school mode. It is off by default. Turn it on only if you agree and the service is set up. AI-based mode, web forms, and settings use offline speech. OK saves; Cancel keeps the earlier choice.'
     if field.kind=='action':return 'Choose this button to '+field.label.lower()+'. It opens that task and leaves Options. Choose OK first if you want to save changed settings.'
     if field.kind=='password':return 'This is a private text box. Its contents are not read aloud. Leaving it blank keeps the saved key. A helper can enter a new key here. Choose OK to save or Cancel to leave it unchanged.'
     if field.kind=='check':return 'This is a checkbox. Press Space to turn it on or off. By voice, choose the setting and say on or off. Choose OK to save or Cancel to keep the earlier choice.'

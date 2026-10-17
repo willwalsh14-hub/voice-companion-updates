@@ -11,6 +11,7 @@ from pathlib import Path
 from storage import keep_previous
 from reading_navigation import ReadingCursor, reading_request
 from dictation_text import clean_dictation
+from ai_dictation import prepare_dictation
 
 CONTENT_TYPES = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -468,7 +469,7 @@ class VoiceDocument:
         self.save()
 
     def append_text(self, text, literal=False):
-        if not literal: text = clean_dictation(text)
+        if not literal: text = prepare_dictation(text)
         if not text: return 'I did not hear text to add.'
         self.checkpoint()
         self.selection = None

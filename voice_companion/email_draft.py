@@ -11,6 +11,7 @@ from document_editor import Paragraph, TextRun, VoiceDocument
 from field_selection import FieldSelection, selection_command
 from storage import keep_previous
 from address_book import AddressBook
+from ai_dictation import prepare_dictation
 
 
 def email_field_destination(spoken):
@@ -292,7 +293,7 @@ class VoiceEmail(VoiceDocument):
             if '\n' in text or '\r' in text:
                 return 'Please say the subject on one line.'
             self.checkpoint()
-            self.subject = text[len('subject is '):].strip()
+            self.subject = prepare_dictation(text[len('subject is '):], old_school_cleanup=False)
             self.save()
             self.compose_step = 'body'
             return 'Subject recorded as ' + self.subject + '. What would you like the message to say?'

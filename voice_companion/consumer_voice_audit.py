@@ -2,13 +2,35 @@
 
 Reports recognition errors rather than claiming microphone performance.
 """
-import io,json,os,tempfile,wave
+import io,json,os,tempfile,wave,time
 from pathlib import Path
 from audio_resample import PCM16Resampler,stereo_to_mono
 from vosk import Model,KaldiRecognizer,SetLogLevel
 import companion as app
 
 PHRASES=('next heading','previous link','list fields','main menu','go to sleep','wake up')
+
+
+def dictation_timing(parakeet):
+    """Measure production model plus cleanup on public synthetic samples.
+
+    This excludes microphone endpoint detection and is not a live latency
+    claim. Report recognition quality separately from command routing.
+    """
+    from espeak_speech import synthesize
+    from ai_dictation import dictation_scope, prepare_dictation
+    if parakeet is None:
+        return {'blocked':'Offline AI model is not available.'}
+    samples=[]
+    for phrase in ('I I um want to meet you tomorrow.', 'It is very very good.', 'I had had enough.'):
+        raw=PCM16Resampler(24000,16000).convert(synthesize(phrase,voice='en-us'))
+        began=time.perf_counter()
+        recognized=parakeet.recognize(raw)
+        with dictation_scope('ai-based'):
+            cleaned=prepare_dictation(recognized)
+        samples.append({'spoken':phrase,'recognized':recognized,'inserted':cleaned,
+                        'model_and_cleanup_seconds':round(time.perf_counter()-began,3)})
+    return {'method':'Synthetic eSpeak speech; excludes microphone endpoint delay', 'samples':samples}
 
 def dispatch(phrase):
     phrase=app.normalized_command(phrase)
@@ -71,6 +93,7 @@ def audit():
                         continue
                     except Exception as exc:entry['reason']=type(exc).__name__+': '+str(exc)[:250]
                     report['samples'].append(entry);print('SYNTHETIC VOICE AUDIT '+json.dumps(entry),flush=True)
+        report['dictation_timing']=dictation_timing(parakeet)
         report['matched']=sum(s['status']=='matched' for s in report['samples']);report['misrecognized']=sum(s['status']=='misrecognized' for s in report['samples']);report['blocked']=sum(s['status']=='blocked' for s in report['samples']);report['dispatch_failed']=sum(s['status']=='dispatch_failed' for s in report['samples'])
     finally:pythoncom.CoUninitialize()
     return report
