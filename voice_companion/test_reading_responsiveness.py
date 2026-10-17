@@ -25,7 +25,7 @@ class ReadingResponsivenessTests(unittest.TestCase):
     def test_rapid_arrows_apply_all_moves_but_speak_final_item_only(self):
         window=self.window([('keyboard','Down')]*6)
         with patch.object(app,'APP_WINDOW',window),patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'account_setup',False),patch.object(app,'interrupt_speech'),patch.object(app,'sync_app_context'),patch.object(app,'KEYBOARD_BATCH_TEXT',None):
-            self.assertEqual(app.process_keyboard_batch('awake'),'awake');self.assertEqual(app.MAIN_MENU_INDEX,5);window.feedback.assert_called_once_with('Podcasts (P), 6 of 12.')
+            self.assertEqual(app.process_keyboard_batch('awake'),'awake');self.assertEqual(app.MAIN_MENU_INDEX,5);window.feedback.assert_called_once_with('Radio (R), 6 of 13.')
     def test_voice_navigation_fast_in_every_reading_context(self):
         with patch.object(app,'INPUT_MODE','mixed'):
             for mode in ('document','email_draft','mailbox','help','web','note'):

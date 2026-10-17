@@ -67,6 +67,7 @@ class HelpSession:
     def topic(self, name):
         wanted = name.casefold().strip()
         aliases = {
+            'files':'file manager','file manager':'file manager','file commands':'file manager','reader':'document reader','document reader':'document reader',
             'what is new':"what's new", 'whats new':"what's new", 'what s new':"what's new", 'release notes':"what's new",
             'email':'read and organize email', 'mail':'read and organize email', 'email commands':'read and organize email',
             'documents':'write a document', 'document':'write a document', 'document commands':'write a document',

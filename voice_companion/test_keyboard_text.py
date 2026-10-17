@@ -216,6 +216,21 @@ class WindowKeyboardTests(unittest.TestCase):
     def tearDown(self):
         if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
+    def test_file_list_routes_selection_clipboard_menu_and_rename_keys(self):
+        context=dict(mode='files',source=None,text='',file_items=['C drive, drive','Documents, folder','notes.txt, file'],file_index=1,echo='none',phonetic=False,ack=0,focus=True)
+        self.window.set_context(context);self.wait(lambda:self.window.context.get('mode')=='files')
+        self.call(lambda:self.window.file_list.focus_force())
+        for key,state,expected in [('Down',0,'Down'),('space',0,'Space'),('c',4,'Ctrl+C'),('x',4,'Ctrl+X'),('v',4,'Ctrl+V'),('a',5,'Ctrl+Shift+A'),('Alt_L',0,'Alt'),('F2',0,'F2')]:
+            self.call(lambda k=key,s=state:self.window.file_list.event_generate('<KeyPress>',keysym=k,state=s))
+            self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
+        while not self.window.commands.empty():self.window.commands.get_nowait()
+        self.window.set_context(dict(context,file_name_input=True,file_rename_value='notes.txt',menu_letters=False))
+        self.wait(lambda:self.window.context.get('file_name_input'))
+        self.call(lambda:self.assertEqual(self.window.typed.get(),'notes.txt'))
+        self.call(lambda:(self.window.typed.delete(0,'end'),self.window.typed.insert(0,'renamed.txt'),self.window.typed.event_generate('<KeyPress>',keysym='Return')))
+        self.wait(lambda:not self.window.commands.empty())
+        self.assertEqual(self.window.commands.get_nowait(),'renamed.txt')
+
     def test_page_revision_replaces_stale_view_despite_pending_caret_ack(self):
         initial=dict(mode='web',source='page',text='Email screen',caret=0,ack=0,readonly=True,web_browse=True,web_revision=1,web_cursor_revision=1)
         self.window.set_context(initial);self.call(lambda:self.window.editor.focus_force())

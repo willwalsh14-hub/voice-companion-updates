@@ -39,6 +39,7 @@ from dictation_text import clean_dictation
 from ai_dictation import dictation_scope, prepare_dictation
 from onboard_help import HelpSession
 from speech_controls import request as speech_setting_request
+from file_manager import FileManager
 from settings_model import DEFAULTS, SettingsSession, prompt_text, keyboard_request
 from keyboard_text import document_text,replace_keyboard_text,absolute
 from menu_navigation import boundary_notice, bounded_index, next_match, menu_label, announce_item
@@ -46,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.144-test'
+APP_VERSION = '0.2.145-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -205,6 +206,14 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
+    if logical=='files' and FILE_MANAGER:
+        context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='rename')
+        if context['file_name_input']:context['file_rename_value']=Path(FILE_MANAGER.pending[1][0]).name
+        context['menu_letters']=not context['file_name_input'] and not FILE_MANAGER.busy
+        if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':context['confirmation']=CONFIRM_CHOICE
+        context['file_revision']=FILE_MANAGER.revision
+        context['file_items']=FILE_MANAGER.labels()
+        context['file_index']=(0 if CONFIRM_CHOICE=='yes' else 1) if context.get('confirmation') is not None else FILE_MANAGER.menu_index if FILE_MANAGER.menu else FILE_MANAGER.index
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
         context['menu_letters']=not context['browser_name_input']
@@ -250,6 +259,8 @@ def app_context(mode):
             context.update(source=source,text=field.get('value','') if field else web_session.reading.text,readonly=field is None or context['web_choice'] or bool(field.get('readonly')),selection=getattr(web_session,'selection',None),caret=getattr(web_session,'web_edit_caret',0) if field else web_session.reading.position,ack=EDIT_ACK.get(source,0))
             context['web_field']=field
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
+    elif logical=='file_reader' and FILE_READER:
+        context.update(source='file:'+str(id(FILE_READER)),text=FILE_READER.text,readonly=True,caret=FILE_READER.reading.position,ack=EDIT_ACK.get('file:'+str(id(FILE_READER)),0))
     elif logical=='help' and help_session and help_session.level=='article':
         source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
         context.update(source=source,text=help_session.reading.text,readonly=True,help_reader=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
@@ -287,7 +298,7 @@ def apply_keyboard_edit(payload,mode):
         if context['mode']=='web' and (context.get('web_choice') or web_session.keyboard_field and web_session.keyboard_field.get('readonly')):
             if not context.get('web_choice'):web_session.web_edit_caret=payload['caret'];web_session.selection=payload.get('selection')
             EDIT_ACK[payload['source']]=payload['seq'];return True
-        reader=help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
+        reader=FILE_READER.reading if context['mode']=='file_reader' else help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
         reader.position=payload['caret'];reader.continuation=payload['caret']
         if context['mode']=='web' and web_session.browse and web_session.keyboard_field is None:
             web_session.selection=payload.get('selection')
@@ -398,7 +409,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -473,6 +484,10 @@ def menu_state(mode):
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
     if VOICE_PICK_INDEX is not None:
         return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
+    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending:
+        names=FILE_MANAGER.labels()
+        attribute='menu_index' if FILE_MANAGER.menu else 'index'
+        return state(names,FILE_MANAGER,attribute)
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
     if mode=='tutorial' and tutorial_session:return tutorial_session.menu()
     if mode=='mailbox' and mail_session and mail_session.folder_picker and not mail_session.pending:
@@ -538,6 +553,13 @@ def _navigation_key(key,mode):
     interrupt_speech()
     if key=='Ctrl+Alt+P':return 'toggle audio'
     if key=='Control':return None
+    if mode=='files':
+        if FILE_MANAGER and FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':
+            if key in ('Up','Left','Home','ShiftTab'):CONFIRM_CHOICE='yes';speak('Yes.');return None
+            if key in ('Down','Right','End','Tab'):CONFIRM_CHOICE='no';speak('No.');return None
+            return {'Enter':CONFIRM_CHOICE,'Space':CONFIRM_CHOICE,'Escape':'no','y':'yes','Y':'yes','n':'no','N':'no'}.get(key)
+        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+Home':'drive list','Ctrl+M':'main menu'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
+    if mode=='file_reader' and key=='Escape':return 'back to files'
     if mode=='regular_browser':
         if key=='Escape':return 'main menu'
         if key in ('Up','Down','Home','End','Enter','Space'):return 'regular browser key '+key
@@ -640,6 +662,28 @@ def apply_settings(values):
     from app_settings import apply_settings as apply
     return apply(sys.modules[__name__],values)
 
+FILE_MANAGER=None
+FILE_READER=None
+
+def options_return_notice(mode):
+    logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','files':'Back to file manager.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+
+def poll_file_manager(mode):
+    global FILE_READER,SLEEP_RETURN_MODE
+    if FILE_MANAGER is None:return mode
+    notice=FILE_MANAGER.poll()
+    logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
+    if logical=='files':
+        if FILE_MANAGER.opened is not None:
+            FILE_READER=FILE_MANAGER.opened;FILE_MANAGER.opened=None
+            notice=notice or 'Opened '+FILE_READER.title+'. Read-only document. '+FILE_READER.reading.read(True)
+            if mode=='sleep':SLEEP_RETURN_MODE='file_reader'
+            else:mode='file_reader'
+        if notice:speak(notice)
+        if notice:sync_app_context(mode,True)
+    return mode
+
 def save_options(values,mode):
     """Return to the previous task only after settings were saved successfully."""
     global SLEEP_RETURN_MODE
@@ -649,10 +693,10 @@ def save_options(values,mode):
     if APP_WINDOW is not None:
         # Old field notices must not interrupt the successful save message.
         while not APP_WINDOW.settings_notices.empty():APP_WINDOW.settings_notices.get_nowait()
-    speak('Options saved.')
     if mode=='sleep' and SLEEP_RETURN_MODE=='settings':SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
     elif mode=='settings':mode=SETTINGS_RETURN_MODE
     sync_app_context(mode,True)
+    speak('Options saved. '+options_return_notice(mode))
     return mode
 
 def apply_document_defaults(document):
@@ -736,7 +780,7 @@ FAST_OFFLINE_COMMANDS = frozenset((
 
 
 def fast_command_request(command, mode):
-    if mode in ('document','email_draft','mailbox','help','web','note') and reading_request(command) and not (mode in ('document','email_draft') and INPUT_MODE=='dictation'):return True
+    if mode in ('document','email_draft','mailbox','help','web','note','file_reader') and reading_request(command) and not (mode in ('document','email_draft') and INPUT_MODE=='dictation'):return True
     if command in ('word processor','open word processor','notepad','open notepad'):return True
     if re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command):return True
     if command in POWER_COMMANDS:return True
@@ -1804,6 +1848,47 @@ def _handle(text, mode, typed=False):
             except Exception: pass
         speak('Going to sleep. Say wake up when you need me.')
         return 'sleep'
+    global FILE_MANAGER,FILE_READER
+    if command in ('file manager','open file manager','manage files','browse files'):
+        if mode=='document' and document is not None:document.save()
+        if FILE_MANAGER is None:FILE_MANAGER=FileManager()
+        FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
+        speak('File manager. '+FILE_MANAGER.refresh())
+        return 'files'
+    if mode=='files':
+        if command in ('main menu','back to main menu','close file manager','leave file manager'):
+            announce_main_menu();return 'awake'
+        if command.startswith('file letter '):
+            state=menu_state(mode)
+            if state:choose_menu_letter(command[-1],mode)
+            return mode
+        try:result=FILE_MANAGER.command(text)
+        except (ValueError,OSError) as exc:result=str(exc)
+        if result=='__main__':announce_main_menu();return 'awake'
+        if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
+        speak(result)
+        sync_app_context(mode,True)
+        return mode
+    if mode=='file_reader':
+        if command in ('back to files','go back','back','close document','leave document','escape'):
+            speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
+        if command in ('main menu','back to main menu'):
+            announce_main_menu();return 'awake'
+        request=reading_request(command)
+        if request:
+            unit,direction=request
+            speak(FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction))
+        elif command in ('beginning of document','top of document','go to beginning of document'):
+            FILE_READER.reading.position=0;speak(FILE_READER.reading.move('line',0))
+        elif command in ('end of document','go to end of document'):
+            FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
+        elif command.startswith('find '):
+            term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
+            if position<0:position=FILE_READER.text.casefold().find(term.casefold())
+            if position<0:speak('Text not found.')
+            else:FILE_READER.reading.position=position;speak(FILE_READER.reading.move('line',0))
+        else:speak('Document reader. Use arrows to read, or say read document, next word, next sentence, next paragraph, find followed by text, or back to files. This document is read-only.')
+        return mode
     help_topic = re.fullmatch(r'(?:help with|help for|open help topic|go to help topic) (.+)', command)
     help_alias = {'email help': 'writing email' if mode == 'email_draft' else 'email',
                   'document help': 'documents', 'web help': 'web',
@@ -2675,7 +2760,7 @@ def handle(text, mode, typed=False):
         mode=process_keyboard_batch(mode)
         if mode=='exit':return mode
     previous_navigation=KEYBOARD_NAVIGATION
-    quick_read=mode in ('document','email_draft','mailbox','help','web','note') and reading_request(text) is not None and not (mode in ('document','email_draft') and INPUT_MODE=='dictation')
+    quick_read=mode in ('document','email_draft','mailbox','help','web','note','file_reader') and reading_request(text) is not None and not (mode in ('document','email_draft') and INPUT_MODE=='dictation')
     help_navigation=(mode=='help' and HelpSession.accepts(text)) or normalized_command(text) in ('help','user guide','open user guide','manual','open manual','document help','email help','web help','radio help','podcast help','commands help','release notes') or normalized_command(text).startswith(('help with ','help for '))
     if help_navigation and not speech_control(text):
         interrupt_speech()
@@ -2961,6 +3046,7 @@ def main():
                 if AI_SPEECH is not None:AI_SPEECH.interrupt()
             try:flush_keyboard_edits()
             except OSError:speak('Keyboard text could not be saved. Keep the document open and try save again.')
+            mode = poll_file_manager(mode)
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
             update_audio_ducking()

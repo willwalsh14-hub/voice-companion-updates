@@ -18,7 +18,7 @@ class AccessibilityFixTests(unittest.TestCase):
     def test_keyboard_interrupts_before_selection_and_home_end(self):
         events=[]
         with patch.object(app,'interrupt_speech',side_effect=lambda:events.append('stop')),patch.object(app,'speak',side_effect=lambda s:events.append(s)),patch.object(app,'account_setup',False),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'MAIN_MENU_INDEX',None):
-            app.navigation_key('Letter:e','awake');self.assertEqual(events,['stop','Email (E), 3 of 12.'])
+            app.navigation_key('Letter:e','awake');self.assertEqual(events,['stop','Email (E), 4 of 13.'])
             app.navigation_key('End','awake');self.assertEqual(app.MAIN_MENU_INDEX,len(app.MAIN_MENU_CHOICES)-1)
             app.navigation_key('Home','awake');self.assertEqual(app.MAIN_MENU_INDEX,0)
     def test_confirmation_y_n_and_control(self):

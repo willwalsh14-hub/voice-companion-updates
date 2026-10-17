@@ -162,6 +162,8 @@ class CompanionWindow:
             self.typed=typed
             typed.pack(fill='x', padx=18)
             self.email_field = None
+            file_list=tk.Listbox(root,font=('Segoe UI',12),exportselection=False)
+            self.file_list=file_list
             activation_keys=set()
             previous = ['', 0]
             field_selection = FieldSelection()
@@ -173,6 +175,12 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
+                if mode=='files' and not self.command_entry_active and not self.context.get('file_name_input'):
+                    file_key=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper() if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Enter' if key=='Return' else 'Space' if key=='space' else key
+                    if control and key=='Home':file_key='Ctrl+Home'
+                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+Home','Ctrl+M'):
+                        self.commands.put(('keyboard',file_key));return 'break'
+                if mode=='files' and self.context.get('file_name_input') and event.widget==typed and key!='Escape':return
                 if key.lower()=='t' and not control and event.state&(8|0x20000):
                     flush_pending_edit();self.command_entry_active=True;typed.focus_set();return 'break'
                 if mode=='web' and self.command_entry_active and event.widget==typed and key=='Escape':
@@ -267,7 +275,7 @@ class CompanionWindow:
                     if self.email_field:
                         self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'send':True}));return 'break'
                     request='Ctrl+Enter' if control else 'Alt+S'
-                elif self.context.get('menu_letters') and not (mode=='browser_menu' and self.command_entry_active) and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
+                elif self.context.get('menu_letters') and not (mode in ('browser_menu','files') and self.command_entry_active) and not self.context.get('file_name_input') and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
                 if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
                 if request:
@@ -289,6 +297,7 @@ class CompanionWindow:
             for sequence in ('<Alt-y>','<Alt-Y>','<Alt-n>','<Alt-N>'):root.bind_all(sequence,shortcut)
             root.bind_all('<Tab>',shortcut)
             root.bind_all('<Shift-Tab>',shortcut)
+            file_list.bind('<KeyPress>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')
             root.bind_all('<KeyRelease>',lambda event:activation_keys.discard(event.keysym),add='+')
             root.bind('<FocusOut>',lambda event:activation_keys.clear() if event.widget==root else None,add='+')
@@ -328,11 +337,13 @@ class CompanionWindow:
                 if event.keysym=='Return' and isinstance(event.widget,tk.Button):
                     event.widget.invoke(); return 'break'
                 if event.widget==editor:return
-                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode') in ('document_name','search') or self.context.get('browser_name_input')):return
+                if event.widget==typed and (self.email_field or typed.get() or self.context.get('mode') in ('document_name','search') or self.context.get('browser_name_input') or self.context.get('file_name_input')):return
                 if event.widget == typed or event.widget == history or event.widget == root or isinstance(event.widget,tk.Button):
                     self.commands.put(('keyboard','Enter' if event.keysym=='Return' else event.keysym)); return 'break'
             def enter(event):
                 if shortcut(event)=='break':return 'break'
+                if self.context.get('file_name_input') and not typed.get().strip():
+                    self.feedback('Enter a new file name, including the extension.');return 'break'
                 if self.context.get('mode')=='document_name':
                     if not typed.get().strip():self.feedback('Enter a document name.');return 'break'
                     return submit_typed(event)
@@ -564,7 +575,20 @@ class CompanionWindow:
                         typed.configure(show='*' if field.get('web_private') else '')
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
-                        text_mode=source is not None and mode in ('document','email_draft','mailbox','help','web')
+                        if mode!='files':file_list.pack_forget()
+                        if mode=='files':
+                            history.pack_forget();editor.pack_forget();file_list.pack(fill='both',expand=True,padx=18,pady=(0,18))
+                            values=field.get('file_items',[])
+                            if tuple(file_list.get(0,'end'))!=tuple(values):
+                                file_list.delete(0,'end')
+                                for value in values:file_list.insert('end',value)
+                            file_list.selection_clear(0,'end')
+                            index=min(field.get('file_index',0),max(0,len(values)-1))
+                            if values:file_list.selection_set(index);file_list.activate(index);file_list.see(index)
+                            if field.get('focus'):
+                                if field.get('file_name_input'):typed.focus_force()
+                                else:file_list.focus_force()
+                        text_mode=source is not None and mode in ('document','email_draft','mailbox','help','web','file_reader')
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:
                             editor.configure(state='normal')
@@ -603,14 +627,16 @@ class CompanionWindow:
                                     except (AttributeError,OSError):pass
                                 editor.focus_force()
                         else:
-                            editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18))
+                            editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18)) if mode!='files' else None
                             if mode!='email_draft' or not self.email_field:
                                 self.email_field=None;self.last_email_request=None
                                 if transition and not field.get('media_form') and not (mode=='document_name' and old.get('mode')=='settings'):typed.delete(0,'end')
                             request=field.get('naming_request')
                             if mode=='document_name' and request and request!=self.last_name_request:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'Type a command, then press Enter:')
+                            if field.get('file_name_input') and field.get('file_rename_value')!=old.get('file_rename_value'):
+                                typed.delete(0,'end');typed.insert(0,field['file_rename_value']);typed.selection_range(0,'end')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'New file name, including extension; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()
@@ -618,7 +644,8 @@ class CompanionWindow:
                                         import sys,ctypes
                                         if sys.platform=='win32':ctypes.windll.user32.SetForegroundWindow(ctypes.windll.user32.GetAncestor(root.winfo_id(),2))
                                     except (AttributeError,OSError):pass
-                                typed.focus_force()
+                                if mode=='files' and not field.get('file_name_input'):file_list.focus_force()
+                                else:typed.focus_force()
                         continue
                     if action == 'email_select' and not field['canceled'].is_set():
                         try:

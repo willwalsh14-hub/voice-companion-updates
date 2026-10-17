@@ -136,7 +136,7 @@ class NativeSettingsTests(unittest.TestCase):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x0D,0)
         self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
-        self.assertTrue(any(message.startswith('Verbosity dialog.') for message in self.notices))
+        self.assertTrue(any(message.startswith('Verbosity options dialog.') for message in self.notices))
 
     def test_text_entry_is_self_voicing_and_password_is_hidden(self):
         hwnd=self.open_panel();self.panel.command('documents')

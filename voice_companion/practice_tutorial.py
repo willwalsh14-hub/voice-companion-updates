@@ -24,7 +24,7 @@ class PracticeTutorial:
         return message
 
     def start(self):
-        return self.say('Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates. '
+        return self.say('Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. '
                         'These are lessons. Commands given here are explained and do not change your work. '
                         'Use Up and Down to select a course and Enter to open it, or say its name. '
                         'Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. '

@@ -113,7 +113,7 @@ class OptionsSaveReturnTests(unittest.TestCase):
                 self.assertEqual(app.save_options({'verbosity':'low'},'settings'),destination)
                 apply.assert_called_once_with({'verbosity':'low'})
                 panel.accepted.assert_called_once()
-                speech.assert_called_once_with('Options saved.')
+                speech.assert_called_once_with('Options saved. '+{'document':'Back to document.','email_draft':'Back to email draft.','web':'Back to web page.','note':'Back to Notepad.','awake':'Main menu.'}[destination])
                 sync.assert_called_once_with(destination,True)
 
     def test_success_drops_old_field_notices_before_save_confirmation(self):
@@ -124,7 +124,7 @@ class OptionsSaveReturnTests(unittest.TestCase):
         window=SimpleNamespace(settings_notices=Queue())
         window.settings_notices.put('Verbosity low')
         def announce(text):
-            self.assertEqual(text,'Options saved.')
+            self.assertEqual(text,'Options saved. Main menu.')
             self.assertTrue(window.settings_notices.empty())
         with patch.object(app,'APP_WINDOW',window),patch.object(app,'SETTINGS_PANEL',Mock()),patch.object(app,'apply_settings'),patch.object(app,'speak',side_effect=announce),patch.object(app,'sync_app_context'),patch('app_settings.stop_preview'):
             app.save_options({},'settings')

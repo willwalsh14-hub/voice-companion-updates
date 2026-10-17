@@ -200,3 +200,11 @@ Set Echo dictated text to at the end of a sentence. Say I will call, pause, then
 
 Options close and return
 Open Options from a document, mail, web page, and note. Open a category. Check the name is followed by dialog. Change a choice or checkbox and press Enter. Check Options saved is spoken once, the window closes, and focus returns to the same task and place. Reopen Options and check the value was saved. Check Cancel still discards changes. Web browser options must not list website favorites. Favorites remain in the browser menu.
+
+File manager and reader
+Check File manager is first on the main menu. Enter should list the local drive, any attached drives, mapped drives, registered cloud roots, and the standard folders. Use a disposable folder only for file action tests.
+Enter nested folders and press Escape once per level. The parent folder and previous item must be retained. Home and End must stop at list boundaries.
+Mark several files with Space and each selection voice alias. Copy, cut, and paste between disposable folders. Check both clipboard directions with File Explorer. A cut must leave the source until paste succeeds. Duplicate names must not be overwritten. Rename one item and confirm deletion of a disposable copy only. Check it reaches Recycle Bin. No is the first delete choice.
+Press Alt and review every command, shortcut, and voice phrase. Check Ctrl A, Ctrl Shift A, F2, Delete, Ctrl C, Ctrl X, Ctrl V, F5, Ctrl Home, and Ctrl M. Type a rename with extension. Cancel it once before completing it.
+Open DOCX, Unicode TXT, HTML, PDF, ODT, and EPUB samples. Read with arrows and voice. Escape must return to the same folder and item. The source file must stay unchanged. Check scanned and password-protected PDFs give clear limits.
+Open Options from a document, email, web page, file list, and reader. Each category says its full options name and dialog. Saving announces Options saved and the returned task.

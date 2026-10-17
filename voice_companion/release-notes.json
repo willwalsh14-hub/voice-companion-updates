@@ -1,17 +1,27 @@
 {
-  "version": "0.2.144-test",
+  "version": "0.2.145-test",
   "status": "Testing build",
   "date": "October 17, 2026",
-  "baseline": "0.2.143-test",
-  "scope": "Save options and return to your task.",
+  "baseline": "0.2.144-test",
+  "scope": "Browse files and read local documents in Companion.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Clear dialog names",
+          "title": "File manager",
           "details": [
-            "Open a category in Options to hear its name and the word dialog. For example, you hear Verbosity dialog."
+            "File manager is the first main menu choice. It opens a drive list from Windows. It also lists mapped drives, registered cloud roots, Desktop, Documents, and Downloads.",
+            "Use arrows to move and Enter to open. Escape goes up one folder. Space marks items. Use Home and End for list ends. Say an item name or a normal list command.",
+            "Copy, cut, paste, rename, and delete work on files and folders. Delete asks first. Drives cannot be changed by those commands. Alt opens a menu with the voice phrases and keys."
+          ]
+        },
+        {
+          "title": "Read your files",
+          "details": [
+            "Enter on a supported file opens it in Companion. The reader supports Word DOCX, text, HTML, PDF, ODT, and EPUB. It reads without changing the source file. Escape returns to the file list.",
+            "The reader does not run programs or web scripts. Legacy DOC and unknown file types are not opened. Scanned PDFs need OCR, which is not included. Password-protected files may need to be unlocked first.",
+            "Cloud files need their provider to make them available. Files have a 50 MB reading limit. The new guide and audio course explain each command."
           ]
         }
       ]
@@ -20,16 +30,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Save and leave Options",
+          "title": "Know which dialog and task you are in",
           "details": [
-            "Press Enter in a setting or choose OK to save. You hear Options saved. The Options window closes and you return to your last task.",
-            "If a setting cannot be saved, Options stays open so you can fix it. Cancel still keeps your earlier choices."
-          ]
-        },
-        {
-          "title": "Fewer web options",
-          "details": [
-            "List website favorites is no longer in Web browser options. Your saved sites are still in the web browser menu."
+            "Options categories now say their full name and dialog. For example, Word processor options dialog.",
+            "Save Options to hear Options saved. You then hear where you are. For example, Main menu or Back to document."
           ]
         }
       ]

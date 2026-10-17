@@ -45,7 +45,7 @@ COURSES = (
   ('Set downloads and move in audio', 'Say "Auto download 5 episodes" to keep the newest five for the open show. Old automatic downloads beyond that limit are removed after new ones succeed. "Manual downloads" stops future automatic downloads and leaves saved files. "Back 15 seconds" and "Fast forward 30 minutes" seek where supported. "Next chapter" uses chapter marks if the episode has them.'),
  ), ('LISTEN TO PODCASTS','SAVED PODCASTS AND DOWNLOADS','LISTEN TO RADIO')),
  ('options','Options',('options','settings','options lesson','settings lesson','practice options'), (
-  ('Open and save options', 'Say "Options" or press Alt O. Choose a category with arrows and Enter. You hear its name and dialog. Tab reaches a control. Arrows change a choice; Space changes a checkbox. Press Enter in a setting or choose OK to save. You hear Options saved. Options closes and returns to your last task. Choose Cancel to keep the earlier settings. Say Next, Previous, and Okay for the same menu steps. Opening another category before OK discards unsaved changes.'),
+  ('Open and save options', 'Say "Options" or press Alt O. Choose a category with arrows and Enter. You hear its full name and dialog, such as Word processor options dialog. Tab reaches a control. Arrows change a choice; Space changes a checkbox. Press Enter in a setting or choose OK to save. You hear Options saved. Options closes and returns to your last task. Choose Cancel to keep the earlier settings. Say Next, Previous, and Okay for the same menu steps. Opening another category before OK discards unsaved changes.'),
   ('Choose settings for your tasks', 'Verbosity controls the amount of spoken help. Voice controls speed, volume, and pitch. Word processor defaults apply to new documents. Email chooses your sending account and message list size. Web browser chooses search, browser, and page-reading settings. Podcasts sets download limits for a chosen show. The following lessons explain each control by its name.'),
  ), ('CHANGE YOUR OPTIONS','SPEECH AND VOICES','USING VOICE COMMANDS')),
  ('help','Help and updates',('help and updates','help','updates','help lesson','updates lesson'), (
@@ -55,6 +55,13 @@ COURSES = (
  ), ('USING HELP AND LESSONS','CHECK FOR UPDATES','FIND YOUR GUIDE FILES','FIX A PROBLEM')),
 )
 
+
+COURSES += (('files','File manager',('file manager','files','file manager lesson'), (
+ ('Start with drives', 'Say "File manager" from the main menu. The drive list comes first. Use Up and Down to hear names. Enter opens an item. Home and End reach the list ends. You hear when a boundary is reached. Windows provides the drives and cloud roots. A disconnected location may not open.'),
+ ('Open folders and return', 'Say a name, or move to it and say "Open". Escape goes up one folder. From Documents and then Voice Companion, Escape returns to Documents. Ctrl Home returns to the drive list. Ctrl M returns to the main menu. The same actions are in the Alt menu.'),
+ ('Mark and move files', 'Press Space to mark each item. Say "Select notes.txt" to mark it by name. Ctrl C copies. Ctrl X cuts. Open the target folder and press Ctrl V. Copy and cut use the File Explorer clipboard. A duplicate name is not replaced. Delete asks you to confirm first.'),
+ ('Read documents', 'Enter on a supported file opens the reader. Use arrows or say "Read document". Say "Next paragraph" or "Find" followed by words. Escape returns to the file list. The reader does not edit the source file. PDF images need OCR, which is not included.'),
+ ),('FILE MANAGER','DOCUMENT READER')),)
 
 def split_instruction(text,limit=1000):
     pieces=re.split(r'(?:(?<=[.!?])|(?<=[.!?]["”]))\s+(?=[A-Z"“0-9])',text)

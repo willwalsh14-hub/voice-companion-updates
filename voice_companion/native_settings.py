@@ -157,7 +157,7 @@ class NativeSettings:
             else:self.announce('Settings closed.');close()
         def open_category():
             baseline[0]=copy.deepcopy(self.session.values);editing[0]=True;render()
-            self.announce(self.session.category_name().removesuffix(' options')+' dialog. '+describe(get_focus()));last_focus[0]=get_focus()
+            self.announce(self.session.category_name()+' dialog. '+describe(get_focus()));last_focus[0]=get_focus()
         def save():
             if not editing[0]:open_category();return
             if self.pending:return

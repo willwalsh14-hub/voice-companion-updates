@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.144-test.
+Guide version: 0.2.145-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -132,6 +132,23 @@ Contents
   23.2 Read and use your browser
   23.3 Understand this testing connection
 
+24 File Manager
+  24.1 Open File manager
+  24.2 Move through a list
+  24.3 Open a drive, folder, or file
+  24.4 Go to the parent folder
+  24.5 Select several items
+  24.6 Copy and paste
+  24.7 Cut and move
+  24.8 Rename one item
+  24.9 Delete files and folders
+  24.10 Find commands and keys
+25 Document Reader
+  25.1 Open supported files
+  25.2 Read with keys or speech
+  25.3 Return to your files
+  25.4 Know the reading limits
+
 1. GETTING STARTED
 
 1.1 Install Voice Companion
@@ -154,11 +171,11 @@ Say "What version?" to hear the version you are using.
 
 1.3 Use the main menu
 The main menu has these choices:
+- File manager
 - Word processor
 - Notepad
 - Email
 - Web browser
-- Regular browser connection
 - Radio
 - Podcasts
 - Options
@@ -879,11 +896,11 @@ Check the message before agreeing so you do not remove the wrong show.
 
 18.1 Open, change, and save a setting
 Say "Options" or press Alt+O. The app opens the Options menu.
-1. Use arrows to choose a category, then press Enter. You hear its name and dialog, such as Verbosity dialog.
+1. Use arrows to choose a category, then press Enter. You hear its full name and dialog, such as Verbosity options dialog.
 2. Use Tab or Shift+Tab to reach a setting, OK, or Cancel.
 3. Use arrows to change a listed choice. Press Space to check or uncheck a box.
 4. Type in a text box when needed.
-5. Press Enter in a setting or choose OK to save. You hear Options saved. Options closes and returns you to your last task. Choose Cancel or press Escape to leave changes unsaved.
+5. Press Enter in a setting or choose OK to save. You hear Options saved. Options closes and returns you to your last task. It names that place, such as Main menu or Back to document. Choose Cancel or press Escape to leave changes unsaved.
 By voice, use "Next", "Previous", and "Okay" to open a category. Say the setting name and its value when supported.
 Say "Cancel" or "Back" to return to categories without saving. Say "Close settings" to leave Options.
 Opening another category or tool before choosing OK discards unsaved setting changes.
@@ -1086,3 +1103,49 @@ The app skips history entries with private sign-in data. It also removes sign-in
 
 Booking calendars
 Choose a service before choosing a date. Some sites mark all dates as No information until you choose a service. Press Space or Enter on the radio button. Wait for the dates to load. Dates that the site disables stay marked unavailable.
+
+24. FILE MANAGER
+
+24.1 Open File manager
+File manager is the first main menu choice. Say "File manager" or use Down Arrow and Enter. You start at the drive list. This list uses Windows Shell, the system behind File Explorer. It includes local drives, mapped drives, and cloud roots that Windows has registered. Desktop, Documents, and Downloads are also listed. Cloud files may need a connection to download before they can be read.
+
+24.2 Move through a list
+Use Up Arrow and Down Arrow. Say "Next", "Previous", "Home", or "End". Home reaches the first item. End reaches the last. Lists do not wrap. You hear the item name, its type, and its place in the list. F5 or "Refresh" reads the folder again after changes made in another app.
+
+24.3 Open a drive, folder, or file
+Press Enter or say "Open", "Okay", or "That one" on the current item. You can also say its name. Say "C drive" to open that drive, or "Open" followed by a file name. A unique name can be used without its extension. If more than one name matches, use arrows or say the full path. Programs and unknown file types are not run.
+
+24.4 Go to the parent folder
+Escape goes up one folder. Say "Go back" or "Parent folder" for the same action. From Documents, then Voice Companion, Escape returns to Documents. At the top of a drive, Escape returns to the drive list. At the drive list, Escape returns to the main menu. Ctrl+Home or "Drive list" returns to drives. Ctrl+M or "Main menu" leaves File manager.
+
+24.5 Select several items
+Space checks or unchecks the current file or folder. Move to another item and press Space to add it. Moving does not clear the marked items. You can say "Select", "Unselect", "Mark", "Unmark", "Check", or "Uncheck". Add an item name to act on it directly. For example, say "Select notes.txt". Say "Select all" or press Ctrl+A to mark all files and folders in this list. Say "Clear selection" or press Ctrl+Shift+A to clear marks. Drives cannot be selected for file actions.
+
+24.6 Copy and paste
+Ctrl+C or "Copy" copies the marked items. If nothing is marked, it uses the current item. Open the folder where you want the copies. Ctrl+V or "Paste" puts them there. The clipboard is shared with File Explorer. You can copy in one app and paste in the other. If a name already exists, the action stops and tells you. It does not replace that file.
+
+24.7 Cut and move
+Ctrl+X or "Cut" marks the items to move. Open the target folder, then press Ctrl+V or say "Paste". Cut does not remove the files until paste succeeds. A folder cannot be placed inside itself. Windows checks access to the source and target folders.
+
+24.8 Rename one item
+Select just one item, or clear marks and move to it. Press F2 or say "Rename". Type or say the new name, with its extension, then press Enter. You can also say "Rename to" followed by the new name. Escape or "Cancel" leaves the name unchanged. A name that already exists is not replaced.
+
+24.9 Delete files and folders
+Delete or "Delete" asks you to confirm the named items. No is the first choice. Use Up Arrow to choose Yes and Enter to confirm. You can also say "Yes" or "No". Escape cancels. Windows handles recycling. If Windows cannot finish the action, check the folder before you try again. File manager does not provide a permanent-delete command. Drives cannot be deleted here.
+
+24.10 Find commands and keys
+Press Alt or say "File manager menu". Use arrows and Enter to choose an action. Each menu item reads its keyboard shortcut and voice command. Escape closes the menu. F1 or "File manager help" repeats the main commands. Press Alt+T to type a command when needed. While a slow location is loading, Escape cancels that opening request. File changes already in progress must finish; do not repeat the action until you hear its result.
+
+25. DOCUMENT READER
+
+25.1 Open supported files
+Enter on a supported file opens it inside Voice Companion. The reader supports Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB. It does not need Microsoft Word. Files open read-only. Your source file is not changed. The word processor still creates and edits Companion Word documents. Legacy DOC files and other unsupported types are not launched in another app.
+
+25.2 Read with keys or speech
+Use arrows to read by character or line. Ctrl+Left and Ctrl+Right move by word. You can select and copy text with the usual text keys. Say "Read document", "Continue reading", "Next word", "Previous line", "Next sentence", or "Next paragraph". Say "Go to beginning of document" or "Go to end of document". Say "Find" followed by text to move to a match.
+
+25.3 Return to your files
+Escape or "Back to files" closes the reader view and returns to the same folder and item. "Main menu" returns to the app menu. You can use Options while reading. Saving Options names the reader when it returns you there.
+
+25.4 Know the reading limits
+HTML and book text are read without scripts or remote content. PDF pages have page labels. A scanned page may have no text to read. The reader tells you when OCR is needed; OCR is not included. Files are limited to 50 MB and five million text characters. Password-protected PDFs need to be unlocked in another tool first. Cloud files need their provider to make them available. Some layouts and graphics do not have text that can be read.

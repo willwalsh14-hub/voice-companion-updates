@@ -11,7 +11,7 @@ from settings_model import CATEGORIES, fields
 class PracticeTutorialTests(unittest.TestCase):
     def test_every_app_has_task_lessons_and_complete_documented_reference(self):
         session=PracticeTutorial()
-        self.assertEqual([c['name'] for c in session.courses],['Getting started','Word processor','Notepad','Email','Web browser','Radio','Podcasts','Options','Help and updates'])
+        self.assertEqual([c['name'] for c in session.courses],['Getting started','Word processor','Notepad','Email','Web browser','Radio','Podcasts','Options','Help and updates','File manager'])
         guide={t['key']:t for t in HelpSession(Path(__file__).with_name('START HERE - Veteran.txt')).topics}
         for course,definition in zip(session.courses,COURSES):
             self.assertGreaterEqual(len(course['lessons']),12,course['name'])
