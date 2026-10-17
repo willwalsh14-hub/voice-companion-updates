@@ -116,6 +116,19 @@ class OptionsSaveReturnTests(unittest.TestCase):
                 speech.assert_called_once_with('Options saved.')
                 sync.assert_called_once_with(destination,True)
 
+    def test_success_drops_old_field_notices_before_save_confirmation(self):
+        import companion as app
+        from queue import Queue
+        from types import SimpleNamespace
+        from unittest.mock import Mock,patch
+        window=SimpleNamespace(settings_notices=Queue())
+        window.settings_notices.put('Verbosity low')
+        def announce(text):
+            self.assertEqual(text,'Options saved.')
+            self.assertTrue(window.settings_notices.empty())
+        with patch.object(app,'APP_WINDOW',window),patch.object(app,'SETTINGS_PANEL',Mock()),patch.object(app,'apply_settings'),patch.object(app,'speak',side_effect=announce),patch.object(app,'sync_app_context'),patch('app_settings.stop_preview'):
+            app.save_options({},'settings')
+
     def test_failed_save_does_not_close_or_announce_success(self):
         import companion as app
         from unittest.mock import Mock,patch

@@ -646,6 +646,9 @@ def save_options(values,mode):
     __import__('app_settings').stop_preview(sys.modules[__name__])
     apply_settings(values)
     SETTINGS_PANEL.accepted()
+    if APP_WINDOW is not None:
+        # Old field notices must not interrupt the successful save message.
+        while not APP_WINDOW.settings_notices.empty():APP_WINDOW.settings_notices.get_nowait()
     speak('Options saved.')
     if mode=='sleep' and SLEEP_RETURN_MODE=='settings':SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
     elif mode=='settings':mode=SETTINGS_RETURN_MODE
