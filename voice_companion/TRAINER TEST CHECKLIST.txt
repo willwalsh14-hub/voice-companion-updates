@@ -197,3 +197,6 @@ Dictate in a text file, mail, and a web field. Use arrows, Home, End, Shift plus
 Book Services regression
 Open fullcircleat.com, then Book Services. Find a service radio button with the virtual cursor. Press Space, then test Enter on another service. Check that one service stays selected and the dates load. Check a date with available times. Do not submit a booking during this check.
 Set Echo dictated text to at the end of a sentence. Say I will call, pause, then you tomorrow, pause, then period. The full sentence should be read once. Check stop speech and a change of document clear old text.
+
+Options close and return
+Open Options from a document, mail, web page, and note. Open a category. Check the name is followed by dialog. Change a choice or checkbox and press Enter. Check Options saved is spoken once, the window closes, and focus returns to the same task and place. Reopen Options and check the value was saved. Check Cancel still discards changes. Web browser options must not list website favorites. Favorites remain in the browser menu.

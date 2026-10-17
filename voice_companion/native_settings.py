@@ -157,7 +157,7 @@ class NativeSettings:
             else:self.announce('Settings closed.');close()
         def open_category():
             baseline[0]=copy.deepcopy(self.session.values);editing[0]=True;render()
-            self.announce(self.session.category_name()+'. '+describe(get_focus()));last_focus[0]=get_focus()
+            self.announce(self.session.category_name().removesuffix(' options')+' dialog. '+describe(get_focus()));last_focus[0]=get_focus()
         def save():
             if not editing[0]:open_category();return
             if self.pending:return
@@ -249,7 +249,7 @@ class NativeSettings:
                     u.SetWindowTextW(status_handle,self.last_notice)
                     while not self.actions.empty():
                         action,payload=self.actions.get_nowait()
-                        if action=='accepted':self.session.original=copy.deepcopy(self.session.values);show_menu();return 0
+                        if action=='accepted':self.session.original=copy.deepcopy(self.session.values);close(saved=True);return 0
                         if action=='cancel':close();return 0
                         if action=='failed':self.pending=False;self.announce(payload)
                         if action=='voice' and not self.pending:voice(payload)

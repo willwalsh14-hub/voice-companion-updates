@@ -103,6 +103,35 @@ class SettingsTests(unittest.TestCase):
         self.assertIn('Email options',CATEGORIES);self.assertIn('Word processor options',CATEGORIES);self.assertIn('Radio options',CATEGORIES)
         for category in CATEGORIES:self.assertTrue(fields(category,self.context))
 
+class OptionsSaveReturnTests(unittest.TestCase):
+    def test_success_announces_once_and_returns_to_each_task(self):
+        import companion as app
+        from unittest.mock import Mock,patch
+        for destination in ('document','email_draft','web','note','awake'):
+            panel=Mock()
+            with patch.object(app,'SETTINGS_PANEL',panel),patch.object(app,'SETTINGS_RETURN_MODE',destination),patch.object(app,'apply_settings') as apply,patch.object(app,'speak') as speech,patch.object(app,'sync_app_context') as sync,patch('app_settings.stop_preview'):
+                self.assertEqual(app.save_options({'verbosity':'low'},'settings'),destination)
+                apply.assert_called_once_with({'verbosity':'low'})
+                panel.accepted.assert_called_once()
+                speech.assert_called_once_with('Options saved.')
+                sync.assert_called_once_with(destination,True)
+
+    def test_failed_save_does_not_close_or_announce_success(self):
+        import companion as app
+        from unittest.mock import Mock,patch
+        panel=Mock()
+        with patch.object(app,'SETTINGS_PANEL',panel),patch.object(app,'apply_settings',side_effect=ValueError('Invalid setting')),patch.object(app,'speak') as speech,patch('app_settings.stop_preview'):
+            with self.assertRaises(ValueError):app.save_options({},'settings')
+            panel.accepted.assert_not_called();speech.assert_not_called()
+
+    def test_sleep_retains_previous_task_and_web_options_have_no_favorites_action(self):
+        import companion as app
+        from unittest.mock import Mock,patch
+        self.assertNotIn('web_favorites',{f.key for f in fields('Web browser',{})})
+        with patch.object(app,'SETTINGS_PANEL',Mock()),patch.object(app,'SETTINGS_RETURN_MODE','document'),patch.object(app,'SLEEP_RETURN_MODE','settings'),patch.object(app,'apply_settings'),patch.object(app,'speak'),patch.object(app,'sync_app_context'),patch('app_settings.stop_preview'):
+            self.assertEqual(app.save_options({},'sleep'),'sleep')
+            self.assertEqual(app.SLEEP_RETURN_MODE,'document')
+
 if __name__=='__main__':unittest.main()
 
 

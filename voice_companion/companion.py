@@ -46,7 +46,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.143-test'
+APP_VERSION = '0.2.144-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -639,6 +639,18 @@ def _navigation_key(key,mode):
 def apply_settings(values):
     from app_settings import apply_settings as apply
     return apply(sys.modules[__name__],values)
+
+def save_options(values,mode):
+    """Return to the previous task only after settings were saved successfully."""
+    global SLEEP_RETURN_MODE
+    __import__('app_settings').stop_preview(sys.modules[__name__])
+    apply_settings(values)
+    SETTINGS_PANEL.accepted()
+    speak('Options saved.')
+    if mode=='sleep' and SLEEP_RETURN_MODE=='settings':SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
+    elif mode=='settings':mode=SETTINGS_RETURN_MODE
+    sync_app_context(mode,True)
+    return mode
 
 def apply_document_defaults(document):
     from app_settings import apply_document_defaults as apply
@@ -2964,10 +2976,7 @@ def main():
                     kind,values=settings_result
                     if kind=='general':
                         try:
-                            __import__('app_settings').stop_preview(sys.modules[__name__])
-                            apply_settings(values)
-                            SETTINGS_PANEL.accepted()
-                            speak('Settings saved.')
+                            mode=save_options(values,mode)
                         except Exception as exc:
                             SETTINGS_PANEL.failed('Settings were not saved: '+str(exc))
                     elif kind=='action':

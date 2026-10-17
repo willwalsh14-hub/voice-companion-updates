@@ -1,17 +1,17 @@
 {
-  "version": "0.2.143-test",
+  "version": "0.2.144-test",
   "status": "Testing build",
   "date": "October 17, 2026",
-  "baseline": "0.2.142-test",
-  "scope": "Select web choices and hear full sentences.",
+  "baseline": "0.2.143-test",
+  "scope": "Save options and return to your task.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "A shorter echo pause",
+          "title": "Clear dialog names",
           "details": [
-            "The added pause before speech reads back your text is now 0.2 seconds. It was 0.35 seconds. Speech still waits for the current voice to finish."
+            "Open a category in Options to hear its name and the word dialog. For example, you hear Verbosity dialog."
           ]
         }
       ]
@@ -20,16 +20,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Hear the full sentence",
+          "title": "Save and leave Options",
           "details": [
-            "Sentence echo keeps all the phrases you speak before a full stop. A pause no longer drops the first part of the sentence. Stop speech or change tasks to clear old readback."
+            "Press Enter in a setting or choose OK to save. You hear Options saved. The Options window closes and you return to your last task.",
+            "If a setting cannot be saved, Options stays open so you can fix it. Cancel still keeps your earlier choices."
           ]
         },
         {
-          "title": "Choose a booking service",
+          "title": "Fewer web options",
           "details": [
-            "Native radio buttons and checkboxes use their normal Space action. A label or a details button over the choice no longer blocks a mouse click.",
-            "On booking sites, choose a service first. The site can then load dates and times. Dates marked No information before that choice are not yet ready. The app still reports dates the site disables."
+            "List website favorites is no longer in Web browser options. Your saved sites are still in the web browser menu."
           ]
         }
       ]

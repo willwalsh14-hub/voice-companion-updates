@@ -95,7 +95,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before and self.notices[-1]==('off' if before else 'on'))
         self.u.PostMessageW(checkbox,0x100,0x0D,0)
         self.wait(lambda:len(self.saved)==1)
-        self.assertFalse(self.panel.closed.is_set())
+        self.assertTrue(self.panel.closed.wait(5))
         self.assertEqual(len(self.saved),1);self.assertEqual(self.saved[0]['duck_audio'],not before)
     def test_category_letters_stop_enter_opens_and_alt_o_returns(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
@@ -130,11 +130,13 @@ class NativeSettingsTests(unittest.TestCase):
         self.u.PostMessageW(combo,0x100,0x0D,0)
         self.wait(lambda:len(self.saved)==1)
         self.assertEqual(self.saved[0]['verbosity'],'medium')
+        self.assertTrue(self.panel.closed.wait(5))
+        self.assertEqual(self.session.original['verbosity'],'medium')
     def test_enter_opens_category_and_focus_is_spoken(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x0D,0)
         self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
-        self.assertTrue(any('Verbosity' in message for message in self.notices))
+        self.assertTrue(any(message.startswith('Verbosity dialog.') for message in self.notices))
 
     def test_text_entry_is_self_voicing_and_password_is_hidden(self):
         hwnd=self.open_panel();self.panel.command('documents')
