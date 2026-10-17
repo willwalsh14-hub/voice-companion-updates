@@ -1221,7 +1221,7 @@ def web_dictation_feedback(result):
     if web_session:
         for owner in (web_session,getattr(web_session,'backend',None)):
             value=getattr(owner,'last_dictated_text',None)
-            if value is not None:
+            if isinstance(value,str):
                 text=value;owner.last_dictated_text=None
     if text is None:speak(result)
     elif text:dictation_feedback('Added: '+text)
