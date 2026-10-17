@@ -185,6 +185,32 @@ class SemanticWebTests(unittest.TestCase):
         self.session.keyboard('Quick:r');self.session.keyboard('Activate')
         self.assertTrue(self.page.locator('#plan').is_checked())
 
+    def test_booking_radio_overlay_activates_once_and_calendar_updates_in_frame(self):
+        import time
+        markup="""<h1>Book services</h1><style>.card{position:relative;width:400px;height:120px}.card input{position:absolute;inset:0;width:100%;height:100%;opacity:0}.card label{position:absolute;inset:0;display:block}.card button{position:absolute;left:120px;top:35px;width:160px;height:50px}</style>
+        <div class=card><input id=service type=radio name=service tabindex=-1 aria-label="Training service" onchange="window.changes=(window.changes||0)+1;setTimeout(()=>{document.querySelector('#date').disabled=false;document.querySelector('#date').setAttribute('aria-label','Monday, October 19, 2026. Times available')},200)"><label for=service>Training service<button type=button onclick="event.preventDefault();window.details=(window.details||0)+1">Read more</button></label></div>
+        <button id=date disabled aria-label="Monday, October 19, 2026. No information">19</button>"""
+        self.context.route('https://booking.test/**',lambda route:route.fulfill(content_type='text/html',body=markup))
+        self.load('<iframe title="Booking calendar" src="https://booking.test/calendar"></iframe>')
+        frame=self.page.frames[1]
+        self.session._refresh(read=False,wait=False)
+        self.assertIn('No information',self.session.reading.text)
+        self.session.keyboard('Quick:r')
+        started=time.monotonic();result=self.session.keyboard('Space')
+        self.assertLess(time.monotonic()-started,3,result)
+        self.assertTrue(frame.locator('#service').is_checked(),result)
+        self.assertEqual(frame.evaluate('window.changes'),1)
+        self.assertIsNone(frame.evaluate('window.details'))
+        frame.wait_for_function("!document.querySelector('#date').disabled")
+        self.session._refresh(read=False,preserve=True,wait=False)
+        self.assertIn('Times available',self.session.reading.text)
+        date=next(e for e in self.session.snapshot['elements'] if e.get('id')=='date')
+        self.assertFalse(date['disabled'])
+        self.assertNotIn('No information',self.session.reading.text)
+        self.session.keyboard('Space')
+        self.assertTrue(frame.locator('#service').is_checked())
+        self.assertEqual(frame.evaluate('window.changes'),1)
+
     def test_click_only_aria_radio_and_delayed_state_activate_once(self):
         self.load("""<div id=a role=radio tabindex=0 aria-label=Standard aria-checked=false onclick="window.actions=(window.actions||0)+1;setTimeout(()=>{this.setAttribute('aria-checked','true');document.querySelector('#b').setAttribute('aria-checked','false')},350)">Standard</div><div id=b role=radio tabindex=0 aria-label=Express aria-checked=true onclick="window.actions=(window.actions||0)+1;this.setAttribute('aria-checked','true');document.querySelector('#a').setAttribute('aria-checked','false')">Express</div>""")
         self.session.keyboard('Quick:r');notice=self.session.keyboard('Space')

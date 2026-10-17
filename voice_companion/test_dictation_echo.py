@@ -24,6 +24,22 @@ class DictationRecoveryTests(unittest.TestCase):
         echo.add('Old.','phrase by phrase');echo.clear();now[0]=5
         self.assertIsNone(echo.take())
 
+    def test_real_spoken_phrases_survive_interrupt_until_sentence_ends(self):
+        import companion as c
+        from queue import Queue
+        from types import SimpleNamespace
+        echo=DictationEcho(lambda:0)
+        with tempfile.TemporaryDirectory() as folder:
+            doc=VoiceDocument(Path(folder));doc.dictating=True
+            window=SimpleNamespace(commands=Queue(),ui_actions=Queue(),show=lambda text:None)
+            with patch.object(c,'APP_WINDOW',window),patch.object(c,'document',doc),patch.object(c,'DICTATION_ECHO',echo),patch.object(c,'TEXT_MODE',False),patch.object(c,'speak'),patch.object(c,'sync_app_context'),patch.object(c,'INPUT_MODE','dictation'),patch.object(c,'KEYBOARD_SPEECH',None),patch.object(c,'ESPEAK_SPEECH',None),patch.object(c,'AI_SPEECH',None),patch.dict(c.PREFERENCES,{'dictation_echo':'at the end of a sentence'}):
+                for phrase in ('I will call','you tomorrow','period'):
+                    c.handle(phrase,'document')
+                self.assertEqual(list(echo.pending),['I will call you tomorrow.'])
+                c.interrupt_speech()
+                self.assertEqual(echo.sentence,'')
+                self.assertFalse(echo.pending)
+
     def test_real_dictation_type_and_keyboard_recovery_in_document_and_mail(self):
         import companion as c
         with tempfile.TemporaryDirectory() as folder:

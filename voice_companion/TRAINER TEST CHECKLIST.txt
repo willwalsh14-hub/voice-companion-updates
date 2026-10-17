@@ -193,3 +193,7 @@ Dictation and keyboard checks
 Choose each Dictation type in Input options, save, and restart. Dictate I I um will call in text and mail. AI-based should trim the clear false start; Old school should keep it.
 In Verbosity, try all three Echo dictated text choices. Check the short pause and no Added label. In sentence mode, pause mid-sentence, then finish it. Check quiet mode.
 Dictate in a text file, mail, and a web field. Use arrows, Home, End, Shift plus arrows, and type a change. Keep all new text. Repeat with fast typing just before speech ends.
+
+Book Services regression
+Open fullcircleat.com, then Book Services. Find a service radio button with the virtual cursor. Press Space, then test Enter on another service. Check that one service stays selected and the dates load. Check a date with available times. Do not submit a booking during this check.
+Set Echo dictated text to at the end of a sentence. Say I will call, pause, then you tomorrow, pause, then period. The full sentence should be read once. Check stop speech and a change of document clear old text.

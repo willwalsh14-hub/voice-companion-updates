@@ -630,13 +630,14 @@ class BrowserBackend:
         """One user action sends one native activation, with no state retries."""
         element=self._element(item)
         if element.get_attribute('aria-busy')=='true':return 'This control is busy. Wait for its result.'
-        # Choose one event path. Native/button widgets have click defaults;
-        # generic widgets with explicit keyboard handlers need Space instead.
-        keyboard=element.evaluate("""e=>!e.matches('input,button')&&!!e.closest('[role="radio"],[role="checkbox"]')&&
-          [e,...(function*(n){while(n.parentElement){n=n.parentElement;yield n;}})(e)].some(n=>typeof n.onkeydown==='function'||typeof n.onkeyup==='function'||n.hasAttribute('onkeydown')||n.hasAttribute('onkeyup'))""")
+        # Native choices use trusted Space so overlapping labels and detail
+        # buttons cannot intercept a center-point click. Activate only once.
+        keyboard=element.evaluate("""e=>e.matches('input[type="radio"],input[type="checkbox"]')||(!e.matches('input,button')&&!!e.closest('[role="radio"],[role="checkbox"]')&&
+          [e,...(function*(n){while(n.parentElement){n=n.parentElement;yield n;}})(e)].some(n=>typeof n.onkeydown==='function'||typeof n.onkeyup==='function'||n.hasAttribute('onkeydown')||n.hasAttribute('onkeyup')))""")
         before=element.evaluate("e=>({checked:'checked' in e?e.checked:e.getAttribute('aria-checked'),busy:e.getAttribute('aria-busy')})")
-        if keyboard:element.press('Space',timeout=10000)
-        else:element.click(timeout=10000)
+        if item.get('tag')=='input' and item.get('type')=='radio' and before['checked'] is True:return ''
+        if keyboard:element.press('Space',timeout=2000)
+        else:element.click(timeout=2000)
         # Wait for delayed rendering without activating the control again.
         try:
             delay=600 if re.search(r'robot|human|verif|captcha',_label(item),re.I) else 150

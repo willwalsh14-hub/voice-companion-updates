@@ -46,7 +46,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.142-test'
+APP_VERSION = '0.2.143-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -791,6 +791,12 @@ def web_feedback_control(text,mode):
     from web_browse import voice_browse_key
     return bool(voice_browse_key(command) or reading_request(command)) or command in ('list links','list headings','read page','leave website','go back','top of page','beginning of page','start of page','bottom of page','end of page','go to top of page','go to beginning of page','go to bottom of page','go to end of page')
 
+def interrupt_for_dictation():
+    # New speech cancels current audio, not the words of an unfinished sentence.
+    sentence,choice=DICTATION_ECHO.sentence,DICTATION_ECHO.choice
+    interrupt_speech()
+    DICTATION_ECHO.sentence,DICTATION_ECHO.choice=sentence,choice
+
 def interrupt_speech():
     global SPEECH_PAUSED
     DICTATION_ECHO.clear()
@@ -1134,6 +1140,7 @@ def dictation_feedback(result):
         DICTATION_ECHO.add(str(result)[7:], PREFERENCES.get('dictation_echo','phrase by phrase'))
         if APP_WINDOW is not None:APP_WINDOW.show('Text added.')
         return
+    DICTATION_ECHO.clear()
     speak(result)
 
 def poll_dictation_echo():
@@ -1647,7 +1654,7 @@ def _handle(text, mode, typed=False):
         control_speech(control)
         return mode
     if text and (mode!='help' or HelpSession.accepts(text) or spoken_control(command)):
-        interrupt_speech()
+        interrupt_for_dictation()
         field=getattr(web_session,'keyboard_field',None) if mode=='web' else None
         fields=getattr(web_session,'form_fields',None);index=getattr(web_session,'form_index',None)
         if not isinstance(field,dict) and isinstance(fields,list) and isinstance(index,int) and 0<=index<len(fields):field=fields[index]
@@ -3115,7 +3122,7 @@ def main():
                 # Stop the current readback as soon as the offline recognizer
                 # recognizes a new utterance. Its words can still be refined
                 # by Parakeet before executing the requested action.
-                interrupt_speech()
+                interrupt_for_dictation()
             if mode != 'sleep' and fast_command_request(local_control, mode):
                 utterance.clear()
                 mode = handle(local_control, mode)

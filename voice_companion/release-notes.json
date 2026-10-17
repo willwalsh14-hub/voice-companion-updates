@@ -1,18 +1,17 @@
 {
-  "version": "0.2.142-test",
+  "version": "0.2.143-test",
   "status": "Testing build",
   "date": "October 17, 2026",
-  "baseline": "0.2.141-test",
-  "scope": "Hear spoken text and keep the keyboard ready.",
+  "baseline": "0.2.142-test",
+  "scope": "Select web choices and hear full sentences.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose when to hear your text",
+          "title": "A shorter echo pause",
           "details": [
-            "Open Verbosity, then Echo dictated text. Choose phrase by phrase, at the end of a sentence, or do not echo dictated text.",
-            "Phrase by phrase is the default. Readback starts after a short pause. It speaks your text with no Added label. Typing echo has its own choice."
+            "The added pause before speech reads back your text is now 0.2 seconds. It was 0.35 seconds. Speech still waits for the current voice to finish."
           ]
         }
       ]
@@ -21,10 +20,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Keep editing after speech",
+          "title": "Hear the full sentence",
           "details": [
-            "Old cursor updates no longer block the text window after speech adds words. The app keeps the latest text and makes the keyboard ready again.",
-            "Both Dictation type choices have tests for text and mail. AI-based trims clear false starts. Old school keeps the usual words. Both use the current saved choice."
+            "Sentence echo keeps all the phrases you speak before a full stop. A pause no longer drops the first part of the sentence. Stop speech or change tasks to clear old readback."
+          ]
+        },
+        {
+          "title": "Choose a booking service",
+          "details": [
+            "Native radio buttons and checkboxes use their normal Space action. A label or a details button over the choice no longer blocks a mouse click.",
+            "On booking sites, choose a service first. The site can then load dates and times. Dates marked No information before that choice are not yet ready. The app still reports dates the site disables."
           ]
         }
       ]

@@ -22,7 +22,7 @@ class DictationEcho:
         text=text.strip()
         if not text or choice=='do not echo dictated text':return
         if choice=='at the end of a sentence':
-            self.sentence=(self.sentence+' '+text).strip()
+            self.sentence=re.sub(r'\s+([,.!?;:])',r'\1',(self.sentence+' '+text).strip())
             # Only complete sentences are spoken; keep the unfinished tail.
             end=list(re.finditer(r'[.!?](?:["\u201d\u2019])?(?=\s|$)',self.sentence))
             if not end:return
@@ -30,7 +30,7 @@ class DictationEcho:
             text=self.sentence[:stop]
             self.sentence=self.sentence[stop:].strip()
         self.pending.append(text)
-        self.ready_at=self.clock()+.35
+        self.ready_at=self.clock()+.2
 
     def take(self, busy=False):
         if busy or not self.pending or self.clock()<self.ready_at:return None
