@@ -1,27 +1,18 @@
 {
-  "version": "0.2.145-test",
+  "version": "0.2.146-test",
   "status": "Testing build",
-  "date": "October 17, 2026",
-  "baseline": "0.2.144-test",
-  "scope": "Browse files and read local documents in Companion.",
+  "date": "October 19, 2026",
+  "baseline": "0.2.145-test",
+  "scope": "Improve update reliability and document clipboard recovery.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "File manager",
+          "title": "Maintenance testing build",
           "details": [
-            "File manager is the first main menu choice. It opens a drive list from Windows. It also lists mapped drives, registered cloud roots, Desktop, Documents, and Downloads.",
-            "Use arrows to move and Enter to open. Escape goes up one folder. Space marks items. Use Home and End for list ends. Say an item name or a normal list command.",
-            "Copy, cut, paste, rename, and delete work on files and folders. Delete asks first. Drives cannot be changed by those commands. Alt opens a menu with the voice phrases and keys."
-          ]
-        },
-        {
-          "title": "Read your files",
-          "details": [
-            "Enter on a supported file opens it in Companion. The reader supports Word DOCX, text, HTML, PDF, ODT, and EPUB. It reads without changing the source file. Escape returns to the file list.",
-            "The reader does not run programs or web scripts. Legacy DOC and unknown file types are not opened. Scanned PDFs need OCR, which is not included. Password-protected files may need to be unlocked first.",
-            "Cloud files need their provider to make them available. Files have a 50 MB reading limit. The new guide and audio course explain each command."
+            "This build focuses on installing updates reliably and keeping document copy and paste working when Windows clipboard access is temporarily unavailable.",
+            "The file manager and supported document-reader features introduced in the previous build remain available."
           ]
         }
       ]
@@ -30,10 +21,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Know which dialog and task you are in",
+          "title": "Updates close the browser connection before installation",
           "details": [
-            "Options categories now say their full name and dialog. For example, Word processor options dialog.",
-            "Save Options to hear Options saved. You then hear where you are. For example, Main menu or Back to document."
+            "Companion closes its installed browser connection helpers before starting Setup, so they no longer keep application files in use after the main app closes.",
+            "Only helpers from the matching Companion installation are closed. Your regular Chrome or Edge browser is not closed."
+          ]
+        },
+        {
+          "title": "Document copy and paste recover from clipboard errors",
+          "details": [
+            "When Windows cannot open the clipboard, Companion keeps the copied document text in its internal clipboard so it can still be pasted within Companion."
           ]
         }
       ]
