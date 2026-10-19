@@ -7,6 +7,48 @@ from media_hub import MediaHub
 from media_navigation import MediaNavigation
 
 class ConsumerAudioTests(unittest.TestCase):
+    def test_local_video_then_audio_switch_keeps_playback_controls_connected(self):
+        self.page.goto((self.folder/'audio-player.html').as_uri())
+        data=self.page.evaluate('''async()=>{
+            const canvas=document.createElement('canvas');canvas.width=32;canvas.height=24;
+            const ctx=canvas.getContext('2d');ctx.fillRect(0,0,32,24);
+            const stream=canvas.captureStream(10);const parts=[];
+            const recorder=new MediaRecorder(stream,{mimeType:'video/webm'});
+            const result=new Promise(resolve=>{recorder.ondataavailable=e=>parts.push(e.data);recorder.onstop=async()=>resolve(Array.from(new Uint8Array(await new Blob(parts).arrayBuffer())));});
+            recorder.start();const timer=setInterval(()=>{ctx.fillStyle='blue';ctx.fillRect(0,0,32,24);},50);
+            await new Promise(resolve=>setTimeout(resolve,1000));clearInterval(timer);recorder.stop();
+            return await result;
+        }''')
+        path=self.folder/'sample.webm';path.write_bytes(bytes(data))
+        self.player.open(path.as_uri(),'Local video','local')
+        self.assertEqual(self.page.evaluate("document.getElementById('audio').tagName"),'VIDEO')
+        self.assertFalse(self.player.status()['paused'])
+        self.page.evaluate("document.querySelectorAll('button')[1].click()")
+        self.assertTrue(self.player.status()['paused'])
+        audio=self.folder/'sample.wav';audio.write_bytes(self.wav)
+        self.player.open(audio.as_uri(),'Local audio','local')
+        self.assertEqual(self.page.evaluate("document.getElementById('audio').tagName"),'AUDIO')
+        self.page.evaluate("document.querySelectorAll('button')[1].click()")
+        self.assertTrue(self.player.status()['paused'])
+
+    def test_local_file_playback_volume_speed_pause_seek_and_stop(self):
+        with tempfile.TemporaryDirectory() as other:
+            path=Path(other)/'sample.wav';path.write_bytes(self.wav)
+            self.player.open(path.as_uri(),'Local fixture','local')
+            self.assertEqual(self.player.kind,'local')
+            self.assertFalse(self.player.status()['paused'])
+            self.assertAlmostEqual(self.player.adjust('volume',-.4),.6)
+            self.player.set_ducked(True)
+            self.assertAlmostEqual(self.page.evaluate("document.getElementById('audio').volume"),.108)
+            self.player.set_ducked(False)
+            self.assertAlmostEqual(self.page.evaluate("document.getElementById('audio').volume"),.6)
+            self.assertEqual(self.player.adjust('speed',1.5),1.5)
+            self.player.control('pause');self.assertTrue(self.player.status()['paused'])
+            self.assertIsNotNone(self.player.control('seek',position=1))
+            self.player.control('play');self.assertFalse(self.player.status()['paused'])
+            self.player.control('stop');self.assertTrue(self.player.status()['paused'])
+            self.assertLess(self.player.status()['position'],.1)
+
     @classmethod
     def setUpClass(cls):
         cls.driver=sync_playwright().start()

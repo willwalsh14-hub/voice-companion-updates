@@ -16,6 +16,13 @@ class Item:
     filesystem:bool=True
     def label(self):return self.name+', '+('drive' if self.drive else 'folder' if self.folder else 'file')
 
+def location_name(path):
+    if path is None:return 'Drive list'
+    clean=str(path).rstrip('\\/')
+    drive,tail=ntpath.splitdrive(clean)
+    if drive and not tail:return drive.rstrip(':')+' drive' if len(drive)==2 else ntpath.basename(drive)
+    return ntpath.basename(clean) or 'Root folder'
+
 def valid_name(name):
     name=name.strip()
     if not name or name in ('.','..') or re.search(r'[<>:"/\\|?*\x00-\x1f]',name) or name.endswith(('.', ' ')) or name.split('.')[0].upper() in {'CON','PRN','AUX','NUL',*(f'COM{i}' for i in range(1,10)),*(f'LPT{i}' for i in range(1,10))}:
@@ -43,7 +50,10 @@ class ShellFiles:
         shell=self._shell();result=[]
         folder=shell.NameSpace(17)
         if folder:
-            result=[self._item(e,True) for e in folder.Items() if e.IsFolder]
+            # This PC also contains known folders; only volume/UNC roots are drives.
+            result=[self._item(e,True) for e in folder.Items()
+                    if e.IsFolder and str(e.Path).rstrip('\\/').casefold()==ntpath.splitdrive(str(e.Path))[0].casefold()
+                    and ntpath.splitdrive(str(e.Path))[0]]
         # Explorer cloud providers register per-user roots with the Shell.
         import winreg
         import win32api,win32security,win32con
@@ -63,10 +73,6 @@ class ShellFiles:
                             if namespace:result.append(Item(str(namespace.Title),str(path),True,True))
                         except OSError:continue
             except OSError:pass
-        # Known folders also honor Explorer redirection, including OneDrive.
-        for name in ('Desktop','Documents','Downloads'):
-            folder=shell.NameSpace('shell:'+name)
-            if folder:result.append(Item(name,str(folder.Self.Path),True,False,bool(folder.Self.IsFileSystem)))
         unique={}
         for item in result:unique.setdefault(item.path.casefold(),item)
         return list(unique.values())
@@ -146,8 +152,8 @@ class ShellFiles:
         operation.PerformOperations()
         if operation.GetAnyOperationsAborted():raise ValueError('Windows did not finish every item. Refresh and check the folder before trying again.')
 
-MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+Home','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Ctrl+M','main menu'))
-HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl Home returns to drives. Ctrl M returns to the main menu.'
+MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+D','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Say Main menu','main menu'))
+HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl D returns to drives. Say Main menu to leave File manager.'
 
 class FileManager:
     def __init__(self,backend=None):
@@ -180,12 +186,14 @@ class FileManager:
         return labels[i]+'. '+str(i+1)+' of '+str(len(labels))+'.' if labels else 'This folder is empty.'
     def refresh(self,path=None,push=False,preserve=None,restore_index=None):
         def done(items):
+            extensions=getattr(self,'pick_extensions',None)
+            if path is not None and extensions:items=[item for item in items if item.folder or Path(item.path).suffix.lower() in extensions]
             if push:self.history.append((self.location,self.index))
             self.location=path;self.items=items;self.selected.clear()
             found=next((n for n,i in enumerate(items) if i.path==preserve),None)
             self.index=found if found is not None else min(restore_index,max(0,len(items)-1)) if restore_index is not None else 0
             self.revision+=1
-            return ('Drive list' if path is None else path)+'. '+self.say_current()
+            return location_name(path)+'. '+self.say_current()
         return self.start_job(lambda:self.backend.roots() if path is None else self.backend.list(path),done,'Loading drive list.' if path is None else 'Opening folder.')
     def refresh_here(self):return self.refresh(self.location,preserve=self.current().path if self.current() else None)
     def targets(self):
@@ -276,12 +284,15 @@ class FileManager:
             if len(targets)!=1:raise ValueError('Select one item to rename.')
             if match[1]:return self.mutate('rename',[targets[0].path],name=valid_name(match[1]))
             self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, including the extension, then press Enter.'
-        if cmd in ('status','where am i','current item','read current item'):return ('Drive list. ' if self.location is None else self.location+'. ')+self.say_current()
+        if cmd in ('status','where am i','current item','read current item'):return location_name(self.location)+'. '+self.say_current()
         if cmd in ('open','enter','okay','ok','activate','confirm','that one'):
             item=self.current()
             if not item:return 'This folder is empty.'
             if item.folder:return self.refresh(item.path,push=True)
             if not item.filesystem:raise ValueError('Windows has not exposed this file for reading.')
+            if getattr(self,'pick_extensions',None):
+                if Path(item.path).suffix.lower() not in self.pick_extensions:raise ValueError('Choose a supported '+getattr(self,'pick_label','document')+' file.')
+                return self.start_job(lambda:Path(item.path),self.finish_pick,'Opening '+item.name+'.')
             from document_reader import open_document
             return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+'.')
         name=re.sub(r'^open(?: file| folder| drive)?\s+','',text,flags=re.I);self.choose(name)
@@ -291,3 +302,4 @@ class FileManager:
     def after_change(self,message):
         self.selected.clear();self.refresh_here();return message+' Refreshing folder.'
     def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+reader.reading.read(True)
+    def finish_pick(self,path):self.opened=path;return 'Selected '+path.name+'.'

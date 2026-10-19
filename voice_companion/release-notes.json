@@ -1,18 +1,25 @@
 {
-  "version": "0.2.146-test",
+  "version": "0.2.147-test",
   "status": "Testing build",
   "date": "October 19, 2026",
-  "baseline": "0.2.145-test",
-  "scope": "Fix updates and copy and paste.",
+  "baseline": "0.2.146-test",
+  "scope": "New menus, document keys, and a media player.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Fixes for this test build",
+          "title": "Word processor menu",
           "details": [
-            "This build fixes updates and copy and paste.",
-            "You can still browse files and read them in the app."
+            "Choose Word processor to create a document, open one, view recent files, or change its options. Open starts at the File manager drive list. Word files open for editing. Other supported files open for reading.",
+            "Press Alt in a document for its command menu. Use the usual keys to save, find, copy, paste, undo, or change text style. The menu shows the keys for each action."
+          ]
+        },
+        {
+          "title": "Media menu and player",
+          "details": [
+            "The main menu now has Media. It holds Radio, Podcasts, and Media player.",
+            "Use Media player to open a local sound or video file. Space plays or pauses. Left and Right move back or forward 15 seconds. Up and Down change volume. You can also change speed or stop playback. Some file types may not play."
           ]
         }
       ]
@@ -21,16 +28,11 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Install an update",
+          "title": "Clear file lists and folder speech",
           "details": [
-            "The app now stops its browser helper before Setup starts. This lets Setup change files that were in use.",
-            "Your Chrome or Edge browser stays open. Helpers from other app folders are left alone."
-          ]
-        },
-        {
-          "title": "Copy and paste text",
-          "details": [
-            "If Windows cannot open the clipboard, the app keeps a copy of your text. You can still paste that text in the app."
+            "Ctrl+D returns to the drive list. Ctrl+Home no longer does that. Ctrl+M no longer opens the main menu.",
+            "The drive list shows drives and cloud roots. It does not call system folders drives.",
+            "When you open a folder, you hear its name and the current item. The full path is no longer read."
           ]
         }
       ]

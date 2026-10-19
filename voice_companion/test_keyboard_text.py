@@ -75,7 +75,7 @@ class KeyboardTextTests(unittest.TestCase):
                 fresh=VoiceDocument(Path(folder))
                 companion.document=fresh;companion.checkpoint_document();fresh.append_text('Discard me.')
                 self.assertEqual(companion.handle('leave document','document'),'document_save')
-                self.assertEqual(companion.handle('no','document_save'),'awake');self.assertFalse(fresh.path.exists())
+                self.assertEqual(companion.handle('no','document_save'),'word_processor');self.assertFalse(fresh.path.exists())
     def test_f2_names_in_place_and_save_prompt_supports_keyboard(self):
         with tempfile.TemporaryDirectory() as folder:
             doc=VoiceDocument(Path(folder));doc.append_text('Body stays.')
@@ -207,7 +207,7 @@ class KeyboardTextTests(unittest.TestCase):
                     self.assertFalse((Path(folder)/'Spoken report.docx').exists())
                     self.assertEqual(companion.app_context('document_name')['naming_request'][1],'Spoken report')
                     result=companion.handle('Spoken report' if confirmation=='typed enter' else 'okay','document_name',typed=confirmation=='typed enter')
-                    self.assertEqual(result,'awake');self.assertTrue((Path(folder)/'Spoken report.docx').exists())
+                    self.assertEqual(result,'word_processor');self.assertTrue((Path(folder)/'Spoken report.docx').exists())
                     self.assertEqual(document_text(doc),'Separate body.')
     def test_untitled_exit_prompts_and_name_is_not_document_text(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -215,13 +215,37 @@ class KeyboardTextTests(unittest.TestCase):
             with patch.object(companion,'document',doc),patch.object(companion,'APP_WINDOW',None),patch.object(companion,'KEYBOARD_DIRTY',{}),patch.object(companion,'speak'),patch.object(companion,'INPUT_MODE','mixed'):
                 self.assertEqual(companion.handle('leave document','document'),'document_save')
                 self.assertEqual(companion.handle('yes','document_save'),'document_name')
-                self.assertEqual(companion.handle('Report for Will','document_name',typed=True),'awake')
+                self.assertEqual(companion.handle('Report for Will','document_name',typed=True),'word_processor')
                 self.assertTrue((Path(folder)/'Report for Will.docx').exists())
                 self.assertEqual(document_text(doc),'Body stays separate.')
                 self.assertFalse((Path(folder)/'Untitled.docx').exists())
 
 @unittest.skipUnless(sys.platform=='win32','Windows Tk keyboard integration')
 class WindowKeyboardTests(unittest.TestCase):
+    def test_document_command_shortcuts_are_routed_before_text_editing(self):
+        self.window.set_context(dict(mode='document',source='shortcut-document',text='Keep this text',caret=0,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='shortcut-document')
+        for key,state,expected in [('s',4,'Ctrl+S'),('b',4,'Ctrl+B'),('o',4,'Ctrl+O'),('p',5,'Ctrl+Shift+P'),('Return',4,'Ctrl+Enter'),('Alt_L',0,'Alt'),('F4',1,'Shift+F4')]:
+            self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
+            self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Keep this text'))
+        self.window.set_context(dict(mode='document',source='shortcut-document',text='Keep this text',caret=0,ack=0,document_table=True))
+        self.wait(lambda:self.window.context.get('document_table'))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
+        self.wait(lambda:('keyboard','Doc:NextCell') in self.window.commands.queue)
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))
+        self.wait(lambda:('keyboard','Doc:PreviousCell') in self.window.commands.queue)
+
+    def test_file_manager_ctrl_d_replaces_old_drive_and_main_shortcuts(self):
+        self.window.set_context(dict(mode='files',source=None,text='',file_items=['C drive'],file_index=0,file_selected_indices=[],ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='files')
+        self.call(lambda:self.window.file_list.event_generate('<KeyPress>',keysym='d',state=4))
+        self.wait(lambda:('keyboard','Ctrl+D') in self.window.commands.queue)
+        self.call(lambda:self.window.file_list.event_generate('<KeyPress>',keysym='Home',state=4))
+        self.call(lambda:self.window.file_list.event_generate('<KeyPress>',keysym='m',state=4))
+        self.assertNotIn(('keyboard','Ctrl+Home'),self.window.commands.queue)
+        self.assertNotIn(('keyboard','Ctrl+M'),self.window.commands.queue)
+
     def setUp(self):
         self.window=CompanionWindow('keyboard test');self.window.start()
     def tearDown(self):
@@ -625,7 +649,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.wait(lambda:not self.window.commands.empty())
         self.assertGreater(self.window.commands.get()[1]['seq'],first)
     def test_last_edit_is_queued_before_escape_or_settings_transition(self):
-        for event,command in (('<Escape>','Escape'),('<Alt-o>','settings')):
+        for event,command in (('<Escape>','Escape'),('<Alt-o>','Alt+O')):
             with self.subTest(event=event):
                 self.window.set_context(dict(mode='awake',source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0))
                 self.context()
