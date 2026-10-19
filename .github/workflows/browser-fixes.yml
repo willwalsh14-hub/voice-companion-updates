@@ -1,0 +1,59 @@
+name: Validate updater fixes and live browsers
+on:
+  pull_request:
+    paths: ['voice_companion/**', '.github/workflows/browser-fixes.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-browser-checks:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    env:
+      VOICE_COMPANION_DATA_DIR: ${{ runner.temp }}/voice-companion-test-data
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/voice_companion/browser-runtime
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies and Firefox
+        shell: pwsh
+        run: |
+          python -m pip install -r voice_companion/requirements.txt
+          if ($LASTEXITCODE) { throw 'Dependency preparation failed.' }
+          python -m playwright install firefox
+          if ($LASTEXITCODE) { throw 'Firefox preparation failed.' }
+      - name: Test updater, clipboard, editing, and settings
+        working-directory: voice_companion
+        shell: pwsh
+        run: |
+          python -m unittest test_app_updates test_text_selection test_document_controls test_document_formatting test_dictation_echo test_settings test_file_manager.FileManagerTests -v 2>&1 | Tee-Object -FilePath fixes-test-results.txt
+          if ($LASTEXITCODE) { throw 'Fix regression checks failed.' }
+      - name: Test live Firefox controls and semantics
+        working-directory: voice_companion
+        shell: pwsh
+        run: |
+          $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
+          python -m unittest test_web_live.LiveWebTests test_web_semantics.SemanticWebTests -v 2>&1 | Tee-Object -FilePath browser-test-results.txt
+          if ($LASTEXITCODE) { throw 'Live browser checks failed.' }
+      - name: Test public websites through Companion
+        working-directory: voice_companion
+        shell: pwsh
+        run: |
+          python live_fix_audit.py --output public-site-results.json
+          if ($LASTEXITCODE) { throw 'Public-site navigation failed.' }
+      - name: Package changed source files
+        shell: pwsh
+        run: |
+          Compress-Archive -Path voice_companion/apply-update.ps1,voice_companion/document_editor.py,voice_companion/test_app_updates.py,voice_companion/test_text_selection.py,voice_companion/test-update-host-cleanup.ps1,voice_companion/live_fix_audit.py -DestinationPath Voice-Companion-tested-fixes.zip
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: live-browser-validation-and-fixes
+          path: |
+            Voice-Companion-tested-fixes.zip
+            voice_companion/fixes-test-results.txt
+            voice_companion/browser-test-results.txt
+            voice_companion/public-site-results.json
+          retention-days: 14

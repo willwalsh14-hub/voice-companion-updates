@@ -9,6 +9,18 @@ from email_draft import VoiceEmail
 
 
 class SelectionTests(unittest.TestCase):
+    @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows clipboard errors')
+    def test_busy_windows_clipboard_preserves_internal_copy_and_paste(self):
+        from unittest.mock import patch
+        import pywintypes
+        import document_editor as editor
+        with patch.object(editor, 'VOICE_CLIPBOARD', ''), patch.object(editor, 'CLIPBOARD_WRITE_OK', False), patch('win32clipboard.OpenClipboard', side_effect=pywintypes.error(5, 'OpenClipboard', 'Access is denied.')):
+            editor.copy_to_clipboard('Preserved text')
+            self.assertEqual(editor.paste_from_clipboard(), 'Preserved text')
+            self.assertFalse(editor.CLIPBOARD_WRITE_OK)
+            editor.CLIPBOARD_WRITE_OK = True
+            self.assertEqual(editor.paste_from_clipboard(), 'Preserved text')
+
     def test_named_formatting_and_ambiguity(self):
         with tempfile.TemporaryDirectory() as folder:
             doc = VoiceDocument(Path(folder))

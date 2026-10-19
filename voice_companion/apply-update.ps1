@@ -29,6 +29,20 @@ function Say-Percent([int]$percent) {
   # The independent listener owns progress speech while its microphone is on.
   if (-not $listener -and $voice) { try { $voice.Speak([string]$percent + ' percent.', 1) | Out-Null } catch { Write-UpdateError $_ } }
 }
+function Close-InstalledBrowserHosts {
+  # Native messaging hosts belong to Chrome/Edge, so exiting Companion alone
+  # does not release their copies of the installed DLLs. Never stop browsers
+  # or hosts belonging to a different installation.
+  $hostPath = [IO.Path]::GetFullPath((Join-Path (Split-Path $AppPath) 'VoiceCompanion-BrowserHost.exe'))
+  foreach ($browserHost in @(Get-Process -Name 'VoiceCompanion-BrowserHost' -ErrorAction SilentlyContinue)) {
+    try {
+      if ($browserHost.HasExited) { continue }
+      if (-not [string]::Equals($browserHost.Path, $hostPath, [StringComparison]::OrdinalIgnoreCase)) { continue }
+      $browserHost.Kill()
+      if (-not $browserHost.WaitForExit(10000)) { throw 'The browser connection did not close for installation.' }
+    } finally { $browserHost.Dispose() }
+  }
+}
 try {
   if (-not (Test-Path -LiteralPath $AppPath)) { throw 'The installed application path is missing.' }
   if ((Get-FileHash -LiteralPath $InstallerPath -Algorithm SHA256).Hash -ne $ExpectedHash) { throw 'Installer integrity check failed.' }
@@ -37,6 +51,7 @@ try {
   $previous = Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue
   if ($previous) { $previous.WaitForExit(30000) | Out-Null }
   if (Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue) { throw 'The previous app is still running.' }
+  Close-InstalledBrowserHosts
   '0' | Set-Content -LiteralPath $progressFile -Encoding ASCII
   if (-not $NoSpeech) {
     $listenerPath = Join-Path $updateFolder 'update-voice-runtime\VoiceCompanion-UpdateVoice.exe'
