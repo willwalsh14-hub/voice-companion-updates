@@ -3,16 +3,16 @@
   "status": "Testing build",
   "date": "October 19, 2026",
   "baseline": "0.2.145-test",
-  "scope": "Improve update reliability and document clipboard recovery.",
+  "scope": "Fix updates and copy and paste.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Maintenance testing build",
+          "title": "Fixes for this test build",
           "details": [
-            "This build focuses on installing updates reliably and keeping document copy and paste working when Windows clipboard access is temporarily unavailable.",
-            "The file manager and supported document-reader features introduced in the previous build remain available."
+            "This build fixes updates and copy and paste.",
+            "You can still browse files and read them in the app."
           ]
         }
       ]
@@ -21,16 +21,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Updates close the browser connection before installation",
+          "title": "Install an update",
           "details": [
-            "Companion closes its installed browser connection helpers before starting Setup, so they no longer keep application files in use after the main app closes.",
-            "Only helpers from the matching Companion installation are closed. Your regular Chrome or Edge browser is not closed."
+            "The app now stops its browser helper before Setup starts. This lets Setup change files that were in use.",
+            "Your Chrome or Edge browser stays open. Helpers from other app folders are left alone."
           ]
         },
         {
-          "title": "Document copy and paste recover from clipboard errors",
+          "title": "Copy and paste text",
           "details": [
-            "When Windows cannot open the clipboard, Companion keeps the copied document text in its internal clipboard so it can still be pasted within Companion."
+            "If Windows cannot open the clipboard, the app keeps a copy of your text. You can still paste that text in the app."
           ]
         }
       ]
