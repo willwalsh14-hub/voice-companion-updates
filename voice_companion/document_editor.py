@@ -36,6 +36,12 @@ NUMBERING = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numberi
 XMLNS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 VOICE_CLIPBOARD = ''
 CLIPBOARD_WRITE_OK = False
+CLIPBOARD_ERRORS = (ImportError, OSError)
+try:
+    from pywintypes import error as WindowsClipboardError
+    CLIPBOARD_ERRORS += (WindowsClipboardError,)
+except ImportError:
+    pass
 
 
 def copy_to_clipboard(value):
@@ -51,7 +57,7 @@ def copy_to_clipboard(value):
             CLIPBOARD_WRITE_OK = True
         finally:
             win32clipboard.CloseClipboard()
-    except (ImportError, OSError):
+    except CLIPBOARD_ERRORS:
         pass
 
 
@@ -68,7 +74,7 @@ def paste_from_clipboard():
                     return value
         finally:
             win32clipboard.CloseClipboard()
-    except (ImportError, OSError):
+    except CLIPBOARD_ERRORS:
         pass
     return VOICE_CLIPBOARD
 

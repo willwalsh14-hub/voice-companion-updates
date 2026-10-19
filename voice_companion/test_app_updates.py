@@ -13,6 +13,14 @@ class Response:
     def read(self,size): result=self.body[:size];self.body=self.body[size:];return result
 
 class UpdateTests(unittest.TestCase):
+    @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows updater process cleanup')
+    def test_installed_browser_hosts_release_files_before_setup(self):
+        import os, subprocess
+        shell = Path(os.environ['SystemRoot'])/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe'
+        result = subprocess.run([str(shell), '-NoProfile', '-File', str(Path(__file__).with_name('test-update-host-cleanup.ps1'))], capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS:', result.stdout)
+
     def release(self,body=b'MZinstaller'):
         return {'schema':1,'version':'1.2.3-test','installer_url':'https://example.org/Setup.exe','sha256':hashlib.sha256(body).hexdigest(),'size':len(body)}
     def test_versions_and_manifest_validation(self):
