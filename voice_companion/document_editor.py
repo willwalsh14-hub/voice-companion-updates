@@ -945,7 +945,7 @@ class VoiceDocument:
                 self.selection_candidates, self.selection_action = [], ''
                 return self._apply_selection_action(selected, action)
             return 'Say next, previous, that one, or cancel selection.'
-        if command in ('what is selected', 'read selection', 'selected text', 'read selected text'):
+        if command in ('what is selected', 'say selection', 'read selection', 'selected text', 'read selected text'):
             return 'Selected: ' + self.selected_text() if self.selection else 'No text is selected.'
         if command in ('clear selection', 'unselect', 'deselect', 'cancel selection'):
             self.selection = None
@@ -1478,14 +1478,15 @@ class VoiceDocument:
         if command in ('list headings', 'what are the headings'):
             headings = [(i, p.text) for i, p in enumerate(self.paragraphs) if p.kind.startswith('Heading')]
             return ', '.join(f'Heading {i + 1}: {name}' for i, name in headings) if headings else 'No headings yet.'
-        if command in ('next heading', 'go to next heading'):
-            for i in range(self.cursor + 1, len(self.paragraphs)):
+        if command in ('next heading', 'go to next heading','previous heading','go to previous heading'):
+            backwards='previous' in command
+            for i in (range(self.cursor-1,-1,-1) if backwards else range(self.cursor + 1, len(self.paragraphs))):
                 if self.paragraphs[i].kind.startswith('Heading'):
                     self.cursor = i
                     self.word_cursor = self.sentence_cursor = 0
                     self.navigation_position = (i,0)
                     return self.process('read paragraph')
-            return 'No more headings.'
+            return 'No previous headings.' if backwards else 'No more headings.'
         if command == 'help with documents':
             return 'Speak normally to write. Say new paragraph, heading level two, bold word, underline this, set font to Arial, single space, double space, or custom spacing. Say bulleted list, numbered list, create table with two rows and two columns, next cell, read formatting, undo, or save document.'
         if self.dictating:

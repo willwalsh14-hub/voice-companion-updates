@@ -40,7 +40,7 @@ class DocumentReaderTests(unittest.TestCase):
             text=open_document(path).text;self.assertIn('Page 1',text);self.assertIn('PDF readable text',text)
             blank=root/'scan.pdf';writer=PdfWriter();writer.add_blank_page(300,300)
             with blank.open('wb') as output:writer.write(output)
-            self.assertIn('OCR is not included',open_document(blank).text)
+            self.assertIn('no readable text',open_document(blank).text.lower())
             writer.encrypt('private');protected=root/'protected.pdf'
             with protected.open('wb') as output:writer.write(output)
             with self.assertRaisesRegex(ValueError,'password'):open_document(protected)

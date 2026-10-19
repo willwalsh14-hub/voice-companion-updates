@@ -47,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.147-test'
+APP_VERSION = '0.2.148-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -265,7 +265,7 @@ def app_context(mode):
             context['web_field']=field
         if web_session.pending or web_session.submit_pending:context['confirmation']=CONFIRM_CHOICE
     elif logical=='file_reader' and FILE_READER:
-        context.update(source='file:'+str(id(FILE_READER)),text=FILE_READER.text,readonly=True,caret=FILE_READER.reading.position,ack=EDIT_ACK.get('file:'+str(id(FILE_READER)),0))
+        context.update(source='file:'+str(id(FILE_READER)),text=FILE_READER.text,rich_spans=FILE_READER.spans,selection=FILE_READER.selection,readonly=True,caret=FILE_READER.reading.position,ack=EDIT_ACK.get('file:'+str(id(FILE_READER)),0))
     elif logical=='help' and help_session and help_session.level=='article':
         source='help:'+str(id(help_session))+':'+str(help_session.topic_index)+':'+str(help_session.subtopic_index)
         context.update(source=source,text=help_session.reading.text,readonly=True,help_reader=True,caret=help_session.reading.position,ack=EDIT_ACK.get(source,0))
@@ -305,6 +305,7 @@ def apply_keyboard_edit(payload,mode):
             EDIT_ACK[payload['source']]=payload['seq'];return True
         reader=FILE_READER.reading if context['mode']=='file_reader' else help_session.reading if context['mode']=='help' else web_session.reading if context['mode']=='web' else mail_session.reading
         reader.position=payload['caret'];reader.continuation=payload['caret']
+        if context['mode']=='file_reader':FILE_READER.selection=payload.get('selection')
         if context['mode']=='web' and web_session.browse and web_session.keyboard_field is None:
             web_session.selection=payload.get('selection')
             web_session.browse.set_position(payload['caret'])
@@ -569,6 +570,8 @@ def _navigation_key(key,mode):
             return {'Enter':CONFIRM_CHOICE,'Space':CONFIRM_CHOICE,'Escape':'no','y':'yes','Y':'yes','n':'no','N':'no'}.get(key)
         return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
     if mode=='file_reader' and key=='Escape':return 'back to files'
+    if mode=='file_reader':
+        return {'Insert+F':'what formatting','CapsLock+F':'what formatting','Insert+Shift+Down':'what is selected','CapsLock+Down':'what is selected','H':'next heading','Shift+H':'previous heading','T':'next table','Shift+T':'previous table','K':'next link','Shift+K':'previous link','L':'next list','Shift+L':'previous list','B':'next bookmark','Shift+B':'previous bookmark','N':'next footnote','Shift+N':'previous footnote','Enter':'follow link'}.get(key)
     if mode=='regular_browser':
         if key=='Escape':return 'main menu'
         if key in ('Up','Down','Home','End','Enter','Space'):return 'regular browser key '+key
@@ -703,6 +706,8 @@ def poll_file_manager(mode):
             return mode
         if FILE_MANAGER.opened is not None:
             FILE_READER=FILE_MANAGER.opened;FILE_MANAGER.opened=None
+            if task_navigation().picker=='document':
+                task_navigation().remember(FILE_READER.path);task_navigation().picker=None
             notice=notice or 'Opened '+FILE_READER.title+'. Read-only document. '+FILE_READER.reading.read(True)
             if mode=='sleep':SLEEP_RETURN_MODE='file_reader'
             else:mode='file_reader'
@@ -1919,6 +1924,16 @@ def _handle(text, mode, typed=False):
         if command in ('main menu','back to main menu'):
             announce_main_menu();return 'awake'
         request=reading_request(command)
+        structure_request=re.fullmatch(r'(next|previous) (heading|table|row|cell|list|list item|link|footnote|bookmark)',command)
+        if structure_request:
+            speak(FILE_READER.navigate(structure_request[2],1 if structure_request[1]=='next' else -1));return mode
+        if command in ('what formatting','say formatting','describe formatting'):
+            speak(FILE_READER.describe_formatting());return mode
+        if command in ('what is selected','say selection','read selection'):
+            selected=FILE_READER.selection
+            speak(FILE_READER.text[slice(*selected)] if selected else 'No text selected.');return mode
+        if command in ('follow link','open link'):
+            speak(FILE_READER.follow_link());return mode
         if request:
             unit,direction=request
             speak(FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction))
@@ -2923,6 +2938,10 @@ def main():
             from playwright.sync_api import sync_playwright
             import web_assistant
             import app_window
+            import pypdfium2
+            import markdown_it
+            from offline_ocr import engine
+            engine()
             runtime = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'browser-runtime'
             if getattr(sys, 'frozen', False) and not any(runtime.glob('firefox-*/firefox/firefox.exe')):
                 raise RuntimeError('The bundled Firefox browser is missing.')

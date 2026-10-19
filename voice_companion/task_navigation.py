@@ -17,15 +17,15 @@ DOCUMENT_ACTIONS = {
              ('Cut', 'Ctrl+X', 'cut selection'), ('Paste', 'Ctrl+V', 'paste'),
              ('Find text', 'Ctrl+F', 'find {value}'), ('Replace text', 'Ctrl+H', 'replace {value}'),
              ('Select text', '', 'select {value}'), ('Delete selected text', '', 'delete selection'),
-             ('Scratch last dictation', '', 'scratch that'), ('Describe selection', '', 'what is selected')],
+             ('Scratch last dictation', 'Ctrl+Shift+Z', 'scratch that'), ('Describe selection', 'Insert+Shift+Down', 'what is selected')],
     'Format': [('Bold', 'Ctrl+B', 'toggle bold'), ('Italic', 'Ctrl+I', 'toggle italic'),
                ('Underline', 'Ctrl+U', 'toggle underline'), ('Remove bold', '', 'remove bold'),
                ('Remove italic', '', 'remove italic'), ('Remove underline', '', 'remove underline'),
                ('Font', 'Ctrl+Shift+F', 'set font {value}'), ('Font size', 'Ctrl+Shift+P', 'set font size {value}'),
                ('Line spacing', '', 'line spacing {value}'), ('Single spacing', 'Ctrl+1', 'single space'),
                ('Double spacing', 'Ctrl+2', 'double space'), ('One and a half spacing', 'Ctrl+5', 'line spacing 1.5'),
-               ('Heading', '', 'heading one'), ('Normal text', '', 'normal text'),
-               ('Formatting details', '', 'what formatting')],
+               ('Heading', 'Ctrl+Alt+1', 'heading one'), ('Normal text', 'Ctrl+Shift+N', 'normal text'),
+               ('Formatting details', 'Insert+F', 'what formatting')],
     'Insert': [('New line', 'Enter', 'new line'), ('New paragraph', 'Ctrl+Enter', 'new paragraph'), ('Table', '', 'create table with {value}'),
                ('Bulleted list', '', 'bulleted list'), ('Numbered list', '', 'numbered list'),
                ('End list', '', 'end list')],
@@ -62,6 +62,16 @@ DOCUMENT_ACTIONS['Edit'].extend([(label, '', command) for label,command in (
 TABLE_KEYS={'next cell':'Tab','previous cell':'Shift+Tab','next row':'Alt+Down','previous row':'Alt+Up','next column':'Alt+Right','previous column':'Alt+Left'}
 DOCUMENT_ACTIONS['Table']=[(name,TABLE_KEYS.get(command,''),command) for name,_,command in DOCUMENT_ACTIONS['Table']]
 SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, command in items if key and key not in ('Enter', 'Alt+T','Tab','Shift+Tab')}
+SHORTCUTS.update({'Ctrl+Alt+'+str(level):'heading '+str(level) for level in range(1,7)})
+SHORTCUTS.update({'CapsLock+F':'what formatting','CapsLock+Down':'what is selected',
+                 'Ctrl+Shift+L':'bulleted list','Ctrl+Shift+7':'numbered list','Ctrl+Alt+T':'create table with {value}',
+                 'Ctrl+Shift+H':'highlight {value}','Ctrl+Alt+H':'list headings','Ctrl+Alt+Down':'next heading',
+                 'Ctrl+Alt+Up':'previous heading','Ctrl+Shift+Delete':'delete selection','Ctrl+Alt+S':'select {value}'})
+DOCUMENT_ACTIONS['Format'].extend([('Heading '+str(level),'Ctrl+Alt+'+str(level),'heading '+str(level)) for level in range(2,7)])
+# Every command also has a stable two-step menu accelerator: Alt, group digit,
+# then the displayed item number. This covers commands without a conventional key.
+for _group,_items in DOCUMENT_ACTIONS.items():
+    DOCUMENT_ACTIONS[_group]=[(name,key or next((k for k,v in SHORTCUTS.items() if v==command),'Alt, '+str(list(DOCUMENT_ACTIONS).index(_group)+1)+', '+('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[i])),command) for i,(name,key,command) in enumerate(_items)]
 
 
 class TaskNavigation:
@@ -140,7 +150,24 @@ class TaskNavigation:
             raise ValueError('This file is no longer available. Choose another document.')
         if path.suffix.lower() == '.docx':
             from document_editor import VoiceDocument
-            opened = VoiceDocument.open_existing(path.parent, path.stem)
+            try:
+                import zipfile
+                from xml.etree import ElementTree as ET
+                with zipfile.ZipFile(path) as archive:
+                    names=archive.namelist()
+                    if sum(info.file_size for info in archive.infolist())>50*1024*1024:raise ValueError('This document expands beyond the reading limit.')
+                    source=ET.fromstring(archive.read('word/document.xml'))
+                    w='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+                    custom_style=any(n.get(w+'val') not in ('Normal',*('Heading'+str(i) for i in range(1,7))) for n in source.iter(w+'pStyle'))
+                    if custom_style or any(name.startswith(('word/header','word/footer','word/footnotes','word/endnotes','word/comments')) for name in names):
+                        raise ValueError('This document has features the editor cannot preserve.')
+                opened = VoiceDocument.open_existing(path.parent, path.stem)
+            except ValueError as error:
+                if 'cannot preserve' not in str(error):raise
+                from document_reader import open_document
+                m.FILE_READER=open_document(path);self.remember(path)
+                m.speak('Opened '+path.name+'. Document reader preserves this document structure. Editing is unavailable for this file. '+m.FILE_READER.reading.read(True))
+                return 'file_reader'
             m.document = opened
             m.checkpoint_document()
             m.document.dictating = False
@@ -148,10 +175,11 @@ class TaskNavigation:
             m.speak('Opened '+path.name+'. Document. '+m.document.process('read paragraph'))
             return 'document'
         from document_reader import open_document
-        m.FILE_READER = open_document(path)
+        from file_manager import FileManager
+        if m.FILE_MANAGER is None:m.FILE_MANAGER=FileManager()
         self.remember(path)
-        m.speak('Opened '+m.FILE_READER.title+'. Read-only document. '+m.FILE_READER.reading.read(True))
-        return 'file_reader'
+        m.speak(m.FILE_MANAGER.start_job(lambda:open_document(path),m.FILE_MANAGER.finish_open,'Opening '+path.name+'.'))
+        return 'files'
 
     def selected_file(self, path):
         kind = self.picker
@@ -202,6 +230,10 @@ class TaskNavigation:
         return m.handle(command, 'document' if mode == 'document_menu' else 'awake' if mode in ('media_menu','word_processor') else mode, typed=True)
 
     def keyboard(self, key, mode):
+        if mode=='document_menu' and key.startswith('MenuPick:'):
+            token=key.split(':',1)[1].upper()
+            index='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.find(token) if self.group else int(token)-1 if token.isdigit() else -1
+            return '@menu:'+str(index)
         if mode == 'document':
             if key in ('Doc:NextCell','Doc:PreviousCell'):return 'next cell' if key=='Doc:NextCell' else 'previous cell'
             if key == 'Alt': self.group = None; return 'document menu'
@@ -218,7 +250,7 @@ class TaskNavigation:
 
     def handle(self, text, mode):
         m = self.app
-        command = m.normalized_command(text)
+        command = text if text.startswith('@') else m.normalized_command(text)
         if mode == 'task_input':
             template, target = self.prompt
             if command in ('cancel','escape','go back'):
@@ -263,6 +295,14 @@ class TaskNavigation:
             return self.action(text, mode) if '{value}' in text or text.startswith('@') else None
         items = self.items(mode)
         if items is None: return None
+        if mode=='document_menu' and command.startswith('@menu:'):
+            index=int(command[6:])
+            if 0<=index<len(items):return self.action(items[index][2],mode)
+            m.speak('No command for this key.');return mode
+        if mode=='document_menu' and command.isdigit():
+            index=int(command)-1
+            if 0<=index<len(items):return self.action(items[index][2],mode)
+            m.speak('Choose an item number from 1 to '+str(len(items))+'.');return mode
         if mode == 'local_media':
             action = {'play or pause':'toggle','play':'play','resume':'play','pause':'pause','stop media':'stop','stop':'stop',
                       'back 15 seconds':'seek','rewind':'seek','forward 15 seconds':'seek'}.get(command)

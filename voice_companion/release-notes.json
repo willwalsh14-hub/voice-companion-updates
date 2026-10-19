@@ -1,25 +1,25 @@
 {
-  "version": "0.2.147-test",
+  "version": "0.2.148-test",
   "status": "Testing build",
   "date": "October 19, 2026",
-  "baseline": "0.2.146-test",
-  "scope": "New menus, document keys, and a media player.",
+  "baseline": "0.2.147-test",
+  "scope": "Read rich files and scans. Use more document keys.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Word processor menu",
+          "title": "Read rich files",
           "details": [
-            "Choose Word processor to create a document, open one, view recent files, or change its options. Open starts at the File manager drive list. Word files open for editing. Other supported files open for reading.",
-            "Press Alt in a document for its command menu. Use the usual keys to save, find, copy, paste, undo, or change text style. The menu shows the keys for each action."
+            "The reader keeps headings, tables, lists, links, and bookmarks. Word files can show notes too. It reads DOCX, HTML, EPUB, ODT, Markdown, and data tables. Your source file stays as it was. Word files that the editor cannot keep now open for reading.",
+            "In the reader, H moves to the next heading. T moves to a table, K to a link, L to a list, B to a bookmark, and N to a note. Hold Shift to move back. Enter follows a link inside the file."
           ]
         },
         {
-          "title": "Media menu and player",
+          "title": "Read scanned PDF pages offline",
           "details": [
-            "The main menu now has Media. It holds Radio, Podcasts, and Media player.",
-            "Use Media player to open a local sound or video file. Space plays or pauses. Left and Right move back or forward 15 seconds. Up and Down change volume. You can also change speed or stop playback. Some file types may not play."
+            "The app now uses a local AI engine to read text in scanned PDF pages. The models ship with the app. No page is sent to a web service. Pages with text keep their text. OCR is used for image pages with no text.",
+            "OCR can make errors. The reader reports lines with low scores. Check key facts in the source scan. A scan has no saved Word styles, so its old headings and tables may not be found."
           ]
         }
       ]
@@ -28,11 +28,11 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Clear file lists and folder speech",
+          "title": "More document keys",
           "details": [
-            "Ctrl+D returns to the drive list. Ctrl+Home no longer does that. Ctrl+M no longer opens the main menu.",
-            "The drive list shows drives and cloud roots. It does not call system folders drives.",
-            "When you open a folder, you hear its name and the current item. The full path is no longer read."
+            "Ctrl+Alt+1 through 6 sets a heading level. Ctrl+Shift+N sets normal text. Ctrl+Shift+L starts a bullet list. Ctrl+Shift+7 starts a number list. Ctrl+Alt+T asks for a table size.",
+            "Insert+F or Caps Lock+F says the format. Insert+Shift+Down or Caps Lock+Down reads the text you selected. Hold Insert or Caps Lock while you press the other key.",
+            "Every document menu action has a key or a short key sequence. Press Alt, a group number, then the item key shown in the menu."
           ]
         }
       ]
