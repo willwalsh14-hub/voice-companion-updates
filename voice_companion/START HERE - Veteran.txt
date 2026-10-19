@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.146-test.
+Guide version: 0.2.147-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -42,6 +42,7 @@ Contents
   6.6 Make a list
   6.7 Make a table
   6.8 Save, copy, close, or reopen a document
+  6.9 Document command menu
 7 Write A Note
   7.1 Start and save a note
   7.2 Review or change a note
@@ -126,12 +127,10 @@ Contents
   22.3 Email or a website will not work
   22.4 A guide or update will not open
   22.5 Understand privacy and online services
-
 23 Regular Browser Connection
   23.1 Set up the extension
   23.2 Read and use your browser
   23.3 Understand this testing connection
-
 24 File Manager
   24.1 Open File manager
   24.2 Move through a list
@@ -148,6 +147,9 @@ Contents
   25.2 Read with keys or speech
   25.3 Return to your files
   25.4 Know the reading limits
+26 Media Player
+  26.1 Open and play a file
+  26.2 Control playback
 
 1. GETTING STARTED
 
@@ -176,8 +178,7 @@ The main menu has these choices:
 - Notepad
 - Email
 - Web browser
-- Radio
-- Podcasts
+- Media
 - Options
 - Check for updates
 - Help
@@ -355,8 +356,9 @@ Choose a matching place if asked. Then speak the words to add. In Commands only,
 6. WRITE A DOCUMENT
 
 6.1 Create and name a document
+Choose Word processor for its menu. Create a document starts a blank file. Open a document starts at drives. Recent documents lists files used in the app. Options opens Word processor options. Ctrl+N creates a file. Ctrl+O opens one. Ctrl+R opens recent files from this menu.
 The Word processor creates files that Microsoft Word can open. You do not need to have Word installed.
-1. Say "Create a document" or choose Word processor.
+1. Say "Create a document", or choose Word processor, then Create a document.
 2. Say "Name document", followed by the file name you want. For example, say "Name document My Letter".
 3. Speak a short sentence or type into the document.
 4. Say "Read paragraph" to check what you wrote.
@@ -431,6 +433,10 @@ After reopening the app, say "List documents", then choose a file. To open a fil
 Say "Open documents" to open the document folder in Windows. "Where are my documents?" reads its location.
 Files are kept in Documents, inside the Voice Companion folder. They use the .docx file type.
 Companion can reopen the simple files it creates. It may refuse a complex Word file to avoid changing it incorrectly.
+
+6.9 Document command menu
+In a document, press Alt for File, Edit, Format, Insert, Read and navigate, Dictation, Table, and More commands. Use arrows and Enter. Type a letter to find an item. Escape goes back a level, then back to the document. Each action uses the same rules as its voice command. If a value is needed, type or say it and press Enter. Escape cancels the prompt. Alt+T lets you type any voice command.
+Ctrl+S saves. Ctrl+Shift+S saves as. F2 names the document. Ctrl+O opens a file. Ctrl+N creates one. Ctrl+W closes it after a save prompt. Ctrl+Z undoes. Ctrl+A selects all. Ctrl+C copies, Ctrl+X cuts, and Ctrl+V pastes. Ctrl+F finds text. Ctrl+H replaces text; enter the old words followed by with and the new words. Ctrl+B, Ctrl+I, and Ctrl+U toggle bold, italic, and underline. Ctrl+L, Ctrl+E, Ctrl+R, and Ctrl+J set left, center, right, and full alignment. Ctrl+Shift+F chooses a font. Ctrl+Shift+P chooses its size. Ctrl+1, Ctrl+2, and Ctrl+5 set single, double, and one-and-a-half spacing. Ctrl+Enter makes a new paragraph. Ctrl+Shift+R reads the document. F4 starts dictation. Shift+F4 pauses it. F1 opens help. Alt+O opens Word processor options. In a table, Tab and Shift+Tab move among cells. Alt+Up and Alt+Down move among rows. Alt+Left and Alt+Right move among columns.
 
 7. WRITE A NOTE
 
@@ -758,7 +764,7 @@ If a station fails, try another result. A station's stream may be unavailable ev
 13.2 Use the radio menus and keys
 The radio menu has an actions list and a results list. Tab or Shift+Tab moves between them.
 Use arrows, Home, End, and first-letter keys to choose an item. Enter opens an action or plays a station.
-Escape from station results says "Station actions." The next Escape says "Radio menu." Press Escape again to reach the main menu.
+Escape from station results says "Station actions." The next Escape says "Radio menu." Press Escape again to reach the Media menu.
 Control+F opens search. Control+P lists saved stations. F5 refreshes the station lists.
 Say "Radio menu", "Actions", or "Results" to choose a list by voice.
 When a station is selected, actions include saving it, recording it, scheduling a recording, and playing or pausing audio.
@@ -1107,7 +1113,7 @@ Choose a service before choosing a date. Some sites mark all dates as No informa
 24. FILE MANAGER
 
 24.1 Open File manager
-File manager is the first main menu choice. Say "File manager" or use Down Arrow and Enter. You start at the drive list. This list uses Windows Shell, the system behind File Explorer. It includes local drives, mapped drives, and cloud roots that Windows has registered. Desktop, Documents, and Downloads are also listed. Cloud files may need a connection to download before they can be read.
+File manager is the first main menu choice. Say "File manager" or use Down Arrow and Enter. You start at the drive list. This list uses Windows Shell, the system behind File Explorer. It includes local drives, mapped drives, and cloud roots that Windows has registered. System folders such as Desktop and Documents are found inside drives. They are not drives. Cloud files may need a connection to download before they can be read.
 
 24.2 Move through a list
 Use Up Arrow and Down Arrow. Say "Next", "Previous", "Home", or "End". Home reaches the first item. End reaches the last. Lists do not wrap. You hear the item name, its type, and its place in the list. F5 or "Refresh" reads the folder again after changes made in another app.
@@ -1116,7 +1122,7 @@ Use Up Arrow and Down Arrow. Say "Next", "Previous", "Home", or "End". Home reac
 Press Enter or say "Open", "Okay", or "That one" on the current item. You can also say its name. Say "C drive" to open that drive, or "Open" followed by a file name. A unique name can be used without its extension. If more than one name matches, use arrows or say the full path. Programs and unknown file types are not run.
 
 24.4 Go to the parent folder
-Escape goes up one folder. Say "Go back" or "Parent folder" for the same action. From Documents, then Voice Companion, Escape returns to Documents. At the top of a drive, Escape returns to the drive list. At the drive list, Escape returns to the main menu. Ctrl+Home or "Drive list" returns to drives. Ctrl+M or "Main menu" leaves File manager.
+Escape goes up one folder. Say "Go back" or "Parent folder" for the same action. From Documents, then Voice Companion, Escape returns to Documents. At the top of a drive, Escape returns to the drive list. At the drive list, Escape returns to the main menu. Ctrl+D or "Drive list" returns to drives. Say "Main menu" to leave File manager.
 
 24.5 Select several items
 Space checks or unchecks the current file or folder. Move to another item and press Space to add it. Moving does not clear the marked items. You can say "Select", "Unselect", "Mark", "Unmark", "Check", or "Uncheck". Add an item name to act on it directly. For example, say "Select notes.txt". Say "Select all" or press Ctrl+A to mark all files and folders in this list. Say "Clear selection" or press Ctrl+Shift+A to clear marks. Drives cannot be selected for file actions.
@@ -1139,7 +1145,7 @@ Press Alt or say "File manager menu". Use arrows and Enter to choose an action. 
 25. DOCUMENT READER
 
 25.1 Open supported files
-Enter on a supported file opens it inside Voice Companion. The reader supports Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB. It does not need Microsoft Word. Files open read-only. Your source file is not changed. The word processor still creates and edits Companion Word documents. Legacy DOC files and other unsupported types are not launched in another app.
+Enter on a supported file opens it inside Voice Companion. The reader supports Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB. It does not need Microsoft Word. Files open read-only. Your source file is not changed. Choose Open a document in Word processor to edit a DOCX file. Other supported files open for reading. Legacy DOC files and other unsupported types are not launched in another app.
 
 25.2 Read with keys or speech
 Use arrows to read by character or line. Ctrl+Left and Ctrl+Right move by word. You can select and copy text with the usual text keys. Say "Read document", "Continue reading", "Next word", "Previous line", "Next sentence", or "Next paragraph". Say "Go to beginning of document" or "Go to end of document". Say "Find" followed by text to move to a match.
@@ -1149,3 +1155,11 @@ Escape or "Back to files" closes the reader view and returns to the same folder 
 
 25.4 Know the reading limits
 HTML and book text are read without scripts or remote content. PDF pages have page labels. A scanned page may have no text to read. The reader tells you when OCR is needed; OCR is not included. Files are limited to 50 MB and five million text characters. Password-protected PDFs need to be unlocked in another tool first. Cloud files need their provider to make them available. Some layouts and graphics do not have text that can be read.
+
+26. MEDIA PLAYER
+
+26.1 Open and play a file
+Choose Media from the main menu, then Media player. Radio and Podcasts are also in Media. Ctrl+O opens the drive list. Use arrows and Enter to open a drive, folder, then a sound or video file. Escape goes up one folder. Escape at drives returns to the player.
+
+26.2 Control playback
+Space plays or pauses. Ctrl+S stops. Left and Right move back or forward 15 seconds. Up and Down change volume. Ctrl+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. Choose Playback speed, enter a number from 0.5 to 3, then press Enter. Escape returns to Media.

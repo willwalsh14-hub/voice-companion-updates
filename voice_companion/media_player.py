@@ -5,7 +5,7 @@ from pathlib import Path
 
 PLAYER_HTML = '''<!doctype html><html lang="en"><meta charset="utf-8">
 <title>Voice Companion Audio</title><style>body{font:1.25rem system-ui;padding:2rem}
-button{font:inherit;margin:.35rem;padding:.6rem}audio{display:block;width:100%;margin:1rem 0}</style>
+button{font:inherit;margin:.35rem;padding:.6rem}audio,video{display:block;width:100%;max-height:75vh;margin:1rem 0}</style>
 <h1>Voice Companion Audio</h1><p id="title">No audio selected.</p>
 <audio id="audio" controls preload="none"></audio>
 <button onclick="audio.play()">Play</button><button onclick="audio.pause()">Pause</button>
@@ -13,7 +13,7 @@ button{font:inherit;margin:.35rem;padding:.6rem}audio{display:block;width:100%;m
 <button onclick="audio.currentTime=Math.max(0,audio.currentTime-15)">Back 15 seconds</button>
 <button onclick="audio.currentTime=Math.min(audio.duration||Infinity,audio.currentTime+15)">Forward 15 seconds</button>
 <p id="status"></p><script>
-const audio=document.getElementById('audio');
+let audio=document.getElementById('audio');
 audio.onerror=()=>document.getElementById('status').textContent='This audio could not play.';
 audio.onplaying=()=>document.getElementById('status').textContent='Playing.';
 audio.onpause=()=>document.getElementById('status').textContent='Paused.';
@@ -62,9 +62,17 @@ class MediaPlayer:
         self.kind=None
         if self.page.url != (self.folder/'audio-player.html').as_uri():
             self.page.goto((self.folder/'audio-player.html').as_uri())
-        result=self.page.evaluate('''async ({url,title,timeout}) => {
-            const a=document.getElementById('audio');a.pause();a.src=url;
-            a.volume=window.voiceCompanionDucked?0.18:1;
+        result=self.page.evaluate('''async ({url,title,timeout,video}) => {
+            let a=document.getElementById('audio');
+            if(a.tagName!==(video?'VIDEO':'AUDIO')){
+                const replacement=document.createElement(video?'video':'audio');
+                replacement.id='audio';replacement.controls=true;replacement.preload='none';
+                a.pause();a.replaceWith(replacement);audio=replacement;a=replacement;
+                a.onerror=()=>document.getElementById('status').textContent='This media could not play.';
+                a.onplaying=()=>document.getElementById('status').textContent='Playing.';
+                a.onpause=()=>document.getElementById('status').textContent='Paused.';
+            }a.pause();a.src=url;
+            a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked?0.18:1);
             document.getElementById('title').textContent=title;
             document.getElementById('status').textContent='Loading audio.';
             let timer;
@@ -73,11 +81,32 @@ class MediaPlayer:
                 if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
                 return started;
             } finally {clearTimeout(timer);}
-        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms})
+        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov')})
         if not result:
             self.kind=None
             raise OSError('This audio format could not start in the player.')
         self.kind=kind
+
+    def adjust(self, setting, value):
+        if not self.page or self.page.is_closed() or not self.kind:
+            raise ValueError('Open a media file first.')
+        if setting not in ('volume','speed'):
+            raise ValueError('Unknown playback setting.')
+        if setting=='speed' and not .5<=value<=3:
+            raise ValueError('Choose a playback speed from 0.5 to 3.')
+        return self.page.evaluate('''({setting,value})=>{
+            const a=document.getElementById('audio');
+            if(setting==='volume'){
+                const volume=Math.max(0,Math.min(1,(window.voiceCompanionVolume??1)+value));
+                window.voiceCompanionVolume=volume;a.volume=volume*(window.voiceCompanionDucked?0.18:1);return volume;
+            }
+            a.playbackRate=value;return a.playbackRate;
+        }''',{'setting':setting,'value':value})
+
+    def status(self):
+        if not self.page or self.page.is_closed() or not self.kind:
+            raise ValueError('Open a media file first.')
+        return self.page.evaluate("() => {const a=document.getElementById('audio');return {paused:a.paused,position:a.currentTime,duration:Number.isFinite(a.duration)?a.duration:null};}")
 
     def set_ducked(self, ducked):
         """Lower radio and podcast playback while Companion speaks."""
@@ -88,7 +117,7 @@ class MediaPlayer:
             return
         self.page.evaluate('''ducked => {
             window.voiceCompanionDucked=ducked;
-            document.getElementById('audio').volume=ducked?0.18:1;
+            document.getElementById('audio').volume=(window.voiceCompanionVolume??1)*(ducked?0.18:1);
         }''',ducked)
         self.ducked=ducked
 

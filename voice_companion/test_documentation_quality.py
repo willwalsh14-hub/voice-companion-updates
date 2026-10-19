@@ -24,7 +24,7 @@ class DocumentationQualityTests(unittest.TestCase):
         for chapter in chapters:
             for part in chapter['parts']:self.assertIn(part['heading'],contents)
         main=chapters[0]['parts'][2]['paragraphs']
-        self.assertTrue(all('- '+name in main for name in ('Word processor','Email','Web browser','Radio','Help')))
+        self.assertTrue(all('- '+name in main for name in ('Word processor','Email','Web browser','Media','Help')))
         for chapter in chapters:
             for part in chapter['parts']:
                 expected=1

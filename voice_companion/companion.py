@@ -47,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.146-test'
+APP_VERSION = '0.2.147-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -178,6 +178,7 @@ KEYBOARD_DIRTY = {}
 UI_CONTEXT_CACHE = None
 PENDING_DOCUMENT_NAME = None
 DOCUMENT_NAME_RETURN = "awake"
+DOCUMENT_NAMING_ACTION = "name document"
 DOCUMENT_CLOSE_TARGET = "awake"
 DOCUMENT_BASELINE = None
 CONFIRM_CHOICE = "yes"
@@ -189,6 +190,7 @@ SEARCH_RETURN_MODE = 'awake'
 def checkpoint_document():
     global DOCUMENT_BASELINE
     path=document.path
+    task_navigation().remember(path)
     DOCUMENT_BASELINE=(id(document),path,path.read_bytes() if path.exists() else None)
 
 def discard_document_changes():
@@ -205,6 +207,7 @@ def discard_document_changes():
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
+    if logical=='task_input':context['task_input']=True
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
     if logical=='files' and FILE_MANAGER:
         context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='rename')
@@ -239,6 +242,7 @@ def app_context(mode):
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
         return context
     if editor is not None:
+        if logical=='document':context['document_table']=bool(editor.table_cell())
         source=str(id(editor));context.update(source=source,text=document_text(editor),readonly=False,ack=EDIT_ACK.get(source,0))
         position=editor.navigation_position or editor.insertion_position or (editor.cursor,len(editor.paragraphs[editor.cursor].text) if editor.paragraphs else 0)
         context['caret']=absolute(editor,position)
@@ -410,7 +414,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'create a document'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Radio', 'radio'), ('Podcasts', 'podcasts'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -489,6 +493,8 @@ def menu_state(mode):
         names=FILE_MANAGER.labels()
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
+    task_state=task_navigation().state(mode)
+    if task_state is not None:return task_state
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
     if mode=='tutorial' and tutorial_session:return tutorial_session.menu()
     if mode=='mailbox' and mail_session and mail_session.folder_picker and not mail_session.pending:
@@ -554,12 +560,14 @@ def _navigation_key(key,mode):
     interrupt_speech()
     if key=='Ctrl+Alt+P':return 'toggle audio'
     if key=='Control':return None
+    task_key=task_navigation().keyboard(key,mode)
+    if task_key is not None:return task_key
     if mode=='files':
         if FILE_MANAGER and FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':
             if key in ('Up','Left','Home','ShiftTab'):CONFIRM_CHOICE='yes';sync_app_context(mode);speak('Yes.');return None
             if key in ('Down','Right','End','Tab'):CONFIRM_CHOICE='no';sync_app_context(mode);speak('No.');return None
             return {'Enter':CONFIRM_CHOICE,'Space':CONFIRM_CHOICE,'Escape':'no','y':'yes','Y':'yes','n':'no','N':'no'}.get(key)
-        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+Home':'drive list','Ctrl+M':'main menu'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
+        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
     if mode=='file_reader' and key=='Escape':return 'back to files'
     if mode=='regular_browser':
         if key=='Escape':return 'main menu'
@@ -584,7 +592,7 @@ def _navigation_key(key,mode):
         if key=='Escape':return 'cancel' if mode=='document_save' else 'no'
     if mode in ('media','podcast') and MEDIA_HUB:
         result=media_navigation().keyboard(key)
-        if result=='__main__':return 'main menu'
+        if result=='__main__':return 'media menu'
         if result:speak(result)
         sync_app_context(mode,True)
         return None
@@ -665,10 +673,17 @@ def apply_settings(values):
 
 FILE_MANAGER=None
 FILE_READER=None
+TASK_NAV=None
+
+def task_navigation():
+    global TASK_NAV
+    from task_navigation import TaskNavigation
+    if TASK_NAV is None or TASK_NAV.app is not sys.modules[__name__]:TASK_NAV=TaskNavigation(sys.modules[__name__])
+    return TASK_NAV
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','files':'Back to file manager.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -676,6 +691,16 @@ def poll_file_manager(mode):
     notice=FILE_MANAGER.poll()
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     if logical=='files':
+        if FILE_MANAGER.opened is not None and isinstance(FILE_MANAGER.opened,Path):
+            selected=FILE_MANAGER.opened;FILE_MANAGER.opened=None
+            try:
+                result=task_navigation().selected_file(selected)
+            except (OSError,ValueError) as exc:
+                speak(str(exc));return mode
+            if mode=='sleep':SLEEP_RETURN_MODE=result
+            else:mode=result
+            sync_app_context(mode,True)
+            return mode
         if FILE_MANAGER.opened is not None:
             FILE_READER=FILE_MANAGER.opened;FILE_MANAGER.opened=None
             notice=notice or 'Opened '+FILE_READER.title+'. Read-only document. '+FILE_READER.reading.read(True)
@@ -1444,6 +1469,7 @@ def finish_exit(mode):
 
 
 def _handle(text, mode, typed=False):
+    global DOCUMENT_NAMING_ACTION
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
@@ -1451,6 +1477,11 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
+    try:
+        task_result=task_navigation().handle(text,mode)
+        if task_result is not None:return task_result
+    except (ValueError,OSError) as exc:
+        speak(str(exc));return mode
     if command in ('regular browser','open regular browser','connect regular browser'):
         return open_browser_menu()
     if command=='toggle audio':
@@ -1495,7 +1526,7 @@ def _handle(text, mode, typed=False):
         state=menu_state(mode)
         if state and state[1] is not None and (state[1]==0 and command=='previous' or state[1]==len(state[0])-1 and command=='next'):
             speak('Start of list.' if command=='previous' else 'End of list.');return mode
-    if command in ('word processor','open word processor'):text='create a document';command=text
+    # Word processor requests are handled by the launch menu.
     if command in ('notepad','open notepad'):text='write a note';command=text
     if command in ('start of list','beginning of list','first item','end of list','last item') and menu_state(mode):
         navigation_key('End' if command in ('end of list','last item') else 'Home',mode)
@@ -1547,8 +1578,9 @@ def _handle(text, mode, typed=False):
                 filename=document.path.name
                 document=None
                 speak('Saved '+filename+'.')
-                return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else 'awake'
+                return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_CLOSE_TARGET=='word_processor' else 'awake'
             DOCUMENT_NAME_RETURN=DOCUMENT_CLOSE_TARGET
+            DOCUMENT_NAMING_ACTION='name document'
             PENDING_DOCUMENT_NAME=None
             speak('Name this document. Say or type its name, then press Enter. Say cancel to keep editing.')
             return 'document_name'
@@ -1558,7 +1590,7 @@ def _handle(text, mode, typed=False):
                 speak('Could not discard changes safely. Your document is still open.');return 'document'
             document=None
             speak('Changes discarded.')
-            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else 'awake'
+            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_CLOSE_TARGET=='word_processor' else 'awake'
         speak('Save this document? Yes or no.');return mode
     if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('options','open options','settings','open settings'):
         if normalized_command(text) in ('cancel','cancel naming','go back'):
@@ -1572,12 +1604,12 @@ def _handle(text, mode, typed=False):
         elif not typed:
             PENDING_DOCUMENT_NAME=(time.monotonic_ns(),title)
             speak(title+'. Press Enter or say okay to save the name.');return 'document_name'
-        result=document.process('name document '+title)
+        result=document.process(DOCUMENT_NAMING_ACTION+' '+title)
         speak(result)
-        if result.startswith('Document named '):
+        if result.startswith(('Document named ','Saved document as ')):
             PENDING_DOCUMENT_NAME=None
             checkpoint_document()
-            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_NAME_RETURN],'awake',typed) if DOCUMENT_NAME_RETURN in ('exit','restart','shutdown') else DOCUMENT_NAME_RETURN
+            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_NAME_RETURN],'awake',typed) if DOCUMENT_NAME_RETURN in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_NAME_RETURN=='word_processor' else DOCUMENT_NAME_RETURN
         return 'document_name'
     if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
         control=speech_control(text)
@@ -1856,6 +1888,9 @@ def _handle(text, mode, typed=False):
         else:flush_note(mode)
         pending_send=None
         if FILE_MANAGER is None:FILE_MANAGER=FileManager()
+        task_navigation().picker=None
+        task_navigation().reader_return='files'
+        FILE_MANAGER.pick_extensions=None
         FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
         speak('File manager. '+FILE_MANAGER.refresh())
         return 'files'
@@ -1868,13 +1903,18 @@ def _handle(text, mode, typed=False):
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)
-        if result=='__main__':announce_main_menu();return 'awake'
+        if result=='__main__':
+            picker=task_navigation().picker
+            task_navigation().picker=None
+            if picker:return task_navigation().enter('local_media' if picker=='media' else 'word_processor','Media player' if picker=='media' else 'Word processor menu')
+            announce_main_menu();return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
         speak(result)
         sync_app_context(mode,True)
         return mode
     if mode=='file_reader':
         if command in ('back to files','go back','back','close document','leave document','escape'):
+            if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
         if command in ('main menu','back to main menu'):
             announce_main_menu();return 'awake'
@@ -2068,11 +2108,12 @@ def _handle(text, mode, typed=False):
                'go back', 'back', 'exit', 'exit document', 'exit document mode', 'close', 'main menu'):
         document.pending_spacing = False
         document.pending_spacing_candidate = None
-        DOCUMENT_CLOSE_TARGET='awake';CONFIRM_CHOICE='yes'
+        DOCUMENT_CLOSE_TARGET='awake' if command in ('main menu','back to main menu') else 'word_processor';CONFIRM_CHOICE='yes'
         speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
         return 'document_save'
     if mode=='document' and command in ('name document','rename document','save as','save document as'):
         DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=None
+        DOCUMENT_NAMING_ACTION='save as' if command.startswith('save') else 'name document'
         speak('Name this document. Say or type its name, then press Enter.');return 'document_name'
     if mode == 'document' and document is not None and document_control_request(text):
         result=document.process(text)

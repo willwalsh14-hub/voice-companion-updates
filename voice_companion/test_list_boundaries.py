@@ -188,7 +188,7 @@ class EverydayWorkflowTests(unittest.TestCase):
                 doc.process('save document as My report');doc.append_text('Second paragraph.')
                 with patch.object(app,'document',doc),patch.object(app,'APP_WINDOW',None),patch.object(app,'KEYBOARD_DIRTY',{}),patch.object(app,'INPUT_MODE','mixed'),patch.object(app,'speak') as speech:
                     self.assertEqual(app.handle('leave document','document',typed=typed),'document_save')
-                    self.assertEqual(app.handle('yes','document_save',typed=typed),'awake')
+                    self.assertEqual(app.handle('yes','document_save',typed=typed),'word_processor')
                     self.assertIsNone(app.document)
                     self.assertIn('Saved My report.docx.',[call.args[0] for call in speech.call_args_list])
                     self.assertFalse(any('Name this document' in call.args[0] for call in speech.call_args_list))

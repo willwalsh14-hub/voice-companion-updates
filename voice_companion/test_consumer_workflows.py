@@ -38,7 +38,7 @@ class ConsumerWorkflowTests(unittest.TestCase):
         after=before+'\n'+' '.join('word'+str(i) for i in range(400))
         self.assertTrue(app.apply_keyboard_edit({'source':source,'before':before,'after':after,'caret':len(after),'seq':1},mode))
         self.assertEqual(self.say('leave document',mode),'document_save')
-        self.assertEqual(self.say('yes','document_save'),'awake')
+        self.assertEqual(self.say('yes','document_save'),'word_processor')
         reopened=VoiceDocument.open_existing(self.root/'Documents','Consumer report')
         self.assertEqual(document_text(reopened),after)
         self.assertEqual(reopened.paragraphs[0].font,'Arial');self.assertEqual(reopened.paragraphs[0].size,14)

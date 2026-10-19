@@ -178,8 +178,23 @@ class CompanionWindow:
                 if mode=='files' and not self.command_entry_active and not self.context.get('file_name_input'):
                     file_key=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper() if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Enter' if key=='Return' else 'Space' if key=='space' else key
                     if control and key=='Home':file_key='Ctrl+Home'
-                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+Home','Ctrl+M'):
+                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D'):
                         self.commands.put(('keyboard',file_key));return 'break'
+                if mode in ('document','word_processor','document_menu','recent_documents','media_menu','local_media','task_input'):
+                    from task_navigation import SHORTCUTS
+                    if mode=='document' and self.context.get('document_table') and key in ('Tab','ISO_Left_Tab'):
+                        flush_pending_edit();cancel_phonetic()
+                        self.commands.put(('keyboard','Doc:PreviousCell' if shift or key=='ISO_Left_Tab' else 'Doc:NextCell'));return 'break'
+                    chord=('Ctrl+Shift+' if shift else 'Ctrl+')+(key if key in ('Home','End','Left','Right') else 'Enter' if key=='Return' else key.upper()) if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Shift+F4' if shift and key=='F4' else key
+                    if event.state&(8|0x20000) and key.lower()=='o':chord='Alt+O'
+                    elif event.state&(8|0x20000) and not control and key in ('Up','Down','Left','Right'):chord='Alt+'+key
+                    requests=set(SHORTCUTS)|{'Alt','Ctrl+O','Ctrl+N','Ctrl+R','Alt+O'}
+                    if mode=='document':requests-= {'Ctrl+Home','Ctrl+End'}
+                    if mode=='local_media':requests|={'space','Left','Right','Up','Down','Escape','Tab','ISO_Left_Tab','Return','Ctrl+I'}
+                    if mode=='document_menu' and key in ('Alt_L','Alt_R'):chord='Escape'
+                    if chord in requests and not (mode=='task_input' or self.command_entry_active):
+                        flush_pending_edit();cancel_phonetic()
+                        self.commands.put(('keyboard','Space' if chord=='space' else 'Enter' if chord=='Return' else 'ShiftTab' if chord=='ISO_Left_Tab' else chord));return 'break'
                 if mode=='files' and self.context.get('file_name_input') and event.widget==typed and key!='Escape':return
                 if key.lower()=='t' and not control and event.state&(8|0x20000):
                     flush_pending_edit();self.command_entry_active=True;typed.focus_set();return 'break'
@@ -203,7 +218,7 @@ class CompanionWindow:
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
                 # A name is editable text, even when empty. Its letters must
                 # never select a main-menu item or become an app command.
-                if (mode=='document_name' or self.context.get('browser_name_input')) and event.widget==typed and key!='Escape':return
+                if (mode=='document_name' or self.context.get('browser_name_input') or self.context.get('task_input')) and event.widget==typed and key!='Escape':return
                 if mode in ('media','podcast') and self.context.get('media_navigation'):
                     if self.context.get('media_input') and key in ('Tab','ISO_Left_Tab','Return'):
                         self.commands.put(('media_field',{'value':typed.get(),'next':'Enter' if key=='Return' else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab'}));typed.delete(0,'end');return 'break'

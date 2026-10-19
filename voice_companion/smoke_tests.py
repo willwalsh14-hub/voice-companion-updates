@@ -479,7 +479,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         mode = companion.handle('A saved sentence.', mode)
         self.assertEqual(companion.handle('Go back.', mode), 'document_save')
         self.assertEqual(companion.handle('yes', 'document_save'), 'document_name')
-        self.assertEqual(companion.handle('Keyboard report', 'document_name', typed=True), 'awake')
+        self.assertEqual(companion.handle('Keyboard report', 'document_name', typed=True), 'word_processor')
         self.assertIn('A saved sentence.', VoiceDocument.open_existing(
             self.root / 'Documents', 'Keyboard report').process('read document'))
         mode = companion.handle('Write an email.', 'awake')
