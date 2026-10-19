@@ -165,6 +165,22 @@ class CompanionWindow:
             file_list=tk.Listbox(root,font=('Segoe UI',12),exportselection=False,selectmode='multiple')
             self.file_list=file_list
             activation_keys=set()
+            document_modifiers=set()
+            caps_modifier={'before':False,'used':False,'synthetic':0}
+            def release_document_modifier(event):
+                document_modifiers.discard(event.keysym)
+                if event.keysym=='Caps_Lock':
+                    if caps_modifier['synthetic']:caps_modifier['synthetic']-=1;return
+                    if caps_modifier['used']:
+                        import sys
+                        if sys.platform=='win32':
+                            import ctypes
+                            if bool(ctypes.windll.user32.GetKeyState(0x14)&1)!=caps_modifier['before']:
+                                caps_modifier['synthetic']=2
+                                ctypes.windll.user32.keybd_event(0x14,0,0,0)
+                                ctypes.windll.user32.keybd_event(0x14,0,2,0)
+                        caps_modifier['used']=False
+            root.bind_all('<KeyRelease>',release_document_modifier,add='+')
             previous = ['', 0]
             field_selection = FieldSelection()
             def shortcut(event):
@@ -175,6 +191,23 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
+                if mode in ('document','file_reader') and not self.command_entry_active:
+                    if key in ('Insert','Caps_Lock'):
+                        if key=='Caps_Lock':
+                            if caps_modifier['synthetic']:caps_modifier['synthetic']-=1;return 'break'
+                            if key not in document_modifiers:caps_modifier.update(before=bool(event.state&2),used=False)
+                        document_modifiers.add(key);return 'break'
+                    prefix='CapsLock' if 'Caps_Lock' in document_modifiers else 'Insert' if 'Insert' in document_modifiers else None
+                    chord=prefix+('+' if prefix=='CapsLock' or not shift else '+Shift+')+('F' if key.lower()=='f' else key) if prefix else None
+                    if chord in ('Insert+F','CapsLock+F','Insert+Shift+Down','CapsLock+Down'):
+                        if prefix=='CapsLock':caps_modifier['used']=True
+                        flush_pending_edit();send_text_position();cancel_phonetic()
+                        self.commands.put(('keyboard',chord));return 'break'
+                if mode=='file_reader' and not self.command_entry_active and not control and not event.state&(8|0x20000):
+                    if key.lower() in ('h','t','k','l','b','n') or key=='Return':
+                        send_text_position();self.commands.put(('keyboard',('Shift+' if shift else '')+key.upper() if key!='Return' else 'Enter'));return 'break'
+                if mode=='document_menu' and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():
+                    self.commands.put(('keyboard','MenuPick:'+event.char));return 'break'
                 if mode=='files' and not self.command_entry_active and not self.context.get('file_name_input'):
                     file_key=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper() if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Enter' if key=='Return' else 'Space' if key=='space' else key
                     if control and key=='Home':file_key='Ctrl+Home'
@@ -186,7 +219,9 @@ class CompanionWindow:
                         flush_pending_edit();cancel_phonetic()
                         self.commands.put(('keyboard','Doc:PreviousCell' if shift or key=='ISO_Left_Tab' else 'Doc:NextCell'));return 'break'
                     chord=('Ctrl+Shift+' if shift else 'Ctrl+')+(key if key in ('Home','End','Left','Right') else 'Enter' if key=='Return' else key.upper()) if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Shift+F4' if shift and key=='F4' else key
+                    if control and shift and 48<=event.keycode<=57:chord='Ctrl+Shift+'+chr(event.keycode)
                     if event.state&(8|0x20000) and key.lower()=='o':chord='Alt+O'
+                    elif control and event.state&(8|0x20000):chord='Ctrl+Alt+'+(key if key in ('Up','Down','Left','Right') else key.upper())
                     elif event.state&(8|0x20000) and not control and key in ('Up','Down','Left','Right'):chord='Alt+'+key
                     requests=set(SHORTCUTS)|{'Alt','Ctrl+O','Ctrl+N','Ctrl+R','Alt+O'}
                     if mode=='document':requests-= {'Ctrl+Home','Ctrl+End'}
@@ -394,6 +429,14 @@ class CompanionWindow:
             editor.tag_configure('italic',font=('Segoe UI',12,'italic'))
             editor.tag_configure('underline',underline=True)
             editor.tag_configure('heading',font=('Segoe UI',16,'bold'))
+            editor.tag_configure('strike',overstrike=True)
+            editor.tag_configure('superscript',offset=4)
+            editor.tag_configure('subscript',offset=-4)
+            editor.tag_configure('highlight',background='#ffff99',foreground='#000000')
+            editor.tag_configure('code',font=('Consolas',12))
+            def reader_link(position):
+                editor.mark_set('insert','1.0 + '+str(position)+' chars');send_text_position()
+                self.commands.put(('keyboard','Enter'));return 'break'
             def open_link(url):
                 from email_reader import safe_link
                 if safe_link(url):
@@ -624,12 +667,16 @@ class CompanionWindow:
                                 editor.see('insert');local['applying']=False
                             if mode=='web' and field.get('readonly'):editor.configure(state='disabled')
                             for tag in editor.tag_names():
-                                if tag in ('bold','italic','underline','heading') or tag.startswith('mail_link_'):editor.tag_remove(tag,'1.0','end')
+                                if tag in ('bold','italic','underline','heading','strike','superscript','subscript','highlight','code') or tag.startswith(('mail_link_','docfont:')):editor.tag_remove(tag,'1.0','end')
                             for i,(start,end,style,url) in enumerate(field.get('rich_spans',[])):
                                 tag='mail_link_'+str(i) if style in ('link','button') else style
+                                if style.startswith('docfont:'):
+                                    import json
+                                    family,size,weight,slant=json.loads(style[8:])
+                                    editor.tag_configure(tag,font=(family,int(size),weight,slant))
                                 if style in ('link','button'):
                                     editor.tag_configure(tag,foreground=readable_color(editor),underline=True)
-                                    editor.tag_bind(tag,'<Button-1>',lambda event,u=url:open_link(u))
+                                    editor.tag_bind(tag,'<Button-1>',lambda event,u=url,a=start:reader_link(a) if self.context.get('mode')=='file_reader' else open_link(u))
                                 editor.tag_add(tag,'1.0 + '+str(start)+' chars','1.0 + '+str(end)+' chars')
                             self.email_field=None
                             if transition:typed.delete(0,'end');self.last_email_request=None

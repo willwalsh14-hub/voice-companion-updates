@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.147-test.
+Guide version: 0.2.148-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -43,6 +43,7 @@ Contents
   6.7 Make a table
   6.8 Save, copy, close, or reopen a document
   6.9 Document command menu
+Document keys added in this build: Ctrl+Alt+1 through 6 sets a heading level. Ctrl+Shift+N sets normal text. Ctrl+Shift+L starts bullets. Ctrl+Shift+7 starts a number list. Ctrl+Alt+T asks for a table size. The Alt document menu shows a key for each action. Press Alt, a group number, then the displayed item key.
 7 Write A Note
   7.1 Start and save a note
   7.2 Review or change a note
@@ -145,6 +146,7 @@ Contents
 25 Document Reader
   25.1 Open supported files
   25.2 Read with keys or speech
+Headings, tables, lists, links, bookmarks, and Word notes stay part of the reading structure. H moves to a heading, T to a table, K to a link, L to a list, B to a bookmark, and N to a note. Shift with that key moves back. Enter follows a link inside the file. Insert+F or Caps Lock+F says the format. Insert+Shift+Down or Caps Lock+Down reads selected text. Hold Insert or Caps Lock as you press the other key.
   25.3 Return to your files
   25.4 Know the reading limits
 26 Media Player
@@ -1145,7 +1147,7 @@ Press Alt or say "File manager menu". Use arrows and Enter to choose an action. 
 25. DOCUMENT READER
 
 25.1 Open supported files
-Enter on a supported file opens it inside Voice Companion. The reader supports Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB. It does not need Microsoft Word. Files open read-only. Your source file is not changed. Choose Open a document in Word processor to edit a DOCX file. Other supported files open for reading. Legacy DOC files and other unsupported types are not launched in another app.
+Enter on a supported file opens it inside Voice Companion. The reader supports Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB. It does not need Microsoft Word. Files open read-only. Your source file is not changed. Choose Open a document in Word processor to edit a supported DOCX file. Word files with features the editor cannot keep open in the reader. Other supported files open for reading. Legacy DOC files and other unsupported types are not launched in another app.
 
 25.2 Read with keys or speech
 Use arrows to read by character or line. Ctrl+Left and Ctrl+Right move by word. You can select and copy text with the usual text keys. Say "Read document", "Continue reading", "Next word", "Previous line", "Next sentence", or "Next paragraph". Say "Go to beginning of document" or "Go to end of document". Say "Find" followed by text to move to a match.
@@ -1154,7 +1156,7 @@ Use arrows to read by character or line. Ctrl+Left and Ctrl+Right move by word. 
 Escape or "Back to files" closes the reader view and returns to the same folder and item. "Main menu" returns to the app menu. You can use Options while reading. Saving Options names the reader when it returns you there.
 
 25.4 Know the reading limits
-HTML and book text are read without scripts or remote content. PDF pages have page labels. A scanned page may have no text to read. The reader tells you when OCR is needed; OCR is not included. Files are limited to 50 MB and five million text characters. Password-protected PDFs need to be unlocked in another tool first. Cloud files need their provider to make them available. Some layouts and graphics do not have text that can be read.
+HTML and book text are read without scripts or remote content. PDF pages have page labels. The reader uses offline AI OCR on image pages with no text. The models ship with the app; no page is sent to a web service. OCR can make errors. Low-score lines are reported. Check key facts in the source scan. Files are limited to 50 MB and five million text characters. Password-protected PDFs need to be unlocked in another tool first. Cloud files need their provider to make them available. Some layouts and graphics do not have text that can be read.
 
 26. MEDIA PLAYER
 
@@ -1163,3 +1165,4 @@ Choose Media from the main menu, then Media player. Radio and Podcasts are also 
 
 26.2 Control playback
 Space plays or pauses. Ctrl+S stops. Left and Right move back or forward 15 seconds. Up and Down change volume. Ctrl+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. Choose Playback speed, enter a number from 0.5 to 3, then press Enter. Escape returns to Media.
+

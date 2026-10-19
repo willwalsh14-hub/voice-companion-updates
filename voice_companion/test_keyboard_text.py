@@ -248,6 +248,20 @@ class WindowKeyboardTests(unittest.TestCase):
 
     def setUp(self):
         self.window=CompanionWindow('keyboard test');self.window.start()
+    def test_document_screen_reader_chords_and_heading_keys_preserve_text(self):
+        self.context()
+        def keys():
+            editor=self.window.editor
+            for modifier,key,state in [('Insert','f',0),('Insert','Down',1),('Caps_Lock','f',0),('Caps_Lock','Down',0)]:
+                editor.event_generate('<KeyPress>',keysym=modifier)
+                editor.event_generate('<KeyPress>',keysym=key,state=state)
+                editor.event_generate('<KeyRelease>',keysym=modifier)
+            editor.event_generate('<KeyPress>',keysym='2',state=12)
+        self.call(keys)
+        self.wait(lambda:('keyboard','Ctrl+Alt+2') in self.window.commands.queue)
+        for chord in ('Insert+F','Insert+Shift+Down','CapsLock+F','CapsLock+Down'):
+            self.assertIn(('keyboard',chord),self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'abc def'))
     def tearDown(self):
         if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
