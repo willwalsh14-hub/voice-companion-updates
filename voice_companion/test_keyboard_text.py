@@ -262,6 +262,30 @@ class WindowKeyboardTests(unittest.TestCase):
         for chord in ('Insert+F','Insert+Shift+Down','CapsLock+F','CapsLock+Down'):
             self.assertIn(('keyboard',chord),self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'abc def'))
+
+    def test_file_toolbar_tab_order_and_typeahead_search_sort_keys(self):
+        self.window.set_context(dict(mode='files',source=None,text='',file_items=['Alpha, folder','Beta, file'],file_index=0,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='files')
+        self.call(lambda:self.window.file_list.focus_force())
+        def exercise():
+            widget=self.window.file_list
+            widget.event_generate('<KeyPress>',keysym='a')
+            widget.event_generate('<KeyPress>',keysym='l')
+            widget.event_generate('<Tab>')
+        self.call(exercise)
+        def activate():
+            self.assertIs(self.window.root.focus_get(),self.window.file_buttons[0])
+            self.window.file_buttons[0].event_generate('<Return>')
+            self.window.file_buttons[0].event_generate('<Shift-Tab>')
+        self.call(activate)
+        def sort_keys():
+            self.assertIs(self.window.root.focus_get(),self.window.file_list)
+            self.window.file_list.event_generate('<KeyPress>',keysym='3',state=5)
+            self.window.file_list.event_generate('<KeyPress>',keysym='s',state=8)
+        self.call(sort_keys)
+        self.wait(lambda:('keyboard','Alt+S') in self.window.commands.queue)
+        for command in (('keyboard','Letter:a'),('keyboard','Letter:l'),'search files',('keyboard','Ctrl+Shift+3')):
+            self.assertIn(command,self.window.commands.queue)
     def tearDown(self):
         if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
         self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())

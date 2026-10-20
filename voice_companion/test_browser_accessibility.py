@@ -118,6 +118,11 @@ class BrowserAccessibilityTests(unittest.TestCase):
                 self.assertEqual(app.browser_focus_notice('web'),'');notice.assert_not_called()
     def test_supported_browser_adapters_choose_correct_engine(self):
         for browser in BrowserBackend.BROWSERS:
+            if browser=='webview2':
+                with tempfile.TemporaryDirectory() as folder,patch('webview2_backend.WebView2Backend') as embedded:
+                    backend=BrowserBackend(folder,browser,headless=True);backend.start()
+                    embedded.assert_called_once_with(Path(folder),True);embedded.return_value.start.assert_called_once()
+                continue
             driver=Mock();driver.chromium.launch_persistent_context.return_value.pages=[Mock()];driver.firefox.launch_persistent_context.return_value.pages=[Mock()]
             with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))),patch.object(Path,'is_file',return_value=True):
                 backend=BrowserBackend(folder,browser,headless=True);backend.start()

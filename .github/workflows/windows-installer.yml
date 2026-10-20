@@ -59,6 +59,15 @@ jobs:
         shell: powershell
         run: |
           $env:VOICE_COMPANION_BUILD_PYTHON = (Get-Command python.exe).Source
+          $webviewRoots = @("${env:ProgramFiles(x86)}\Microsoft\EdgeWebView\Application", "$env:LOCALAPPDATA\Microsoft\EdgeWebView\Application")
+          if (-not ($webviewRoots | Where-Object { Test-Path -LiteralPath $_ })) {
+            $bootstrapper = Join-Path $env:RUNNER_TEMP 'MicrosoftEdgeWebview2Setup.exe'
+            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $bootstrapper
+            $signature = Get-AuthenticodeSignature -LiteralPath $bootstrapper
+            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') { throw 'The WebView2 Runtime installer signature is invalid.' }
+            $runtimeInstall = Start-Process -FilePath $bootstrapper -ArgumentList '/silent','/install' -WindowStyle Hidden -Wait -PassThru
+            if ($runtimeInstall.ExitCode -ne 0) { throw 'The WebView2 Runtime could not be installed for testing.' }
+          }
           # Hosted runners already include Chrome. Reuse it rather than
           # downloading a moving installer through a stale package checksum.
           $chromeCandidates = @(

@@ -70,6 +70,9 @@ class ConnectedBrowserBackend(BrowserBackend):
 
 
 def create_backend(folder,browser):
+    if browser=='webview2':
+        from webview2_backend import WebView2Backend
+        return WebView2Backend(folder)
     from browser_cdp_relay import current
     relay = current()
     return ConnectedBrowserBackend(folder,browser,relay) if relay is not None else BrowserBackend(folder,browser)

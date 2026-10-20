@@ -14,6 +14,9 @@ class Item:
     folder:bool=False
     drive:bool=False
     filesystem:bool=True
+    created:float|None=None
+    modified:float|None=None
+    added:float|None=None
     def label(self):return self.name+', '+('drive' if self.drive else 'folder' if self.folder else 'file')
 
 def location_name(path):
@@ -44,7 +47,12 @@ class ShellFiles:
         from win32com.client import Dispatch
         return Dispatch('Shell.Application')
     def _item(self,e,drive=False):
-        return Item(Path(str(e.Path)).name if e.IsFileSystem and not drive else str(e.Name),str(e.Path),bool(e.IsFolder),drive,bool(e.IsFileSystem))
+        def date(name):
+            try:
+                value=e.ExtendedProperty(name)
+                return value.timestamp() if hasattr(value,'timestamp') else None
+            except Exception:return None
+        return Item(Path(str(e.Path)).name if e.IsFileSystem and not drive else str(e.Name),str(e.Path),bool(e.IsFolder),drive,bool(e.IsFileSystem),date('System.DateCreated') if not drive else None,date('System.DateModified') if not drive else None)
     @shell_thread
     def roots(self):
         shell=self._shell();result=[]
@@ -153,11 +161,17 @@ class ShellFiles:
         if operation.GetAnyOperationsAborted():raise ValueError('Windows did not finish every item. Refresh and check the folder before trying again.')
 
 MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+D','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Say Main menu','main menu'))
-HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl D returns to drives. Say Main menu to leave File manager.'
+SORT_MENU=(('Name','Ctrl+Shift+1','sort by name'),('Date created','Ctrl+Shift+2','sort by date created'),('Date modified','Ctrl+Shift+3','sort by date modified'),('Date added (first seen here)','Ctrl+Shift+4','sort by date added'),('Ascending','Ctrl+Shift+Up','sort ascending'),('Descending','Ctrl+Shift+Down','sort descending'))
+MENU=MENU[:-1]+(('Search current list','Ctrl+F','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Main menu','Alt+Home','main menu'))
+
+HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl D returns to drives. Type the first few letters of an item to jump to it. Repeated letters cycle matches. Backspace removes a letter. Ctrl F searches names in this list; Ctrl Shift F searches subfolders. Ctrl Shift X clears search. Alt S opens Sort. Ctrl Shift 1 through 4 sorts by name, date created, date modified, or date added. Ctrl Shift Up and Down choose ascending and descending. Date added means first seen here. Tab and Shift Tab reach Search, Sort, Clear search and Drives buttons. Alt Home returns to the main menu. Say Main menu to leave File manager.'
 
 class FileManager:
     def __init__(self,backend=None):
         self.backend=backend or ShellFiles();self.items=[];self.index=0;self.location=None;self.history=[];self.selected=set();self.menu=False;self.menu_index=0;self.pending=None;self.busy=False;self.events=queue.Queue();self.opened=None;self.revision=0;self.job_id=0;self.mutating=False
+        from file_explorer import FileView
+        from regular_browser import data_folder
+        self.view=FileView(data_folder()/'file-dates' if backend is None else None)
     def start_job(self,work,done,notice,mutating=False):
         if self.busy:return 'File manager is working. Please wait.'
         self.busy=True;self.mutating=mutating;self.job_id+=1;job_id=self.job_id
@@ -175,10 +189,11 @@ class FileManager:
         if error:return error
         try:return done(value)
         except (ValueError,OSError) as exc:return str(exc)
+    def menu_items(self):return SORT_MENU if self.menu=='sort' else MENU
     def labels(self):
         if self.busy:return ['File manager is working']
         if self.pending:return ['Yes','No'] if self.pending[0]=='delete' else []
-        if self.menu:return [name+'. '+key+'. Say '+voice+'.' for name,key,voice in MENU]
+        if self.menu:return [name+'. '+key+'. Say '+voice+'.' for name,key,voice in self.menu_items()]
         return [i.label()+(', selected' if i.path in self.selected else '') for i in self.items]
     def current(self):return self.items[self.index] if self.items and 0<=self.index<len(self.items) else None
     def say_current(self):
@@ -189,7 +204,10 @@ class FileManager:
             extensions=getattr(self,'pick_extensions',None)
             if path is not None and extensions:items=[item for item in items if item.folder or Path(item.path).suffix.lower() in extensions]
             if push:self.history.append((self.location,self.index))
-            self.location=path;self.items=items;self.selected.clear()
+            if path!=self.location:self.view.filter=''
+            self.view.prefix='';self.view.searching=False
+            self.view.all_items=self.view.dated(items,path,prune=True)
+            self.location=path;self.items=self.view.shown();self.selected.clear();items=self.items
             found=next((n for n,i in enumerate(items) if i.path==preserve),None)
             self.index=found if found is not None else min(restore_index,max(0,len(items)-1)) if restore_index is not None else 0
             self.revision+=1
@@ -212,7 +230,7 @@ class FileManager:
         if cmd in ('file manager help','help with file manager','help for file manager','help','commands'):return HELP
         if self.busy:
             if cmd in ('escape','go back','cancel') and not self.mutating:
-                self.job_id+=1;self.busy=False;return 'Opening canceled. '+self.say_current()
+                self.view.cancel.set();self.job_id+=1;self.busy=False;return 'Opening canceled. '+self.say_current()
             return 'File manager is working. Please wait.'
         if self.pending:
             action,paths=self.pending
@@ -224,19 +242,26 @@ class FileManager:
             if action=='rename':
                 name=re.sub(r'^(?:rename to|name|call it)\s+','',text,flags=re.I)
                 valid_name(name);self.pending=None;return self.mutate('rename',paths,name=name)
+            if action in ('search','search all'):
+                if not text.strip():raise ValueError('Enter part of a name, or press Escape to cancel.')
+                self.pending=None
+                return self.command(('search subfolders for ' if action=='search all' else 'search files for ')+text)
             return 'Delete the selected items? Say Yes or No. Escape cancels.'
         if cmd in ('file manager menu','alt','menu'):
             self.menu=not self.menu;self.menu_index=0;return ('File manager menu. ' if self.menu else 'Files. ')+self.say_current()
         if self.menu:
             if cmd in ('escape','go back','cancel'):self.menu=False;return self.say_current()
             if cmd in ('enter','okay','ok','open','activate','confirm'):
-                command=MENU[self.menu_index][2];self.menu=False;return self.command(command)
-            if cmd not in ('next','previous','up','down','home','end','first','last'):
+                command=self.menu_items()[self.menu_index][2];self.menu=False;return self.command(command)
+            if cmd not in ('next','previous','up','down','home','end','first','last','file backspace') and not cmd.startswith('file letters '):
                 self.menu=False;return self.command(text)
         if cmd in ('next','previous','up','down','home','end','first','last'):
-            attr='menu_index' if self.menu else 'index';old=getattr(self,attr);length=len(MENU) if self.menu else len(self.items)
+            attr='menu_index' if self.menu else 'index';old=getattr(self,attr);length=len(self.menu_items()) if self.menu else len(self.items)
             new=0 if cmd in ('home','first') else max(0,length-1) if cmd in ('end','last') else max(0,min(max(0,length-1),old+(-1 if cmd in ('previous','up') else 1)))
             setattr(self,attr,new);return ('Start of list. ' if old==new==0 else 'End of list. ' if old==new and length else '')+self.say_current()
+        from file_explorer import command as view_command
+        result=view_command(self,text)
+        if result is not None:return result
         relative=re.fullmatch(r'(next|previous) (item|drive|folder|file)',cmd)
         if relative:
             direction=1 if relative[1]=='next' else -1
