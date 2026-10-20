@@ -268,7 +268,7 @@ class BrowserBackend:
         self.start()
         self._watch_dialogs()
         script = '''() => {
-          const visibility=new WeakMap();const visible=e=>{if(visibility.has(e))return visibility.get(e);const style=getComputedStyle(e),parent=e.assignedSlot||e.parentElement||e.getRootNode()?.host;const result=style.display!=='none'&&style.visibility!=='hidden'&&style.visibility!=='collapse'&&!e.hidden&&!e.inert&&e.getAttribute('aria-hidden')!=='true'&&(!parent||visible(parent));visibility.set(e,result);return result;};
+          const visibility=new WeakMap();const layoutVisible=e=>{if(visibility.has(e))return visibility.get(e);const parent=e.assignedSlot||e.parentElement||e.getRootNode()?.host;const result=getComputedStyle(e).display!=='none'&&!e.hidden&&!e.inert&&e.getAttribute('aria-hidden')!=='true'&&(!parent||layoutVisible(parent));visibility.set(e,result);return result;};const visible=(e,descend=false)=>layoutVisible(e)&&(descend||!['hidden','collapse'].includes(getComputedStyle(e).visibility));
           const accessibleLabel=/*ACCESSIBLE_LABEL*/;
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
@@ -565,7 +565,7 @@ class BrowserBackend:
             else:element.click(timeout=10000)
             if kind(item)=='button' or key:
                 try:
-                    invalid=element.evaluate('e=>{const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('+ACCESSIBLE_LABEL+')(bad),message:bad.validationMessage}:null;}')
+                    invalid=element.evaluate('''e=>{if(!e.matches('button[type=submit],button:not([type]),input[type=submit],input[type=image]') && !('''+str(key=='Enter').lower()+''' && e.matches('input:not([type=button]):not([type=reset]),select')))return null;const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('''+ACCESSIBLE_LABEL+''')(bad),message:bad.validationMessage}:null;}''')
                     if invalid:return {'validation':invalid['label']+'. '+invalid['message']}
                 except Exception:pass
             clicked_at=time.monotonic()
@@ -973,7 +973,7 @@ class WebSession:
                     else:self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
-                if role=='button':
+                if role in ('button','menuitem','menuitemradio','menuitemcheckbox'):
                     self.progress('Loading page.')
                     action=self.backend.activate(item)
                     message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
@@ -1329,7 +1329,7 @@ class WebSession:
         if not self.snapshot: return 'Open a website first.'
         self.pending = None
         self.suggestion_index = None
-        controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button')]
+        controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
         self.choices = match_choices(controls, request)
         if not self.choices:
             # A result can arrive after the initial page paint.
@@ -1339,7 +1339,7 @@ class WebSession:
                     self.snapshot = self.backend.snapshot()
                 except Exception:
                     break
-                controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button')]
+                controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
                 self.choices = match_choices(controls, request)
                 if self.choices: break
         if not self.choices:
@@ -1463,12 +1463,12 @@ class WebSession:
     def help_here(self):
         if not self.snapshot:
             return 'No website is open. Say open website followed by its address, or search the web for a topic.'
-        links = [c for c in self.snapshot['controls'] if c['role'] in ('link','button')]
+        links = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
         if not links:
             try:
                 if hasattr(self.backend, 'settle'): self.backend.settle()
                 self.snapshot = self.backend.snapshot()
-                links = [c for c in self.snapshot['controls'] if c['role'] in ('link','button')]
+                links = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
             except Exception: pass
         fields = [c for c in self.snapshot['controls'] if c['role'] == 'field']
         examples = ', '.join(_label(c) for c in links[:3])

@@ -33,6 +33,20 @@ class LiveWebTests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.session=WebSession(self.temp.name,self.backend);self.session._refresh()
     def element(self,label):return next(e for e in self.session.snapshot['elements'] if e['label']==label)
+    def test_staff_menu_overrides_hidden_portal_and_does_not_validate_booking_form(self):
+        self.page.set_content("""<form><label>Name<input required></label><button type="button" onclick="document.querySelector('#portal').style.display='block'">Choose staff</button><button>Book</button></form>
+        <div style="visibility:hidden"><div id="portal" style="display:none;visibility:visible" role="menu"><button role="menuitem" onclick="window.chosen='Trainer';document.querySelector('#portal').style.display='none'">Trainer</button></div><span>Hidden secret</span></div>""")
+        self.session._refresh(read=False)
+        item=self.element('Choose staff');self.session.browse.index=self.session.browse.elements.index(item)
+        self.assertNotIn('fill out',self.session.keyboard('Activate'))
+        self.assertNotIn('Hidden secret',self.session.reading.text)
+        item=self.element('Trainer');self.assertEqual(item['role'],'menuitem')
+        self.session.browse.index=self.session.browse.elements.index(item)
+        self.assertNotIn('could not',self.session.keyboard('Activate'))
+        self.assertEqual(self.page.evaluate('window.chosen'),'Trainer')
+        self.session.browse.index=self.session.browse.elements.index(self.element('Book'))
+        self.assertIn('Name',self.session.keyboard('Activate'))
+
     def test_readable_semantics_document_order_and_hidden_content(self):
         snapshot=self.session.snapshot;self.assertNotIn('NameName',snapshot['text']);self.assertNotIn('AgreeAgree',snapshot['text']);self.assertNotIn('window.sent',snapshot['text']);self.assertNotIn('Hidden link',snapshot['text'])
         self.assertLess(self.element('Fixture heading')['start'],self.element('Next page')['start'])

@@ -79,7 +79,7 @@ class CompanionWindow:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
             self.root=self.typed=self.editor=self.current=self.file_list=None
-            self.file_toolbar=None;self.file_buttons=[]
+            self.file_toolbar=None;self.file_buttons=[];self.update_buttons=[]
             import gc
             gc.collect()
 
@@ -167,7 +167,7 @@ class CompanionWindow:
             root = tk.Tk()
             self.root=root
             from media_shortcut import MediaShortcut
-            self.media_shortcut=MediaShortcut(lambda:self.commands.put(('keyboard','Ctrl+Alt+P')))
+            self.media_shortcut=MediaShortcut(lambda:self.commands.put(('keyboard','Ctrl+P')))
             self.media_shortcut.register()
             root.bind('<Destroy>',lambda event:self.closed.set() if event.widget==root else None)
             root.title('Voice Companion ' + self.version)
@@ -196,6 +196,20 @@ class CompanionWindow:
                 button.pack(side='left',padx=3);self.file_buttons.append(button)
                 button.bind('<FocusIn>',lambda event,name=label:self.feedback(name+' button. Enter activates. Tab moves to the next control.'))
                 button.bind('<Return>',lambda event,command=request:(self.commands.put(command),'break')[1])
+            update_toolbar=tk.Frame(root)
+            self.update_buttons=[]
+            for label,request,hint in (('Status','update status','Alt+S or F5'),('Cancel update','cancel update','Alt+C or Escape')):
+                button=tk.Button(update_toolbar,text=label,command=lambda command=request:self.commands.put(command),takefocus=True)
+                button.pack(side='left',padx=3);self.update_buttons.append(button)
+                button.bind('<FocusIn>',lambda event,name=label,key=hint:self.feedback(name+' button. '+key+'. Enter activates.'))
+                button.bind('<Return>',lambda event,command=request:(self.commands.put(command),'break')[1])
+            def update_tab(event):
+                controls=self.update_buttons
+                index=controls.index(event.widget) if event.widget in controls else -1
+                controls[(index+(-1 if event.state&1 or event.keysym=='ISO_Left_Tab' else 1))%len(controls)].focus_force()
+                return 'break'
+            for button in self.update_buttons:
+                for sequence in ('<Tab>','<Shift-Tab>','<ISO_Left_Tab>'):button.bind(sequence,update_tab)
             def file_tab(event):
                 if self.context.get('file_name_input'):return
                 controls=[file_list,*self.file_buttons]
@@ -227,13 +241,22 @@ class CompanionWindow:
             previous = ['', 0]
             field_selection = FieldSelection()
             def shortcut(event):
-                if event.keysym.lower()=='p' and event.state&4 and event.state&(8|0x20000):
-                    if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+Alt+P'))
+                if event.keysym.lower()=='p' and event.state&4 and not event.state&(1|8|0x20000):
+                    if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
                     return 'break'
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
+                if mode=='files' and control and key.lower()=='e':
+                    self.command_entry_active=False
+                    typed.delete(0,'end')
+                    self.commands.put(('keyboard','Ctrl+E'));return 'break'
+                if mode=='update_download':
+                    if key in ('Tab','ISO_Left_Tab'):return update_tab(event)
+                    update_key='Alt+'+key.upper() if event.state&(8|0x20000) else key
+                    if update_key in ('F5','Alt+S','Escape','Alt+C'):
+                        self.commands.put(('keyboard',update_key));return 'break'
                 if mode in ('document','file_reader') and not self.command_entry_active:
                     if key in ('Insert','Caps_Lock'):
                         if key=='Caps_Lock':
@@ -255,13 +278,13 @@ class CompanionWindow:
                     file_key=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper() if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Enter' if key=='Return' else 'Space' if key=='space' else key
                     if control and shift:
                         file_key='Ctrl+Shift+'+(chr(event.keycode) if 48<=event.keycode<=57 else key if key in ('Up','Down') else key.upper())
-                    if event.state&(8|0x20000) and key.lower()=='s':file_key='Alt+S'
+                    if event.state&(8|0x20000) and key.lower() in ('s','n','c','m','d','a','z'):file_key='Alt+'+key.upper()
                     if event.state&(8|0x20000) and key=='Home':file_key='Alt+Home'
                     if control and key=='Home':file_key='Ctrl+Home'
-                    if event.widget in self.file_buttons and not control and file_key not in ('Alt+S','Alt+Home','Escape'):return
+                    if event.widget in self.file_buttons and not control and file_key not in ('Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Escape'):return
                     if event.widget==file_list and not control and not event.state&(8|0x20000) and event.char and event.char.isprintable() and key!='space':
                         self.commands.put(('keyboard','Letter:'+event.char));return 'break'
-                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
+                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
                         self.commands.put(('keyboard',file_key));return 'break'
                 if mode in ('document','word_processor','document_menu','recent_documents','media_menu','local_media','task_input'):
                     from task_navigation import SHORTCUTS
@@ -310,6 +333,7 @@ class CompanionWindow:
                     if key=='Escape':request='Escape'
                     elif key in ('Tab','ISO_Left_Tab'):request='ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab'
                     elif not control and not self.context.get('media_input') and key in ('Up','Down','Left','Right','Home','End','Return','space','Delete','F5') and not typed.get():request='Enter' if key=='Return' else 'Space' if key=='space' else key
+                    elif control and shift and key.lower()=='p':request='Ctrl+Shift+P'
                     elif control and key.lower() in ('f','p','r','s','d'):request='Ctrl+'+key.upper()
                     elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
                 if mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
@@ -668,6 +692,8 @@ class CompanionWindow:
                     if action=='ui_call':
                         field();continue
                     if action=='context':
+                        if field.get('mode')=='update_download':update_toolbar.pack(before=history,fill='x',padx=18,pady=6)
+                        else:update_toolbar.pack_forget()
                         old=self.context;self.context=field
                         mode=field['mode'];source=field.get('source')
                         transition=old.get('mode')!=mode or old.get('source')!=source or old.get('browser_name_input')!=field.get('browser_name_input') or field.get('focus',False)

@@ -161,8 +161,8 @@ class ShellFiles:
         if operation.GetAnyOperationsAborted():raise ValueError('Windows did not finish every item. Refresh and check the folder before trying again.')
 
 MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+D','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Say Main menu','main menu'))
-SORT_MENU=(('Name','Ctrl+Shift+1','sort by name'),('Date created','Ctrl+Shift+2','sort by date created'),('Date modified','Ctrl+Shift+3','sort by date modified'),('Date added (first seen here)','Ctrl+Shift+4','sort by date added'),('Ascending','Ctrl+Shift+Up','sort ascending'),('Descending','Ctrl+Shift+Down','sort descending'))
-MENU=MENU[:-1]+(('Search current list','Ctrl+F','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Main menu','Alt+Home','main menu'))
+SORT_MENU=(('Name','Alt+N','sort by name'),('Date created','Alt+C','sort by date created'),('Date modified','Alt+M','sort by date modified'),('Date added (first seen here)','Alt+D','sort by date added'),('Ascending','Alt+A','sort ascending'),('Descending','Alt+Z','sort descending'))
+MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Main menu','Alt+Home','main menu'))
 
 HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl D returns to drives. Type the first few letters of an item to jump to it. Repeated letters cycle matches. Backspace removes a letter. Ctrl F searches names in this list; Ctrl Shift F searches subfolders. Ctrl Shift X clears search. Alt S opens Sort. Ctrl Shift 1 through 4 sorts by name, date created, date modified, or date added. Ctrl Shift Up and Down choose ascending and descending. Date added means first seen here. Tab and Shift Tab reach Search, Sort, Clear search and Drives buttons. Alt Home returns to the main menu. Say Main menu to leave File manager.'
 
@@ -320,6 +320,9 @@ class FileManager:
                 if getattr(self,'pick_label',None)=='document' and Path(item.path).suffix.lower()!='.docx':
                     from document_reader import open_document
                     return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+'. Scanned pages are read with offline OCR.')
+                return self.start_job(lambda:Path(item.path),self.finish_pick,'Opening '+item.name+'.')
+            from task_navigation import MEDIA_TYPES
+            if Path(item.path).suffix.lower() in MEDIA_TYPES:
                 return self.start_job(lambda:Path(item.path),self.finish_pick,'Opening '+item.name+'.')
             from document_reader import open_document
             return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+'.')

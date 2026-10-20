@@ -94,8 +94,9 @@ class BrowseCursor:
         def match(e):
             role=kind(e)
             if level:return role=='heading' and e.get('level')==level
-            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button')
-            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button') and not e.get('disabled') and e.get('tabindex',0)>=0
+            if wanted=='button' and role in ('menuitem','menuitemradio','menuitemcheckbox'):return True
+            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox')
+            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox') and not e.get('disabled') and e.get('tabindex',0)>=0
             return role==wanted
         if tab:
             ordered=focus_order([e for e in self.elements if match(e)],self.elements)
@@ -176,7 +177,8 @@ SEMANTICS = r'''
           const controlRoles=['button','textbox','searchbox','checkbox','radio','combobox','listbox','switch','slider','spinbutton'];
           const walk=e=>{
             if(e.nodeType===3){append(e.textContent);return;}
-            if(e.nodeType!==1 || !visible(e) || e.closest('[aria-hidden="true"],[inert]') || ['SCRIPT','STYLE','NOSCRIPT','HEAD'].includes(e.tagName))return;
+            if(e.nodeType!==1 || !visible(e,true) || e.closest('[aria-hidden="true"],[inert]') || ['SCRIPT','STYLE','NOSCRIPT','HEAD'].includes(e.tagName))return;
+            if(!visible(e)){for(const child of (e.shadowRoot?e.shadowRoot.children:e.children))walk(child);return;}
             if(block.has(e.tagName))newline();if(e.tagName==='BR'){newline();return;}
             let role=accessibleLabel.role(e)||'';const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase(),editable=e.isContentEditable&&!e.parentElement?.isContentEditable;
             const explicit=e.getAttribute('role')||'', presentation=['none','presentation'].includes(role);

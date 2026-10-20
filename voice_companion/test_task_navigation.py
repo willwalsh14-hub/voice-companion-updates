@@ -24,6 +24,21 @@ class TaskMenuTests(unittest.TestCase):
         self.say=self.stack.enter_context(patch.object(app,'speak'))
         self.stack.enter_context(patch.object(app,'sync_app_context'))
 
+    def test_general_file_manager_mp3_uses_player_without_document_picker(self):
+        path=self.root/'music.mp3';path.write_bytes(b'test')
+        hub=Mock();app.MEDIA_HUB=hub
+        self.assertEqual(app.task_navigation().selected_file(path),'local_media')
+        hub.player.open.assert_called_once_with(path.resolve().as_uri(),path.name,'local')
+
+    def test_search_chord_leaves_menu_or_pending_prompt_and_update_keys_are_available(self):
+        app.FILE_MANAGER=FileManager(FakeFiles(self.root))
+        for pending in (None,('rename',['a.txt']),('search',[])):
+            app.FILE_MANAGER.pending=pending;app.FILE_MANAGER.menu='sort'
+            self.assertEqual(app.navigation_key('Ctrl+E','files'),'search files')
+            self.assertFalse(app.FILE_MANAGER.menu);self.assertIsNone(app.FILE_MANAGER.pending)
+        for key,command in (('F5','update status'),('Alt+S','update status'),('Alt+C','cancel update'),('Escape','cancel update')):
+            self.assertEqual(app.navigation_key(key,'update_download'),command)
+
     def test_word_processor_opens_four_item_menu_without_creating_file(self):
         self.assertEqual(app.handle('word processor','awake'),'word_processor')
         self.assertIsNone(app.document)

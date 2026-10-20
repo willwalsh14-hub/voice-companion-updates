@@ -1,17 +1,29 @@
 {
-  "version": "0.2.150-test",
+  "version": "0.2.151-test",
   "status": "Testing build",
   "date": "October 19, 2026",
-  "baseline": "0.2.149-test",
-  "scope": "Recover changing web pages and reload with F5.",
+  "baseline": "0.2.150-test",
+  "scope": "Open media from File Manager, sort with easy keys, and choose booking staff.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Search or enter address",
+          "title": "File Manager keys",
           "details": [
-            "The web browser menu and spoken prompt now say Search or enter address. The guide and lesson use the same name. The old spoken option still works."
+            "Control+E opens name search from any File Manager control. Alt+N sorts by name. Alt+C sorts by date created, Alt+M by date modified, and Alt+D by date added. Alt+A uses ascending order. Alt+Z uses descending order. The earlier sort keys still work."
+          ]
+        },
+        {
+          "title": "One play and pause key",
+          "details": [
+            "Control+P pauses or resumes the current audio from any app screen. It works for local media, radio and podcasts. Control+Shift+P now opens saved stations or podcast subscriptions."
+          ]
+        },
+        {
+          "title": "Update controls",
+          "details": [
+            "During a download, Tab and Shift+Tab move through Status and Cancel update. Each button speaks its name. Enter activates it. Alt+S or F5 reads status. Alt+C or Escape cancels the download."
           ]
         }
       ]
@@ -20,17 +32,15 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Read changing sign-in pages",
+          "title": "Open media files",
           "details": [
-            "A site may change its page or code screen as the app reads it. The app now tries to read the new screen. It does not click a link or button twice.",
-            "Checks cover a security-code screen with Try another way, the next screen and its buttons. PayPal\u2019s public sign-in page was checked without using an account. Your own PayPal verification flow still needs confirmation after this update."
+            "Open an MP3 or other media file from File Manager to play it. The app now sends it to the player. It no longer tries to read it as a document. This works after you type the first letters. It also works when you go back to drives and open a folder again."
           ]
         },
         {
-          "title": "Reload with F5",
+          "title": "Choose booking staff",
           "details": [
-            "F5 now works from the links and headings lists too. It can reload before trying to read an out-of-date page. If the browser connection had to start again, it reopens the last page address instead of reloading a blank page. Pending form approvals are cleared.",
-            "If reloading fails, the message now says the reload did not finish. It does not claim the control is ready."
+            "The Book Services page at Full Circle AT now exposes its staff menu choices. A visible menu inside a hidden page layer can now be read and used. Opening a menu no longer reports a missing name as if you had tried to book. The live staff choice was checked in WebView2. No booking was sent."
           ]
         }
       ]
