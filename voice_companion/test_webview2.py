@@ -24,6 +24,36 @@ class WebViewFixture:
 
 
 class EmbeddedLiveTests(WebViewFixture,LiveWebTests):
+    def test_cross_origin_security_screen_replacement(self):
+        self.context.route('https://code.fixture.test/code',lambda route:route.fulfill(content_type='text/html',body='''<h1>Security code</h1><button onclick="parent.postMessage('otherWay','https://fixture.test')">Try another way</button>'''))
+        self.context.route('https://verify.fixture.test/methods',lambda route:route.fulfill(content_type='text/html',body='''<h1>Choose another way</h1><button onclick="parent.postMessage('chosen','https://fixture.test');document.body.innerHTML='<h1>Authenticator instructions</h1>'">Use authenticator app</button>'''))
+        self.page.set_content('''<script>window.changes=0;window.choices=0;addEventListener('message',event=>{if(event.origin==='https://code.fixture.test'&&event.data==='otherWay'){changes++;const next=document.createElement('iframe');next.src='https://verify.fixture.test/methods';document.querySelector('iframe').replaceWith(next)}else if(event.origin==='https://verify.fixture.test'&&event.data==='chosen'){choices++}})</script><iframe src="https://code.fixture.test/code"></iframe>''')
+        self.page.frames[1].wait_for_load_state('domcontentloaded');self.session._refresh()
+        for name,expected in (('Try another way','Choose another way'),('Use authenticator app','Authenticator instructions')):
+            item=self.element(name);self.session.browse.index=self.session.browse.elements.index(item)
+            result=self.session.keyboard('Activate')
+            self.assertNotIn('did not finish',result);self.assertNotIn('could not be used',result)
+            self.assertIn(expected,self.session.reading.text)
+        self.assertEqual(self.page.evaluate('[window.changes,window.choices]'),[1,1])
+
+    def test_security_code_frame_replacement_then_new_control_and_f5(self):
+        self.context.route('https://fixture.test/code',lambda route:route.fulfill(content_type='text/html',body='''<h1>Security code</h1><button onclick="parent.changes++;const next=parent.document.createElement('iframe');next.src='https://fixture.test/methods';parent.document.querySelector('iframe').replaceWith(next)">Try another way</button>'''))
+        self.context.route('https://fixture.test/methods',lambda route:route.fulfill(content_type='text/html',body='''<h1>Choose another way</h1><button onclick="parent.choices++;document.body.innerHTML='<h1>Authenticator instructions</h1>'">Use authenticator app</button>'''))
+        self.page.set_content('<script>window.changes=0;window.choices=0</script><iframe src="https://fixture.test/code"></iframe>')
+        self.page.frames[1].wait_for_load_state('domcontentloaded');self.session._refresh()
+        def activate(name):
+            item=self.element(name);self.session.browse.index=self.session.browse.elements.index(item)
+            return self.session.keyboard('Activate')
+        result=activate('Try another way')
+        self.assertNotIn('did not finish',result);self.assertNotIn('could not be used',result)
+        self.assertIn('Choose another way',self.session.reading.text)
+        activate('Use authenticator app')
+        self.assertIn('Authenticator instructions',self.session.reading.text)
+        self.assertEqual(self.page.evaluate('[window.changes,window.choices]'),[1,1])
+        revision=self.session.page_revision
+        self.assertNotIn('did not finish',self.session.keyboard('Refresh'))
+        self.assertGreater(self.session.page_revision,revision);self.assertIn('Fixture heading',self.session.reading.text)
+
     def test_private_browser_transport_rejects_wrong_token_and_web_origins(self):
         from websockets.sync.client import connect
         from websockets.exceptions import InvalidStatus

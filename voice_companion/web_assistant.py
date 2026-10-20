@@ -137,6 +137,12 @@ class Favorites:
             self.delete(name)
 
 
+def navigation_interrupted(error):
+    message=str(error).casefold()
+    return any(text in message for text in ('execution context was destroyed',
+        'cannot find context with specified id','cannot find context with id'))
+
+
 class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one."""
     BROWSERS = ('edge', 'chrome', 'brave', 'firefox','webview2')
@@ -231,6 +237,13 @@ class BrowserBackend:
         return stamp
 
     def wait_ready(self):
+        for attempt in range(3):
+            try:return self._wait_ready()
+            except Exception as exc:
+                if not navigation_interrupted(exc) or attempt==2:raise
+                self.page.wait_for_timeout(100)
+
+    def _wait_ready(self):
         from playwright.sync_api import TimeoutError as BrowserTimeout
         # CDP-attached profile tabs can restore from the back/forward cache
         # without replaying lifecycle events. Inspect the restored document.
@@ -609,7 +622,13 @@ class BrowserBackend:
                         try:frame.wait_for_function("old=>(document.body?.innerText.slice(0,200000)||'')!==old",arg=before_text,timeout=5000)
                         except BrowserTimeout:pass
                 except Exception:pass
-            if self.page is not before_page or frame.url!=before_url or frame.evaluate('()=>performance.timeOrigin')!=before_epoch:self.wait_ready()
+            document_changed=self.page is not before_page
+            if not document_changed:
+                try:document_changed=frame.url!=before_url or frame.evaluate('()=>performance.timeOrigin')!=before_epoch
+                except Exception as exc:
+                    if not frame.is_detached() and not navigation_interrupted(exc):raise
+                    document_changed=True
+            if document_changed:self.wait_ready()
             return {'fragment':fragment,'frame_index':item.get('frame_index')}
         finally:
             if self.context:self.context.remove_listener('page',new_page)
@@ -872,6 +891,24 @@ class WebSession:
             self._refresh(read=False)
 
     def keyboard(self,key,direct_submit=False):
+        if key=='Refresh':
+            # Reload is the recovery route: it must not first capture the same
+            # changing document that caused the failed action.
+            if not self.snapshot:return 'Open a website first.'
+            address=self.snapshot.get('url','')
+            old_page=getattr(self.backend,'page',None)
+            self.pending=None;self.submit_pending=None;self.review_submission=None
+            try:
+                if hasattr(self.backend,'start'):self.backend.start()
+                sync=getattr(type(self.backend),'sync_active_tab',None)
+                if sync:sync(self.backend)
+                page=self.backend.page
+                if page is not old_page and page.url=='about:blank' and self.address_allowed(address):
+                    page.goto(address,wait_until='domcontentloaded',timeout=30000)
+                else:page.reload(wait_until='domcontentloaded',timeout=30000)
+                return self._refresh()
+            except Exception:
+                return 'The page reload did not finish. Wait a moment, then press F5 again, or return to the browser menu.'
         try:self._sync_browser_tab()
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         if not self.snapshot:return 'Open a website first.'
@@ -898,9 +935,6 @@ class WebSession:
                     text=self.reading.move('line',-1 if key=='ShiftTab' else 1)
                     self.browse.set_position(self.reading.position)
                     return message+' '+text
-            elif key=='Refresh':
-                self.backend.page.reload(wait_until='domcontentloaded',timeout=30000)
-                return self._refresh()
             elif key=='Back':return self.command('go back')
             elif key=='Forward':return self.command('go forward')
             elif key=='Done':
@@ -1100,10 +1134,14 @@ class WebSession:
         return state if isinstance(state,dict) else None
 
     def _capture(self):
-        for _ in range(3):
-            before=self._stamp();snapshot=self.backend.snapshot();after=self._stamp()
+        for _ in range(5):
+            try:before=self._stamp();snapshot=self.backend.snapshot();after=self._stamp()
+            except Exception as exc:
+                if not navigation_interrupted(exc):raise
+                if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
+                continue
             if before and after:
-                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch'))
+                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch','frame_identity'))
                 changed=changed or bool(after.get('url') and snapshot.get('url')!=after['url'])
                 if changed:
                     if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
@@ -1115,7 +1153,12 @@ class WebSession:
 
     def _refresh(self,read=None,preserve=False,wait=True):
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
-        if wait and hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
+        if wait and hasattr(self.backend,'wait_ready'):
+            for attempt in range(3):
+                try:self.backend.wait_ready();break
+                except Exception as exc:
+                    if not navigation_interrupted(exc) or attempt==2:raise
+                    if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
         self.snapshot,captured_state = self._capture()
         self.pending_scroll=None
         try:self.menu.record(self.snapshot)

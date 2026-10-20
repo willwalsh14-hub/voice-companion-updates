@@ -47,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.149-test'
+APP_VERSION = '0.2.150-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1351,7 +1351,7 @@ def handle_browser_menu(text):
     if action=='main':return 'awake'
     if action=='search':
         SEARCH_RETURN_MODE='browser_menu'
-        speak('Search or type address. Say or type your search or address, then press Enter. Escape returns to the web browser menu.');return 'search'
+        speak('Search or enter address. Say or type your search or address, then press Enter. Escape returns to the web browser menu.');return 'search'
     if action in ('back','forward','resume') or isinstance(action,tuple):
         if action in ('back','forward') and not web_session.snapshot:
             speak('No browser page is open. Use Web history to open an earlier page.');return 'browser_menu'

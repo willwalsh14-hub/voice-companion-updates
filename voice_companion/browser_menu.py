@@ -42,7 +42,7 @@ class BrowserMenu:
         temporary.replace(self.path)
 
     def choices(self, session, keep_open):
-        items = [('Search or type address', 'search'), ('Go to favorite', 'open'),
+        items = [('Search or enter address', 'search'), ('Go to favorite', 'open'),
                  ('New favorite', 'new'), ('Delete favorite', 'delete'),
                  ('Rename favorite', 'rename'), ('Go back', 'back'),
                  ('Go forward', 'forward'), ('Web history', 'history')]
@@ -52,7 +52,7 @@ class BrowserMenu:
 
     def start(self,resume=False):
         self.level = 'menu'; self.index = None; self.prefix = ''; self.target = None
-        return 'Web browser menu. '+('Resume where you left off, ' if resume else '')+'Search or type address, Go to favorite, New favorite, Delete favorite, Rename favorite, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
+        return 'Web browser menu. '+('Resume where you left off, ' if resume else '')+'Search or enter address, Go to favorite, New favorite, Delete favorite, Rename favorite, Go back, Go forward, or Web history. Use arrows and Enter, or say an option. Escape returns to the main menu.'
 
     def menu(self, session, keep_open):
         if self.level == 'name':
@@ -117,7 +117,7 @@ class BrowserMenu:
             self.index = target
             return self.notice(names), None
         if self.level == 'menu':
-            aliases = {'go to favorite':'open','list favorites':'open','new favorite':'new','add favorite':'new','delete favorite':'delete','rename favorite':'rename','search':'search', 'search or type address':'search', 'type address':'search', 'go to bookmark':'open', 'list bookmarks':'open', 'list favorites':'open', 'new bookmark':'new', 'add bookmark':'new', 'delete bookmark':'delete', 'rename bookmark':'rename', 'go back':'back', 'back':'back', 'go forward':'forward', 'forward':'forward', 'web history':'history', 'history':'history', 'resume':'resume', 'resume where you left off':'resume'}
+            aliases = {'go to favorite':'open','list favorites':'open','new favorite':'new','add favorite':'new','delete favorite':'delete','rename favorite':'rename','search':'search', 'search or enter address':'search', 'enter address':'search', 'search or type address':'search', 'type address':'search', 'go to bookmark':'open', 'list bookmarks':'open', 'list favorites':'open', 'new bookmark':'new', 'add bookmark':'new', 'delete bookmark':'delete', 'rename bookmark':'rename', 'go back':'back', 'back':'back', 'go forward':'forward', 'forward':'forward', 'web history':'history', 'history':'history', 'resume':'resume', 'resume where you left off':'resume'}
             action = aliases.get(command)
             if command in ('okay', 'ok', 'confirm', 'confirm that', 'that one', 'enter') and self.index is not None:
                 action = self.choices(session, keep_open)[self.index][1]

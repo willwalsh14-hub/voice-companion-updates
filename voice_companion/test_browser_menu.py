@@ -117,7 +117,8 @@ class BrowserMenuTests(unittest.TestCase):
     def test_search_cancel_name_literal_and_keyboard_routes(self):
         self.session.open('example.com')
         with patch.object(app,'web_session',self.session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None):
-            self.assertEqual(app.handle('search or type address','browser_menu'),'search')
+            self.assertEqual(app.handle('search or enter address','browser_menu'),'search')
+            self.assertEqual(self.menu.process('search or type address',self.session,False)[1],'search')
             self.assertEqual(app.handle_keyboard(app.navigation_key('Escape','search'),'search'),'browser_menu')
             app.handle('new bookmark','browser_menu')
             self.assertTrue(app.app_context('browser_menu')['browser_name_input'])
