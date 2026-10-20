@@ -139,7 +139,7 @@ class Favorites:
 
 class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one."""
-    BROWSERS = ('edge', 'chrome', 'brave', 'firefox')
+    BROWSERS = ('edge', 'chrome', 'brave', 'firefox','webview2')
 
     def __init__(self, folder, browser='edge', headless=False):
         self.folder = Path(folder)
@@ -150,6 +150,10 @@ class BrowserBackend:
         self.playwright = self.context = self.page = None
 
     def start(self):
+        if self.browser=='webview2':
+            from webview2_backend import WebView2Backend
+            if not getattr(self,'_embedded',None):self._embedded=WebView2Backend(self.folder,self.headless)
+            self._embedded.start();self.page=self._embedded.page;self.context=self._embedded.context;self.playwright=self._embedded.playwright;return
         if self.page and not self.page.is_closed(): return
         if self.context or self.playwright:self.close()
         try:
@@ -186,6 +190,8 @@ class BrowserBackend:
                            ' browser could not start. Ask your helper to check that browser and the installation.') from exc
 
     def close(self):
+        if getattr(self,'_embedded',None):
+            embedded=self._embedded;self._embedded=None;self.page=self.context=self.playwright=None;embedded.close();return
         context,playwright=self.context,self.playwright
         self.page=self.context=self.playwright=None
         for action in (context.close if context else None,playwright.stop if playwright else None):
@@ -194,6 +200,7 @@ class BrowserBackend:
                 except Exception:pass
 
     def refocus(self):
+        if getattr(self,'_embedded',None):return self._embedded.refocus()
         if not self.page or self.page.is_closed():return False
         self.page.bring_to_front()
         return True
@@ -1046,7 +1053,7 @@ class WebSession:
         return self._refresh(read=False,preserve=True)
 
     def adopt_connected_browser(self):
-        if self.injected_backend:return False
+        if self.injected_backend or self.browser=='webview2':return False
         from browser_cdp_relay import current
         from connected_browser import ConnectedBrowserBackend
         relay=current()
@@ -1069,9 +1076,9 @@ class WebSession:
             return 'firefox'
 
     def choose_browser(self, name):
-        name = name.lower()
+        name = {'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview 2':'webview2'}.get(name.lower(),name.lower())
         if name not in BrowserBackend.BROWSERS:
-            return 'Choose Edge, Chrome, Brave, or Firefox.'
+            return 'Choose embedded Edge WebView2, Edge, Chrome, Brave, or Firefox.'
         if self.browser != name or getattr(self.backend,'browser',name)!=name:
             if not self.injected_backend:
                 try: self.backend.close()
@@ -1213,7 +1220,7 @@ class WebSession:
             self.backend.goto(url)
             return ''
         except WebError:
-            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser=='firefox':raise
+            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser in ('firefox','webview2'):raise
             self.backend.close()
             self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
             self.backend.goto(url)
@@ -1857,7 +1864,7 @@ class WebSession:
             if self.browse:self.browse.set_position(self.reading.position)
             self.auto_focus_position();self.cursor_changed()
             return result
-        match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(edge|chrome|brave|firefox)(?: browser)?', command)
+        match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command)
         if match: return self.choose_browser(match[1])
         if command in ('which browser','what browser am i using'):
             return 'Guided websites use ' + self.browser.capitalize() + '. Say use Chrome, use Brave, use Firefox, or use Edge to change it.'

@@ -47,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.148-test'
+APP_VERSION = '0.2.149-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -210,8 +210,11 @@ def app_context(mode):
     if logical=='task_input':context['task_input']=True
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
     if logical=='files' and FILE_MANAGER:
-        context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='rename')
-        if context['file_name_input']:context['file_rename_value']=Path(FILE_MANAGER.pending[1][0]).name
+        context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0] in ('rename','search','search all'))
+        if context['file_name_input']:
+            action=FILE_MANAGER.pending[0]
+            context['file_rename_value']=Path(FILE_MANAGER.pending[1][0]).name if action=='rename' else ''
+            context['file_input_label']='New file name, including extension' if action=='rename' else 'Search folder and subfolders' if action=='search all' else 'Search names in this list'
         context['menu_letters']=not context['file_name_input'] and not FILE_MANAGER.busy
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':context['confirmation']=CONFIRM_CHOICE
         context['file_revision']=FILE_MANAGER.revision
@@ -401,6 +404,9 @@ def process_keyboard_batch(mode):
         if KEYBOARD_BATCH_STATUS:finish_mail_announcement()
         text=KEYBOARD_BATCH_TEXT;KEYBOARD_BATCH_TEXT=None
         APP_WINDOW.feedback(punctuation_for_speech(text))
+    if mode=='web' and APP_WINDOW is not None:
+        sync_app_context(mode,True)
+        if hasattr(APP_WINDOW,'wait_for_context'):APP_WINDOW.wait_for_context()
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
@@ -568,7 +574,7 @@ def _navigation_key(key,mode):
             if key in ('Up','Left','Home','ShiftTab'):CONFIRM_CHOICE='yes';sync_app_context(mode);speak('Yes.');return None
             if key in ('Down','Right','End','Tab'):CONFIRM_CHOICE='no';sync_app_context(mode);speak('No.');return None
             return {'Enter':CONFIRM_CHOICE,'Space':CONFIRM_CHOICE,'Escape':'no','y':'yes','Y':'yes','n':'no','N':'no'}.get(key)
-        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
+        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list','Ctrl+F':'search files','Ctrl+Shift+F':'search subfolders','Ctrl+Shift+X':'clear search','Alt+S':'sort files','Alt+Home':'main menu','Ctrl+Shift+1':'sort by name','Ctrl+Shift+2':'sort by date created','Ctrl+Shift+3':'sort by date modified','Ctrl+Shift+4':'sort by date added','Ctrl+Shift+Up':'sort ascending','Ctrl+Shift+Down':'sort descending','BackSpace':'file backspace'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
     if mode=='file_reader' and key=='Escape':return 'back to files'
     if mode=='file_reader':
         return {'Insert+F':'what formatting','CapsLock+F':'what formatting','Insert+Shift+Down':'what is selected','CapsLock+Down':'what is selected','H':'next heading','Shift+H':'previous heading','T':'next table','Shift+T':'previous table','K':'next link','Shift+K':'previous link','L':'next list','Shift+L':'previous list','B':'next bookmark','Shift+B':'previous bookmark','N':'next footnote','Shift+N':'previous footnote','Enter':'follow link'}.get(key)
@@ -1482,6 +1488,11 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
+    manager=globals().get('FILE_MANAGER')
+    if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
+        try:speak(manager.command(text))
+        except (OSError,ValueError) as error:speak(str(error))
+        sync_app_context(mode,True);return mode
     try:
         task_result=task_navigation().handle(text,mode)
         if task_result is not None:return task_result
@@ -1904,7 +1915,7 @@ def _handle(text, mode, typed=False):
             announce_main_menu();return 'awake'
         if command.startswith('file letter '):
             state=menu_state(mode)
-            if state:choose_menu_letter(command[-1],mode)
+            if state:speak(FILE_MANAGER.command('file letters '+text[len('file letter '):]));sync_app_context(mode,True)
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)
@@ -2688,7 +2699,7 @@ def _handle(text, mode, typed=False):
         webbrowser.open(provider_websites['yahoo mail' if provider == 'yahoo' else provider])
         speak('Opened ' + provider + ' in your usual browser. Voice Companion is not connected to this account.')
         return 'awake'
-    if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
+    if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
         web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
@@ -2952,6 +2963,11 @@ def main():
             from guide_files import guide_sources
             guide_sources(expected_version=APP_VERSION)
             update_root = Path(getattr(sys, '_MEIPASS', Path(__file__).parent))
+            if getattr(sys, 'frozen', False):
+                for name in ('VoiceCompanion-WebView2.exe', 'Microsoft.Web.WebView2.Core.dll',
+                             'Microsoft.Web.WebView2.WinForms.dll', 'WebView2Loader.dll', 'LICENSE.txt'):
+                    if not (update_root / 'webview2' / name).is_file():
+                        raise RuntimeError('An embedded Edge component is missing: ' + name)
             if not all((update_root / name).is_file() for name in ('update-settings.json','apply-update.ps1')):
                 raise RuntimeError('The updater components are missing.')
             print('Packaged Python, email, audio, browser, and private-entry components are available.', flush=True)

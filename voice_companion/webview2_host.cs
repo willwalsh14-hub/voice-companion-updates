@@ -1,0 +1,230 @@
+// Owned embedded browser. CDP travels over inherited private stdin/stdout pipes.
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using System.Web.Script.Serialization;
+using System.Windows.Forms;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
+
+class CompanionWebView : Form {
+    private readonly WebView2 view = new WebView2();
+    private readonly TabControl tabs = new TabControl { Dock = DockStyle.Fill };
+    private CoreWebView2Environment environment;
+    private readonly Dictionary<string, WebView2> views = new Dictionary<string, WebView2>();
+    private readonly Dictionary<string, string> targets = new Dictionary<string, string>();
+    private readonly Dictionary<string, WebView2> children = new Dictionary<string, WebView2>();
+    private readonly Dictionary<string, string> openers = new Dictionary<string, string>();
+    private readonly Dictionary<string, string> navigation = new Dictionary<string, string>();
+    private readonly HashSet<WebView2> noCache = new HashSet<WebView2>();
+    private readonly HashSet<WebView2> intercepting = new HashSet<WebView2>();
+    private readonly HashSet<string> fetchEnabled = new HashSet<string>();
+    private readonly HashSet<string> attached = new HashSet<string>();
+    private bool autoAttach;
+    private int serial;
+    private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
+    private readonly string profile;
+    private readonly bool hidden;
+    private readonly object outputLock = new object();
+    protected override bool ShowWithoutActivation { get { return hidden; } }
+    public CompanionWebView(string[] args) {
+        if (args.Length < 1) throw new ArgumentException("Missing owned browser profile.");
+        profile = Path.GetFullPath(args[0]); hidden = args.Length > 1 && args[1] == "--test-hidden";
+        Text = "Voice Companion - Embedded Edge"; Width = 1100; Height = 760;
+        if (hidden) { ShowInTaskbar = false; StartPosition = FormStartPosition.Manual; Location = new System.Drawing.Point(-20000, -20000); }
+        view.Dock = DockStyle.Fill; var first = new TabPage("Page 1"); first.Controls.Add(view); tabs.TabPages.Add(first); Controls.Add(tabs); views["main-view"] = view;
+        tabs.SelectedIndexChanged += (s, e) => ActiveTab(); Shown += Start;
+    }
+    private void Send(object message) { lock (outputLock) { Console.WriteLine(json.Serialize(message)); Console.Out.Flush(); } }
+    private void ActiveTab() {
+        foreach (var item in views) if (item.Value.Parent == tabs.SelectedTab) {
+            Send(new { method = "Host.activeTab", @params = new { sessionId = item.Key } }); break;
+        }
+    }
+    private async void Start(object sender, EventArgs args) {
+        try {
+            var handle = view.Handle;
+            environment = await CoreWebView2Environment.CreateAsync(null, profile);
+            await view.EnsureCoreWebView2Async(environment);
+            Register(view, "main-view");
+            var loaded = new TaskCompletionSource<bool>();
+            EventHandler<CoreWebView2NavigationCompletedEventArgs> completed = null;
+            completed = (s, e) => { view.CoreWebView2.NavigationCompleted -= completed; loaded.TrySetResult(true); };
+            view.CoreWebView2.NavigationCompleted += completed;
+            view.CoreWebView2.Navigate("about:blank"); await loaded.Task;
+            Send(new { method = "Host.ready", @params = new { version = environment.BrowserVersionString } });
+            Task.Run(() => Read());
+        } catch (Exception error) { Send(new { method = "Host.error", @params = new { message = error.Message } }); Close(); }
+    }
+    private void Register(WebView2 control, string sessionId) {
+        var core = control.CoreWebView2;
+            core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            core.WebResourceRequested += (s, request) => {
+                if (noCache.Contains(control)) { request.Request.Headers.SetHeader("Cache-Control", "no-cache"); request.Request.Headers.SetHeader("Pragma", "no-cache"); }
+            };
+            core.PermissionRequested += (s, request) => { request.State = CoreWebView2PermissionState.Deny; };
+            core.DownloadStarting += (s, request) => { request.Cancel = true; };
+            core.DocumentTitleChanged += (s, e) => { var page = control.Parent as TabPage; if (page != null) page.Text = core.DocumentTitle.Length > 60 ? core.DocumentTitle.Substring(0,60) : core.DocumentTitle; };
+            core.NewWindowRequested += async (s, request) => {
+                var pending = request.GetDeferral(); request.Handled = true;
+                try {
+                    var info = (Dictionary<string, object>)await TargetInfo(control);
+                    Uri destination;
+                    if (views.Count < 20 && Uri.TryCreate(request.Uri, UriKind.Absolute, out destination)
+                        && (destination.Scheme == "https" || destination.Scheme == "http"))
+                        await AddView(request.Uri, (string)info["targetId"]);
+                } finally { pending.Complete(); }
+            };
+            // Register protocol events before the automation driver enables domains.
+            string[] events = {
+                "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed", "Target.targetInfoChanged",
+                "Runtime.executionContextCreated", "Runtime.executionContextDestroyed", "Runtime.executionContextsCleared", "Runtime.consoleAPICalled", "Runtime.exceptionThrown", "Runtime.bindingCalled",
+                "Page.frameAttached", "Page.frameDetached", "Page.frameNavigated", "Page.navigatedWithinDocument", "Page.frameStartedLoading", "Page.frameStoppedLoading", "Page.lifecycleEvent", "Page.javascriptDialogOpening", "Page.javascriptDialogClosed", "Page.fileChooserOpened", "Page.windowOpen", "Page.domContentEventFired", "Page.loadEventFired", "Page.frameRequestedNavigation",
+                "Network.requestWillBeSent", "Network.requestWillBeSentExtraInfo", "Network.responseReceived", "Network.responseReceivedExtraInfo", "Network.loadingFinished", "Network.loadingFailed", "Network.requestServedFromCache", "Network.webSocketCreated", "Network.webSocketClosed", "Network.webSocketFrameSent", "Network.webSocketFrameReceived",
+                "Fetch.requestPaused", "Fetch.authRequired", "Log.entryAdded", "Inspector.detached", "Inspector.targetCrashed", "DOM.documentUpdated", "Browser.downloadWillBegin", "Browser.downloadProgress"
+            };
+            foreach (string name in events) {
+                try {
+                    string eventName = name;
+                    core.GetDevToolsProtocolEventReceiver(name).DevToolsProtocolEventReceived += (s, e) => {
+                        if (eventName == "Fetch.requestPaused" && !intercepting.Contains(control)) {
+                            var detail = json.Deserialize<Dictionary<string, object>>(e.ParameterObjectAsJson);
+                            var parameters = json.Serialize(new { requestId = (string)detail["requestId"] });
+                            var continued = String.IsNullOrEmpty(e.SessionId)
+                                ? core.CallDevToolsProtocolMethodAsync("Fetch.continueRequest", parameters)
+                                : core.CallDevToolsProtocolMethodForSessionAsync(e.SessionId, "Fetch.continueRequest", parameters);
+                            continued.ContinueWith(task => { var ignored = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+                            return;
+                        }
+                        var message = new Dictionary<string, object> { { "method", eventName }, { "params", json.DeserializeObject(e.ParameterObjectAsJson) } };
+                        if (!String.IsNullOrEmpty(e.SessionId)) message["sessionId"] = e.SessionId;
+                        else if (!eventName.StartsWith("Browser.")) message["sessionId"] = sessionId;
+                        if (eventName == "Target.attachedToTarget") {
+                            var detail = json.Deserialize<Dictionary<string, object>>(e.ParameterObjectAsJson);
+                            if (detail.ContainsKey("sessionId")) children[(string)detail["sessionId"]] = control;
+                        }
+                        Send(message);
+                    };
+                } catch (ArgumentException) { }
+            }
+    }
+    private async Task<object> TargetInfo(WebView2 control) {
+        string info = await control.CoreWebView2.CallDevToolsProtocolMethodAsync("Target.getTargetInfo", "{}");
+        return json.Deserialize<Dictionary<string, object>>(info)["targetInfo"];
+    }
+    private async Task Attach(string sessionId, WebView2 control) {
+        if (!attached.Add(sessionId)) return;
+        var info = (Dictionary<string, object>)await TargetInfo(control);
+        if (openers.ContainsKey(sessionId)) { info["openerId"] = openers[sessionId]; info["canAccessOpener"] = true; }
+        targets[(string)info["targetId"]] = sessionId;
+        Send(new { method = "Target.attachedToTarget", @params = new { sessionId = sessionId, targetInfo = info, waitingForDebugger = true } });
+    }
+    private async Task<WebView2> AddView(string url, string opener = null) {
+        string sessionId = "view-" + (++serial);
+        var control = new WebView2 { Dock = DockStyle.Fill };
+        var page = new TabPage("New page"); page.Controls.Add(control); tabs.TabPages.Add(page); tabs.SelectedTab = page;
+        var handle = control.Handle; await control.EnsureCoreWebView2Async(environment);
+        views[sessionId] = control; if (opener != null) openers[sessionId] = opener; Register(control, sessionId);
+        if (url != "about:blank") navigation[sessionId] = url;
+        if (autoAttach) await Attach(sessionId, control);
+        else if (url != "about:blank") { navigation.Remove(sessionId); control.CoreWebView2.Navigate(url); }
+        ActiveTab(); return control;
+    }
+    private void Reply(Dictionary<string, object> request, object result) {
+        var response = new Dictionary<string, object> { { "id", request["id"] }, { "result", result } };
+        if (request.ContainsKey("sessionId")) response["sessionId"] = request["sessionId"];
+        Send(response);
+    }
+    private void Read() {
+        try {
+            string line;
+            while ((line = Console.ReadLine()) != null) {
+                if (line.Length > 16 * 1024 * 1024) break;
+                var message = json.Deserialize<Dictionary<string, object>>(line);
+                BeginInvoke(new Action(() => Dispatch(message)));
+            }
+        } catch (Exception) { }
+        try { BeginInvoke(new Action(Close)); } catch (InvalidOperationException) { }
+    }
+    private async void Dispatch(Dictionary<string, object> message) {
+        object id = message.ContainsKey("id") ? message["id"] : 0;
+        try {
+            string method = (string)message["method"];
+            if (method == "Host.close") { Send(new { id = id, result = new { } }); Close(); return; }
+            if (method == "Host.focus") { WindowState = FormWindowState.Normal; Activate(); Send(new { id = id, result = new { } }); return; }
+            var parameters = message.ContainsKey("params") ? (Dictionary<string, object>)message["params"] : new Dictionary<string, object>();
+            string sessionId = message.ContainsKey("sessionId") ? (string)message["sessionId"] : null;
+            if (method == "Target.createTarget") {
+                var created = await AddView(parameters.ContainsKey("url") ? (string)parameters["url"] : "about:blank");
+                var info = (Dictionary<string, object>)await TargetInfo(created);
+                Reply(message, new { targetId = (string)info["targetId"] }); return;
+            }
+            if (method == "Target.closeTarget" || method == "Target.activateTarget") {
+                string target = (string)parameters["targetId"];
+                if (!targets.ContainsKey(target)) throw new ArgumentException("This tab is no longer available.");
+                string selected = targets[target]; var control = views[selected]; var page = (TabPage)control.Parent;
+                if (method == "Target.activateTarget") tabs.SelectedTab = page;
+                else {
+                    Send(new { method = "Target.detachedFromTarget", @params = new { sessionId = selected, targetId = target } });
+                    Send(new { method = "Target.targetDestroyed", @params = new { targetId = target } });
+                    views.Remove(selected); targets.Remove(target); attached.Remove(selected);
+                    noCache.Remove(control); intercepting.Remove(control); fetchEnabled.Remove(selected);
+                    navigation.Remove(selected); openers.Remove(selected);
+                    foreach (var child in new Dictionary<string, WebView2>(children))
+                        if (child.Value == control) { children.Remove(child.Key); fetchEnabled.Remove(child.Key); }
+                    tabs.TabPages.Remove(page); control.Dispose(); page.Dispose();
+                }
+                Reply(message, new { success = true }); return;
+            }
+            WebView2 owner = view;
+            if (sessionId != null) {
+                if (views.ContainsKey(sessionId)) owner = views[sessionId];
+                else if (children.ContainsKey(sessionId)) owner = children[sessionId];
+                else throw new ArgumentException("This tab is no longer available.");
+            } else if (!views.ContainsValue(owner)) {
+                foreach (var live in views.Values) { owner = live; break; }
+            }
+            if (method == "Network.setCacheDisabled") {
+                if (parameters.ContainsKey("cacheDisabled") && (bool)parameters["cacheDisabled"]) noCache.Add(owner); else noCache.Remove(owner);
+                Reply(message, new { }); return;
+            }
+            if (method == "Fetch.enable") {
+                intercepting.Add(owner);
+                // Keep native interception enabled once per session. Playwright
+                // filters its routes itself; toggling an idle WebView's Fetch
+                // domain can leave the native API's completion task unresolved.
+                if (!fetchEnabled.Add(sessionId ?? "main-view")) { Reply(message, new { }); return; }
+            }
+            if (method == "Fetch.disable") {
+                // Some WebView2 versions do not complete this call for idle
+                // controls. Disable routing immediately; any residual paused
+                // request is continued by the native receiver above.
+                intercepting.Remove(owner);
+                Reply(message, new { }); return;
+            }
+            if (method == "Page.bringToFront" && owner.Parent is TabPage) tabs.SelectedTab = (TabPage)owner.Parent;
+            string result = sessionId != null && !views.ContainsKey(sessionId)
+                ? await owner.CoreWebView2.CallDevToolsProtocolMethodForSessionAsync(sessionId, method, json.Serialize(parameters))
+                : await owner.CoreWebView2.CallDevToolsProtocolMethodAsync(method, json.Serialize(parameters));
+            if (method == "Target.setAutoAttach" && sessionId == null) {
+                autoAttach = parameters.ContainsKey("autoAttach") && (bool)parameters["autoAttach"];
+                if (autoAttach) foreach (var item in new Dictionary<string, WebView2>(views)) await Attach(item.Key, item.Value);
+            }
+            Reply(message, json.DeserializeObject(result));
+            if (method == "Runtime.runIfWaitingForDebugger" && sessionId != null && navigation.ContainsKey(sessionId)) {
+                string destination = navigation[sessionId]; navigation.Remove(sessionId); owner.CoreWebView2.Navigate(destination);
+            }
+        } catch (Exception error) {
+            var response = new Dictionary<string, object> { { "id", id }, { "error", new { code = -32000, message = error.Message } } };
+            if (message.ContainsKey("sessionId")) response["sessionId"] = message["sessionId"];
+            Send(response);
+        }
+    }
+    [STAThread] static void Main(string[] args) {
+        Console.InputEncoding = new System.Text.UTF8Encoding(false);
+        Console.OutputEncoding = new System.Text.UTF8Encoding(false);
+        Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
+        Application.Run(new CompanionWebView(args));
+    }
+}

@@ -1,25 +1,25 @@
 {
-  "version": "0.2.148-test",
+  "version": "0.2.149-test",
   "status": "Testing build",
   "date": "October 19, 2026",
-  "baseline": "0.2.147-test",
-  "scope": "Read rich files and scans. Use more document keys.",
+  "baseline": "0.2.148-test",
+  "scope": "Try embedded Edge. Find and sort files with more keys.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Read rich files",
+          "title": "Embedded Edge browser",
           "details": [
-            "The reader keeps headings, tables, lists, links, and bookmarks. Word files can show notes too. It reads DOCX, HTML, EPUB, ODT, Markdown, and data tables. Your source file stays as it was. Word files that the editor cannot keep now open for reading.",
-            "In the reader, H moves to the next heading. T moves to a table, K to a link, L to a list, B to a bookmark, and N to a note. Hold Shift to move back. Enter follows a link inside the file."
+            "You can now choose webview2 in Web browser options, or say Use embedded Edge. This uses the Edge WebView2 engine in a window owned by Voice Companion. It does not need a Chrome extension. The current browser choice stays as it was until you change it.",
+            "The browser has been tested with the same page, form and reading tasks used for other browsers. It has its own profile. Some sign-in flows and sites that need a full browser may not work. You can switch back to another browser in Options."
           ]
         },
         {
-          "title": "Read scanned PDF pages offline",
+          "title": "Find files and folders",
           "details": [
-            "The app now uses a local AI engine to read text in scanned PDF pages. The models ship with the app. No page is sent to a web service. Pages with text keep their text. OCR is used for image pages with no text.",
-            "OCR can make errors. The reader reports lines with low scores. Check key facts in the source scan. A scan has no saved Word styles, so its old headings and tables may not be found."
+            "Type a first letter to jump to a file, folder, or drive. Repeat that letter to cycle matches. Type more letters to narrow the list. Backspace removes a letter. Escape clears the name filter first.",
+            "Ctrl+F searches names in the current list. Ctrl+Shift+F searches names in the folder and its subfolders. Ctrl+Shift+X clears the search. You can also say Search files for followed by a name, or Search subfolders for followed by a name. Large searches have limits and can be canceled."
           ]
         }
       ]
@@ -28,11 +28,17 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "More document keys",
+          "title": "Sort files with voice or keys",
           "details": [
-            "Ctrl+Alt+1 through 6 sets a heading level. Ctrl+Shift+N sets normal text. Ctrl+Shift+L starts a bullet list. Ctrl+Shift+7 starts a number list. Ctrl+Alt+T asks for a table size.",
-            "Insert+F or Caps Lock+F says the format. Insert+Shift+Down or Caps Lock+Down reads the text you selected. Hold Insert or Caps Lock while you press the other key.",
-            "Every document menu action has a key or a short key sequence. Press Alt, a group number, then the item key shown in the menu."
+            "Alt+S opens Sort. Ctrl+Shift+1 sorts by name. Ctrl+Shift+2 uses date created. Ctrl+Shift+3 uses date modified. Ctrl+Shift+4 uses date added. Ctrl+Shift+Up chooses ascending. Ctrl+Shift+Down chooses descending. You can say each sort name too.",
+            "Date added means when this app first saw the item in this folder. It is not a claim about when an old file was first put there. Dates that Windows does not provide sort last."
+          ]
+        },
+        {
+          "title": "Reach file controls with Tab",
+          "details": [
+            "Tab and Shift+Tab move between the list and Search, Search subfolders, Sort, Clear search, Drives, and Main menu buttons. Enter activates a button. The File manager menu has the same actions. Alt+Home returns to the main menu.",
+            "The command menus were checked for both voice and keyboard routes. Alt+T lets you type the same command you would say, then press Enter."
           ]
         }
       ]

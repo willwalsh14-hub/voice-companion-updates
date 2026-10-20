@@ -10,6 +10,24 @@ from field_selection import FieldSelection
 from keyboard_text import caret_feedback,typing_feedback,phonetic,character as spoken_character
 
 
+def foreground_window(root,control=None):
+    """Return keyboard ownership after an explicit application navigation."""
+    import sys
+    if sys.platform!='win32':return
+    import ctypes
+    user=ctypes.windll.user32
+    hwnd=user.GetAncestor(root.winfo_id(),2)
+    current=ctypes.windll.kernel32.GetCurrentThreadId()
+    other=user.GetWindowThreadProcessId(user.GetForegroundWindow(),None)
+    attached=False
+    try:
+        if other and current!=other:attached=bool(user.AttachThreadInput(current,other,True))
+        user.BringWindowToTop(hwnd);user.SetForegroundWindow(hwnd)
+        if control is not None:user.SetFocus(control.winfo_id())
+    finally:
+        if attached:user.AttachThreadInput(current,other,False)
+
+
 def entry_feedback(before, after, old_caret, caret, key, character=""):
     """Short spoken feedback for a standard editable email entry."""
     names = {'@':'at sign', '.':'dot', '-':'hyphen', '_':'underscore', ' ':'space'}
@@ -61,6 +79,7 @@ class CompanionWindow:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
             self.root=self.typed=self.editor=self.current=self.file_list=None
+            self.file_toolbar=None;self.file_buttons=[]
             import gc
             gc.collect()
 
@@ -76,6 +95,12 @@ class CompanionWindow:
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
+
+    def wait_for_context(self):
+        # Native browser focus calls can complete before the queued reading-view
+        # update. Finish that update before the next physical key is accepted.
+        if self.closed.is_set() or threading.current_thread() is self.thread:return
+        done=threading.Event();self.ui_actions.put(('ui_call',done.set));done.wait(1)
 
     def feedback(self,text):
         if text:
@@ -164,6 +189,24 @@ class CompanionWindow:
             self.email_field = None
             file_list=tk.Listbox(root,font=('Segoe UI',12),exportselection=False,selectmode='multiple')
             self.file_list=file_list
+            file_toolbar=tk.Frame(root)
+            self.file_toolbar=file_toolbar;self.file_buttons=[]
+            for label,request in (('Search','search files'),('Search subfolders','search subfolders'),('Sort','sort files'),('Clear search','clear search'),('Drives','drive list'),('Main menu','main menu')):
+                button=tk.Button(file_toolbar,text=label,command=lambda command=request:self.commands.put(command),takefocus=True)
+                button.pack(side='left',padx=3);self.file_buttons.append(button)
+                button.bind('<FocusIn>',lambda event,name=label:self.feedback(name+' button. Enter activates. Tab moves to the next control.'))
+                button.bind('<Return>',lambda event,command=request:(self.commands.put(command),'break')[1])
+            def file_tab(event):
+                if self.context.get('file_name_input'):return
+                controls=[file_list,*self.file_buttons]
+                index=controls.index(event.widget) if event.widget in controls else 0
+                backward=bool(event.state&1) or event.keysym=='ISO_Left_Tab'
+                target=controls[(index+(-1 if backward else 1))%len(controls)]
+                target.focus_set()
+                if target==file_list:self.feedback('File list. Use arrows or type the first letters of an item.')
+                return 'break'
+            for widget in [file_list,*self.file_buttons]:
+                widget.bind('<Tab>',file_tab);widget.bind('<Shift-Tab>',file_tab);widget.bind('<ISO_Left_Tab>',file_tab)
             activation_keys=set()
             document_modifiers=set()
             caps_modifier={'before':False,'used':False,'synthetic':0}
@@ -210,8 +253,15 @@ class CompanionWindow:
                     self.commands.put(('keyboard','MenuPick:'+event.char));return 'break'
                 if mode=='files' and not self.command_entry_active and not self.context.get('file_name_input'):
                     file_key=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper() if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Enter' if key=='Return' else 'Space' if key=='space' else key
+                    if control and shift:
+                        file_key='Ctrl+Shift+'+(chr(event.keycode) if 48<=event.keycode<=57 else key if key in ('Up','Down') else key.upper())
+                    if event.state&(8|0x20000) and key.lower()=='s':file_key='Alt+S'
+                    if event.state&(8|0x20000) and key=='Home':file_key='Alt+Home'
                     if control and key=='Home':file_key='Ctrl+Home'
-                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D'):
+                    if event.widget in self.file_buttons and not control and file_key not in ('Alt+S','Alt+Home','Escape'):return
+                    if event.widget==file_list and not control and not event.state&(8|0x20000) and event.char and event.char.isprintable() and key!='space':
+                        self.commands.put(('keyboard','Letter:'+event.char));return 'break'
+                    if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
                         self.commands.put(('keyboard',file_key));return 'break'
                 if mode in ('document','word_processor','document_menu','recent_documents','media_menu','local_media','task_input'):
                     from task_navigation import SHORTCUTS
@@ -633,9 +683,9 @@ class CompanionWindow:
                         typed.configure(show='*' if field.get('web_private') else '')
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
-                        if mode!='files':file_list.pack_forget()
+                        if mode!='files':file_list.pack_forget();file_toolbar.pack_forget()
                         if mode=='files':
-                            history.pack_forget();editor.pack_forget();file_list.pack(fill='both',expand=True,padx=18,pady=(0,18))
+                            history.pack_forget();editor.pack_forget();file_toolbar.pack(side='bottom',fill='x',padx=18,pady=(0,18));file_list.pack(fill='both',expand=True,padx=18)
                             values=field.get('file_items',[])
                             if tuple(file_list.get(0,'end'))!=tuple(values):
                                 file_list.delete(0,'end')
@@ -684,10 +734,7 @@ class CompanionWindow:
                                 root.deiconify();root.lift()
                                 if mode=='web':
                                     try:
-                                        import sys,ctypes
-                                        if sys.platform=='win32':
-                                            hwnd=ctypes.windll.user32.GetAncestor(root.winfo_id(),2)
-                                            ctypes.windll.user32.SetForegroundWindow(hwnd)
+                                        foreground_window(root,editor)
                                     except (AttributeError,OSError):pass
                                 editor.focus_force()
                         else:
@@ -700,13 +747,13 @@ class CompanionWindow:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
                             if field.get('file_name_input') and old.get('mode')!='settings' and field.get('file_rename_value')!=old.get('file_rename_value'):
                                 typed.delete(0,'end');typed.insert(0,field['file_rename_value']);typed.selection_range(0,'end')
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else 'New file name, including extension; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else field.get('file_input_label','New file name, including extension')+'; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()
                                     try:
                                         import sys,ctypes
-                                        if sys.platform=='win32':ctypes.windll.user32.SetForegroundWindow(ctypes.windll.user32.GetAncestor(root.winfo_id(),2))
+                                        if sys.platform=='win32':foreground_window(root)
                                     except (AttributeError,OSError):pass
                                 if mode=='files' and not field.get('file_name_input'):file_list.focus_force()
                                 else:typed.focus_force()

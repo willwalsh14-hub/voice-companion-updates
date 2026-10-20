@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.148-test.
+Guide version: 0.2.149-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -43,7 +43,6 @@ Contents
   6.7 Make a table
   6.8 Save, copy, close, or reopen a document
   6.9 Document command menu
-Document keys added in this build: Ctrl+Alt+1 through 6 sets a heading level. Ctrl+Shift+N sets normal text. Ctrl+Shift+L starts bullets. Ctrl+Shift+7 starts a number list. Ctrl+Alt+T asks for a table size. The Alt document menu shows a key for each action. Press Alt, a group number, then the displayed item key.
 7 Write A Note
   7.1 Start and save a note
   7.2 Review or change a note
@@ -143,10 +142,10 @@ Document keys added in this build: Ctrl+Alt+1 through 6 sets a heading level. Ct
   24.8 Rename one item
   24.9 Delete files and folders
   24.10 Find commands and keys
+  24.11 Find and sort items
 25 Document Reader
   25.1 Open supported files
   25.2 Read with keys or speech
-Headings, tables, lists, links, bookmarks, and Word notes stay part of the reading structure. H moves to a heading, T to a table, K to a link, L to a list, B to a bookmark, and N to a note. Shift with that key moves back. Enter follows a link inside the file. Insert+F or Caps Lock+F says the format. Insert+Shift+Down or Caps Lock+Down reads selected text. Hold Insert or Caps Lock as you press the other key.
   25.3 Return to your files
   25.4 Know the reading limits
 26 Media Player
@@ -965,7 +964,9 @@ Keep browser window open controls whether a page stays open when you leave page 
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
 HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
-The Guided browser setting lets you choose Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
+The Guided browser setting lets you choose webview2, Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
+Choose webview2 to try embedded Edge. You can also say "Use embedded Edge". It opens a browser window owned by Companion and does not need the Chrome extension.
+Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, ask your helper to check that component. Some sign-in pages and sites that need a full browser may not work in this window. You can choose another browser in these options.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.
 
@@ -1144,6 +1145,11 @@ Delete or "Delete" asks you to confirm the named items. No is the first choice. 
 24.10 Find commands and keys
 Press Alt or say "File manager menu". Use arrows and Enter to choose an action. Each menu item reads its keyboard shortcut and voice command. Escape closes the menu. F1 or "File manager help" repeats the main commands. Press Alt+T to type a command when needed. While a slow location is loading, Escape cancels that opening request. File changes already in progress must finish; do not repeat the action until you hear its result.
 
+24.11 Find and sort items
+Type the first letter of a file, folder, or drive to select it. Repeat a letter to cycle matches. Type more letters within a short pause to narrow the list. Backspace removes a letter. Escape clears this name filter before moving up a folder. Ctrl+F searches names in this list. Ctrl+Shift+F searches names in this folder and its subfolders. Ctrl+Shift+X clears search. Say Search files for followed by a name, Search subfolders for followed by a name, or Clear search.
+Alt+S opens Sort. Ctrl+Shift+1 sorts by name, Ctrl+Shift+2 by date created, Ctrl+Shift+3 by date modified, and Ctrl+Shift+4 by date added. Ctrl+Shift+Up chooses ascending and Ctrl+Shift+Down descending. Say Sort by name, Sort by date created, Sort by date modified, Sort by date added, Sort ascending, or Sort descending for the same actions. Date added means first seen by this app in this folder. Dates that Windows does not supply sort last. Folders stay before files.
+Tab and Shift+Tab cycle the list and the Search, Search subfolders, Sort, Clear search, Drives, and Main menu buttons. Enter activates a button. Alt+Home returns to the main menu. A subfolder search stops at 5,000 matches or 100,000 checked items. Narrow the search if you reach the limit. Links and junctions are not followed. Escape cancels a search.
+
 25. DOCUMENT READER
 
 25.1 Open supported files
@@ -1165,4 +1171,5 @@ Choose Media from the main menu, then Media player. Radio and Podcasts are also 
 
 26.2 Control playback
 Space plays or pauses. Ctrl+S stops. Left and Right move back or forward 15 seconds. Up and Down change volume. Ctrl+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. Choose Playback speed, enter a number from 0.5 to 3, then press Enter. Escape returns to Media.
+
 
