@@ -316,6 +316,7 @@ class CompanionWindow:
                     request='Enter' if key=='Return' else 'Space' if key=='space' else key
                 elif mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
                 elif mode=='web' and not control and event.state&(8|0x20000) and key in ('Left','Right'):request='Web:Back' if key=='Left' else 'Web:Forward'
+                elif mode=='web' and key=='F5':request='Web:Refresh'
                 elif mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
                 elif mode=='web' and control and not shift and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'

@@ -162,7 +162,7 @@ class OnboardHelpTests(unittest.TestCase):
             self.assertEqual(companion.handle('next', 'help'), 'help')
             self.assertIn('Search or open an address', spoken.call_args.args[0])
             self.assertEqual(companion.handle('that one', 'help'), 'help')
-            self.assertIn('Choose Search or type address',spoken.call_args.args[0])
+            self.assertIn('Choose Search or enter address',spoken.call_args.args[0])
             self.assertEqual(companion.handle('close help', 'help'), 'awake')
 
     def test_help_with_commands_is_spoken_and_browseable(self):

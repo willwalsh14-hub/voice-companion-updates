@@ -796,6 +796,13 @@ class WindowKeyboardTests(unittest.TestCase):
             self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='F4',state=8))
             self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('keyboard','Alt+F4'))
 
+    def test_f5_reloads_from_web_links_and_headings_lists(self):
+        self.window.set_context(dict(mode='web',source=None,text='',menu_letters=True,web_name_list=True,echo='characters',phonetic=False,ack=0,focus=True))
+        self.call(lambda:self.window.typed.focus_force())
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='F5'))
+        self.wait(lambda:not self.window.commands.empty())
+        self.assertEqual(self.window.commands.get(),('keyboard','Web:Refresh'))
+
     def test_virtual_browser_reading_keys_dispatch_without_using_old_native_caret(self):
         context=dict(mode='web',source='page',text='Title\nBefore\nLater heading\nAfter',caret=0,readonly=True,web_browse=True,web_cursor_revision=1,echo='characters',phonetic=False,ack=0,focus=True)
         self.window.set_context(context);self.call(lambda:self.window.editor.focus_force())

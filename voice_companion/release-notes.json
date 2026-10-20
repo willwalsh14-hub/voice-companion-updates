@@ -1,25 +1,17 @@
 {
-  "version": "0.2.149-test",
+  "version": "0.2.150-test",
   "status": "Testing build",
   "date": "October 19, 2026",
-  "baseline": "0.2.148-test",
-  "scope": "Try embedded Edge. Find and sort files with more keys.",
+  "baseline": "0.2.149-test",
+  "scope": "Recover changing web pages and reload with F5.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Embedded Edge browser",
+          "title": "Search or enter address",
           "details": [
-            "You can now choose webview2 in Web browser options, or say Use embedded Edge. This uses the Edge WebView2 engine in a window owned by Voice Companion. It does not need a Chrome extension. The current browser choice stays as it was until you change it.",
-            "The browser has been tested with the same page, form and reading tasks used for other browsers. It has its own profile. Some sign-in flows and sites that need a full browser may not work. You can switch back to another browser in Options."
-          ]
-        },
-        {
-          "title": "Find files and folders",
-          "details": [
-            "Type a first letter to jump to a file, folder, or drive. Repeat that letter to cycle matches. Type more letters to narrow the list. Backspace removes a letter. Escape clears the name filter first.",
-            "Ctrl+F searches names in the current list. Ctrl+Shift+F searches names in the folder and its subfolders. Ctrl+Shift+X clears the search. You can also say Search files for followed by a name, or Search subfolders for followed by a name. Large searches have limits and can be canceled."
+            "The web browser menu and spoken prompt now say Search or enter address. The guide and lesson use the same name. The old spoken option still works."
           ]
         }
       ]
@@ -28,17 +20,17 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Sort files with voice or keys",
+          "title": "Read changing sign-in pages",
           "details": [
-            "Alt+S opens Sort. Ctrl+Shift+1 sorts by name. Ctrl+Shift+2 uses date created. Ctrl+Shift+3 uses date modified. Ctrl+Shift+4 uses date added. Ctrl+Shift+Up chooses ascending. Ctrl+Shift+Down chooses descending. You can say each sort name too.",
-            "Date added means when this app first saw the item in this folder. It is not a claim about when an old file was first put there. Dates that Windows does not provide sort last."
+            "A site may change its page or code screen as the app reads it. The app now tries to read the new screen. It does not click a link or button twice.",
+            "Checks cover a security-code screen with Try another way, the next screen and its buttons. PayPal\u2019s public sign-in page was checked without using an account. Your own PayPal verification flow still needs confirmation after this update."
           ]
         },
         {
-          "title": "Reach file controls with Tab",
+          "title": "Reload with F5",
           "details": [
-            "Tab and Shift+Tab move between the list and Search, Search subfolders, Sort, Clear search, Drives, and Main menu buttons. Enter activates a button. The File manager menu has the same actions. Alt+Home returns to the main menu.",
-            "The command menus were checked for both voice and keyboard routes. Alt+T lets you type the same command you would say, then press Enter."
+            "F5 now works from the links and headings lists too. It can reload before trying to read an out-of-date page. If the browser connection had to start again, it reopens the last page address instead of reloading a blank page. Pending form approvals are cleared.",
+            "If reloading fails, the message now says the reload did not finish. It does not claim the control is ready."
           ]
         }
       ]

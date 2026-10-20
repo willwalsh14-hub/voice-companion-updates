@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.149-test.
+Guide version: 0.2.150-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -597,7 +597,7 @@ The Messages per list setting is in Email options. Choices include 10, 20, 30, 4
 Choose Web browser on the main menu. It opens a web browser menu, even if you used a page earlier.
 When a page is kept open, Resume where you left off is the first choice.
 The web browser menu also has these choices:
-- Search or type address
+- Search or enter address
 - Go to favorite
 - New favorite
 - Delete favorite
@@ -605,11 +605,11 @@ The web browser menu also has these choices:
 - Go back
 - Go forward
 - Web history
-When Keep browser window open is on and a page remains open, Resume where you left off appears above Search or type address.
+When Keep browser window open is on and a page remains open, Resume where you left off appears above Search or enter address.
 Use arrows and Enter, or say the name of a menu item. Press Escape from this menu to return to the main menu.
 
 11.2 Search or open an address
-1. Choose Search or type address.
+1. Choose Search or enter address.
 2. Say your search, or type it and press Enter. For example, type weather in Houston.
 3. Wait for the page title and site name.
 4. Use the page reading commands to explore the result.
