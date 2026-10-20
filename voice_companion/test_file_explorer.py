@@ -40,6 +40,17 @@ class FileExplorerTests(unittest.TestCase):
         m.command('sort by date created ascending');self.assertEqual([i.name for i in m.items],['Two','One','Unknown'])
         m.command('sort files');self.assertEqual(m.menu,'sort');m.command('end');m.command('enter');self.assertTrue(m.view.descending)
 
+    def test_mp3_open_after_typeahead_and_return_to_drives_routes_to_media(self):
+        m=self.manager
+        (self.root/'Music.mp3').write_bytes(b'test')
+        m.refresh_here();settle(m)
+        m.command('file letters m');m.command('file letters u')
+        self.assertEqual(m.current().name,'Music.mp3')
+        m.command('open');settle(m);self.assertEqual(m.opened,self.root/'Music.mp3')
+        m.opened=None;m.command('drive list');settle(m);m.command('enter');settle(m)
+        m.command('file letters m');m.command('open');settle(m)
+        self.assertEqual(m.opened,self.root/'Music.mp3')
+
     def test_date_added_is_persisted_first_seen_and_not_creation_time(self):
         store=self.root/'state';item=Item('File','file',created=1)
         first=FileView(store).dated([item],'folder')[0]

@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.150-test.
+Guide version: 0.2.151-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -766,7 +766,7 @@ If a station fails, try another result. A station's stream may be unavailable ev
 The radio menu has an actions list and a results list. Tab or Shift+Tab moves between them.
 Use arrows, Home, End, and first-letter keys to choose an item. Enter opens an action or plays a station.
 Escape from station results says "Station actions." The next Escape says "Radio menu." Press Escape again to reach the Media menu.
-Control+F opens search. Control+P lists saved stations. F5 refreshes the station lists.
+Control+F opens search. Control+Shift+P lists saved stations. F5 refreshes the station lists.
 Say "Radio menu", "Actions", or "Results" to choose a list by voice.
 When a station is selected, actions include saving it, recording it, scheduling a recording, and playing or pausing audio.
 
@@ -776,7 +776,7 @@ Say "Pause radio" or "Stop podcast" to make clear which audio you mean. "Stop ta
 Space pauses or resumes audio in the radio or podcast area. Control+R resumes. Control+S stops.
 Control+Left Arrow moves back 15 seconds. Control+Right Arrow moves forward 15 seconds. Some streams do not support this.
 Companion can lower media volume while it speaks, then restore it. Change this choice in Voice options.
-Control+Alt+P pauses or resumes radio and podcasts from any screen in Companion. This includes Options.
+Control+P pauses or resumes radio and podcasts from any screen in Companion. This includes Options.
 Going back to the main menu stops audio by default. In Radio or Podcasts options, turn on Keep audio playing in the background to keep listening. The same setting applies to both.
 You can also say "Keep audio playing in the background on" or "Keep audio playing in the background off".
 
@@ -853,12 +853,12 @@ To play an episode by number, say "Play episode" or "Play", followed by its numb
 Tab and Shift+Tab move between actions and results. Use arrows, Home, End, and first-letter keys to choose.
 Press Enter on a show to open its episode list. Press Enter on an episode or downloaded file to play it.
 Escape returns from episodes to shows, then actions, then the main menu.
-Control+F searches. Control+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes subscribed shows.
+Control+F searches. Control+Shift+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes subscribed shows.
 Say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action" to move by voice.
 Actions also offer downloads, playback, chapters, and the previous or next episode or show.
 
 16.3 Pause, seek, or move by chapter
-Control+Alt+P pauses or resumes audio from any screen in Companion.
+Control+P pauses or resumes audio from any screen in Companion.
 At the main menu, audio stops unless Keep audio playing in the background is on. This checkbox is in Radio and Podcasts options. It is off at first.
 Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
 To move within the audio, say "Back", "Fast forward", or "Forward", followed by the amount of time. For example, say "Back 15 seconds", "Fast forward 30 minutes", or "Forward one hour and 20 minutes".
@@ -1023,7 +1023,7 @@ If the check fails, you can keep using the current version and try again later.
 2. Let Companion save your current work and download the file.
 3. Listen to the progress messages. Say "Status" or "Update status" to hear the current percentage.
 4. Wait while Companion closes, installs the update, and opens again.
-Say "Cancel update" while the download is in progress if you need to stop it.
+Say "Cancel update" while the download is in progress if you need to stop it. Tab and Shift+Tab move between Status and Cancel update. Enter activates the button. Alt+S or F5 reads status. Alt+C or Escape cancels the download.
 The app checks the downloaded file before using it. Windows may still need your helper for a security prompt.
 The app speaks progress at each five-percent step during download and installation. Say "Status" or "Update status" to hear just the current percentage. This works while a progress message is being read.
 If Windows cannot open the microphone for the update window, the window stays open and keeps trying. Press the Status button or Enter to hear progress.
@@ -1146,8 +1146,8 @@ Delete or "Delete" asks you to confirm the named items. No is the first choice. 
 Press Alt or say "File manager menu". Use arrows and Enter to choose an action. Each menu item reads its keyboard shortcut and voice command. Escape closes the menu. F1 or "File manager help" repeats the main commands. Press Alt+T to type a command when needed. While a slow location is loading, Escape cancels that opening request. File changes already in progress must finish; do not repeat the action until you hear its result.
 
 24.11 Find and sort items
-Type the first letter of a file, folder, or drive to select it. Repeat a letter to cycle matches. Type more letters within a short pause to narrow the list. Backspace removes a letter. Escape clears this name filter before moving up a folder. Ctrl+F searches names in this list. Ctrl+Shift+F searches names in this folder and its subfolders. Ctrl+Shift+X clears search. Say Search files for followed by a name, Search subfolders for followed by a name, or Clear search.
-Alt+S opens Sort. Ctrl+Shift+1 sorts by name, Ctrl+Shift+2 by date created, Ctrl+Shift+3 by date modified, and Ctrl+Shift+4 by date added. Ctrl+Shift+Up chooses ascending and Ctrl+Shift+Down descending. Say Sort by name, Sort by date created, Sort by date modified, Sort by date added, Sort ascending, or Sort descending for the same actions. Date added means first seen by this app in this folder. Dates that Windows does not supply sort last. Folders stay before files.
+Type the first letter of a file, folder, or drive to select it. Repeat a letter to cycle matches. Type more letters within a short pause to narrow the list. Backspace removes a letter. Escape clears this name filter before moving up a folder. Ctrl+E opens name search from any File Manager control. Ctrl+F also searches names in this list. Ctrl+Shift+F searches names in this folder and its subfolders. Ctrl+Shift+X clears search. Say Search files for followed by a name, Search subfolders for followed by a name, or Clear search.
+Alt+S opens Sort. Alt+N sorts by name, Alt+C by date created, Alt+M by date modified, and Alt+D by date added. Alt+A chooses ascending and Alt+Z descending. The older Control+Shift number and arrow keys also work. Say Sort by name, Sort by date created, Sort by date modified, Sort by date added, Sort ascending, or Sort descending for the same actions. Date added means first seen by this app in this folder. Dates that Windows does not supply sort last. Folders stay before files.
 Tab and Shift+Tab cycle the list and the Search, Search subfolders, Sort, Clear search, Drives, and Main menu buttons. Enter activates a button. Alt+Home returns to the main menu. A subfolder search stops at 5,000 matches or 100,000 checked items. Narrow the search if you reach the limit. Links and junctions are not followed. Escape cancels a search.
 
 25. DOCUMENT READER

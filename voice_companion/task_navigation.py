@@ -183,7 +183,7 @@ class TaskNavigation:
 
     def selected_file(self, path):
         kind = self.picker
-        if kind == 'media':
+        if kind == 'media' or kind is None and Path(path).suffix.lower() in MEDIA_TYPES:
             path = Path(path)
             self.app.media().player.open(path.resolve().as_uri(), path.name, 'local')
             self.media_title = path.name

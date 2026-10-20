@@ -28,6 +28,8 @@ class ProgressSpeech:
                 try:self.messages.get_nowait()
                 except queue.Empty:break
         self.messages.put_nowait(('percent',percent,interrupt))
+    def announce(self,text):
+        self.messages.put_nowait(('notice',text,True))
     def finish(self):
         self.messages.put_nowait(('complete',None,False))
     def _run(self):
@@ -45,7 +47,7 @@ class ProgressSpeech:
                 pythoncom.PumpWaitingMessages()
                 try:kind,percent,interrupt=self.messages.get_nowait()
                 except queue.Empty:continue
-                text='Installation complete, restarting Voice Companion.' if kind=='complete' else str(percent)+' percent.'
+                text='Installation complete, restarting Voice Companion.' if kind=='complete' else str(percent) if kind=='notice' else str(percent)+' percent.'
                 voice.Speak(text,0 if stream else 3 if interrupt else 1)
                 with (self.folder/'speech-log.txt').open('a',encoding='utf-8') as log:log.write(text+'\n')
                 if kind=='complete':
@@ -136,8 +138,10 @@ def run(folder,headless=False,no_microphone=False,speech_file=None):
         window=tk.Tk();window.title('Voice Companion update')
         label=tk.StringVar(value='0 percent.')
         tk.Label(window,textvariable=label,font=('Arial',14)).pack(padx=24,pady=16)
-        button=tk.Button(window,text='Status',command=lambda:requested.put(True));button.pack(pady=12);button.focus_set()
-        window.bind('<Return>',lambda event:requested.put(True));window.bind('<Alt-s>',lambda event:requested.put(True))
+        button=tk.Button(window,text='Status',command=lambda:requested.put(True),takefocus=True);button.pack(pady=12)
+        button.bind('<FocusIn>',lambda event:speech.announce('Status button. Alt S, F5 or Enter reads update progress.'))
+        button.focus_set()
+        window.bind('<Return>',lambda event:requested.put(True));window.bind('<Alt-s>',lambda event:requested.put(True));window.bind('<F5>',lambda event:requested.put(True))
         window.protocol('WM_DELETE_WINDOW',lambda:window.iconify())
     try:
         if not no_microphone:

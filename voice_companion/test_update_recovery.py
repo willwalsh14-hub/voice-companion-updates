@@ -134,7 +134,7 @@ class PlaybackAndExitTests(unittest.TestCase):
         hub=Mock();hub.command.return_value='Audio paused.'
         for mode in ('awake','sleep','media','podcast','document','email_draft','web','browser_menu','settings','help','tutorial','update_download'):
             with self.subTest(mode=mode),patch.object(app,'MEDIA_HUB',hub),patch.object(app,'APP_WINDOW',None),patch.object(app,'interrupt_speech'),patch.object(app,'speak'):
-                command=app.navigation_key('Ctrl+Alt+P',mode)
+                command=app.navigation_key('Ctrl+P',mode)
                 self.assertEqual(command,'toggle audio')
                 self.assertEqual(app.handle(command,mode),mode)
                 hub.command.assert_called_with('toggle audio')
@@ -180,7 +180,7 @@ class PlaybackAndExitTests(unittest.TestCase):
         def toggled():seen.append('toggle');received.set()
         shortcut=MediaShortcut(toggled)
         try:
-            self.assertTrue(shortcut.register(),'Control+Alt+P could not register')
+            self.assertTrue(shortcut.register(),'Control+P could not register')
             self.assertTrue(ctypes.windll.user32.PostThreadMessageW(shortcut.thread_id,shortcut.MESSAGE,shortcut.HOTKEY_ID,0))
             self.assertTrue(received.wait(2),'Hotkey message was not received')
             self.assertEqual(seen,['toggle'])

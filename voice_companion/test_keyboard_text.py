@@ -263,6 +263,26 @@ class WindowKeyboardTests(unittest.TestCase):
             self.assertIn(('keyboard',chord),self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'abc def'))
 
+    def test_file_search_shortcut_from_each_toolbar_control_and_input(self):
+        self.window.set_context(dict(mode='files',source=None,file_items=['Music.mp3, file'],file_index=0,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='files')
+        for widget in [self.window.file_list,*self.window.file_buttons,self.window.typed]:
+            self.call(lambda w=widget:w.event_generate('<KeyPress>',keysym='e',state=4))
+        self.wait(lambda:self.window.commands.qsize()>=8)
+        self.assertEqual(list(self.window.commands.queue).count(('keyboard','Ctrl+E')),8)
+
+    def test_update_buttons_announce_focus_activate_and_have_shortcuts(self):
+        self.window.set_context(dict(mode='update_download',source=None,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='update_download')
+        self.call(lambda:self.window.typed.event_generate('<Tab>'))
+        self.call(lambda:self.assertIs(self.window.root.focus_get(),self.window.update_buttons[0]))
+        self.call(lambda:self.window.update_buttons[0].event_generate('<Return>'))
+        self.call(lambda:self.window.update_buttons[0].event_generate('<Tab>'))
+        self.call(lambda:self.window.update_buttons[1].event_generate('<Return>'))
+        self.assertIn('update status',self.window.commands.queue);self.assertIn('cancel update',self.window.commands.queue)
+        self.assertTrue(any('Status button' in text for text in self.window.key_feedback.queue))
+        self.assertTrue(any('Cancel update button' in text for text in self.window.key_feedback.queue))
+
     def test_file_toolbar_tab_order_and_typeahead_search_sort_keys(self):
         self.window.set_context(dict(mode='files',source=None,text='',file_items=['Alpha, folder','Beta, file'],file_index=0,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('mode')=='files')

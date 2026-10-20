@@ -28,8 +28,8 @@ class MediaShortcut:
         api = ctypes.windll.user32
         self.thread_id = ctypes.windll.kernel32.GetCurrentThreadId()
         try:
-            # Control + Alt + P; NOREPEAT gives one toggle per press.
-            self.registered = bool(api.RegisterHotKey(None, self.HOTKEY_ID, 0x4003, ord('P')))
+            # Control + P; NOREPEAT gives one toggle per press.
+            self.registered = bool(api.RegisterHotKey(None, self.HOTKEY_ID, 0x4002, ord('P')))
             self.ready.set()
             if not self.registered:
                 return

@@ -47,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.150-test'
+APP_VERSION = '0.2.151-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -565,16 +565,21 @@ def navigation_key(key,mode):
 def _navigation_key(key,mode):
     global CONFIRM_CHOICE, ACCOUNT_MENU_INDEX
     interrupt_speech()
-    if key=='Ctrl+Alt+P':return 'toggle audio'
+    if key=='Ctrl+P':return 'toggle audio'
     if key=='Control':return None
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    if mode=='update_download':
+        return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
+        if key=='Ctrl+E':
+            if FILE_MANAGER:FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
+            return 'search files'
         if FILE_MANAGER and FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':
             if key in ('Up','Left','Home','ShiftTab'):CONFIRM_CHOICE='yes';sync_app_context(mode);speak('Yes.');return None
             if key in ('Down','Right','End','Tab'):CONFIRM_CHOICE='no';sync_app_context(mode);speak('No.');return None
             return {'Enter':CONFIRM_CHOICE,'Space':CONFIRM_CHOICE,'Escape':'no','y':'yes','Y':'yes','n':'no','N':'no'}.get(key)
-        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list','Ctrl+F':'search files','Ctrl+Shift+F':'search subfolders','Ctrl+Shift+X':'clear search','Alt+S':'sort files','Alt+Home':'main menu','Ctrl+Shift+1':'sort by name','Ctrl+Shift+2':'sort by date created','Ctrl+Shift+3':'sort by date modified','Ctrl+Shift+4':'sort by date added','Ctrl+Shift+Up':'sort ascending','Ctrl+Shift+Down':'sort descending','BackSpace':'file backspace'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
+        return {'Up':'previous','Down':'next','Left':'previous','Right':'next','Home':'home','End':'end','Enter':'enter','Space':'toggle selection','Escape':'escape','Alt':'file manager menu','F1':'file manager help','F2':'rename','Delete':'delete','Ctrl+C':'copy','Ctrl+X':'cut','Ctrl+V':'paste','Ctrl+A':'select all','Ctrl+Shift+A':'clear selection','F5':'refresh','Ctrl+D':'drive list','Ctrl+E':'search files','Ctrl+F':'search files','Alt+N':'sort by name','Alt+C':'sort by date created','Alt+M':'sort by date modified','Alt+D':'sort by date added','Alt+A':'sort ascending','Alt+Z':'sort descending','Ctrl+Shift+F':'search subfolders','Ctrl+Shift+X':'clear search','Alt+S':'sort files','Alt+Home':'main menu','Ctrl+Shift+1':'sort by name','Ctrl+Shift+2':'sort by date created','Ctrl+Shift+3':'sort by date modified','Ctrl+Shift+4':'sort by date added','Ctrl+Shift+Up':'sort ascending','Ctrl+Shift+Down':'sort descending','BackSpace':'file backspace'}.get(key) if not key.startswith('Letter:') else ('file letter '+key[7:])
     if mode=='file_reader' and key=='Escape':return 'back to files'
     if mode=='file_reader':
         return {'Insert+F':'what formatting','CapsLock+F':'what formatting','Insert+Shift+Down':'what is selected','CapsLock+Down':'what is selected','H':'next heading','Shift+H':'previous heading','T':'next table','Shift+T':'previous table','K':'next link','Shift+K':'previous link','L':'next list','Shift+L':'previous list','B':'next bookmark','Shift+B':'previous bookmark','N':'next footnote','Shift+N':'previous footnote','Enter':'follow link'}.get(key)
@@ -1488,6 +1493,9 @@ def _handle(text, mode, typed=False):
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global SEARCH_RETURN_MODE,NAMED_LIST
     command=normalized_command(text)
+    if command=='toggle audio':
+        speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
+        return mode
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
         try:speak(manager.command(text))
@@ -1500,9 +1508,6 @@ def _handle(text, mode, typed=False):
         speak(str(exc));return mode
     if command in ('regular browser','open regular browser','connect regular browser'):
         return open_browser_menu()
-    if command=='toggle audio':
-        speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Choose a station or episode first.')
-        return mode
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     background_request=re.fullmatch(r'(?:set )?keep audio playing in (?:the )?background (on|off)',command)
     if background_request and mode!='settings':
@@ -1906,6 +1911,7 @@ def _handle(text, mode, typed=False):
         if FILE_MANAGER is None:FILE_MANAGER=FileManager()
         task_navigation().picker=None
         task_navigation().reader_return='files'
+        task_navigation().picker=None
         FILE_MANAGER.pick_extensions=None
         FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
         speak('File manager. '+FILE_MANAGER.refresh())
