@@ -881,6 +881,11 @@ class WebSession:
             self._refresh_at(item);self.focus_current()
         return label+'.'
 
+    def running_browser(self):
+        """The browser actually showing pages, which differs from the preference after a fallback."""
+        running = getattr(self.backend, 'browser', None)
+        return running if isinstance(running, str) and running else self.browser
+
     def _sync_browser_tab(self):
         if not self.injected_backend and not getattr(self.backend,'regular',False):
             self.adopt_connected_browser()
@@ -1267,7 +1272,6 @@ class WebSession:
             self.backend.close()
             self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
             self.backend.goto(url)
-            self.browser='firefox'
             return 'The chosen browser could not start. Using the included Firefox browser. '
 
     def open(self, url):
@@ -1503,7 +1507,7 @@ class WebSession:
     def handoff(self):
         if not self.snapshot: return 'No website is open. Ask your helper to open the site with you.'
         url = urlsplit(self.snapshot['url'])
-        return ('Ask your helper to look at the ' + self.browser.capitalize() + ' window titled ' + _plain(self.snapshot['title']) +
+        return ('Ask your helper to look at the ' + self.running_browser().capitalize() + ' window titled ' + _plain(self.snapshot['title']) +
                 '. The site is ' + (url.hostname or 'unknown') + '. ' +
                 ('The form has ' + str(len(self.form_answers)) + ' answers entered by voice. ' if self.form_answers else '') +
                 'Review the site address, all form fields, and the final action together. I have not sent your answers to anyone.')
@@ -1912,7 +1916,11 @@ class WebSession:
         match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command)
         if match: return self.choose_browser(match[1])
         if command in ('which browser','what browser am i using'):
-            return 'Guided websites use ' + self.browser.capitalize() + '. Say use Chrome, use Brave, use Firefox, or use Edge to change it.'
+            running = self.running_browser()
+            # The preference is kept after a fallback; say which browser is really showing the page.
+            return ('Guided websites use ' + self.browser.capitalize() + '.' +
+                    (' This page is open in ' + running.capitalize() + ' because ' + self.browser.capitalize() + ' could not start.' if running != self.browser else '') +
+                    ' Say use Chrome, use Brave, use Firefox, or use Edge to change it.')
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None
