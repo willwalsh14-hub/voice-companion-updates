@@ -28,6 +28,7 @@ RADIO_ROOTS = ('https://all.api.radio-browser.info','https://de1.api.radio-brows
 IPRD_CATALOG = 'https://iprd-org.github.io/iprd/site_data/metadata/catalog.json'
 APPLE_API = 'https://itunes.apple.com/search'
 MAX_DOWNLOAD = 500 * 1024 * 1024
+AUDIO_EXTENSIONS = ('.mp3', '.m4a', '.aac', '.ogg', '.opus')
 PODCAST_REFRESH_SECONDS = 6 * 3600
 
 
@@ -357,9 +358,15 @@ class MediaHub:
         key = {'name':'name','tag':'tags','countrycode':'country','state':'state'}[param]
         country_aliases = {'US':'united states', 'CA':'canada', 'GB':'united kingdom',
                            'AU':'australia', 'DE':'germany', 'FR':'france'}
-        local = [s for s in local if any(candidate in str(s.get(key,'')).casefold()
-                 for candidate in ([query.casefold(),country_aliases.get(query,'')]
-                                   if param=='countrycode' else [query.casefold()]) if candidate)]
+        def matches(value):
+            value=str(value).casefold()
+            if param!='countrycode':
+                return query.casefold() in value
+            # Match a country code or name as whole words, so 'US' does not match
+            # Russia or Australia.
+            return any(re.search(r'(?<!\w)'+re.escape(candidate)+r'(?!\w)',value)
+                       for candidate in (query.casefold(),country_aliases.get(query,'')) if candidate)
+        local = [s for s in local if matches(s.get(key,''))]
         if kind=='city' and not online and not local:
             return 'The directory does not reliably label stations by city. Try a station name or state.'
         seen = set()
@@ -526,6 +533,13 @@ class MediaHub:
     def _feed_episodes(self, show):
         if not _http_url(show['feed']): raise ValueError('The podcast feed address is invalid.')
         root=ET.fromstring(_http(show['feed'],5_000_000))
+        # Some feeds declare a default namespace (e.g. xmlns="http://backend.userland.com/rss2"),
+        # which hides channel/item/title from plain lookups. Drop only that default namespace.
+        if root.tag.startswith('{'):
+            default=root.tag[:root.tag.index('}')+1]
+            for element in root.iter():
+                if isinstance(element.tag,str) and element.tag.startswith(default):
+                    element.tag=element.tag[len(default):]
         episodes=[]
         for item in root.findall('.//channel/item'):
             title=item.findtext('title') or 'Untitled episode'
@@ -777,11 +791,19 @@ class MediaHub:
         return None
 
     def download_episode(self, number):
-        episode=self.episodes[int(number)-1]
+        i=int(number)-1
+        if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
+        episode=self.episodes[i]
         folder=self._path('Podcast Downloads'); folder.mkdir(parents=True,exist_ok=True)
         extension=Path(urlsplit(episode['url']).path).suffix.lower()
         if extension not in ('.mp3','.m4a','.aac','.ogg','.opus'): extension='.mp3'
-        target=folder/(_safe(episode['show']+' - '+episode['title'])+extension)
+        name=episode['show']+' - '+episode['title']
+        stem=_safe(name)
+        # Long names are cut to 90 characters; add a short URL hash so episodes that
+        # differ only after the cut (Part One / Part Two) do not collide.
+        if len(re.sub(r'[^\w .-]', '', name).strip(' .'))>90:
+            stem=stem[:70]+'-'+hashlib.sha256(episode['url'].encode()).hexdigest()[:12]
+        target=folder/(stem+extension)
         temp=target.with_suffix(target.suffix+'.part')
         with self._lock:
             if target in self._downloads: return 'That episode is already downloading.'
@@ -829,8 +851,14 @@ class MediaHub:
 
     def downloads(self):
         folder=self._path('Podcast Downloads')
-        files=sorted((p for p in folder.iterdir() if p.is_file()),key=lambda p:p.name.casefold()) if folder.exists() else []
+        # Unfinished .part files (download running or interrupted) are not playable episodes.
+        files=sorted((p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in AUDIO_EXTENSIONS),key=lambda p:p.name.casefold()) if folder.exists() else []
         return files
+
+    def recordings(self):
+        """Saved radio recordings in the one order used for listing, keyboard browsing, and playing."""
+        folder=self._path('Radio Recordings')
+        return sorted((p for p in folder.iterdir() if p.is_file()),key=lambda p:p.name.casefold()) if folder.exists() else []
 
     def play_download(self, number):
         files=self.downloads()
@@ -843,8 +871,7 @@ class MediaHub:
         return 'Playing downloaded episode '+files[i].stem+'.'
 
     def play_recording(self, number):
-        folder=self._path('Radio Recordings')
-        files=sorted((p for p in folder.iterdir() if p.is_file()),key=lambda p:p.name.casefold()) if folder.exists() else []
+        files=self.recordings()
         i=int(number)-1
         if not 0<=i<len(files): return 'That recording number is unavailable.'
         try: self.player.open(files[i].as_uri(),files[i].stem,'radio')
@@ -1027,8 +1054,7 @@ class MediaHub:
             name=jobs.pop(i)['station']['name'];self._save('radio-schedule.json',jobs)
             return 'Canceled scheduled recording of '+name+'.'
         if cmd in ('list recordings','list radio recordings'):
-            folder=self._path('Radio Recordings')
-            names=sorted(p.name for p in folder.iterdir() if p.is_file()) if folder.exists() else []
+            names=[p.name for p in self.recordings()]
             return 'Recordings: '+ '; '.join(f'{i}. {n}' for i,n in enumerate(names[:30],1)) if names else 'No radio recordings yet.'
         match=re.fullmatch(r'play recording (\d+)',cmd)
         if match: return self.play_recording(match[1])

@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 import re
 from menu_navigation import announce_item,next_match,boundary_notice
 
+# MediaHub.source() returns stored ids; the Station database form shows spoken labels.
+SOURCE_LABELS={'all':'all','radio-browser':'radio browser','iprd':'iprd','radiosure':'radio sure'}
+
 @dataclass(frozen=True)
 class Action:
     label:str
@@ -42,7 +45,7 @@ class MediaNavigation:
         if self.view=='episodes':return h.episodes
         if self.view=='downloads':return [{'title':p.stem} for p in h.downloads()]
         if self.view=='recordings':
-            folder=h._path('Radio Recordings');return [{'title':p.stem} for p in sorted(folder.iterdir(),key=lambda p:p.name) if p.is_file()] if folder.exists() else []
+            return [{'title':p.stem} for p in h.recordings()]
         if self.view=='scheduled':return [{**j,'name':j['station']['name']+' at '+j['when']} for j in h._load('radio-schedule.json',[])]
         return []
     def state(self):
@@ -151,7 +154,7 @@ class MediaNavigation:
         selected=self.items()[self.item_index] if self.focus=='items' and self.items() and self.item_index<len(self.items()) else {}
         if name=='preset' and not selected:
             selected=self.hub.stations[self.hub.station_index] if self.hub.stations and self.hub.station_index is not None else self.hub.current_station or {}
-        definitions={'search':[field('Station name' if self.section=='radio' else 'Podcast name')], 'genre':[field('Genre')], 'country':[field('Country')], 'state':[field('State')], 'city':[field('City')], 'category':[field('Podcast category')], 'source':[field('Station database',self.hub.source(),('all','radio browser','iprd','radio sure'))], 'preset':[field('Preset name',selected.get('name',''))], 'record':[field('Length in minutes','30')], 'schedule':[field('Day','tomorrow',('today','tomorrow')),field('Time','8 PM'),field('Length in minutes','30'),field('Repeat every day','no',('no','yes'))], 'automatic':[field('Automatic download limit','manual')], 'rewind':[field('Amount','15 seconds')], 'forward':[field('Amount','15 seconds')], 'import':[field('RadioSure file path')]}
+        definitions={'search':[field('Station name' if self.section=='radio' else 'Podcast name')], 'genre':[field('Genre')], 'country':[field('Country')], 'state':[field('State')], 'city':[field('City')], 'category':[field('Podcast category')], 'source':[field('Station database',SOURCE_LABELS.get(self.hub.source(),'all'),('all','radio browser','iprd','radio sure'))], 'preset':[field('Preset name',selected.get('name',''))], 'record':[field('Length in minutes','30')], 'schedule':[field('Day','tomorrow',('today','tomorrow')),field('Time','8 PM'),field('Length in minutes','30'),field('Repeat every day','no',('no','yes'))], 'automatic':[field('Automatic download limit','manual')], 'rewind':[field('Amount','15 seconds')], 'forward':[field('Amount','15 seconds')], 'import':[field('RadioSure file path')]}
         self.form={'name':name,'fields':definitions[name]};self.field_index=0;self.revision+=1
         question=('What station would you like to find? ' if self.section=='radio' else 'What podcast would you like to find? ') if name=='search' else ''
         return question+self.field_notice()+ ' Tab or Shift+Tab moves between fields, OK and Cancel. Enter continues. Escape cancels.'

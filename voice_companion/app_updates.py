@@ -151,6 +151,19 @@ class AppUpdates:
                     if value: self.manifest_url = https_url(value)
                 except (ValueError,KeyError,OSError): pass
                 break
+        self.remove_old_downloads()
+
+    def remove_old_downloads(self):
+        """Delete installers left by earlier updates, retries, and cancellations.
+
+        Each download goes to its own Updates/<id> folder and can be hundreds of
+        megabytes. The update result and log live in the data folder, so nothing
+        in these folders is needed once the app starts again. Files still in use
+        are skipped and retried next start."""
+        updates=self.folder/'Updates'
+        try: folders=[entry for entry in updates.iterdir() if entry.is_dir()]
+        except OSError: return
+        for entry in folders: shutil.rmtree(entry,ignore_errors=True)
 
     def check(self, manual=False):
         if self.busy: return False
@@ -180,8 +193,10 @@ class AppUpdates:
                         self.events.put(('progress', percent))
                 path = download_release(release,folder,self.canceled, report)
                 event=('downloaded',(path,release))
-            except InterruptedError:event=('canceled',None)
-            except Exception:event=('download_failed',None)
+            except InterruptedError:
+                shutil.rmtree(folder,ignore_errors=True);event=('canceled',None)
+            except Exception:
+                shutil.rmtree(folder,ignore_errors=True);event=('download_failed',None)
             self.busy=False
             self.events.put(event)
         threading.Thread(target=work,daemon=True).start()
