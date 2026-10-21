@@ -155,6 +155,15 @@ def document_control_request(raw):
     return bool(re.fullmatch(r'make it (?:\d+|[a-z -]+) points?',command)) or bool(document_navigation_request(raw)) or command in FORMAT_READ_COMMANDS or command in LINE_BREAK_COMMANDS + START_COMMANDS + END_COMMANDS + ('scratch','scratch that','type new line') or bool(re.fullmatch(NAME_PATTERN, command)) or command.startswith(('type literally ', 'dictate literally '))
 
 
+# "change font to Arial" sets formatting; it must not replace the word "font" in the text.
+FORMAT_CHANGE_TARGETS = frozenset(('font', 'font name', 'the font', 'font size', 'size', 'the font size',
+                                   'line spacing', 'the line spacing', 'document line spacing',
+                                   'all line spacing', 'word font', 'word size', 'spacing'))
+
+TABLE_SELECTION_NOTICE = ('That selection crosses table cells. Change or paste one cell at a time, '
+                          'or say delete selection to clear the text and keep the cells.')
+
+
 def document_filename(title):
     name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', title).strip(' .')[:80]
     if name.lower().endswith('.docx'): name = name[:-5].rstrip(' .')
@@ -230,6 +239,20 @@ class VoiceDocument:
     last_change: tuple | None = None
     _opening: bool = False
     reading: ReadingCursor = field(default_factory=ReadingCursor, repr=False)
+    source_path: Path | None = field(default=None, repr=False)
+
+    def __setattr__(self, name, value):
+        # A selection is a pair of paragraph/offset positions. Remember the text it
+        # was made against so a later edit (delete paragraph, dictation, undo...)
+        # cannot leave it pointing at different words or past the end.
+        if name == 'selection':
+            object.__setattr__(self, '_selection_text',
+                               None if value is None else tuple(p.text for p in getattr(self, 'paragraphs', [])))
+        object.__setattr__(self, name, value)
+
+    def drop_stale_selection(self):
+        if self.selection is not None and getattr(self, '_selection_text', None) != tuple(p.text for p in self.paragraphs):
+            self.selection = None
 
     def __post_init__(self):
         self.folder.mkdir(parents=True, exist_ok=True)
@@ -244,16 +267,22 @@ class VoiceDocument:
         folder.mkdir(parents=True, exist_ok=True)
         name = document_filename(title)
         legacy = re.sub(r'[^\w .-]+', '', title).strip(' .')[:80]
-        matches = [p for p in folder.glob('*.docx') if p.stem.casefold() in (name.casefold(),legacy.casefold())]
+        matches = [p for p in folder.glob('*.docx') if p.stem.casefold() in (name.casefold(),legacy.casefold(),title.casefold())]
         if not matches:
             raise FileNotFoundError(title)
+        # "Letter.docx.docx" and "Letter.docx" both sanitize to "Letter"; open the exact one.
+        matches.sort(key=lambda p: (p.stem != title, p.stem.casefold() != title.casefold(), p.name))
         path = matches[0]
         if path.stat().st_size > 10 * 1024 * 1024:
             raise ValueError('This document is too large for this test editor.')
-        with zipfile.ZipFile(path) as archive:
-            if archive.getinfo('word/document.xml').file_size > 10 * 1024 * 1024:
-                raise ValueError('This document is too large for this test editor.')
-            root = ET.fromstring(archive.read('word/document.xml'))
+        try:
+            with zipfile.ZipFile(path) as archive:
+                if archive.getinfo('word/document.xml').file_size > 10 * 1024 * 1024:
+                    raise ValueError('This document is too large for this test editor.')
+                root = ET.fromstring(archive.read('word/document.xml'))
+        except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
+            # An empty "New Microsoft Word Document" or a damaged file is not a crash.
+            raise ValueError('This document is empty or damaged, so it could not be opened.') from error
         ns = '{' + XMLNS + '}'
         allowed = {ns + tag for tag in ('document', 'body', 'p', 'pPr', 'pStyle', 'r', 'rPr', 'b', 'i', 'u', 'highlight',
                    'rFonts', 'sz', 't', 'sectPr', 'numPr', 'ilvl', 'numId', 'tbl', 'tblPr', 'tblGrid',
@@ -261,7 +290,22 @@ class VoiceDocument:
                    'top', 'bottom', 'left', 'right', 'insideH', 'insideV', 'jc', 'spacing', 'br')}
         if any(node.tag not in allowed for node in root.iter()):
             raise ValueError('This document uses formatting this test editor cannot preserve.')
-        document = cls(folder, title=path.stem, _opening=True)
+        # Attributes this editor would silently drop on save: space before/after
+        # paragraphs and paragraph styles other than headings.
+        if any(node.get(ns + side) is not None for node in root.iter(ns + 'spacing')
+               for side in ('before', 'after', 'beforeLines', 'afterLines', 'beforeAutospacing', 'afterAutospacing')):
+            raise ValueError('This document uses formatting this test editor cannot preserve.')
+        if any(not re.fullmatch(r'(?:Heading[1-6]|Normal)', node.get(ns + 'val', ''))
+               for node in root.iter(ns + 'pStyle')):
+            raise ValueError('This document uses formatting this test editor cannot preserve.')
+        document = cls(folder, title=path.stem, _opening=True, source_path=path)
+        def switched_on(props, tag):
+            # <w:b w:val="0"/> and <w:u w:val="none"/> mean the formatting is off.
+            node = props.find(ns + tag) if props is not None else None
+            return node is not None and node.get(ns + 'val', 'true').lower() not in ('0', 'false', 'off', 'none')
+        def points(node):
+            half_points = int(node.get(ns + 'val'))
+            return half_points // 2 if half_points % 2 == 0 else half_points / 2
         def parse_paragraph(node, table_id=0, row=0, column=0):
             style = node.find('./' + ns + 'pPr/' + ns + 'pStyle')
             kind = 'Normal'
@@ -277,9 +321,9 @@ class VoiceDocument:
                 return ''.join(('\n' if child.tag == ns+'br' else child.text or '')
                                for child in run if child.tag in (ns+'t', ns+'br'))
             text = ''.join(run_text(run) for run in runs)
-            bold = bool(runs) and all(run.find('./' + ns + 'rPr/' + ns + 'b') is not None for run in runs)
-            italic = bool(runs) and all(run.find('./' + ns + 'rPr/' + ns + 'i') is not None for run in runs)
-            underline = bool(runs) and all(run.find('./' + ns + 'rPr/' + ns + 'u') is not None for run in runs)
+            bold = bool(runs) and all(switched_on(run.find(ns + 'rPr'), 'b') for run in runs)
+            italic = bool(runs) and all(switched_on(run.find(ns + 'rPr'), 'i') for run in runs)
+            underline = bool(runs) and all(switched_on(run.find(ns + 'rPr'), 'u') for run in runs)
             first = runs[0].find('./' + ns + 'rPr') if runs else None
             fonts = first.find(ns+'rFonts') if first is not None else None
             size = first.find(ns+'sz') if first is not None else None
@@ -290,15 +334,15 @@ class VoiceDocument:
                 rs = props.find(ns+'sz') if props is not None else None
                 rh = props.find(ns+'highlight') if props is not None else None
                 parsed_runs.append(TextRun(run_text(run),
-                    props is not None and props.find(ns+'b') is not None,
-                    props is not None and props.find(ns+'i') is not None,
-                    props is not None and props.find(ns+'u') is not None,
+                    switched_on(props, 'b'),
+                    switched_on(props, 'i'),
+                    switched_on(props, 'u'),
                     rf.get(ns+'ascii', '') if rf is not None else '',
-                    int(rs.get(ns+'val'))//2 if rs is not None else 0,
+                    points(rs) if rs is not None else 0,
                     rh.get(ns+'val', '') if rh is not None else ''))
             document.paragraphs.append(Paragraph(text, kind, bold, italic, underline,
                 fonts.get(ns+'ascii', '') if fonts is not None else '',
-                int(size.get(ns+'val'))//2 if size is not None else 0, table_id, row, column,
+                points(size) if size is not None else 0, table_id, row, column,
                 parsed_runs if len(parsed_runs) > 1 or any(r.highlight for r in parsed_runs) else [],
                 align.get(ns+'val', 'left') if align is not None else 'left',
                 int(spacing.get(ns+'line', '0')) if spacing is not None else 0,
@@ -319,6 +363,9 @@ class VoiceDocument:
 
     @property
     def path(self):
+        # An opened file keeps its real name until the user renames the document.
+        if self.source_path is not None and self.source_path.stem == self.title:
+            return self.source_path
         safe = document_filename(self.title)
         return self.folder / (safe + '.docx')
 
@@ -338,7 +385,7 @@ class VoiceDocument:
                 runstyle = ('<w:rPr>' + ('<w:b/>' if run.bold else '') + ('<w:i/>' if run.italic else '')
                             + ('<w:u w:val="single"/>' if run.underline else '')
                             + ('<w:rFonts w:ascii="' + html.escape(run.font, quote=True) + '" w:hAnsi="' + html.escape(run.font, quote=True) + '"/>' if run.font else '')
-                            + ('<w:sz w:val="' + str(run.size*2) + '"/>' if run.size else '') + '</w:rPr>')
+                            + ('<w:sz w:val="' + str(int(round(run.size*2))) + '"/>' if run.size else '') + '</w:rPr>')
                 if run.highlight:
                     runstyle = runstyle.replace('</w:rPr>', '<w:highlight w:val="' + html.escape(run.highlight, quote=True) + '"/></w:rPr>')
                 lines = run.text.split('\n')
@@ -414,6 +461,7 @@ class VoiceDocument:
         twips, error = self.validated_line_spacing(amount, rule)
         if error:
             return error
+        self.drop_stale_selection()
         self.checkpoint()
         for p in (self.paragraphs if whole_document else self.paragraphs[self.selection.first_paragraph:self.selection.last_paragraph+1] if self.selection else [self.paragraphs[self.cursor]]):
             p.line_spacing_twips = twips
@@ -610,8 +658,15 @@ class VoiceDocument:
         base = TextRun('', p.bold, p.italic, p.underline, p.font, p.size)
         return [copy.copy(run) for run in p.runs for _ in run.text] if p.runs else [copy.copy(base) for _ in p.text]
 
+    def crosses_table_cells(self, selected):
+        return (selected.first_paragraph != selected.last_paragraph and
+                any(p.table_id for p in self.paragraphs[selected.first_paragraph:selected.last_paragraph+1]))
+
     def _replace_selection(self, replacement):
         selected = self.selection
+        if self.crosses_table_cells(selected):
+            # Joining cells would leave the table with missing cells, which cannot be saved.
+            raise ValueError(TABLE_SELECTION_NOTICE)
         first = self.paragraphs[selected.first_paragraph]
         last = self.paragraphs[selected.last_paragraph]
         a, b = selected.first_offset, selected.last_offset
@@ -655,6 +710,9 @@ class VoiceDocument:
             self.reading.position = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor]) + position[1]
             return 'Insert ' + action.split('_')[1] + ' ' + content + '.'
         if action.startswith('replace:'):
+            if self.crosses_table_cells(selected):
+                self.selection = None
+                return TABLE_SELECTION_NOTICE
             replacement = action[len('replace:'):]
             self._replace_selection(replacement)
             return 'Replaced ' + content + ' with ' + replacement + '.'
@@ -698,6 +756,7 @@ class VoiceDocument:
         return action.capitalize() + ' applied to: ' + content
 
     def process(self, raw):
+        self.drop_stale_selection()
         text = raw.strip()
         command = re.sub(r'[.!?]+$', '', text.lower()).strip()
         if not command:
@@ -971,8 +1030,20 @@ class VoiceDocument:
             if not self.paragraphs:
                 return 'The document is empty.'
             p = self.paragraphs[self.cursor]
-            self.selection = TextSelection(self.cursor, 0, self.cursor, len(p.text))
-            return self._apply_selection_action(self.selection, 'delete')
+            position_source = self.navigation_position or self.insertion_position
+            offset = min(position_source[1], len(p.text)) if position_source and position_source[0] == self.cursor else 0
+            # A paragraph can hold several lines separated by line breaks; delete only this one.
+            start = p.text.rfind('\n', 0, offset) + 1
+            end = p.text.find('\n', offset)
+            if end == -1:
+                end = len(p.text)
+                if start > 0: start -= 1
+            else:
+                end += 1
+            line = p.text[start:end].strip('\n')
+            self.selection = TextSelection(self.cursor, start, self.cursor, end)
+            self._apply_selection_action(self.selection, 'delete')
+            return 'Deleted line: ' + (line or 'blank line') + '. Say undo to restore it.'
         if command == 'delete current word':
             command = 'delete word'
         current = re.fullmatch(r'(select|highlight|bold|underline|italicize|copy|cut|delete) (?:the )?(?:current |this )?(word|sentence|paragraph|line|selection|that)', command)
@@ -1020,9 +1091,21 @@ class VoiceDocument:
             if self.selection is None:
                 self.selection = TextSelection(self.cursor,len(self.paragraphs[self.cursor].text),
                                                self.cursor,len(self.paragraphs[self.cursor].text))
+            if self.crosses_table_cells(self.selection):
+                return TABLE_SELECTION_NOTICE
             self._replace_selection(pasted)
             return 'Pasted: ' + pasted + '. Say undo to remove it.'
         request = reading_request(command)
+        if request == ('paragraph', 0) and self.paragraphs:
+            # The shared reading cursor skips blank paragraphs, which would move the
+            # editing position to a neighbour and send dictation to the wrong place.
+            self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
+            self.reading.position = self.reading.continuation = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
+            self.word_cursor = self.sentence_cursor = 0
+            p = self.paragraphs[self.cursor]
+            if p.table_id:
+                return self.describe_cell()
+            return p.text.strip() or 'Empty paragraph.'
         if request:
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             unit, direction = request
@@ -1084,7 +1167,15 @@ class VoiceDocument:
             if self.table_cell():
                 return 'You are in a table. Say next cell, or say leave table to write after it.'
             self.checkpoint()
-            current = self.paragraphs[self.cursor] if self.paragraphs else Paragraph('')
+            if not self.paragraphs:
+                # An empty document has nowhere to put the cursor yet: create the first paragraph.
+                self.paragraphs.append(Paragraph(''))
+                self.cursor = 0
+                self.insertion_position = None
+                self.selection = None
+                self.changed()
+                return 'New paragraph.'
+            current = self.paragraphs[self.cursor]
             self.paragraphs.insert(self.cursor + 1, Paragraph('',
                 kind=current.kind if current.kind.endswith('list') else 'Normal',
                 alignment=current.alignment,
@@ -1163,9 +1254,12 @@ class VoiceDocument:
             p.text = re.sub(r' {2,}', ' ', p.text)
             self.changed()
             return ('Replaced the sentence. ' if replacement else 'Deleted the sentence. ') + (p.text or 'Paragraph is now empty.')
-        match = re.match(r'^(?:change|replace) (.+?) (?:to|with) (.+)$', text, re.I)
+        match = re.match(r'^(change|replace) (.+?) (?:to|with) (.+)$', text, re.I)
+        if match and (match[2].lower().strip() in ('paragraph', 'current paragraph', 'the paragraph', 'this paragraph') or
+                      match[1].lower() == 'change' and match[2].lower().strip() in FORMAT_CHANGE_TARGETS):
+            match = None
         if match:
-            before, after = match.groups()
+            before, after = match[2], match[3]
             after = clean_dictation(after.strip().rstrip('.,;:!?').strip())
             if not after: return 'Please say the replacement text.'
             spans = self._phrase_spans(before)
@@ -1193,11 +1287,12 @@ class VoiceDocument:
             self.cursor = min(self.cursor, max(0, len(self.paragraphs) - 1))
             self.changed()
             return 'Deleted paragraph: ' + removed.text
-        if command.startswith('replace paragraph with '):
+        whole_paragraph = re.match(r'replace (?:the |current |this )?paragraph with (.+)$', text, re.I | re.S)
+        if whole_paragraph:
             if not self.paragraphs:
                 return 'The document is empty.'
             self.checkpoint()
-            self.paragraphs[self.cursor].text = text[len('replace paragraph with '):]
+            self.paragraphs[self.cursor].text = whole_paragraph[1]
             self.changed()
             return 'Replaced the paragraph with: ' + self.paragraphs[self.cursor].text
         create = re.fullmatch(r'(?:create|insert|add) (?:a )?table with (\d+|one|two|three|four|five|six|seven|eight|nine|ten) rows? and (\d+|one|two|three|four|five|six|seven|eight|nine|ten) columns?', command)
@@ -1494,6 +1589,7 @@ class VoiceDocument:
         return 'I did not recognize that document request. Say help with documents for examples.'
 
     def formatting_report(self, detail='all'):
+        self.drop_stale_selection()
         if not self.paragraphs: return 'The document is empty.'
         selected = self.selection
         paragraphs = self.paragraphs[selected.first_paragraph:selected.last_paragraph+1] if selected else [self.paragraphs[self.cursor]]
@@ -1527,6 +1623,7 @@ class VoiceDocument:
         return '. '.join(parts[key] for key in ('font','size','kind','bold','italic','underline','highlight','alignment','spacing'))+'.' if detail=='all' else parts[detail]+'.'
 
     def format_current(self, **changes):
+        self.drop_stale_selection()
         if not self.paragraphs:
             return 'The document is empty.'
         self.checkpoint()

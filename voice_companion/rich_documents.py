@@ -17,6 +17,9 @@ class Structure:
     attributes: dict = field(default_factory=dict)
 
 
+VOID_TAGS = frozenset(('area','base','br','col','embed','hr','img','input','link','meta','source','track','wbr'))
+
+
 class RichText(HTMLParser):
     blocks = {'p','div','section','article','blockquote','pre','h1','h2','h3','h4','h5','h6','table','tr','ul','ol','li'}
     styles = {'b':'bold','strong':'bold','i':'italic','em':'italic','u':'underline','s':'strike','del':'strike','sup':'superscript','sub':'subscript','mark':'highlight','code':'code'}
@@ -29,11 +32,15 @@ class RichText(HTMLParser):
         if self.text and not self.text.endswith('\n'):self.text+='\n'
 
     def handle_starttag(self, tag, attrs):
-        attrs=dict(attrs)
+        # Bare attributes such as <img alt> or <ol start> arrive with the value None.
+        attrs={name:(value or '') for name,value in attrs}
         if tag in ('script','style','head','iframe','object','template') or self.hidden:
-            if tag not in ('img','br','meta','link','input','hr'):self.hidden.append(tag)
+            if tag not in VOID_TAGS:self.hidden.append(tag)
             return
-        if 'hidden' in attrs or attrs.get('aria-hidden')=='true':self.hidden.append(tag);return
+        if 'hidden' in attrs or attrs.get('aria-hidden')=='true':
+            # A hidden image or line break has no end tag; it must not hide the rest of the page.
+            if tag not in VOID_TAGS:self.hidden.append(tag)
+            return
         if tag in self.blocks:self.newline()
         if tag in ('td','th') and self.text and not self.text.endswith('\n'):self.text+='\t'
         if tag in ('ul','ol'):self.lists.append([tag,int(attrs.get('start','1'))-1 if attrs.get('start','1').lstrip('-').isdigit() else 0])
@@ -69,7 +76,9 @@ class RichText(HTMLParser):
 
     def handle_endtag(self,tag):
         if self.hidden:
-            if tag==self.hidden[-1]:self.hidden.pop()
+            # Close back to the matching tag, so an unclosed <p> or <li> inside a
+            # hidden block does not keep everything after the block hidden.
+            if tag in self.hidden:del self.hidden[len(self.hidden)-1-self.hidden[::-1].index(tag):]
             return
         for i in range(len(self.active)-1,-1,-1):
             name,start,kind,style,url,attrs=self.active[i]
