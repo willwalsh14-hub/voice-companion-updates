@@ -277,12 +277,12 @@ class BrowserBackend:
           const all = root => {if(allCache.has(root))return allCache.get(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
             [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);allCache.set(root,nodes);return nodes;};
           const modal=[...document.querySelectorAll('[role="dialog"][aria-modal="true"],dialog[open]')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).at(-1);
-          const readingRoot=modal||document.body;
+          const readingRoot=modal||document.body||document.documentElement;
           const priority=modal||document.querySelector('#search,#main,main,[role="main"],article');
           const nodes=[...new Set([...(priority ? all(priority).filter(e=>e.matches(selector)) : []),
                                    ...all(modal||document).filter(e=>e.matches(selector))])];
           let controlSerial=1+all(document).reduce((m,e)=>Math.max(m,/^n\\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
-          const controlKey=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+controlSerial++);return e.getAttribute('data-voice-companion-key');};
+          const controlKeyOwners=new Map();const controlKey=e=>{const existing=e.getAttribute('data-voice-companion-key');if(!/^n\\d+$/.test(existing||'')||controlKeyOwners.has(existing)&&controlKeyOwners.get(existing)!==e)e.setAttribute('data-voice-companion-key','n'+controlSerial++);const key=e.getAttribute('data-voice-companion-key');controlKeyOwners.set(key,e);return key;};
           const controls = [];
           for (let i=0; i<nodes.length && controls.length<500; i++) {
             const e=nodes[i]; if (!visible(e) || e.closest('[aria-hidden="true"],[inert]')) continue;
@@ -688,7 +688,7 @@ class BrowserBackend:
             owns=element.get_attribute('aria-controls') or element.get_attribute('aria-owns') or ''
             if owns:
                 frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
-                candidates=frame.locator(','.join('[id='+json.dumps(name)+'] [role="option"]' for name in owns.split()))
+                candidates=frame.locator(','.join('[id='+json.dumps(name,ensure_ascii=False)+'] [role="option"]' for name in owns.split()))
             matches=[candidates.nth(i) for i in range(candidates.count()) if candidates.nth(i).inner_text().strip().casefold()==answer.casefold() and candidates.nth(i).get_attribute('aria-disabled')!='true']
             if len(matches)!=1:raise WebError('I could not identify one option.')
             matches[0].click(timeout=10000)
@@ -880,6 +880,11 @@ class WebSession:
             self.backend.choose_form_option(item,label)
             self._refresh_at(item);self.focus_current()
         return label+'.'
+
+    def running_browser(self):
+        """The browser actually showing pages, which differs from the preference after a fallback."""
+        running = getattr(self.backend, 'browser', None)
+        return running if isinstance(running, str) and running else self.browser
 
     def _sync_browser_tab(self):
         if not self.injected_backend and not getattr(self.backend,'regular',False):
@@ -1329,6 +1334,7 @@ class WebSession:
         if not self.snapshot: return 'Open a website first.'
         self.pending = None
         self.suggestion_index = None
+        self.link_position = None
         controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
         self.choices = match_choices(controls, request)
         if not self.choices:
@@ -1501,7 +1507,7 @@ class WebSession:
     def handoff(self):
         if not self.snapshot: return 'No website is open. Ask your helper to open the site with you.'
         url = urlsplit(self.snapshot['url'])
-        return ('Ask your helper to look at the ' + self.browser.capitalize() + ' window titled ' + _plain(self.snapshot['title']) +
+        return ('Ask your helper to look at the ' + self.running_browser().capitalize() + ' window titled ' + _plain(self.snapshot['title']) +
                 '. The site is ' + (url.hostname or 'unknown') + '. ' +
                 ('The form has ' + str(len(self.form_answers)) + ' answers entered by voice. ' if self.form_answers else '') +
                 'Review the site address, all form fields, and the final action together. I have not sent your answers to anyone.')
@@ -1855,7 +1861,7 @@ class WebSession:
         if command in ('list headings','show headings','headings list','heading list'):return self.list_headings()
         if self.list_focus in ('links','headings') and not (self.pending or self.submit_pending):
             if command in ('cancel','go back','close list','back to page','escape'):
-                self.list_focus=None;self.pending=None;return 'Virtual page view.'
+                self.list_focus=None;self.pending=None;self.link_position=None;return 'Virtual page view.'
             if command in ('yes','yes please','okay','ok','confirm','confirm that','that one','open current link','activate current link','go to heading','open current heading'):
                 return self.activate_list_item()
             if command in ('no','no thanks'):
@@ -1910,7 +1916,11 @@ class WebSession:
         match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command)
         if match: return self.choose_browser(match[1])
         if command in ('which browser','what browser am i using'):
-            return 'Guided websites use ' + self.browser.capitalize() + '. Say use Chrome, use Brave, use Firefox, or use Edge to change it.'
+            running = self.running_browser()
+            # The preference is kept after a fallback; say which browser is really showing the page.
+            return ('Guided websites use ' + self.browser.capitalize() + '.' +
+                    (' This page is open in ' + running.capitalize() + ' because ' + self.browser.capitalize() + ' could not start.' if running != self.browser else '') +
+                    ' Say use Chrome, use Brave, use Firefox, or use Edge to change it.')
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None
@@ -1971,7 +1981,7 @@ class WebSession:
         if self.pending and command in ('yes','yes please','that one','that is it',"that's it",'okay','ok','confirm','confirm that'):
             return self.confirm()
         if self.pending and command in ('no','no thanks','not that one','another one','next one'):
-            if self.link_position is not None:
+            if self.link_position is not None and self.list_focus=='links':
                 self.pending = None
                 return self.move_link(1)
             self.suggestion_index = (self.suggestion_index or 0) + 1

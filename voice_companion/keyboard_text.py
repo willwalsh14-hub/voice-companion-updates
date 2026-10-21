@@ -53,7 +53,9 @@ def paragraph_destination(text,caret,direction):
     starts=[m.start() for m in re.finditer(r'[^\n]+',text) if m.group().strip()]
     if not starts:return 0
     from bisect import bisect_right
-    index=max(0,bisect_right(starts,caret)-1)
+    index=bisect_right(starts,caret)-1
+    # A caret on blank lines before the first paragraph moves forward to that paragraph.
+    if index<0:return starts[0]
     if direction<0 and caret>starts[index]:return starts[index]
     return starts[max(0,min(len(starts)-1,index+direction))]
 

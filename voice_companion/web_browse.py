@@ -129,9 +129,9 @@ class BrowseCursor:
         maxrow=max(e['row']+e.get('rowspan',1)-1 for e in cells);maxcol=max(e['column']+e.get('colspan',1)-1 for e in cells)
         cell=self.cell_at(row,column)
         if key=='Right':column=(cell['column']+cell.get('colspan',1)) if cell else column+1
-        elif key=='Left':column-=1
+        elif key=='Left':column=(cell['column'] if cell else column)-1
         elif key=='Down':row=(cell['row']+cell.get('rowspan',1)) if cell else row+1
-        elif key=='Up':row-=1
+        elif key=='Up':row=(cell['row'] if cell else row)-1
         elif key=='Home':column=0
         elif key=='End':column=maxcol
         elif key=='Prior':row=0
@@ -151,7 +151,7 @@ SEMANTICS = r'''
           const block=new Set(['P','DIV','SECTION','ARTICLE','HEADER','FOOTER','MAIN','NAV','ASIDE','H1','H2','H3','H4','H5','H6','LI','UL','OL','MENU','TR','TABLE']);
           const newline=()=>{output=output.replace(/ +$/,'');if(output && !output.endsWith('\n'))output+='\n';};
           const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output || /[ \n]$/.test(output))s=s.trimStart();output+=s;};
-          const key=e=>{if(!e.hasAttribute('data-voice-companion-key'))e.setAttribute('data-voice-companion-key','n'+serial++);return e.getAttribute('data-voice-companion-key');};
+          const keyOwners=new Map();const key=e=>{const existing=e.getAttribute('data-voice-companion-key');if(!/^n\d+$/.test(existing||'')||keyOwners.has(existing)&&keyOwners.get(existing)!==e)e.setAttribute('data-voice-companion-key','n'+serial++);const value=e.getAttribute('data-voice-companion-key');keyOwners.set(value,e);return value;};
           const searchHost=['search.brave.com','www.google.com','google.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'].includes(location.hostname);
           const titleSelector='.search-snippet-title,.snippet-title,.snippet-title-text,[data-testid="result-title"],.title';
           const braveResult=e=>location.hostname==='search.brave.com'&&e.matches(titleSelector)&&e.closest('a[href]');

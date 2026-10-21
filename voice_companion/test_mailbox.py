@@ -553,7 +553,7 @@ class MailboxTests(unittest.TestCase):
     def test_yahoo_uses_current_folder_and_safe_uid_move(self):
         self.assertEqual(decode_folder_name(encode_folder_name('Café & notes')), 'Café & notes')
         class FakeIMAP:
-            capabilities = (b'IMAP4REV1', b'MOVE')
+            capabilities = ('IMAP4REV1', 'MOVE')  # imaplib stores text, not bytes
             calls = []
             def __init__(self, *args, **kwargs): pass
             def login(self, *args): pass

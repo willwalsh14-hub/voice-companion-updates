@@ -150,9 +150,9 @@ class TaskNavigation:
             raise ValueError('This file is no longer available. Choose another document.')
         if path.suffix.lower() == '.docx':
             from document_editor import VoiceDocument
+            import zipfile
+            from xml.etree import ElementTree as ET
             try:
-                import zipfile
-                from xml.etree import ElementTree as ET
                 with zipfile.ZipFile(path) as archive:
                     names=archive.namelist()
                     if sum(info.file_size for info in archive.infolist())>50*1024*1024:raise ValueError('This document expands beyond the reading limit.')
@@ -162,6 +162,9 @@ class TaskNavigation:
                     if custom_style or any(name.startswith(('word/header','word/footer','word/footnotes','word/endnotes','word/comments')) for name in names):
                         raise ValueError('This document has features the editor cannot preserve.')
                 opened = VoiceDocument.open_existing(path.parent, path.stem)
+            except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
+                # An empty "New Microsoft Word Document" or a damaged file must not stop the app.
+                raise ValueError('This document is empty or damaged, so it could not be opened.') from error
             except ValueError as error:
                 if 'cannot preserve' not in str(error):raise
                 from document_reader import open_document

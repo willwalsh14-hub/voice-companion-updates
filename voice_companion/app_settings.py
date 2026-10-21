@@ -95,7 +95,9 @@ def apply_settings(m,values):
     from settings_model import CATEGORIES,fields
     for category in CATEGORIES:
         for field in fields(category,session.context):
-            if field.kind!='action' and field.key in values and not (field.kind=='choice' and not field.choices):session.set(field.key,values[field.key])
+            # An empty choice means "nothing chosen" (several email accounts with none
+            # selected, or a saved voice outside the picker); it leaves that setting as it is.
+            if field.kind!='action' and field.key in values and not (field.kind=='choice' and (not field.choices or values[field.key]=='')):session.set(field.key,values[field.key])
     from windows_actions import set_startup, startup_enabled
     if bool(values.get('start_with_windows'))!=startup_enabled():set_startup(bool(values.get('start_with_windows')))
     if values.get('remove_ai'):

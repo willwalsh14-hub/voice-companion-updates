@@ -5,6 +5,7 @@ on graph.microsoft.com so an access token cannot be sent to another host.
 """
 import base64
 import json
+import re
 from datetime import datetime, timezone
 from email import policy
 from email.parser import BytesParser
@@ -24,7 +25,8 @@ def message_date(value):
             date = datetime.fromtimestamp(int(value) / 1000, tz=timezone.utc)
         elif isinstance(value, str) and len(value) > 10 and value[2] == '-' and value[6] == '-':
             date = datetime.strptime(value, '%d-%b-%Y %H:%M:%S %z')
-        elif isinstance(value, str) and 'T' in value:
+        elif isinstance(value, str) and re.match(r'\d{4}-\d\d-\d\dT', value):
+            # ISO 8601 only: RFC 2822 dates such as "Tue, ..." and "Thu, ..." also contain a T.
             date = datetime.fromisoformat(value.replace('Z', '+00:00'))
         else:
             date = parsedate_to_datetime(value)

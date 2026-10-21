@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Voice Companion Browser Connection",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "One-time browser link for Voice Companion\u2019s usual reading, forms, tables, lists and keyboard controls.",
   "permissions": [
     "tabs",

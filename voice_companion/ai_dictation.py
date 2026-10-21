@@ -34,12 +34,22 @@ def clean_disfluencies(text):
         text = re.sub(r'^[,;:.!? \t]+', '', text)
     text = re.sub(r'[ \t]+', ' ', text).strip()
     # Collapse partial-word stammers, e.g. "w-w-want" or "th-th-this".
-    text = re.sub(r'(?i)\b([a-z]{1,3})-(?:\1-)*([a-z]+)\b',
-                  lambda m: m[2] if len(m[2])>len(m[1]) and m[2].lower().startswith(m[1].lower()) else m[0], text)
+    # A single short hyphenated prefix is a real word ("re-read", "co-convene"),
+    # so only collapse one of those when the start is actually repeated ("re-re-read").
+    def stammer(m):
+        if not (len(m[2])>len(m[1]) and m[2].lower().startswith(m[1].lower())):
+            return m[0]
+        if m[1].lower() in WORD_PREFIXES and m[0].count('-')<2:
+            return m[0]
+        return m[2]
+    text = re.sub(r'(?i)\b([a-z]{1,3})-(?:\1-)*([a-z]+)\b', stammer, text)
     # Only a narrow set of repeated starts is unambiguous enough to remove.
     # Preserve "had had", "that that", emphasis, negation, names and numbers.
     text = re.sub(r'(?i)\b(I|we|you|he|she|they|please)(?:(?:[ \t]+|,[ \t]+)\1\b)+', r'\1', text)
     return text
+
+
+WORD_PREFIXES = frozenset(('re','co','de','pre','un','non','ex','sub','mid','pro','bi','tri','dis','mis','in','up','out','off','self'))
 
 
 def prepare_dictation(raw, old_school_cleanup=True):

@@ -35,8 +35,12 @@ class ReadingCursor:
         if not spans: return 'There is no text to read.'
         starts_key=unit+':starts'
         if starts_key not in self._cache:self._cache[starts_key]=[span.start() for span in spans]
-        index=max(0,bisect_right(self._cache[starts_key],self.position)-1)
-        if self.position>=spans[index].end():
+        index=bisect_right(self._cache[starts_key],self.position)-1
+        if index<0:
+            # Before the first unit (leading blank space or a blank first paragraph):
+            # moving forward or reading lands on the first unit instead of skipping it.
+            index=0
+        elif self.position>=spans[index].end():
             if direction>=0:index+=1
         else:index+=direction
         index=max(0,min(len(spans)-1,index))

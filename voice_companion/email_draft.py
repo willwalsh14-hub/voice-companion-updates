@@ -29,9 +29,16 @@ def email_field_destination(spoken):
 
 def normalize_recipient(spoken):
     """Accept a simple spoken email address, but refuse ambiguous recipients."""
-    address = spoken.strip().lower()
+    # Speech recognizers add sentence punctuation ("bob at example dot com.").
+    address = spoken.strip().lower().rstrip('.!?,;').strip()
     address = re.sub(r'\s+at\s+', '@', address)
     address = re.sub(r'\s+dot\s+', '.', address)
+    address = re.sub(r'\s+underscore\s+', '_', address)
+    address = re.sub(r'\s+(?:dash|hyphen)\s+', '-', address)
+    # Words after the domain ("bob at example dot com next week") must not be glued
+    # onto it; a spoken name before the @ may still have spaces ("john smith at ...").
+    if '@' in address and re.search(r'\s', address.rsplit('@', 1)[1].strip()):
+        raise ValueError('I could not understand one complete email address. Say it like friend at example dot com.')
     address = re.sub(r'\s+', '', address)
     if (len(address) > 254 or not re.fullmatch(
             r'[a-z0-9][a-z0-9.!#$%&\x27*+/=?^_`{|}~-]*@[a-z0-9-]+(?:\.[a-z0-9-]+)+', address)
@@ -127,7 +134,8 @@ class VoiceEmail(VoiceDocument):
         else:
             msg['X-Unsent'] = '1'
         body = '\n\n'.join(p.text for p in self.paragraphs)
-        if self.response_context.get('action') == 'forward':
+        if self.response_context.get('action') == 'forward' and (
+                self.response_context.get('original_from') or self.response_context.get('original_body')):
             body += ('\n\nForwarded message:\nFrom: ' + self.response_context.get('original_from', '') +
                      '\nSubject: ' + self.response_context.get('original_subject', '') +
                      '\n\n' + self.response_context.get('original_body', ''))
@@ -233,8 +241,14 @@ class VoiceEmail(VoiceDocument):
             from mail_accounts import ProtectedStore
             selected = ProtectedStore(self.folder.parent).selected()
             account = selected[1] if selected and selected[0] == self.provider else ''
-            entry = AddressBook(self.folder.parent, account).get(value)
+            entry = AddressBook(self.folder.parent, account).get(value.strip().rstrip('.!?,;').strip())
             return entry['address'] if entry else value
+        def parses(value):
+            try: normalize_recipient(contact_address(value)); return True
+            except ValueError: return False
+        # While writing the message body, a sentence that merely starts like a field
+        # command ("Send to the team at the office.", "CC is fine with me.") is dictation.
+        in_body = self.compose_step == 'body'
         if command in ('cc', 'bcc', 'add cc', 'add bcc'):
             field = 'bcc' if 'bcc' in command else 'cc'
             self.after_copy_step = self.compose_step or 'body'
@@ -248,6 +262,8 @@ class VoiceEmail(VoiceDocument):
             self.compose_step = self.after_copy_step or 'body'
             return 'Skipped. ' + ('What is the subject?' if self.compose_step == 'subject' else 'What would you like the message to say?')
         copy_match = re.fullmatch(r'(?:add |set )?(cc|bcc)(?: to| is)? (.+)', text, re.I)
+        if copy_match and in_body and not parses(copy_match.group(2)):
+            copy_match = None
         if copy_match or self.compose_step in ('cc','bcc'):
             field = copy_match.group(1).lower() if copy_match else self.compose_step
             try: address = normalize_recipient(contact_address(copy_match.group(2) if copy_match else text))
@@ -272,7 +288,8 @@ class VoiceEmail(VoiceDocument):
             return provider.capitalize() + ' selected for this local draft. Ask your helper to confirm the account is connected before sending.'
         if command in ('which email provider', 'read email provider'):
             return 'Email provider: ' + (self.provider or 'not selected.')
-        if command.startswith(('email to ', 'send to ', 'recipient is ')):
+        if command.startswith(('email to ', 'send to ', 'recipient is ')) and not (
+                in_body and not parses(re.sub(r'^(email to |send to |recipient is )', '', text, flags=re.I).strip())):
             spoken = re.sub(r'^(email to |send to |recipient is )', '', text, flags=re.I).strip()
             try:
                 recipient = normalize_recipient(contact_address(spoken))

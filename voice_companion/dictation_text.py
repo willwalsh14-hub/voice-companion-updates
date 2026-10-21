@@ -17,7 +17,11 @@ def clean_dictation(raw):
         token = '\x00' + str(len(protected)) + '\x00'
         protected[token] = match.group(0)
         return token
-    text = re.sub(r'(?i)\b(?:the period of|(?:the )?word (?:comma|period)|(?:a|the) comma)\b', protect, text)
+    # "period" is also an ordinary noun: "the trial period is over", "my period of service".
+    noun_period = (r'(?:a|an|the|this|that|each|every|same|my|your|his|her|our|their|its|'
+                   r'trial|grace|waiting|time|probation|probationary|cooling|billing|pay|notice|'
+                   r'holding|rest|study|reporting|enrollment|open) period|period of')
+    text = re.sub(r'(?i)\b(?:' + noun_period + r'|(?:the )?word (?:comma|period)|(?:a|the) comma)\b', protect, text)
     pattern = r'(?i)\s*[,.;:!?]?\s*\b(' + '|'.join(marks) + r')\b[.,!?]?\s*'
     text = re.sub(pattern, lambda m: marks[m.group(1).lower()] + ' ', text).strip()
     for token, original in protected.items(): text = text.replace(token, original)
