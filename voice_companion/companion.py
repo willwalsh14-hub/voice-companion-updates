@@ -1035,8 +1035,9 @@ def change_speech_setting(command, writing=False):
     if request is None: return False
     kind, operation, amount = request
     lower, upper = (-10, 10) if kind in ('rate','pitch') else (0, 100)
-    # "Rate this product five stars." or "Volume two is out." while writing is text.
-    if writing and amount is None: return False
+    # "Rate this product five stars." or "Speed limits matter." while writing is text.
+    # A short attempt such as "volume banana" or "rate 1.5" is still a setting error.
+    if writing and amount is None and len(re.findall(r"[\w'.-]+", command)) > 2: return False
     if amount is None or (operation == 'set' and not lower <= amount <= upper):
         speak(('Voice '+kind+' must be a whole number from minus ten to ten.') if kind in ('rate','pitch') else
               'Speech volume must be a whole number from zero to one hundred percent.')
