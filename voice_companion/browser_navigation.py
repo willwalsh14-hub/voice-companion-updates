@@ -3,11 +3,21 @@ import re
 import urllib.parse
 
 
+def spoken_address(spoken):
+    """Turn a dictated address such as "VA dot gov." into "VA.gov".
+
+    Speech recognizers add sentence punctuation, and people say "forward slash",
+    "dash", or a trailing "dot"; none of those words belong in the host name."""
+    address = str(spoken).strip()
+    address = re.sub(r'\s*\b(?:forward\s+)?slash\b\s*', '/', address, flags=re.I)
+    address = re.sub(r'\s*\bdot\b\s*', '.', address, flags=re.I)
+    address = re.sub(r'(?<=\w)\s+(?:dash|hyphen)\s+(?=\w)', '-', address, flags=re.I)
+    return address.strip().rstrip('.!?,;').strip()
+
+
 def prepare_address(spoken):
     """Use HTTPS for bare addresses and preserve an explicit HTTP address."""
-    address = re.sub(' dot ','.',spoken.strip(),flags=re.I)
-    address = re.sub(' slash ','/',address,flags=re.I)
-    address = re.sub(r'\s+', '', address)
+    address = re.sub(r'\s+', '', spoken_address(spoken))
     if not address or '\\' in address or any(ord(c)<32 for c in spoken):
         raise ValueError('Type a website address, such as example.com.')
     if '://' in address:
@@ -30,8 +40,14 @@ def prepare_address(spoken):
     return urllib.parse.urlunsplit((parsed.scheme, host+(':'+str(port) if port is not None else ''), parsed.path, parsed.query, parsed.fragment)), host
 
 def looks_like_address(text):
-    value=str(text).strip()
-    return bool(re.match(r'^https?://\S+|^(?:[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)(?:[/?:#]|$)',value,re.I)) and not re.search(r'\s',value)
+    value=str(text).strip().rstrip('.!?,;')
+    if re.search(r'\s',value):return False
+    if re.match(r'^https?://\S+',value,re.I):return True
+    match=re.match(r'^((?:[A-Za-z0-9-]+)(?:\.[A-Za-z0-9-]+)+)(?:[/?:#]|$)',value)
+    if not match:return False
+    # A plain number such as 98.6 or 3.14 is a search, not a website; keep IPv4 addresses.
+    labels=match[1].split('.')
+    return bool(re.search(r'[A-Za-z]',labels[-1])) or len(labels)==4 and all(label.isdigit() for label in labels)
 
 def contains_address(text):
     return bool(re.search(r'@|https?://|www\.|\b[A-Za-z0-9-]+\.(?:[A-Za-z]{2,})(?:\b|/)|\b(?:at|dot)\b.+\b(?:dot|com|org|net|co|edu)\b',str(text),re.I))

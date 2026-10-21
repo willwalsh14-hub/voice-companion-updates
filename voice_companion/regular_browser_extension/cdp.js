@@ -4,6 +4,8 @@ class CompanionCDP {
   constructor(api, emit) {
     this.api = api; this.emit = emit; this.tabs = new Map(); this.children = new Map();
     this.autoAttach = false; this.serial = 0; this.aliases = new Map(); this.browserSessions = new Set(); this.allTabs = false;
+    // Tabs whose debugger bar the user cancelled. They stay unattached until the user reconnects.
+    this.declined = new Set();
   }
   remember(tab, attached = false) {
     if (!Number.isInteger(tab?.id)) throw new Error('No browser tab is available.');
@@ -53,6 +55,7 @@ class CompanionCDP {
     if (item.announced) this.emit({method:'Target.detachedFromTarget',params:{sessionId:item.sessionId,targetId:item.info?.targetId}});
   }
   async created(tab) {
+    if (this.declined.has(tab.id)) return;
     if (!this.tabs.has(tab.openerTabId) && !(this.allTabs && /^https?:\/\//i.test(tab.url || ''))) return;
     const item = this.remember(tab);
     if (this.autoAttach) await this.attach(item);
@@ -92,7 +95,7 @@ class CompanionCDP {
       return {targetId:item?.info?.targetId || ''};
     }
     if (!sessionId && method === 'Browser.getVersion') {
-      if (!this.tabs.size && this.allTabs)for(const tab of await this.api.tabs.query({}))if(/^https?:\/\//i.test(tab.url||''))this.remember(tab);
+      if (!this.tabs.size && this.allTabs)for(const tab of await this.api.tabs.query({}))if(/^https?:\/\//i.test(tab.url||'')&&!this.declined.has(tab.id))this.remember(tab);
       let item;
       for(const candidate of this.tabs.values()) {
         try {if(!candidate.attached){await this.api.debugger.attach({tabId:candidate.tabId},'1.3');candidate.attached=true;}item=candidate;break;}

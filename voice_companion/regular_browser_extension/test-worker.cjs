@@ -69,7 +69,8 @@ const Model=vm.runInContext('CompanionCDP',context);
   connectNative:()=>{ports++;return {postMessage:()=>{},disconnect:()=>{},onMessage:listenerStub(),onDisconnect:listenerStub()};}};
  const chrome={...api,runtime,storage:{local:{get:async()=>saved,set:async value=>Object.assign(saved,value)}},
   alarms:{create:async()=>{},onAlarm:listenerStub()}};
- chrome.debugger={...api.debugger,onEvent:listenerStub(),onDetach:listenerStub()};
+ let detached;
+ chrome.debugger={...api.debugger,onEvent:listenerStub(),onDetach:{addListener:handler=>{detached=handler;}}};
  let updated;
  chrome.tabs={...api.tabs,onCreated:listenerStub(),onUpdated:{addListener:handler=>{updated=handler;}},onRemoved:listenerStub()};
  const workerContext=vm.createContext({chrome,navigator:{userAgent:'Chrome/140.0.0.0'}});
@@ -78,6 +79,14 @@ const Model=vm.runInContext('CompanionCDP',context);
  await vm.runInContext('startup()',workerContext);
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(ports,1);assert.equal(vm.runInContext('model.allTabs',workerContext),true);
+ // Cancel on the "is debugging this browser" bar must stick until the user reconnects.
+ const attachesBefore=attached.length;
+ detached({tabId:7},'canceled_by_user');assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),false);
+ updated(7,{title:'New title'},{id:7,url:'https://fixture.test/'});await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),false);assert.equal(attached.length,attachesBefore);
+ await vm.runInContext('run("connect")',workerContext);assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),true);
+ detached({tabId:7},'target_closed');updated(7,{title:'Again'},{id:7,url:'https://fixture.test/'});await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),true);
  updated(7,{url:'about:blank'},{id:7,url:'about:blank'});assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),true);
  updated(7,{url:'chrome://settings/'},{id:7,url:'chrome://settings/'});assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),false);
  await vm.runInContext('run("disconnect")',workerContext);assert.equal(saved.enabled,false);
