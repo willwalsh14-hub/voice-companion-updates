@@ -43,7 +43,7 @@ def _token(folder, authorize=False):
     if address.casefold() != saved['address'].casefold():
         raise AccountError('Google Contacts signed into a different account. Select the same Gmail address and try again.')
     saved['contacts_credentials'] = credentials.to_json()
-    store.save('gmail', saved)
+    store.save('gmail', saved, select=False)
     return credentials.token
 
 

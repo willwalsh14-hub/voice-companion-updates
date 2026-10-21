@@ -348,7 +348,9 @@ def handle_keyboard(text,mode):
 def _handle_keyboard(text,mode):
     global SLEEP_RETURN_MODE
     if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
-        SLEEP_RETURN_MODE=handle_keyboard(text,SLEEP_RETURN_MODE)
+        result=handle_keyboard(text,SLEEP_RETURN_MODE)
+        # "go to sleep" typed while asleep returns 'sleep'; keep the place to wake up to.
+        if result!='sleep':SLEEP_RETURN_MODE=result
         if SLEEP_RETURN_MODE=='exit':return 'exit'
         sync_app_context('sleep',True)
         return 'sleep'
@@ -545,9 +547,14 @@ def commit_email_field_tab(payload,mode):
     field=payload['field'];value=payload['value'].strip()
     if field!=(email_draft.compose_step or 'body'):return None
     try:
-        if field=='recipient':email_draft.recipient=normalize_recipient(value) if value else ''
+        if field=='recipient':
+            recipient=normalize_recipient(value) if value else ''
+            if email_draft.response_context and recipient!=email_draft.recipient:email_draft.response_context['recipient_override']=True
+            email_draft.recipient=recipient
         elif field in ('cc','bcc'):
-            setattr(email_draft,field,[normalize_recipient(x) for x in re.split(r'[,;]',value) if x.strip()])
+            addresses=[normalize_recipient(x) for x in re.split(r'[,;]',value) if x.strip()]
+            if email_draft.response_context and addresses!=getattr(email_draft,field):email_draft.response_context['recipient_override']=True
+            setattr(email_draft,field,addresses)
         elif field=='subject':
             if email_draft.response_context and value!=email_draft.subject:
                 raise ValueError('This response keeps the original subject.')
@@ -801,6 +808,25 @@ def normalized_command(value):
     return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', ' ', value.casefold())).strip()
 
 
+# "go to options" or "go to website ..." in the inbox are app commands, not folder names.
+MAILBOX_GLOBAL_GO_TO = r'go to (?:the )?(?:main menu|options|settings|website )'
+
+
+SEND_REVIEW_ANSWERS = ('confirm send email', 'yes send email', 'yes send it', 'yes send that', 'yes', 'yes please',
+                       'confirm send', 'cancel send', 'do not send', 'no', 'no thanks')
+
+
+def writing_dictation(mode, typed=False):
+    """True when spoken words in this mode may be ordinary text for a document, email, or note.
+
+    Several commands are recognized by their first words ("rate ...", "capital letters ...",
+    "help with ...", "use ... at ..."). In a writing field, a sentence that only starts that
+    way and does not complete the command is dictation, not an error."""
+    editor_open = (mode == 'document' and document is not None or
+                   mode == 'email_draft' and email_draft is not None or mode == 'note')
+    return not typed and INPUT_MODE != 'commands' and editor_open
+
+
 def speech_control(value):
     command = normalized_command(value)
     if command in SILENCE:
@@ -1003,12 +1029,14 @@ def save_speech_settings():
 
 
 
-def change_speech_setting(command):
+def change_speech_setting(command, writing=False):
     global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME
     request = speech_setting_request(command)
     if request is None: return False
     kind, operation, amount = request
     lower, upper = (-10, 10) if kind in ('rate','pitch') else (0, 100)
+    # "Rate this product five stars." or "Volume two is out." while writing is text.
+    if writing and amount is None: return False
     if amount is None or (operation == 'set' and not lower <= amount <= upper):
         speak(('Voice '+kind+' must be a whole number from minus ten to ten.') if kind in ('rate','pitch') else
               'Speech volume must be a whole number from zero to one hundred percent.')
@@ -1668,6 +1696,9 @@ def _handle(text, mode, typed=False):
             speak('Start with Windows '+startup_command[1]+'.')
         except (OSError,ValueError) as exc:speak(str(exc))
         return mode
+    if mode=='mailbox' and re.fullmatch(r'go to (?:the )?(main menu|options|settings)',command):
+        # In the inbox these are app commands, not folder names.
+        text=command=re.fullmatch(r'go to (?:the )?(main menu|options|settings)',command)[1]
     if normalized_command(text) in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):
         SETTINGS_RETURN_MODE = mode
         return open_settings(mode)
@@ -1689,8 +1720,9 @@ def _handle(text, mode, typed=False):
                 save_preferences()
                 if request[0]=='capital_letters' and KEYBOARD_SPEECH:KEYBOARD_SPEECH.capital_letters=session.values['capital_letters']
                 speak(message+'.')
-            except (ValueError,OSError) as exc:speak(str(exc))
-            return mode
+            except (ValueError,OSError) as exc:
+                if not (isinstance(exc,ValueError) and writing_dictation(mode,typed)):speak(str(exc));return mode
+            else:return mode
     if mode=='awake' and update_command in ('main menu','back to main menu'):
         announce_main_menu()
         return mode
@@ -1702,10 +1734,18 @@ def _handle(text, mode, typed=False):
         if request:
             try:
                 message=session.set(*request)
-                apply_settings(session.values)
-                speak(message+'.')
-            except (ValueError,OSError) as exc:speak(str(exc))
-            return mode
+            except ValueError as exc:
+                # "Browser tabs are confusing." while writing is text, not a bad setting.
+                if not writing_dictation(mode,typed):speak(str(exc));return mode
+            else:
+                try:
+                    apply_settings(session.values)
+                    speak(message+'.')
+                except (ValueError,OSError) as exc:speak(str(exc))
+                if mode=='mailbox' and mail_session is None:
+                    # Changing the sending account closes the old mailbox session.
+                    return 'awake'
+                return mode
     if update_command in ('check for updates', 'check updates', 'update voice companion'):
         if UPDATES is None:
             speak('Update checking is available in the installed app.')
@@ -1782,7 +1822,9 @@ def _handle(text, mode, typed=False):
         if TEXT_MODE and not password_field:print('Heard:', feedback, flush=True)
         if APP_WINDOW is not None: APP_WINDOW.show('Heard: ' + feedback)
     command = re.sub(r'[.!?]+$', '', text.lower()).strip().replace('auto-download','auto download')
-    if change_speech_setting(command): return mode
+    # Recognizers add inner punctuation ("Yes, please."); compare plain phrases without it.
+    command = re.sub(r'\s+', ' ', re.sub(r'\s*[,;!?]+\s*', ' ', command)).strip()
+    if change_speech_setting(command, writing_dictation(mode, typed)): return mode
     if command in ('open user guides', 'open user guides folder', 'open guides', 'open guides folder',
                    'show user guides', 'where are the user guides', 'where are my user guides',
                    'where is the user guide folder'):
@@ -1855,14 +1897,18 @@ def _handle(text, mode, typed=False):
             except (OSError, AttributeError) as exc:
                 speak('Voice check could not be saved: ' + str(exc))
         return mode
-    if command.startswith(('use voice ', 'change voice to ', 'set voice to ')):
+    voice_request = command.startswith(('use voice ', 'change voice to ', 'set voice to '))
+    if voice_request:
         name = re.sub(r'^(?:use voice|change voice to|set voice to)\s+', '', command)
+        choices = [] if TEXT_MODE else voice_choices()
+        matches = [item for item in choices if name == item[1].casefold()]
+        if not matches:
+            matches = [item for item in choices if name in item[1].casefold()]
+        # "Use voice commands to send mail." while writing is text unless it names one voice.
+        if len(matches) != 1 and writing_dictation(mode, typed): voice_request = False
+    if voice_request:
         if TEXT_MODE: speak('Voice selection requires Windows.')
         else:
-            choices = voice_choices()
-            matches = [item for item in choices if name == item[1].casefold()]
-            if not matches:
-                matches = [item for item in choices if name in item[1].casefold()]
             if len(matches) == 1:
                 chosen = choose_voice(matches[0])
                 SYNTH_PICK_INDEX = VOICE_PICK_ENGINE = VOICE_PICK_INDEX = VOICE_PICK_ORIGINAL = None
@@ -1891,7 +1937,7 @@ def _handle(text, mode, typed=False):
             return 'exit_confirm'
         return finish_exit(mode)
     if spoken_control(command) == 'sleep':
-        SLEEP_RETURN_MODE = mode
+        if mode != 'sleep': SLEEP_RETURN_MODE = mode
         pending_send = None
         if mode == 'email_draft' and email_draft is not None: email_draft.save()
         if mode == 'document' and document is not None: document.save()
@@ -1970,6 +2016,12 @@ def _handle(text, mode, typed=False):
                   'document help': 'documents', 'web help': 'web',
                   'radio help': 'radio', 'podcast help': 'podcasts',
                   'commands help': 'commands'}
+    if help_topic and writing_dictation(mode, typed):
+        # "Help with the dishes tonight" while writing is text unless it names a guide topic.
+        try:
+            probe = HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
+            if probe.topic(help_topic[1]).startswith('I could not identify one help topic'): help_topic = None
+        except (OSError, ValueError): pass
     if command in ('help', 'user guide', 'open user guide', 'manual', 'open manual') or help_topic:
         try:
             if mode != 'help' or help_session is None:
@@ -2060,7 +2112,7 @@ def _handle(text, mode, typed=False):
         dictation_feedback(email_draft.process(text))
         focus_email_entry()
         return mode
-    if mode == 'mailbox' and mail_session is not None and (
+    if mode == 'mailbox' and mail_session is not None and not re.match(MAILBOX_GLOBAL_GO_TO, command) and (
             command in ('that one','okay','ok','confirm','confirm that','next message','previous message','next','previous',
                         'back to inbox','return to inbox','go to inbox','open inbox', 'email list size',
                         'mail list size','how many emails','how many messages per page',
@@ -2180,7 +2232,9 @@ def _handle(text, mode, typed=False):
         if body_active and ((((isinstance(editor.replacement_candidates, list) and editor.replacement_candidates) or (isinstance(editor.selection_candidates, list) and editor.selection_candidates)) and command not in ('main menu', 'back to main menu', 'leave document', 'close document', 'go back', 'back', 'exit', 'exit document', 'leave email', 'close email', 'exit email')) or re.fullmatch(r'(?:replace|change) .+ (?:with|to) .+', command) or re.fullmatch(r'insert (?:before|after) .+', command) or re.fullmatch(r'(?:select|find|highlight|bold|underline|italicize|copy|cut|delete) .+', command)):
             speak(editor.process(text))
             return mode
-    if INPUT_MODE == 'dictation' and not typed:
+    # While a send review is waiting, "yes" or "no" answers it; it is not message text.
+    answering_send = mode == 'email_draft' and pending_send is not None and command in SEND_REVIEW_ANSWERS
+    if INPUT_MODE == 'dictation' and not typed and not answering_send:
         if mode in ('email_draft', 'document'):
             editor = email_draft if mode == 'email_draft' else document
             if (mode == 'document' or mode == 'email_draft' and (email_draft.compose_step or 'body') == 'body') and (document_format_command(command) or editor.pending_spacing):
@@ -2243,6 +2297,9 @@ def _handle(text, mode, typed=False):
     contact_account = store.selected()
     contacts = AddressBook(APP, contact_account[1] if contact_account else '')
     contact = re.fullmatch(r'(?:add|save|create|update) contact (.+?) (?:as|at|email is) (.+)', text, re.I)
+    if contact and writing_dictation(mode, typed):
+        try: normalize_recipient(contact[2])
+        except ValueError: contact = None
     if contact:
         try:
             address = contacts.save(contact[1], contact[2])
@@ -2278,15 +2335,21 @@ def _handle(text, mode, typed=False):
             speak('Google Contacts could not sync. Gmail remains connected. Ask your helper to check that the People API is enabled and Contacts permission is granted.')
         return mode
     match_account = re.fullmatch(r'(?:switch to|use|select) (.+)', command)
-    if match_account and ('@' in match_account[1] or ' at ' in match_account[1] or match_account[1] in
-                          ('gmail','outlook','exchange','microsoft 365','yahoo')):
-        choice = match_account[1]
-        accounts = store.accounts()
-        if '@' in choice or ' at ' in choice:
-            try: choice = normalize_recipient(choice)
-            except ValueError:
+    if match_account and not ('@' in match_account[1] or ' at ' in match_account[1] or match_account[1] in
+                              ('gmail','outlook','exchange','microsoft 365','yahoo')):
+        match_account = None
+    choice = match_account[1] if match_account else None
+    if match_account and ('@' in choice or ' at ' in choice):
+        try: choice = normalize_recipient(choice)
+        except ValueError:
+            # "Use the side door at noon." while writing is text, not an account name.
+            if not writing_dictation(mode, typed):
                 speak_prompt('I did not understand that email address. Say list email accounts and try again.')
                 return mode
+            match_account = None
+    if match_account:
+        accounts = store.accounts()
+        if '@' in choice:
             matches = [(p,a) for p,a in accounts if a.casefold() == choice.casefold()]
         else:
             provider = 'outlook' if choice in ('exchange','microsoft 365') else choice
@@ -2425,6 +2488,10 @@ def _handle(text, mode, typed=False):
         speak_web_result(web_session.command(text),revision)
         return 'web'
     if mode == 'mailbox':
+        if mail_session is None:
+            # The mailbox closed underneath this command (for example, the sending
+            # account changed). Return to the main menu rather than failing.
+            return 'awake'
         if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
             speak(mail_session.process(text))
             return 'mailbox'
@@ -2460,6 +2527,10 @@ def _handle(text, mode, typed=False):
         if command in ('go back', 'back') and mail_session.view == 'message':
             speak(mail_session.process('back to folder'))
             return mode
+        if command.startswith('go to website '):
+            # Leave the inbox for the website, as from the main menu.
+            mail_session = None
+            return _handle(text, 'awake', typed)
         if command in ('go back', 'back', 'exit', 'leave email', 'main menu', 'close inbox'):
             mail_session = None
             pass
@@ -2517,7 +2588,13 @@ def _handle(text, mode, typed=False):
                 if current_address != address:
                     raise AccountError('The sending account changed. Review the email again.')
                 email_draft.last_attempt_hash = fingerprint
-                email_draft.save()
+                try:
+                    email_draft.save()
+                except OSError:
+                    # Nothing reached the mail service, so a retry is safe.
+                    email_draft.last_attempt_hash = ''
+                    speak('The draft could not be saved, so the email was not sent. Check that the disk has space and try again.')
+                    return mode
                 submit(provider, email_draft, token, sender=address)
                 email_draft.last_accepted_hash = fingerprint
                 email_draft.save()
@@ -2849,7 +2926,9 @@ def handle(text, mode, typed=False):
     old_send=pending_send
     _HANDLE_DEPTH += 1
     try:
-        if _HANDLE_DEPTH==1:flush_keyboard_edits(True)
+        if _HANDLE_DEPTH==1:
+            try:flush_keyboard_edits(True)
+            except OSError:speak('Your typed changes could not be saved yet. The file may be open in another program. Close it and they will be saved.')
         with dictation_scope(PREFERENCES.get('dictation_type','old school'), typed=typed):
             result = _handle(text, mode, typed)
         if (mail_session and not old_mail_pending and getattr(mail_session,"pending",None)) or old_send is None and pending_send is not None:CONFIRM_CHOICE="yes"

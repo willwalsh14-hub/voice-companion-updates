@@ -182,7 +182,8 @@ class YahooMailbox:
 
     def move(self, ids, source_id, destination_id):
         def operation(conn):
-            if b'MOVE' not in conn.capabilities:
+            # imaplib stores capabilities as text ('MOVE'); accept bytes too for older callers.
+            if 'MOVE' not in {c.decode() if isinstance(c, bytes) else c for c in conn.capabilities}:
                 raise MailboxError('This Yahoo account does not offer safe message moving.')
             status, _ = conn.select(self._folder(source_id, raw=True))
             self._check(status)

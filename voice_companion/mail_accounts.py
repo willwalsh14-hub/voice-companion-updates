@@ -165,7 +165,9 @@ class ProtectedStore:
         temporary.replace(path)
         return matches[0]
 
-    def save(self, provider, data):
+    def save(self, provider, data, select=True):
+        """Store an account. Only connecting an account selects it; a token refresh
+        or contacts sync for another account must not switch the sending account."""
         self.folder.mkdir(parents=True, exist_ok=True)
         address = data.get('address')
         if not address: raise AccountError('The account address is missing.')
@@ -174,7 +176,8 @@ class ProtectedStore:
         temporary = path.with_suffix('.writing')
         temporary.write_bytes(encrypted)
         temporary.replace(path)
-        self.select(provider, address)
+        if select:
+            self.select(provider, address)
 
     def load(self, provider):
         accounts = [(p,a) for p,a in self.accounts() if p == provider]
@@ -251,7 +254,7 @@ def gmail_token(store, client_file):
             raise AccountError('Gmail sign-in expired or was refused. Say add account, choose Gmail, and sign in again to reconnect it.') from exc
         except TransportError as exc:
             raise AccountError('I could not reach Google to renew your Gmail sign-in. Check the internet connection, then say check email again.') from exc
-        store.save('gmail', {**saved, 'credentials': credentials.to_json()})
+        store.save('gmail', {**saved, 'credentials': credentials.to_json()}, select=False)
     return saved['address'], credentials.token
 
 
@@ -297,5 +300,5 @@ def microsoft_token(store, client_id):
     if not result or 'access_token' not in result:
         raise AccountError('Microsoft sign-in expired. Reconnect the account.')
     if cache.has_state_changed:
-        store.save('outlook', {**saved, 'cache': cache.serialize()})
+        store.save('outlook', {**saved, 'cache': cache.serialize()}, select=False)
     return saved['address'], result['access_token']

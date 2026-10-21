@@ -48,7 +48,7 @@ def formatted_body(draft):
         else:
             match=re.fullmatch(r'Heading ([1-6])',p.kind)
             pieces.append(paragraph(p,'h'+match[1] if match else 'p'));index+=1
-    if draft.response_context.get('action')=='forward':
+    if draft.response_context.get('action')=='forward' and (draft.response_context.get('original_from') or draft.response_context.get('original_body')):
         context=draft.response_context
         pieces.append('<p>Forwarded message:<br>From: '+html.escape(context.get('original_from',''))+'<br>Subject: '+html.escape(context.get('original_subject',''))+'</p><p>'+html.escape(context.get('original_body','')).replace('\n','<br>')+'</p>')
     return '<html><body>'+''.join(pieces)+'</body></html>'

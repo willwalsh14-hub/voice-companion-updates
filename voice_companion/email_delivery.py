@@ -36,7 +36,9 @@ def message_parts(draft):
 
 def outgoing_body(draft, comment):
     context = draft.response_context
-    if context.get('action') == 'forward':
+    # Outlook's Graph /forward attaches the original itself and gives no original
+    # sender or text here; adding an empty "Forwarded message" block is just noise.
+    if context.get('action') == 'forward' and (context.get('original_from') or context.get('original_body')):
         return (comment + '\n\nForwarded message:\nFrom: ' + context.get('original_from', '') +
                 '\nSubject: ' + context.get('original_subject', '') + '\n\n' + context.get('original_body', ''))
     return comment
