@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.151-test.
+Guide version: 0.2.152-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -495,7 +495,7 @@ Google Calendar and Google Drive are not connected in this version.
 3. Give the subject when asked.
 4. Speak the message in short parts. Listen back before sending.
 From the keyboard in email, press Control+N to start a new message. Type an address in To and press Enter. Continue through the subject and message.
-When speaking an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com.
+When speaking an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com. Say "underscore" for _ and "dash" for -.
 
 9.2 Change To, CC, BCC, or Subject
 The To field holds the main recipient's address. CC sends a copy to another person. BCC sends a copy without showing that address to the other recipients.
