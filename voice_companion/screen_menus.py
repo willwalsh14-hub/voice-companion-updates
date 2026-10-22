@@ -433,7 +433,7 @@ class ScreenMenu:
             if action == 'open':
                 return self.open(mode) if self.mode is None else self.back(mode)
             if action == 'alt':
-                return self.other_alt(mode)
+                return self.other_alt(mode) or mode
             if self.mode is None:
                 return mode
             if action == 'close':
@@ -460,7 +460,7 @@ class ScreenMenu:
             return self.move('home', mode)
         if command in ('last item', 'end of list', 'bottom of list'):
             return self.move('end', mode)
-        if command in ('enter', 'okay', 'ok', 'that one', 'confirm', 'confirm that', 'select', 'open', 'open it'):
+        if command in ('enter', 'okay', 'ok', 'that one', 'confirm', 'confirm that', 'open', 'open it'):
             return self.choose(self.index, mode)
         if command in ('escape', 'go back', 'back', 'cancel'):
             return self.back(mode)

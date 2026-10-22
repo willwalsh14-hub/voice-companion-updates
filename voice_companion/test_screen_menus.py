@@ -259,6 +259,10 @@ class ScreenMenuTests(unittest.TestCase):
         self.assertTrue(self.said[-1].startswith('Select (S), 2 of 7.'))
         app.handle('That one.', mode)
         self.assertTrue(self.said[-1].startswith('Select menu. '))
+        app.handle('Go back.', mode)
+        self.assertEqual(self.said[-1], 'Email menu. Select (S), 2 of 7.')
+        app.handle('Select.', mode)
+        self.assertTrue(self.said[-1].startswith('Select menu. '))
         app.handle('Select all messages', mode)
         self.assertEqual(self.said[-1], '2 messages on this page selected.')
         self.assertIsNone(app.SCREEN_MENU.mode)
@@ -311,6 +315,11 @@ class ScreenMenuTests(unittest.TestCase):
             self.press('Alt', 'media')
             self.assertEqual(nav.focus, 'items')
             self.assertTrue(self.said[-1].startswith('Menu closed. Results. Jazz FM'), self.said[-1])
+
+    def test_alt_without_a_media_screen_does_nothing_else(self):
+        app.web_session = WebStandIn(snapshot=None)
+        self.assertEqual(app.handle('@sm:alt', 'media'), 'media')
+        app.web_session.command.assert_not_called()
 
     def test_web_browser_menu_alt_repeats_the_menu(self):
         app.web_session = WebStandIn(snapshot=None)
