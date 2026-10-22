@@ -20,6 +20,44 @@ audio.onpause=()=>document.getElementById('status').textContent='Paused.';
 </script></html>'''
 
 
+def spoken_time(seconds):
+    """Say a playback time in words, such as 1 minute 23 seconds."""
+    try: total=int(round(float(seconds)))
+    except (TypeError,ValueError,OverflowError): total=0
+    if total<0: total=0
+    hours,rest=divmod(total,3600);minutes,secs=divmod(rest,60)
+    parts=[f'{value} {unit}'+('' if value==1 else 's') for value,unit in ((hours,'hour'),(minutes,'minute'),(secs,'second')) if value]
+    return ' '.join(parts) or '0 seconds'
+
+
+def _number(value):
+    if isinstance(value,bool) or not isinstance(value,(int,float)): return None
+    return value if value==value and abs(value)!=float('inf') else None
+
+
+def seek_message(player, seconds, noun='track'):
+    """Seek by a number of seconds and say the jump and the new place.
+
+    Returns None when the media cannot seek. At either end it says so, instead
+    of naming a jump that did not fully happen.
+    """
+    try: before=player.status()
+    except Exception: before=None
+    if not isinstance(before,dict): before={}
+    position=player.control('seek',seconds=seconds)
+    if position is None: return None
+    jump=('Moved back ' if seconds<0 else 'Moved forward ')+spoken_time(abs(seconds))+'.'
+    position=_number(position)
+    if position is None: return jump
+    old=_number(before.get('position'));duration=_number(before.get('duration'))
+    if seconds<0 and (position<=.5 or old is not None and old-position<-seconds-.5):
+        return 'Moved back to the start of the '+noun+'.'
+    if seconds>0 and (duration is not None and position>=duration-.5 or old is not None and position-old<seconds-.5):
+        return 'Moved forward to the end of the '+noun+'.'
+    if duration: return jump+' '+spoken_time(position)+' of '+spoken_time(duration)+'.'
+    return jump+' Now at '+spoken_time(position)+'.'
+
+
 class MediaPlayer:
     def __init__(self, folder):
         self.folder=Path(folder)
