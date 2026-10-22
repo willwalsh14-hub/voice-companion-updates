@@ -21,6 +21,14 @@ class PackagingTests(unittest.TestCase):
             self.assertEqual(package(options,out,err,runner=run),2)
             self.assertEqual((out.read_text(),err.read_text()),('output','error'))
 
+    def test_build_failures_are_readable_without_the_full_log(self):
+        # GitHub annotations can be read through the API when the log cannot.
+        s=Path(__file__).with_name('build-windows.ps1').read_text()
+        self.assertIn("Write-BuildAnnotation 'Build stopped' $_.Exception.Message",s)
+        self.assertIn("Write-BuildAnnotation 'Release tests failed'",s)
+        self.assertIn("'^(FAIL|ERROR): '",s)
+        self.assertIn("throw ('Dependency security audit failed. ' + ($findings -join ' | '))",s)
+
     def test_builder_uses_launcher_and_current_data_syntax(self):
         s=Path(__file__).with_name('build-windows.ps1').read_text()
         self.assertIn("'build_packaging.py'",s)

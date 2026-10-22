@@ -2,6 +2,18 @@
 param([switch]$Parakeet, [switch]$NoPublish, [switch]$Unattended)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
+# On GitHub, put the reason a build stopped into the run's annotations, which
+# can be read without the full log.
+function Write-BuildAnnotation([string]$Title, [string]$Message) {
+  if (-not $env:GITHUB_ACTIONS) { return }
+  $clean = ($Message -replace '%','%25' -replace "`r",'' -replace "`n",'%0A')
+  if ($clean.Length -gt 3500) { $clean = $clean.Substring($clean.Length - 3500) }
+  Write-Output ('::error title=' + $Title + '::' + $clean)
+}
+trap {
+  Write-BuildAnnotation 'Build stopped' $_.Exception.Message
+  break
+}
 Start-Transcript -Path (Join-Path $PSScriptRoot 'VoiceCompanion-Build-Log.txt') -Force | Out-Null
 $receiptPath = Join-Path $PSScriptRoot 'VoiceCompanion-Build-Passed.json'
 Remove-Item -LiteralPath $receiptPath -Force -ErrorAction SilentlyContinue
@@ -101,6 +113,11 @@ $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
 if ($releaseTests.ExitCode -ne 0) {
   if (Test-Path $releaseOutput) { Get-Content $releaseOutput | Out-Host }
+  if (Test-Path $releaseErrors) {
+    $failed = @(Select-String -LiteralPath $releaseErrors -Pattern '^(FAIL|ERROR): ' | ForEach-Object { $_.Line })
+    $tail = (Get-Content -LiteralPath $releaseErrors -Tail 40) -join "`n"
+    Write-BuildAnnotation 'Release tests failed' ((($failed | Select-Object -First 15) -join "`n") + "`n---`n" + $tail)
+  }
   throw "The document, email, or browser release checks failed. See $releaseErrors"
 }
 & $python prepare_espeak.py (Join-Path $PSScriptRoot 'espeak')
@@ -111,15 +128,18 @@ if ($LASTEXITCODE -ne 0) { throw 'Source security checks failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Could not prepare the dependency security audit.' }
 & $python -m pip_audit --strict --format json --output security-dependency-audit.json
 if ($LASTEXITCODE -ne 0) {
+  $findings = @()
   if (Test-Path 'security-dependency-audit.json') {
     $audit = Get-Content -Raw 'security-dependency-audit.json' | ConvertFrom-Json
     foreach ($dependency in $audit.dependencies) {
       foreach ($finding in $dependency.vulns) {
-        Write-Output ('Security finding: ' + $dependency.name + ' ' + $dependency.version + '; ' + $finding.id + '; fixed versions: ' + ($finding.fix_versions -join ', '))
+        $line = 'Security finding: ' + $dependency.name + ' ' + $dependency.version + '; ' + $finding.id + '; fixed versions: ' + ($finding.fix_versions -join ', ')
+        Write-Output $line; $findings += $line
       }
     }
   }
-  throw 'Dependency security audit failed. Review security-dependency-audit.json.'
+  if (-not $findings) { $findings = @('No findings were recorded. The audit service may have been unreachable.') }
+  throw ('Dependency security audit failed. ' + ($findings -join ' | '))
 }
 & $python -m unittest test_security_privacy -v
 if ($LASTEXITCODE -ne 0) { throw 'Privacy or security checks failed.' }
