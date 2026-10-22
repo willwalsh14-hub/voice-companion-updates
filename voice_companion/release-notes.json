@@ -14,7 +14,7 @@
             "Web pages now open in embedded Edge. This is a browser window the app owns. It does not need the browser extension.",
             "If embedded Edge cannot start, the app uses its own Firefox and tells you.",
             "Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say Use Firefox.",
-            "If you already chose a browser, your choice stays. Say Which browser to hear the one in use."
+            "If you already chose a browser, your choice stays. If you linked your own browser with the extension, the app keeps using it. Say Which browser to hear the one in use."
           ]
         },
         {
