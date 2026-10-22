@@ -16,7 +16,10 @@ from urllib import parse, request
 
 
 class MailboxError(Exception):
-    pass
+    """A mail request failed. unchanged=True means nothing in the mailbox changed."""
+    def __init__(self, message='', unchanged=False):
+        super().__init__(message)
+        self.unchanged = unchanged
 
 
 def message_date(value):
@@ -50,6 +53,15 @@ def html_text(source):
     return render_html(source)
 
 
+def part_text(part):
+    """Text of one message part. An unknown character set is read as UTF-8
+    instead of hiding the whole message."""
+    try:
+        return part.get_content()
+    except LookupError:
+        return (part.get_payload(decode=True) or b'').decode('utf-8', 'replace')
+
+
 def gmail_body(raw):
     try:
         payload = base64.urlsafe_b64decode(raw + '=' * (-len(raw) % 4))
@@ -59,10 +71,10 @@ def gmail_body(raw):
         part = msg.get_body(preferencelist=('html', 'plain'))
         if part is None:
             return ''
-        content = part.get_content()
+        content = part_text(part)
         body=html_text(content) if part.get_content_type() == 'text/html' else plain_body(content)
         plain=msg.get_body(preferencelist=('plain',))
-        if plain is not None:body.plain=str(plain_body(plain.get_content()))
+        if plain is not None:body.plain=str(plain_body(part_text(plain)))
         return body
     except (ValueError, TypeError, UnicodeError, LookupError) as exc:
         raise MailboxError('This message could not be read.') from exc

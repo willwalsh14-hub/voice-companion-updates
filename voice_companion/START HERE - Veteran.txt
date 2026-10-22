@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.156-test.
+Guide version: 0.2.157-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -494,7 +494,7 @@ Google and Microsoft use their usual sign-in pages. Work or school accounts may 
 Yahoo uses an app password, not your normal password. To make one, sign in to Yahoo, open Account security, and choose Generate app password. Copy it.
 When you choose Yahoo, Companion asks for your email address. Type it or say it, then press Enter.
 Next, type or paste the app password, then press Enter. Press Control+V to paste. For privacy, do not say it aloud. You hear "Hidden character" for each letter.
-Companion checks the password with Yahoo. It tells you if it worked. If not, it tells you what to do. Say "Change address" to fix the address. Press Escape or say "Cancel" to stop.
+Companion checks the password with Yahoo. It tells you if it worked. If not, it tells you what to do. If Yahoo stops accepting a saved app password, make a new one. Then say "Add account" and choose Yahoo again. The new password replaces the old one. Say "Change address" to fix the address. Press Escape or say "Cancel" to stop.
 Thunderbird uses the email accounts already set up in the Thunderbird program. Your helper sets this up once. Keep Thunderbird open while you use email in Companion.
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
@@ -560,6 +560,7 @@ Canceling cannot take back a message already sent. If you reopened a saved draft
 Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead of sending it.
 After the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.
 If Companion says the result is uncertain, check your sent mail and ask the recipient before trying again.
+With Yahoo, Companion also puts a copy in your Sent folder. If it cannot, it tells you. The message was still sent.
 
 10. READ AND ORGANIZE EMAIL
 
@@ -578,6 +579,7 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 Say "Back to inbox" to return to Inbox, or choose Inbox in the Control+Y list. To hear where you are, say "Which folder", or press Control+Shift+I.
 To open a folder within another folder, give its full location. For example, say "Go to Projects slash 2026" or "2026 inside of Projects".
 If two folders have the same name, listen to each full location. Choose the right one with "Next" and "That one".
+In any account, say "Go to Spam", "Go to Junk", "Go to Trash", "Go to Sent", or "Go to Drafts". In Yahoo, Spam is the folder Yahoo calls Bulk.
 Escape cancels the folder list.
 
 10.3 Select, move, or delete messages

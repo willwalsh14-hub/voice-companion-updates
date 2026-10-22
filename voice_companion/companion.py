@@ -22,9 +22,10 @@ from field_selection import FieldSelection, selection_command
 from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
 from media_hub import MediaHub
-from email_delivery import DeliveryError, message_parts, submit
-from mail_accounts import AccountError, ProtectedStore, account_token, connect, yahoo_connect
+from email_delivery import DeliveryError, delivery_note, message_parts, submit
+from mail_accounts import AccountError, ProtectedStore, account_token, connect, yahoo_connect, PROVIDERS as MAIL_PROVIDERS
 from mail_voice import MailSession
+from mailbox_access import MailboxError
 from practice_tutorial import PracticeTutorial
 from cloud_recognition import CloudRecognition
 from privacy_controls import narration_allowed,cloud_recognition_allowed
@@ -48,7 +49,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.156-test'
+APP_VERSION = '0.2.157-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1651,6 +1652,10 @@ def handle_mailbox_screen(text, command, mode, typed):
                   'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
             focus_email_entry()
             return 'email_draft'
+        except (MailboxError, AccountError) as exc:
+            # Say what went wrong (for example an expired app password), not a guess.
+            speak(str(exc))
+            return mode
         except Exception:
             speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
             return mode
@@ -2335,7 +2340,7 @@ def _handle(text, mode, typed=False):
         speak('Draft canceled without saving.' if discarded else
               'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
         finish_mail_announcement()
-        if mail_session is None and provider in ('gmail', 'outlook', 'yahoo'):
+        if mail_session is None and provider in MAIL_PROVIDERS:
             mail_session = MailSession(provider, APP, progress=mail_progress)
         if mail_session is not None:
             speak(mail_session.process('open inbox'))
@@ -2751,7 +2756,7 @@ def _handle(text, mode, typed=False):
                     speak('This same draft was already attempted. Check Sent Mail before trying again. Ask your helper if you need to send a corrected message.')
                     return mode
                 provider = email_draft.provider
-                if provider not in ('gmail', 'outlook', 'yahoo'):
+                if provider not in MAIL_PROVIDERS:
                     raise AccountError('Choose a connected email account first. The draft has not been sent.')
                 address = ProtectedStore(APP).load(provider)['address']
                 if email_draft.response_context and email_draft.response_context.get('source_address') not in (None, address):
@@ -2791,7 +2796,7 @@ def _handle(text, mode, typed=False):
                     email_draft.last_attempt_hash = ''
                     speak('The draft could not be saved, so the email was not sent. Check that the disk has space and try again.')
                     return mode
-                submit(provider, email_draft, token, sender=address)
+                accepted = submit(provider, email_draft, token, sender=address)
                 email_draft.last_accepted_hash = fingerprint
                 email_draft.save()
             except (AccountError, DeliveryError, ValueError, OSError, KeyError) as exc:
@@ -2801,7 +2806,7 @@ def _handle(text, mode, typed=False):
                 reason=str(exc) if isinstance(exc,(AccountError,DeliveryError,ValueError)) else 'The email connection could not complete the request.'
                 speak(reason+' The draft is saved locally.'+(' Check Sent Mail before trying again; do not send a duplicate.' if uncertain else ' It has not been sent. Correct the problem and review the draft again.'))
                 return mode
-            speak_status('Email sent successfully.')
+            speak_status('Email sent successfully.' + delivery_note(accepted))
             finish_mail_announcement()
             original_body = (mail_session.body_text if mail_session is not None and
                              email_draft.response_context and mail_session.view == 'message' else None)
