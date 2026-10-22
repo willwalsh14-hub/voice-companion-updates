@@ -432,7 +432,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Audio tutorial', 'start tutorial'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -570,6 +570,7 @@ def commit_email_field_tab(payload,mode):
             email_draft.subject=value
         email_draft.save()
     except (ValueError,OSError) as exc:speak(str(exc));return None
+    if payload.get('key'):return navigation_key(payload['key'],mode)
     return 'send email' if payload.get('send') else navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
 
 def navigation_key(key,mode):
@@ -585,6 +586,10 @@ def _navigation_key(key,mode):
     if key=='Control':return None
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    from input_parity import screen_command
+    direct=screen_command(key,mode)
+    if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
+    if direct:return direct
     if mode=='update_download':
         return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
@@ -2114,7 +2119,8 @@ def _handle(text, mode, typed=False):
         speak(result)
         sync_app_context(mode,True)
         return mode
-    if mode=='file_reader':
+    # Help in Document reader opens the guide, as on every other screen.
+    if mode=='file_reader' and not (command in ('help','user guide','open user guide','manual','open manual') or command.startswith(('help with ','help for '))):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'

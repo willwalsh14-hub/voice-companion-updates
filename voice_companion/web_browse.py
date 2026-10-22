@@ -23,6 +23,10 @@ def voice_browse_key(command):
             'next column':'Right','previous column':'Left','prior column':'Left',
             'first column':'Home','last column':'End','first row':'Prior','last row':'Next',
             'cell above':'Up','cell below':'Down','cell left':'Left','cell right':'Right'}
+    # Page Up, Page Down, Home and End in page reading.
+    line=re.fullmatch(r'(?:the )?(start|beginning|end) of (?:the )?line',command)
+    if line:return 'Read:'+('End' if line[1]=='end' else 'Home')
+    if command in ('page down','page up'):return 'Read:'+('Next' if command=='page down' else 'Prior')
     table_command=command.removeprefix('table ')
     if table_command in tables:return 'Table:'+tables[table_command]
     return {'activate current element':'Activate','activate element':'Activate',

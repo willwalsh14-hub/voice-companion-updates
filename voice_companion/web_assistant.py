@@ -2091,6 +2091,7 @@ class WebSession:
                 return self.move_heading(-1 if command.startswith('previous') else 1)
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
         browse_key=voice_browse_key(command)
+        if browse_key and browse_key.startswith('Read:') and self.keyboard_field:browse_key=None  # Reading keys move through the page, not a text box.
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
         if not self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')) and self.browse and self.browse.current() and text_field(self.browse.current()):self.focus_current()
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
