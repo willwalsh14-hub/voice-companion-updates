@@ -43,14 +43,29 @@ function Close-InstalledBrowserHosts {
     } finally { $browserHost.Dispose() }
   }
 }
+function Stop-PreviousCompanion($previous) {
+  # The app saves documents, drafts and notes before it hands over. If it has not
+  # closed after 30 seconds it is stuck, so ask it to close, then stop it, so the
+  # update still ends with Voice Companion running. Only this installation's copy
+  # is ever stopped, through the handle opened before the wait (no reused process id).
+  if (-not $previous) { return }
+  try {
+    if ($previous.WaitForExit(30000)) { return }
+    $appFullPath = [IO.Path]::GetFullPath($AppPath)
+    if (-not $previous.Path -or -not [string]::Equals([IO.Path]::GetFullPath($previous.Path), $appFullPath, [StringComparison]::OrdinalIgnoreCase)) { return }
+    Write-UpdateError 'The previous app did not close within 30 seconds. Stopping it.'
+    try { $previous.CloseMainWindow() | Out-Null } catch { Write-UpdateError $_ }
+    if ($previous.WaitForExit(10000)) { return }
+    $previous.Kill()
+    if (-not $previous.WaitForExit(10000)) { throw 'The previous app is still running.' }
+  } finally { $previous.Dispose() }
+}
 try {
   if (-not (Test-Path -LiteralPath $AppPath)) { throw 'The installed application path is missing.' }
   if ((Get-FileHash -LiteralPath $InstallerPath -Algorithm SHA256).Hash -ne $ExpectedHash) { throw 'Installer integrity check failed.' }
   if (-not $NoSpeech) { $voice = New-Object -ComObject SAPI.SpVoice }
   if ($ReadyFile) { '{"ready":true}' | Set-Content -LiteralPath $ReadyFile -Encoding UTF8 }
-  $previous = Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue
-  if ($previous) { $previous.WaitForExit(30000) | Out-Null }
-  if (Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue) { throw 'The previous app is still running.' }
+  Stop-PreviousCompanion (Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue)
   Close-InstalledBrowserHosts
   '0' | Set-Content -LiteralPath $progressFile -Encoding ASCII
   if (-not $NoSpeech) {

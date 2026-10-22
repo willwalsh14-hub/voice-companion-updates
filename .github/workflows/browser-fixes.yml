@@ -46,7 +46,7 @@ jobs:
       - name: Package changed source files
         shell: pwsh
         run: |
-          Compress-Archive -Path voice_companion/apply-update.ps1,voice_companion/document_editor.py,voice_companion/test_app_updates.py,voice_companion/test_text_selection.py,voice_companion/test-update-host-cleanup.ps1,voice_companion/live_fix_audit.py -DestinationPath Voice-Companion-tested-fixes.zip
+          Compress-Archive -Path voice_companion/apply-update.ps1,voice_companion/document_editor.py,voice_companion/test_app_updates.py,voice_companion/test_text_selection.py,voice_companion/test-update-host-cleanup.ps1,voice_companion/test-update-previous-app.ps1,voice_companion/live_fix_audit.py -DestinationPath Voice-Companion-tested-fixes.zip
       - uses: actions/upload-artifact@v6
         if: always()
         with:

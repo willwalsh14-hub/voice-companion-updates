@@ -265,12 +265,23 @@ class MailboxTests(unittest.TestCase):
     def test_gmail_listing_read_and_trash(self):
         calls = []
         raw = base64.urlsafe_b64encode(b'From: friend@example.com\nSubject: Hello\nContent-Type: text/plain; charset=utf-8\n\nA readable message.').decode()
+        metadata = {'payload': {'headers': [{'name':'From','value':'friend@example.com'},
+                                            {'name':'Subject','value':'Hello'}]}, 'labelIds':['UNREAD','INBOX'],
+                    'internalDate':'1783036800000'}
         def open_request(req, timeout):
             calls.append((req.full_url, req.get_method(), req.data))
+            if req.full_url == 'https://gmail.googleapis.com/batch/gmail/v1':
+                # Gmail answers a batch as multipart/mixed, one HTTP response per call.
+                self.assertIn(b'GET /gmail/v1/users/me/messages/abc?format=metadata', req.data)
+                self.assertIn(b'Content-ID: <item0>', req.data)
+                reply = Reply({})
+                reply.body = ('--batch_x\r\nContent-Type: application/http\r\nContent-ID: <response-item0>\r\n\r\n'
+                              'HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
+                              json.dumps(metadata) + '\r\n--batch_x--\r\n').encode()
+                reply.headers = {'Content-Type': 'multipart/mixed; boundary=batch_x'}
+                return reply
             if 'format=metadata' in req.full_url:
-                return Reply({'payload': {'headers': [{'name':'From','value':'friend@example.com'},
-                                                      {'name':'Subject','value':'Hello'}]}, 'labelIds':['UNREAD','INBOX'],
-                              'internalDate':'1783036800000'})
+                return Reply(metadata)
             if 'format=minimal' in req.full_url: return Reply({'labelIds':['INBOX']})
             if 'format=raw' in req.full_url: return Reply({'raw':raw})
             if '?labelIds=' in req.full_url: return Reply({'messages':[{'id':'abc'}], 'nextPageToken':'next'})

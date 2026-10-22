@@ -45,8 +45,8 @@ class AddressBook:
         added = 0
         for name, address in contacts:
             try: address = normalize_recipient(address)
-            except ValueError: continue
-            name = name.strip() or address
+            except (ValueError, TypeError, AttributeError): continue
+            name = (name.strip() if isinstance(name, str) else '') or address
             key = name.casefold()
             if key in entries and entries[key].get('address') != address:
                 name = name + ' (' + address + ')'
