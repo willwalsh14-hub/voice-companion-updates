@@ -136,6 +136,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | account entry busy": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | account entry empty": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | action": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -442,6 +454,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | cancel setup": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | cancel this draft": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -484,6 +502,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | change address": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | change email list size": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
@@ -497,6 +521,12 @@
 "screen_after": "awake"
 },
 "awake | change list to": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | change the address": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -1174,6 +1204,18 @@
 "awake | first item": {
 "said": [
 "File manager (F), 1 of 12."
+],
+"screen_after": "awake"
+},
+"awake | fix address": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | fix the address": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -2465,6 +2507,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | provider": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | quieter": {
 "said": [
 "Volume 90 percent."
@@ -2621,6 +2669,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | repeat": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | replace paragraph with New text": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -2752,6 +2806,12 @@
 "screen_after": "awake"
 },
 "awake | say selection": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | say that again": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -3086,6 +3146,12 @@
 "screen_after": "media"
 },
 "awake | status": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | step": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -3447,6 +3513,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | what do i do": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | what documents do i have": {
 "said": [
 "You have no saved documents yet."
@@ -3492,6 +3564,12 @@
 "awake | what notes do i have": {
 "said": [
 "You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | what now": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -3639,6 +3717,12 @@
 "awake | writing email": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | wrong address": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -3892,6 +3976,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. account"
+]
+},
+"document | account entry busy": {
+"said": [
+"account entry busy"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. account entry busy"
+]
+},
+"document | account entry empty": {
+"said": [
+"account entry empty"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. account entry empty"
 ]
 },
 "document | action": {
@@ -4353,6 +4455,15 @@
 "Hello world. Second sentence. cancel send"
 ]
 },
+"document | cancel setup": {
+"said": [
+"cancel setup"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. cancel setup"
+]
+},
 "document | cancel this draft": {
 "said": [
 "cancel this draft"
@@ -4416,6 +4527,15 @@
 "Hello world. Second sentence. cc"
 ]
 },
+"document | change address": {
+"said": [
+"change address"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. change address"
+]
+},
 "document | change email list size": {
 "said": [
 "change email list size"
@@ -4441,6 +4561,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. change list to"
+]
+},
+"document | change the address": {
+"said": [
+"change the address"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. change the address"
 ]
 },
 "document | change voice to": {
@@ -5428,6 +5557,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. first item"
+]
+},
+"document | fix address": {
+"said": [
+"fix address"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. fix address"
+]
+},
+"document | fix the address": {
+"said": [
+"fix the address"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. fix the address"
 ]
 },
 "document | follow link": {
@@ -7326,6 +7473,15 @@
 "Hello world. Second sentence. previous voice"
 ]
 },
+"document | provider": {
+"said": [
+"provider"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. provider"
+]
+},
 "document | quieter": {
 "said": [
 "Volume 90 percent."
@@ -7557,6 +7713,15 @@
 "Hello world. Second sentence. rename favorite"
 ]
 },
+"document | repeat": {
+"said": [
+"repeat"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. repeat"
+]
+},
 "document | replace paragraph with New text": {
 "said": [
 "Replaced the paragraph with: New text"
@@ -7760,6 +7925,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | say that again": {
+"said": [
+"say that again"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. say that again"
 ]
 },
 "document | schedule station": {
@@ -8248,6 +8422,15 @@
 "Hello world. Second sentence. status"
 ]
 },
+"document | step": {
+"said": [
+"step"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. step"
+]
+},
 "document | stop": {
 "said": [],
 "screen_after": "document",
@@ -8733,6 +8916,15 @@
 "Hello world. Second sentence. what browser am i using"
 ]
 },
+"document | what do i do": {
+"said": [
+"what do i do"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. what do i do"
+]
+},
 "document | what documents do i have": {
 "said": [
 "what documents do i have"
@@ -8803,6 +8995,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. what notes do i have"
+]
+},
+"document | what now": {
+"said": [
+"what now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. what now"
 ]
 },
 "document | what s new": {
@@ -9019,6 +9220,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. writing email"
+]
+},
+"document | wrong address": {
+"said": [
+"wrong address"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. wrong address"
 ]
 },
 "document | yahoo": {
@@ -9298,6 +9508,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. account"
+]
+},
+"email_draft | account entry busy": {
+"said": [
+"account entry busy"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. account entry busy"
+]
+},
+"email_draft | account entry empty": {
+"said": [
+"account entry empty"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. account entry empty"
 ]
 },
 "email_draft | action": {
@@ -9820,6 +10048,15 @@
 "Hello world."
 ]
 },
+"email_draft | cancel setup": {
+"said": [
+"cancel setup"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. cancel setup"
+]
+},
 "email_draft | cancel this draft": {
 "calls": [
 "call.process('open inbox')",
@@ -9908,6 +10145,15 @@
 "Hello world."
 ]
 },
+"email_draft | change address": {
+"said": [
+"change address"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. change address"
+]
+},
 "email_draft | change email list size": {
 "said": [
 "change email list size"
@@ -9933,6 +10179,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. change list to"
+]
+},
+"email_draft | change the address": {
+"said": [
+"change the address"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. change the address"
 ]
 },
 "email_draft | change voice to": {
@@ -10953,6 +11208,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. first item"
+]
+},
+"email_draft | fix address": {
+"said": [
+"fix address"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. fix address"
+]
+},
+"email_draft | fix the address": {
+"said": [
+"fix the address"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. fix the address"
 ]
 },
 "email_draft | follow link": {
@@ -12878,6 +13151,15 @@
 "Hello world. previous voice"
 ]
 },
+"email_draft | provider": {
+"said": [
+"provider"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. provider"
+]
+},
 "email_draft | quieter": {
 "said": [
 "Volume 90 percent."
@@ -13109,6 +13391,15 @@
 "Hello world. rename favorite"
 ]
 },
+"email_draft | repeat": {
+"said": [
+"repeat"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. repeat"
+]
+},
 "email_draft | replace paragraph with New text": {
 "said": [
 "Replaced the paragraph with: New text"
@@ -13317,6 +13608,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | say that again": {
+"said": [
+"say that again"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. say that again"
 ]
 },
 "email_draft | schedule station": {
@@ -13805,6 +14105,15 @@
 "Hello world. status"
 ]
 },
+"email_draft | step": {
+"said": [
+"step"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. step"
+]
+},
 "email_draft | stop": {
 "said": [],
 "screen_after": "email_draft",
@@ -14290,6 +14599,15 @@
 "Hello world. what browser am i using"
 ]
 },
+"email_draft | what do i do": {
+"said": [
+"what do i do"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. what do i do"
+]
+},
 "email_draft | what documents do i have": {
 "said": [
 "what documents do i have"
@@ -14360,6 +14678,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. what notes do i have"
+]
+},
+"email_draft | what now": {
+"said": [
+"what now"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. what now"
 ]
 },
 "email_draft | what s new": {
@@ -14578,6 +14905,15 @@
 "Hello world. writing email"
 ]
 },
+"email_draft | wrong address": {
+"said": [
+"wrong address"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. wrong address"
+]
+},
 "email_draft | yahoo": {
 "said": [
 "yahoo"
@@ -14758,6 +15094,14 @@
 "screen_after": "help"
 },
 "help | account": {
+"said": [],
+"screen_after": "help"
+},
+"help | account entry busy": {
+"said": [],
+"screen_after": "help"
+},
+"help | account entry empty": {
 "said": [],
 "screen_after": "help"
 },
@@ -14980,6 +15324,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | cancel setup": {
+"said": [],
+"screen_after": "help"
+},
 "help | cancel this draft": {
 "said": [],
 "screen_after": "help"
@@ -15008,6 +15356,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | change address": {
+"said": [],
+"screen_after": "help"
+},
 "help | change email list size": {
 "said": [],
 "screen_after": "help"
@@ -15017,6 +15369,10 @@
 "screen_after": "help"
 },
 "help | change list to": {
+"said": [],
+"screen_after": "help"
+},
+"help | change the address": {
 "said": [],
 "screen_after": "help"
 },
@@ -15477,6 +15833,14 @@
 "said": [
 "Start of list."
 ],
+"screen_after": "help"
+},
+"help | fix address": {
+"said": [],
+"screen_after": "help"
+},
+"help | fix the address": {
+"said": [],
 "screen_after": "help"
 },
 "help | follow link": {
@@ -16387,6 +16751,10 @@
 ],
 "screen_after": "awake"
 },
+"help | provider": {
+"said": [],
+"screen_after": "help"
+},
 "help | quieter": {
 "said": [
 "Volume 90 percent."
@@ -16502,6 +16870,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | repeat": {
+"said": [],
+"screen_after": "help"
+},
 "help | replace paragraph with New text": {
 "said": [],
 "screen_after": "help"
@@ -16595,6 +16967,10 @@
 "screen_after": "help"
 },
 "help | say selection": {
+"said": [],
+"screen_after": "help"
+},
+"help | say that again": {
 "said": [],
 "screen_after": "help"
 },
@@ -16838,6 +17214,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | step": {
+"said": [],
+"screen_after": "help"
+},
 "help | stop": {
 "said": [],
 "screen_after": "help"
@@ -17074,6 +17454,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | what do i do": {
+"said": [],
+"screen_after": "help"
+},
 "help | what documents do i have": {
 "said": [],
 "screen_after": "help"
@@ -17105,6 +17489,10 @@
 "screen_after": "help"
 },
 "help | what notes do i have": {
+"said": [],
+"screen_after": "help"
+},
+"help | what now": {
 "said": [],
 "screen_after": "help"
 },
@@ -17213,6 +17601,10 @@
 "screen_after": "help"
 },
 "help | writing email": {
+"said": [],
+"screen_after": "help"
+},
+"help | wrong address": {
 "said": [],
 "screen_after": "help"
 },
@@ -17411,6 +17803,24 @@
 ],
 "said": [
 "session handled: account"
+],
+"screen_after": "mailbox"
+},
+"mailbox | account entry busy": {
+"calls": [
+"call.process('account entry busy')"
+],
+"said": [
+"session handled: account entry busy"
+],
+"screen_after": "mailbox"
+},
+"mailbox | account entry empty": {
+"calls": [
+"call.process('account entry empty')"
+],
+"said": [
+"session handled: account entry empty"
 ],
 "screen_after": "mailbox"
 },
@@ -17843,6 +18253,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | cancel setup": {
+"calls": [
+"call.process('cancel setup')"
+],
+"said": [
+"session handled: cancel setup"
+],
+"screen_after": "mailbox"
+},
 "mailbox | cancel this draft": {
 "calls": [
 "call.process('cancel this draft')"
@@ -17906,6 +18325,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | change address": {
+"calls": [
+"call.process('change address')"
+],
+"said": [
+"session handled: change address"
+],
+"screen_after": "mailbox"
+},
 "mailbox | change email list size": {
 "calls": [
 "call.process('change email list size')"
@@ -17930,6 +18358,15 @@
 ],
 "said": [
 "session handled: change list to"
+],
+"screen_after": "mailbox"
+},
+"mailbox | change the address": {
+"calls": [
+"call.process('change the address')"
+],
+"said": [
+"session handled: change the address"
 ],
 "screen_after": "mailbox"
 },
@@ -18836,6 +19273,24 @@
 ],
 "said": [
 "session handled: first item"
+],
+"screen_after": "mailbox"
+},
+"mailbox | fix address": {
+"calls": [
+"call.process('fix address')"
+],
+"said": [
+"session handled: fix address"
+],
+"screen_after": "mailbox"
+},
+"mailbox | fix the address": {
+"calls": [
+"call.process('fix the address')"
+],
+"said": [
+"session handled: fix the address"
 ],
 "screen_after": "mailbox"
 },
@@ -20549,6 +21004,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | provider": {
+"calls": [
+"call.process('provider')"
+],
+"said": [
+"session handled: provider"
+],
+"screen_after": "mailbox"
+},
 "mailbox | quieter": {
 "said": [
 "Volume 90 percent."
@@ -20750,6 +21214,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | repeat": {
+"calls": [
+"call.process('repeat')"
+],
+"said": [
+"session handled: repeat"
+],
+"screen_after": "mailbox"
+},
 "mailbox | replace paragraph with New text": {
 "calls": [
 "call.process('replace paragraph with New text')"
@@ -20945,6 +21418,15 @@
 ],
 "said": [
 "session handled: say selection"
+],
+"screen_after": "mailbox"
+},
+"mailbox | say that again": {
+"calls": [
+"call.process('say that again')"
+],
+"said": [
+"session handled: say that again"
 ],
 "screen_after": "mailbox"
 },
@@ -21392,6 +21874,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | step": {
+"calls": [
+"call.process('step')"
+],
+"said": [
+"session handled: step"
+],
+"screen_after": "mailbox"
+},
 "mailbox | stop": {
 "said": [],
 "screen_after": "mailbox"
@@ -21811,6 +22302,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | what do i do": {
+"calls": [
+"call.process('what do i do')"
+],
+"said": [
+"session handled: what do i do"
+],
+"screen_after": "mailbox"
+},
 "mailbox | what documents do i have": {
 "calls": [
 "call.process('what documents do i have')"
@@ -21868,6 +22368,15 @@
 ],
 "said": [
 "session handled: what notes do i have"
+],
+"screen_after": "mailbox"
+},
+"mailbox | what now": {
+"calls": [
+"call.process('what now')"
+],
+"said": [
+"session handled: what now"
 ],
 "screen_after": "mailbox"
 },
@@ -22032,6 +22541,15 @@
 ],
 "said": [
 "session handled: writing email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | wrong address": {
+"calls": [
+"call.process('wrong address')"
+],
+"said": [
+"session handled: wrong address"
 ],
 "screen_after": "mailbox"
 },
@@ -22245,6 +22763,18 @@
 "note | account": {
 "said": [
 "account"
+],
+"screen_after": "note"
+},
+"note | account entry busy": {
+"said": [
+"account entry busy"
+],
+"screen_after": "note"
+},
+"note | account entry empty": {
+"said": [
+"account entry empty"
 ],
 "screen_after": "note"
 },
@@ -22556,6 +23086,12 @@
 ],
 "screen_after": "note"
 },
+"note | cancel setup": {
+"said": [
+"cancel setup"
+],
+"screen_after": "note"
+},
 "note | cancel this draft": {
 "said": [
 "cancel this draft"
@@ -22598,6 +23134,12 @@
 ],
 "screen_after": "note"
 },
+"note | change address": {
+"said": [
+"change address"
+],
+"screen_after": "note"
+},
 "note | change email list size": {
 "said": [
 "change email list size"
@@ -22613,6 +23155,12 @@
 "note | change list to": {
 "said": [
 "change list to"
+],
+"screen_after": "note"
+},
+"note | change the address": {
+"said": [
+"change the address"
 ],
 "screen_after": "note"
 },
@@ -23277,6 +23825,18 @@
 "note | first item": {
 "said": [
 "first item"
+],
+"screen_after": "note"
+},
+"note | fix address": {
+"said": [
+"fix address"
+],
+"screen_after": "note"
+},
+"note | fix the address": {
+"said": [
+"fix the address"
 ],
 "screen_after": "note"
 },
@@ -24547,6 +25107,12 @@
 ],
 "screen_after": "note"
 },
+"note | provider": {
+"said": [
+"provider"
+],
+"screen_after": "note"
+},
 "note | quieter": {
 "said": [
 "Volume 90 percent."
@@ -24703,6 +25269,12 @@
 ],
 "screen_after": "note"
 },
+"note | repeat": {
+"said": [
+"repeat"
+],
+"screen_after": "note"
+},
 "note | replace paragraph with New text": {
 "said": [
 "replace paragraph with New text"
@@ -24837,6 +25409,12 @@
 "note | say selection": {
 "said": [
 "say selection"
+],
+"screen_after": "note"
+},
+"note | say that again": {
+"said": [
+"say that again"
 ],
 "screen_after": "note"
 },
@@ -25164,6 +25742,12 @@
 ],
 "screen_after": "note"
 },
+"note | step": {
+"said": [
+"step"
+],
+"screen_after": "note"
+},
 "note | stop": {
 "said": [],
 "screen_after": "note"
@@ -25487,6 +26071,12 @@
 ],
 "screen_after": "note"
 },
+"note | what do i do": {
+"said": [
+"what do i do"
+],
+"screen_after": "note"
+},
 "note | what documents do i have": {
 "said": [
 "what documents do i have"
@@ -25532,6 +26122,12 @@
 "note | what notes do i have": {
 "said": [
 "what notes do i have"
+],
+"screen_after": "note"
+},
+"note | what now": {
+"said": [
+"what now"
 ],
 "screen_after": "note"
 },
@@ -25676,6 +26272,12 @@
 "note | writing email": {
 "said": [
 "writing email"
+],
+"screen_after": "note"
+},
+"note | wrong address": {
+"said": [
+"wrong address"
 ],
 "screen_after": "note"
 },
@@ -25902,6 +26504,26 @@
 ],
 "said": [
 "session handled: account"
+],
+"screen_after": "web"
+},
+"web | account entry busy": {
+"calls": [
+"call.command('account entry busy')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: account entry busy"
+],
+"screen_after": "web"
+},
+"web | account entry empty": {
+"calls": [
+"call.command('account entry empty')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: account entry empty"
 ],
 "screen_after": "web"
 },
@@ -26392,6 +27014,16 @@
 ],
 "screen_after": "web"
 },
+"web | cancel setup": {
+"calls": [
+"call.command('cancel setup')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: cancel setup"
+],
+"screen_after": "web"
+},
 "web | cancel this draft": {
 "calls": [
 "call.command('cancel this draft')",
@@ -26462,6 +27094,16 @@
 ],
 "screen_after": "web"
 },
+"web | change address": {
+"calls": [
+"call.command('change address')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: change address"
+],
+"screen_after": "web"
+},
 "web | change email list size": {
 "calls": [
 "call.command('change email list size')",
@@ -26489,6 +27131,16 @@
 ],
 "said": [
 "session handled: change list to"
+],
+"screen_after": "web"
+},
+"web | change the address": {
+"calls": [
+"call.command('change the address')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: change the address"
 ],
 "screen_after": "web"
 },
@@ -27481,6 +28133,26 @@
 ],
 "said": [
 "session handled: first item"
+],
+"screen_after": "web"
+},
+"web | fix address": {
+"calls": [
+"call.command('fix address')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: fix address"
+],
+"screen_after": "web"
+},
+"web | fix the address": {
+"calls": [
+"call.command('fix the address')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: fix the address"
 ],
 "screen_after": "web"
 },
@@ -29390,6 +30062,16 @@
 ],
 "screen_after": "web"
 },
+"web | provider": {
+"calls": [
+"call.command('provider')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: provider"
+],
+"screen_after": "web"
+},
 "web | quieter": {
 "said": [
 "Volume 90 percent."
@@ -29614,6 +30296,16 @@
 ],
 "screen_after": "browser_menu"
 },
+"web | repeat": {
+"calls": [
+"call.command('repeat')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: repeat"
+],
+"screen_after": "web"
+},
 "web | replace paragraph with New text": {
 "calls": [
 "call.command('replace paragraph with New text')",
@@ -29827,6 +30519,16 @@
 ],
 "said": [
 "session handled: say selection"
+],
+"screen_after": "web"
+},
+"web | say that again": {
+"calls": [
+"call.command('say that again')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: say that again"
 ],
 "screen_after": "web"
 },
@@ -30302,6 +31004,16 @@
 ],
 "screen_after": "web"
 },
+"web | step": {
+"calls": [
+"call.command('step')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: step"
+],
+"screen_after": "web"
+},
 "web | stop": {
 "said": [],
 "screen_after": "web"
@@ -30746,6 +31458,16 @@
 ],
 "screen_after": "web"
 },
+"web | what do i do": {
+"calls": [
+"call.command('what do i do')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: what do i do"
+],
+"screen_after": "web"
+},
 "web | what documents do i have": {
 "calls": [
 "call.command('what documents do i have')",
@@ -30807,6 +31529,16 @@
 ],
 "said": [
 "session handled: what notes do i have"
+],
+"screen_after": "web"
+},
+"web | what now": {
+"calls": [
+"call.command('what now')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: what now"
 ],
 "screen_after": "web"
 },
@@ -30975,6 +31707,16 @@
 ],
 "said": [
 "session handled: writing email"
+],
+"screen_after": "web"
+},
+"web | wrong address": {
+"calls": [
+"call.command('wrong address')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: wrong address"
 ],
 "screen_after": "web"
 },

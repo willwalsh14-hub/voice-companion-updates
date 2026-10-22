@@ -6,6 +6,7 @@ entered by a helper, never the normal account password.
 """
 from network_security import secure_service_open
 import json
+import re
 import os
 import hashlib
 import sys
@@ -94,44 +95,70 @@ def connect(provider, folder, graphical=False):
     if provider == 'thunderbird':
         return thunderbird_connect(store)
     if provider == 'yahoo':
-        import smtplib
-        import ssl
-        from email_draft import normalize_recipient
         if graphical:
-            address, password = yahoo_account_dialog()
-        else:
-            import getpass
-            address = input('Yahoo email address: ').strip()
-            password = getpass.getpass('Yahoo app password (not your account password): ')
-        address = normalize_recipient(address)
-        if not password.strip():
-            raise AccountError('An app password is required.')
-        try:
-            with smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465,
-                                  context=ssl.create_default_context(), timeout=30) as smtp:
-                smtp.login(address, password.strip())
-        except (smtplib.SMTPException, OSError) as exc:
-            raise AccountError('Yahoo could not verify that app password. No account was saved.') from exc
-        store.save('yahoo', {'address': address, 'app_password': password.strip()})
-        return address
+            # The app asks for the address and app password in its own speaking
+            # text box (companion.ACCOUNT_ENTRY), never in a separate window.
+            raise AccountError('Say add account and choose Yahoo.')
+        import getpass
+        address = input('Yahoo email address: ').strip()
+        password = getpass.getpass('Yahoo app password (not your account password): ')
+        return yahoo_connect(store, address, password)
     raise AccountError('This provider is not supported for account connection yet.')
 
 
-def yahoo_account_dialog():
-    """Private keyboard entry; never read or log the app password."""
-    import tkinter as tk
-    from tkinter import simpledialog
-    root = tk.Tk()
-    root.withdraw()
+YAHOO_SMTP = ('smtp.mail.yahoo.com', 465)
+YAHOO_IMAP = ('imap.mail.yahoo.com', 993)
+YAHOO_TIMEOUT = 20
+
+
+def clean_app_password(password):
+    """Yahoo shows app passwords in groups, e.g. 'abcd efgh ijkl mnop'. Pasted copies
+    may carry spaces, dashes or line breaks; the password itself is the letters."""
+    return re.sub(r'[\s-]+', '', password or '')
+
+
+def yahoo_connect(store, address, password, smtp_factory=None, imap_factory=None):
+    """Check the app password with Yahoo's sending and reading servers, then save it.
+
+    Never logs or speaks the password. Every failure is a plain AccountError.
+    """
+    import smtplib, ssl, imaplib, socket
+    from email_draft import normalize_recipient
     try:
-        address = simpledialog.askstring('Connect Yahoo', 'Yahoo email address:', parent=root)
-        if address is None: raise AccountError('Yahoo setup canceled.')
-        password = simpledialog.askstring('Connect Yahoo', 'Yahoo app password (not normal password):',
-                                          parent=root, show='*')
-        if password is None: raise AccountError('Yahoo setup canceled.')
-        return address, password
+        address = normalize_recipient(address)
+    except ValueError as exc:
+        raise AccountError('That is not a complete email address. Say or type it again, such as sam at yahoo dot com.') from exc
+    password = clean_app_password(password)
+    if not password:
+        raise AccountError('An app password is needed. Type or paste it, then press Enter.')
+    context = ssl.create_default_context()
+    smtp_factory = smtp_factory or (lambda: smtplib.SMTP_SSL(*YAHOO_SMTP, context=context, timeout=YAHOO_TIMEOUT))
+    imap_factory = imap_factory or (lambda: imaplib.IMAP4_SSL(*YAHOO_IMAP, ssl_context=context, timeout=YAHOO_TIMEOUT))
+    refused = ('Yahoo did not accept that app password. Check that you copied all of it. '
+               'If it still fails, make a new app password in Yahoo Account security, then try again.')
+    unreachable = 'Yahoo could not be reached. Check the internet connection, then try again.'
+    try:
+        with smtp_factory() as smtp:
+            smtp.login(address, password)
+    except smtplib.SMTPAuthenticationError as exc:
+        raise AccountError(refused) from exc
+    except (smtplib.SMTPException, OSError, socket.timeout) as exc:
+        raise AccountError(unreachable) from exc
+    try:
+        imap = imap_factory()
+    except (OSError, socket.timeout, imaplib.IMAP4.error) as exc:
+        raise AccountError(unreachable) from exc
+    try:
+        imap.login(address, password)
+    except imaplib.IMAP4.error as exc:
+        raise AccountError(refused) from exc
+    except (OSError, socket.timeout) as exc:
+        raise AccountError(unreachable) from exc
     finally:
-        root.destroy()
+        try: imap.logout()
+        except Exception: pass
+    store.save('yahoo', {'address': address, 'app_password': password})
+    return address
 
 
 PROVIDERS = ('gmail', 'outlook', 'yahoo', 'thunderbird')
