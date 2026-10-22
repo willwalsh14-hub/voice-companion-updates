@@ -25,7 +25,8 @@
           "title": "Gmail inbox",
           "details": [
             "In the last two versions, a Gmail inbox could fail to open. It now opens again.",
-            "The app still gets long lists quickly when it can. If that does not work, it gets messages one at a time, as before."
+            "The app still gets long lists quickly when it can. If that does not work, it gets messages one at a time, as before.",
+            "Some Outlook messages began with a stray number, such as 96. That number is no longer read."
           ]
         },
         {

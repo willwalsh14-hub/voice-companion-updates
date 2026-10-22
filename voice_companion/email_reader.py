@@ -40,7 +40,7 @@ def spoken_range(body,start,end):
 class Renderer(HTMLParser):
     blocks={'p','div','section','article','blockquote','h1','h2','h3','h4','h5','h6','tr','ul','ol'}
     styles={'b':'bold','strong':'bold','i':'italic','em':'italic','u':'underline','h1':'heading','h2':'heading','h3':'heading'}
-    head_tags={'title','meta','link','base','style','script','noscript','template'}
+    head_tags={'title','meta','link','base','style','script','noscript','template','xml'}
     def __init__(self):
         super().__init__(convert_charrefs=True);self.text='';self.spans=[];self.active=[];self.hidden=0;self.lists=[];self.control_labels={}
         self.in_head=False
@@ -52,7 +52,8 @@ class Renderer(HTMLParser):
         # Browsers end <head> at the first body tag even when </head> is missing.
         if tag=='head':self.in_head=True;return
         if self.in_head and tag not in self.head_tags:self.in_head=False
-        if tag in ('script','style') or tag=='title' and self.in_head:self.hidden+=1;return
+        # Outlook stores page settings in <xml> blocks; they are never message text.
+        if tag in ('script','style','xml') or tag=='title' and self.in_head:self.hidden+=1;return
         if self.hidden or self.in_head:return
         if tag in self.blocks or tag=='li':self.newline()
         if tag in ('ul','ol'):self.lists.append([tag,0])
@@ -75,7 +76,7 @@ class Renderer(HTMLParser):
             if label:self.control_labels[(tag,len(self.text))]=label
     def handle_endtag(self,tag):
         if tag=='head':self.in_head=False;return
-        if tag in ('script','style') or tag=='title' and self.in_head:
+        if tag in ('script','style','xml') or tag=='title' and self.in_head:
             self.hidden=max(0,self.hidden-1);return
         if self.hidden or self.in_head:return
         for i in range(len(self.active)-1,-1,-1):

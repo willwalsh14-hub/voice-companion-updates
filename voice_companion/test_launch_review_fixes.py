@@ -55,6 +55,22 @@ class ManualUpdateCheckTests(unittest.TestCase):
 
 
 class UnclosedHeadEmailTests(unittest.TestCase):
+    def test_common_real_world_email_reads_only_the_message(self):
+        from email_reader import render_html
+        samples = {
+            '<div dir="ltr">Hi Will,<div>Lunch at noon?</div></div>': 'Hi Will,\nLunch at noon?',
+            '<html><head><meta charset="utf-8"><title>News</title><style>p{}</style></head><body><p>Body text</p></body></html>': 'Body text',
+            ('<html><head><meta name=Generator content="Microsoft Word 15"><!--[if gte mso 9]><xml><o:OfficeDocumentSettings>'
+             '<o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]--><style>p{}</style></head>'
+             '<body><p class=MsoNormal>Meeting moved to 3.</p></body></html>'): 'Meeting moved to 3.',
+            ('<html><head><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>'
+             '<style>x{}</style></head><body><p>Real text</p></body></html>'): 'Real text',
+            '<html><head><title>Sale</title></head><body><table><tr><td>Big sale today</td></tr></table></body></html>': 'Big sale today',
+        }
+        for source, expected in samples.items():
+            with self.subTest(expected=expected):
+                self.assertEqual(str(render_html(source)).strip(), expected)
+
     def test_body_after_unclosed_head_is_read(self):
         from email_reader import render_html
         source = ('<html><head><meta charset="utf-8"><title>Newsletter</title>'
