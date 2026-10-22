@@ -250,6 +250,31 @@ class CompanionWindow:
             root.bind_all('<KeyRelease>',release_document_modifier,add='+')
             previous = ['', 0]
             field_selection = FieldSelection()
+            # Alt pressed and let go with no other key opens the screen's Alt menu
+            # (screen_menus.py). Alt+O, Alt+T, Alt+F4 and other Alt keys never do.
+            alt_tap={'alone':False,'when':0.0}
+            def watch_alt(event):
+                if event.keysym in ('Alt_L','Alt_R'):
+                    if not alt_tap['alone']:alt_tap.update(alone=True,when=time.monotonic())
+                else:alt_tap['alone']=False
+            root.bind('<KeyPress>',watch_alt,add='+')
+            root.bind('<FocusOut>',lambda event:alt_tap.update(alone=False),add='+')
+            def alt_release(event):
+                if event.keysym not in ('Alt_L','Alt_R'):return
+                alone=alt_tap['alone'] and time.monotonic()-alt_tap['when']<2;alt_tap['alone']=False
+                if not alone or event.widget.winfo_toplevel()!=root:return
+                from screen_menus import alt_menu_key
+                if not alt_menu_key(self.context,self.command_entry_active,typed.get()):return
+                if self.keyboard_output:self.keyboard_output.interrupt()
+                flush_pending_edit();cancel_phonetic()
+                mode=self.context.get('mode');opening=not self.context.get('screen_menu')
+                if opening and mode=='email_draft' and self.email_field:
+                    # Keep what was typed in the address or subject box first.
+                    self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'key':'Alt'}));return 'break'
+                if opening and mode=='note' and typed.get().strip():
+                    self.commands.put(typed.get().strip());typed.delete(0,'end')
+                self.commands.put(('keyboard','Alt'));return 'break'
+            root.bind_all('<KeyRelease>',alt_release,add='+')
             def shortcut(event):
                 if event.keysym.lower()=='p' and event.state&4 and not event.state&(1|8|0x20000):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
@@ -258,6 +283,16 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
+                watch_alt(event)
+                if self.context.get('screen_menu') and not self.command_entry_active:
+                    # An Alt menu is open: arrows, Enter, Escape, letters and numbers belong to it.
+                    from screen_menus import overlay_key
+                    menu_key=overlay_key(key,event.char,event.state)
+                    if menu_key is not None:
+                        if menu_key:
+                            if self.keyboard_output:self.keyboard_output.interrupt()
+                            flush_pending_edit();cancel_phonetic();self.commands.put(('keyboard',menu_key))
+                        return 'break'
                 if mode=='files' and control and key.lower()=='e':
                     self.command_entry_active=False
                     typed.delete(0,'end')

@@ -193,6 +193,7 @@ To open the item you hear, say "That one", "Okay", or "Confirm", or press Enter.
 To reach the first or last item, say "Start of list" or "End of list", or press Home or End.
 You hear "Start of list" or "End of list" if you try to move past the first or last item. The list does not wrap around.
 To find an item, say its name, or press its first letter. Then press Enter to open it. Text boxes use those keys for typing instead.
+On the main menu, Alt says that you are in the main menu. On most other screens, press Alt to open a menu of that screen's actions. Use arrows and Enter to choose. Each item says its key and voice command. Press a number to open a group or choose an item. Type a letter to find an item. Escape goes back one level. Press Alt again to close the menu.
 
 1.4 Set up your microphone
 Voice Companion uses the microphone selected in Windows. You can use a built-in microphone or a working headset.
@@ -245,6 +246,7 @@ To open the guide inside the app, say "Help", or press F1 on the main menu. To c
 You can go straight to a topic. For example, say "Help with documents", "Help with email", or "Help with web".
 Other useful requests are "Help with radio", "Help with podcasts", "Help with presets", and "Help with commands".
 F1 on most screens opens the Help topic for that screen. Home and End reach the ends of a list.
+Press Alt to open the help menu. It has Help topics, Subsections, Release notes, Lessons, the guide folder, Close help, and Main menu.
 
 3.2 Read part of a topic
 Each Help topic has a list of smaller parts. Choose the part you want, then listen.
@@ -275,6 +277,7 @@ To learn about a command, say "Explain command", followed by the command. For ex
 If a long explanation pauses, say "Continue reading", or press Control+Down Arrow.
 To go back one level, say "Go back", or press Escape. Say "Courses" to return to the course list.
 To leave the tutorial, say "Main menu" or "Close tutorial", or press Escape from the course list.
+Press Alt to open the lessons menu. It has the lesson list, Repeat, Find lesson, Explain a command, and the other lesson commands.
 
 4. SPEECH AND VOICES
 
@@ -463,6 +466,7 @@ Notepad is for a short plain text note. Use the Word processor when you need hea
 3. To listen to it, say "Read from top", or press Control+Shift+R.
 4. To save it, say "Save note", or press Control+S.
 To save the note and return to the main menu, say "Go back", or press Escape. Going to sleep also saves the text you have entered. For Notepad help, say "Help with notepad", or press F1.
+Press Alt to open the notepad menu. It has Save and close note, Read note, Saved notes, New line, Notepad options, Notepad help, and Main menu. Words you typed are added to the note first.
 
 7.2 Review or change a note
 Use "Next word", "Previous word", "Next line", and "Previous line" to review.
@@ -506,6 +510,7 @@ With two accounts of the same type, say "Switch to" followed by the full address
 To hear the account in use, say "Which email account?". Check it before sending mail.
 With the keyboard, press Alt+O and choose Email options. Sending account names the account in use. Choose another account there to switch.
 "Check Gmail", "Check Outlook", and "Check Yahoo" open that account when exactly one of its type is connected.
+Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, or Which account.
 
 8.3 Add and find contacts
 A contact is a saved name and email address.
@@ -526,6 +531,7 @@ Google Calendar and Google Drive are not connected in this version.
 4. Speak the message in short parts. Listen back before sending.
 From the keyboard in email, press Control+N to start a new message. Type an address in To and press Enter. Continue through the subject and message.
 When speaking an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com. Say "underscore" for _ and "dash" for -.
+Press Alt to open the email draft menu. It has Message, Fields, Format, and Contacts and help. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.
 
 9.2 Change To, CC, BCC, or Subject
 The To field holds the main recipient's address. CC sends a copy to another person. BCC sends a copy without showing that address to the other recipients.
@@ -572,6 +578,7 @@ With Yahoo, Companion also puts a copy in your Sent folder. If it cannot, it tel
 To choose a message by number, say "Read message" or "Open message", followed by its number. For example, say "Read message 1" or "Open message 1".
 To repeat the sender, subject, and date, say "Message details", or press Control+I. For more of a long message, say "Continue reading", or press Down Arrow.
 Say "Read from beginning" to read it again. To return to the message list, say "Back to folder" or "Go back", or press Escape.
+Press Alt to open the email menu. Its groups are Messages, Select, Go to folder, Folder actions, Drafts and contacts, Accounts, and Options and help. For example, press Alt, 3, then 2 to go to Sent. Press Alt, 7, then 1 for Email options.
 
 10.2 Go to folders
 To hear a folder list, say "Go to folder", or press Control+Y. Use "Next", "Previous", and "That one", or arrows and Enter, to choose.
@@ -636,6 +643,7 @@ The web browser menu also has these choices:
 - Web history
 When Keep browser window open is on and a page remains open, Resume where you left off appears above Search or enter address.
 Use arrows and Enter, or say the name of a menu item. Press Escape from this menu to return to the main menu.
+On this menu, Alt reads the menu again.
 
 11.2 Search or open an address
 1. Choose Search or enter address. From a page, you can also say "Search", or press Control+L.
@@ -662,6 +670,7 @@ To move a longer way, say "Page down" or "Page up", or press Page Down or Page U
 The page view follows the place you choose. After you move to a heading, arrow reading continues from that heading.
 When a website changes a form without opening a new page, the page view updates. For example, after an email step, you can move through the new password step. A hidden old field is no longer active.
 A newly loaded page may start reading on its own. Turn off Automatic page reading in Web browser options if you prefer.
+Press Alt to open the web page menu. It has Page, Lists, Favorites, and Options and help. The menu does not close the page. While you type in a page field, Alt does not open the menu.
 
 11.4 Move to headings, links, or controls
 H moves to the next heading. Shift+H moves to the previous heading. K moves to the next link.
@@ -804,6 +813,7 @@ Escape from station results says "Station actions." The next Escape says "Radio 
 Control+F opens search. Control+Shift+P lists saved stations. F5 refreshes the station lists.
 Say "Radio menu", "Actions", or "Results" to choose a list by voice. For radio help, say "Help with radio", or press F1. To run an action by voice, say its name, such as "List stations" or "Record current station".
 When a station is selected, actions include saving it, recording it, scheduling a recording, and playing or pausing audio.
+Alt also moves you to the radio menu, the actions list. Press Alt again to go back to the results.
 
 13.3 Control audio
 Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
@@ -891,6 +901,7 @@ Escape returns from episodes to shows, then actions, then the main menu.
 Control+F searches. Control+Shift+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes subscribed shows.
 Say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action" to move by voice. For podcast help, say "Help with podcasts", or press F1.
 Actions also offer downloads, playback, chapters, and the previous or next episode or show.
+Alt also moves you to the podcasts menu, the actions list. Press Alt again to go back to the results.
 
 16.3 Pause, seek, or move by chapter
 Control+P pauses or resumes audio from any screen in Companion.
@@ -1198,6 +1209,7 @@ To read the whole document, say "Read document", or press Control+Shift+R.
 To reach an end, say "Go to beginning of document" or "Go to end of document", or press Control+Home or Control+End.
 To move to a match, say "Find" followed by the text. Or press Control+F, type the text, and press Enter.
 To move by heading, table, link, or list, say "Next heading" or "Next table", or press H, T, K, or L. Hold Shift to move back. For reader help, say "Help with document reader", or press F1.
+Press Alt to open the document reader menu. It has Read, Move by, and Leave and help.
 
 25.3 Return to your files
 Escape or "Back to files" closes the reader view and returns to the same folder and item. "Main menu" returns to the app menu. You can use Options while reading. Saving Options names the reader when it returns you there.

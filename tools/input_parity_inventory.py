@@ -3,7 +3,7 @@
   python3 tools/input_parity_inventory.py
 
 Menu-driven areas (main menu, Word processor, document menu, File manager,
-Options, web browser menu, media player) are read from the app's own tables
+Options, web browser menu, media player, and the Alt menus of other screens) are read from the app's own tables
 through voice_companion/input_parity.py, so they stay current. The new direct
 keys come from input_parity.SCREEN_KEYS. Everything else is listed by hand
 below; keep it in step with the user guide.
@@ -43,6 +43,8 @@ HAND = [
     ('Start, wake and commands', 'Choose the item you hear', '"That one", "Okay", "Confirm"', 'Enter', 'Both'),
     ('Start, wake and commands', 'Find a menu item by name', 'Say the item name', 'Type its first letter', 'Both'),
     ('Start, wake and commands', 'Return to the main menu', '"Main menu"', 'Escape until the main menu', 'Both'),
+    ('Start, wake and commands', "Open the current screen's menu", '"Email menu", "Notepad menu", "Help menu", ...', 'Alt (Alt again closes it)', 'Added: Alt on Email, drafts, Notepad, web pages, Help, lessons and Document reader'),
+    ('Start, wake and commands', 'Move between radio or podcast actions and results', '"Radio menu", "Podcasts menu", "Results"', 'Alt; Tab', 'Added: Alt'),
     # Help and lessons
     ('Help and lessons', 'Open Help', '"Help"', 'F1 on the main menu; main menu, Help, Enter', 'Added: F1 on the main menu'),
     ('Help and lessons', 'Help for the current screen', '"Help with documents", "Help with email", ...', 'F1', 'Added: F1 on email, notes, web, media, reader and menu screens'),
@@ -254,6 +256,8 @@ def rows():
         if area.startswith('Document: '):
             area = 'Word processor document: ' + area[len('Document: '):]
         status = ADDED.get((area, row['action']), ADDED_AREAS.get(area, 'Both'))
+        if area.startswith('Alt menu, ') and row['keyboard'].startswith('Alt, '):
+            status = 'Added: Alt menu path'
         result.append((area, row['action'], '"' + voice[:1].upper() + voice[1:] + '"', row['keyboard'], status))
     return result + HAND
 
