@@ -1,0 +1,64 @@
+name: Something went wrong
+description: Tell us about a problem in Voice Companion. Plain words are fine.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Say what you did and what Voice Companion said or did. For example, "I said delete message in Yahoo and it said it could not move it."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the app?
+      options:
+        - Documents (word processor)
+        - Email
+        - Web browser
+        - Radio or podcasts
+        - File manager or media player
+        - Notes
+        - Settings or speech
+        - Updates or installing
+        - Somewhere else or not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: input
+    attributes:
+      label: How were you giving commands?
+      options:
+        - Speaking (normal mode)
+        - Speaking (dictation only)
+        - Speaking (commands only)
+        - Keyboard
+        - Both voice and keyboard
+        - Not sure
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Say "What version?" to Voice Companion and type what it answers. Leave blank if you are not sure.
+      placeholder: 0.2.152-test
+  - type: dropdown
+    id: often
+    attributes:
+      label: Does it happen every time?
+      options:
+        - Every time
+        - Sometimes
+        - Only once so far
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Optional. Do not include passwords, email contents, or private information.
