@@ -1,6 +1,6 @@
 # Voice Companion launch checklist
 
-Status as of October 21, 2026 (version 0.2.153-test in pull request #28). Items marked **Will**
+Status as of October 21, 2026 (version 0.2.154-test in progress). Items marked **Will**
 need you or an account only you control; everything else Claude can do in
 pull requests. Update this file as items are finished.
 
