@@ -4,7 +4,7 @@ from pathlib import Path
 from settings_model import SettingsSession, DEFAULTS
 from native_settings import NativeSettings
 
-ACTIONS={'open_notepad':'write a note','add_account':'add account','web_favorites':'list favorites','radio_presets':'list presets','radio_recordings':'list scheduled recordings','podcast_subscriptions':'list subscriptions','check_now':'check for updates','google_contacts':'connect google contacts'}
+ACTIONS={'open_notepad':'write a note','add_account':'add account','web_favorites':'list favorites','radio_presets':'list presets','radio_recordings':'list scheduled recordings','podcast_subscriptions':'list subscriptions','check_now':'check for updates','google_contacts':'connect google contacts','chrome_setup':'set up chrome'}
 
 def read(path,default):
     try:return json.loads(Path(path).read_text(encoding='utf-8'))

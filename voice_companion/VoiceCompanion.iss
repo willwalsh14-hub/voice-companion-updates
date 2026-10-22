@@ -24,6 +24,11 @@ DisableProgramGroupPage=yes
 DisableReadyPage=yes
 DisableFinishedPage=no
 UninstallDisplayIcon={app}\VoiceCompanion.exe
+; Silent updates must not repeat the one-time Chrome setup request.
+UsePreviousTasks=no
+
+[Tasks]
+Name: "setupchrome"; Description: "Set up Chrome and the Voice Companion extension when Voice Companion opens"; Flags: unchecked
 
 [Files]
 Source: "dist\VoiceCompanion\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
@@ -100,6 +105,12 @@ begin
     if not Exec(Diagnostic, '--check-runtime', ExpandConstant('{app}'), SW_HIDE,
       ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
       RaiseException('The installed Voice Companion could not verify its included components. Run Setup again or contact your trainer.');
+    // The app reads this once at its next start and asks before each change.
+    if WizardIsTaskSelected('setupchrome') then
+    begin
+      ForceDirectories(ExpandConstant('{localappdata}\VoiceCompanion'));
+      SaveStringToFile(ExpandConstant('{localappdata}\VoiceCompanion\setup-chrome.request'), 'yes', False);
+    end;
   end;
 end;
 
@@ -110,5 +121,9 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then
+  begin
     RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'VoiceCompanion');
+    // Chrome removes the extension that Chrome setup added once this entry is gone.
+    RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Google\Chrome\Extensions\ijojiipjhcfaajafdbinnbehcenfchcc');
+  end;
 end;
