@@ -945,6 +945,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | do it": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | do not send": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1219,6 +1225,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | flow": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | follow link": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1237,6 +1249,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | frozen": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | get more emails": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
@@ -1250,6 +1268,12 @@
 "screen_after": "awake"
 },
 "awake | gmail": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | go ahead": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -2513,6 +2537,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | question": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | quieter": {
 "said": [
 "Volume 90 percent."
@@ -2670,6 +2700,12 @@
 "screen_after": "awake"
 },
 "awake | repeat": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | repeat that": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -3209,6 +3245,12 @@
 ],
 "screen_after": "media"
 },
+"awake | sure": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | switch to": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -3504,6 +3546,12 @@
 ],
 "screen_after": "web"
 },
+"awake | what": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | what browser am i using": {
 "calls": [
 "call.command('what browser am i using')"
@@ -3735,6 +3783,18 @@
 "awake | yahoo mail": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | yeah": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | yep": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -5181,6 +5241,15 @@
 "Hello world. Second sentence. discard this email"
 ]
 },
+"document | do it": {
+"said": [
+"do it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. do it"
+]
+},
 "document | do not send": {
 "said": [
 "do not send"
@@ -5577,6 +5646,15 @@
 "Hello world. Second sentence. fix the address"
 ]
 },
+"document | flow": {
+"said": [
+"flow"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. flow"
+]
+},
 "document | follow link": {
 "said": [
 "follow link"
@@ -5604,6 +5682,15 @@
 "Hello world. Second sentence. forward message"
 ]
 },
+"document | frozen": {
+"said": [
+"frozen"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. frozen"
+]
+},
 "document | get more emails": {
 "said": [
 "get more emails"
@@ -5629,6 +5716,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. gmail"
+]
+},
+"document | go ahead": {
+"said": [
+"go ahead"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go ahead"
 ]
 },
 "document | go back": {
@@ -7482,6 +7578,15 @@
 "Hello world. Second sentence. provider"
 ]
 },
+"document | question": {
+"said": [
+"question"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. question"
+]
+},
 "document | quieter": {
 "said": [
 "Volume 90 percent."
@@ -7720,6 +7825,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. repeat"
+]
+},
+"document | repeat that": {
+"said": [
+"repeat that"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. repeat that"
 ]
 },
 "document | replace paragraph with New text": {
@@ -8510,6 +8624,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | sure": {
+"said": [
+"sure"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. sure"
+]
+},
 "document | switch to": {
 "said": [
 "switch to"
@@ -8907,6 +9030,15 @@
 "Hello world. Second sentence. web search"
 ]
 },
+"document | what": {
+"said": [
+"what"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. what"
+]
+},
 "document | what browser am i using": {
 "said": [
 "what browser am i using"
@@ -9247,6 +9379,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. yahoo mail"
+]
+},
+"document | yeah": {
+"said": [
+"yeah"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. yeah"
+]
+},
+"document | yep": {
+"said": [
+"yep"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. yep"
 ]
 },
 "document | yes": {
@@ -10830,6 +10980,15 @@
 "Hello world."
 ]
 },
+"email_draft | do it": {
+"said": [
+"do it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. do it"
+]
+},
 "email_draft | do not send": {
 "said": [
 "Sending canceled. The email remains a local draft."
@@ -11228,6 +11387,15 @@
 "Hello world. fix the address"
 ]
 },
+"email_draft | flow": {
+"said": [
+"flow"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. flow"
+]
+},
 "email_draft | follow link": {
 "said": [
 "follow link"
@@ -11255,6 +11423,15 @@
 "Hello world. forward message"
 ]
 },
+"email_draft | frozen": {
+"said": [
+"frozen"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. frozen"
+]
+},
 "email_draft | get more emails": {
 "said": [
 "get more emails"
@@ -11280,6 +11457,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. gmail"
+]
+},
+"email_draft | go ahead": {
+"said": [
+"go ahead"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go ahead"
 ]
 },
 "email_draft | go back": {
@@ -13160,6 +13346,15 @@
 "Hello world. provider"
 ]
 },
+"email_draft | question": {
+"said": [
+"question"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. question"
+]
+},
 "email_draft | quieter": {
 "said": [
 "Volume 90 percent."
@@ -13398,6 +13593,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. repeat"
+]
+},
+"email_draft | repeat that": {
+"said": [
+"repeat that"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. repeat that"
 ]
 },
 "email_draft | replace paragraph with New text": {
@@ -14193,6 +14397,15 @@
 "Hello world."
 ]
 },
+"email_draft | sure": {
+"said": [
+"sure"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. sure"
+]
+},
 "email_draft | switch to": {
 "said": [
 "switch to"
@@ -14590,6 +14803,15 @@
 "Hello world. web search"
 ]
 },
+"email_draft | what": {
+"said": [
+"what"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. what"
+]
+},
 "email_draft | what browser am i using": {
 "said": [
 "what browser am i using"
@@ -14930,6 +15152,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. yahoo mail"
+]
+},
+"email_draft | yeah": {
+"said": [
+"yeah"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. yeah"
+]
+},
+"email_draft | yep": {
+"said": [
+"yep"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. yep"
 ]
 },
 "email_draft | yes": {
@@ -15659,6 +15899,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | do it": {
+"said": [],
+"screen_after": "help"
+},
 "help | do not send": {
 "said": [],
 "screen_after": "help"
@@ -15843,6 +16087,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | flow": {
+"said": [],
+"screen_after": "help"
+},
 "help | follow link": {
 "said": [],
 "screen_after": "help"
@@ -15855,6 +16103,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | frozen": {
+"said": [],
+"screen_after": "help"
+},
 "help | get more emails": {
 "said": [],
 "screen_after": "help"
@@ -15864,6 +16116,10 @@
 "screen_after": "help"
 },
 "help | gmail": {
+"said": [],
+"screen_after": "help"
+},
+"help | go ahead": {
 "said": [],
 "screen_after": "help"
 },
@@ -16755,6 +17011,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | question": {
+"said": [],
+"screen_after": "help"
+},
 "help | quieter": {
 "said": [
 "Volume 90 percent."
@@ -16871,6 +17131,10 @@
 "screen_after": "help"
 },
 "help | repeat": {
+"said": [],
+"screen_after": "help"
+},
+"help | repeat that": {
 "said": [],
 "screen_after": "help"
 },
@@ -17254,6 +17518,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | sure": {
+"said": [],
+"screen_after": "help"
+},
 "help | switch to": {
 "said": [],
 "screen_after": "help"
@@ -17450,6 +17718,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | what": {
+"said": [],
+"screen_after": "help"
+},
 "help | what browser am i using": {
 "said": [],
 "screen_after": "help"
@@ -17613,6 +17885,14 @@
 "screen_after": "help"
 },
 "help | yahoo mail": {
+"said": [],
+"screen_after": "help"
+},
+"help | yeah": {
+"said": [],
+"screen_after": "help"
+},
+"help | yep": {
 "said": [],
 "screen_after": "help"
 },
@@ -18921,6 +19201,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | do it": {
+"calls": [
+"call.process('do it')"
+],
+"said": [
+"session handled: do it"
+],
+"screen_after": "mailbox"
+},
 "mailbox | do not send": {
 "calls": [
 "call.process('do not send')"
@@ -19294,6 +19583,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | flow": {
+"calls": [
+"call.process('flow')"
+],
+"said": [
+"session handled: flow"
+],
+"screen_after": "mailbox"
+},
 "mailbox | follow link": {
 "calls": [
 "call.process('follow link')"
@@ -19325,6 +19623,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | frozen": {
+"calls": [
+"call.process('frozen')"
+],
+"said": [
+"session handled: frozen"
+],
+"screen_after": "mailbox"
+},
 "mailbox | get more emails": {
 "calls": [
 "call.process('get more emails')"
@@ -19349,6 +19656,15 @@
 ],
 "said": [
 "session handled: gmail"
+],
+"screen_after": "mailbox"
+},
+"mailbox | go ahead": {
+"calls": [
+"call.process('go ahead')"
+],
+"said": [
+"session handled: go ahead"
 ],
 "screen_after": "mailbox"
 },
@@ -21013,6 +21329,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | question": {
+"calls": [
+"call.process('question')"
+],
+"said": [
+"session handled: question"
+],
+"screen_after": "mailbox"
+},
 "mailbox | quieter": {
 "said": [
 "Volume 90 percent."
@@ -21220,6 +21545,15 @@
 ],
 "said": [
 "session handled: repeat"
+],
+"screen_after": "mailbox"
+},
+"mailbox | repeat that": {
+"calls": [
+"call.process('repeat that')"
+],
+"said": [
+"session handled: repeat that"
 ],
 "screen_after": "mailbox"
 },
@@ -21953,6 +22287,15 @@
 ],
 "screen_after": "media"
 },
+"mailbox | sure": {
+"calls": [
+"call.process('sure')"
+],
+"said": [
+"session handled: sure"
+],
+"screen_after": "mailbox"
+},
 "mailbox | switch to": {
 "calls": [
 "call.process('switch to')"
@@ -22293,6 +22636,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | what": {
+"calls": [
+"call.process('what')"
+],
+"said": [
+"session handled: what"
+],
+"screen_after": "mailbox"
+},
 "mailbox | what browser am i using": {
 "calls": [
 "call.process('what browser am i using')"
@@ -22568,6 +22920,24 @@
 ],
 "said": [
 "session handled: yahoo mail"
+],
+"screen_after": "mailbox"
+},
+"mailbox | yeah": {
+"calls": [
+"call.process('yeah')"
+],
+"said": [
+"session handled: yeah"
+],
+"screen_after": "mailbox"
+},
+"mailbox | yep": {
+"calls": [
+"call.process('yep')"
+],
+"said": [
+"session handled: yep"
 ],
 "screen_after": "mailbox"
 },
@@ -23572,6 +23942,12 @@
 ],
 "screen_after": "note"
 },
+"note | do it": {
+"said": [
+"do it"
+],
+"screen_after": "note"
+},
 "note | do not send": {
 "said": [
 "do not send"
@@ -23840,6 +24216,12 @@
 ],
 "screen_after": "note"
 },
+"note | flow": {
+"said": [
+"flow"
+],
+"screen_after": "note"
+},
 "note | follow link": {
 "said": [
 "follow link"
@@ -23858,6 +24240,12 @@
 ],
 "screen_after": "note"
 },
+"note | frozen": {
+"said": [
+"frozen"
+],
+"screen_after": "note"
+},
 "note | get more emails": {
 "said": [
 "get more emails"
@@ -23873,6 +24261,12 @@
 "note | gmail": {
 "said": [
 "gmail"
+],
+"screen_after": "note"
+},
+"note | go ahead": {
+"said": [
+"go ahead"
 ],
 "screen_after": "note"
 },
@@ -25113,6 +25507,12 @@
 ],
 "screen_after": "note"
 },
+"note | question": {
+"said": [
+"question"
+],
+"screen_after": "note"
+},
 "note | quieter": {
 "said": [
 "Volume 90 percent."
@@ -25272,6 +25672,12 @@
 "note | repeat": {
 "said": [
 "repeat"
+],
+"screen_after": "note"
+},
+"note | repeat that": {
+"said": [
+"repeat that"
 ],
 "screen_after": "note"
 },
@@ -25800,6 +26206,12 @@
 ],
 "screen_after": "media"
 },
+"note | sure": {
+"said": [
+"sure"
+],
+"screen_after": "note"
+},
 "note | switch to": {
 "said": [
 "switch to"
@@ -26065,6 +26477,12 @@
 ],
 "screen_after": "note"
 },
+"note | what": {
+"said": [
+"what"
+],
+"screen_after": "note"
+},
 "note | what browser am i using": {
 "said": [
 "what browser am i using"
@@ -26290,6 +26708,18 @@
 "note | yahoo mail": {
 "said": [
 "yahoo mail"
+],
+"screen_after": "note"
+},
+"note | yeah": {
+"said": [
+"yeah"
+],
+"screen_after": "note"
+},
+"note | yep": {
+"said": [
+"yep"
 ],
 "screen_after": "note"
 },
@@ -27740,6 +28170,16 @@
 ],
 "screen_after": "web"
 },
+"web | do it": {
+"calls": [
+"call.command('do it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: do it"
+],
+"screen_after": "web"
+},
 "web | do not send": {
 "calls": [
 "call.command('do not send')",
@@ -28156,6 +28596,16 @@
 ],
 "screen_after": "web"
 },
+"web | flow": {
+"calls": [
+"call.command('flow')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: flow"
+],
+"screen_after": "web"
+},
 "web | follow link": {
 "calls": [
 "call.command('follow link')",
@@ -28186,6 +28636,16 @@
 ],
 "screen_after": "web"
 },
+"web | frozen": {
+"calls": [
+"call.command('frozen')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: frozen"
+],
+"screen_after": "web"
+},
 "web | get more emails": {
 "calls": [
 "call.command('get more emails')",
@@ -28213,6 +28673,16 @@
 ],
 "said": [
 "session handled: gmail"
+],
+"screen_after": "web"
+},
+"web | go ahead": {
+"calls": [
+"call.command('go ahead')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go ahead"
 ],
 "screen_after": "web"
 },
@@ -30072,6 +30542,16 @@
 ],
 "screen_after": "web"
 },
+"web | question": {
+"calls": [
+"call.command('question')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: question"
+],
+"screen_after": "web"
+},
 "web | quieter": {
 "said": [
 "Volume 90 percent."
@@ -30303,6 +30783,16 @@
 ],
 "said": [
 "session handled: repeat"
+],
+"screen_after": "web"
+},
+"web | repeat that": {
+"calls": [
+"call.command('repeat that')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: repeat that"
 ],
 "screen_after": "web"
 },
@@ -31090,6 +31580,16 @@
 ],
 "screen_after": "media"
 },
+"web | sure": {
+"calls": [
+"call.command('sure')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: sure"
+],
+"screen_after": "web"
+},
 "web | switch to": {
 "calls": [
 "call.command('switch to')",
@@ -31448,6 +31948,16 @@
 ],
 "screen_after": "search"
 },
+"web | what": {
+"calls": [
+"call.command('what')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: what"
+],
+"screen_after": "web"
+},
 "web | what browser am i using": {
 "calls": [
 "call.command('what browser am i using')",
@@ -31737,6 +32247,26 @@
 ],
 "said": [
 "session handled: yahoo mail"
+],
+"screen_after": "web"
+},
+"web | yeah": {
+"calls": [
+"call.command('yeah')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: yeah"
+],
+"screen_after": "web"
+},
+"web | yep": {
+"calls": [
+"call.command('yep')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: yep"
 ],
 "screen_after": "web"
 },
