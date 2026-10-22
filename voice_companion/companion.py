@@ -231,6 +231,7 @@ def app_context(mode):
         context['menu_letters']=False
         return context
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
+    if SCREEN_MENU is not None and SCREEN_MENU.is_open(logical):context['screen_menu']=True
     if logical=='files' and FILE_MANAGER:
         context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0] in ('rename','search','search all'))
         if context['file_name_input']:
@@ -610,6 +611,8 @@ def _navigation_key(key,mode):
     interrupt_speech()
     if key=='Ctrl+P':return 'toggle audio'
     if key=='Control':return None
+    menu_key=screen_menu().keyboard(key,mode)
+    if menu_key is not None:return menu_key
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
     from input_parity import screen_command
@@ -736,6 +739,14 @@ def apply_settings(values):
 FILE_MANAGER=None
 FILE_READER=None
 TASK_NAV=None
+SCREEN_MENU=None
+
+def screen_menu():
+    """The Alt menu of the current screen (screen_menus.py)."""
+    global SCREEN_MENU
+    from screen_menus import ScreenMenu
+    if SCREEN_MENU is None or SCREEN_MENU.app is not sys.modules[__name__]:SCREEN_MENU=ScreenMenu(sys.modules[__name__])
+    return SCREEN_MENU
 
 def task_navigation():
     global TASK_NAV
@@ -1769,6 +1780,8 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
     try:
+        menu_result=screen_menu().handle(text,mode)
+        if menu_result is not None:return menu_result
         task_result=task_navigation().handle(text,mode)
         if task_result is not None:return task_result
     except (ValueError,OSError) as exc:
@@ -2225,7 +2238,8 @@ def _handle(text, mode, typed=False):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
         if command in ('main menu','back to main menu'):
-            announce_main_menu();return 'awake'
+            # handle() announces the main menu once when the screen changes.
+            return 'awake'
         request=reading_request(command)
         structure_request=re.fullmatch(r'(next|previous) (heading|table|row|cell|list|list item|link|footnote|bookmark)',command)
         if structure_request:
