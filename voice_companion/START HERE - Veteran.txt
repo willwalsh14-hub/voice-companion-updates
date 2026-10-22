@@ -463,11 +463,12 @@ The same selection and editing rules apply to the current note. Keep a saved cop
 8.1 Connect an email account
 Connect an account before relying on Companion to send or organize email.
 1. Say "Add account".
-2. Choose Gmail, Outlook or Exchange, or Yahoo as your email service.
+2. Choose Gmail, Outlook or Exchange, Yahoo, or Thunderbird as your email service.
 3. Follow the sign-in prompts. Ask your helper if you need help with the sign-in page.
 4. Open the inbox and send a test message to someone you know.
 Google and Microsoft use their usual sign-in pages. Work or school accounts may need your organization's approval.
 Yahoo requires an app password. You create this password in your Yahoo account settings for use with an email app.
+Thunderbird uses the email accounts already set up in the Thunderbird program. Your helper sets this up once. Keep Thunderbird open while you use email in Companion.
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
 
@@ -965,8 +966,8 @@ Automatic page reading controls whether new pages start reading aloud. It is on 
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
 HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
 The Guided browser setting lets you choose webview2, Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
-Choose webview2 to try embedded Edge. You can also say "Use embedded Edge". It opens a browser window owned by Companion and does not need the Chrome extension.
-Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, ask your helper to check that component. Some sign-in pages and sites that need a full browser may not work in this window. You can choose another browser in these options.
+Embedded Edge, shown as webview2, is the usual choice. You can also say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
+Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, Companion uses its own Firefox and tells you. Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Firefox", or use your regular browser with the extension.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.
 
@@ -1095,6 +1096,7 @@ The app skips history entries with private sign-in data. It also removes sign-in
 23. REGULAR BROWSER CONNECTION
 
 23.1 Set up the extension
+You need this extension only to use your own Chrome or Edge, with the sites you are already signed in to. Embedded Edge works without it.
 1. Ask your trainer to open Browser Connection Setup in the Voice Companion Start menu folder. Set up the included Chrome or Edge extension once. The installer includes the local host. Python is not needed.
 2. If you used the earlier test connection, reload the extension on your browser's Extensions page after this update. Its name and ID stay the same.
 3. Open Companion. Open a website in Chrome or Edge. The browser links on its own. No Connect button is needed for each site or tab. Return to Companion.
