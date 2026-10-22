@@ -49,9 +49,11 @@ Source: "dist\VoiceCompanion\Voice Companion Release Notes.brf"; DestDir: "{user
 [Registry]
 Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.voicecompanion.browser"; ValueType: string; ValueName: ""; ValueData: "{app}\browser-native-host.json"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\com.voicecompanion.browser"; ValueType: string; ValueName: ""; ValueData: "{app}\browser-native-host.json"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\com.voicecompanion.mail"; ValueType: string; ValueName: ""; ValueData: "{app}\mail-native-host.json"; Flags: uninsdeletekey
 
 [UninstallDelete]
 Type: files; Name: "{app}\browser-native-host.json"
+Type: files; Name: "{app}\mail-native-host.json"
 
 [Icons]
 Name: "{group}\Voice Companion"; Filename: "{app}\VoiceCompanion.exe"

@@ -141,6 +141,9 @@ def submit(provider, draft, access_token, opener=secure_service_open, sender='')
                 'microsoft 365': microsoft_request, 'exchange online': microsoft_request}
     if provider == 'yahoo':
         return yahoo_submit(draft, sender, access_token)
+    if provider == 'thunderbird':
+        from thunderbird_mailbox import submit as thunderbird_submit
+        return thunderbird_submit(draft, access_token)
     if provider not in builders:
         raise DeliveryError('This email provider is not connected.')
     outgoing = builders[provider](draft, access_token)

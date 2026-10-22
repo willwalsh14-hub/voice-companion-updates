@@ -133,6 +133,8 @@ web_session = None
 REGULAR_BROWSER = None
 account_setup = False
 ACCOUNT_MENU_INDEX = None
+# Spoken name and account type, in menu order. Thunderbird uses its own sign-in.
+ACCOUNT_TYPES = (('Gmail', 'gmail'), ('Outlook or Exchange', 'outlook'), ('Yahoo', 'yahoo'), ('Thunderbird', 'thunderbird'))
 help_session = None
 help_return_mode = 'awake'
 TEXT_MODE = False
@@ -489,7 +491,7 @@ def menu_state(mode):
         return (names, getattr(owner,attribute) if current is None else current,
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
-    if account_setup:return state(['Gmail','Outlook or Exchange','Yahoo'],module,'ACCOUNT_MENU_INDEX')
+    if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
     if mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
@@ -647,12 +649,12 @@ def _navigation_key(key,mode):
         if mode=='web' and web_session and not web_session.list_focus and key[-1] in __import__('web_browse').QUICK_KEYS:return 'web key Quick:'+key[-1]
         choose_menu_letter(key[-1],mode);return None
     if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
-        return ('gmail','outlook','yahoo')[ACCOUNT_MENU_INDEX]
+        return ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][1]
     if account_setup and key in ('Up','Down','Left','Right'):
         step=1 if key in ('Down','Right') else -1
-        if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<3:speak('Start of list.' if step<0 else 'End of list.');return None
-        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,3)
-        speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
+        if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<len(ACCOUNT_TYPES):speak('Start of list.' if step<0 else 'End of list.');return None
+        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,len(ACCOUNT_TYPES))
+        speak(announce_item(ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][0],ACCOUNT_MENU_INDEX,len(ACCOUNT_TYPES)));return None
     if mode=='tutorial' and tutorial_session:
         if key=='Escape':return 'go back'
         if key=='Enter':return 'that one' if tutorial_session.menu() else 'next lesson'
@@ -2313,15 +2315,16 @@ def _handle(text, mode, typed=False):
     store = ProtectedStore(APP)
     direct_connection = re.fullmatch(
         r'(?:connect|add|set up|setup|sign in to|log in to)\s+(?:my\s+|an?\s+)?'
-        r'(gmail|google mail|outlook|microsoft 365|exchange|yahoo)(?:\s+(?:email|mail|account))?', command)
+        r'(gmail|google mail|outlook|microsoft 365|exchange|yahoo|thunderbird)(?:\s+(?:email|mail|account))?', command)
     if direct_connection:
         account_setup = True
         selected_type = direct_connection[1]
         command = ('gmail' if selected_type in ('gmail','google mail') else
-                   'outlook' if selected_type in ('outlook','microsoft 365','exchange') else 'yahoo')
+                   'outlook' if selected_type in ('outlook','microsoft 365','exchange') else
+                   'thunderbird' if selected_type == 'thunderbird' else 'yahoo')
     if command in ('add account', 'add another account', 'add email account', 'connect email account', 'set up email'):
         account_setup = True
-        speak('Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details.')
+        speak('Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird.')
         return mode
     if account_setup:
         if command in ('cancel', 'cancel account setup'):
@@ -2330,9 +2333,10 @@ def _handle(text, mode, typed=False):
             return mode
         provider = ('gmail' if command in ('gmail','google','google mail') else
                     'outlook' if command in ('outlook','microsoft','microsoft 365','exchange','work email') else
-                    'yahoo' if command in ('yahoo','yahoo mail') else None)
+                    'yahoo' if command in ('yahoo','yahoo mail') else
+                    'thunderbird' if command in ('thunderbird','thunderbird mail','mozilla thunderbird') else None)
         if not provider:
-            speak('Say Gmail, Outlook or Exchange, Yahoo, or cancel.')
+            speak('Say Gmail, Outlook or Exchange, Yahoo, Thunderbird, or cancel.')
             return mode
         account_setup = False
         speak('Opening ' + provider.capitalize() + ' account setup. A trusted person may complete the private sign-in. Please wait for the result.')
@@ -3564,6 +3568,11 @@ if __name__ == '__main__':
                 try:
                     from browser_cdp_relay import prepare
                     prepare(APP)
+                except OSError:pass
+                try:
+                    # Thunderbird's mail add-on connects here when Thunderbird is open.
+                    from thunderbird_bridge import prepare as prepare_mail
+                    prepare_mail(APP)
                 except OSError:pass
         except Exception:
             APP_WINDOW = None

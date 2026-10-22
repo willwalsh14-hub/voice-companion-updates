@@ -144,13 +144,13 @@
 },
 "awake | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "awake"
 },
 "awake | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "awake"
 },
@@ -162,7 +162,7 @@
 },
 "awake | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "awake"
 },
@@ -731,7 +731,7 @@
 },
 "awake | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "awake"
 },
@@ -1657,6 +1657,12 @@
 "awake | more emails": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | mozilla thunderbird": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -2853,7 +2859,7 @@
 },
 "awake | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "awake"
 },
@@ -3093,6 +3099,18 @@
 "awake | that one": {
 "said": [
 "Say next or previous to choose an option."
+],
+"screen_after": "awake"
+},
+"awake | thunderbird": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | thunderbird mail": {
+"said": [
+"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
 ],
 "screen_after": "awake"
 },
@@ -3779,7 +3797,7 @@
 },
 "document | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "document",
 "text": [
@@ -3788,7 +3806,7 @@
 },
 "document | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "document",
 "text": [
@@ -3806,7 +3824,7 @@
 },
 "document | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "document",
 "text": [
@@ -4652,7 +4670,7 @@
 },
 "document | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "document",
 "text": [
@@ -6013,6 +6031,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. more emails"
+]
+},
+"document | mozilla thunderbird": {
+"said": [
+"mozilla thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. mozilla thunderbird"
 ]
 },
 "document | my documents": {
@@ -7764,7 +7791,7 @@
 },
 "document | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "document",
 "text": [
@@ -8128,6 +8155,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. that one"
+]
+},
+"document | thunderbird": {
+"said": [
+"thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. thunderbird"
+]
+},
+"document | thunderbird mail": {
+"said": [
+"thunderbird mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. thunderbird mail"
 ]
 },
 "document | toggle audio": {
@@ -8996,7 +9041,7 @@
 },
 "email_draft | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -9005,7 +9050,7 @@
 },
 "email_draft | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -9023,7 +9068,7 @@
 },
 "email_draft | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -9956,7 +10001,7 @@
 },
 "email_draft | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -11366,6 +11411,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. more emails"
+]
+},
+"email_draft | mozilla thunderbird": {
+"said": [
+"mozilla thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. mozilla thunderbird"
 ]
 },
 "email_draft | my documents": {
@@ -13132,7 +13186,7 @@
 },
 "email_draft | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -13496,6 +13550,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. that one"
+]
+},
+"email_draft | thunderbird": {
+"said": [
+"thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. thunderbird"
+]
+},
+"email_draft | thunderbird mail": {
+"said": [
+"thunderbird mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. thunderbird mail"
 ]
 },
 "email_draft | toggle audio": {
@@ -15310,6 +15382,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | mozilla thunderbird": {
+"said": [],
+"screen_after": "help"
+},
 "help | my documents": {
 "said": [],
 "screen_after": "help"
@@ -16340,6 +16416,14 @@
 ],
 "screen_after": "help"
 },
+"help | thunderbird": {
+"said": [],
+"screen_after": "help"
+},
+"help | thunderbird mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | toggle audio": {
 "said": [
 "No audio is playing. Open a media file, station or episode first."
@@ -16837,13 +16921,13 @@
 },
 "mailbox | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "mailbox"
 },
 "mailbox | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "mailbox"
 },
@@ -16858,7 +16942,7 @@
 },
 "mailbox | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "mailbox"
 },
@@ -17646,7 +17730,7 @@
 },
 "mailbox | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "mailbox"
 },
@@ -18898,6 +18982,15 @@
 ],
 "said": [
 "session handled: more emails"
+],
+"screen_after": "mailbox"
+},
+"mailbox | mozilla thunderbird": {
+"calls": [
+"call.process('mozilla thunderbird')"
+],
+"said": [
+"session handled: mozilla thunderbird"
 ],
 "screen_after": "mailbox"
 },
@@ -20494,7 +20587,7 @@
 },
 "mailbox | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "mailbox"
 },
@@ -20794,6 +20887,24 @@
 ],
 "said": [
 "session handled: that one"
+],
+"screen_after": "mailbox"
+},
+"mailbox | thunderbird": {
+"calls": [
+"call.process('thunderbird')"
+],
+"said": [
+"session handled: thunderbird"
+],
+"screen_after": "mailbox"
+},
+"mailbox | thunderbird mail": {
+"calls": [
+"call.process('thunderbird mail')"
+],
+"said": [
+"session handled: thunderbird mail"
 ],
 "screen_after": "mailbox"
 },
@@ -21491,13 +21602,13 @@
 },
 "note | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "note"
 },
 "note | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "note"
 },
@@ -21509,7 +21620,7 @@
 },
 "note | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "note"
 },
@@ -22075,7 +22186,7 @@
 },
 "note | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "note"
 },
@@ -22988,6 +23099,12 @@
 "note | more emails": {
 "said": [
 "more emails"
+],
+"screen_after": "note"
+},
+"note | mozilla thunderbird": {
+"said": [
+"mozilla thunderbird"
 ],
 "screen_after": "note"
 },
@@ -24161,7 +24278,7 @@
 },
 "note | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "note"
 },
@@ -24401,6 +24518,18 @@
 "note | that one": {
 "said": [
 "that one"
+],
+"screen_after": "note"
+},
+"note | thunderbird": {
+"said": [
+"thunderbird"
+],
+"screen_after": "note"
+},
+"note | thunderbird mail": {
+"said": [
+"thunderbird mail"
 ],
 "screen_after": "note"
 },
@@ -25026,13 +25155,13 @@
 },
 "web | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "web"
 },
 "web | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "web"
 },
@@ -25048,7 +25177,7 @@
 },
 "web | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "web"
 },
@@ -25929,7 +26058,7 @@
 },
 "web | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "web"
 },
@@ -27321,6 +27450,16 @@
 ],
 "said": [
 "session handled: more emails"
+],
+"screen_after": "web"
+},
+"web | mozilla thunderbird": {
+"calls": [
+"call.command('mozilla thunderbird')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: mozilla thunderbird"
 ],
 "screen_after": "web"
 },
@@ -29061,7 +29200,7 @@
 },
 "web | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details."
+"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
 ],
 "screen_after": "web"
 },
@@ -29381,6 +29520,26 @@
 ],
 "said": [
 "session handled: that one"
+],
+"screen_after": "web"
+},
+"web | thunderbird": {
+"calls": [
+"call.command('thunderbird')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: thunderbird"
+],
+"screen_after": "web"
+},
+"web | thunderbird mail": {
+"calls": [
+"call.command('thunderbird mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: thunderbird mail"
 ],
 "screen_after": "web"
 },

@@ -66,6 +66,9 @@ class MailSession:
         address, token = account_token(self.provider, self.folder)
         if self.provider == 'yahoo':
             return YahooMailbox(address, token)
+        if self.provider == 'thunderbird':
+            from thunderbird_mailbox import ThunderbirdMailbox
+            return ThunderbirdMailbox(address, token)
         return self.client_factory(self.provider, token)
 
     def list_folders(self):

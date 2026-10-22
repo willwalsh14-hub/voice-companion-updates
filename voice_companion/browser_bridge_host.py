@@ -99,6 +99,9 @@ def register():
                 'allowed_origins':['chrome-extension://' + item + '/'
                                    for item in (identity, CHROME_STORE_EXTENSION_ID)]}
     (folder / 'browser-native-host.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+    # Thunderbird starts the same host for the mail connection add-on.
+    from thunderbird_bridge import register as register_mail
+    register_mail(folder, Path(sys.executable).resolve())
 
 
 def main():
@@ -124,6 +127,10 @@ def main():
             if message.get('protocol') == 2 and message.get('command') == 'cdp':
                 from browser_cdp_relay import native_stream
                 native_stream(message, sys.stdin.buffer, sys.stdout.buffer)
+                return
+            if message.get('protocol') == 3 and message.get('command') == 'mail':
+                from thunderbird_bridge import native_stream as mail_stream
+                mail_stream(message, sys.stdin.buffer, sys.stdout.buffer)
                 return
             # Synchronous speech keeps the process alive until speech ends.
             # No text from the page is ever evaluated as a command.

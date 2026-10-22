@@ -32,6 +32,8 @@ jobs:
           node-version: '22'
       - name: Check experimental regular-browser message handling
         run: node ./voice_companion/regular_browser_extension/test-worker.cjs
+      - name: Check Thunderbird mail add-on
+        run: node ./voice_companion/thunderbird_mail_extension/test-bridge.cjs
       - name: Install installer compiler
         shell: pwsh
         run: |
