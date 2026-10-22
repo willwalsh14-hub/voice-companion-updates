@@ -34,8 +34,8 @@ pull requests. Update this file as items are finished.
       registration so users do not see an "unverified" warning.
 - [x] **Browser extension:** approved and live on the Chrome Web Store
       (version 0.4.0, October 17, 2026).
-- [ ] **Will:** upload extension 0.4.1 (shipped in app 0.2.152-test) to the
-      Chrome Web Store. From 0.2.153 embedded Edge is the default browser and
+- [x] **Will:** upload extension 0.4.1 (shipped in app 0.2.152-test) to the
+      Chrome Web Store. Submitted for review October 21, 2026. From 0.2.153 embedded Edge is the default browser and
       does not need the extension; the extension stays for people who want
       their own Chrome or Edge, and for sites that need Google sign-in.
 - [ ] **Will or a tester:** try Thunderbird email on a real PC: install
