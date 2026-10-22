@@ -613,7 +613,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Choice box options | "Next option", "First option", "Select option ..." | Arrows, Home, End, first letter | Both |
 | Combo box suggestions | "Next suggestion", "Previous suggestion" | Down Arrow, Up Arrow | Both |
 | Fill out a form | "Fill out this form" | Tab through the fields and type each answer | Both |
-| Review the answers | "Review form" | F8 lists the fields and their answers | Added: F8 |
+| Review the answers | "Review form" | F8 opens the field list; Tab through the fields to hear each answer | Added: F8 |
 | Submit | "Review and submit form" | Tab to the Submit button, Enter | Both |
 | Read a table | "Next row", "Previous column", "First row", "Last column" | Ctrl+Alt+arrows, Ctrl+Alt+Home/End/Page Up/Page Down | Both |
 

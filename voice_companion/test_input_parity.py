@@ -93,16 +93,20 @@ class ScreenKeyTableTests(unittest.TestCase):
         self.assertEqual(screen_key('email_draft','s',4,{},email_field='subject'),'Ctrl+S')
 
     def test_guide_gives_the_spoken_command_and_the_key_for_each_new_key(self):
-        guide=GUIDE.read_text(encoding='utf-8')
-        names={'Next':'Page Down','Prior':'Page Up'}
+        """Each key appears in the guide on the same line as the spoken command it matches."""
+        lines=GUIDE.read_text(encoding='utf-8').casefold().splitlines()
+        names={'Next':'Page Down','Prior':'Page Up','Ctrl+Down':'Ctrl+Down Arrow','Ctrl+Up':'Ctrl+Up Arrow'}
         for mode,keys in SCREEN_KEYS.items():
             for key,command in keys.items():
                 with self.subTest(mode=mode,key=key):
-                    written=names.get(key,key)
-                    self.assertTrue(written in guide or written.replace('Ctrl+','Control+') in guide,written)
+                    written=names.get(key,key).replace('Ctrl+','Control+').casefold()
+                    phrase=command.replace('{value}','').strip()
+                    self.assertTrue(any(written in line and phrase in line for line in lines),(written,phrase))
         for phrase in ('Save note','Save draft','Next messages','Previous messages','Message details','Audio tutorial',
                        'Go to start of line','Go to end of line','Page down','Page up'):
-            self.assertIn(phrase.lower(),guide.lower(),phrase)
+            self.assertIn(phrase.casefold(),'\n'.join(lines),phrase)
+        # One spelling for keys, as speech reads it.
+        self.assertNotIn('ctrl+','\n'.join(lines))
 
 
 class ScreenKeyEffectTests(unittest.TestCase):
