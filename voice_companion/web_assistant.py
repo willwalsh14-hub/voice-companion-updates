@@ -238,7 +238,7 @@ class BrowserBackend:
         stamp['frame_states']=[];stamp['frame_identity']=[]
         for frame in self.page.frames[1:]:
             try:
-                if not frame.frame_element().is_visible():continue
+                if _frame_shown(frame) is None:continue
                 state=frame.evaluate(DOCUMENT_STAMP)
                 stamp['frame_states'].append({key:state.get(key) for key in ('url','epoch','revision','ready','busy')})
                 stamp['frame_identity'].append((state.get('url'),state.get('epoch')))
@@ -363,9 +363,8 @@ class BrowserBackend:
             if frame == self.page.main_frame: continue
             if frame.parent_frame not in active_frames:continue
             try:
-                frame_element=frame.frame_element()
-                if not frame_element.is_visible() or frame_element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):continue
-                frame_key=frame_element.get_attribute('data-voice-companion-key')
+                frame_key=_frame_shown(frame,readable=True)
+                if frame_key is None:continue
                 parent_index=self.page.frames.index(frame.parent_frame) if frame.parent_frame!=self.page.main_frame else None
                 container=next((e for e in result.get('elements',[]) if e.get('role')=='frame' and e.get('key')==frame_key and e.get('frame_index')==parent_index),None)
                 if container is None:continue
@@ -2381,6 +2380,24 @@ class WebSession:
                 if not result.startswith('No editable text field'): return result
             except Exception: pass
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
+
+def _frame_shown(frame,readable=False):
+    """Whether a frame's element is shown; with readable, its key unless hidden from readers.
+
+    Each frame_element() call holds the element in the page until released.
+    Checked every 0.3 seconds on pages with ad frames, unreleased handles grew
+    without limit, in the page and in the driver.
+    """
+    element=frame.frame_element()
+    try:
+        if not element.is_visible():return None
+        if not readable:return ''
+        if element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):return None
+        return element.get_attribute('data-voice-companion-key')
+    finally:
+        try:element.dispose()
+        except Exception:pass
+
 
 SNAPSHOT_AS_TEXT="()=>JSON.stringify((/*SNAPSHOT*/)(),(key,value)=>value===undefined?null:value)"
 

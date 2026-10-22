@@ -228,6 +228,21 @@ class BusyPageTests(unittest.TestCase):
         self.assertIsInstance(largest, str)
         self.assertIn('Like 0', snapshot['text'])
 
+    def test_change_checks_on_a_page_with_frames_do_not_grow_memory(self):
+        self.context.route('https://frames.fixture.test/**', lambda route: route.fulfill(content_type='text/html', body='<p>Ad text</p>'))
+        self.page.set_content('<p>Video</p><iframe src="https://frames.fixture.test/a"></iframe><iframe src="https://frames.fixture.test/b"></iframe>')
+        self.page.wait_for_function('document.querySelectorAll("iframe").length===2')
+        self.page.wait_for_timeout(300)
+        objects = getattr(getattr(self.page, '_impl_obj', None), '_connection', None)
+        if objects is None or not hasattr(objects, '_objects'): self.skipTest('Driver object table is not available.')
+        self.backend.document_stamp(); self.backend.snapshot()
+        before = len(objects._objects)
+        for _ in range(40): self.backend.document_stamp()
+        for _ in range(5): self.backend.snapshot()
+        self.assertEqual(len(self.backend.document_stamp()['frame_states']), 2)
+        # Each check used to leave one frame element behind per frame.
+        self.assertLess(len(objects._objects) - before, 10)
+
     def test_moving_progress_bar_is_not_a_page_change(self):
         self.load(MOTION)
         first = self.backend.document_stamp(); self.page.wait_for_timeout(400)
