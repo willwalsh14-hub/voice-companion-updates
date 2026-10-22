@@ -6,6 +6,7 @@ entered by a helper, never the normal account password.
 """
 from network_security import secure_service_open
 import json
+import os
 import hashlib
 import sys
 from pathlib import Path
@@ -233,6 +234,22 @@ class ProtectedStore:
             raise AccountError('Choose the account by its address before disconnecting.')
 
 
+GMAIL_SIGN_IN_SECONDS = 300
+
+
+def _gmail_sign_in_problem(exc):
+    """A plain sentence for a Gmail sign-in that did not finish."""
+    again = ' Say add account and choose Gmail to try again.'
+    if exc is None or isinstance(exc, AttributeError):
+        # No answer from the browser in time (the library has no address to read).
+        return 'Gmail sign-in took too long, so it was stopped.' + again
+    if getattr(exc, 'error', '') == 'access_denied' or 'access_denied' in str(exc):
+        return 'You did not allow Voice Companion to use this Gmail account.' + again
+    if isinstance(exc, OSError):
+        return 'Gmail sign-in could not open or reach the sign-in page. Check the internet connection.' + again
+    return 'Gmail sign-in did not finish.' + again
+
+
 def gmail_connect(store, client_file):
     path = Path(client_file)
     if not path.is_file():
@@ -241,11 +258,28 @@ def gmail_connect(store, client_file):
     config = json.loads(path.read_text(encoding='utf-8'))
     if 'installed' not in config:
         raise AccountError('A Google desktop app registration is required.')
-    credentials = InstalledAppFlow.from_client_config(config, GMAIL_SCOPES).run_local_server(port=0)
-    from google.auth.transport.requests import Request
+    # Google may grant fewer permissions when a box is left unticked. Without this,
+    # oauthlib stops with a technical "Scope has changed" error; the check below
+    # explains it instead.
+    os.environ.setdefault('OAUTHLIB_RELAX_TOKEN_SCOPE', '1')
+    try:
+        credentials = InstalledAppFlow.from_client_config(config, GMAIL_SCOPES).run_local_server(
+            port=0, timeout_seconds=GMAIL_SIGN_IN_SECONDS, authorization_prompt_message='',
+            success_message='Gmail sign-in is complete. Close this window and go back to Voice Companion.')
+    except Exception as exc:
+        raise AccountError(_gmail_sign_in_problem(exc)) from exc
+    if credentials is None:
+        raise AccountError(_gmail_sign_in_problem(None))
+    granted = getattr(credentials, 'granted_scopes', None)
+    if isinstance(granted, str): granted = granted.split()
+    if granted is not None and not {'https://www.googleapis.com/auth/gmail.send',
+                                    'https://www.googleapis.com/auth/gmail.modify'}.issubset(set(granted)):
+        raise AccountError('Google did not give Voice Companion permission to read and send your mail. '
+                           'Say add account, choose Gmail, and sign in again. On the Google page, check every box, then choose Continue.')
     from urllib import request
     # Identify the signed-in account rather than trusting a spoken label.
     if not credentials.valid and credentials.refresh_token:
+        from google.auth.transport.requests import Request
         credentials.refresh(Request())
     if not credentials.valid:
         raise AccountError('Gmail sign-in did not finish.')
