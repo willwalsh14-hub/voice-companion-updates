@@ -236,6 +236,14 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))
         self.wait(lambda:('keyboard','Doc:PreviousCell') in self.window.commands.queue)
 
+    def test_notepad_ctrl_o_lists_notes_without_typing_a_letter(self):
+        self.window.set_context(dict(mode='note',source=None,text='',caret=0,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='note')
+        self.call(lambda:self.window.typed.insert(0,'Buy'))
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='o',state=4))
+        self.wait(lambda:('keyboard','Ctrl+O') in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.typed.get(),'Buy'))
+
     def test_file_manager_ctrl_d_replaces_old_drive_and_main_shortcuts(self):
         self.window.set_context(dict(mode='files',source=None,text='',file_items=['C drive'],file_index=0,file_selected_indices=[],ack=0,focus=True))
         self.wait(lambda:self.window.context.get('mode')=='files')

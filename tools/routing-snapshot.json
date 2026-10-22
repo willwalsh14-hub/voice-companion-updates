@@ -851,7 +851,7 @@
 },
 "awake | dictate": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -1073,7 +1073,7 @@
 },
 "awake | exit note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -1167,7 +1167,7 @@
 },
 "awake | finish note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -1510,6 +1510,18 @@
 ],
 "screen_after": "web"
 },
+"awake | list my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | list notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
 "awake | list podcast": {
 "said": [
 "No podcast subscriptions yet."
@@ -1540,6 +1552,12 @@
 ],
 "screen_after": "media"
 },
+"awake | list saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
 "awake | list scheduled recordings": {
 "said": [
 "No recordings are scheduled."
@@ -1557,6 +1575,12 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"awake | list the notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
 },
 "awake | list voices": {
 "said": [
@@ -1700,6 +1724,12 @@
 ],
 "screen_after": "web"
 },
+"awake | my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
 "awake | my podcasts": {
 "said": [
 "No podcast subscriptions yet."
@@ -1780,7 +1810,7 @@
 },
 "awake | new note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -1906,15 +1936,21 @@
 },
 "awake | note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
 "awake | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
+},
+"awake | notes list": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
 },
 "awake | nt": {
 "said": [
@@ -1943,6 +1979,18 @@
 "awake | open": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | open a note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | open a saved note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -2048,11 +2096,29 @@
 ],
 "screen_after": "help"
 },
+"awake | open my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | open note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
 "awake | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
+},
+"awake | open notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
 },
 "awake | open options": {
 "said": [
@@ -2112,6 +2178,18 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"awake | open saved note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | open saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
 },
 "awake | open settings": {
 "said": [
@@ -2645,7 +2723,7 @@
 },
 "awake | save note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -2658,6 +2736,12 @@
 "awake | save preset as": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -2905,9 +2989,27 @@
 ],
 "screen_after": "awake"
 },
+"awake | show my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | show notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
 "awake | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "awake"
+},
+"awake | show saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -3092,7 +3194,7 @@
 },
 "awake | take a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -3387,6 +3489,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | what notes do i have": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
 "awake | what s new": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
@@ -3500,7 +3608,7 @@
 },
 "awake | write a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -5808,6 +5916,24 @@
 "Hello world. Second sentence. list favorites"
 ]
 },
+"document | list my notes": {
+"said": [
+"list my notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. list my notes"
+]
+},
+"document | list notes": {
+"said": [
+"list notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. list notes"
+]
+},
 "document | list podcast": {
 "said": [
 "No podcast subscriptions yet."
@@ -5853,6 +5979,15 @@
 "Hello world. Second sentence. list recordings"
 ]
 },
+"document | list saved notes": {
+"said": [
+"list saved notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. list saved notes"
+]
+},
 "document | list scheduled recordings": {
 "said": [
 "list scheduled recordings"
@@ -5878,6 +6013,15 @@
 "screen_after": "media",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | list the notes": {
+"said": [
+"list the notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. list the notes"
 ]
 },
 "document | list voices": {
@@ -6087,6 +6231,15 @@
 "Hello world. Second sentence. my favorites"
 ]
 },
+"document | my notes": {
+"said": [
+"my notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. my notes"
+]
+},
 "document | my podcasts": {
 "said": [
 "No podcast subscriptions yet."
@@ -6206,7 +6359,7 @@
 },
 "document | new note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
@@ -6405,11 +6558,20 @@
 },
 "document | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | notes list": {
+"said": [
+"notes list"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. notes list"
 ]
 },
 "document | nt": {
@@ -6455,6 +6617,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. open"
+]
+},
+"document | open a note": {
+"said": [
+"open a note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open a note"
+]
+},
+"document | open a saved note": {
+"said": [
+"open a saved note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open a saved note"
 ]
 },
 "document | open current document": {
@@ -6610,13 +6790,40 @@
 "Hello world. Second sentence."
 ]
 },
+"document | open my notes": {
+"said": [
+"open my notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my notes"
+]
+},
+"document | open note": {
+"said": [
+"open note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open note"
+]
+},
 "document | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | open notes": {
+"said": [
+"open notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open notes"
 ]
 },
 "document | open options": {
@@ -6703,6 +6910,24 @@
 "screen_after": "help",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | open saved note": {
+"said": [
+"open saved note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open saved note"
+]
+},
+"document | open saved notes": {
+"said": [
+"open saved notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open saved notes"
 ]
 },
 "document | open settings": {
@@ -7510,6 +7735,15 @@
 "Hello world. Second sentence. save preset as"
 ]
 },
+"document | saved notes": {
+"said": [
+"saved notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. saved notes"
+]
+},
 "document | say formatting": {
 "said": [
 "Font default. Font size default. Style Normal. Not bold. Not italic. Not underline. Highlight none. Alignment left. default line spacing."
@@ -7861,6 +8095,24 @@
 "Hello world. Second sentence. show more messages"
 ]
 },
+"document | show my notes": {
+"said": [
+"show my notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. show my notes"
+]
+},
+"document | show notes": {
+"said": [
+"show notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. show notes"
+]
+},
 "document | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
@@ -7868,6 +8120,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | show saved notes": {
+"said": [
+"show saved notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. show saved notes"
 ]
 },
 "document | show settings": {
@@ -8141,7 +8402,7 @@
 },
 "document | take a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
@@ -8535,6 +8796,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | what notes do i have": {
+"said": [
+"what notes do i have"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. what notes do i have"
+]
+},
 "document | what s new": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
@@ -8699,7 +8969,7 @@
 },
 "document | write a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
@@ -11187,6 +11457,24 @@
 "Hello world. list favorites"
 ]
 },
+"email_draft | list my notes": {
+"said": [
+"list my notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. list my notes"
+]
+},
+"email_draft | list notes": {
+"said": [
+"list notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. list notes"
+]
+},
 "email_draft | list podcast": {
 "said": [
 "No podcast subscriptions yet."
@@ -11232,6 +11520,15 @@
 "Hello world. list recordings"
 ]
 },
+"email_draft | list saved notes": {
+"said": [
+"list saved notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. list saved notes"
+]
+},
 "email_draft | list scheduled recordings": {
 "said": [
 "list scheduled recordings"
@@ -11257,6 +11554,15 @@
 "screen_after": "media",
 "text": [
 "Hello world."
+]
+},
+"email_draft | list the notes": {
+"said": [
+"list the notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. list the notes"
 ]
 },
 "email_draft | list voices": {
@@ -11467,6 +11773,15 @@
 "Hello world. my favorites"
 ]
 },
+"email_draft | my notes": {
+"said": [
+"my notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. my notes"
+]
+},
 "email_draft | my podcasts": {
 "said": [
 "No podcast subscriptions yet."
@@ -11596,7 +11911,7 @@
 },
 "email_draft | new note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
@@ -11795,11 +12110,20 @@
 },
 "email_draft | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
 "Hello world."
+]
+},
+"email_draft | notes list": {
+"said": [
+"notes list"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. notes list"
 ]
 },
 "email_draft | nt": {
@@ -11845,6 +12169,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. open"
+]
+},
+"email_draft | open a note": {
+"said": [
+"open a note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open a note"
+]
+},
+"email_draft | open a saved note": {
+"said": [
+"open a saved note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open a saved note"
 ]
 },
 "email_draft | open current document": {
@@ -12000,13 +12342,40 @@
 "Hello world."
 ]
 },
+"email_draft | open my notes": {
+"said": [
+"open my notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my notes"
+]
+},
+"email_draft | open note": {
+"said": [
+"open note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open note"
+]
+},
 "email_draft | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
 "Hello world."
+]
+},
+"email_draft | open notes": {
+"said": [
+"open notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open notes"
 ]
 },
 "email_draft | open options": {
@@ -12093,6 +12462,24 @@
 "screen_after": "help",
 "text": [
 "Hello world."
+]
+},
+"email_draft | open saved note": {
+"said": [
+"open saved note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open saved note"
+]
+},
+"email_draft | open saved notes": {
+"said": [
+"open saved notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open saved notes"
 ]
 },
 "email_draft | open settings": {
@@ -12905,6 +13292,15 @@
 "Hello world. save preset as"
 ]
 },
+"email_draft | saved notes": {
+"said": [
+"saved notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. saved notes"
+]
+},
 "email_draft | say formatting": {
 "said": [
 "Font default. Font size default. Style Normal. Not bold. Not italic. Not underline. Highlight none. Alignment left. default line spacing."
@@ -13256,6 +13652,24 @@
 "Hello world. show more messages"
 ]
 },
+"email_draft | show my notes": {
+"said": [
+"show my notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. show my notes"
+]
+},
+"email_draft | show notes": {
+"said": [
+"show notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. show notes"
+]
+},
 "email_draft | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
@@ -13263,6 +13677,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | show saved notes": {
+"said": [
+"show saved notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. show saved notes"
 ]
 },
 "email_draft | show settings": {
@@ -13536,7 +13959,7 @@
 },
 "email_draft | take a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
@@ -13930,6 +14353,15 @@
 "Hello world."
 ]
 },
+"email_draft | what notes do i have": {
+"said": [
+"what notes do i have"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. what notes do i have"
+]
+},
 "email_draft | what s new": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
@@ -14094,7 +14526,7 @@
 },
 "email_draft | write a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note",
 "text": [
@@ -15272,6 +15704,14 @@
 "said": [],
 "screen_after": "help"
 },
+"help | list my notes": {
+"said": [],
+"screen_after": "help"
+},
+"help | list notes": {
+"said": [],
+"screen_after": "help"
+},
 "help | list podcast": {
 "said": [],
 "screen_after": "help"
@@ -15292,6 +15732,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | list saved notes": {
+"said": [],
+"screen_after": "help"
+},
 "help | list scheduled recordings": {
 "said": [],
 "screen_after": "help"
@@ -15301,6 +15745,10 @@
 "screen_after": "help"
 },
 "help | list subscriptions": {
+"said": [],
+"screen_after": "help"
+},
+"help | list the notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -15403,6 +15851,10 @@
 "screen_after": "help"
 },
 "help | my favorites": {
+"said": [],
+"screen_after": "help"
+},
+"help | my notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -15555,6 +16007,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | notes list": {
+"said": [],
+"screen_after": "help"
+},
 "help | nt": {
 "said": [],
 "screen_after": "help"
@@ -15576,6 +16032,14 @@
 "screen_after": "help"
 },
 "help | open": {
+"said": [],
+"screen_after": "help"
+},
+"help | open a note": {
+"said": [],
+"screen_after": "help"
+},
+"help | open a saved note": {
 "said": [],
 "screen_after": "help"
 },
@@ -15653,7 +16117,19 @@
 ],
 "screen_after": "help"
 },
+"help | open my notes": {
+"said": [],
+"screen_after": "help"
+},
+"help | open note": {
+"said": [],
+"screen_after": "help"
+},
 "help | open notepad": {
+"said": [],
+"screen_after": "help"
+},
+"help | open notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -15704,6 +16180,14 @@
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
+"screen_after": "help"
+},
+"help | open saved note": {
+"said": [],
+"screen_after": "help"
+},
+"help | open saved notes": {
+"said": [],
 "screen_after": "help"
 },
 "help | open settings": {
@@ -16102,6 +16586,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | saved notes": {
+"said": [],
+"screen_after": "help"
+},
 "help | say formatting": {
 "said": [],
 "screen_after": "help"
@@ -16264,10 +16752,22 @@
 "said": [],
 "screen_after": "help"
 },
+"help | show my notes": {
+"said": [],
+"screen_after": "help"
+},
+"help | show notes": {
+"said": [],
+"screen_after": "help"
+},
 "help | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
 ],
+"screen_after": "help"
+},
+"help | show saved notes": {
+"said": [],
 "screen_after": "help"
 },
 "help | show settings": {
@@ -16601,6 +17101,10 @@
 "screen_after": "help"
 },
 "help | what mode": {
+"said": [],
+"screen_after": "help"
+},
+"help | what notes do i have": {
 "said": [],
 "screen_after": "help"
 },
@@ -18796,6 +19300,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | list my notes": {
+"calls": [
+"call.process('list my notes')"
+],
+"said": [
+"session handled: list my notes"
+],
+"screen_after": "mailbox"
+},
+"mailbox | list notes": {
+"calls": [
+"call.process('list notes')"
+],
+"said": [
+"session handled: list notes"
+],
+"screen_after": "mailbox"
+},
 "mailbox | list podcast": {
 "said": [
 "No podcast subscriptions yet."
@@ -18829,6 +19351,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | list saved notes": {
+"calls": [
+"call.process('list saved notes')"
+],
+"said": [
+"session handled: list saved notes"
+],
+"screen_after": "mailbox"
+},
 "mailbox | list scheduled recordings": {
 "calls": [
 "call.process('list scheduled recordings')"
@@ -18852,6 +19383,15 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"mailbox | list the notes": {
+"calls": [
+"call.process('list the notes')"
+],
+"said": [
+"session handled: list the notes"
+],
+"screen_after": "mailbox"
 },
 "mailbox | list voices": {
 "said": [
@@ -19033,6 +19573,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | my notes": {
+"calls": [
+"call.process('my notes')"
+],
+"said": [
+"session handled: my notes"
+],
+"screen_after": "mailbox"
+},
 "mailbox | my podcasts": {
 "said": [
 "No podcast subscriptions yet."
@@ -19139,7 +19688,7 @@
 },
 "mailbox | new note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -19328,9 +19877,18 @@
 },
 "mailbox | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
+},
+"mailbox | notes list": {
+"calls": [
+"call.process('notes list')"
+],
+"said": [
+"session handled: notes list"
+],
+"screen_after": "mailbox"
 },
 "mailbox | nt": {
 "calls": [
@@ -19374,6 +19932,24 @@
 ],
 "said": [
 "session handled: open"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open a note": {
+"calls": [
+"call.process('open a note')"
+],
+"said": [
+"session handled: open a note"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open a saved note": {
+"calls": [
+"call.process('open a saved note')"
+],
+"said": [
+"session handled: open a saved note"
 ],
 "screen_after": "mailbox"
 },
@@ -19509,11 +20085,38 @@
 ],
 "screen_after": "help"
 },
+"mailbox | open my notes": {
+"calls": [
+"call.process('open my notes')"
+],
+"said": [
+"session handled: open my notes"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open note": {
+"calls": [
+"call.process('open note')"
+],
+"said": [
+"session handled: open note"
+],
+"screen_after": "mailbox"
+},
 "mailbox | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
+},
+"mailbox | open notes": {
+"calls": [
+"call.process('open notes')"
+],
+"said": [
+"session handled: open notes"
+],
+"screen_after": "mailbox"
 },
 "mailbox | open options": {
 "said": [
@@ -19585,6 +20188,24 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"mailbox | open saved note": {
+"calls": [
+"call.process('open saved note')"
+],
+"said": [
+"session handled: open saved note"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open saved notes": {
+"calls": [
+"call.process('open saved notes')"
+],
+"said": [
+"session handled: open saved notes"
+],
+"screen_after": "mailbox"
 },
 "mailbox | open settings": {
 "said": [
@@ -20312,6 +20933,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | saved notes": {
+"calls": [
+"call.process('saved notes')"
+],
+"said": [
+"session handled: saved notes"
+],
+"screen_after": "mailbox"
+},
 "mailbox | say formatting": {
 "calls": [
 "call.process('say formatting')"
@@ -20645,9 +21275,36 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | show my notes": {
+"calls": [
+"call.process('show my notes')"
+],
+"said": [
+"session handled: show my notes"
+],
+"screen_after": "mailbox"
+},
+"mailbox | show notes": {
+"calls": [
+"call.process('show notes')"
+],
+"said": [
+"session handled: show notes"
+],
+"screen_after": "mailbox"
+},
 "mailbox | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "mailbox"
+},
+"mailbox | show saved notes": {
+"calls": [
+"call.process('show saved notes')"
+],
+"said": [
+"session handled: show saved notes"
 ],
 "screen_after": "mailbox"
 },
@@ -20877,7 +21534,7 @@
 },
 "mailbox | take a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -21217,6 +21874,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | what notes do i have": {
+"calls": [
+"call.process('what notes do i have')"
+],
+"said": [
+"session handled: what notes do i have"
+],
+"screen_after": "mailbox"
+},
 "mailbox | what s new": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
@@ -21339,7 +22005,7 @@
 },
 "mailbox | write a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -22951,6 +23617,18 @@
 ],
 "screen_after": "note"
 },
+"note | list my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
+"note | list notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
 "note | list podcast": {
 "said": [
 "No podcast subscriptions yet."
@@ -22981,6 +23659,12 @@
 ],
 "screen_after": "note"
 },
+"note | list saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
 "note | list scheduled recordings": {
 "said": [
 "list scheduled recordings"
@@ -22998,6 +23682,12 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"note | list the notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
 },
 "note | list voices": {
 "said": [
@@ -23138,6 +23828,12 @@
 ],
 "screen_after": "note"
 },
+"note | my notes": {
+"said": [
+"my notes"
+],
+"screen_after": "note"
+},
 "note | my podcasts": {
 "said": [
 "No podcast subscriptions yet."
@@ -23218,7 +23914,7 @@
 },
 "note | new note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -23350,7 +24046,13 @@
 },
 "note | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+],
+"screen_after": "note"
+},
+"note | notes list": {
+"said": [
+"notes list"
 ],
 "screen_after": "note"
 },
@@ -23381,6 +24083,18 @@
 "note | open": {
 "said": [
 "open"
+],
+"screen_after": "note"
+},
+"note | open a note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
+"note | open a saved note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "note"
 },
@@ -23486,9 +24200,27 @@
 ],
 "screen_after": "help"
 },
+"note | open my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
+"note | open note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
 "note | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+],
+"screen_after": "note"
+},
+"note | open notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "note"
 },
@@ -23550,6 +24282,18 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"note | open saved note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
+"note | open saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
 },
 "note | open settings": {
 "said": [
@@ -24090,6 +24834,12 @@
 ],
 "screen_after": "note"
 },
+"note | saved notes": {
+"said": [
+"saved notes"
+],
+"screen_after": "note"
+},
 "note | say formatting": {
 "said": [
 "say formatting"
@@ -24324,9 +25074,27 @@
 ],
 "screen_after": "note"
 },
+"note | show my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
+"note | show notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "note"
+},
 "note | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "note"
+},
+"note | show saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "note"
 },
@@ -24511,7 +25279,7 @@
 },
 "note | take a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -24773,6 +25541,12 @@
 ],
 "screen_after": "note"
 },
+"note | what notes do i have": {
+"said": [
+"what notes do i have"
+],
+"screen_after": "note"
+},
 "note | what s new": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
@@ -24883,7 +25657,7 @@
 },
 "note | write a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -27239,6 +28013,26 @@
 ],
 "screen_after": "web"
 },
+"web | list my notes": {
+"calls": [
+"call.command('list my notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: list my notes"
+],
+"screen_after": "web"
+},
+"web | list notes": {
+"calls": [
+"call.command('list notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: list notes"
+],
+"screen_after": "web"
+},
 "web | list podcast": {
 "said": [
 "No podcast subscriptions yet."
@@ -27281,6 +28075,16 @@
 ],
 "screen_after": "web"
 },
+"web | list saved notes": {
+"calls": [
+"call.command('list saved notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: list saved notes"
+],
+"screen_after": "web"
+},
 "web | list scheduled recordings": {
 "calls": [
 "call.command('list scheduled recordings')",
@@ -27306,6 +28110,16 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"web | list the notes": {
+"calls": [
+"call.command('list the notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: list the notes"
+],
+"screen_after": "web"
 },
 "web | list voices": {
 "said": [
@@ -27505,6 +28319,16 @@
 ],
 "screen_after": "web"
 },
+"web | my notes": {
+"calls": [
+"call.command('my notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: my notes"
+],
+"screen_after": "web"
+},
 "web | my podcasts": {
 "said": [
 "No podcast subscriptions yet."
@@ -27621,7 +28445,7 @@
 },
 "web | new note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -27829,9 +28653,19 @@
 },
 "web | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
+},
+"web | notes list": {
+"calls": [
+"call.command('notes list')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: notes list"
+],
+"screen_after": "web"
 },
 "web | nt": {
 "calls": [
@@ -27880,6 +28714,26 @@
 ],
 "said": [
 "session handled: open"
+],
+"screen_after": "web"
+},
+"web | open a note": {
+"calls": [
+"call.command('open a note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open a note"
+],
+"screen_after": "web"
+},
+"web | open a saved note": {
+"calls": [
+"call.command('open a saved note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open a saved note"
 ],
 "screen_after": "web"
 },
@@ -28025,11 +28879,41 @@
 ],
 "screen_after": "help"
 },
+"web | open my notes": {
+"calls": [
+"call.command('open my notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my notes"
+],
+"screen_after": "web"
+},
+"web | open note": {
+"calls": [
+"call.command('open note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open note"
+],
+"screen_after": "web"
+},
 "web | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
+},
+"web | open notes": {
+"calls": [
+"call.command('open notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open notes"
+],
+"screen_after": "web"
 },
 "web | open options": {
 "said": [
@@ -28109,6 +28993,26 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"web | open saved note": {
+"calls": [
+"call.command('open saved note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open saved note"
+],
+"screen_after": "web"
+},
+"web | open saved notes": {
+"calls": [
+"call.command('open saved notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open saved notes"
+],
+"screen_after": "web"
 },
 "web | open settings": {
 "said": [
@@ -28908,6 +29812,16 @@
 ],
 "screen_after": "web"
 },
+"web | saved notes": {
+"calls": [
+"call.command('saved notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: saved notes"
+],
+"screen_after": "web"
+},
 "web | say formatting": {
 "calls": [
 "call.command('say formatting')",
@@ -29262,9 +30176,39 @@
 ],
 "screen_after": "web"
 },
+"web | show my notes": {
+"calls": [
+"call.command('show my notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: show my notes"
+],
+"screen_after": "web"
+},
+"web | show notes": {
+"calls": [
+"call.command('show notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: show notes"
+],
+"screen_after": "web"
+},
 "web | show options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "web"
+},
+"web | show saved notes": {
+"calls": [
+"call.command('show saved notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: show saved notes"
 ],
 "screen_after": "web"
 },
@@ -29509,7 +30453,7 @@
 },
 "web | take a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },
@@ -29868,6 +30812,16 @@
 ],
 "screen_after": "web"
 },
+"web | what notes do i have": {
+"calls": [
+"call.command('what notes do i have')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: what notes do i have"
+],
+"screen_after": "web"
+},
 "web | what s new": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
@@ -29994,7 +30948,7 @@
 },
 "web | write a note": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished."
+"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
 ],
 "screen_after": "note"
 },

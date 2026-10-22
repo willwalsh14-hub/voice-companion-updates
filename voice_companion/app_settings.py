@@ -4,7 +4,7 @@ from pathlib import Path
 from settings_model import SettingsSession, DEFAULTS
 from native_settings import NativeSettings
 
-ACTIONS={'open_notepad':'write a note','add_account':'add account','open_documents':'open documents folder','web_favorites':'list favorites','radio_presets':'list presets','radio_recordings':'list scheduled recordings','podcast_subscriptions':'list subscriptions','check_now':'check for updates'}
+ACTIONS={'open_notepad':'write a note','add_account':'add account','web_favorites':'list favorites','radio_presets':'list presets','radio_recordings':'list scheduled recordings','podcast_subscriptions':'list subscriptions','check_now':'check for updates'}
 
 def read(path,default):
     try:return json.loads(Path(path).read_text(encoding='utf-8'))
@@ -159,7 +159,11 @@ def apply_settings(m,values):
     return True
 
 def apply_document_defaults(m,document):
+    """Give a new, empty document the font, size, spacing and alignment from Word processor options."""
     p=m.PREFERENCES
-    document.process('set font '+p.get('document_font','Calibri')+' '+str(p.get('document_size','11'))+' point')
-    document.process({'single':'single space','double':'double space','one and a half':'set line spacing 1.5'}[p.get('document_spacing','single')])
-    document.process('align '+('justified' if p.get('document_alignment')=='justify' else p.get('document_alignment','left')))
+    size=str(p.get('document_size') or DEFAULTS['document_size'])
+    alignment=p.get('document_alignment') or 'left'
+    document.use_new_document_style(font=str(p.get('document_font') or DEFAULTS['document_font']).strip(),
+                                    size=int(size) if size.isdigit() and 6<=int(size)<=72 else 11,
+                                    alignment='both' if alignment=='justify' else alignment if alignment in ('left','center','right') else 'left',
+                                    spacing={'one and a half':'1.5','double':'2'}.get(p.get('document_spacing')))

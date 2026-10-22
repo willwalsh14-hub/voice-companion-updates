@@ -24,7 +24,7 @@ def keep_previous(path: Path, count=3):
         # separate temporary file and then atomically replace the old file.
 
 
-def write_text_atomic(path, text, encoding='utf-8'):
+def write_text_atomic(path, text, encoding='utf-8', encoding_errors=None):
     """Write a small settings file so a crash or power cut never leaves it half written.
 
     The text goes to a temporary file in the same folder, which then replaces the
@@ -33,7 +33,7 @@ def write_text_atomic(path, text, encoding='utf-8'):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + '.writing')
-    with open(temporary, 'w', encoding=encoding) as file:
+    with open(temporary, 'w', encoding=encoding, errors=encoding_errors) as file:
         file.write(text)
         file.flush()
         os.fsync(file.fileno())
