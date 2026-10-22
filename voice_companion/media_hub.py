@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib import request, parse
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from media_player import MediaPlayer
+from media_player import MediaPlayer, seek_message
 
 RADIO_API = 'https://de1.api.radio-browser.info/json/stations/search'
 RADIO_ROOTS = ('https://all.api.radio-browser.info','https://de1.api.radio-browser.info',
@@ -807,10 +807,10 @@ class MediaHub:
             amount=_interval_seconds(match[2])
             if amount is None: return 'Say a time such as 15 seconds, 30 minutes, or one hour.'
             direction=-amount if match[1] in ('rewind','back','go back') else amount
-            try: position=self.player.control('seek',seconds=direction)
-            except Exception: position=None
-            return ('Moved '+('back' if direction<0 else 'forward')+' '+match[2]+'.'
-                    if position is not None else 'This audio cannot seek.')
+            noun={'podcast':'episode','local':'track'}.get(getattr(self.player,'kind',None),'audio')
+            try: message=seek_message(self.player,direction,noun)
+            except Exception: message=None
+            return message or 'This audio cannot seek.'
         if cmd in ('next chapter','previous chapter'): return self.chapter(cmd.split()[0])
         if cmd in ('next episode','previous episode'):
             if self.current_episode_index is None: return 'Play an episode first.'

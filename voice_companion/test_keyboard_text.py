@@ -236,6 +236,14 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))
         self.wait(lambda:('keyboard','Doc:PreviousCell') in self.window.commands.queue)
 
+    def test_notepad_ctrl_o_lists_notes_without_typing_a_letter(self):
+        self.window.set_context(dict(mode='note',source=None,text='',caret=0,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='note')
+        self.call(lambda:self.window.typed.insert(0,'Buy'))
+        self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='o',state=4))
+        self.wait(lambda:('keyboard','Ctrl+O') in self.window.commands.queue)
+        self.call(lambda:self.assertEqual(self.window.typed.get(),'Buy'))
+
     def test_file_manager_ctrl_d_replaces_old_drive_and_main_shortcuts(self):
         self.window.set_context(dict(mode='files',source=None,text='',file_items=['C drive'],file_index=0,file_selected_indices=[],ack=0,focus=True))
         self.wait(lambda:self.window.context.get('mode')=='files')
@@ -541,6 +549,23 @@ class WindowKeyboardTests(unittest.TestCase):
             self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
             self.wait(lambda r=request:('keyboard',r) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Alpha'))
+    def test_web_search_combo_types_and_arrows_ask_for_suggestions(self):
+        # A site search box (editable combo box): letters type, arrows ask the site.
+        self.window.set_context(dict(mode='web',source='web-combo',text='ca',caret=2,readonly=False,web_choice=False,web_combo_edit=True,web_field={'key':'search','role':'combobox','tag':'textarea','type':'textarea'},echo='characters',phonetic=False,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='web-combo');self.call(self.window.editor.focus_force)
+        self.call(lambda:self.window.editor.mark_set('insert','end'))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='t'))
+        self.wait(lambda:self.window.editor.get('1.0','end-1c')=='cat')
+        self.assertFalse(any(isinstance(c,tuple) and 'ChoiceLetter' in str(c[1]) for c in list(self.window.commands.queue)))
+        for key,request in (('Down','Web:Down'),('Up','Web:Up'),('Return','Web:Done')):
+            self.call(lambda k=key:self.window.editor.event_generate('<KeyPress>',keysym=k))
+            self.wait(lambda r=request:('keyboard',r) in self.window.commands.queue)
+            self.call(lambda k=key:self.window.editor.event_generate('<KeyRelease>',keysym=k))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Escape'))
+        self.wait(lambda:('keyboard','Web:Escape') in self.window.commands.queue)
+        # Escape may only close the suggestions, so typing still reaches the field.
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='s'))
+        self.wait(lambda:self.window.editor.get('1.0','end-1c')=='cats')
     def test_single_line_web_edit_arrows_leave_field(self):
         self.window.set_context(dict(mode='web',source='web-field',text='Typed',caret=0,readonly=False,web_field={'key':'name','role':'field','tag':'input','type':'text'},echo='characters',phonetic=False,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('source')=='web-field');self.call(self.window.editor.focus_force)

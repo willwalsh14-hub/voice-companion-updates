@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.153-test.
+Guide version: 0.2.154-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -46,6 +46,7 @@ Contents
 7 Write A Note
   7.1 Start and save a note
   7.2 Review or change a note
+  7.3 Open a saved note
 8 Set Up Email
   8.1 Connect an email account
   8.2 Choose another account
@@ -151,6 +152,7 @@ Contents
 26 Media Player
   26.1 Open and play a file
   26.2 Control playback
+  26.3 Use the player menu
 
 1. GETTING STARTED
 
@@ -458,6 +460,15 @@ Use "Commands only" to review without adding speech as text. Say "Normal mode" w
 To enter words that sound like commands, say "Type literally", followed by those words. For example, say "Type literally new line" to write the words new line.
 The same selection and editing rules apply to the current note. Keep a saved copy of any note you need.
 
+7.3 Open a saved note
+Say "List notes" to hear your saved notes. You can also say "Open a note" or "My notes". The newest note comes first.
+On the Notepad screen, press Ctrl+O to list your notes. The note you are writing is saved first.
+Use the Up and Down Arrow keys, or say "Next" and "Previous", to move through the list. You hear the first words and the date of each note.
+Press Enter or say "OK" to open a note. Companion reads it to you. Then speak to add to it.
+Say "Save note" or "Go back" to save your changes. They go into the same note, not a new copy.
+You can also say "Open note" and a number from the list. For example, say "Open note 2".
+If you have no saved notes yet, Companion tells you how to start one.
+
 8. SET UP EMAIL
 
 8.1 Connect an email account
@@ -666,6 +677,10 @@ Say "Select all" to select the text in the active box. Say "Read selection" to c
 For a checkbox, press Space or say "Check checkbox", "Uncheck checkbox", or "Toggle checkbox".
 In a choice box, arrows change the choice. Home and End choose the first and last options.
 You can say "Next option", "Previous option", "First option", "Last option", or "Select option" followed by its name.
+Some text boxes suggest answers as you type, such as the search box on YouTube. Companion calls this an edit combo box.
+Type or say your words. Then press Down Arrow or Up Arrow to hear each suggestion. You can also say "Next suggestion" or "Previous suggestion".
+Press Enter to use the suggestion you heard, or the words you typed. Escape closes the suggestions and keeps you in the box. Press Escape again to cancel editing.
+In a box like this, say "Search for" followed by your words to search that website.
 Read-only boxes cannot be changed. Passwords are hidden in the page text and spoken review.
 
 11.7 Fill in and review a form by voice
@@ -956,7 +971,7 @@ Choose Add an email account to start the setup steps in chapter 8.
 18.5 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents.
 These defaults do not change text in an existing document or draft. Font size choices run from 6 to 72 points.
-Choose Open Documents folder to open your saved document folder in Windows.
+Font for new documents is a list of common fonts, such as Arial, Calibri, Times New Roman, and Verdana. Use the Up and Down Arrow keys, or type the first letter of a font. You can also say "Font" and its name, such as "Font Arial".
 In Notepad options, choose Open Notepad to return to your note or start a new one.
 
 18.6 Web browser options
@@ -1169,9 +1184,12 @@ HTML and book text are read without scripts or remote content. PDF pages have pa
 26. MEDIA PLAYER
 
 26.1 Open and play a file
-Choose Media from the main menu, then Media player. Radio and Podcasts are also in Media. Ctrl+O opens the drive list. Use arrows and Enter to open a drive, folder, then a sound or video file. Escape goes up one folder. Escape at drives returns to the player.
+Choose Media from the main menu, then Media player. Radio and Podcasts are also in Media. Ctrl+O opens the drive list. Use arrows and Enter to open a drive, folder, then a sound or video file. Escape goes up one folder. Escape at drives returns to the player. You can also press Enter on a sound or video file in File manager. Companion says the file name and starts to play it.
 
 26.2 Control playback
-Space plays or pauses. Ctrl+S stops. Left and Right move back or forward 15 seconds. Up and Down change volume. Ctrl+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. Choose Playback speed, enter a number from 0.5 to 3, then press Enter. Escape returns to Media.
+Space plays or pauses. Ctrl+S stops. Left and Right move back or forward 15 seconds. You hear how far you moved and where you are now, such as 1 minute 23 seconds of 4 minutes 5 seconds. At the start or end of the file, you hear that instead. Up and Down change volume. Ctrl+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. To move a different amount, say Back or Forward, followed by the time. For example, say Forward 2 minutes. Choose Playback speed, enter a number from 0.5 to 3, then press Enter.
+
+26.3 Use the player menu
+While a file plays, press Escape or Alt to open the player menu. You can also say Player menu. Use Up Arrow and Down Arrow to choose an item, then press Enter. Left and Right Arrow also move through the menu. Space, Ctrl+S, and Ctrl+I still work. Alt closes the menu and goes back to the player. Escape in the menu leaves the player. If you opened the file in File manager, you go back to the same folder and file. If not, you go back to Media. Audio stops unless Keep audio playing in the background is on. When you choose Media player from the Media menu, the menu is already open.
 
 

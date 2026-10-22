@@ -240,6 +240,12 @@ class VoiceDocument:
     _opening: bool = False
     reading: ReadingCursor = field(default_factory=ReadingCursor, repr=False)
     source_path: Path | None = field(default=None, repr=False)
+    # Font and size from Word processor options. Every paragraph without its own
+    # font or size uses them, including ones added later (a new paragraph has none).
+    default_font: str = field(default='', repr=False)
+    default_size: float = field(default=0, repr=False)
+    # Alignment and spacing for the first paragraph; later paragraphs copy it.
+    pending_layout: tuple | None = field(default=None, repr=False)
 
     def __setattr__(self, name, value):
         # A selection is a pair of paragraph/offset positions. Remember the text it
@@ -370,6 +376,7 @@ class VoiceDocument:
         return self.folder / (safe + '.docx')
 
     def save(self):
+        self.apply_new_document_style()
         parts = []
         def paragraph_xml(p):
             properties = ''
@@ -517,6 +524,35 @@ class VoiceDocument:
         self.changed()
         self.word_cursor = selected_index
         return 'Formatted word ' + selected.group() + '. ' + ', '.join(f'{k}: {v}' for k,v in changes.items()) + '.'
+
+    def use_new_document_style(self, font='', size=0, alignment='left', spacing=None):
+        """Set the look of a new document before it has any text.
+
+        An empty document has no paragraph to format yet, so the choices are kept
+        and applied as soon as the first text is written.
+        """
+        self.default_font = font or ''
+        self.default_size = size or 0
+        twips = 0
+        if spacing:
+            twips, error = self.validated_line_spacing(spacing, 'auto')
+            if error: twips = 0
+        self.pending_layout = (alignment or 'left', twips)
+        self.apply_new_document_style()
+
+    def apply_new_document_style(self):
+        if not self.paragraphs:
+            return
+        if self.pending_layout:
+            alignment, twips = self.pending_layout
+            self.pending_layout = None
+            for p in self.paragraphs:
+                if p.alignment == 'left': p.alignment = alignment
+                if not p.line_spacing_twips and twips: p.line_spacing_twips, p.line_spacing_rule = twips, 'auto'
+        for p in self.paragraphs:
+            for item in [p] + list(p.runs):
+                if self.default_font and not item.font: item.font = self.default_font
+                if self.default_size and not item.size: item.size = self.default_size
 
     def changed(self):
         self.sentence_cursor = self.word_cursor = 0

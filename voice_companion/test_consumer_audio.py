@@ -49,6 +49,23 @@ class ConsumerAudioTests(unittest.TestCase):
             self.player.control('stop');self.assertTrue(self.player.status()['paused'])
             self.assertLess(self.player.status()['position'],.1)
 
+    def test_local_file_seek_says_jump_place_and_each_end(self):
+        from media_player import seek_message
+        with tempfile.TemporaryDirectory() as other:
+            path=Path(other)/'sample.wav';path.write_bytes(self.wav)
+            self.player.open(path.as_uri(),'Local fixture','local')
+            self.player.control('pause')
+            self.page.wait_for_function('document.getElementById("audio").seekable.length>0',timeout=5000)
+            self.player.control('seek',position=1)
+            self.assertEqual(seek_message(self.player,1),'Moved forward 1 second. 2 seconds of 4 seconds.')
+            self.assertEqual(seek_message(self.player,-1),'Moved back 1 second. 1 second of 4 seconds.')
+            self.assertEqual(seek_message(self.player,-15),'Moved back to the start of the track.')
+            self.assertLess(self.player.status()['position'],.1)
+            self.assertEqual(seek_message(self.player,15),'Moved forward to the end of the track.')
+            self.assertAlmostEqual(self.player.status()['position'],4,delta=.1)
+            self.player.close()
+            self.assertIsNone(seek_message(self.player,15))
+
     @classmethod
     def setUpClass(cls):
         cls.driver=sync_playwright().start()

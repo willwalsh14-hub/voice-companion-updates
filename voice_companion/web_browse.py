@@ -30,6 +30,7 @@ def voice_browse_key(command):
             'edit current field':'Activate','enter forms mode':'Activate',
             'toggle checkbox':'Space','select radio button':'Space',
             'next option':'Down','previous option':'Up','first option':'Home','last option':'End',
+           'next suggestion':'Down','previous suggestion':'Up',
             'next control':'Tab','previous control':'ShiftTab',
             'cancel field editing':'Escape','cancel forms mode':'Escape',
             'save field':'Done','finish field editing':'Done'}.get(command)
@@ -42,6 +43,25 @@ def kind(item):
     if tag=='select' or role=='combobox':return 'combobox'
     if tag in ('input','textarea') or role=='textbox' or item.get('editable'):return 'edit'
     return role
+
+TEXT_TYPES=('','text','search','email','url','tel','textarea')
+def editable_combo(item):
+    """A combo box you type into, with suggestions, such as a site's search box.
+
+    The page records combo_edit when it reads the control. Select-only combo
+    boxes (select, buttons, or containers without a text box) are choices."""
+    if not item or kind(item)!='combobox' or item.get('tag')=='select':return False
+    if 'combo_edit' in item:return bool(item['combo_edit'])
+    if item.get('datalist') or item.get('editable'):return True
+    return item.get('tag') in ('input','textarea') and item.get('type','') in TEXT_TYPES
+
+def choice_field(item):
+    """A combo box or list box whose value is picked from options, not typed."""
+    return bool(item) and kind(item) in ('combobox','listbox') and not editable_combo(item)
+
+def text_field(item):
+    """Any control whose value is typed: edit fields and editable combo boxes."""
+    return bool(item) and (kind(item)=='edit' or editable_combo(item))
 
 def describe(item):
     name=item.get('label') or 'Unlabeled';role=kind(item)
@@ -57,7 +77,10 @@ def describe(item):
     if item.get('expanded') is not None:state+=', '+('expanded' if item['expanded'] else 'collapsed')
     if item.get('selected') is not None:state+=', '+('selected' if item['selected'] else 'not selected')
     if item.get('pressed') is not None:state+=', '+('pressed' if item['pressed'] else 'not pressed')
-    if role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
+    if editable_combo(item):
+        role='edit combo box';value=str(item.get('value') or '')
+        state=', '+' '.join(value.split())[:180] if value.strip() and item.get('type')!='password' else ''
+    elif role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
     if item.get('disabled'):state+=', unavailable'
     if item.get('readonly'):state+=', read-only'
     if item.get('required'):state+=', required'
@@ -94,6 +117,7 @@ class BrowseCursor:
         def match(e):
             role=kind(e)
             if level:return role=='heading' and e.get('level')==level
+            if wanted=='edit' and editable_combo(e):return True
             if wanted=='button' and role in ('menuitem','menuitemradio','menuitemcheckbox'):return True
             if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox')
             if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox') and not e.get('disabled') and e.get('tabindex',0)>=0
@@ -220,9 +244,9 @@ SEMANTICS = r'''
             const bookmark=e.id?{id:e.id,key:key(e),start:output.length,end:output.length}:null;if(bookmark)anchors.push(bookmark);
             let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
             if(item){item.landmark=landmark;if(role==='list'){item.item_count=Math.max(listItems.length,...listItems.map(n=>Number(n.getAttribute('aria-setsize'))||0));item.ordered=tag==='ol';}if(role==='listitem'){item.position=Number(e.getAttribute('aria-posinset'))||siblings.indexOf(e)+1;item.set_size=Number(e.getAttribute('aria-setsize'))||siblings.length;}}
-            if(item){item.tabindex=e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
+            if(item){item.tabindex=control?.combo_input_key?control.tabindex:e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
             if(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable){
-              const spokenRole=type==='password'?'password field':({button:'button',textbox:'edit field',searchbox:'search field',checkbox:'checkbox',radio:'radio button',combobox:'combo box',listbox:'list box',switch:'switch',slider:'slider',spinbutton:'spin button'}[role]||'edit field');
+              const spokenRole=type==='password'?'password field':control?.combo_edit?'edit combo box':({button:'button',textbox:'edit field',searchbox:'search field',checkbox:'checkbox',radio:'radio button',combobox:'combo box',listbox:'list box',switch:'switch',slider:'slider',spinbutton:'spin button'}[role]||'edit field');
               append(label+', '+spokenRole);
               if(['checkbox','radio','switch'].includes(role))append(accessibleLabel.checked(e)?', checked':', not checked');
               if(e.disabled||e.getAttribute('aria-disabled')==='true')append(', unavailable');
@@ -230,6 +254,7 @@ SEMANTICS = r'''
               if(e.required||e.getAttribute('aria-required')==='true')append(', required');
               if(type!=='password'&&role!=='button'&&e.value&&!['checkbox','radio','image','submit','button'].includes(type))append(', '+(tag==='select'?e.selectedOptions[0]?.text:e.value));
               if(editable)append(', '+(e.innerText||''));
+              if(control?.combo_input_key&&control.value)append(', '+control.value);
             }
             else if(role==='graphic'||role==='frame')append((role==='frame'?'Frame ':'')+label);
             else if(tag==='img'){}

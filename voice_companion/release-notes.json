@@ -1,29 +1,36 @@
 {
-  "version": "0.2.153-test",
+  "version": "0.2.154-test",
   "status": "Testing build",
-  "date": "October 21, 2026",
-  "baseline": "0.2.152-test",
-  "scope": "Web pages open in a window the app owns, so most people no longer need the browser extension. Email can now work through Thunderbird.",
+  "date": "October 22, 2026",
+  "baseline": "0.2.153-test",
+  "scope": "Search boxes on sites like YouTube now take typing, notes can be opened again, and the media player is easier to use.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Embedded Edge is the usual browser",
+          "title": "Open your saved notes",
           "details": [
-            "Web pages now open in embedded Edge. This is a browser window the app owns. It does not need the browser extension.",
-            "If embedded Edge cannot start, the app uses its own Firefox and tells you.",
-            "Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say Use Firefox.",
-            "If you already chose a browser, your choice stays. If you linked your own browser with the extension, the app keeps using it. Say Which browser to hear the one in use."
+            "Say List notes to hear your saved notes. You can also say Open a note or My notes. The newest note comes first.",
+            "Press Enter to open a note. Companion reads it to you. Then speak to add to it. Your changes go into the same note.",
+            "On the Notepad screen, Ctrl+O also lists your notes.",
+            "Before, Open a note started a new blank note."
           ]
         },
         {
-          "title": "Email through Thunderbird",
+          "title": "Search boxes that suggest words",
           "details": [
-            "You can now use email through Thunderbird. Thunderbird is a free email program. Your helper adds your email account to it once.",
-            "To start, say Add account, then choose Thunderbird. You can read, reply, send, move and delete mail the same way as before.",
-            "Keep Thunderbird open while you use email. If it is closed, the app asks you to open it.",
-            "Your helper can find the steps in EMAIL SETUP - Helper."
+            "Some search boxes, like the one on YouTube, suggest words as you type. They are now called edit combo boxes, and you can type in them.",
+            "As you type, the site shows its suggestions. Press Up or Down to hear each one. Press Enter to choose it.",
+            "Escape closes the suggestions. You stay in the box.",
+            "In one of these boxes, say Search for and the words to search that site."
+          ]
+        },
+        {
+          "title": "Media player menu",
+          "details": [
+            "While a file plays, press Escape or Alt to open the player menu. You can also say Player menu. The file keeps playing.",
+            "Alt closes the menu again. Escape in the menu leaves the player."
           ]
         }
       ]
@@ -32,37 +39,26 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Your settings are safe",
+          "title": "Fonts for new documents",
           "details": [
-            "Your settings and speech choices are saved in a safer way. If the computer turns off while saving, your old settings stay."
+            "Font for new documents is now a list of common fonts. Use the arrow keys, or say Font and a name, such as Font Arial.",
+            "Your font, size, spacing and alignment choices are now used in new documents. Before, they were not used at all.",
+            "Open Documents folder is no longer in the word processor options. You can still say Open documents."
           ]
         },
         {
-          "title": "Your words are kept",
+          "title": "Playing a file from File manager",
           "details": [
-            "On the main menu, a sentence such as Help with the dishes is no longer taken as writing. It only becomes text when a document, email or note is open."
+            "When you open a sound or video file, Companion says its name and how to reach the menu. It no longer reads a menu you cannot reach.",
+            "When you leave the player, you go back to the same folder and file.",
+            "If a file cannot play, you hear that and stay in File manager."
           ]
         },
         {
-          "title": "Email",
+          "title": "Moving through a track",
           "details": [
-            "Some emails used to read as blank. They now read their words.",
-            "Long Gmail lists open faster.",
-            "Google Contacts sync no longer stops when one contact has a problem. The app tells you how many were not added."
-          ]
-        },
-        {
-          "title": "Updates",
-          "details": [
-            "You can check for updates yourself. After that, an update offer no longer breaks in while you write.",
-            "If the old copy of the app is slow to close, the update still finishes and the app opens again."
-          ]
-        },
-        {
-          "title": "Radio",
-          "details": [
-            "A damaged scheduled recording is now named once and skipped. Other recordings still run.",
-            "To remove it, say List scheduled recordings. Then say Cancel scheduled recording and its number."
+            "You now hear how far you moved and where you are. For example: Moved forward 15 seconds. 1 minute 38 seconds of 4 minutes 5 seconds.",
+            "At the start or end of a track, you hear that instead. Podcasts and radio work the same way."
           ]
         },
         {
