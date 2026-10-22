@@ -495,7 +495,7 @@ Yahoo uses an app password, not your normal password. To make one, sign in to Ya
 When you choose Yahoo, Companion asks for your email address. Type it or say it, then press Enter.
 Next, type or paste the app password, then press Enter. Press Control+V to paste. For privacy, do not say it aloud. You hear "Hidden character" for each letter.
 Companion checks the password with Yahoo. It tells you if it worked. If not, it tells you what to do. If Yahoo stops accepting a saved app password, make a new one. Then say "Add account" and choose Yahoo again. The new password replaces the old one. Say "Change address" to fix the address. Press Escape or say "Cancel" to stop.
-Thunderbird uses the email accounts already set up in the Thunderbird program. Your helper sets this up once. Keep Thunderbird open while you use email in Companion.
+Thunderbird is a free email program. Companion uses the email accounts already set up in it. When you choose Thunderbird, Companion checks what is missing and tells you the next step. It may offer to open the Thunderbird website, install its connection in Thunderbird, or start Thunderbird. Say yes or no, or press Y or N. Your helper adds your email account in Thunderbird once. Keep Thunderbird open while you use email in Companion. It can stay minimized.
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
 
