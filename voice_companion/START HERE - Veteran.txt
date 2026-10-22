@@ -185,7 +185,6 @@ The main menu has these choices:
 - Options
 - Check for updates
 - Help
-- Audio tutorial
 - Shut down the computer
 - Restart the computer
 - Exit Voice Companion
@@ -261,7 +260,7 @@ For the full topic list, say "Back to topics", or press Escape again. To return 
 3.3 Start the audio tutorial
 The tutorial explains how to use the app. It waits for you between lessons. The tutorial explains the commands you give. It does not use them to send mail or change your files.
 1. Return to the main menu.
-2. Say "Start tutorial", or choose Audio tutorial on the main menu.
+2. Say "Start tutorial", or press Control+Shift+T on the main menu.
 3. Say a course name, such as "Email" or "Web browser". You can also use arrows and Enter.
 4. Listen to the first lesson.
 5. When you are ready, say "Next lesson", or press Down Arrow.
@@ -322,7 +321,7 @@ To move by letter or symbol, say "Next character" or "Previous character", or pr
 To move by word, say "Next word" or "Previous word", or press Control+Right Arrow or Control+Left Arrow.
 To move by line, say "Next line" or "Previous line", or press Down Arrow or Up Arrow.
 To move by sentence, say "Next sentence" or "Previous sentence". In Help, press Control+Down Arrow or Control+Up Arrow. In a document, press Alt, 5, then Q or R.
-To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Control+Down Arrow or Control+Up Arrow.
+To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Control+Down Arrow or Control+Up Arrow. In Help, press Down Arrow or Up Arrow.
 To reach the start or end of a line, say "Go to start of line" or "Go to end of line", or press Home or End.
 A line may end at a line break in the text. It may differ from a line shown on the screen.
 
@@ -1020,7 +1019,7 @@ Each setting controls its own Yes or No prompt. Document save questions still ap
 19. SLEEP, EXIT, AND COMPUTER POWER
 
 19.1 Put the microphone to sleep
-To pause ordinary voice requests, say "Go to sleep", or press Control+M. To continue, say "Wake up", or press Control+M again.
+To pause ordinary voice requests, say "Go to sleep", or press F12. To continue, say "Wake up", or press F12 again.
 Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
 If an email is waiting for your approval to send, that approval is canceled. Review the message again before sending it.
 The keyboard still works while voice commands are asleep. Sleep is different from closing the app or putting Windows to sleep.

@@ -102,7 +102,7 @@ class ScreenKeyTableTests(unittest.TestCase):
                     written=names.get(key,key).replace('Ctrl+','Control+').casefold()
                     phrase=command.replace('{value}','').strip()
                     self.assertTrue(any(written in line and phrase in line for line in lines),(written,phrase))
-        for phrase in ('Save note','Save draft','Next messages','Previous messages','Message details','Audio tutorial',
+        for phrase in ('Save note','Save draft','Next messages','Previous messages','Message details','Start tutorial',
                        'Go to start of line','Go to end of line','Page down','Page up'):
             self.assertIn(phrase.casefold(),'\n'.join(lines),phrase)
         # One spelling for keys, as speech reads it.
@@ -241,13 +241,13 @@ class ScreenKeyEffectTests(unittest.TestCase):
         self.press('Ctrl+F','file_reader');self.assertEqual(app.handle_keyboard('escape','task_input'),'file_reader')
         self.assertEqual(app.handle('Help.','file_reader'),'help')
 
-    def test_audio_tutorial_is_on_the_main_menu(self):
-        names=[name for name,_ in app.MAIN_MENU_CHOICES]
-        self.assertEqual(names[names.index('Help')+1],'Audio tutorial')
-        app.MAIN_MENU_INDEX=names.index('Audio tutorial')
+    def test_audio_tutorial_has_a_main_menu_key(self):
+        # The main menu keeps its 12 items; Control+Shift+T starts the tutorial like the spoken command.
+        self.assertNotIn('Audio tutorial',[name for name,_ in app.MAIN_MENU_CHOICES])
         with patch.object(app,'PracticeTutorial') as tutorial:
             tutorial.return_value.start.return_value='Tutorial courses.'
-            self.assertEqual(self.press('Enter','awake'),'tutorial')
+            self.assertEqual(self.press('Ctrl+Shift+T','awake'),'tutorial')
+            app.tutorial_session=None
             self.assertEqual(app.handle('Start tutorial.','awake'),'tutorial')
 
     def test_line_start_and_end_by_voice_match_home_and_end(self):
@@ -333,14 +333,14 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
             screen,said,_=self.both('awake','Ctrl+Shift+G','Open user guides.')
         self.assertEqual(screen,'awake')
 
-    def test_control_m_puts_the_microphone_to_sleep_and_wakes_it(self):
+    def test_f12_puts_the_microphone_to_sleep_and_wakes_it(self):
         for mode in ('awake','note','files','document','web','mailbox','help'):
             with self.subTest(mode=mode):
-                self.assertEqual(app.navigation_key('Ctrl+M',mode),'go to sleep')
+                self.assertEqual(app.navigation_key('F12',mode),'go to sleep')
         app.SLEEP_RETURN_MODE='awake'
-        self.assertEqual(self.press('Ctrl+M','awake'),'sleep')
+        self.assertEqual(self.press('F12','awake'),'sleep')
         self.assertEqual(app.handle('go to sleep','awake'),'sleep')
-        self.assertEqual(app.navigation_key('Ctrl+M','sleep'),'wake up')
+        self.assertEqual(app.navigation_key('F12','sleep'),'wake up')
         self.assertEqual(app.handle_keyboard('wake up','sleep'),'awake')
 
     def test_mail_folder_selection_and_contact_keys_match_voice(self):
@@ -488,6 +488,8 @@ class CatalogParityTests(unittest.TestCase):
                 stack.enter_context(patch.object(app,name,value))
             stack.enter_context(patch.object(app,'open_settings',return_value='settings'))
             stack.enter_context(patch.object(app,'SETTINGS_PANEL',Mock()))
+            stack.enter_context(patch.object(app,'SETTINGS_RETURN_MODE',app.SETTINGS_RETURN_MODE))
+            stack.enter_context(patch.object(app,'TASK_NAV',None))
             stack.enter_context(patch.object(app,'MEDIA_SECTION','radio'))
             stack.enter_context(patch.object(app,'MEDIA_HUB',None))
             stack.enter_context(patch.object(app,'open_browser_menu',return_value='browser_menu'))

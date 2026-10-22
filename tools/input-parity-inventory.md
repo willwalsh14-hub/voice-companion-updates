@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 451 |
+| Actions inventoried | 450 |
 | Already had both ways | 386 |
-| Gaps found | 65 |
-| Gaps fixed (Added) | 57 |
+| Gaps found | 64 |
+| Gaps fixed (Added) | 56 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -26,7 +26,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Options | "Options" | First letter, arrows, Enter | Both |
 | Check for updates | "Check for updates" | First letter, arrows, Enter | Both |
 | Help | "Help" | First letter, arrows, Enter | Both |
-| Audio tutorial | "Start tutorial" | First letter, arrows, Enter | Added: main menu item |
 | Shut down the computer | "Shut down computer" | First letter, arrows, Enter | Both |
 | Restart the computer | "Restart computer" | First letter, arrows, Enter | Both |
 | Exit Voice Companion | "Exit companion" | First letter, arrows, Enter | Both |
@@ -431,8 +430,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Action | Voice | Keyboard | Status |
 | --- | --- | --- | --- |
-| Wake up the microphone | "Wake up" | Any arrow key or Enter while asleep; Ctrl+M | Added: Ctrl+M |
-| Put the microphone to sleep | "Go to sleep" | Ctrl+M on any main screen | Added: Ctrl+M |
+| Wake up the microphone | "Wake up" | Any arrow key or Enter while asleep; F12 | Added: F12 |
+| Put the microphone to sleep | "Go to sleep" | F12 on any main screen | Added: F12 |
 | Hear the version | "What version?" | Ctrl+Shift+V on the main menu | Added: Ctrl+Shift+V |
 | Type a command | N/A | Alt+T, type, Enter | N/A - this is the keyboard way to give any spoken command |
 | Normal mode, Commands only, Dictation only | "Normal mode", "Commands only", "Dictation only" | Alt+O, Input options, Command and dictation mode | Both |
@@ -462,7 +461,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Back to parts or topics | "Back to subsections", "Back to topics" | Escape | Both |
 | Close Help | "Close help" | Escape from the topic list | Both |
 | Read the release notes | "What's new" | Help, End (last topic), Enter | Both |
-| Start the audio tutorial | "Start tutorial" | Main menu, Audio tutorial, Enter | Added: main menu item |
+| Start the audio tutorial | "Start tutorial" | Ctrl+Shift+T on the main menu | Added: Ctrl+Shift+T |
 | Choose a course or lesson | Course name, "Next lesson", "Previous lesson" | Arrows, Enter | Both |
 | Repeat a lesson | "Repeat" | Ctrl+Shift+R | Added: Ctrl+Shift+R |
 | Lesson list | "Lesson list" | Ctrl+L | Added: Ctrl+L |

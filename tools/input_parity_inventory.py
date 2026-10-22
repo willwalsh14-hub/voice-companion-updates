@@ -28,8 +28,8 @@ TARGET = Path(__file__).resolve().parent / 'input-parity-inventory.md'
 # 'N/A - reason' (one way does not make sense). No row may need the command box alone.
 HAND = [
     # Start, wake and commands
-    ('Start, wake and commands', 'Wake up the microphone', '"Wake up"', 'Any arrow key or Enter while asleep; Ctrl+M', 'Added: Ctrl+M'),
-    ('Start, wake and commands', 'Put the microphone to sleep', '"Go to sleep"', 'Ctrl+M on any main screen', 'Added: Ctrl+M'),
+    ('Start, wake and commands', 'Wake up the microphone', '"Wake up"', 'Any arrow key or Enter while asleep; F12', 'Added: F12'),
+    ('Start, wake and commands', 'Put the microphone to sleep', '"Go to sleep"', 'F12 on any main screen', 'Added: F12'),
     ('Start, wake and commands', 'Hear the version', '"What version?"', 'Ctrl+Shift+V on the main menu', 'Added: Ctrl+Shift+V'),
     ('Start, wake and commands', 'Type a command', 'N/A', 'Alt+T, type, Enter', 'N/A - this is the keyboard way to give any spoken command'),
     ('Start, wake and commands', 'Normal mode, Commands only, Dictation only', '"Normal mode", "Commands only", "Dictation only"', 'Alt+O, Input options, Command and dictation mode', 'Both'),
@@ -55,7 +55,7 @@ HAND = [
     ('Help and lessons', 'Back to parts or topics', '"Back to subsections", "Back to topics"', 'Escape', 'Both'),
     ('Help and lessons', 'Close Help', '"Close help"', 'Escape from the topic list', 'Both'),
     ('Help and lessons', 'Read the release notes', '"What\'s new"', 'Help, End (last topic), Enter', 'Both'),
-    ('Help and lessons', 'Start the audio tutorial', '"Start tutorial"', 'Main menu, Audio tutorial, Enter', 'Added: main menu item'),
+    ('Help and lessons', 'Start the audio tutorial', '"Start tutorial"', 'Ctrl+Shift+T on the main menu', 'Added: Ctrl+Shift+T'),
     ('Help and lessons', 'Choose a course or lesson', 'Course name, "Next lesson", "Previous lesson"', 'Arrows, Enter', 'Both'),
     ('Help and lessons', 'Repeat a lesson', '"Repeat"', 'Ctrl+Shift+R', 'Added: Ctrl+Shift+R'),
     ('Help and lessons', 'Lesson list', '"Lesson list"', 'Ctrl+L', 'Added: Ctrl+L'),
@@ -225,8 +225,7 @@ HAND = [
 ]
 
 # Catalog rows whose status is not plain Both: (area, action) -> status.
-ADDED = {('Main menu', 'Audio tutorial'): 'Added: main menu item',
-         ('Email options', 'Connect Google Contacts'): 'Added: Options button',
+ADDED = {('Email options', 'Connect Google Contacts'): 'Added: Options button',
          ('Word processor document: More commands', 'Run any document voice command'):
              'N/A - this item is the keyboard way to type any spoken command'}
 ADDED_AREAS = {'Radio station actions': 'Added: voice (say the action name)'}

@@ -6,7 +6,7 @@ from pathlib import Path
 # The window sends these keys only on the named screen; see screen_key().
 SCREEN_KEYS = {
     'awake': {'F1': 'help', 'Ctrl+Shift+V': 'what version', 'Ctrl+Shift+M': 'what mode',
-              'Ctrl+Shift+G': 'open user guides'},
+              'Ctrl+Shift+G': 'open user guides', 'Ctrl+Shift+T': 'start tutorial'},
     'note': {'Ctrl+S': 'save note', 'Ctrl+Shift+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+Shift+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
@@ -29,12 +29,12 @@ SCREEN_KEYS = {
     'tutorial': {'Ctrl+Shift+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
                  'Ctrl+F': 'find lesson {value}', 'Ctrl+Shift+F': 'explain command {value}',
                  'Ctrl+Down': 'continue reading'},
-    'sleep': {'Ctrl+M': 'wake up'},
+    'sleep': {'F12': 'wake up'},
 }
-# Control+M puts the microphone to sleep from any main screen; on the sleep screen it wakes it.
+# F12 puts the microphone to sleep from any main screen; on the sleep screen it wakes it.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
               'recent_documents', 'media_menu', 'local_media', 'help', 'tutorial', 'document', 'files', 'document_menu'):
-    SCREEN_KEYS.setdefault(_mode, {})['Ctrl+M'] = 'go to sleep'
+    SCREEN_KEYS.setdefault(_mode, {})['F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
 # Formatting keys apply to the message body, not to an address or subject box.
