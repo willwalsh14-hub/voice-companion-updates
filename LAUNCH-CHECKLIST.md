@@ -89,6 +89,10 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 - [x] Listing or cancelling a damaged scheduled recording stopped the app.
 
 ## Later
+- [ ] Main builds for 0.2.154 and 0.2.155 each failed once in "Build and test
+      complete installer" about seven minutes in, and passed on rerun with no
+      changes. From 0.2.156 the stop reason is written to GitHub annotations;
+      read it on the next failure and fix the unreliable test or download.
 - [ ] Known and kept by design: in Dictation only mode, a sentence starting
       with "find" still runs the editor's find command.
 - [ ] A volunteer tester group beyond the private beta, with a short weekly

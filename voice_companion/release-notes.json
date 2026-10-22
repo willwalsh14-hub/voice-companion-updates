@@ -1,19 +1,37 @@
 {
-  "version": "0.2.155-test",
+  "version": "0.2.156-test",
   "status": "Testing build",
   "date": "October 22, 2026",
-  "baseline": "0.2.154-test",
-  "scope": "Gmail opens and reads your mail again, and numbered steps in the Word guide start at 1.",
+  "baseline": "0.2.155-test",
+  "scope": "Everything in the app can now be done by voice and by keyboard. The guide gives both ways for each task.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Clear Gmail sign-in messages",
+          "title": "A key for every voice command",
           "details": [
-            "Gmail sign-in now stops after five minutes if it does not finish. Before, the app could wait with no sound.",
-            "If you press Cancel on the Google page, the app tells you and says how to try again.",
-            "Google may show a box for each permission. If a box is not checked, the app tells you to sign in again and check every box."
+            "Things you could only say now have a key too. Things you could only press now have a spoken command.",
+            "F12 puts the microphone to sleep on any main screen. On the sleep screen, F12 wakes it.",
+            "On the main menu: Control+Shift+V tells the version. Control+Shift+M tells the mode. Control+Shift+G opens the user guides. Control+Shift+T starts the tutorial.",
+            "F1 gives help on each screen."
+          ]
+        },
+        {
+          "title": "Email keys",
+          "details": [
+            "In the inbox, Control+O lists your saved email drafts. You can also say Open email draft.",
+            "Control+K lists your contacts. Control+Shift+K adds a contact.",
+            "Control+Shift+I tells which folder you are in. Control+I gives message details.",
+            "Page Down and Page Up move through the message list a page at a time."
+          ]
+        },
+        {
+          "title": "Web, help and tutorial keys",
+          "details": [
+            "On a web page, Control+F finds words. F8 lists the fields.",
+            "In a Help topic, Control+Down Arrow and Control+Up Arrow move one sentence at a time.",
+            "In the tutorial, Control+Shift+R repeats. F1 lists the commands. Control+L lists the lessons."
           ]
         }
       ]
@@ -22,18 +40,18 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Gmail inbox",
+          "title": "The guide",
           "details": [
-            "In the last two versions, a Gmail inbox could fail to open. It now opens again.",
-            "The app still gets long lists quickly when it can. If that does not work, it gets messages one at a time, as before.",
-            "Some Outlook messages began with a stray number, such as 96. That number is no longer read."
+            "Each task in the guide now gives the spoken command and the key. For example: Say Read paragraph, or press Alt, 5, then B.",
+            "Keys are now written as Control, not Ctrl, so they are read clearly."
           ]
         },
         {
-          "title": "Guide numbering",
+          "title": "Radio and email",
           "details": [
-            "In the Word copy of the guide, each list of steps now starts at 1. Before, the numbers ran on from the last list.",
-            "The Word copy of the release notes is fixed the same way."
+            "Radio station actions now have spoken names. For example, say Add to favorites.",
+            "List email drafts now works from the inbox. Before, it only gave a help message.",
+            "Email options have a new Connect Google Contacts button."
           ]
         },
         {
