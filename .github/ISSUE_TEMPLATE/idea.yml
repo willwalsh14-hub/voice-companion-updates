@@ -1,0 +1,16 @@
+name: An idea or request
+description: Suggest something new or a change that would make Voice Companion easier to use.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: Describe it in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: How would it help?
+      description: Optional. What would it let you do, or what would be easier?
