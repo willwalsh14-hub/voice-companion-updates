@@ -15,8 +15,9 @@ asked.
   touches `voice_companion/` must be a complete release:
   1. Bump the version everywhere: `APP_VERSION` in `companion.py`,
      `#define AppVersion` in `VoiceCompanion.iss`, the three `0.2.x-test`
-     strings in `build-windows.ps1`, and `Guide version:` in
-     `START HERE - Veteran.txt` and `.html`.
+     strings in `build-windows.ps1` (one is written `0\.2\.x-test`),
+     `Guide version:` in `START HERE - Veteran.txt` and `.html`, and the
+     placeholder in `.github/ISSUE_TEMPLATE/bug-report.yml`.
   2. Rewrite `voice_companion/release-notes.json` for the new version (see
      "Writing for users" below). It needs both sections, "New in this version"
      and "What works better", each with at least one topic.

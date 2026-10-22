@@ -75,6 +75,8 @@ def normalize(value, folder):
     text = str(value).replace(str(folder), '<DATA>')
     text = re.sub(r"<(?:Magic)?Mock[^>]*>", '<mock>', text)
     text = re.sub(r"id='\d+'", "id='N'", text)
+    # The version changes every release; it is not a routing change.
+    text = re.sub(r"\b0\.\d+\.\d+-test\b", '<VERSION>', text)
     return text
 
 

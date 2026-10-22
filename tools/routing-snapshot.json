@@ -126,7 +126,7 @@
 },
 "awake | about voice companion": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "awake"
 },
@@ -3236,7 +3236,7 @@
 },
 "awake | version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "awake"
 },
@@ -3395,7 +3395,7 @@
 },
 "awake | what version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "awake"
 },
@@ -3770,7 +3770,7 @@
 },
 "document | about voice companion": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "document",
 "text": [
@@ -8357,7 +8357,7 @@
 },
 "document | version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "document",
 "text": [
@@ -8546,7 +8546,7 @@
 },
 "document | what version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "document",
 "text": [
@@ -9014,7 +9014,7 @@
 },
 "email_draft | about voice companion": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -13752,7 +13752,7 @@
 },
 "email_draft | version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -13941,7 +13941,7 @@
 },
 "email_draft | what version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -14722,7 +14722,7 @@
 },
 "help | confirm": {
 "said": [
-"About this guide. Guide version: 0.2.152-test. Say back to subsections for the chapter parts, or back to topics for all chapters."
+"About this guide. Guide version: <VERSION>. Say back to subsections for the chapter parts, or back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -14736,7 +14736,7 @@
 },
 "help | confirm that": {
 "said": [
-"About this guide. Guide version: 0.2.152-test. Say back to subsections for the chapter parts, or back to topics for all chapters."
+"About this guide. Guide version: <VERSION>. Say back to subsections for the chapter parts, or back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -15561,13 +15561,13 @@
 },
 "help | ok": {
 "said": [
-"About this guide. Guide version: 0.2.152-test. Say back to subsections for the chapter parts, or back to topics for all chapters."
+"About this guide. Guide version: <VERSION>. Say back to subsections for the chapter parts, or back to topics for all chapters."
 ],
 "screen_after": "help"
 },
 "help | okay": {
 "said": [
-"About this guide. Guide version: 0.2.152-test. Say back to subsections for the chapter parts, or back to topics for all chapters."
+"About this guide. Guide version: <VERSION>. Say back to subsections for the chapter parts, or back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -16412,7 +16412,7 @@
 },
 "help | that one": {
 "said": [
-"About this guide. Guide version: 0.2.152-test. Say back to subsections for the chapter parts, or back to topics for all chapters."
+"About this guide. Guide version: <VERSION>. Say back to subsections for the chapter parts, or back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -16897,7 +16897,7 @@
 },
 "mailbox | about voice companion": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "mailbox"
 },
@@ -21066,7 +21066,7 @@
 },
 "mailbox | version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "mailbox"
 },
@@ -21225,7 +21225,7 @@
 },
 "mailbox | what version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "mailbox"
 },
@@ -21584,7 +21584,7 @@
 },
 "note | about voice companion": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "note"
 },
@@ -24655,7 +24655,7 @@
 },
 "note | version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "note"
 },
@@ -24781,7 +24781,7 @@
 },
 "note | what version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "note"
 },
@@ -25129,7 +25129,7 @@
 },
 "web | about voice companion": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "web"
 },
@@ -29713,7 +29713,7 @@
 },
 "web | version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "web"
 },
@@ -29876,7 +29876,7 @@
 },
 "web | what version": {
 "said": [
-"Voice Companion version 0.2.152-test. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
 ],
 "screen_after": "web"
 },
