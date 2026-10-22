@@ -25,6 +25,46 @@ class DefaultBrowserTests(unittest.TestCase):
             self.assertEqual(WebSession(Path(folder), FakeBackend()).browser, 'webview2')
 
 
+class LinkedExtensionTests(unittest.TestCase):
+    """A tab linked through the browser extension is the user's own choice."""
+    def adopt(self, saved=None):
+        relay = mock.Mock(browser='chrome'); relay.connected.is_set.return_value = True
+        with tempfile.TemporaryDirectory() as folder:
+            if saved: (Path(folder) / 'browser-choice.txt').write_text(saved, encoding='utf-8')
+            embedded = FakeBackend(); embedded.browser = 'webview2'; embedded.close = mock.Mock()
+            session = WebSession(Path(folder), embedded)
+            session.injected_backend = False
+            created = []
+            class Connected:
+                regular = True
+                def __init__(self, profile, browser, relay):
+                    self.browser = relay.browser; self.started = 0; created.append(self)
+                def start(self): self.started += 1
+            with mock.patch('browser_cdp_relay.current', return_value=relay), \
+                 mock.patch('connected_browser.ConnectedBrowserBackend', Connected):
+                session._refresh = lambda read=None: ''
+                return session.adopt_connected_browser(), created, session
+
+    def test_default_embedded_edge_still_uses_a_linked_extension_tab(self):
+        adopted, created, session = self.adopt()
+        self.assertTrue(adopted)
+        self.assertEqual([backend.started for backend in created], [1])
+        self.assertEqual(session.browser, 'chrome')
+        self.assertIs(session.backend, created[0])
+
+    def test_chosen_embedded_edge_ignores_the_extension(self):
+        adopted, created, session = self.adopt('webview2')
+        self.assertFalse(adopted)
+        self.assertEqual(created, [])
+
+    def test_no_linked_tab_keeps_embedded_edge(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = WebSession(Path(folder), FakeBackend()); session.injected_backend = False
+            with mock.patch('browser_cdp_relay.current', return_value=None):
+                self.assertFalse(session.adopt_connected_browser())
+            self.assertEqual(session.browser, 'webview2')
+
+
 class FallbackTests(unittest.TestCase):
     def test_embedded_edge_that_cannot_start_falls_back_to_firefox(self):
         class Embedded(FakeBackend):

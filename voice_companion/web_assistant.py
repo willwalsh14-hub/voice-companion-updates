@@ -1098,7 +1098,9 @@ class WebSession:
         return self._refresh(read=False,preserve=True)
 
     def adopt_connected_browser(self):
-        if self.injected_backend or self.browser=='webview2':return False
+        # Only a saved choice of embedded Edge ignores a tab linked through the
+        # extension. As the default, embedded Edge gives way to the user's own browser.
+        if self.injected_backend or (self.browser=='webview2' and self._saved_browser()=='webview2'):return False
         from browser_cdp_relay import current
         from connected_browser import ConnectedBrowserBackend
         relay=current()
@@ -1113,14 +1115,17 @@ class WebSession:
             self._refresh(read=False)
         return True
 
+    def _saved_browser(self):
+        try:
+            choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
+        except OSError:
+            return None
+        return choice if choice in BrowserBackend.BROWSERS else None
+
     def _browser_preference(self):
         # Embedded Edge (WebView2) is the default: it is owned by Companion and needs
         # no browser extension. A saved choice is always kept.
-        try:
-            choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
-            return choice if choice in BrowserBackend.BROWSERS else DEFAULT_BROWSER
-        except OSError:
-            return DEFAULT_BROWSER
+        return self._saved_browser() or DEFAULT_BROWSER
 
     def choose_browser(self, name):
         name = {'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview 2':'webview2'}.get(name.lower(),name.lower())
