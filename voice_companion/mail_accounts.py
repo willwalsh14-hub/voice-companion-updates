@@ -76,7 +76,8 @@ def thunderbird_connect(store):
     identities = [(account, identity) for account in found for identity in account.get('identities', [])
                   if identity.get('email')]
     if not identities:
-        raise AccountError('Thunderbird has no email accounts yet. Ask your helper to add your email account in Thunderbird first.')
+        raise AccountError('Thunderbird is connected, but it has no email accounts yet. Ask a helper to add your email account '
+                           'in Thunderbird. Then say add account and choose Thunderbird.')
     for account, identity in identities:
         store.save('thunderbird', {'address': identity['email'], 'account_id': account['id'],
                                    'identity_id': identity['id'], 'name': account.get('name', '')}, select=False)

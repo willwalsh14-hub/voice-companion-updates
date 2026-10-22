@@ -140,6 +140,8 @@ account_setup = False
 # Yahoo setup asks for the address, then the app password, in the app's own
 # text box: {'provider': 'yahoo', 'step': 'address' | 'password', 'address': ...}.
 ACCOUNT_ENTRY = None
+# Thunderbird setup waiting for a yes or no: {'flow': thunderbird_setup.Setup, 'question': ...}.
+THUNDERBIRD_SETUP = None
 YAHOO_SETUP_PROMPT = ('Yahoo uses an app password, not your normal password. To make one, sign in to Yahoo, '
                       'open Account security, and choose Generate app password. '
                       'Now type or say your Yahoo email address, then press Enter. Say cancel to stop.')
@@ -225,6 +227,7 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     if logical=='task_input':context['task_input']=True
+    if THUNDERBIRD_SETUP is not None:context['confirmation']=CONFIRM_CHOICE
     if ACCOUNT_ENTRY is not None:
         context['account_entry']=ACCOUNT_ENTRY['step']
         context['account_private']=ACCOUNT_ENTRY['step']=='password'
@@ -638,7 +641,7 @@ def _navigation_key(key,mode):
         web_session.list_prefix='';web_session.list_prefix_time=0
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
     if key=='Alt+F4':return 'exit companion'
-    confirming=pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=THUNDERBIRD_SETUP is not None or pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -1742,6 +1745,54 @@ def finish_account_secret(value, mode):
     return mode
 
 
+def new_thunderbird_setup():
+    """Thunderbird setup on this computer, with the add-on package this copy of the app ships."""
+    import thunderbird_setup
+    from thunderbird_bridge import current, prepare
+    from mail_accounts import thunderbird_connect
+    package = Path(sys.executable).parent / 'Voice Companion Mail Connection.xpi'
+    if not getattr(sys, 'frozen', False) or not package.is_file():
+        from build_thunderbird_addon import build
+        package = build(APP / 'thunderbird-addon' / 'Voice Companion Mail Connection.xpi')
+    def relay():
+        return current() or (prepare(APP) if os.name == 'nt' else None)
+    return thunderbird_setup.Setup(thunderbird_setup.WindowsSystem(), package,
+                                   lambda: thunderbird_connect(ProtectedStore(APP)), relay, speak_status)
+
+
+THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok', 'do it', 'go ahead')
+THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
+
+
+def thunderbird_setup_step(step, mode):
+    """Speak one setup result; keep its yes or no question waiting."""
+    global THUNDERBIRD_SETUP, CONFIRM_CHOICE
+    flow = THUNDERBIRD_SETUP['flow'] if THUNDERBIRD_SETUP else None
+    THUNDERBIRD_SETUP = None
+    if step.question:
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
+        CONFIRM_CHOICE = 'yes'
+    speak(step.message)
+    sync_app_context(mode, True)
+    return mode
+
+
+def thunderbird_setup_answer(command, mode):
+    """Yes starts the offered step. Anything else, except repeat, is no."""
+    global THUNDERBIRD_SETUP
+    if command in THUNDERBIRD_REPEAT:
+        speak(THUNDERBIRD_SETUP['message'])
+        return mode
+    flow, question = THUNDERBIRD_SETUP['flow'], THUNDERBIRD_SETUP['question']
+    try:
+        step = flow.answer(question, command in THUNDERBIRD_YES)
+    except Exception:
+        THUNDERBIRD_SETUP = None
+        speak('Thunderbird setup stopped because of a problem. Nothing else was changed. Say add account to try again.')
+        return mode
+    return thunderbird_setup_step(step, mode)
+
+
 def _handle(text, mode, typed=False):
     global DOCUMENT_NAMING_ACTION
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
@@ -1749,7 +1800,7 @@ def _handle(text, mode, typed=False):
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
-    global OPEN_NOTE, ACCOUNT_ENTRY
+    global OPEN_NOTE, ACCOUNT_ENTRY, THUNDERBIRD_SETUP
     global SEARCH_RETURN_MODE,NAMED_LIST
     # Phrases that list saved notes. On the Notepad screen only the clear commands
     # count; a sentence such as "My notes are on the desk" is text.
@@ -1760,6 +1811,8 @@ def _handle(text, mode, typed=False):
     command=normalized_command(text)
     if ACCOUNT_ENTRY is not None:
         return account_entry_step(text, command, mode)
+    if THUNDERBIRD_SETUP is not None:
+        return thunderbird_setup_answer(command, mode)
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
@@ -2527,6 +2580,16 @@ def _handle(text, mode, typed=False):
             speak(YAHOO_SETUP_PROMPT)
             sync_app_context(mode, True)
             return mode
+        if provider == 'thunderbird':
+            # No sign-in here: find what Thunderbird still needs and say the next step.
+            try:
+                flow = new_thunderbird_setup()
+                THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
+                return thunderbird_setup_step(flow.start(), mode)
+            except Exception:
+                THUNDERBIRD_SETUP = None
+                speak('Thunderbird setup stopped because of a problem. Ask your helper to check Email Setup Helper, section 4.')
+                return mode
         speak('Opening ' + provider.capitalize() + ' account setup. A trusted person may complete the private sign-in. Please wait for the result.')
         try:
             address = connect(provider, APP, graphical=True)

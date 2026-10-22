@@ -107,7 +107,7 @@ $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
 $releaseErrors = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Errors.txt'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
   -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox',
-    'test_media_update_fixes','test_web_fixes','test_document_fixes','test_core_email_fixes','test_storage','test_embedded_edge_default','test_thunderbird_mail',
+    'test_media_update_fixes','test_web_fixes','test_document_fixes','test_core_email_fixes','test_storage','test_embedded_edge_default','test_thunderbird_mail','test_thunderbird_setup',
     'test_web_assistant','test_browser_recovery','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_ai_dictation','test_dictation_echo','test_file_manager','test_file_explorer','test_input_parity','test_task_navigation','test_media_player_menu','test_document_reader','test_rich_documents','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge','test_regular_browser','test_browser_cdp_relay','test_launch_review_fixes','test_notepad_and_document_options','test_gmail_sign_in','test_yahoo_setup','test_yahoo_mail') `
   -RedirectStandardOutput $releaseOutput -RedirectStandardError $releaseErrors
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
@@ -181,7 +181,7 @@ $arguments = @('--clean', '--noconfirm', '--onedir', '--contents-directory', '.'
   '--add-data', 'Voice Companion Release Notes.brf:.',
   '--add-data', 'START HERE - Veteran - DAISY 3.zip:.', '--hidden-import', 'sounddevice',
   '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter',
-  '--hidden-import', 'thunderbird_bridge', '--hidden-import', 'thunderbird_mailbox',
+  '--hidden-import', 'thunderbird_bridge', '--hidden-import', 'thunderbird_mailbox', '--hidden-import', 'thunderbird_setup',
   '--collect-all', 'win32com', '--collect-all', 'vosk',
   '--collect-all', 'google_auth_oauthlib', '--collect-all', 'msal',
   '--collect-all', 'playwright', '--collect-all', 'rapidocr', '--collect-all', 'onnxruntime',
