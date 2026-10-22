@@ -298,6 +298,30 @@ class GoogleContactsTests(unittest.TestCase):
 
 
 class RadioScheduleTests(unittest.TestCase):
+    def test_damaged_entries_can_be_listed_and_canceled_by_voice(self):
+        from media_hub import MediaHub
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = MediaHub(tmp, notify=lambda text: None, player=Mock())
+            jobs = ['junk', {'station': 'WGN', 'when': 5}, {'when': '2026-10-21T21:00:00', 'minutes': 5},
+                    {'station': {'name': 'Later', 'url': 'https://r.example/l'}, 'when': '2026-10-22T09:00:00', 'minutes': 5}]
+            hub._save('radio-schedule.json', jobs)
+            spoken = hub.command('list scheduled recordings', section='radio')
+            self.assertIn('1. A damaged schedule entry', spoken)
+            self.assertIn('4. Later at 2026-10-22T09:00:00', spoken)
+            self.assertEqual(hub.command('cancel scheduled recording 1', section='radio'),
+                             'Canceled a damaged schedule entry.')
+            self.assertEqual(hub.command('cancel scheduled recording 3', section='radio'),
+                             'Canceled scheduled recording of Later.')
+            self.assertEqual(len(hub._load('radio-schedule.json', [])), 2)
+
+    def test_schedule_file_that_is_not_a_list_can_be_listed(self):
+        from media_hub import MediaHub
+        with tempfile.TemporaryDirectory() as tmp:
+            hub = MediaHub(tmp, notify=lambda text: None, player=Mock())
+            hub._save('radio-schedule.json', {'when': 'soon'})
+            self.assertIn('damaged', hub.command('list scheduled recordings', section='radio'))
+            self.assertEqual(hub.command('cancel scheduled recording 1', section='radio'), 'That schedule number is unavailable.')
+
     def test_malformed_scheduled_recording_is_reported_once_and_skipped(self):
         from media_hub import MediaHub
         with tempfile.TemporaryDirectory() as tmp:

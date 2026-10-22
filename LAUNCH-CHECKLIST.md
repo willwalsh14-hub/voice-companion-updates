@@ -73,19 +73,20 @@ pull requests. Update this file as items are finished.
 
 ## Should do before launch
 
-Possible problems found in the October 2026 review but not yet confirmed or fixed:
-- [ ] A manual "check for updates" leaves a flag set, so a later automatic
+Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests:
+- [x] A manual "check for updates" leaves a flag set, so a later automatic
       update offer can interrupt any screen, including document editing.
-- [ ] HTML email with an unclosed `<head>` reads as blank.
-- [ ] Two email drafts whose titles differ only in punctuation share one file.
-- [ ] Opening a Gmail list of 1,000 messages makes about 1,000 separate
+- [x] HTML email with an unclosed `<head>` reads as blank.
+- [x] Two email drafts whose titles differ only in punctuation share one file.
+- [x] Opening a Gmail list of 1,000 messages makes about 1,000 separate
       requests (slow, can hit Google's rate limit).
-- [ ] Google Contacts sync stops completely if one contact fails.
-- [ ] One malformed scheduled radio recording repeats an error every 10 seconds.
-- [ ] The update helper does not restart the app if the old copy is still
+- [x] Google Contacts sync stops completely if one contact fails.
+- [x] One malformed scheduled radio recording repeats an error every 10 seconds.
+- [x] The update helper does not restart the app if the old copy is still
       running after 30 seconds.
-- [ ] Speech and media message queues can raise an error if their worker
-      thread has stopped.
+- [x] Speech and media message queues can raise an error if their worker
+      thread has stopped. (Only the update window's queue could; fixed.)
+- [x] Listing or cancelling a damaged scheduled recording stopped the app.
 
 ## Later
 - [ ] Known and kept by design: in Dictation only mode, a sentence starting

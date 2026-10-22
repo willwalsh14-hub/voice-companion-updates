@@ -44,6 +44,28 @@
           ]
         },
         {
+          "title": "Email",
+          "details": [
+            "Some emails used to read as blank. They now read their words.",
+            "Long Gmail lists open faster.",
+            "Google Contacts sync no longer stops when one contact has a problem. The app tells you how many were not added."
+          ]
+        },
+        {
+          "title": "Updates",
+          "details": [
+            "You can check for updates yourself. After that, an update offer no longer breaks in while you write.",
+            "If the old copy of the app is slow to close, the update still finishes and the app opens again."
+          ]
+        },
+        {
+          "title": "Radio",
+          "details": [
+            "A damaged scheduled recording is now named once and skipped. Other recordings still run.",
+            "To remove it, say List scheduled recordings. Then say Cancel scheduled recording and its number."
+          ]
+        },
+        {
           "title": "Browser extension",
           "details": [
             "The browser extension did not change. You do not need to reload it."
