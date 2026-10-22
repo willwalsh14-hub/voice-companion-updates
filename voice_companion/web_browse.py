@@ -177,8 +177,12 @@ class BrowseCursor:
 SEMANTICS = r'''
           const elements=[],anchors=[];let output='';let serial=1+all(document).reduce((maximum,e)=>Math.max(maximum,/^n\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
           const block=new Set(['P','DIV','SECTION','ARTICLE','HEADER','FOOTER','MAIN','NAV','ASIDE','H1','H2','H3','H4','H5','H6','LI','UL','OL','MENU','TR','TABLE']);
-          const newline=()=>{output=output.replace(/ +$/,'');if(output && !output.endsWith('\n'))output+='\n';};
-          const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output || /[ \n]$/.test(output))s=s.trimStart();output+=s;};
+          // Trailing spaces wait in pad until more text arrives. Testing the end of
+          // the growing text with a regular expression rescanned all of it on
+          // every line, which took seconds on long pages.
+          let pad=0,last='';const size=()=>output.length+pad;
+          const newline=()=>{pad=0;if(output && last!=='\n'){output+='\n';last='\n';}};
+          const append=s=>{s=String(s||'').replace(/\s+/g,' ');if(!output&&!pad || pad || last==='\n')s=s.trimStart();if(!s)return;const body=s.trimEnd();if(!body){pad+=s.length;return;}output+=' '.repeat(pad)+body;pad=s.length-body.length;last=body[body.length-1];};
           const keyOwners=new Map();const key=e=>{const existing=e.getAttribute('data-voice-companion-key');if(!/^n\d+$/.test(existing||'')||keyOwners.has(existing)&&keyOwners.get(existing)!==e)e.setAttribute('data-voice-companion-key','n'+serial++);const value=e.getAttribute('data-voice-companion-key');keyOwners.set(value,e);return value;};
           const searchHost=['search.brave.com','www.google.com','google.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'].includes(location.hostname);
           const titleSelector='.search-snippet-title,.snippet-title,.snippet-title-text,[data-testid="result-title"],.title';
@@ -245,8 +249,8 @@ SEMANTICS = r'''
             if(role==='list'&&!label)label='List';
             if(role==='landmark'&&!label)label='Unnamed';
             if(['list','listitem','frame','landmark'].includes(role))newline();
-            const bookmark=e.id?{id:e.id,key:key(e),start:output.length,end:output.length}:null;if(bookmark)anchors.push(bookmark);
-            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:output.length,end:output.length,disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
+            const bookmark=e.id?{id:e.id,key:key(e),start:size(),end:size()}:null;if(bookmark)anchors.push(bookmark);
+            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:size(),end:size(),disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
             if(item){item.landmark=landmark;if(role==='list'){item.item_count=Math.max(listItems.length,...listItems.map(n=>Number(n.getAttribute('aria-setsize'))||0));item.ordered=tag==='ol';}if(role==='listitem'){item.position=Number(e.getAttribute('aria-posinset'))||siblings.indexOf(e)+1;item.set_size=Number(e.getAttribute('aria-setsize'))||siblings.length;}}
             if(item){item.tabindex=control?.combo_input_key?control.tabindex:e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
             if(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable){
@@ -263,11 +267,11 @@ SEMANTICS = r'''
             else if(role==='graphic'||role==='frame')append((role==='frame'?'Frame ':'')+label);
             else if(tag==='img'){}
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.tagName==='SLOT'&&e.assignedNodes({flatten:true}).length?e.assignedNodes({flatten:true}):e.childNodes))walk(child);
-            if(item){if(output.length===item.start && label)append(label);item.end=output.length;if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}
-            if(bookmark)bookmark.end=output.length;
+            if(item){if(size()===item.start && label)append(label);item.end=size();if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}
+            if(bookmark)bookmark.end=size();
             if(['input','select','textarea','a','button'].includes(tag)||controlRoles.includes(role)||editable)newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName)||['list','listitem','frame','landmark'].includes(role))newline();
           };
-          walk(readingRoot);
+          walk(readingRoot);output+=' '.repeat(pad);pad=0;
           // A result may put its URL in an H tag and its human title in a
           // sibling div. The heading's label and caret must target that title.
           for(const item of elements){if(item.role!=='heading'||!item.label||urlOnly(item.label))continue;

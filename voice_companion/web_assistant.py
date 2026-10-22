@@ -276,9 +276,8 @@ class BrowserBackend:
     def snapshot(self):
         self.start()
         self._watch_dialogs()
-        script = '''() => {
+        script = '''() => {const accessibleLabel=/*ACCESSIBLE_LABEL*/;return accessibleLabel.withCachedLabels(()=>{
           const visibility=new WeakMap();const layoutVisible=e=>{if(visibility.has(e))return visibility.get(e);const parent=e.assignedSlot||e.parentElement||e.getRootNode()?.host;const result=getComputedStyle(e).display!=='none'&&!e.hidden&&!e.inert&&e.getAttribute('aria-hidden')!=='true'&&(!parent||layoutVisible(parent));visibility.set(e,result);return result;};const visible=(e,descend=false)=>layoutVisible(e)&&(descend||!['hidden','collapse'].includes(getComputedStyle(e).visibility));
-          const accessibleLabel=/*ACCESSIBLE_LABEL*/;
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
@@ -293,7 +292,9 @@ class BrowserBackend:
             return [...e.querySelectorAll('input,textarea,[contenteditable="true"],[role="textbox"]'),...owned].find(n=>typable(n)&&visible(n))||null;
           };
           const allCache=new WeakMap();
-          const all = root => {if(allCache.has(root))return allCache.get(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
+          // Changes inside open shadow roots are watched too (a video player's Skip ad button).
+          const watchRoot=window.__voiceCompanionDocument?.watch||(()=>{});
+          const all = root => {if(allCache.has(root))return allCache.get(root);if(root.host)watchRoot(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
             [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);allCache.set(root,nodes);return nodes;};
           const modal=[...document.querySelectorAll('[role="dialog"][aria-modal="true"],dialog[open]')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).at(-1);
           const readingRoot=modal||document.body||document.documentElement;
@@ -348,10 +349,13 @@ class BrowserBackend:
                   text:bodyText, modal_key:modal?controlKey(modal):'', anchors, document_epoch:String(performance.timeOrigin)+':'+window.__voiceCompanionDocument.epoch, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(readingRoot?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
-        }'''
+        });}'''
         script=script.replace('/*SEMANTICS*/',SEMANTICS).replace('/*ACCESSIBLE_LABEL*/',ACCESSIBLE_LABEL)
+        # Return one JSON string. Letting the driver convert the large object
+        # value by value took over a second on a page with 5,000 elements.
+        script=SNAPSHOT_AS_TEXT.replace('/*SNAPSHOT*/',script)
         self.page.evaluate(DOCUMENT_STAMP)
-        result = self.page.evaluate(script)
+        result = snapshot_value(self.page.evaluate(script))
         # Playwright can inspect cross-origin frames without asking page JS to
         # cross the browser's origin boundary.
         active_frames={self.page.main_frame}
@@ -367,7 +371,7 @@ class BrowserBackend:
                 if container is None:continue
                 container['child_frame_index']=index
                 frame.evaluate(DOCUMENT_STAMP)
-                part = frame.evaluate(script)
+                part = snapshot_value(frame.evaluate(script))
                 active_frames.add(frame)
             except Exception:
                 continue
@@ -597,7 +601,10 @@ class BrowserBackend:
             else:element.click(timeout=10000)
             if kind(item)=='button' or key:
                 try:
-                    invalid=element.evaluate('''e=>{if(!e.matches('button[type=submit],button:not([type]),input[type=submit],input[type=image]') && !('''+str(key=='Enter').lower()+''' && e.matches('input:not([type=button]):not([type=reset]),select')))return null;const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('''+ACCESSIBLE_LABEL+''')(bad),message:bad.validationMessage}:null;}''')
+                    # A button that removes itself when pressed (Skip ad, Close,
+                    # Accept cookies) has no form to check. Asking the driver
+                    # about it anyway waited the full ten-second timeout.
+                    invalid=None if element.count()!=1 else element.evaluate('''e=>{if(!e.matches('button[type=submit],button:not([type]),input[type=submit],input[type=image]') && !('''+str(key=='Enter').lower()+''' && e.matches('input:not([type=button]):not([type=reset]),select')))return null;const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('''+ACCESSIBLE_LABEL+''')(bad),message:bad.validationMessage}:null;}''',timeout=5000)
                     if invalid:return {'validation':invalid['label']+'. '+invalid['message']}
                 except Exception:pass
             clicked_at=time.monotonic()
@@ -817,6 +824,44 @@ class BrowserBackend:
 
 
 EdgeBackend = BrowserBackend
+
+
+SKIP_AD=re.compile(r'skip (?:the |this )?(?:ads?|advert|advertisement)s?')
+
+
+def skip_ad_button(snapshot):
+    """The video ad's Skip button, when the page shows one."""
+    host=(urlsplit(str((snapshot or {}).get('url',''))).hostname or '').lower()
+    video_site=host=='youtube.com' or host.endswith('.youtube.com')
+    for item in (snapshot or {}).get('elements',[]):
+        if kind(item)!='button' or item.get('disabled'):continue
+        label=re.sub(r'\s+',' ',str(item.get('label',''))).strip().rstrip('.!').lower()
+        if SKIP_AD.fullmatch(label) or video_site and label=='skip':return item
+    return None
+
+
+SKIP_AD_READY='Skip ad button ready. Say skip ad to press it.'
+
+
+class RefreshPacer:
+    """When the main loop next looks for page changes.
+
+    A quick check repeats every 0.3 seconds. Reading a busy page again (a
+    video page with a moving clock) can take a large part of a second, and keys
+    and speech wait while it runs. So after a slow read, wait three times as
+    long before the next one (at most two seconds), and leave room after a
+    key press.
+    """
+    def __init__(self,interval=.3,factor=3,after_key=.12,longest=2.0):
+        self.interval,self.factor,self.after_key,self.longest=interval,factor,after_key,longest
+        self.next_at=0.0;self.cost=0.0
+
+    def due(self,now,last_navigation=0.0):
+        return now>=self.next_at and now-last_navigation>max(self.after_key,min(self.longest,2*self.cost))
+
+    def done(self,started,finished):
+        self.cost=max(0.0,finished-started)
+        self.next_at=max(started+self.interval,finished+min(self.longest,self.factor*self.cost))
 
 
 class WebSession:
@@ -1355,18 +1400,27 @@ class WebSession:
         return state if isinstance(state,dict) else None
 
     def _capture(self):
-        for _ in range(5):
+        for attempt in range(5):
             try:before=self._stamp();snapshot=self.backend.snapshot();after=self._stamp()
             except Exception as exc:
                 if not navigation_interrupted(exc):raise
                 if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
                 continue
             if before and after:
-                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch','frame_identity'))
+                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch'))
                 changed=changed or bool(after.get('url') and snapshot.get('url')!=after['url'])
                 if changed:
                     if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
                     continue
+                if before.get('frame_identity')!=after.get('frame_identity'):
+                    # Only an embedded frame came, went or reloaded, as ads do
+                    # every few seconds on video sites. The page itself is
+                    # unchanged, so do not wait for it to settle. If frames
+                    # keep changing, keep this view; the stored state is the
+                    # earlier one, so the next check reads the frames again.
+                    if attempt<2:
+                        if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
+                        continue
             # Store the pre-capture revision, so a mutation immediately after
             # extraction will trigger another refresh instead of being swallowed.
             return snapshot,before
@@ -1467,6 +1521,8 @@ class WebSession:
         position=self.reading.position;continuation=self.reading.continuation
         anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
+        # Say once when a video ad's Skip button appears. It lasts only seconds.
+        skip_ready=skip_ad_button(snapshot) is not None and skip_ad_button(self.snapshot) is None
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
         if changed:
             self.page_revision+=1
@@ -1480,7 +1536,23 @@ class WebSession:
                 continuation+=self.browse.position-position
         if changed and not self.keyboard_field:self.cursor_changed()
         self.reading.position=self.browse.position;self.reading.continuation=min(continuation,len(self.reading.text))
-        return ''
+        return SKIP_AD_READY if skip_ready else ''
+
+    def skip_ad(self):
+        """Press the video ad's Skip button without moving the reading place."""
+        if not self.snapshot:return 'Open a website first.'
+        try:self.refresh_changed()
+        except Exception:pass
+        item=skip_ad_button(self.snapshot)
+        if not item:return 'No Skip ad button is showing now.'
+        try:action=self.backend.activate(item)
+        except WebError:
+            try:self._refresh(read=False,preserve=True,wait=False)
+            except Exception:pass
+            return 'The ad ended before it could be skipped.' if not skip_ad_button(self.snapshot) else 'The Skip ad button could not be pressed. Try again.'
+        if isinstance(action,dict) and action.get('validation'):return action['validation']
+        self._refresh(read=False,preserve=True,wait=False)
+        return 'Ad skipped.' if not skip_ad_button(self.snapshot) else 'The Skip ad button is still showing. Say skip ad again.'
 
     def _navigate(self,url):
         try:
@@ -2090,6 +2162,7 @@ class WebSession:
             if self.list_focus=='headings' and command in ('next','previous','next heading','previous heading'):
                 return self.move_heading(-1 if command.startswith('previous') else 1)
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
+        if not self.keyboard_field and SKIP_AD.fullmatch(command):return self.skip_ad()
         browse_key=voice_browse_key(command)
         if browse_key and browse_key.startswith('Read:') and self.keyboard_field:browse_key=None  # Reading keys move through the page, not a text box.
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
@@ -2309,9 +2382,27 @@ class WebSession:
             except Exception: pass
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
-# The same accessible name is used for snapshot and stale-target validation.
-DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement){old?.observer?.disconnect();const state={revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+1};const observer=new MutationObserver(records=>{if(records.some(r=>r.type!=='attributes'||!r.attributeName.startsWith('data-voice-companion-'))){state.revision++;state.changed=Date.now();}});observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true});state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
+SNAPSHOT_AS_TEXT="()=>JSON.stringify((/*SNAPSHOT*/)(),(key,value)=>value===undefined?null:value)"
 
+
+def snapshot_value(value):
+    """A page snapshot arrives as JSON text; test doubles may return the object."""
+    return json.loads(value) if isinstance(value,str) else value
+
+
+# The page's change counter. Players and animations rewrite position, size and
+# opacity styles many times a second (a video's progress bar); nothing a
+# reader hears changes, so that is not a page change. Display and visibility
+# changes still are. Slider and progress values count as a change, but do not
+# keep the page from looking settled.
+DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement||old.version!==2){old?.observer?.disconnect();const same=!!old&&old.root===document.documentElement;const state={version:2,revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+(same?0:1)};
+const motion=/^(?:transform|translate|scale|rotate|width|height|min-width|min-height|max-width|max-height|left|top|right|bottom|inset|opacity|background-position|background-size|clip-path|stroke-dasharray|stroke-dashoffset|will-change|transition(?:-.*)?|animation(?:-.*)?|--.*)$/;
+const styles=text=>{const found=new Map();for(const part of String(text||'').split(';')){const at=part.indexOf(':');if(at>0)found.set(part.slice(0,at).trim().toLowerCase(),part.slice(at+1).trim());}return found;};
+const ignored=r=>{if(r.type!=='attributes')return false;const name=r.attributeName||'';if(name.startsWith('data-voice-companion-'))return true;if(name!=='style')return false;const before=styles(r.oldValue),after=styles(r.target.getAttribute('style'));for(const key of new Set([...before.keys(),...after.keys()]))if(before.get(key)!==after.get(key)&&!motion.test(key))return false;return true;};
+const steady=r=>r.type==='attributes'&&(r.attributeName==='aria-valuenow'||r.attributeName==='aria-valuetext');
+const observer=new MutationObserver(records=>{const real=records.filter(r=>!ignored(r));if(real.length){state.revision++;if(!real.every(steady))state.changed=Date.now();}});const options={childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true};observer.observe(document.documentElement,options);const watched=new WeakSet();state.watch=root=>{if(!watched.has(root)){watched.add(root);observer.observe(root,options);}};state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
+
+# The same accessible name is used for snapshot and stale-target validation.
 from web_accessible_names import ACCESSIBLE_LABEL
 
 LIVE_IDENTITY='e=>{const label=('+ACCESSIBLE_LABEL+')(e);return {label,tag:e.tagName.toLowerCase(),type:(e.type||\'\').toLowerCase(),href:e.tagName===\'A\'?e.href:\'\',disabled:!!e.disabled||e.getAttribute(\'aria-disabled\')===\'true\'};}'

@@ -36,7 +36,16 @@ class CompanionWebView : Form {
         view.Dock = DockStyle.Fill; var first = new TabPage("Page 1"); first.Controls.Add(view); tabs.TabPages.Add(first); Controls.Add(tabs); views["main-view"] = view;
         tabs.SelectedIndexChanged += (s, e) => ActiveTab(); Shown += Start;
     }
-    private void Send(object message) { lock (outputLock) { Console.WriteLine(json.Serialize(message)); Console.Out.Flush(); } }
+    private void Send(object message) { SendLine(json.Serialize(message)); }
+    private void SendLine(string line) { lock (outputLock) { Console.WriteLine(line); Console.Out.Flush(); } }
+    // Browser events and results are already JSON text. Pass them through as
+    // they are: parsing and rewriting every network event and every large page
+    // snapshot on this window's thread made busy pages (video sites) lag.
+    // One line is one message, so text that holds a raw line break is rewritten.
+    private string Compact(string raw) {
+        if (String.IsNullOrEmpty(raw)) return "{}";
+        return raw.IndexOf('\n') < 0 && raw.IndexOf('\r') < 0 ? raw : json.Serialize(json.DeserializeObject(raw));
+    }
     private void ActiveTab() {
         foreach (var item in views) if (item.Value.Parent == tabs.SelectedTab) {
             Send(new { method = "Host.activeTab", @params = new { sessionId = item.Key } }); break;
@@ -59,7 +68,9 @@ class CompanionWebView : Form {
     }
     private void Register(WebView2 control, string sessionId) {
         var core = control.CoreWebView2;
-            core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            // The request filter is added only while the automation driver turns
+            // the cache off (Network.setCacheDisabled). With it always on, every
+            // request (each piece of a video) waited for this window's thread.
             core.WebResourceRequested += (s, request) => {
                 if (noCache.Contains(control)) { request.Request.Headers.SetHeader("Cache-Control", "no-cache"); request.Request.Headers.SetHeader("Pragma", "no-cache"); }
             };
@@ -97,14 +108,13 @@ class CompanionWebView : Form {
                             continued.ContinueWith(task => { var ignored = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
                             return;
                         }
-                        var message = new Dictionary<string, object> { { "method", eventName }, { "params", json.DeserializeObject(e.ParameterObjectAsJson) } };
-                        if (!String.IsNullOrEmpty(e.SessionId)) message["sessionId"] = e.SessionId;
-                        else if (!eventName.StartsWith("Browser.")) message["sessionId"] = sessionId;
+                        string target = !String.IsNullOrEmpty(e.SessionId) ? e.SessionId : eventName.StartsWith("Browser.") ? null : sessionId;
                         if (eventName == "Target.attachedToTarget") {
                             var detail = json.Deserialize<Dictionary<string, object>>(e.ParameterObjectAsJson);
                             if (detail.ContainsKey("sessionId")) children[(string)detail["sessionId"]] = control;
                         }
-                        Send(message);
+                        SendLine("{\"method\":" + json.Serialize(eventName) + ",\"params\":" + Compact(e.ParameterObjectAsJson)
+                            + (target != null ? ",\"sessionId\":" + json.Serialize(target) : "") + "}");
                     };
                 } catch (ArgumentException) { }
             }
@@ -135,6 +145,10 @@ class CompanionWebView : Form {
         var response = new Dictionary<string, object> { { "id", request["id"] }, { "result", result } };
         if (request.ContainsKey("sessionId")) response["sessionId"] = request["sessionId"];
         Send(response);
+    }
+    private void ReplyRaw(Dictionary<string, object> request, string result) {
+        SendLine("{\"id\":" + json.Serialize(request["id"]) + ",\"result\":" + Compact(result)
+            + (request.ContainsKey("sessionId") ? ",\"sessionId\":" + json.Serialize(request["sessionId"]) : "") + "}");
     }
     private void Read() {
         try {
@@ -186,7 +200,9 @@ class CompanionWebView : Form {
                 foreach (var live in views.Values) { owner = live; break; }
             }
             if (method == "Network.setCacheDisabled") {
-                if (parameters.ContainsKey("cacheDisabled") && (bool)parameters["cacheDisabled"]) noCache.Add(owner); else noCache.Remove(owner);
+                if (parameters.ContainsKey("cacheDisabled") && (bool)parameters["cacheDisabled"]) {
+                    if (noCache.Add(owner)) owner.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+                } else if (noCache.Remove(owner)) owner.CoreWebView2.RemoveWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
                 Reply(message, new { }); return;
             }
             if (method == "Fetch.enable") {
@@ -211,7 +227,7 @@ class CompanionWebView : Form {
                 autoAttach = parameters.ContainsKey("autoAttach") && (bool)parameters["autoAttach"];
                 if (autoAttach) foreach (var item in new Dictionary<string, WebView2>(views)) await Attach(item.Key, item.Value);
             }
-            Reply(message, json.DeserializeObject(result));
+            ReplyRaw(message, result);
             if (method == "Runtime.runIfWaitingForDebugger" && sessionId != null && navigation.ContainsKey(sessionId)) {
                 string destination = navigation[sessionId]; navigation.Remove(sessionId); owner.CoreWebView2.Navigate(destination);
             }
