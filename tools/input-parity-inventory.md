@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 450 |
-| Already had both ways | 386 |
-| Gaps found | 64 |
-| Gaps fixed (Added) | 56 |
+| Actions inventoried | 565 |
+| Already had both ways | 455 |
+| Gaps found | 110 |
+| Gaps fixed (Added) | 102 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -413,6 +413,224 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Open next podcast | "Open next podcast" | Actions list: arrows to the action, Enter | Both |
 | Open previous podcast | "Open previous podcast" | Actions list: arrows to the action, Enter | Both |
 
+## Alt menu, Email: Messages
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Check for new mail | "List messages" | F5 | Both |
+| Read message | "Open current message" | Enter | Both |
+| Reply | "Reply" | Ctrl+R | Both |
+| Reply all | "Reply all" | Ctrl+Shift+R | Both |
+| Forward | "Forward" | Ctrl+F | Both |
+| New email | "New email" | Ctrl+N | Both |
+| Delete | "Delete" | Delete | Both |
+| Move to folder | "Move" | Ctrl+Shift+V | Both |
+| Message details | "Message details" | Ctrl+I | Both |
+
+## Alt menu, Email: Select
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Mark or unmark message | "Toggle message selection" | Space | Both |
+| Select all messages | "Select all messages" | Ctrl+A | Both |
+| Clear selection | "Clear selection" | Ctrl+Shift+A | Both |
+| What is selected | "What is selected" | Ctrl+Shift+S | Both |
+| Copy sender address | "Copy sender address" | Ctrl+Shift+C | Both |
+| Email the sender | "New email to sender" | Ctrl+Shift+N | Both |
+
+## Alt menu, Email: Go to folder
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Inbox | "Go to inbox" | Alt, 3, 1 | Added: Alt menu path |
+| Sent | "Go to sent" | Alt, 3, 2 | Added: Alt menu path |
+| Drafts | "Go to drafts" | Alt, 3, 3 | Added: Alt menu path |
+| Trash | "Go to trash" | Alt, 3, 4 | Added: Alt menu path |
+| Spam | "Go to spam" | Alt, 3, 5 | Added: Alt menu path |
+| Choose a folder | "Go to folder" | Ctrl+Y | Both |
+| Which folder | "Which folder" | Ctrl+Shift+I | Both |
+| Next page of messages | "Next messages" | Page Down | Both |
+| Previous page of messages | "Previous messages" | Page Up | Both |
+
+## Alt menu, Email: Folder actions
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Create folder | "Create folder" | Ctrl+Shift+E | Both |
+| Rename folder | "Rename folder" | F2 | Both |
+| Move folder | "Move folder" | Ctrl+Shift+M | Both |
+| Delete empty folder | "Delete folder" | Ctrl+Shift+D | Both |
+| List folders | "List folders" | Alt, 4, 5 | Added: Alt menu path |
+
+## Alt menu, Email: Drafts and contacts
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Email drafts | "Open email draft" | Ctrl+O | Both |
+| List contacts | "List contacts" | Ctrl+K | Both |
+| Add contact | "Add contact ..." | Ctrl+Shift+K | Both |
+| Connect Google Contacts | "Connect google contacts" | Alt, 5, 4 | Added: Alt menu path |
+
+## Alt menu, Email: Accounts
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Add account | "Add account" | Alt, 6, 1 | Added: Alt menu path |
+| Switch account | "List email accounts" | Alt, 6, 2 | Added: Alt menu path |
+| Which account | "Which email account" | Alt, 6, 3 | Added: Alt menu path |
+
+## Alt menu, Email: Options and help
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Email options | "Options, then Email options" | Alt, 7, 1 | Added: Alt menu path |
+| Messages per page | "Email list size" | Alt, 7, 2 | Added: Alt menu path |
+| Email help | "Help with email" | F1 | Both |
+| Main menu | "Main menu" | Alt, 7, 4 | Added: Alt menu path |
+
+## Alt menu, Email draft: Message
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Send | "Send email" | Alt+S | Both |
+| Save draft | "Save draft" | Ctrl+S | Both |
+| Read draft | "Read email draft" | Ctrl+Shift+R | Both |
+| Save and close | "Leave email" | Alt, 1, 4 | Added: Alt menu path |
+| Discard draft | "Discard draft" | Alt, 1, 5 | Added: Alt menu path |
+
+## Alt menu, Email draft: Fields
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| To | "Go to to" | Alt, 2, 1 | Added: Alt menu path |
+| Cc | "Go to cc" | Alt, 2, 2 | Added: Alt menu path |
+| Bcc | "Go to bcc" | Alt, 2, 3 | Added: Alt menu path |
+| Subject | "Go to subject" | Alt, 2, 4 | Added: Alt menu path |
+| Message body | "Go to body" | Alt, 2, 5 | Added: Alt menu path |
+
+## Alt menu, Email draft: Format
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Bold | "Toggle bold" | Ctrl+B | Both |
+| Italic | "Toggle italic" | Ctrl+I | Both |
+| Underline | "Toggle underline" | Ctrl+U | Both |
+
+## Alt menu, Email draft: Contacts and help
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| List contacts | "List contacts" | Ctrl+K | Both |
+| Add contact | "Add contact ..." | Alt, 4, 2 | Added: Alt menu path |
+| Email options | "Options, then Email options" | Alt, 4, 3 | Added: Alt menu path |
+| Writing email help | "Help with writing email" | F1 | Both |
+
+## Alt menu, Notepad: Notepad
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Save and close note | "Save note" | Ctrl+S | Both |
+| Read note | "Read from top" | Ctrl+Shift+R | Both |
+| Saved notes | "List notes" | Ctrl+O | Both |
+| New line | "New line" | Alt, 4 | Added: Alt menu path |
+| Notepad options | "Options, then Notepad options" | Alt, 5 | Added: Alt menu path |
+| Notepad help | "Help with notepad" | F1 | Both |
+| Main menu | "Main menu" | Alt, 7 | Added: Alt menu path |
+
+## Alt menu, Web page: Page
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Back | "Back" | Alt+Left | Both |
+| Forward | "Forward" | Alt+Right | Both |
+| Refresh | "Refresh" | F5 | Both |
+| Search or enter address | "Search or enter address" | Ctrl+L | Both |
+| Find on page | "Find ..." | Ctrl+F | Both |
+| Top of page | "Top of page" | Alt, 1, 6 | Added: Alt menu path |
+| Bottom of page | "Bottom of page" | Alt, 1, 7 | Added: Alt menu path |
+
+## Alt menu, Web page: Lists
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Headings | "List headings" | F6 | Both |
+| Links | "List links" | F7 | Both |
+| Form fields | "List fields" | F8 | Both |
+
+## Alt menu, Web page: Favorites
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Add favorite | "Add favorite" | Alt, 3, 1 | Added: Alt menu path |
+| Go to favorite | "Go to favorite" | Alt, 3, 2 | Added: Alt menu path |
+| Web history | "Web history" | Alt, 3, 3 | Added: Alt menu path |
+| Web browser menu | "Web browser menu" | Escape | Both |
+
+## Alt menu, Web page: Options and help
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Web browser options | "Options, then Web browser options" | Alt, 4, 1 | Added: Alt menu path |
+| Web help | "Help with web" | F1 | Both |
+
+## Alt menu, Help: Help
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Help topics | "Help topics" | Alt, 1 | Added: Alt menu path |
+| Subsections | "List subsections" | Alt, 2 | Added: Alt menu path |
+| Release notes | "Release notes" | Alt, 3 | Added: Alt menu path |
+| Lessons | "Start tutorial" | Alt, 4 | Added: Alt menu path |
+| Open the guide folder | "Open user guides" | Alt, 5 | Added: Alt menu path |
+| Close help | "Close help" | Alt, 6 | Added: Alt menu path |
+| Main menu | "Main menu" | Alt, 7 | Added: Alt menu path |
+
+## Alt menu, Lessons: Lessons
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Lesson list | "Lesson list" | Ctrl+L | Both |
+| Repeat | "Repeat" | Ctrl+Shift+R | Both |
+| Continue reading | "Continue reading" | Ctrl+Down | Both |
+| Next lesson | "Next lesson" | Alt, 4 | Added: Alt menu path |
+| Previous lesson | "Previous lesson" | Alt, 5 | Added: Alt menu path |
+| Find lesson | "Find lesson ..." | Ctrl+F | Both |
+| Explain a command | "Explain command ..." | Ctrl+Shift+F | Both |
+| List commands | "List commands" | F1 | Both |
+| Main menu | "Main menu" | Alt, 9 | Added: Alt menu path |
+
+## Alt menu, Document reader: Read
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Read document | "Read document" | Ctrl+Shift+R | Both |
+| Find text | "Find ..." | Ctrl+F | Both |
+| Beginning of document | "Go to beginning of document" | Alt, 1, 3 | Added: Alt menu path |
+| End of document | "Go to end of document" | Alt, 1, 4 | Added: Alt menu path |
+| Formatting | "What formatting" | Insert+F | Both |
+| Selected text | "What is selected" | Insert+Shift+Down | Both |
+
+## Alt menu, Document reader: Move by
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Next heading | "Next heading" | H | Both |
+| Previous heading | "Previous heading" | Shift+H | Both |
+| Next table | "Next table" | T | Both |
+| Next list | "Next list" | L | Both |
+| Next link | "Next link" | K | Both |
+| Follow link | "Follow link" | Enter | Both |
+| Next bookmark | "Next bookmark" | B | Both |
+| Next footnote | "Next footnote" | N | Both |
+
+## Alt menu, Document reader: Leave and help
+
+| Action | Voice | Keyboard | Status |
+| --- | --- | --- | --- |
+| Back to files | "Back to files" | Escape | Both |
+| Main menu | "Main menu" | Alt, 3, 2 | Added: Alt menu path |
+| Document reader help | "Help with document reader" | F1 | Both |
+
 ## Browser menu
 
 | Action | Voice | Keyboard | Status |
@@ -445,6 +663,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Choose the item you hear | "That one", "Okay", "Confirm" | Enter | Both |
 | Find a menu item by name | Say the item name | Type its first letter | Both |
 | Return to the main menu | "Main menu" | Escape until the main menu | Both |
+| Open the current screen's menu | "Email menu", "Notepad menu", "Help menu", ... | Alt (Alt again closes it) | Added: Alt on Email, drafts, Notepad, web pages, Help, lessons and Document reader |
+| Move between radio or podcast actions and results | "Radio menu", "Podcasts menu", "Results" | Alt; Tab | Added: Alt |
 
 ## Help and lessons
 

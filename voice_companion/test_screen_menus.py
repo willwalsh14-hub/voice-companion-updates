@@ -65,7 +65,8 @@ class ScreenMenuTests(unittest.TestCase):
                     'OPEN_NOTE': None, 'KEYBOARD_DIRTY': {}, 'EDIT_ACK': {}, 'PREFERENCES': dict(app.PREFERENCES),
                     'SLEEP_RETURN_MODE': 'awake', 'SEARCH_RETURN_MODE': 'awake', 'FILE_READER': None,
                     'FILE_MANAGER': None, 'TASK_NAV': None, 'SCREEN_MENU': None, 'SETTINGS_PANEL': None,
-                    'ACCOUNT_ENTRY': None}
+                    'ACCOUNT_ENTRY': None, 'SETTINGS_RETURN_MODE': 'awake', 'CONFIRM_CHOICE': 'yes',
+                    'MEDIA_SECTION': 'radio', 'ACCOUNT_MENU_INDEX': None, 'DOCUMENT_CLOSE_TARGET': app.DOCUMENT_CLOSE_TARGET}
         for name, value in defaults.items():
             self.stack.enter_context(patch.object(app, name, value, create=True))
         self.said = []
