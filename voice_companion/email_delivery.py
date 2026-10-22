@@ -10,6 +10,7 @@ import json
 import smtplib
 import ssl
 from email.message import EmailMessage
+from email.utils import formatdate, make_msgid
 from urllib import error, parse, request
 
 from email_draft import normalize_recipient
@@ -107,8 +108,28 @@ def microsoft_request(draft, access_token):
                  'Content-Type': 'application/json'}, method='POST')
 
 
-def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL):
+class Accepted(str):
+    """A provider's acceptance. note is extra spoken detail, such as a Sent copy that failed."""
+    note = ''
+
+
+def delivery_note(result):
+    note = getattr(result, 'note', '')
+    return note if isinstance(note, str) else ''
+
+
+YAHOO_SIGN_IN_FAILED = ('Yahoo did not accept the saved app password. Ask your helper to make a new '
+                        'Yahoo app password, then say add account.')
+
+
+def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL, sent_folder=None):
+    """Send through smtp.mail.yahoo.com, then keep a copy in Yahoo's Sent folder
+    when sent_folder (a function taking the raw message and its Message-ID) is given.
+
+    Only a failure after the message data started can leave the result
+    uncertain; a refused sign-in, address or message was certainly not sent."""
     recipient, subject, body = message_parts(draft)
+    app_password = ''.join(str(app_password or '').split())
     if not app_password or not address:
         raise DeliveryError('Yahoo is not connected.')
     msg = EmailMessage()
@@ -117,22 +138,63 @@ def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL):
     if draft.cc: msg['Cc'] = ', '.join(draft.cc)
     if getattr(draft, 'bcc', []): msg['Bcc'] = ', '.join(draft.bcc)
     msg['Subject'] = subject
+    # Gmail adds these itself; Yahoo's Sent copy needs them to sort and match.
+    msg['Date'] = formatdate(localtime=True)
+    msg['Message-ID'] = make_msgid(domain=normalize_recipient(address).rpartition('@')[2] or 'yahoo.com')
     context = draft.response_context
     if context.get('action') in ('reply', 'reply_all') and context.get('message_id'):
         msg['In-Reply-To'] = context['message_id']
         msg['References'] = (context.get('references', '') + ' ' + context['message_id']).strip()
     msg.set_content(outgoing_body(draft, body))
     msg.add_alternative(formatted_body(draft), subtype='html')
+    stage, smtp = 'connect', None
     try:
-        with smtp_factory('smtp.mail.yahoo.com', 465,
-                          context=ssl.create_default_context(), timeout=30) as smtp:
-            smtp.login(address, app_password)
-            refused = smtp.send_message(msg)
+        smtp = smtp_factory('smtp.mail.yahoo.com', 465, context=ssl.create_default_context(), timeout=30)
+        smtp.login(address, app_password)
+        stage = 'send'
+        refused = smtp.send_message(msg)
+        stage = 'accepted'
+    except smtplib.SMTPAuthenticationError as exc:
+        raise DeliveryError(YAHOO_SIGN_IN_FAILED, uncertain=False) from exc
+    except smtplib.SMTPRecipientsRefused as exc:
+        raise DeliveryError('Yahoo would not send to ' + ', '.join(exc.recipients) +
+                            '. Check the address, then review the draft again.', uncertain=False) from exc
+    except smtplib.SMTPSenderRefused as exc:
+        raise DeliveryError('Yahoo would not send from this account right now. Wait a few minutes, '
+                            'then review the draft again.', uncertain=False) from exc
+    except smtplib.SMTPDataError as exc:
+        raise DeliveryError('Yahoo refused this message. Wait a few minutes, then review the draft again. '
+                            'If it happens again, ask your helper.', uncertain=False) from exc
     except (smtplib.SMTPException, OSError, TimeoutError) as exc:
+        if stage == 'connect':
+            raise DeliveryError('Voice Companion could not reach Yahoo Mail. Check the internet connection, '
+                                'then review the draft again.', uncertain=False) from exc
         raise DeliveryError('The result is uncertain. Keep the draft and check with the recipient before trying again.') from exc
+    finally:
+        if smtp is not None:
+            try:
+                if stage == 'accepted': smtp.quit()
+                else: smtp.close()
+            except Exception:
+                # Yahoo already accepted the message; a failed goodbye changes nothing.
+                try: smtp.close()
+                except Exception: pass
+    result = Accepted('accepted by Yahoo SMTP')
     if refused:
-        raise DeliveryError('Yahoo did not accept the recipient. Keep the draft.')
-    return 'accepted by Yahoo SMTP'
+        result.note += (' Yahoo did not accept ' + ', '.join(refused) +
+                        ', so they did not get it. Everyone else did.')
+    if sent_folder is not None:
+        try:
+            sent_folder(msg.as_bytes(), str(msg['Message-ID']))
+        except Exception:
+            # The message was sent; only the copy is missing. Never report a failed send.
+            result.note += ' A copy could not be saved in your Yahoo Sent folder.'
+    return result
+
+
+def yahoo_sent_folder(address, app_password):
+    from yahoo_mailbox import YahooMailbox
+    return YahooMailbox(address, app_password).save_sent_copy
 
 
 def submit(provider, draft, access_token, opener=secure_service_open, sender=''):
@@ -140,7 +202,7 @@ def submit(provider, draft, access_token, opener=secure_service_open, sender='')
     builders = {'gmail': gmail_request, 'outlook': microsoft_request,
                 'microsoft 365': microsoft_request, 'exchange online': microsoft_request}
     if provider == 'yahoo':
-        return yahoo_submit(draft, sender, access_token)
+        return yahoo_submit(draft, sender, access_token, sent_folder=yahoo_sent_folder(sender, access_token))
     if provider == 'thunderbird':
         from thunderbird_mailbox import submit as thunderbird_submit
         return thunderbird_submit(draft, access_token)

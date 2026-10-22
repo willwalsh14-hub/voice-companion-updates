@@ -160,6 +160,22 @@ class ThunderbirdOfflineTests(unittest.TestCase):
             with zipfile.ZipFile(build(Path(folder) / 'mail.xpi')) as archive:
                 self.assertEqual(sorted(archive.namelist()), ['background.js', 'manifest.json'])
 
+    def test_send_review_accepts_a_thunderbird_draft(self):
+        # The send step listed only Gmail, Outlook and Yahoo, so a Thunderbird
+        # draft heard "Choose a connected email account first" and never sent.
+        import companion
+        folder = Path(tempfile.mkdtemp())
+        draft = VoiceEmail(folder / 'Email Drafts', recipient='sam@example.com', subject='Lunch', provider='thunderbird')
+        draft.paragraphs = [Paragraph('See you at noon.')]
+        spoken = []
+        with mock.patch.object(companion, 'email_draft', draft), mock.patch.object(companion, 'pending_send', None), \
+             mock.patch.object(companion, 'APP', folder), mock.patch.object(companion, 'TEXT_MODE', True), \
+             mock.patch.object(companion, 'APP_WINDOW', None), mock.patch.object(companion, 'speak', spoken.append), \
+             mock.patch.object(mail_accounts.ProtectedStore, 'load', lambda self, provider: {'address': 'me@gmail.com'}):
+            companion.handle('send email', 'email_draft')
+            self.assertEqual(companion.pending_send[1:], ('thunderbird', 'me@gmail.com'))
+        self.assertFalse(any('Choose a connected email account' in line for line in spoken), spoken)
+
     def test_account_type_menu_offers_thunderbird(self):
         import companion
         self.assertIn(('Thunderbird', 'thunderbird'), companion.ACCOUNT_TYPES)

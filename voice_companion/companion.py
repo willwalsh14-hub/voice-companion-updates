@@ -22,9 +22,10 @@ from field_selection import FieldSelection, selection_command
 from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
 from media_hub import MediaHub
-from email_delivery import DeliveryError, message_parts, submit
-from mail_accounts import AccountError, ProtectedStore, account_token, connect
+from email_delivery import DeliveryError, delivery_note, message_parts, submit
+from mail_accounts import AccountError, ProtectedStore, account_token, connect, yahoo_connect, PROVIDERS as MAIL_PROVIDERS
 from mail_voice import MailSession
+from mailbox_access import MailboxError
 from practice_tutorial import PracticeTutorial
 from cloud_recognition import CloudRecognition
 from privacy_controls import narration_allowed,cloud_recognition_allowed
@@ -48,7 +49,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.156-test'
+APP_VERSION = '0.2.157-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -136,6 +137,15 @@ pending_website = None
 web_session = None
 REGULAR_BROWSER = None
 account_setup = False
+# Yahoo setup asks for the address, then the app password, in the app's own
+# text box: {'provider': 'yahoo', 'step': 'address' | 'password', 'address': ...}.
+ACCOUNT_ENTRY = None
+YAHOO_SETUP_PROMPT = ('Yahoo uses an app password, not your normal password. To make one, sign in to Yahoo, '
+                      'open Account security, and choose Generate app password. '
+                      'Now type or say your Yahoo email address, then press Enter. Say cancel to stop.')
+YAHOO_PASSWORD_PROMPT = ('Now type or paste your Yahoo app password, then press Enter. '
+                         'For privacy, do not say it aloud. Each character is spoken as hidden. '
+                         'Say change address to fix the address, or cancel to stop.')
 ACCOUNT_MENU_INDEX = None
 # Spoken name and account type, in menu order. Thunderbird uses its own sign-in.
 ACCOUNT_TYPES = (('Gmail', 'gmail'), ('Outlook or Exchange', 'outlook'), ('Yahoo', 'yahoo'), ('Thunderbird', 'thunderbird'))
@@ -215,6 +225,11 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     if logical=='task_input':context['task_input']=True
+    if ACCOUNT_ENTRY is not None:
+        context['account_entry']=ACCOUNT_ENTRY['step']
+        context['account_private']=ACCOUNT_ENTRY['step']=='password'
+        context['menu_letters']=False
+        return context
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
     if logical=='files' and FILE_MANAGER:
         context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0] in ('rename','search','search all'))
@@ -402,6 +417,8 @@ def process_keyboard_batch(mode):
                         else:web_session.commit_keyboard_field(command[1]['value'])
                         command='web key '+next_key
                     except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
+                elif command[0]=='account_secret':
+                    mode=finish_account_secret(command[1],mode);continue
                 elif command[0]=='media_field':
                     speak(media_navigation().field_value(command[1]['value'],command[1]['next']));sync_app_context(mode,True);continue
                 elif command[0]=='email_field_tab':
@@ -578,6 +595,12 @@ def commit_email_field_tab(payload,mode):
 
 def navigation_key(key,mode):
     global KEYBOARD_NAVIGATION
+    if ACCOUNT_ENTRY is not None and key!='Control':
+        # Setup owns the keyboard: keys must not reach the menu behind the text box.
+        if key=='Escape':return 'cancel account setup'
+        if key=='F1':return 'help'
+        if key in ('Enter','Space','Up','Down','Left','Right','Home','End','Delete','Tab','ShiftTab','F5'):return 'account entry empty'
+        return 'account entry busy'
     previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
     try:return _navigation_key(key,mode)
     finally:KEYBOARD_NAVIGATION=previous
@@ -1629,6 +1652,10 @@ def handle_mailbox_screen(text, command, mode, typed):
                   'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
             focus_email_entry()
             return 'email_draft'
+        except (MailboxError, AccountError) as exc:
+            # Say what went wrong (for example an expired app password), not a guess.
+            speak(str(exc))
+            return mode
         except Exception:
             speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
             return mode
@@ -1647,6 +1674,74 @@ def handle_mailbox_screen(text, command, mode, typed):
     return 'mailbox'
 
 
+def account_entry_step(text, command, mode):
+    """One spoken or typed answer during Yahoo setup. The password is never taken by voice."""
+    global ACCOUNT_ENTRY
+    if command in ('cancel', 'cancel account setup', 'cancel setup', 'stop', 'go back', 'escape', 'never mind', 'main menu'):
+        ACCOUNT_ENTRY = None
+        speak('Yahoo setup canceled. No account was saved.')
+        sync_app_context(mode, True)
+        return mode
+    if command == 'account entry empty':
+        speak(('The box is empty. Type or paste the app password, then press Enter.' if ACCOUNT_ENTRY['step'] == 'password'
+               else 'The box is empty. Type your Yahoo email address, then press Enter.') + ' Press Escape to cancel.')
+        return mode
+    if command == 'account entry busy':
+        speak('Yahoo setup is open. Finish it, or press Escape to cancel.')
+        return mode
+    if command in ('help', 'what do i do', 'repeat', 'what now', 'say that again'):
+        speak(YAHOO_SETUP_PROMPT if ACCOUNT_ENTRY['step'] == 'address' else YAHOO_PASSWORD_PROMPT)
+        return mode
+    if ACCOUNT_ENTRY['step'] == 'password':
+        if command in ('change address', 'change the address', 'wrong address', 'fix address', 'fix the address'):
+            ACCOUNT_ENTRY = {'provider': 'yahoo', 'step': 'address'}
+            speak('Type or say your Yahoo email address, then press Enter.')
+            sync_app_context(mode, True)
+            return mode
+        # Never repeat what was said: it may have been the password.
+        speak('For privacy, type or paste the app password instead of saying it. Then press Enter. Say cancel to stop.')
+        return mode
+    from email_draft import normalize_recipient
+    try:
+        address = normalize_recipient(text.strip().rstrip('.'))
+    except ValueError:
+        speak('That is not a complete email address. Type or say it again, such as sam at yahoo dot com. Say cancel to stop.')
+        return mode
+    ACCOUNT_ENTRY = {'provider': 'yahoo', 'step': 'password', 'address': address}
+    speak('Address ' + address + '. ' + YAHOO_PASSWORD_PROMPT)
+    sync_app_context(mode, True)
+    return mode
+
+
+def finish_account_secret(value, mode):
+    """Typed or pasted app password from the private text box."""
+    global ACCOUNT_ENTRY
+    entry = ACCOUNT_ENTRY
+    if not entry or entry.get('step') != 'password':
+        speak('Nothing is waiting for a password. Say add account to connect email.')
+        return mode
+    checking = 'Checking the app password with Yahoo. This can take up to 30 seconds.'
+    if KEYBOARD_BATCH and APP_WINDOW is not None:
+        APP_WINDOW.feedback(checking)  # keyboard actions otherwise speak only their final result
+    else:
+        speak(checking)
+    try:
+        address = yahoo_connect(ProtectedStore(APP), entry['address'], value)
+    except AccountError as exc:
+        speak(str(exc) + ' Type or paste the app password again, say change address, or say cancel.')
+        sync_app_context(mode, True)
+        return mode
+    except Exception:
+        speak('Yahoo setup stopped because of a problem. No account was saved. Say add account to try again.')
+        ACCOUNT_ENTRY = None
+        sync_app_context(mode, True)
+        return mode
+    ACCOUNT_ENTRY = None
+    speak('Yahoo account ' + address + ' is connected and selected. Say check email to open it.')
+    sync_app_context(mode, True)
+    return mode
+
+
 def _handle(text, mode, typed=False):
     global DOCUMENT_NAMING_ACTION
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
@@ -1654,7 +1749,7 @@ def _handle(text, mode, typed=False):
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
-    global OPEN_NOTE
+    global OPEN_NOTE, ACCOUNT_ENTRY
     global SEARCH_RETURN_MODE,NAMED_LIST
     # Phrases that list saved notes. On the Notepad screen only the clear commands
     # count; a sentence such as "My notes are on the desk" is text.
@@ -1663,6 +1758,8 @@ def _handle(text, mode, typed=False):
                           'show notes', 'show my notes', 'show saved notes')
     NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have')
     command=normalized_command(text)
+    if ACCOUNT_ENTRY is not None:
+        return account_entry_step(text, command, mode)
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
@@ -2243,7 +2340,7 @@ def _handle(text, mode, typed=False):
         speak('Draft canceled without saving.' if discarded else
               'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
         finish_mail_announcement()
-        if mail_session is None and provider in ('gmail', 'outlook', 'yahoo'):
+        if mail_session is None and provider in MAIL_PROVIDERS:
             mail_session = MailSession(provider, APP, progress=mail_progress)
         if mail_session is not None:
             speak(mail_session.process('open inbox'))
@@ -2425,6 +2522,11 @@ def _handle(text, mode, typed=False):
             speak('Say Gmail, Outlook or Exchange, Yahoo, Thunderbird, or cancel.')
             return mode
         account_setup = False
+        if provider == 'yahoo':
+            ACCOUNT_ENTRY = {'provider': 'yahoo', 'step': 'address'}
+            speak(YAHOO_SETUP_PROMPT)
+            sync_app_context(mode, True)
+            return mode
         speak('Opening ' + provider.capitalize() + ' account setup. A trusted person may complete the private sign-in. Please wait for the result.')
         try:
             address = connect(provider, APP, graphical=True)
@@ -2654,7 +2756,7 @@ def _handle(text, mode, typed=False):
                     speak('This same draft was already attempted. Check Sent Mail before trying again. Ask your helper if you need to send a corrected message.')
                     return mode
                 provider = email_draft.provider
-                if provider not in ('gmail', 'outlook', 'yahoo'):
+                if provider not in MAIL_PROVIDERS:
                     raise AccountError('Choose a connected email account first. The draft has not been sent.')
                 address = ProtectedStore(APP).load(provider)['address']
                 if email_draft.response_context and email_draft.response_context.get('source_address') not in (None, address):
@@ -2694,7 +2796,7 @@ def _handle(text, mode, typed=False):
                     email_draft.last_attempt_hash = ''
                     speak('The draft could not be saved, so the email was not sent. Check that the disk has space and try again.')
                     return mode
-                submit(provider, email_draft, token, sender=address)
+                accepted = submit(provider, email_draft, token, sender=address)
                 email_draft.last_accepted_hash = fingerprint
                 email_draft.save()
             except (AccountError, DeliveryError, ValueError, OSError, KeyError) as exc:
@@ -2704,7 +2806,7 @@ def _handle(text, mode, typed=False):
                 reason=str(exc) if isinstance(exc,(AccountError,DeliveryError,ValueError)) else 'The email connection could not complete the request.'
                 speak(reason+' The draft is saved locally.'+(' Check Sent Mail before trying again; do not send a duplicate.' if uncertain else ' It has not been sent. Correct the problem and review the draft again.'))
                 return mode
-            speak_status('Email sent successfully.')
+            speak_status('Email sent successfully.' + delivery_note(accepted))
             finish_mail_announcement()
             original_body = (mail_session.body_text if mail_session is not None and
                              email_draft.response_context and mail_session.view == 'message' else None)

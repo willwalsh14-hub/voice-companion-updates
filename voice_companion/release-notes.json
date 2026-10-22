@@ -1,37 +1,29 @@
 {
-  "version": "0.2.156-test",
+  "version": "0.2.157-test",
   "status": "Testing build",
   "date": "October 22, 2026",
-  "baseline": "0.2.155-test",
-  "scope": "Everything in the app can now be done by voice and by keyboard. The guide gives both ways for each task.",
+  "baseline": "0.2.156-test",
+  "scope": "Yahoo mail works again, from adding the account to reading, organizing and sending.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "A key for every voice command",
+          "title": "Add a Yahoo account",
           "details": [
-            "Things you could only say now have a key too. Things you could only press now have a spoken command.",
-            "F12 puts the microphone to sleep on any main screen. On the sleep screen, F12 wakes it.",
-            "On the main menu: Control+Shift+V tells the version. Control+Shift+M tells the mode. Control+Shift+G opens the user guides. Control+Shift+T starts the tutorial.",
-            "F1 gives help on each screen."
+            "Say Add account and choose Yahoo. Companion asks for your Yahoo address. Type it or say it.",
+            "Then type or paste your Yahoo app password and press Enter. Press Control+V to paste. Each letter is spoken as hidden.",
+            "Companion checks the password with Yahoo and tells you if it worked. If not, it says what to do.",
+            "Before, Yahoo setup froze with no speech, and you could not type or paste."
           ]
         },
         {
-          "title": "Email keys",
+          "title": "Yahoo works like Gmail",
           "details": [
-            "In the inbox, Control+O lists your saved email drafts. You can also say Open email draft.",
-            "Control+K lists your contacts. Control+Shift+K adds a contact.",
-            "Control+Shift+I tells which folder you are in. Control+I gives message details.",
-            "Page Down and Page Up move through the message list a page at a time."
-          ]
-        },
-        {
-          "title": "Web, help and tutorial keys",
-          "details": [
-            "On a web page, Control+F finds words. F8 lists the fields.",
-            "In a Help topic, Control+Down Arrow and Control+Up Arrow move one sentence at a time.",
-            "In the tutorial, Control+Shift+R repeats. F1 lists the commands. Control+L lists the lessons."
+            "Every email command now works the same way for Yahoo as for Gmail.",
+            "Delete and move now work for Yahoo. Deleted mail goes to Trash.",
+            "Say Go to Spam or Go to Junk to open spam. Yahoo calls this folder Bulk.",
+            "Mail you send from Yahoo is now kept in your Sent folder."
           ]
         }
       ]
@@ -40,18 +32,18 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "The guide",
+          "title": "Clear messages",
           "details": [
-            "Each task in the guide now gives the spoken command and the key. For example: Say Read paragraph, or press Alt, 5, then B.",
-            "Keys are now written as Control, not Ctrl, so they are read clearly."
+            "If Yahoo stops accepting your app password, Companion says so. Make a new app password, then add the account again.",
+            "If sending fails, Companion says whether the message was sent.",
+            "Saying Yes, please, with a comma, now confirms a delete or move for any account."
           ]
         },
         {
-          "title": "Radio and email",
+          "title": "Thunderbird and other mail",
           "details": [
-            "Radio station actions now have spoken names. For example, say Add to favorites.",
-            "List email drafts now works from the inbox. Before, it only gave a help message.",
-            "Email options have a new Connect Google Contacts button."
+            "Mail from a Thunderbird account can now be sent. Before, the send step refused it.",
+            "Names and subjects in other languages are now read the right way."
           ]
         },
         {

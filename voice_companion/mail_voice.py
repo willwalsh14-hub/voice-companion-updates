@@ -93,8 +93,8 @@ class MailSession:
         return name
 
     def _mutable_folder(self, title, ident):
-        if title.casefold() in ('inbox', 'sent', 'sent items', 'drafts', 'trash',
-                                'deleted items', 'junk', 'junk email', 'spam', 'all mail', 'archive'):
+        if title.casefold() in ('inbox', 'sent', 'sent items', 'drafts', 'draft', 'trash',
+                                'deleted items', 'junk', 'junk email', 'spam', 'bulk', 'all mail', 'archive'):
             raise MailboxError('That standard folder cannot be changed by voice.')
         if self.provider == 'gmail' and self.client().folder_info(ident).get('type', '').lower() != 'user':
             raise MailboxError('That Gmail system label cannot be changed.')
@@ -145,9 +145,12 @@ class MailSession:
             matches = [item for item in self.folders if item[0].casefold() in ('sent', 'sent mail', 'sent items')
                        or item[1].casefold() in ('sent', 'sentitems')]
         if not matches:
+            # Folder IDs: Gmail (SPAM), Outlook (junkemail) and Yahoo (Bulk) name these differently.
+            spam = ('spam', 'junkemail', 'bulk')
             standard = {'drafts': ('draft', 'drafts'), 'draft': ('draft', 'drafts'),
-                        'trash': ('trash', 'deleteditems'), 'spam': ('spam', 'junkemail'),
-                        'sent': ('sent', 'sentitems')}.get(name, ())
+                        'trash': ('trash', 'deleteditems'), 'deleted items': ('trash', 'deleteditems'),
+                        'spam': spam, 'junk': spam, 'junk mail': spam, 'junk email': spam, 'bulk': spam,
+                        'bulk mail': spam, 'sent': ('sent', 'sentitems')}.get(name, ())
             matches = [item for item in self.folders if item[1].casefold() in standard]
         if not matches:
             return 'I could not find that folder. Say go to folder to hear the list.'
@@ -422,7 +425,8 @@ class MailSession:
 
     def process(self, text):
         spoken = text.strip().rstrip('.!?')
-        command = spoken.lower()
+        # Recognizers add inner punctuation ("Yes, please."), as companion.handle allows for.
+        command = re.sub(r'\s+', ' ', re.sub(r'\s*[,;!?]+\s*', ' ', spoken.lower())).strip()
         size = re.fullmatch(r'(?:set |change |show )?(?:email |mail |message )?(?:list size|page size|messages per page|emails per page)(?: to)? (all|\d+|one thousand)', command)
         size = size or re.fullmatch(r'(?:set|change) (?:list )?to (all|\d+|one thousand)', command)
         size = size or re.fullmatch(r'(?:list |list of |list to |show |show me )(all|\d+|one thousand)(?: (?:number of )?(?:messages|emails))?', command)
@@ -813,6 +817,12 @@ class MailSession:
                             self.client().trash(ids, self.folder_id)
                         else:
                             self.client().trash(ids)
+                except (MailboxError, AccountError) as exc:
+                    if isinstance(exc, AccountError) or exc.unchanged:
+                        # The mail service refused before anything moved; say why.
+                        return str(exc) + ('' if 'Nothing was' in str(exc) else ' Nothing was changed.')
+                    self.rows = []
+                    return 'Some messages may have moved. Refresh the folder and check before trying again.'
                 except Exception:
                     self.rows = []
                     return 'Some messages may have moved. Refresh the folder and check before trying again.'

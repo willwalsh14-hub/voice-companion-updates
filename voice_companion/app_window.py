@@ -135,6 +135,9 @@ class CompanionWindow:
         if not self.closed.is_set(): self.ui_actions.put(('clear_email', None))
 
     def submit_entry(self, value):
+        if self.context.get('account_private'):
+            # Yahoo app password: sent straight to setup, never shown or spoken.
+            self.commands.put(('account_secret',value));return True
         if self.context.get('media_input'):
             self.commands.put(('media_field',{'value':value,'next':'Enter'}));return True
         if self.context.get('web_private'):
@@ -148,6 +151,13 @@ class CompanionWindow:
         return False
 
     def report_entry_key(self, before, after, old_caret, caret, key, character=""):
+        if self.context.get('account_private'):
+            added=len(after)-len(before)
+            if added>1:self.feedback(str(added)+' hidden characters pasted.')
+            elif added==1:self.feedback('Hidden character.')
+            elif added<0:self.feedback('Deleted.' if not after else 'Deleted. '+str(len(after))+' hidden characters left.')
+            else:self.feedback('Private field. '+str(len(after))+' hidden characters.' if after else 'Private field. Empty.')
+            return
         if self.context.get('web_private'):
             if before!=after:self.feedback('Hidden character.' if len(after)>len(before) else 'Deleted.')
             else:self.feedback('Private field.')
@@ -723,7 +733,12 @@ class CompanionWindow:
                             if form:
                                 entry_label.configure(text=form['label']+':');typed.delete(0,'end');typed.insert(0,form['value'] if field.get('media_input') else '');typed.icursor('end');typed.focus_force()
                             else:typed.delete(0,'end')
-                        typed.configure(show='*' if field.get('web_private') else '')
+                        typed.configure(show='*' if field.get('web_private') or field.get('account_private') else '')
+                        if field.get('account_entry')!=old.get('account_entry'):
+                            typed.delete(0,'end')
+                            if field.get('account_entry'):
+                                entry_label.configure(text='Yahoo app password (private); paste or type, then press Enter. Escape cancels:' if field.get('account_private') else 'Yahoo email address; type, then press Enter. Escape cancels:')
+                                typed.focus_force()
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
                         if mode!='files':file_list.pack_forget();file_toolbar.pack_forget()
@@ -790,7 +805,7 @@ class CompanionWindow:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
                             if field.get('file_name_input') and old.get('mode')!='settings' and field.get('file_rename_value')!=old.get('file_rename_value'):
                                 typed.delete(0,'end');typed.insert(0,field['file_rename_value']);typed.selection_range(0,'end')
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else field.get('file_input_label','New file name, including extension')+'; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('account_entry') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else field.get('file_input_label','New file name, including extension')+'; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()
