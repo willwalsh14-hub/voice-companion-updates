@@ -92,6 +92,9 @@ PARAKEET_MODEL = Path(os.getenv('VOICE_COMPANION_PARAKEET_MODEL',
 MODEL = Path(os.getenv('VOICE_COMPANION_MODEL', str(BUNDLED_MODEL if BUNDLED_MODEL.exists() else APP / 'model')))
 GUIDE = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'START HERE - Veteran.txt'
 WAKE = ('wake up',)
+# Saying the first three lists the saved drafts; the rest open a list to choose one from.
+EMAIL_DRAFT_COMMANDS = ('list email drafts', 'list drafts', 'my email drafts',
+                        'open email draft', 'open an email draft', 'choose email draft', 'choose an email draft')
 SLEEP = ('go to sleep', 'stop listening', 'sleep companion')
 EXIT = ('shut down companion', 'exit companion', 'quit companion', 'close companion', 'return to windows', 'exit voice companion', 'close voice companion')
 AUDIO = queue.Queue(maxsize=400)  # About 20 seconds of 50 ms microphone blocks.
@@ -2630,7 +2633,8 @@ def _handle(text, mode, typed=False):
             return 'web'
         speak_web_result(web_session.command(text),revision)
         return 'web'
-    if mode == 'mailbox':
+    # Saved drafts open from the inbox too (Control+O), not only from the main menu.
+    if mode == 'mailbox' and not (command in EMAIL_DRAFT_COMMANDS or command.startswith('open email draft ')):
         return handle_mailbox_screen(text, command, mode, typed)
     # Keep active writing in its editor. A dictated sentence that happens to
     # start with "open document" must not replace the current document.
@@ -2833,11 +2837,18 @@ def _handle(text, mode, typed=False):
         mail_session = MailSession(provider, APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
         return 'mailbox'
-    if command in ('list email drafts', 'list drafts', 'my email drafts'):
+    if command in EMAIL_DRAFT_COMMANDS[:3]:
         folder = APP / 'Email Drafts'
         names = sorted((p.stem for p in folder.glob('*.json')), key=str.casefold) if folder.exists() else []
         speak('Your email drafts are: ' + ', '.join(names[:20]) + ('. There are more drafts.' if len(names) > 20 else '.')
               if names else 'You have no saved email drafts yet.')
+        return mode
+    if command in EMAIL_DRAFT_COMMANDS[3:]:
+        # A list to choose from with arrows and Enter (Control+O in email), or by voice.
+        folder = APP / 'Email Drafts'
+        names = sorted((p.stem for p in folder.glob('*.json')), key=str.casefold) if folder.exists() else []
+        speak(open_named_list('Email drafts', [(name, 'open email draft ' + name) for name in names]) if names
+              else 'You have no saved email drafts yet.')
         return mode
     if command.startswith('open email draft '):
         try:

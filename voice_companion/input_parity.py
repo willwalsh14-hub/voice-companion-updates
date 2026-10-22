@@ -5,21 +5,38 @@ from pathlib import Path
 # Each key runs the same spoken command, so voice and keyboard give the same result.
 # The window sends these keys only on the named screen; see screen_key().
 SCREEN_KEYS = {
-    'awake': {'F1': 'help'},
+    'awake': {'F1': 'help', 'Ctrl+Shift+V': 'what version', 'Ctrl+Shift+M': 'what mode',
+              'Ctrl+Shift+G': 'open user guides'},
     'note': {'Ctrl+S': 'save note', 'Ctrl+Shift+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+Shift+R': 'read email draft', 'F1': 'help with writing email',
-                    'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline'},
+                    'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
+                    'Ctrl+K': 'list contacts'},
     'mailbox': {'Next': 'next messages', 'Prior': 'previous messages', 'Ctrl+I': 'message details',
-                'F1': 'help with email'},
+                'F1': 'help with email', 'Ctrl+Shift+I': 'which folder', 'Ctrl+O': 'open email draft',
+                'Ctrl+K': 'list contacts', 'Ctrl+Shift+K': 'add contact {value}',
+                'Ctrl+Shift+A': 'clear selection', 'Ctrl+Shift+S': 'what is selected',
+                'Ctrl+Shift+M': 'move folder', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+Shift+R': 'read document', 'F1': 'help with document reader'},
-    'web': {'F1': 'help with web'},
+    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields'},
     'browser_menu': {'F1': 'help with web'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
     'media_menu': {'F1': 'help with media player'},
     'local_media': {'F1': 'help with media player'},
+    # Sentences in an open help topic (Up and Down move by paragraph).
+    'help': {'Ctrl+Down': 'next sentence', 'Ctrl+Up': 'previous sentence'},
+    'tutorial': {'Ctrl+Shift+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
+                 'Ctrl+F': 'find lesson {value}', 'Ctrl+Shift+F': 'explain command {value}',
+                 'Ctrl+Down': 'continue reading'},
+    'sleep': {'Ctrl+M': 'wake up'},
 }
+# Control+M puts the microphone to sleep from any main screen; on the sleep screen it wakes it.
+for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
+              'recent_documents', 'media_menu', 'local_media', 'help', 'tutorial', 'document', 'files', 'document_menu'):
+    SCREEN_KEYS.setdefault(_mode, {})['Ctrl+M'] = 'go to sleep'
+# Keys that work only in one part of a screen.
+HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
 # Formatting keys apply to the message body, not to an address or subject box.
 BODY_ONLY = {'Ctrl+B', 'Ctrl+I', 'Ctrl+U'}
 
@@ -50,6 +67,8 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
         return None  # Page keys scroll an open message; they change pages only in the list.
     if mode == 'email_draft' and key in BODY_ONLY and email_field:
         return None
+    if mode == 'help' and key in HELP_ARTICLE_ONLY and not context.get('help_reader'):
+        return None
     return key
 
 
@@ -59,6 +78,12 @@ def screen_command(key, mode):
     if command and '{value}' in command:
         return '@prompt:' + command
     return command
+
+
+def settings_phrase(field):
+    """What to say in Options to change a field: its name, or its key name when the name is long."""
+    name=field.label if ';' not in field.label else field.key.replace('_',' ')
+    return 'set '+name+' to'
 
 
 def catalog():
@@ -75,8 +100,14 @@ def catalog():
     nav=app.task_navigation()
     for mode in ('word_processor','media_menu','local_media'):
         for name,key,voice in nav.items(mode):add(mode.replace('_',' ').title(),name,name if voice.startswith('@') else voice,key or 'First letter, arrows, Enter')
+    from app_settings import ACTIONS
     for category in CATEGORIES:
-        for field in fields(category,{}):add(category,field.label,'Choose '+field.label,'Arrows to field; Space, text or arrows; Enter to save')
+        for field in fields(category,{}):
+            if field.kind=='action':add(category,field.label,ACTIONS[field.key],'Alt+O, arrows to '+category+', Tab to the button, Enter')
+            else:add(category,field.label.split(';')[0],settings_phrase(field)+' ...','Alt+O, arrows to '+category+', Tab to the field, arrows or Space, Enter to save')
+    from media_navigation import RADIO,RADIO_STATION,PODCASTS
+    for area,actions in (('Radio',RADIO),('Radio station actions',RADIO_STATION),('Podcasts',PODCASTS)):
+        for action in actions:add(area,action.label,action.label,'Actions list: arrows to the action, Enter')
     from browser_menu import BrowserMenu
     from types import SimpleNamespace
     # Bypass history loading: choices depends only on the session's page state.

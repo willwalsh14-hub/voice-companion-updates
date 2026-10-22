@@ -51,7 +51,7 @@ class ScreenKeyTableTests(unittest.TestCase):
         for mode,keys in SCREEN_KEYS.items():
             for key,command in keys.items():
                 with self.subTest(mode=mode,key=key):
-                    with patch.object(app,'speak'),patch.object(app,'NAMED_LIST',None):
+                    with patch.object(app,'speak'),patch.object(app,'NAMED_LIST',None),patch.object(app,'MEDIA_SECTION','radio'):
                         request=app.navigation_key(key,mode)
                     self.assertEqual(request,('@prompt:'+command) if '{value}' in command else command)
                     self.assertEqual(screen_command(key,mode),request)
@@ -64,7 +64,7 @@ class ScreenKeyTableTests(unittest.TestCase):
                 keysym,state=key_event(key)
                 with self.subTest(mode=mode,key=key):
                     self.assertEqual(chord(keysym,state),key)
-                    self.assertEqual(screen_key(mode,keysym,state,{}),key)
+                    self.assertEqual(screen_key(mode,keysym,state,{'help_reader':True}),key)
                     self.assertIsNone(screen_key(mode,keysym,state,{'confirmation':'yes'}))
                     for private in ('web_private','media_input','browser_name_input','file_name_input','task_input'):
                         self.assertIsNone(screen_key(mode,keysym,state,{private:True}))
@@ -73,6 +73,9 @@ class ScreenKeyTableTests(unittest.TestCase):
         self.assertIsNone(screen_key('note','s',8|4,{}))
         self.assertIsNone(screen_key('note','s',0,{}))
         self.assertIsNone(screen_key('awake','F1',1,{}))
+        # Sentence keys work only inside an open help topic, not in the topic list.
+        self.assertIsNone(screen_key('help','Down',4,{}))
+        self.assertEqual(screen_key('help','Down',4,{'help_reader':True}),'Ctrl+Down')
         self.assertEqual(chord('Page_Down',0),'Next')
 
     def test_page_keys_change_mail_pages_only_in_the_message_list(self):
@@ -284,6 +287,219 @@ class ScreenKeyEffectTests(unittest.TestCase):
             session.keyboard_field={'key':'q','tag':'input','type':'text','label':'Search','value':''}
             session.find=Mock(return_value='Not found.')  # The usual answer to words it does not know.
             session.command('page down');self.assertEqual(session.reading.position,0)
+
+
+class MailFake:
+    """A mail client with the same shape as the real ones: folders, pages and message bodies."""
+    def __init__(self,*args):pass
+    def folders(self):return [('Inbox','INBOX'),('Receipts','Receipts')]
+    def list_messages(self,folder,cursor=None,limit=10):
+        page=int(cursor or 0)
+        return ([{'id':str(page*10+i),'from':'p'+str(page)+'@example.com','subject':'Page '+str(page)+' item '+str(i)} for i in range(2)],None if page else '1')
+
+
+class NewKeyEffectTests(ScreenKeyEffectTests):
+    """Each key added for parity does what the spoken command does."""
+
+    def both(self,mode,key,voice,setup=None,state=None):
+        """Run the voice command and the key from the same start; return what was said and the end state."""
+        results=[]
+        for use_key in (False,True):
+            if setup:setup()
+            self.speech.reset_mock()
+            screen=self.press(key,mode) if use_key else app.handle(voice,mode)
+            said=[str(c.args[0]) for c in self.speech.call_args_list]
+            results.append((screen,said,state() if state else None))
+        self.assertEqual(results[0],results[1],key)
+        return results[0]
+
+    def mailbox(self):
+        from mail_voice import MailSession
+        self.stack.enter_context(patch('mail_voice.account_token',return_value=('me@example.com','token')))
+        session=MailSession('gmail',str(self.root),MailFake);session.process('open inbox')
+        app.mail_session=session
+        return session
+
+    def test_main_menu_keys_for_version_mode_and_guides(self):
+        for key,voice in (('Ctrl+Shift+V','What version?'),('Ctrl+Shift+M','what mode')):
+            screen,said,_=self.both('awake',key,voice)
+            self.assertEqual(screen,'awake');self.assertTrue(said)
+        self.assertIn(app.APP_VERSION,self.both('awake','Ctrl+Shift+V','what version')[1][0])
+        with patch('guide_files.open_folder',create=True),patch('os.startfile',create=True):
+            screen,said,_=self.both('awake','Ctrl+Shift+G','Open user guides.')
+        self.assertEqual(screen,'awake')
+
+    def test_control_m_puts_the_microphone_to_sleep_and_wakes_it(self):
+        for mode in ('awake','note','files','document','web','mailbox','help'):
+            with self.subTest(mode=mode):
+                self.assertEqual(app.navigation_key('Ctrl+M',mode),'go to sleep')
+        app.SLEEP_RETURN_MODE='awake'
+        self.assertEqual(self.press('Ctrl+M','awake'),'sleep')
+        self.assertEqual(app.handle('go to sleep','awake'),'sleep')
+        self.assertEqual(app.navigation_key('Ctrl+M','sleep'),'wake up')
+        self.assertEqual(app.handle_keyboard('wake up','sleep'),'awake')
+
+    def test_mail_folder_selection_and_contact_keys_match_voice(self):
+        session=self.mailbox()
+        self.both('mailbox','Ctrl+Shift+I','Which folder?')
+        self.assertIn('Inbox',self.last())
+        def marked():session._clear_marks();session.process('toggle message selection')
+        self.both('mailbox','Ctrl+Shift+S','what is selected',setup=marked)
+        self.assertIn('1',self.last())
+        self.both('mailbox','Ctrl+Shift+A','clear selection',setup=marked,state=lambda:len(session.marked_ids))
+        self.assertEqual(len(session.marked_ids),0)
+        def no_picker():session.folder_picker=None
+        self.both('mailbox','Ctrl+Shift+M','move folder',setup=no_picker,state=lambda:session.folder_picker['action'])
+        self.assertEqual(session.folder_picker['action'],'move_source');session.folder_picker=None
+        from address_book import AddressBook
+        with patch.object(app,'current_account',return_value=None,create=True):
+            AddressBook(app.APP,'').save('Sam Jones','sam@example.com')
+            def closed():app.NAMED_LIST=None
+            screen,said,_=self.both('mailbox','Ctrl+K','List contacts.',setup=closed,state=lambda:app.NAMED_LIST['title'])
+            self.assertIn('Sam Jones',said[0])
+            for mode in ('email_draft',):self.assertEqual(app.navigation_key('Ctrl+K',mode),'list contacts')
+            # Add contact opens a box for the name and address; the result is the same contact.
+            app.NAMED_LIST=None
+            self.assertEqual(self.press('Ctrl+Shift+K','mailbox'),'task_input')
+            self.assertIn('Escape cancels',self.last())
+            self.assertEqual(app.handle_keyboard('Pat Lee as pat@example.com','task_input'),'mailbox')
+            self.assertEqual(AddressBook(app.APP,'').get('Pat Lee')['address'],'pat@example.com')
+
+    def test_message_link_and_button_lists_have_keys(self):
+        session=self.mailbox()
+        for key,voice in (('F7','list links'),('F8','list buttons')):
+            session.view='folder'
+            self.both('mailbox',key,voice)
+            self.assertEqual(self.last(),'Open a message first.')
+        session.view='message';session.body_text='Visit the site.'
+        (self.root/'preferences.json').write_text('{"email_format": "html"}',encoding='utf-8')
+        with patch('email_reader.message_controls',return_value=[(6,14,'link','https://example.com')]):
+            self.both('mailbox','F7','list links')
+        self.assertIn('the site',self.last())
+
+    def test_saved_email_drafts_can_be_chosen_with_control_o(self):
+        from email_draft import VoiceEmail
+        draft=VoiceEmail(self.root/'Email Drafts');draft.compose_step='body';draft.recipient='sam@example.com'
+        draft.process('Lunch on Friday.');draft.save()
+        self.mailbox()
+        def closed():app.NAMED_LIST=None
+        screen,said,_=self.both('mailbox','Ctrl+O','open email draft',setup=closed,state=lambda:[n for n,_ in app.NAMED_LIST['items']])
+        self.assertIn('Email drafts list',said[0])
+        self.assertEqual(app.navigation_key('Enter','mailbox'),'okay')
+        self.assertEqual(app.handle_keyboard('okay','mailbox'),'email_draft')
+        self.assertIn('Lunch on Friday.',app.email_draft.body_text() if hasattr(app.email_draft,'body_text') else str(app.email_draft.paragraphs[0].text))
+        # The spoken list is unchanged.
+        app.handle('list email drafts','mailbox');self.assertIn('Your email drafts are:',self.last())
+        empty=self.root/'empty';empty.mkdir()
+        with patch.object(app,'APP',empty):
+            app.handle('open email draft','awake');self.assertEqual(self.last(),'You have no saved email drafts yet.')
+
+    def test_web_find_and_field_list_keys_match_voice(self):
+        from web_assistant import WebSession
+        session=WebSession(str(self.root),Mock());app.web_session=session
+        calls=[]
+        session.find=lambda spoken:calls.append(spoken) or 'Found it.'
+        session.fields=lambda guided=False:'Fields: Name, Email.'
+        self.assertEqual(app.handle('find login','web'),'web')
+        self.assertEqual(self.press('Ctrl+F','web'),'task_input')
+        self.assertIn('Escape cancels',self.last())
+        self.assertEqual(app.handle_keyboard('login','task_input'),'web')
+        self.assertEqual(calls[0].lower(),calls[1].lower())
+        self.both('web','F8','List fields.')
+        self.assertEqual(self.last(),'Fields: Name, Email.')
+
+    def test_help_sentence_keys_match_voice(self):
+        app.handle('help','awake')
+        topic=next(i for i,t in enumerate(app.help_session.topics) if t['name'].casefold()=='getting started')
+        def open_topic():
+            app.help_session.topic_index=topic;app.help_session.level='topics';app.handle('that one','help');app.handle('that one','help')
+        positions=[]
+        for key,voice in (('Ctrl+Down','next sentence'),('Ctrl+Up','previous sentence')):
+            positions.append(self.both('help',key,voice,setup=open_topic,state=lambda:app.help_session.reading.position))
+        self.assertEqual(app.help_session.level,'article')
+
+    def test_tutorial_keys_match_voice(self):
+        def fresh():
+            app.tutorial_session=None;app.handle('start tutorial','awake');app.handle('that one','tutorial');app.handle('that one','tutorial')
+        state=lambda:(app.tutorial_session.level,app.tutorial_session.index)
+        for key,voice in (('Ctrl+Shift+R','Repeat.'),('F1','list commands'),('Ctrl+L','Lesson list.'),('Ctrl+Down','continue reading')):
+            with self.subTest(key=key):self.both('tutorial',key,voice,setup=fresh,state=state)
+        fresh();app.handle('find lesson email','tutorial');expected=(self.last(),state())
+        fresh()
+        self.assertEqual(self.press('Ctrl+F','tutorial'),'task_input')
+        self.assertEqual(app.handle_keyboard('email','task_input'),'tutorial')
+        self.assertEqual((self.last(),state()),expected)
+        fresh();self.press('Ctrl+Shift+F','tutorial');self.assertEqual(app.handle_keyboard('next message','task_input'),'tutorial')
+        said=self.last();fresh();app.handle('explain command next message','tutorial');self.assertEqual(self.last(),said)
+
+    def test_radio_station_actions_can_be_spoken_by_name(self):
+        from media_navigation import MediaNavigation,RADIO_STATION
+        hub=Mock();hub.stations=[{'name':'Jazz FM','url':'http://x'}];hub.station_index=0;hub.current_station=None
+        hub.preset_browsing=False;hub.browsing_episodes=False;hub.player.kind=None;hub.presets.return_value=[]
+        for action in RADIO_STATION:
+            if not action.form:continue
+            with self.subTest(action=action.label):
+                spoken=MediaNavigation(hub,'radio');spoken.command(action.label+'.')
+                pressed=MediaNavigation(hub,'radio');pressed.keyboard('Down')
+                pressed.focus='actions';pressed.index=[a.label for a in pressed.actions].index(action.label);pressed.activate()
+                self.assertEqual(spoken.form['name'],pressed.form['name'])
+
+    def test_google_contacts_is_in_email_options(self):
+        from settings_model import fields
+        from app_settings import ACTIONS
+        field=next(f for f in fields('Email options',{}) if f.key=='google_contacts')
+        self.assertEqual(field.kind,'action');self.assertEqual(ACTIONS['google_contacts'],'connect google contacts')
+        with patch('google_contacts.sync',return_value='Google Contacts synced.') as sync:
+            app.settings_action('google_contacts','mailbox')
+        sync.assert_called_once()
+
+
+class CatalogParityTests(unittest.TestCase):
+    """Every menu item, option and media action has a spoken name that the app understands."""
+
+    def test_settings_phrases_reach_the_same_field(self):
+        from settings_model import CATEGORIES,fields,SettingsSession
+        from input_parity import settings_phrase
+        session=SettingsSession({}, {})
+        for category in CATEGORIES:
+            for field in fields(category,{}):
+                if field.kind=='action':continue
+                with self.subTest(field=field.key):
+                    request=session.voice_setting((settings_phrase(field)+' on').capitalize()+'.')
+                    self.assertIsNotNone(request,field.label);self.assertEqual(request[0],field.key)
+
+    def test_settings_buttons_have_spoken_commands(self):
+        from settings_model import CATEGORIES,fields
+        from app_settings import ACTIONS
+        for category in CATEGORIES:
+            for field in fields(category,{}):
+                if field.kind=='action':self.assertIn(field.key,ACTIONS)
+
+    def test_menu_items_spoken_or_entered_open_the_same_place(self):
+        with ExitStack() as stack:
+            root=Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            stack.enter_context(redirect_stdout(io.StringIO()))
+            speech=stack.enter_context(patch.object(app,'speak'))
+            for name,value in {'APP':root,'TEXT_MODE':True,'APP_WINDOW':None,'NAMED_LIST':None,'document':None,'email_draft':None}.items():
+                stack.enter_context(patch.object(app,name,value))
+            stack.enter_context(patch.object(app,'open_settings',return_value='settings'))
+            stack.enter_context(patch.object(app,'SETTINGS_PANEL',Mock()))
+            stack.enter_context(patch.object(app,'MEDIA_SECTION','radio'))
+            stack.enter_context(patch.object(app,'MEDIA_HUB',None))
+            stack.enter_context(patch.object(app,'open_browser_menu',return_value='browser_menu'))
+            stack.enter_context(patch.object(app,'open_email_reader',return_value='mailbox',create=True))
+            nav=app.task_navigation()
+            for mode in ('word_processor','media_menu'):
+                for index,(name,key,voice) in enumerate(nav.items(mode)):
+                    with self.subTest(mode=mode,item=name):
+                        results=[]
+                        for use_key in (False,True):
+                            nav.enter(mode,'Menu');speech.reset_mock()
+                            if use_key:
+                                nav.indices[mode]=index
+                                results.append(app.handle_keyboard(app.navigation_key('Enter',mode),mode))
+                            else:results.append(app.handle(name+'.',mode))
+                        self.assertEqual(results[0],results[1])
 
 
 @unittest.skipUnless(__import__('sys').platform=='win32','Windows Tk keyboard integration')
