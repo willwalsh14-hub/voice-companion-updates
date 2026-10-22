@@ -3509,7 +3509,7 @@
 },
 "awake | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -8996,7 +8996,7 @@
 },
 "document | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -14769,7 +14769,7 @@
 },
 "email_draft | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -22605,7 +22605,7 @@
 },
 "mailbox | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -26455,7 +26455,7 @@
 },
 "note | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27707,6 +27707,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -27767,6 +27768,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -28383,6 +28385,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -28439,6 +28442,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -31918,7 +31922,7 @@
 },
 "web | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },

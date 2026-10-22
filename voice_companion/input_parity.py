@@ -17,8 +17,8 @@ SCREEN_KEYS = {
                 'Ctrl+Shift+A': 'clear selection', 'Ctrl+Shift+S': 'what is selected',
                 'Ctrl+Shift+M': 'move folder', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+Shift+R': 'read document', 'F1': 'help with document reader'},
-    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields'},
-    'browser_menu': {'F1': 'help with web'},
+    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window'},
+    'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},

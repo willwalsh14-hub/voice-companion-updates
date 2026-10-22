@@ -74,6 +74,7 @@ Contents
   11.7 Fill in and review a form by voice
   11.8 Read a web table and leave a page
   11.9 Identify graphics, lists, regions, and frames
+  11.10 Use website keys and sliders
 12 Favorites And Web History
   12.1 Save the current page
   12.2 Open or find a favorite
@@ -708,6 +709,7 @@ You can say "Next option", "Previous option", "First option", "Last option", or 
 Some text boxes suggest answers as you type, such as the search box on YouTube. Companion calls this an edit combo box.
 Type or say your words. Then press Down Arrow or Up Arrow to hear each suggestion. You can also say "Next suggestion" or "Previous suggestion".
 Press Enter to use the suggestion you heard, or the words you typed. Escape closes the suggestions and keeps you in the box. Press Escape again to cancel editing.
+When the list of suggestions changes, Companion says "New suggestions available". It waits until you stop typing, so you do not hear it for each letter.
 In a box like this, say "Search for" followed by your words to search that website.
 Read-only boxes cannot be changed. Passwords are hidden in the page text and spoken review.
 
@@ -736,7 +738,9 @@ Companion reads the cell text. It also reads the heading and the row and column 
 Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same.
 To reload the page, say "Refresh page", or press F5. For web help, say "Help with web", or press F1.
 Escape from ordinary page reading opens the web browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
-Saying "Leave website" also opens the web browser menu. "Close browser" or "Main menu" leaves the browser activity.
+Saying "Leave website" also opens the web browser menu. "Main menu" leaves the browser activity.
+To close the browser window, say "Close browser window", or press Control+Shift+W. This works even when Keep browser window open is on. Companion then goes to the main menu. It works in the web browser menu too.
+If you use your regular browser with the extension, its tabs stay open. Companion just lets go of it.
 
 11.9 Identify graphics, lists, regions, and frames
 Companion uses names supplied by the website. A name should tell you what an item is or what it does. If a useful name is missing, Companion says that the item is unlabeled. It does not guess what a picture shows.
@@ -747,6 +751,22 @@ K and Shift+K move between links. L and I are for lists and list items, even whe
 A region is an area such as navigation, main content, or a named section. Press D or Shift+D to move between regions. You can say "Next region", "Previous region", "Next landmark", or "Previous landmark". Companion reads the area's name and type.
 A frame holds another page inside the current page. Press M for the next frame or Shift+M for the previous frame. You can also say "Next frame" or "Previous frame". Companion uses the frame's title or label when supplied.
 Readable frame content appears where the frame occurs on the page. Companion marks the end of the frame. Hidden frames are skipped.
+
+11.10 Use website keys and sliders
+Some websites have their own keys. For example, on YouTube, K plays or pauses a video. J and L skip back and ahead. M turns the sound off, and F fills the screen.
+In browse mode, Companion uses letter keys to move through the page. To send your keys to the website instead, use app mode.
+To use app mode, say "App mode", or press Insert+Space. To go back, say "Browse mode", or press Insert+Space again. You can also say "Focus mode" for app mode.
+NVDA and JAWS keep Insert+Space for themselves. If one of them is running, press Control+Alt+Space instead. It works the same way.
+In app mode, every key goes to the website, even Escape and the arrows. Companion tells you where the website moves you and what changes. It also reads short messages from the website, such as Paused.
+F5, F6, F7, Control+L, Alt+Left Arrow, and Alt+Right Arrow keep their usual jobs in app mode.
+To leave the page from app mode, press Insert+Space first. Then press Escape for the web browser menu.
+When you go back to browse mode, your reading place moves to where you were in app mode.
+Each website keeps its own mode while you use the web browser. When you go to a different website, Companion says which mode it uses. Leaving the page always goes back to browse mode.
+A slider sets a level, such as the place in a video or the sound volume. Companion reads its name and value. For example, it says "Seek slider, 1:23 of 4:05".
+To find a slider, say "Next slider", or press Tab until you reach it. When Tab reaches a slider, you can use it at once. If you reached it another way, press Enter to start using it.
+Then use Left Arrow and Right Arrow, or Up Arrow and Down Arrow, to change it. Page Up and Page Down make bigger changes. Home and End go to the start and the end. Companion says the new value each time.
+Press Escape to stop using the slider and go back to browse mode. Tab also moves on to the next control.
+Choice boxes and text boxes work the same way. When Tab reaches one, you can use it at once. Press Enter on one you reached another way.
 
 12. FAVORITES AND WEB HISTORY
 
@@ -787,6 +807,7 @@ Your history remains saved when you close and reopen Companion. Back and Forward
 12.5 Resume where you left off
 Open Options, then Web browser options. Check Keep browser window open if you want to keep a page for later.
 When this setting is on, pressing Escape during page reading opens the web browser menu and leaves the page open.
+To close the page anyway, say "Close browser window", or press Control+Shift+W.
 Choose Resume where you left off to return to that page and your reading place.
 When this setting is off, leaving page reading closes Companion's browser windows. The menu does not show Resume where you left off.
 If the saved browser session has been closed elsewhere, Companion removes Resume where you left off from the menu.

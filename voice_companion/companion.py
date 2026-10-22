@@ -286,6 +286,8 @@ def app_context(mode):
         context['web_choice']=__import__('web_browse').choice_field(field)
         context['web_combo_edit']=__import__('web_browse').editable_combo(field)
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
+        context['web_app_mode']=getattr(web_session,'app_mode',False) is True
+        context['web_slider']=bool(isinstance(getattr(web_session,'slider_field',None),dict))
         document_identity=(web_session.document_state or {}).get('epoch',getattr(web_session,'page_revision',0))
         if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(document_identity)+':'+str(field.get('frame_index','main'))+':'+field['key']
         if field and field.get('type')=='password':context['web_private']=True;context['web_field']=dict(field)
@@ -668,8 +670,8 @@ def _navigation_key(key,mode):
             return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Home':'home','End':'end','Enter':'enter','Escape':'escape'}[key]
         if key.startswith('Letter:'):return key
     if mode=='web' and key in ('Escape','Web:Escape') and web_session and isinstance(web_session.snapshot,dict) and web_session.snapshot.get('modal_key') and not web_session.list_focus:return 'web key Escape'
-    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'web browser menu'
-    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus:return 'web browser menu'
+    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field or isinstance(getattr(web_session,'slider_field',None),dict)):return 'web browser menu'
+    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus and not isinstance(getattr(web_session,'slider_field',None),dict):return 'web browser menu'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key=='Enter':return 'open current heading' if web_session.list_focus=='headings' else 'open current link'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
@@ -1418,6 +1420,19 @@ def web_dictation_feedback(result):
     if text is None:speak(result)
     elif text:dictation_feedback('Added: '+text)
 
+CLOSE_BROWSER_COMMANDS=('close browser','close the browser','close browser window','close the browser window','close web browser',
+                        'close web browser window','close the web browser','exit browser','exit web browser','quit browser')
+
+def close_browser_window():
+    """Close the browser even when Keep browser window open is on, then go to the main menu."""
+    regular=getattr(getattr(web_session,'backend',None),'regular',False) is True
+    try:web_session.leave(False)
+    except Exception:
+        speak('The browser window could not close. Try closing it again.');return 'web' if web_session.snapshot else 'browser_menu'
+    speak('Companion let go of your browser. Its tabs stay open.' if regular else 'Browser window closed.')
+    announce_main_menu()
+    return 'awake'
+
 def open_browser_menu():
     global web_session
     if os.name=='nt':
@@ -1850,6 +1865,8 @@ def _handle(text, mode, typed=False):
     if mode=='web' and command in ('web browser menu','browser menu','leave website'):
         web_session.leave(PREFERENCES.get('web_keep_open',False))
         return open_browser_menu()
+    if command in CLOSE_BROWSER_COMMANDS and web_session and (mode in ('web','browser_menu') or mode=='awake' and web_session.snapshot):
+        return close_browser_window()
     if mode == 'tutorial':
         if change_speech_setting(text) or use_synthesizer(text) or voice_menu(command):return mode
         control=speech_control(text)
@@ -2798,7 +2815,7 @@ def _handle(text, mode, typed=False):
             result=web_session.keyboard(text[8:],direct_submit=True) if KEYBOARD_NAVIGATION and text[8:] in ('Activate','Space') else web_session.keyboard(text[8:])
             speak_web_result(result,revision);return mode
         web_session.input_mode = INPUT_MODE
-        if command in ('leave website', 'close website','close browser','exit browser','leave web browser','close web browser','exit web browser', 'main menu', 'back to main menu'):
+        if command in ('leave website', 'close website','leave web browser', 'main menu', 'back to main menu'):
             try:web_session.leave(PREFERENCES.get('web_keep_open',False))
             except Exception:speak('The browser window could not close. Try closing it again.')
             announce_main_menu()

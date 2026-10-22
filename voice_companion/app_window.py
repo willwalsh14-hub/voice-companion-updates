@@ -46,6 +46,20 @@ def entry_feedback(before, after, old_caret, caret, key, character=""):
     return None
 
 
+def show_context_text(old, field, seq, web_cursor_changed=False):
+    """Whether the editor takes the app's text and caret from a new context.
+
+    In a web text box, keys typed since the app's last acknowledgment are
+    still on their way to it. Replacing the box then would undo those letters
+    and make the next key look like a conflicting edit."""
+    if old.get('source') != field.get('source'):
+        return True
+    if (field.get('mode') == 'web' and field.get('web_field') and not field.get('readonly')
+            and field.get('ack', 0) < seq):
+        return False
+    return bool(web_cursor_changed or field.get('focus', False) or field.get('ack', 0) >= seq)
+
+
 class CompanionWindow:
     def __init__(self, version, data_folder=None):
         self.version = version
@@ -331,6 +345,14 @@ class CompanionWindow:
                         self.commands.put(('keyboard','Letter:'+event.char));return 'break'
                     if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
                         self.commands.put(('keyboard',file_key));return 'break'
+                if mode=='web' and not self.command_entry_active and not self.context.get('web_private'):
+                    from web_modes import toggle_chord
+                    # Insert+Space, or Control+Alt+Space when a screen reader owns Insert.
+                    if key=='Insert':document_modifiers.add(key);return 'break'
+                    if toggle_chord(key,event.state,'Insert' in document_modifiers):
+                        if self.keyboard_output:self.keyboard_output.interrupt()
+                        flush_pending_edit();cancel_phonetic()
+                        self.commands.put(('keyboard','Web:ToggleAppMode'));return 'break'
                 if not self.command_entry_active and mode!='task_input':
                     from input_parity import screen_key
                     direct=screen_key(mode,key,event.state,self.context,self.email_field,typed.get())
@@ -394,7 +416,13 @@ class CompanionWindow:
                     elif control and shift and key.lower()=='p':request='Ctrl+Shift+P'
                     elif control and key.lower() in ('f','p','r','s','d'):request='Ctrl+'+key.upper()
                     elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
-                if mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
+                if mode=='web' and (self.context.get('web_app_mode') or self.context.get('web_slider')) and not self.command_entry_active and not self.context.get('web_private'):
+                    # App mode sends keys to the page; a slider takes its arrow keys.
+                    from web_modes import window_request
+                    request=window_request(key,event.char,event.state,self.context)
+                    if request=='':return 'break'
+                if request:pass
+                elif mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
                     request='Enter' if key=='Return' else 'Space' if key=='space' else key
                 elif mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
                 elif mode=='note' and control and not shift and not event.state&(8|0x20000) and key.lower()=='o':request='Ctrl+O'
@@ -799,7 +827,7 @@ class CompanionWindow:
                             web_cursor_changed=mode=='web' and (old.get('web_cursor_revision')!=field.get('web_cursor_revision') or old.get('web_revision')!=field.get('web_revision'))
                             if web_cursor_changed or transition:local['web_navigation_pending']=False
                             if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
-                            if old.get('source')!=source or web_cursor_changed or field.get('focus',False) or field.get('ack',0)>=local['seq']:
+                            if show_context_text(old,field,local['seq'],web_cursor_changed):
                                 local['applying']=True
                                 if editor.get('1.0','end-1c')!=field.get('text',''):
                                     editor.delete('1.0','end');editor.insert('1.0',field.get('text',''));editor.edit_reset()
