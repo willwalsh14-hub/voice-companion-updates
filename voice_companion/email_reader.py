@@ -40,15 +40,20 @@ def spoken_range(body,start,end):
 class Renderer(HTMLParser):
     blocks={'p','div','section','article','blockquote','h1','h2','h3','h4','h5','h6','tr','ul','ol'}
     styles={'b':'bold','strong':'bold','i':'italic','em':'italic','u':'underline','h1':'heading','h2':'heading','h3':'heading'}
+    head_tags={'title','meta','link','base','style','script','noscript','template'}
     def __init__(self):
         super().__init__(convert_charrefs=True);self.text='';self.spans=[];self.active=[];self.hidden=0;self.lists=[];self.control_labels={}
+        self.in_head=False
     def newline(self):
         self.text=self.text.rstrip(' ')
         if self.text and not self.text.endswith('\n'):self.text+='\n'
     def handle_starttag(self,tag,attrs):
         attrs=dict(attrs)
-        if tag in ('script','style','head'):self.hidden+=1;return
-        if self.hidden:return
+        # Browsers end <head> at the first body tag even when </head> is missing.
+        if tag=='head':self.in_head=True;return
+        if self.in_head and tag not in self.head_tags:self.in_head=False
+        if tag in ('script','style') or tag=='title' and self.in_head:self.hidden+=1;return
+        if self.hidden or self.in_head:return
         if tag in self.blocks or tag=='li':self.newline()
         if tag in ('ul','ol'):self.lists.append([tag,0])
         if tag=='li':
@@ -69,9 +74,10 @@ class Renderer(HTMLParser):
             label=attrs.get('aria-label') or attrs.get('title')
             if label:self.control_labels[(tag,len(self.text))]=label
     def handle_endtag(self,tag):
-        if tag in ('script','style','head'):
+        if tag=='head':self.in_head=False;return
+        if tag in ('script','style') or tag=='title' and self.in_head:
             self.hidden=max(0,self.hidden-1);return
-        if self.hidden:return
+        if self.hidden or self.in_head:return
         for i in range(len(self.active)-1,-1,-1):
             name,start,style,url=self.active[i]
             if name==tag:
@@ -81,6 +87,9 @@ class Renderer(HTMLParser):
         if tag in ('ol','ul') and self.lists:self.lists.pop()
     def handle_data(self,data):
         if self.hidden:return
+        if self.in_head:
+            if not data.strip():return
+            self.in_head=False
         value=re.sub(r'\s+',' ',data.replace('\xa0',' '))
         if self.text.endswith((' ','\n')) or not self.text:value=value.lstrip()
         self.text+=value

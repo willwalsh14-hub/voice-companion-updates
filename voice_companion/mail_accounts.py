@@ -56,7 +56,31 @@ def account_token(provider, folder):
     if provider == 'yahoo':
         saved = store.load('yahoo')
         return saved['address'], saved['app_password']
+    if provider == 'thunderbird':
+        # Thunderbird holds the sign-in. The "token" is which Thunderbird account to use.
+        saved = store.load('thunderbird')
+        return saved['address'], saved
     raise AccountError('That provider is not connected.')
+
+
+def thunderbird_connect(store):
+    """Add every Thunderbird sending address; select the first one."""
+    from mailbox_access import MailboxError
+    from thunderbird_mailbox import accounts
+    try:
+        found = accounts()
+    except MailboxError as exc:
+        raise AccountError(str(exc)) from exc
+    identities = [(account, identity) for account in found for identity in account.get('identities', [])
+                  if identity.get('email')]
+    if not identities:
+        raise AccountError('Thunderbird has no email accounts yet. Ask your helper to add your email account in Thunderbird first.')
+    for account, identity in identities:
+        store.save('thunderbird', {'address': identity['email'], 'account_id': account['id'],
+                                   'identity_id': identity['id'], 'name': account.get('name', '')}, select=False)
+    first = identities[0][1]['email']
+    store.select('thunderbird', first)
+    return first
 
 
 def connect(provider, folder, graphical=False):
@@ -66,6 +90,8 @@ def connect(provider, folder, graphical=False):
         return gmail_connect(store, config.get('google_credentials_file', ''))
     if provider == 'outlook':
         return microsoft_connect(store, config.get('microsoft_client_id', ''))
+    if provider == 'thunderbird':
+        return thunderbird_connect(store)
     if provider == 'yahoo':
         import smtplib
         import ssl
@@ -107,12 +133,15 @@ def yahoo_account_dialog():
         root.destroy()
 
 
+PROVIDERS = ('gmail', 'outlook', 'yahoo', 'thunderbird')
+
+
 class ProtectedStore:
     def __init__(self, folder):
         self.folder = Path(folder)
 
     def _path(self, provider):
-        if provider not in ('gmail', 'outlook', 'yahoo'):
+        if provider not in PROVIDERS:
             raise AccountError('That account type is not supported.')
         return self.folder / (provider + '.account')
 
@@ -136,7 +165,7 @@ class ProtectedStore:
 
     def accounts(self):
         result = []
-        for provider in ('gmail', 'outlook', 'yahoo'):
+        for provider in PROVIDERS:
             paths = list(self.folder.glob(provider + '-*.account')) + [self._path(provider)]
             for path in paths:
                 if not path.is_file(): continue

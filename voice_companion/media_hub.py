@@ -476,14 +476,40 @@ class MediaHub:
         return ('Scheduled ' + station['name'] + ' for ' + when.strftime('%A %B %d at %I:%M %p') +
                 f' for {minutes} minutes. Keep Voice Companion running and the computer awake.')
 
+    @staticmethod
+    def _scheduled_name(job):
+        """The station name of a schedule entry, or None if the entry is damaged."""
+        station=job.get('station') if isinstance(job,dict) else None
+        name=station.get('name') if isinstance(station,dict) else None
+        return name if isinstance(name,str) and name and isinstance(job.get('when'),str) else None
+
+    def _damaged_schedule_is_new(self, job):
+        """True the first time a damaged entry is seen; the scheduler checks every 10 seconds."""
+        try: key=json.dumps(job,sort_keys=True,default=str)
+        except (TypeError,ValueError): key=repr(job)
+        reported=self.__dict__.setdefault('_damaged_schedule_entries',set())
+        if key in reported: return False
+        reported.add(key)
+        return True
+
     def tick(self):
         now=self.clock()
         with self._lock:
             jobs=self._load('radio-schedule.json', [])
+            damaged=0
+            if not isinstance(jobs,list):
+                damaged+=self._damaged_schedule_is_new(jobs);jobs=[]
             changed=False
             kept=[]
             for job in jobs:
-                due=datetime.fromisoformat(job['when'])
+                try:
+                    due=datetime.fromisoformat(job['when'])
+                    due<=now
+                    if not isinstance(job['station'],dict) or not isinstance(job['station'].get('name'),str): raise TypeError
+                    int(job['minutes'])
+                except (TypeError,KeyError,ValueError,AttributeError,OverflowError):
+                    # Kept in the file for a helper to inspect, but never retried as an error.
+                    damaged+=self._damaged_schedule_is_new(job);kept.append(job);continue
                 if due<=now:
                     if now-due<=timedelta(minutes=5):
                         result=self.record_now(job['station'],int(job['minutes']))
@@ -496,6 +522,9 @@ class MediaHub:
                         kept.append(job)
                 else: kept.append(job)
             if changed: self._save('radio-schedule.json',kept)
+            if damaged:
+                self.notify(('One scheduled radio recording is' if damaged==1 else f'{damaged} scheduled radio recordings are')+
+                            ' damaged and will be skipped. Other recordings still work. Ask your helper to check the radio schedule.')
         if time.time()-self._last_refresh_attempt>24*3600:
             self._last_refresh_attempt=time.time()
             try: self.refresh_iprd()
@@ -507,9 +536,13 @@ class MediaHub:
     def start_scheduler(self):
         if self._scheduler and self._scheduler.is_alive(): return
         def run():
+            failing=False
             while True:
-                try: self.tick()
-                except Exception: self.notify('The radio schedule could not be checked. Ask your helper to inspect it.')
+                try: self.tick();failing=False
+                except Exception:
+                    # Say it once, not every 10 seconds, until a check works again.
+                    if not failing: self.notify('The radio schedule could not be checked. Ask your helper to inspect it.')
+                    failing=True
                 time.sleep(10)
         self._scheduler=threading.Thread(target=run,daemon=True)
         self._scheduler.start()
@@ -1046,13 +1079,17 @@ class MediaHub:
             return self.schedule(self.station(number),when,int(duration),bool(repeat))
         if cmd in ('list scheduled recordings','what recordings are scheduled'):
             jobs=self._load('radio-schedule.json',[])
-            return 'Scheduled: '+ '; '.join(f'{i}. {j["station"]["name"]} at {j["when"]}' for i,j in enumerate(jobs,1)) if jobs else 'No recordings are scheduled.'
+            if not isinstance(jobs,list):
+                return 'The radio schedule is damaged. Ask your helper to check it.'
+            return 'Scheduled: '+ '; '.join(f'{i}. '+(f'{name} at {j["when"]}' if (name:=self._scheduled_name(j)) else 'A damaged schedule entry')
+                                           for i,j in enumerate(jobs,1)) if jobs else 'No recordings are scheduled.'
         match=re.fullmatch(r'cancel scheduled recording (\d+)',cmd)
         if match:
-            jobs=self._load('radio-schedule.json',[]);i=int(match[1])-1
-            if not 0<=i<len(jobs): return 'That schedule number is unavailable.'
-            name=jobs.pop(i)['station']['name'];self._save('radio-schedule.json',jobs)
-            return 'Canceled scheduled recording of '+name+'.'
+            with self._lock:
+                jobs=self._load('radio-schedule.json',[]);i=int(match[1])-1
+                if not isinstance(jobs,list) or not 0<=i<len(jobs): return 'That schedule number is unavailable.'
+                name=self._scheduled_name(jobs.pop(i));self._save('radio-schedule.json',jobs)
+            return 'Canceled scheduled recording of '+name+'.' if name else 'Canceled a damaged schedule entry.'
         if cmd in ('list recordings','list radio recordings'):
             names=[p.name for p in self.recordings()]
             return 'Recordings: '+ '; '.join(f'{i}. {n}' for i,n in enumerate(names[:30],1)) if names else 'No radio recordings yet.'

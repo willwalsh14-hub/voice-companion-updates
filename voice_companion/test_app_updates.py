@@ -21,6 +21,28 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('PASS:', result.stdout)
 
+    @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows updater process handling')
+    def test_stuck_previous_app_is_stopped_so_update_restarts(self):
+        import os, subprocess
+        shell = Path(os.environ['SystemRoot'])/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe'
+        result = subprocess.run([str(shell), '-NoProfile', '-File', str(Path(__file__).with_name('test-update-previous-app.ps1'))], capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS:', result.stdout)
+
+    def test_helper_does_not_give_up_when_previous_app_is_slow_to_close(self):
+        helper=(Path(__file__).parent/'apply-update.ps1').read_text()
+        stop=helper[helper.index('function Stop-PreviousCompanion'):helper.index('\ntry {')]
+        # Wait 30 seconds, ask to close, then stop only this installation's copy.
+        for value in ('WaitForExit(30000)','CloseMainWindow()','.Kill()','[IO.Path]::GetFullPath($AppPath)','.Dispose()'):
+            self.assertIn(value,stop)
+        self.assertLess(stop.index('WaitForExit(30000)'),stop.index('CloseMainWindow()'))
+        self.assertLess(stop.index('CloseMainWindow()'),stop.index('.Kill()'))
+        body=helper[helper.index('\ntry {'):]
+        self.assertIn('Stop-PreviousCompanion (Get-Process -Id $PreviousProcessId',body)
+        self.assertNotIn("throw 'The previous app is still running.'",body)
+        self.assertLess(body.index('Stop-PreviousCompanion'),body.index('$setup = Start-Process'))
+        self.assertTrue(Path(__file__).with_name('test-update-previous-app.ps1').is_file())
+
     def release(self,body=b'MZinstaller'):
         return {'schema':1,'version':'1.2.3-test','installer_url':'https://example.org/Setup.exe','sha256':hashlib.sha256(body).hexdigest(),'size':len(body)}
     def test_versions_and_manifest_validation(self):

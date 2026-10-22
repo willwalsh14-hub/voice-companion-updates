@@ -67,6 +67,11 @@ def gmail_body(raw):
         raise MailboxError('This message could not be read.') from exc
 
 
+GMAIL_BATCH_URL = 'https://gmail.googleapis.com/batch/gmail/v1'
+GMAIL_BATCH_SIZE = 50  # Google advises 50 or fewer calls per batch to avoid rate limits.
+GMAIL_METADATA = '?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date'
+
+
 class MailboxClient:
     def __init__(self, provider, token, opener=None):
         if provider not in ('gmail', 'outlook'):
@@ -102,6 +107,54 @@ class MailboxClient:
             if method != 'GET':
                 raise MailboxError('The result is uncertain. Check the folder or messages before trying again.') from exc
             raise MailboxError('The mail service could not complete this request. Try again later.') from exc
+
+    def _gmail_batch(self, ids):
+        """Message details for up to 50 ids in one request, keyed by id.
+
+        Gmail's batch endpoint takes multipart/mixed with one GET per part and
+        answers in parts named <response-ID>, possibly out of order. Parts that
+        did not succeed are left out so the caller can retry them alone.
+        """
+        if not ids:
+            return {}
+        boundary = 'voice_companion_' + base64.urlsafe_b64encode(__import__('os').urandom(12)).decode().rstrip('=')
+        body = ''.join('--' + boundary + '\r\nContent-Type: application/http\r\nContent-ID: <item' + str(n) +
+                       '>\r\n\r\nGET /gmail/v1/users/me/messages/' + parse.quote(ident, safe='') + GMAIL_METADATA +
+                       '\r\n\r\n' for n, ident in enumerate(ids)) + '--' + boundary + '--\r\n'
+        outgoing = request.Request(GMAIL_BATCH_URL, data=body.encode('utf-8'), method='POST',
+                                   headers={'Authorization': 'Bearer ' + self.token,
+                                            'Content-Type': 'multipart/mixed; boundary=' + boundary})
+        try:
+            with self.opener(outgoing, timeout=30) as response:
+                content = response.read(6 * 1024 * 1024)
+                if response.read(1):
+                    raise MailboxError('The mail response is too large.')
+                content_type = response.headers.get('Content-Type', '')
+        except MailboxError:
+            raise
+        except Exception as exc:
+            raise MailboxError('The mail service could not complete this request. Try again later.') from exc
+        if not content_type.lower().startswith('multipart/'):
+            return {}
+        try:
+            reply = BytesParser(policy=policy.default).parsebytes(
+                b'Content-Type: ' + content_type.encode('latin-1') + b'\r\n\r\n' + content)
+            results = {}
+            for part in reply.iter_parts():
+                match = re.fullmatch(r'\s*<?response-item(\d+)>?\s*', str(part.get('Content-ID', '')))
+                if not match or int(match[1]) >= len(ids):
+                    continue
+                raw = part.get_payload(decode=True) or b''
+                head, _, payload = raw.replace(b'\r\n', b'\n').partition(b'\n\n')
+                status = head.split(b'\n', 1)[0].split()
+                if len(status) < 2 or status[1] != b'200':
+                    continue
+                info = json.loads(payload)
+                if isinstance(info, dict):
+                    results[ids[int(match[1])]] = info
+            return results
+        except (ValueError, TypeError, UnicodeError, LookupError):
+            return {}
 
     def folders(self):
         if self.provider == 'gmail':
@@ -163,9 +216,15 @@ class MailboxClient:
                 args['pageToken'] = cursor
             data = self._call('/messages?' + parse.urlencode(args))
             rows = []
+            ids = [item['id'] for item in data.get('messages', [])]
+            details = {}
+            for start in range(0, len(ids), GMAIL_BATCH_SIZE):
+                details.update(self._gmail_batch(ids[start:start + GMAIL_BATCH_SIZE]))
             for item in data.get('messages', []):
-                info = self._call('/messages/' + parse.quote(item['id'], safe='') +
-                                  '?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date')
+                info = details.get(item['id'])
+                if info is None:
+                    # A call the batch could not answer is retried alone, as before batching.
+                    info = self._call('/messages/' + parse.quote(item['id'], safe='') + GMAIL_METADATA)
                 headers = {h['name'].lower(): h['value'] for h in info.get('payload', {}).get('headers', [])}
                 rows.append({'id': item['id'], 'from': headers.get('from', 'Unknown sender'),
                              'subject': headers.get('subject', '(no subject)'),

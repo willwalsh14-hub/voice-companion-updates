@@ -65,21 +65,35 @@ def sync(folder, authorize=False):
                '&pageSize=1000' + ('&pageToken='+parse.quote(page) if page else ''))
         response = _api(url, token)
         for person in response.get('connections', []):
-            names = person.get('names', [])
-            name = names[0].get('displayName', '') if names else ''
-            for item in person.get('emailAddresses', []):
-                remote.append((name, item.get('value', '')))
+            # One unusual contact is skipped; it never stops the whole sync.
+            try:
+                names = person.get('names', [])
+                name = names[0].get('displayName', '') if names else ''
+                for item in person.get('emailAddresses', []):
+                    address = item.get('value', '')
+                    if isinstance(address, str) and address.strip():
+                        remote.append((name if isinstance(name, str) else '', address))
+            except (AttributeError, TypeError, KeyError, IndexError):
+                continue
         page = response.get('nextPageToken', '')
         if not page: break
     existing = {(name.casefold(), address.casefold()) for name,address in remote}
-    uploaded = 0
+    uploaded = failed = 0
     for entry in list(book.all().values()):
-        if entry.get('source') == 'google': continue
-        name, address = entry['name'], entry['address']
-        if (name.casefold(), address.casefold()) not in existing:
-            _api('https://people.googleapis.com/v1/people:createContact?personFields=names,emailAddresses',
-                 token, {'names':[{'givenName':name}], 'emailAddresses':[{'value':address}]})
-            uploaded += 1
-            existing.add((name.casefold(), address.casefold()))
+        try:
+            if entry.get('source') == 'google': continue
+            name, address = entry['name'], entry['address']
+            if (name.casefold(), address.casefold()) not in existing:
+                _api('https://people.googleapis.com/v1/people:createContact?personFields=names,emailAddresses',
+                     token, {'names':[{'givenName':name}], 'emailAddresses':[{'value':address}]})
+                uploaded += 1
+                existing.add((name.casefold(), address.casefold()))
+        except (OSError, ValueError, AttributeError, TypeError, KeyError):
+            # urllib's HTTPError is an OSError: Google refused this one contact.
+            failed += 1
     imported = book.import_google(remote)
-    return f'Google Contacts synced. {imported} contacts added here; {uploaded} local contacts added to Google.'
+    message = f'Google Contacts synced. {imported} contacts added here; {uploaded} local contacts added to Google.'
+    if failed:
+        message += (' 1 contact could not be added to Google.' if failed == 1 else
+                    f' {failed} contacts could not be added to Google.') + ' Check those contacts and sync again.'
+    return message

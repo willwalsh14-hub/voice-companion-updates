@@ -24,13 +24,25 @@ Yahoo needs an app password. This is a separate password made in Yahoo's account
 Use the app password here. Keep your usual Yahoo password private.
 Companion protects the saved connection for the Windows user who made it.
 
-4. Choose the right account
+4. Connect through Thunderbird
+Thunderbird can hold the email sign-in instead of Companion. This works for Gmail, Outlook, Yahoo and most other email.
+1. Install Thunderbird and add the email account there. Check that Thunderbird can read and send mail.
+2. In Thunderbird, open the Add-ons and Themes page. Choose the gear button, then Install Add-on From File.
+3. Pick Voice Companion Mail Connection.xpi in the Voice Companion program folder. It is in AppData, Local, Programs, Voice Companion.
+4. Agree to the add-on's requests. It reads, moves and sends mail only when Companion asks.
+5. Keep Thunderbird open. It can stay minimized.
+6. In Companion, say "Add account" and choose Thunderbird. Companion adds each address set up in Thunderbird.
+7. Listen to the address Companion reads. Check that it is right.
+When Companion sends mail, Thunderbird sends it. A Thunderbird window may open briefly and close.
+If Companion says Thunderbird is not connected, open Thunderbird and wait one minute. Then try again.
+
+5. Choose the right account
 Say "List email accounts" to hear saved accounts.
 Say "Switch to" followed by the full email address when you have more than one account of the same type.
 Say "Which email account?" to check the current choice. Check it before sending.
 Without a connected account, the app can save a draft but cannot send it.
 
-5. Test a message
+6. Test a message
 Use an address you control or someone who has agreed to help.
 1. Say "Write an email".
 2. Give the test address, a short subject, and one sentence.
@@ -43,7 +55,7 @@ A sent message may not appear in Yahoo's Sent folder. Check arrival with the rec
 If the result is uncertain, check the account and receiver before trying again. This helps avoid sending the same message twice.
 Close and reopen Companion. Check that the saved account still works.
 
-6. Test folders and replies
+7. Test folders and replies
 Use spare messages and empty test folders. Keep important mail out of these tests.
 Read a message and return to its folder. Try reply, reply all, and forward. Check all addresses before sending.
 Choose one message, then several messages. Move them to a test folder and check the result in your email service.
@@ -51,7 +63,7 @@ Try making, renaming, and moving an empty folder. Delete it only after checking 
 Gmail and Yahoo forwards do not include the original attachments in this version. Some email services also limit folder changes.
 Read chapters 8, 9, and 10 of the user guide for the full steps.
 
-7. Add Google Contacts if wanted
+8. Add Google Contacts if wanted
 Select the correct Gmail account. Say "Connect Google Contacts".
 Google asks separately for permission to use contacts. Check the account and agree only if the owner wants this.
 Say "Sync Google Contacts" to check for changes. Try a spare contact first.
@@ -59,7 +71,7 @@ The app brings in Google contacts and can add new local contacts to Google. It d
 If access is refused, mail stays connected. The local contact list can still be used.
 The app supplier may need to finish the Google service setup. Google Calendar and Google Drive are not connected in this version.
 
-8. Remove access
+9. Remove access
 To fully remove access, the owner can use the email service's account security page. For Yahoo, remove the app password made for Companion.
 A support person can remove a saved connection from this computer. First choose the exact address in Companion. Then close the app.
 The support person runs VoiceCompanion-Diagnostics.exe. Use --disconnect-gmail, --disconnect-outlook, or --disconnect-yahoo for that account type.

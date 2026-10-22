@@ -30,7 +30,7 @@ def snapshot(m):
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
     context={'engines':('SAPI',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
     from windows_actions import startup_enabled
-    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt','firefox'),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
+    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt',__import__('web_assistant').DEFAULT_BROWSER),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
 
 def open_settings(m,mode):
@@ -124,7 +124,8 @@ def apply_settings(m,values):
     m.PREFERENCES['ai_consent']=bool(values.get('ai_consent'))
     save_preferences(m);m.save_speech_settings()
     m.APP.mkdir(parents=True,exist_ok=True)
-    (m.APP/'email-list-size.txt').write_text(values['email_list_size'],encoding='utf-8')
+    from storage import write_text_atomic
+    write_text_atomic(m.APP/'email-list-size.txt',values['email_list_size'])
     if m.mail_session:
         m.mail_session.all_messages=values['email_list_size']=='all';m.mail_session.list_size=10 if m.mail_session.all_messages else int(values['email_list_size'])
     account=values.get('email_account','')
@@ -138,7 +139,9 @@ def apply_settings(m,values):
         m.email_draft.dictating=m.INPUT_MODE!='commands';m.email_draft.automatic_dictation=m.INPUT_MODE!='commands'
     if m.web_session:
         m.web_session.choose_browser(values['browser']);m.web_session.input_mode=m.INPUT_MODE
-    else:(m.APP/'browser-choice.txt').write_text(values['browser'],encoding='utf-8')
+    else:
+        from storage import write_text_atomic
+        write_text_atomic(m.APP/'browser-choice.txt',values['browser'])
     m.media().choose_source(values['radio_source'])
     limits=values.get('podcast_limits',{})
     feed=session.context['podcast_feeds'].get(values.get('podcast_feed'))

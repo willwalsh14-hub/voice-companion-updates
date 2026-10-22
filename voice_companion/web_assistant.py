@@ -17,6 +17,7 @@ from privacy_controls import saved_address
 from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
 from reading_navigation import ReadingCursor, reading_request
+from storage import write_text_atomic
 from dictation_text import clean_dictation
 from ai_dictation import prepare_dictation
 
@@ -141,6 +142,11 @@ def navigation_interrupted(error):
     message=str(error).casefold()
     return any(text in message for text in ('execution context was destroyed',
         'cannot find context with specified id','cannot find context with id'))
+
+
+DEFAULT_BROWSER = 'webview2'
+GOOGLE_SIGN_IN_NOTICE = ('Google does not allow signing in inside embedded Edge. To use a Google account on this site, '
+                         'say use Firefox, or use your regular browser with the Voice Companion extension')
 
 
 class BrowserBackend:
@@ -1092,7 +1098,9 @@ class WebSession:
         return self._refresh(read=False,preserve=True)
 
     def adopt_connected_browser(self):
-        if self.injected_backend or self.browser=='webview2':return False
+        # Only a saved choice of embedded Edge ignores a tab linked through the
+        # extension. As the default, embedded Edge gives way to the user's own browser.
+        if self.injected_backend or (self.browser=='webview2' and self._saved_browser()=='webview2'):return False
         from browser_cdp_relay import current
         from connected_browser import ConnectedBrowserBackend
         relay=current()
@@ -1107,12 +1115,17 @@ class WebSession:
             self._refresh(read=False)
         return True
 
-    def _browser_preference(self):
+    def _saved_browser(self):
         try:
             choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
-            return choice if choice in BrowserBackend.BROWSERS else 'firefox'
         except OSError:
-            return 'firefox'
+            return None
+        return choice if choice in BrowserBackend.BROWSERS else None
+
+    def _browser_preference(self):
+        # Embedded Edge (WebView2) is the default: it is owned by Companion and needs
+        # no browser extension. A saved choice is always kept.
+        return self._saved_browser() or DEFAULT_BROWSER
 
     def choose_browser(self, name):
         name = {'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview 2':'webview2'}.get(name.lower(),name.lower())
@@ -1130,7 +1143,7 @@ class WebSession:
             self.review_submission = None
         if not self.injected_backend:
             self.folder.mkdir(parents=True, exist_ok=True)
-            (self.folder / 'browser-choice.txt').write_text(name, encoding='utf-8')
+            write_text_atomic(self.folder / 'browser-choice.txt', name)
         if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+name.capitalize()+'.'
         return 'Selected ' + name.capitalize() + '. Say open website followed by the address. This uses a separate browser profile.'
 
@@ -1222,6 +1235,9 @@ class WebSession:
         dialog_notice=getattr(self.backend,'dialog_notice','')
         if not isinstance(dialog_notice,str):dialog_notice=''
         if dialog_notice:self.backend.dialog_notice=''
+        if self.running_browser()=='webview2' and (urlsplit(url).hostname or '').lower()=='accounts.google.com':
+            # Google blocks its own sign-in inside embedded browsers such as WebView2.
+            dialog_notice=GOOGLE_SIGN_IN_NOTICE+(' '+dialog_notice if dialog_notice else '')
         return ((dialog_notice+'. ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
@@ -1268,11 +1284,13 @@ class WebSession:
             self.backend.goto(url)
             return ''
         except WebError:
-            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser in ('firefox','webview2'):raise
+            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser=='firefox':raise
+            embedded=self.backend.browser=='webview2'
             self.backend.close()
             self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
             self.backend.goto(url)
-            return 'The chosen browser could not start. Using the included Firefox browser. '
+            return ('Embedded Edge could not start. Using the included Firefox browser. Ask your helper to check the Microsoft WebView2 component. '
+                    if embedded else 'The chosen browser could not start. Using the included Firefox browser. ')
 
     def open(self, url):
         self.navigation_succeeded=False

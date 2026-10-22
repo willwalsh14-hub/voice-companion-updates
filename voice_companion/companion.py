@@ -47,7 +47,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.152-test'
+APP_VERSION = '0.2.153-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -133,6 +133,8 @@ web_session = None
 REGULAR_BROWSER = None
 account_setup = False
 ACCOUNT_MENU_INDEX = None
+# Spoken name and account type, in menu order. Thunderbird uses its own sign-in.
+ACCOUNT_TYPES = (('Gmail', 'gmail'), ('Outlook or Exchange', 'outlook'), ('Yahoo', 'yahoo'), ('Thunderbird', 'thunderbird'))
 help_session = None
 help_return_mode = 'awake'
 TEXT_MODE = False
@@ -489,7 +491,7 @@ def menu_state(mode):
         return (names, getattr(owner,attribute) if current is None else current,
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
-    if account_setup:return state(['Gmail','Outlook or Exchange','Yahoo'],module,'ACCOUNT_MENU_INDEX')
+    if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
     if mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
@@ -647,12 +649,12 @@ def _navigation_key(key,mode):
         if mode=='web' and web_session and not web_session.list_focus and key[-1] in __import__('web_browse').QUICK_KEYS:return 'web key Quick:'+key[-1]
         choose_menu_letter(key[-1],mode);return None
     if key=='Enter' and account_setup and ACCOUNT_MENU_INDEX is not None:
-        return ('gmail','outlook','yahoo')[ACCOUNT_MENU_INDEX]
+        return ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][1]
     if account_setup and key in ('Up','Down','Left','Right'):
         step=1 if key in ('Down','Right') else -1
-        if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<3:speak('Start of list.' if step<0 else 'End of list.');return None
-        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,3)
-        speak(announce_item(('Gmail','Outlook or Exchange','Yahoo')[ACCOUNT_MENU_INDEX],ACCOUNT_MENU_INDEX,3));return None
+        if ACCOUNT_MENU_INDEX is not None and not 0<=ACCOUNT_MENU_INDEX+step<len(ACCOUNT_TYPES):speak('Start of list.' if step<0 else 'End of list.');return None
+        ACCOUNT_MENU_INDEX=bounded_index(ACCOUNT_MENU_INDEX,step,len(ACCOUNT_TYPES))
+        speak(announce_item(ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][0],ACCOUNT_MENU_INDEX,len(ACCOUNT_TYPES)));return None
     if mode=='tutorial' and tutorial_session:
         if key=='Escape':return 'go back'
         if key=='Enter':return 'that one' if tutorial_session.menu() else 'next lesson'
@@ -1020,12 +1022,12 @@ def update_audio_ducking(active=None):
 
 
 def save_speech_settings():
-    APP.mkdir(parents=True, exist_ok=True)
-    (APP / 'speech-settings.json').write_text(
+    from storage import write_text_atomic
+    write_text_atomic(APP / 'speech-settings.json',
         json.dumps({'pitch':SPEECH_PITCH,'rate': SPEECH_RATE, 'volume': SPEECH_VOLUME, 'punctuation': PUNCTUATION_LEVEL, 'verbosity':VERBOSITY, 'input_mode':INPUT_MODE,
                     'ai_enabled': bool(AI_SPEECH and AI_SPEECH.enabled), 'ai_voice': AI_VOICE_NAME,
                     'espeak_enabled': bool(ESPEAK_SPEECH and ESPEAK_SPEECH.enabled), 'espeak_voice': ESPEAK_VOICE_NAME,
-                    'voice': voice.Voice.GetDescription() if not TEXT_MODE else ''}), encoding='utf-8')
+                    'voice': voice.Voice.GetDescription() if not TEXT_MODE else ''}))
 
 
 
@@ -1511,6 +1513,60 @@ def finish_exit(mode):
     speak_status('Shutting down. Goodbye.')
     wait_for_speech(30000)
     return 'exit'
+
+
+def handle_mailbox_screen(text, command, mode, typed):
+    """The email inbox screen: folders, reading, reply and forward, leaving."""
+    global email_draft, mail_session
+    if mail_session is None:
+        # The mailbox closed underneath this command (for example, the sending
+        # account changed). Return to the main menu rather than failing.
+        return 'awake'
+    if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
+        speak(mail_session.process(text))
+        return 'mailbox'
+    response_actions = {'reply': 'reply', 'reply to message': 'reply',
+                        'reply all': 'reply_all', 'reply to all': 'reply_all',
+                        'forward': 'forward', 'forward message': 'forward'}
+    if command in response_actions:
+        try:
+            context = mail_session.response_context(response_actions[command])
+            email_draft = VoiceEmail(APP / 'Email Drafts')
+            email_draft.dictating = INPUT_MODE != 'commands'
+            email_draft.automatic_dictation = INPUT_MODE != 'commands'
+            email_draft.provider = mail_session.provider
+            email_draft.recipient = context['recipient']
+            email_draft.cc = context['cc']
+            email_draft.subject = context['subject']
+            email_draft.response_context = context
+            email_draft.compose_step = 'recipient' if context['action'] == 'forward' else 'body'
+            email_draft.save()
+            recipient_note = ('Say email to followed by the forwarding address. '
+                              if context['action'] == 'forward' else
+                              'Recipient ' + email_draft.recipient +
+                              ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
+            attachment_note = (' Original attachments are not included in this forward.'
+                               if context['action'] == 'forward' and mail_session.provider != 'outlook' else '')
+            speak('New ' + command + ' draft. ' + recipient_note +
+                  'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
+            focus_email_entry()
+            return 'email_draft'
+        except Exception:
+            speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
+            return mode
+    if command in ('go back', 'back') and mail_session.view == 'message':
+        speak(mail_session.process('back to folder'))
+        return mode
+    if command.startswith('go to website '):
+        # Leave the inbox for the website, as from the main menu.
+        mail_session = None
+        return _handle(text, 'awake', typed)
+    if command in ('go back', 'back', 'exit', 'leave email', 'main menu', 'close inbox'):
+        mail_session = None
+        pass
+        return 'awake'
+    speak(mail_session.process(text))
+    return 'mailbox'
 
 
 def _handle(text, mode, typed=False):
@@ -2259,15 +2315,16 @@ def _handle(text, mode, typed=False):
     store = ProtectedStore(APP)
     direct_connection = re.fullmatch(
         r'(?:connect|add|set up|setup|sign in to|log in to)\s+(?:my\s+|an?\s+)?'
-        r'(gmail|google mail|outlook|microsoft 365|exchange|yahoo)(?:\s+(?:email|mail|account))?', command)
+        r'(gmail|google mail|outlook|microsoft 365|exchange|yahoo|thunderbird)(?:\s+(?:email|mail|account))?', command)
     if direct_connection:
         account_setup = True
         selected_type = direct_connection[1]
         command = ('gmail' if selected_type in ('gmail','google mail') else
-                   'outlook' if selected_type in ('outlook','microsoft 365','exchange') else 'yahoo')
+                   'outlook' if selected_type in ('outlook','microsoft 365','exchange') else
+                   'thunderbird' if selected_type == 'thunderbird' else 'yahoo')
     if command in ('add account', 'add another account', 'add email account', 'connect email account', 'set up email'):
         account_setup = True
-        speak('Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details.')
+        speak('Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird.')
         return mode
     if account_setup:
         if command in ('cancel', 'cancel account setup'):
@@ -2276,9 +2333,10 @@ def _handle(text, mode, typed=False):
             return mode
         provider = ('gmail' if command in ('gmail','google','google mail') else
                     'outlook' if command in ('outlook','microsoft','microsoft 365','exchange','work email') else
-                    'yahoo' if command in ('yahoo','yahoo mail') else None)
+                    'yahoo' if command in ('yahoo','yahoo mail') else
+                    'thunderbird' if command in ('thunderbird','thunderbird mail','mozilla thunderbird') else None)
         if not provider:
-            speak('Say Gmail, Outlook or Exchange, Yahoo, or cancel.')
+            speak('Say Gmail, Outlook or Exchange, Yahoo, Thunderbird, or cancel.')
             return mode
         account_setup = False
         speak('Opening ' + provider.capitalize() + ' account setup. A trusted person may complete the private sign-in. Please wait for the result.')
@@ -2489,55 +2547,7 @@ def _handle(text, mode, typed=False):
         speak_web_result(web_session.command(text),revision)
         return 'web'
     if mode == 'mailbox':
-        if mail_session is None:
-            # The mailbox closed underneath this command (for example, the sending
-            # account changed). Return to the main menu rather than failing.
-            return 'awake'
-        if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
-            speak(mail_session.process(text))
-            return 'mailbox'
-        response_actions = {'reply': 'reply', 'reply to message': 'reply',
-                            'reply all': 'reply_all', 'reply to all': 'reply_all',
-                            'forward': 'forward', 'forward message': 'forward'}
-        if command in response_actions:
-            try:
-                context = mail_session.response_context(response_actions[command])
-                email_draft = VoiceEmail(APP / 'Email Drafts')
-                email_draft.dictating = INPUT_MODE != 'commands'
-                email_draft.automatic_dictation = INPUT_MODE != 'commands'
-                email_draft.provider = mail_session.provider
-                email_draft.recipient = context['recipient']
-                email_draft.cc = context['cc']
-                email_draft.subject = context['subject']
-                email_draft.response_context = context
-                email_draft.compose_step = 'recipient' if context['action'] == 'forward' else 'body'
-                email_draft.save()
-                recipient_note = ('Say email to followed by the forwarding address. '
-                                  if context['action'] == 'forward' else
-                                  'Recipient ' + email_draft.recipient +
-                                  ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
-                attachment_note = (' Original attachments are not included in this forward.'
-                                   if context['action'] == 'forward' and mail_session.provider != 'outlook' else '')
-                speak('New ' + command + ' draft. ' + recipient_note +
-                      'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
-                focus_email_entry()
-                return 'email_draft'
-            except Exception:
-                speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
-                return mode
-        if command in ('go back', 'back') and mail_session.view == 'message':
-            speak(mail_session.process('back to folder'))
-            return mode
-        if command.startswith('go to website '):
-            # Leave the inbox for the website, as from the main menu.
-            mail_session = None
-            return _handle(text, 'awake', typed)
-        if command in ('go back', 'back', 'exit', 'leave email', 'main menu', 'close inbox'):
-            mail_session = None
-            pass
-            return 'awake'
-        speak(mail_session.process(text))
-        return 'mailbox'
+        return handle_mailbox_screen(text, command, mode, typed)
     # Keep active writing in its editor. A dictated sentence that happens to
     # start with "open document" must not replace the current document.
     if mode == 'email_draft':
@@ -2945,7 +2955,7 @@ def handle(text, mode, typed=False):
 
 
 def poll_app_updates(mode):
-    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT, CONFIRM_CHOICE
+    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT, CONFIRM_CHOICE, UPDATE_MANUAL
     if UPDATES is None: return mode
     while not UPDATES.events.empty():
         event, payload = UPDATES.events.get_nowait()
@@ -2953,10 +2963,13 @@ def poll_app_updates(mode):
             UPDATES.release = payload
             UPDATE_OFFER = True
         elif event == 'current' and payload:
+            UPDATE_MANUAL = False
             speak('Voice Companion is up to date.')
         elif event == 'unconfigured':
+            UPDATE_MANUAL = False
             speak('The update server is not configured yet. Ask your trainer to set it up.')
         elif event == 'check_failed' and payload:
+            UPDATE_MANUAL = False
             speak('I could not check for updates. You can keep using the app and try later.')
         elif event in ('download_failed', 'canceled'):
             if mode == 'update_download':
@@ -2990,6 +3003,8 @@ def poll_app_updates(mode):
     if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
         UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
         UPDATE_OFFER = False
+        # The manual check has its answer; later automatic offers wait for the main screen.
+        UPDATE_MANUAL = False
         CONFIRM_CHOICE='yes'
         speak('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
         return 'update_offer'
@@ -3558,6 +3573,11 @@ if __name__ == '__main__':
                 try:
                     from browser_cdp_relay import prepare
                     prepare(APP)
+                except OSError:pass
+                try:
+                    # Thunderbird's mail add-on connects here when Thunderbird is open.
+                    from thunderbird_bridge import prepare as prepare_mail
+                    prepare_mail(APP)
                 except OSError:pass
         except Exception:
             APP_WINDOW = None

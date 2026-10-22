@@ -15,8 +15,9 @@ asked.
   touches `voice_companion/` must be a complete release:
   1. Bump the version everywhere: `APP_VERSION` in `companion.py`,
      `#define AppVersion` in `VoiceCompanion.iss`, the three `0.2.x-test`
-     strings in `build-windows.ps1`, and `Guide version:` in
-     `START HERE - Veteran.txt` and `.html`.
+     strings in `build-windows.ps1` (one is written `0\.2\.x-test`),
+     `Guide version:` in `START HERE - Veteran.txt` and `.html`, and the
+     placeholder in `.github/ISSUE_TEMPLATE/bug-report.yml`.
   2. Rewrite `voice_companion/release-notes.json` for the new version (see
      "Writing for users" below). It needs both sections, "New in this version"
      and "What works better", each with at least one topic.
@@ -45,6 +46,11 @@ asked.
    environment reasons (Windows fonts, eSpeak binaries, missing packages);
    `--compare` separates those from real regressions. Running files one at a
    time is not enough: shared state in `companion` leaks between files.
+   It also checks command routing: every command phrase and everyday sentence
+   is sent to the app on seven screens and compared with
+   `tools/routing-snapshot.json`. If a change in behaviour is intended, run
+   `python3 tools/routing_snapshot.py --update` and list the changed records,
+   and why, in the pull request. An unexplained routing change is a bug.
 3. If web or browser code changed, also run `python3 tools/run_checks.py --live --compare main`
    and `node voice_companion/regular_browser_extension/test-worker.cjs`.
 4. After pushing, wait for all three GitHub checks ("Build and publish Windows

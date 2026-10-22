@@ -1,24 +1,29 @@
 {
-  "version": "0.2.152-test",
+  "version": "0.2.153-test",
   "status": "Testing build",
   "date": "October 21, 2026",
-  "baseline": "0.2.151-test",
-  "scope": "Fix problems found in a full check of the app. Your words are kept, and fewer things stop the app.",
+  "baseline": "0.2.152-test",
+  "scope": "Web pages open in a window the app owns, so most people no longer need the browser extension. Email can now work through Thunderbird.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Spell email addresses",
+          "title": "Embedded Edge is the usual browser",
           "details": [
-            "Say underscore for _ and dash for - in an email address. For example, say sam underscore lee at example dot com.",
-            "A period that speech adds at the end of an address is now ignored."
+            "Web pages now open in embedded Edge. This is a browser window the app owns. It does not need the browser extension.",
+            "If embedded Edge cannot start, the app uses its own Firefox and tells you.",
+            "Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say Use Firefox.",
+            "If you already chose a browser, your choice stays. If you linked your own browser with the extension, the app keeps using it. Say Which browser to hear the one in use."
           ]
         },
         {
-          "title": "Which browser",
+          "title": "Email through Thunderbird",
           "details": [
-            "If your chosen browser cannot start, the app uses its own Firefox. Say Which browser to hear this. Your choice stays saved for next time."
+            "You can now use email through Thunderbird. Thunderbird is a free email program. Your helper adds your email account to it once.",
+            "To start, say Add account, then choose Thunderbird. You can read, reply, send, move and delete mail the same way as before.",
+            "Keep Thunderbird open while you use email. If it is closed, the app asks you to open it.",
+            "Your helper can find the steps in EMAIL SETUP - Helper."
           ]
         }
       ]
@@ -27,59 +32,43 @@
       "title": "What works better",
       "topics": [
         {
+          "title": "Your settings are safe",
+          "details": [
+            "Your settings and speech choices are saved in a safer way. If the computer turns off while saving, your old settings stay."
+          ]
+        },
+        {
           "title": "Your words are kept",
           "details": [
-            "Some sentences start like a command, such as Rate this product or Use the back door at night. Before, the app could drop them. Now they are written into your document, email or note.",
-            "Change font to Arial now changes the font. It no longer replaces the word font in your text. Line spacing and font size work the same way.",
-            "Say Delete paragraph, then Delete selection. The words of the next paragraph now stay.",
-            "Read paragraph on an empty paragraph keeps your place there. What you say next goes there too.",
-            "The words re-read and co-convene stay as you said them. The trial period keeps the word period."
-          ]
-        },
-        {
-          "title": "Fewer stops",
-          "details": [
-            "An empty or damaged Word file now gives a message. It no longer stops the app.",
-            "New paragraph in an empty document works. Reading or writing next no longer stops the app.",
-            "A file that is open in another program no longer stops the app when you type. The app tells you it will save later.",
-            "Changing the sending account from the inbox now returns you to the main menu."
-          ]
-        },
-        {
-          "title": "Word files and tables",
-          "details": [
-            "Text that is not bold or not underlined stays that way after you save. A 10.5 point font stays 10.5 points.",
-            "Changing or pasting across two table cells is refused with a message. Before, it could break the table so it could not be saved.",
-            "Delete line now removes only the current line."
+            "On the main menu, a sentence such as Help with the dishes is no longer taken as writing. It only becomes text when a document, email or note is open."
           ]
         },
         {
           "title": "Email",
           "details": [
-            "Delete and move now work for Yahoo mail.",
-            "In Dictation only, saying Yes at the send review sends the email. It is no longer typed into the message.",
-            "Some words can follow an address, as in bob at example dot com next week. They are no longer added to the address.",
-            "A reply sent from Outlook goes to the address you typed in the To field.",
-            "Your sending account no longer changes by itself when Gmail renews its sign-in.",
-            "Messages sent on a Tuesday or Thursday now read their date."
+            "Some emails used to read as blank. They now read their words.",
+            "Long Gmail lists open faster.",
+            "Google Contacts sync no longer stops when one contact has a problem. The app tells you how many were not added."
           ]
         },
         {
-          "title": "Web",
+          "title": "Updates",
           "details": [
-            "Open website VA dot gov now works even when speech adds a period at the end. Forward slash works too.",
-            "Typing a number such as 98.6 in the search box now searches for it.",
-            "Some news sites copy their links in a moving row. Those links now open.",
-            "If you press Cancel on the browser bar that says Voice Companion is debugging this browser, the tab now stays unlinked. Choose Connect in the extension to link it again. If you loaded the extension yourself, choose Reload once on its card."
+            "You can check for updates yourself. After that, an update offer no longer breaks in while you write.",
+            "If the old copy of the app is slow to close, the update still finishes and the app opens again."
           ]
         },
         {
-          "title": "Radio, podcasts and updates",
+          "title": "Radio",
           "details": [
-            "The saved recordings list now plays the recording you hear named.",
-            "Download episode 0 now says there is no such number. Before, it got the last episode.",
-            "Search for stations in the US. You no longer get ones from Russia or Australia.",
-            "Old update files are now removed. This frees disk space."
+            "A damaged scheduled recording is now named once and skipped. Other recordings still run.",
+            "To remove it, say List scheduled recordings. Then say Cancel scheduled recording and its number."
+          ]
+        },
+        {
+          "title": "Browser extension",
+          "details": [
+            "The browser extension did not change. You do not need to reload it."
           ]
         }
       ]
