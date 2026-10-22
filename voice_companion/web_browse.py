@@ -10,7 +10,7 @@ def voice_browse_key(command):
            'button':'b','checkbox':'x','check box':'x','combo box':'c','combobox':'c',
            'list box':'s','listbox':'s','dropdown':'c','drop down':'c','edit field':'e','text field':'e','table':'t',
            'radio button':'r','list':'l','list item':'i','landmark':'d','graphic':'g',
-           'image':'g','region':'d','frame':'m','iframe':'m','paragraph':'p'}
+           'image':'g','region':'d','frame':'m','iframe':'m','paragraph':'p','slider':'slider'}
     match=re.fullmatch(r'(next|previous|prior) (.+)',command)
     if match:
         direction,name=match.groups()
@@ -73,22 +73,24 @@ def describe(item):
     if role=='list':return (name+', ' if name not in ('List','Unlabeled') else '')+('Ordered list' if item.get('ordered') else 'List')+', '+str(item.get('item_count',0))+' items.'
     if role=='listitem':return name+', list item'+(' '+str(item['position'])+' of '+str(item['set_size']) if item.get('position') and item.get('set_size',0)>0 else '')+'.'
     if role=='heading':role+=' level '+str(item.get('level',1))
-    state=''
+    state='';spoken_role=role
     if role in ('checkbox','radio'):state=', '+('checked' if item.get('checked') else 'not checked')
     if role in ('switch','menuitemcheckbox','menuitemradio'):state=', '+('on' if item.get('checked') else 'off')
     if role in ('slider','spinbutton','progressbar','meter','scrollbar'):
         state=', '+str(item.get('value_text') or item.get('value_now') or 'value not provided')
+        # YouTube names its seek bar "Seek slider"; do not say slider twice.
+        if role=='slider' and name.casefold().split()[-1:]==['slider']:spoken_role=''
     if item.get('expanded') is not None:state+=', '+('expanded' if item['expanded'] else 'collapsed')
     if item.get('selected') is not None:state+=', '+('selected' if item['selected'] else 'not selected')
     if item.get('pressed') is not None:state+=', '+('pressed' if item['pressed'] else 'not pressed')
     if editable_combo(item):
-        role='edit combo box';value=str(item.get('value') or '')
+        role=spoken_role='edit combo box';value=str(item.get('value') or '')
         state=', '+' '.join(value.split())[:180] if value.strip() and item.get('type')!='password' else ''
     elif role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
     if item.get('disabled'):state+=', unavailable'
     if item.get('readonly'):state+=', read-only'
     if item.get('required'):state+=', required'
-    return ('Link '+name+state+'.') if role=='link' else name+', '+role+state+'.'
+    return ('Link '+name+state+'.') if role=='link' else name+(', '+spoken_role if spoken_role else '')+state+'.'
 
 def focus_order(items,elements=None):
     """Keep frame contents inside their owner while honoring HTML tabindex."""
@@ -123,8 +125,8 @@ class BrowseCursor:
             if level:return role=='heading' and e.get('level')==level
             if wanted=='edit' and editable_combo(e):return True
             if wanted=='button' and role in ('menuitem','menuitemradio','menuitemcheckbox'):return True
-            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox')
-            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox') and not e.get('disabled') and e.get('tabindex',0)>=0
+            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider')
+            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider') and not e.get('disabled') and e.get('tabindex',0)>=0
             return role==wanted
         if tab:
             ordered=focus_order([e for e in self.elements if match(e)],self.elements)
@@ -251,13 +253,14 @@ SEMANTICS = r'''
             if(item){item.tabindex=control?.combo_input_key?control.tabindex:e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
             if(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable){
               const spokenRole=type==='password'?'password field':control?.combo_edit?'edit combo box':({button:'button',textbox:'edit field',searchbox:'search field',checkbox:'checkbox',radio:'radio button',combobox:'combo box',listbox:'list box',switch:'switch',slider:'slider',spinbutton:'spin button'}[role]||'edit field');
-              append(label+', '+spokenRole);
+              append(role==='slider'&&/\bslider$/i.test(label)?label:label+', '+spokenRole);
               if(['checkbox','radio','switch'].includes(role))append(accessibleLabel.checked(e)?', checked':', not checked');
               if(e.disabled||e.getAttribute('aria-disabled')==='true')append(', unavailable');
               if(e.readOnly||e.getAttribute('aria-readonly')==='true')append(', read-only');
               if(e.required||e.getAttribute('aria-required')==='true')append(', required');
               if(type!=='password'&&role!=='button'&&e.value&&!['checkbox','radio','image','submit','button'].includes(type))append(', '+(tag==='select'?e.selectedOptions[0]?.text:e.value));
               if(editable)append(', '+(e.innerText||''));
+              if(role==='slider'&&tag!=='input'&&(e.getAttribute('aria-valuetext')||e.getAttribute('aria-valuenow')))append(', '+(e.getAttribute('aria-valuetext')||e.getAttribute('aria-valuenow')));
               if(control?.combo_input_key&&control.value)append(', '+control.value);
             }
             else if(role==='graphic'||role==='frame')append((role==='frame'?'Frame ':'')+label);

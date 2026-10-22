@@ -16,6 +16,7 @@ from privacy_controls import saved_address
 
 from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,choice_field,describe,editable_combo,kind,text_field,voice_browse_key
+from web_modes import APP_MODE,BROWSE_MODE
 from reading_navigation import ReadingCursor, reading_request
 from storage import write_text_atomic
 from dictation_text import clean_dictation
@@ -761,6 +762,56 @@ class BrowserBackend:
         self._combo_focus(element,element.evaluate(COMBO_STATE,{}))
         return self.activate(item,key='Enter',focused=True)
 
+    def page_key_state(self,drain=False):
+        """The focused element and new page announcements, for app mode speech."""
+        state=self.page.evaluate(PAGE_KEY_STATE,{'drain':drain})
+        focus=state.get('focus')
+        if focus and focus.get('tag') in ('iframe','frame'):
+            # Keys typed into a frame go to the element focused inside it.
+            for frame in self.page.frames[1:]:
+                try:inner=frame.evaluate(PAGE_KEY_STATE,{'drain':False})
+                except Exception:continue
+                if inner.get('focus') and inner.get('has_focus') and inner['focus'].get('tag') not in ('iframe','frame'):
+                    state['focus']=inner['focus'];break
+        return state
+
+    def press_page_key(self,key):
+        """App mode: one real key press for the page, and what it changed."""
+        self._watch_dialogs()
+        before=self.page_key_state(drain=True)
+        self.page.keyboard.press(key)
+        snapshot=lambda s:json.dumps(s.get('focus'),sort_keys=True)
+        after=self.page_key_state()
+        # Sites answer some keys a moment later; wait briefly for a change.
+        for _ in range(6):
+            if after.get('live') or snapshot(after)!=snapshot(before):break
+            self.page.wait_for_timeout(25)
+            after=self.page_key_state()
+        after['live']=after.get('live',[])+self.page_key_state(drain=True).get('live',[])
+        return before,after
+
+    def focus_for_keys(self,item):
+        """Give keyboard focus to an element without clicking it."""
+        element=self._text_element(item) if editable_combo(item) else self._element(item)
+        element.focus()
+
+    def focused_key(self):
+        """The Companion key of the element that has keyboard focus, if any."""
+        return self.page.evaluate("()=>{let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;return e&&e!==document.body?e.getAttribute('data-voice-companion-key'):null;}")
+
+    def slider_key(self,item,key):
+        """Press an arrow, Page or Home/End key on a slider and read its new value."""
+        element=self._element(item)
+        read="e=>({value_text:e.getAttribute('aria-valuetext')||'',value_now:e.getAttribute('aria-valuenow')??(['range','number'].includes((e.type||'').toLowerCase())?e.value:null)})"
+        before=element.evaluate(read)
+        element.press(key,timeout=5000)
+        after=element.evaluate(read)
+        for _ in range(8):
+            if after!=before:break
+            self.page.wait_for_timeout(25)
+            after=element.evaluate(read)
+        return after
+
     def activate_choice(self,item):
         """One user action sends one native activation, with no state retries."""
         element=self._element(item)
@@ -858,6 +909,8 @@ class WebSession:
         self.input_mode = 'mixed'
         self.reading = ReadingCursor()
         self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
+        # App mode is remembered per site until leaving the web screen.
+        self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
 
     def address_allowed(self,url):
         try:
@@ -922,6 +975,10 @@ class WebSession:
 
     def focus_current(self):
         item=self.browse.current() if self.browse else None
+        if item and not item.get('disabled') and kind(item)=='slider':
+            # Tab onto a slider: its arrow keys work at once, as for a text box.
+            self.slider_field=None;self.begin_slider(item)
+            return self.slider_field is not None
         if not item or item.get('disabled') or kind(item) not in ('edit','combobox','listbox'):return False
         self.backend.focus(item)
         if choice_field(item) and item.get('tag')!='select':
@@ -935,7 +992,7 @@ class WebSession:
                 value=item.get('value','')
             field['value']=value;field['_original_value']=value
         else:field['value']=item.get('selected_label','')
-        self.keyboard_field=field;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None
+        self.keyboard_field=field;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None;self.combo_seen=()
         return True
 
     def auto_focus_position(self):
@@ -998,7 +1055,8 @@ class WebSession:
         item=self.keyboard_field
         if not editable_combo(item) or item.get('readonly') or not hasattr(self.backend,'type_combo'):return ''
         try:
-            if self.backend.type_combo(item,item.get('value','')):self.combo_choice=None
+            if self.backend.type_combo(item,item.get('value','')):
+                self.combo_choice=None;self.combo_typed_at=__import__('time').monotonic()
         except WebError as exc:return str(exc)
         except Exception:return 'The website did not get that text. Press F5 to refresh the page.'
         return ''
@@ -1009,8 +1067,9 @@ class WebSession:
             item['value']=value;self.web_edit_caret=len(value);self.selection=None;self._web_field_selection=None
 
     def _combo_entered(self):
-        try:count=len(self.backend.combo_state(self.keyboard_field,wait=True).get('options') or [])
-        except Exception:count=0
+        try:options=tuple(self.backend.combo_state(self.keyboard_field,wait=True).get('options') or ())
+        except Exception:options=()
+        self.combo_seen=options;count=len(options)
         if not count:return 'Text entered. Press Enter to submit, or Tab to move on.'
         return 'Text entered. '+str(count)+(' suggestion' if count==1 else ' suggestions')+'. Press Down arrow or say next suggestion to hear them. Press Enter to submit.'
 
@@ -1022,7 +1081,7 @@ class WebSession:
         if item.get('datalist'):return self._datalist_key(key)
         state=self.backend.combo_move(item,'ArrowDown' if key=='Down' else 'ArrowUp',item.get('value',''))
         self._combo_value(state.get('value'))
-        options=state.get('options') or [];active=state.get('active')
+        options=state.get('options') or [];active=state.get('active');self.combo_seen=tuple(options)
         if isinstance(active,int) and 0<=active<len(options):return options[active]+', '+str(active+1)+' of '+str(len(options))+'.'
         if not options:return 'No suggestions. Keep typing, or press Tab to move on.'
         return 'No suggestion selected. Field text: '+(item.get('value') or 'blank')+'.'
@@ -1082,6 +1141,81 @@ class WebSession:
         self.keyboard_field=None
         return self._refresh(wait=False)
 
+    def _host(self):
+        try:return (urlsplit((self.snapshot or {}).get('url','')).hostname or '').lower()
+        except ValueError:return ''
+
+    @property
+    def app_mode(self):
+        """App mode sends keys to the page. Each site keeps its own choice."""
+        return bool(self.snapshot) and self._host() in getattr(self,'app_mode_hosts',())
+
+    def set_app_mode(self,request):
+        """Switch to 'app' or 'browse' mode, or 'toggle' between them."""
+        if not self.snapshot:return 'Open a website first.'
+        if self.form_index is not None:return 'Finish the form questions first, or say cancel form.'
+        self.list_focus=None;self.pending=None
+        interacting=bool(self.keyboard_field or getattr(self,'slider_field',None))
+        if request=='toggle':request='browse' if self.app_mode or interacting else 'app'
+        if self.keyboard_field:
+            try:self.commit_keyboard_field()
+            except WebError as exc:return str(exc)
+        self.slider_field=None
+        if request=='browse':
+            was_app=self.app_mode
+            self.app_mode_hosts.discard(self._host());self.mode_announced=False
+            return BROWSE_MODE+(self._browse_at_focus() if was_app else '')
+        self.app_mode_hosts.add(self._host());self.mode_announced=True
+        # Keys go where the browse cursor is, as they would for a mouse user.
+        item=self.browse.current() if self.browse else None
+        if item and not item.get('disabled') and kind(item) in ('link','button','edit','combobox','listbox','checkbox','radio','slider','spinbutton','switch','tab','menuitem','menuitemcheckbox','menuitemradio','treeitem','option'):
+            try:self.backend.focus_for_keys(item)
+            except Exception:pass
+        try:self.backend.page_key_state(drain=True)  # Start listening for page announcements.
+        except Exception:pass
+        return APP_MODE
+
+    def _browse_at_focus(self):
+        """After app mode, put the browse cursor where keyboard focus ended."""
+        try:key=self.backend.focused_key()
+        except Exception:key=None
+        try:self._refresh(read=False,preserve=True,wait=False)
+        except Exception:return ''
+        item=next((e for e in self.browse.elements if key and e.get('key')==key and 'frame_index' not in e),None)
+        if not item:return ''
+        self.browse.index=self.browse.elements.index(item);self.browse.position=item.get('start',0)
+        self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
+        return ' '+describe(item)
+
+    def pass_key(self,key):
+        """App mode: the key goes to the page; say what changed."""
+        if not self.app_mode:return ''  # A key typed just before leaving app mode.
+        try:before,after=self.backend.press_page_key(key)
+        except Exception:return 'The page did not take that key. Press F5 to refresh the page.'
+        from web_modes import page_key_feedback
+        notice=page_key_feedback(key,before,after)
+        dialog=getattr(self.backend,'dialog_notice','')
+        if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+'. '+notice).strip()
+        return notice
+
+    def begin_slider(self,item):
+        """Arrow keys now change this slider on the page, until Escape or Tab."""
+        try:self.backend.focus_for_keys(item)
+        except WebError as exc:return str(exc)
+        except Exception:return 'The slider could not be used. Press F5 to refresh the page.'
+        self.slider_field=dict(item)
+        return describe(item)
+
+    def slider_key(self,key):
+        from web_modes import SLIDER_KEYS,slider_value
+        item=self.slider_field
+        try:item.update(self.backend.slider_key(item,SLIDER_KEYS[key]))
+        except WebError as exc:self.slider_field=None;return str(exc)
+        except Exception:self.slider_field=None;return 'The slider changed. Press F5 to refresh the page.'
+        current=self.browse.current() if self.browse else None
+        if current and current.get('key')==item.get('key'):current.update(value_text=item.get('value_text'),value_now=item.get('value_now'))
+        return slider_value(item)+'.'
+
     def running_browser(self):
         """The browser actually showing pages, which differs from the preference after a fallback."""
         running = getattr(self.backend, 'browser', None)
@@ -1120,6 +1254,14 @@ class WebSession:
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
+            if key in ('ToggleAppMode','AppMode','BrowseMode'):return self.set_app_mode({'ToggleAppMode':'toggle','AppMode':'app','BrowseMode':'browse'}[key])
+            if key.startswith('Pass:'):return self.pass_key(key[5:])
+            if getattr(self,'slider_field',None):
+                if key.startswith('Slider:'):return self.slider_key(key[7:])
+                if key=='Escape':self.slider_field=None;return BROWSE_MODE
+                if key in ('Activate','Space','Done'):return describe(self.slider_field)
+                self.slider_field=None
+            elif key.startswith('Slider:'):key='Read:'+key[7:]  # Typed just after leaving the slider.
             if key.startswith('ListText:'):return self.list_name_input(key[9:])
             if key=='ListBackspace':return self.list_name_input('',backspace=True)
             if key.startswith('Read:'):return self.read_key(key[5:])
@@ -1173,6 +1315,7 @@ class WebSession:
                     if linked:item=linked;role='link'
                     links=[e for e in self.browse.elements if kind(e)=='link' and e.get('start',0)<=item.get('start',0)<e.get('end',0)]
                     if role=='heading' and links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
+                if role=='slider' and not item.get('disabled'):return self.begin_slider(item)
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
                 if role in ('checkbox','radio'):
@@ -1290,6 +1433,8 @@ class WebSession:
 
     def leave(self,keep_open=False):
         self.keyboard_field=None;self.pending=None;self.submit_pending=None;self.list_focus=None;self.form_index=None
+        # Leaving the web screen always returns to browse mode.
+        self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
         if not keep_open:
             self.backend.close()
             self.snapshot=None;self.browse=None;self.document_state=None
@@ -1373,6 +1518,17 @@ class WebSession:
         raise WebError('The page is still changing. Its virtual view will update when it settles.')
 
     def _refresh(self,read=None,preserve=False,wait=True):
+        # In app mode the page is in use, not being read: say only its title.
+        if read is None and self.app_mode:read=False
+        self.slider_field=None
+        result=self._refresh_page(read,preserve,wait)
+        if self.app_mode!=self.mode_announced and self.snapshot:
+            # Each site keeps its own mode; say which one this page uses.
+            self.mode_announced=self.app_mode
+            result=(APP_MODE if self.app_mode else BROWSE_MODE)+' '+result
+        return result
+
+    def _refresh_page(self,read=None,preserve=False,wait=True):
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
         if wait and hasattr(self.backend,'wait_ready'):
             for attempt in range(3):
@@ -1445,6 +1601,27 @@ class WebSession:
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
+        suggestions=self.suggestions_notice()
+        return self._refresh_changed() or suggestions
+
+    def suggestions_notice(self,now=None):
+        """'New suggestions available.' once when a site's suggestion list changes.
+
+        It waits until typing pauses, so it is not said for every letter. An
+        empty list is not announced; Down Arrow says there are no suggestions."""
+        import time
+        item=self.keyboard_field
+        if not editable_combo(item) or item.get('datalist') or not hasattr(self.backend,'combo_state'):
+            self.combo_seen=();return ''
+        now=time.monotonic() if now is None else now
+        if now-getattr(self,'combo_typed_at',0)<.6:return ''
+        try:options=tuple(self.backend.combo_state(item).get('options') or ())
+        except Exception:return ''
+        seen=getattr(self,'combo_seen',())
+        self.combo_seen=options
+        return 'New suggestions available.' if options and options!=seen else ''
+
+    def _refresh_changed(self):
         if not self.snapshot or not hasattr(self.backend,'document_stamp'):return ''
         notice=getattr(self.backend,'dialog_notice','')
         if not isinstance(notice,str):notice=''
@@ -2068,6 +2245,9 @@ class WebSession:
             choice=re.fullmatch(r'(?:(?:try|use|choose|select|search with) )?(google|bing|brave(?: search)?|duck ?duck ?go)(?: for this search)?',command)
             if choice:return self.retry_search_engine('brave' if choice[1].startswith('brave') else 'duckduckgo' if choice[1].startswith('duck') else choice[1])
             return 'Choose an engine with arrows and Enter, or say its name.'
+        from web_modes import mode_request
+        mode=mode_request(command)
+        if mode and self.snapshot:return self.set_app_mode(mode)
         boundary=command.replace('of the page','of page')
         boundary=re.sub(r'^(?:go|move|jump) (?:to )?(?:the )?','',boundary)
         if boundary in ('top of page','beginning of page','start of page'):return self.page_boundary()
@@ -2348,4 +2528,34 @@ COMBO_STATE=r'''(e,arg)=>{
   if(active<0&&typed!==null&&value!==typed)active=labels.findIndex(l=>l.trim().toLowerCase()===value.trim().toLowerCase());
   const expanded=combo.getAttribute('aria-expanded')==='true'||e.getAttribute('aria-expanded')==='true'||options.length>0;
   return {options:labels,active:active<0?null:active,value,expanded,datalist:false,focus_in_box:focusInBox,focus_in_list:!focusInBox&&popups.some(inside)};
+}'''
+
+# App mode: the element with keyboard focus, and text that the page announces
+# through live regions (role status, alert or log, or aria-live). The live
+# region watcher is a JavaScript property, so it never changes the page's DOM.
+PAGE_KEY_STATE=r'''(arg)=>{
+  const accessibleLabel='''+ACCESSIBLE_LABEL+r''';
+  if(!window.__voiceCompanionLive){
+    const live={texts:[]};
+    const region=n=>{for(let x=n&&(n.nodeType===1?n:n.parentElement);x;x=x.parentElement||x.getRootNode()?.host){
+      if(!x.getAttribute)continue;const level=x.getAttribute('aria-live'),role=x.getAttribute('role');
+      if(level==='off')return null;if(level==='polite'||level==='assertive'||['status','alert','log'].includes(role))return x;}return null;};
+    live.observer=new MutationObserver(records=>{const seen=new Set();for(const record of records){const target=region(record.target);if(!target||seen.has(target))continue;seen.add(target);
+      if(target.closest('[aria-hidden="true"]'))continue;const text=String(target.innerText||target.textContent||'').replace(/\s+/g,' ').trim();
+      if(text&&text!==target.__voiceCompanionSaid){target.__voiceCompanionSaid=text;live.texts.push(text.slice(0,300));}}});
+    live.observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+    window.__voiceCompanionLive=live;
+  }
+  const texts=arg&&arg.drain?window.__voiceCompanionLive.texts.splice(0):window.__voiceCompanionLive.texts.slice();
+  let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
+  if(!e||e===document.body||e===document.documentElement)return {focus:null,live:texts,has_focus:document.hasFocus()};
+  window.__voiceCompanionFocusSerial=window.__voiceCompanionFocusSerial||0;
+  if(!e.__voiceCompanionFocusId)e.__voiceCompanionFocusId=++window.__voiceCompanionFocusSerial;
+  const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase();
+  const editable=e.isContentEditable||tag==='textarea'||tag==='input'&&!['checkbox','radio','button','submit','reset','range','color','file','image','hidden'].includes(type);
+  const text=editable?(e.isContentEditable?e.innerText:String(e.value||'')):'';
+  return {has_focus:document.hasFocus(),live:texts,focus:{id:e.__voiceCompanionFocusId,label:accessibleLabel(e),role:accessibleLabel.role(e)||'',tag,type,
+    value_text:e.getAttribute('aria-valuetext')||'',value_now:e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null),
+    checked:accessibleLabel.checked(e),expanded:e.getAttribute('aria-expanded'),selected:tag==='select'?(e.selectedOptions[0]?.text||''):'',
+    editable,password:type==='password',value:type==='password'?'':text.slice(0,2000),caret:type!=='password'&&typeof e.selectionStart==='number'?e.selectionStart:null}};
 }'''
