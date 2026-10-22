@@ -48,7 +48,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.155-test'
+APP_VERSION = '0.2.156-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -92,6 +92,9 @@ PARAKEET_MODEL = Path(os.getenv('VOICE_COMPANION_PARAKEET_MODEL',
 MODEL = Path(os.getenv('VOICE_COMPANION_MODEL', str(BUNDLED_MODEL if BUNDLED_MODEL.exists() else APP / 'model')))
 GUIDE = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'START HERE - Veteran.txt'
 WAKE = ('wake up',)
+# Saying the first three lists the saved drafts; the rest open a list to choose one from.
+EMAIL_DRAFT_COMMANDS = ('list email drafts', 'list drafts', 'my email drafts',
+                        'open email draft', 'open an email draft', 'choose email draft', 'choose an email draft')
 SLEEP = ('go to sleep', 'stop listening', 'sleep companion')
 EXIT = ('shut down companion', 'exit companion', 'quit companion', 'close companion', 'return to windows', 'exit voice companion', 'close voice companion')
 AUDIO = queue.Queue(maxsize=400)  # About 20 seconds of 50 ms microphone blocks.
@@ -570,6 +573,7 @@ def commit_email_field_tab(payload,mode):
             email_draft.subject=value
         email_draft.save()
     except (ValueError,OSError) as exc:speak(str(exc));return None
+    if payload.get('key'):return navigation_key(payload['key'],mode)
     return 'send email' if payload.get('send') else navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
 
 def navigation_key(key,mode):
@@ -585,6 +589,10 @@ def _navigation_key(key,mode):
     if key=='Control':return None
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    from input_parity import screen_command
+    direct=screen_command(key,mode)
+    if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
+    if direct:return direct
     if mode=='update_download':
         return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
@@ -2114,7 +2122,8 @@ def _handle(text, mode, typed=False):
         speak(result)
         sync_app_context(mode,True)
         return mode
-    if mode=='file_reader':
+    # Help in Document reader opens the guide, as on every other screen.
+    if mode=='file_reader' and not (command in ('help','user guide','open user guide','manual','open manual') or command.startswith(('help with ','help for '))):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
@@ -2624,7 +2633,8 @@ def _handle(text, mode, typed=False):
             return 'web'
         speak_web_result(web_session.command(text),revision)
         return 'web'
-    if mode == 'mailbox':
+    # Saved drafts open from the inbox too (Control+O), not only from the main menu.
+    if mode == 'mailbox' and not (command in EMAIL_DRAFT_COMMANDS or command.startswith('open email draft ')):
         return handle_mailbox_screen(text, command, mode, typed)
     # Keep active writing in its editor. A dictated sentence that happens to
     # start with "open document" must not replace the current document.
@@ -2827,11 +2837,18 @@ def _handle(text, mode, typed=False):
         mail_session = MailSession(provider, APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
         return 'mailbox'
-    if command in ('list email drafts', 'list drafts', 'my email drafts'):
+    if command in EMAIL_DRAFT_COMMANDS[:3]:
         folder = APP / 'Email Drafts'
         names = sorted((p.stem for p in folder.glob('*.json')), key=str.casefold) if folder.exists() else []
         speak('Your email drafts are: ' + ', '.join(names[:20]) + ('. There are more drafts.' if len(names) > 20 else '.')
               if names else 'You have no saved email drafts yet.')
+        return mode
+    if command in EMAIL_DRAFT_COMMANDS[3:]:
+        # A list to choose from with arrows and Enter (Control+O in email), or by voice.
+        folder = APP / 'Email Drafts'
+        names = sorted((p.stem for p in folder.glob('*.json')), key=str.casefold) if folder.exists() else []
+        speak(open_named_list('Email drafts', [(name, 'open email draft ' + name) for name in names]) if names
+              else 'You have no saved email drafts yet.')
         return mode
     if command.startswith('open email draft '):
         try:

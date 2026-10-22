@@ -143,6 +143,9 @@ def document_navigation_request(raw):
     if command in END_COMMANDS: return 'end of document'
     match = re.fullmatch(r'(?:(?:go|move|jump|return|take me) (?:to )?)?(?:the )?(beginning|start|end)(?: of (?:the |my )?(?:document|doc))?',command)
     if match: return 'end of document' if match[1]=='end' else 'beginning of document'
+    # Home and End: "go to end of line". The verb is required, so "End of line." can still be written.
+    line = re.fullmatch(r'(?:go|move|jump) to (?:the )?(start|beginning|end) of (?:the |this )?line', command)
+    if line: return 'end of line' if line[1] == 'end' else 'start of line'
     original_command = command
     command = re.sub(r'^(?:go|move|jump) (?:to )?(?:the )?', '', command)
     if re.fullmatch(r'(?:next|previous) (?:character|word|line|sentence|paragraph|heading|cell|row|column)',command): return command
@@ -828,6 +831,7 @@ class VoiceDocument:
                 return self.confirm_replacement()
             return 'Say next, previous, that one, or cancel replacement.'
         navigation = document_navigation_request(text)
+        line_source = self.navigation_position or self.insertion_position
         if navigation:
             command = navigation
             self.selection = None
@@ -845,6 +849,15 @@ class VoiceDocument:
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             self.reading.position = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
             return self.process('read current paragraph')
+        if navigation in ('start of line','end of line'):
+            if not self.paragraphs: return 'The document is empty.'
+            p = self.paragraphs[self.cursor]
+            offset = min(line_source[1], len(p.text)) if line_source and line_source[0] == self.cursor else len(p.text)
+            start = p.text.rfind('\n', 0, offset) + 1
+            end = p.text.find('\n', offset)
+            end = len(p.text) if end < 0 else end
+            self.insertion_position = self.navigation_position = (self.cursor, start if navigation == 'start of line' else end)
+            return ('Start' if navigation == 'start of line' else 'End') + ' of line. ' + (p.text[start:end].strip() or 'Blank.')
         if command in FORMAT_READ_COMMANDS:
             return self.formatting_report(FORMAT_READ_COMMANDS[command])
         name = re.fullmatch(NAME_PATTERN, ' '.join(text.split()), re.I | re.S)

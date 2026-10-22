@@ -151,9 +151,13 @@ class NativeSettingsTests(unittest.TestCase):
         self.panel.command('Font, Arial.')
         self.wait(lambda:self.session.values['document_font']=='Arial')
         # Typed characters in an editable box are still spoken.
+        before=len(self.notices)
         self.panel.command('podcasts')
-        self.wait(lambda:self.session.category_name()=='Podcasts options' and bool(self.u.GetDlgItem(hwnd,202)))
+        # Wait for the Podcasts dialog to be drawn and announced. Until then, control 202
+        # still belongs to the previous dialog, and a key sent to it is lost.
+        self.wait(lambda:any(m.startswith('Podcasts options dialog.') for m in self.notices[before:]))
         entry=self.u.GetDlgItem(hwnd,202)
+        self.assertTrue(entry)
         self.u.PostMessageW(entry,0x102,ord('Z'),0)
         self.wait(lambda:'Z' in self.notices)
         self.panel.command('synthesizer')

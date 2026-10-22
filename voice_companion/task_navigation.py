@@ -254,10 +254,14 @@ class TaskNavigation:
             m.speak('Playback speed. Type or say a number from 0.5 to 3, then Enter. Escape cancels.')
             return 'task_input'
         if '{value}' in command:
-            self.prompt = (command, 'document')
+            self.prompt = (command, 'document' if mode in ('document', 'document_menu') else mode)
             prompt={'{value}':'Document command. Type or say the full command, then Enter.',
                     'replace {value}':'Replace text. Type or say the old text, with, then the new text. Press Enter.',
-                    'create table with {value}':'Table size. Type or say the rows and columns, such as two rows and two columns. Press Enter.'}.get(command)
+                    'create table with {value}':'Table size. Type or say the rows and columns, such as two rows and two columns. Press Enter.',
+                    'find {value}':'Find. Type or say the words to find, then press Enter.',
+                    'add contact {value}':'Add contact. Type or say the name, the word as, then the email address. Press Enter.',
+                    'find lesson {value}':'Find lesson. Type or say a subject, then press Enter.',
+                    'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')
             return 'task_input'
         return m.handle(command, 'document' if mode == 'document_menu' else 'awake' if mode in ('media_menu','word_processor') else mode, typed=True)
@@ -293,11 +297,14 @@ class TaskNavigation:
             template, target = self.prompt
             if command in ('cancel','escape','go back'):
                 self.prompt=None
-                m.speak('Canceled. Back to '+target.replace('_',' ')+'.'); return target
+                m.speak('Canceled. Back to '+{'file_reader':'document reader','mailbox':'email','web':'the web page'}.get(target,target.replace('_',' '))+'.'); return target
             if not text.strip():m.speak('Enter a value, or press Escape to cancel.');return mode
             result=self.handle(template.format(value=text.strip()), target) if target == 'local_media' else m.handle(template.format(value=text.strip()), target, typed=True)
             self.prompt=None
             return result
+        if text.startswith('@prompt:'):
+            # A direct key for a command that needs a value, such as Ctrl+F in Document reader.
+            return self.action(text[len('@prompt:'):], mode)
         if mode in ('document_name','document_save','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
         if mode=='files' and m.FILE_MANAGER and m.FILE_MANAGER.pending:return None
         if m.NAMED_LIST:return None
@@ -310,10 +317,11 @@ class TaskNavigation:
             return m.handle(text,'document',typed=True)
         if mode in ('word_processor','media_menu','recent_documents','document_menu','local_media') and (m.spoken_control(command) or command in ('help','exit companion','go to sleep','wake up','main menu','back to main menu')):
             return None
-        if mode=='document' and command in ('toggle bold','toggle italic','toggle underline'):
+        editor = m.document if mode == 'document' else m.email_draft if mode == 'email_draft' else None
+        if editor is not None and command in ('toggle bold','toggle italic','toggle underline') and (mode == 'document' or (editor.compose_step or 'body') == 'body'):
             attribute=command.split()[1]
-            value=m.document.formatting_report(attribute).lower()==attribute+'.'
-            m.speak(m.document.process(('remove '+attribute) if value else 'make this '+('underlined' if attribute=='underline' else attribute)))
+            value=editor.formatting_report(attribute).lower()==attribute+'.'
+            m.speak(editor.process(('remove '+attribute) if value else 'make this '+('underlined' if attribute=='underline' else attribute)))
             return mode
         if mode in ('awake','document','word_processor') and command in ('open a document','open document'):
             return self.pick('document')

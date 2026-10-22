@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.155-test.
+Guide version: 0.2.156-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -168,11 +168,11 @@ You can open the app later from its desktop icon or the Windows Start menu. Use 
 1. Open Voice Companion.
 2. Wait while it checks for updates.
 3. If it offers an update, say "Yes" or "No". You can also use the arrow keys and Enter.
-4. When it says it is ready, say "Wake up".
+4. When it says it is ready, say "Wake up", or press Down Arrow.
 5. Wait for the main menu. Say the name of the tool you want.
 For example, say "Word processor", "Notepad", "Email", "Web browser", "Radio", or "Podcasts".
 The keyboard works while voice commands are asleep. Press Down Arrow to hear a menu item. Press Enter to open it.
-Say "What version?" to hear the version you are using.
+To hear the version you are using, say "What version?", or press Control+Shift+V on the main menu.
 
 1.3 Use the main menu
 The main menu has these choices:
@@ -188,10 +188,11 @@ The main menu has these choices:
 - Shut down the computer
 - Restart the computer
 - Exit Voice Companion
-With your voice, say "Next" or "Previous" to move. Say "That one", "Okay", or "Confirm" to open the item you hear.
-From the keyboard, use Up Arrow and Down Arrow to move. Press Enter to open an item. Home selects the first item. End selects the last item.
+To move, say "Next" or "Previous", or press Down Arrow or Up Arrow.
+To open the item you hear, say "That one", "Okay", or "Confirm", or press Enter.
+To reach the first or last item, say "Start of list" or "End of list", or press Home or End.
 You hear "Start of list" or "End of list" if you try to move past the first or last item. The list does not wrap around.
-In most menus, press the first letter of a name to find a matching item. Press Enter to open it. Text boxes use those keys for typing instead.
+To find an item, say its name, or press its first letter. Then press Enter to open it. Text boxes use those keys for typing instead.
 
 1.4 Set up your microphone
 Voice Companion uses the microphone selected in Windows. You can use a built-in microphone or a working headset.
@@ -202,15 +203,18 @@ You can keep using the keyboard if the microphone is not available.
 2. USING VOICE COMMANDS
 
 2.1 Give a command
-Say a command, then wait for the reply. For example, say "Help" to open the guide.
-In a menu, say "Next", then "That one" to choose the item you hear. Say "Main menu" to return to the start.
+Say a command, then wait for the reply. For example, say "Help", or press F1, to open the guide.
+In a menu, say "Next", then "That one" to choose the item you hear. Or press Down Arrow, then Enter.
+To return to the start, say "Main menu", or press Escape until you hear Main menu.
 Names in examples are sample names. Replace them with your own document, contact, folder, or favorite name.
+This guide gives each task as a spoken command, then a key. For example: say "Help", or press F1. The key does the same thing as the spoken command.
 
 2.2 Speak text or give commands
 In Normal mode, you can give commands and dictate text. In a document, draft, note, or web text box, ordinary speech adds text.
 Say "Commands only" when you want to move around without adding text by mistake.
 Say "Dictation only" when you want your speech to become text. In this mode, some words that are usually commands become text.
-Say "Normal mode" to return to voice commands and text entry. Say "What mode?" to hear the current choice.
+Say "Normal mode" to return to voice commands and text entry. To choose a mode with the keyboard, press Alt+O, then choose Input options.
+To hear the current mode, say "What mode?", or press Control+Shift+M on the main menu.
 You can still leave a document, cancel a draft, or put Companion to sleep in dictation-only mode. Some editing commands also remain available.
 If you are unsure which mode is active, switch to Normal mode before giving an editing or reading command.
 
@@ -230,51 +234,56 @@ In a web page, Alt+T lets you type an app command. Press Escape to return to pag
 
 2.5 Answer Yes or No
 When Companion asks a question, listen to the item name and the action first.
-Say "Yes" to do the action. Say "No" or "Cancel" to stop it.
-From the keyboard, use arrows or Tab to choose Yes or No, then press Enter. Alt+Y answers Yes. Alt+N answers No. Escape cancels.
+To do the action, say "Yes", or press Alt+Y. To stop it, say "No" or "Cancel", or press Alt+N or Escape.
+You can also use arrows or Tab to choose Yes or No, then press Enter.
 At a Yes or No prompt, Home selects Yes and End selects No.
 
 3. USING HELP AND LESSONS
 
 3.1 Open a Help topic
-Say "Help" to open the guide inside the app. Use "Next", "Previous", and "That one" to choose a topic.
+To open the guide inside the app, say "Help", or press F1 on the main menu. To choose a topic, say "Next", "Previous", and "That one", or use the arrows and Enter.
 You can go straight to a topic. For example, say "Help with documents", "Help with email", or "Help with web".
 Other useful requests are "Help with radio", "Help with podcasts", "Help with presets", and "Help with commands".
-From the keyboard, use the arrows and Enter to choose. Home and End reach the ends of a list.
+F1 on most screens opens the Help topic for that screen. Home and End reach the ends of a list.
 
 3.2 Read part of a topic
 Each Help topic has a list of smaller parts. Choose the part you want, then listen.
-Help reads one complete paragraph or list item at a time. Say "Continue reading" for the next block. Say "Read from top" to start that part again.
-Say "Next paragraph", "Previous paragraph", "Next sentence", or "Next word" to move through the text.
-From the keyboard, press Down Arrow for the next paragraph or list item. Press Up Arrow for the previous block. Home goes to the first block. End goes to the last block. Long paragraphs are read in full, even when they wrap across several screen lines.
+Help reads one complete paragraph or list item at a time. For the next block, say "Continue reading", or press Down Arrow. Say "Read from top" to start that part again.
+To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Down Arrow or Up Arrow.
+To move by sentence, say "Next sentence" or "Previous sentence", or press Control+Down Arrow or Control+Up Arrow.
+To move by word, say "Next word" or "Previous word", or press Control+Right Arrow or Control+Left Arrow.
+For the first or last block, say "First block" or "Last block", or press Home or End. Long paragraphs are read in full, even when they wrap across several screen lines.
 Choosing another Help item stops the old speech before the next item is read.
-Press Control to silence speech. Say "Back to subsections" to return to the smaller parts.
-Say "Back to topics" for the full topic list. Say "Close help" to return to your work.
+Press Control to silence speech. To return to the smaller parts, say "Back to subsections", or press Escape.
+For the full topic list, say "Back to topics", or press Escape again. To return to your work, say "Close help", or press Escape from the topic list.
 
 3.3 Start the audio tutorial
 The tutorial explains how to use the app. It waits for you between lessons. The tutorial explains the commands you give. It does not use them to send mail or change your files.
 1. Return to the main menu.
-2. Say "Start tutorial".
+2. Say "Start tutorial", or press Control+Shift+T on the main menu.
 3. Say a course name, such as "Email" or "Web browser". You can also use arrows and Enter.
 4. Listen to the first lesson.
-5. Say "Next lesson" when you are ready.
+5. When you are ready, say "Next lesson", or press Down Arrow.
 Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates.
 
 3.4 Find, repeat, and leave a lesson
-Say "Repeat" to hear the same lesson. Say "Previous lesson" to go back.
-Say "Lesson list" for the lesson names. Use arrows and Enter to choose one.
-Say "Find lesson" followed by a topic. For example, say "Find lesson favorites".
-Say "List commands" for the course's command list. Say "Explain command", followed by the command you want to learn about. For example, say "Explain command send it".
-If a long explanation pauses, say "Continue reading" to hear the next part. Say "Courses" to return to the course list.
-Escape goes back one level. Say "Main menu" or "Close tutorial" to leave the tutorial.
+To hear the same lesson, say "Repeat", or press Control+Shift+R. To go back, say "Previous lesson", or press Up Arrow.
+For the lesson names, say "Lesson list", or press Control+L. Use arrows and Enter to choose one.
+To find a lesson, say "Find lesson" followed by a topic, such as "Find lesson favorites". Or press Control+F, type the topic, and press Enter.
+For the course's command list, say "List commands", or press F1.
+To learn about a command, say "Explain command", followed by the command. For example, say "Explain command send it". Or press Control+Shift+F, type the command, and press Enter.
+If a long explanation pauses, say "Continue reading", or press Control+Down Arrow.
+To go back one level, say "Go back", or press Escape. Say "Courses" to return to the course list.
+To leave the tutorial, say "Main menu" or "Close tutorial", or press Escape from the course list.
 
 4. SPEECH AND VOICES
 
 4.1 Stop or pause speech
 Press Control to silence Companion. This works while the microphone is asleep too.
 By voice, say "Be quiet", "Stop talking", "Pause", or "Shut up". Say "Resume" or "Keep talking" to continue paused speech.
+Control stops speech instead of pausing it. To hear the text again, use a reading key, such as Down Arrow.
 Say "Next" or "Previous" to interrupt a spoken menu item and move. These commands also work while Help or a lesson is being read. A new command can stop the old reading and do something else. For example, say "Next message" while mail is being read.
-For audio such as radio or podcasts, use "Pause audio" or "Stop audio" to make your meaning clear.
+For audio such as radio or podcasts, say "Pause audio" or "Stop audio" to make your meaning clear. Or press Control+P to pause or resume.
 
 4.2 Change speed, volume, or pitch
 Say "Faster" or "Slower" to change speech speed. Say "Louder", "Quieter", or "Softer" to change volume.
@@ -291,6 +300,7 @@ From the keyboard, press Alt+O. Open Voice options. Use Tab to reach a setting, 
 4. Listen to the sample and confirm your choice.
 SAPI means the voices provided by Windows. eSpeak has US and UK English choices. AI voices need a separate setup and an internet connection.
 Use "Next voice", "Previous voice", and "Okay" to choose. Say "Cancel voice" to keep your earlier choice.
+With the keyboard, press Alt+O and choose Synthesizer options. Tab to the voice list, choose with the arrows, then choose OK.
 The available voices depend on what is installed and set up on your computer.
 
 4.4 Use an AI voice
@@ -305,12 +315,14 @@ The app uses a local voice for typing and menu movement so you can hear each key
 
 5.1 Read from your current place
 These commands work in documents, email, web pages, and notes where text reading is available.
-Say "Read from top" or "Start reading" to start at the beginning. Say "Continue reading" for the next part.
-Say "Next character" or "Previous character" to move by letter or symbol.
-Say "Next word" or "Previous word" to move by word.
-Say "Next line" or "Previous line" to move by line.
-Say "Next sentence" or "Previous sentence" to move by sentence.
-Say "Next paragraph" or "Previous paragraph" to move by paragraph.
+To start at the beginning, say "Read from top" or "Start reading". In a document, draft, note, or the Document reader, you can also press Control+Shift+R.
+For the next part, say "Continue reading", or press Down Arrow.
+To move by letter or symbol, say "Next character" or "Previous character", or press Right Arrow or Left Arrow.
+To move by word, say "Next word" or "Previous word", or press Control+Right Arrow or Control+Left Arrow.
+To move by line, say "Next line" or "Previous line", or press Down Arrow or Up Arrow.
+To move by sentence, say "Next sentence" or "Previous sentence". In Help, press Control+Down Arrow or Control+Up Arrow. In a document, press Alt, 5, then Q or R.
+To move by paragraph, say "Next paragraph" or "Previous paragraph", or press Control+Down Arrow or Control+Up Arrow. In Help, press Down Arrow or Up Arrow.
+To reach the start or end of a line, say "Go to start of line" or "Go to end of line", or press Home or End.
 A line may end at a line break in the text. It may differ from a line shown on the screen.
 
 5.2 Read with the keyboard
@@ -325,131 +337,132 @@ The same keys can review a received email. You can read and copy received text, 
 Selected text is the part you have chosen to copy, change, or delete.
 From the keyboard, hold Shift while pressing a movement key. Control+A selects all the text in an open text view.
 With your voice, say "Select word", "Select line", "Select sentence", "Select character", or "Select paragraph" for the current part.
-Say "Select all" for all the text. Say "What is selected" or "Read selection" to check your choice.
+For all the text, say "Select all", or press Control+A. To check your choice, say "What is selected" or "Read selection". In a document, you can also press Insert+Shift+Down Arrow.
 In a document or draft, say "Select", followed by the part you want. You can use first, next, previous, last, current, or a number with character, word, line, sentence, or paragraph. For example, say "Select first paragraph", "Select next paragraph", "Select previous paragraph", or "Select paragraph 3".
 In an email address box, a subject box, a note, or a web text box, selection applies only to the text in that area.
 Web page reading text is read-only. To change a web answer, enter its text box first.
 
 5.4 Choose named words
-To select a word or phrase, say "Select", followed by the words you want. For example, say "Select red fox".
+To select a word or phrase, say "Select", followed by the words you want. For example, say "Select red fox". In a document, you can also press Control+Alt+S, type the words, and press Enter.
 To select a passage, say "Select", followed by the start word, "through", and the end word. For example, say "Select cat through dog". You can use a phrase at either end, such as "Select red fox through sleeps".
 You can also mark each end in a separate command. Say "Selection start at", followed by the start word or phrase. Then say "Selection end at", followed by the end word or phrase. For example, say "Selection start at cat", then "Selection end at dog".
 If the words appear more than once, Companion reads each matching place. Say "Next" or "Previous" to hear another match.
-Say "Read sentence" to hear the nearby sentence again. Say "That one", "Confirm that", or "Okay" to choose.
-To choose a match by number, say "Match", followed by its number. For example, say "Match 3". You can also say "First match" or "Second match". Say "Cancel selection" to leave the text as it is.
+Say "Read sentence" to hear the nearby sentence again. To choose, say "That one", "Confirm that", or "Okay", or press Enter. Arrows also move through the matches.
+To choose a match by number, say "Match", followed by its number. For example, say "Match 3". You can also say "First match" or "Second match". To leave the text as it is, say "Cancel selection", or press Escape.
 To select the word all rather than all the text, say "Select the word all".
 
 5.5 Copy, cut, paste, or remove text
 Say "Copy selection", "Cut selection", or "Paste". From the keyboard, use Control+C, Control+X, or Control+V.
 In a document or draft, say "Copy", "Cut", or "Delete", followed by the words you want to change. For example, say "Copy cat", "Cut cat", or "Delete cat".
-Say "Delete word", "Delete line", "Delete sentence", or "Delete paragraph" to remove the current part.
-Say "Scratch" or "Scratch that" to remove selected text. If no text is selected, the command removes the most recent dictated text where this feature is supported.
-In documents and draft message bodies, say "Undo" to reverse an edit. Check the text after the change.
+Say "Delete word", "Delete line", "Delete sentence", or "Delete paragraph" to remove the current part. In a document, these are also in the Edit menu: press Alt, then 2.
+Say "Scratch" or "Scratch that", or press Control+Shift+Z, to remove selected text. If no text is selected, the command removes the most recent dictated text where this feature is supported.
+In documents and draft message bodies, say "Undo", or press Control+Z, to reverse an edit. Check the text after the change.
 Moving to a new place clears the old selection. Check your choice again before you change or remove text.
 
 5.6 Replace or insert words
-To replace text, say "Replace", followed by the old words, "with", and the new words. For example, say "Replace cat with dog". You can also say "Change", followed by the old words, "to", and the new words, such as "Change cat to dog".
+To replace text, say "Replace", followed by the old words, "with", and the new words. For example, say "Replace cat with dog". Or press Control+H, type the same words, and press Enter. You can also say "Change", followed by the old words, "to", and the new words, such as "Change cat to dog".
 If the app finds one match, it changes that text at once. If it finds several matches, use "Next", "Previous", and "That one" to choose the right place.
-Say "Cancel replacement" to stop without changing the words. Say a punctuation name if you want it in the new text.
+To stop without changing the words, say "Cancel replacement", or press Escape. Say a punctuation name if you want it in the new text.
 For example, say "Replace cat with dog period" to use dog followed by a period. A period that speech recognition adds on its own does not become part of the replacement.
 To replace the current word, sentence, or paragraph, say "Replace word with", "Replace sentence with", or "Replace paragraph with", followed by the new text. For example, say "Replace word with hello", "Replace sentence with Thank you", or "Replace paragraph with I will call tomorrow".
-To choose where to add text, say "Insert before" or "Insert after", followed by a word or phrase already in the text. For example, say "Insert before red fox" or "Insert after red fox".
+To choose where to add text, say "Insert before" or "Insert after", followed by a word or phrase already in the text. For example, say "Insert before red fox". In a document, you can also press Alt, 2, then O or P.
 Choose a matching place if asked. Then speak the words to add. In Commands only, use "Type literally" before the new words.
 
 6. WRITE A DOCUMENT
 
 6.1 Create and name a document
-Choose Word processor for its menu. Create a document starts a blank file. Open a document starts at drives. Recent documents lists files used in the app. Options opens Word processor options. Ctrl+N creates a file. Ctrl+O opens one. Ctrl+R opens recent files from this menu.
-The Word processor creates files that Microsoft Word can open. You do not need to have Word installed.
-1. Say "Create a document", or choose Word processor, then Create a document.
-2. Say "Name document", followed by the file name you want. For example, say "Name document My Letter".
+Choose Word processor for its menu. Create a document starts a blank file. Open a document starts at drives. Recent documents lists files used in the app. Options opens Word processor options. Control+N creates a file. Control+O opens one. Control+R opens recent files from this menu.
+The Word processor creates files that Microsoft Word can open. You do not need to have Word installed. For help, say "Help with documents", or press F1 in the Word processor menu.
+1. Say "Create a document". Or choose Word processor, then press Control+N.
+2. Say "Name document", followed by the file name you want, such as "Name document My Letter". Or press F2, type the name, and press Enter.
 3. Speak a short sentence or type into the document.
-4. Say "Read paragraph" to check what you wrote.
+4. To check what you wrote, say "Read paragraph", or press Alt, 5, then B.
 The file name and the title inside your letter are separate. Naming the file does not add a title to the page.
-You can also press F2 to reach the name box. Say the name, then say "Okay", or type the name and press Enter.
 
 6.2 Write and move through the document
-Say "New paragraph" to start a new paragraph. Say "New line" to start a line in the same paragraph.
-Say "Read paragraph", "Spell word", "Next word", or "Next sentence" to review your text.
-Say "Go to beginning of document" or "Go to end of document" to move to an end.
+To start a new paragraph, say "New paragraph", or press Control+Enter. To start a line in the same paragraph, say "New line".
+To review your text, say "Read paragraph", "Spell word", "Next word", or "Next sentence". The keys are in chapter 5.
+To move to an end, say "Go to beginning of document" or "Go to end of document", or press Control+Home or Control+End.
 You can also say "Move to beginning of document", "Move to end of document", "Jump to beginning of document", or "Jump to end of document".
 After moving, new words are added at that place. A previous selection is cleared.
-You can type directly too. Enter creates a paragraph. Use the reading and editing keys in chapter 5.
+You can type directly too. Enter creates a paragraph. Use the reading and editing keys in chapter 5. To give any document command with the keyboard, press Alt to open the document menu. See part 6.9.
 
 6.3 Change the look of text
 Choose the text first if you want to change only part of it. With no selection, many commands change the current paragraph.
-Say "Make this bold", "Make this italic", or "Underline this". Say "Remove bold", "Remove italic", or "Remove underline" to turn a style off.
+Say "Make this bold", "Make this italic", or "Underline this", or press Control+B, Control+I, or Control+U. These keys turn the style on or off.
+You can also say "Remove bold", "Remove italic", or "Remove underline" to turn a style off.
 To format specific words, say "Bold", "Italicize", "Underline", or "Highlight", followed by those words. For example, say "Bold cat", "Italicize cat", "Underline cat", or "Highlight cat".
-To choose a font, say "Set font to", followed by its name. For example, say "Set font to Arial".
-To choose a font size, say "Set font size to", followed by a number and "points". For example, say "Set font size to 14 points". You can also use the shorter form "Set size 14".
+To choose a font, say "Set font to", followed by its name. For example, say "Set font to Arial". Or press Control+Shift+F, type the name, and press Enter.
+To choose a font size, say "Set font size to", followed by a number and "points". For example, say "Set font size to 14 points". Or press Control+Shift+P, type the size, and press Enter.
 To set both, say "Set font", followed by the font name, the size, and "points". For example, say "Set font Times New Roman 16 points".
 To change just the current word, say "Bold word", "Italic word", or "Underline word". To change its size, say "Set word size to", followed by the number and "points". For example, say "Set word size to 14 points".
 To change the current word's font, say "Set word font to", followed by the font name. For example, say "Set word font to Arial". "Remove bold from word" turns bold off for that word.
-Say "Say font" or "Read formatting" to hear the text settings. "Say font name", "Say size", "Say bold", "Say italic", and "Say underline" read one setting.
+To hear the text settings, say "Say font" or "Read formatting", or press Insert+F. "Say font name", "Say size", "Say bold", "Say italic", and "Say underline" read one setting.
 If selected text has more than one setting, Companion tells you that the setting is mixed.
 
 6.4 Use headings and align text
 A heading names a part of your document. Heading levels run from 1 to 6.
-To apply a heading, say "Heading" or "Apply heading", followed by a level number. For example, say "Heading 1" or "Apply heading 1" for a main heading. Use a higher number for a smaller heading.
-"Make this a heading" uses level 1. "Normal text" removes the heading style.
-Say "Align left", "Align center", "Align right", or "Align justified" to place a paragraph on the page.
+To apply a heading, say "Heading", followed by a level number, such as "Heading 1". Or press Control+Alt and the number, such as Control+Alt+1. Use a higher number for a smaller heading.
+"Make this a heading" uses level 1. To remove the heading style, say "Normal text", or press Control+Shift+N.
+To place a paragraph on the page, say "Align left", "Align center", "Align right", or "Align justified". Or press Control+L, Control+E, Control+R, or Control+J.
 Justified text lines up with both page edges. Say "Say alignment" or "Say heading" to check the setting.
 With selected text, these commands apply to the selected paragraphs.
 
 6.5 Change line spacing
 Line spacing is the space between the lines in a paragraph.
-Say "Single space" or "Double space" to set the spacing. To give a value, say "Line spacing", followed by the number. For example, say "Line spacing 1.5".
+To set the spacing, say "Single space" or "Double space", or press Control+1 or Control+2. For one and a half, say "Line spacing 1.5", or press Control+5.
+For another value, say "Line spacing", followed by the number. Or press Alt, 3, then I, and type the number.
 For another value, say "Custom spacing". Give the value when asked, such as "One point seven five" or "Exactly eighteen points".
 Companion repeats the value. Say "Yes" to use it, "No" to give another value, or "Cancel" to stop.
 To change spacing throughout the document, say "Set document line spacing to", followed by the value. For example, say "Set document line spacing to 1.25".
 Say "Read line spacing" for the current paragraph. Say "Read document line spacing" for the whole document.
-"Reset line spacing" resets the current paragraph. "Reset document line spacing" resets all paragraphs.
+"Reset line spacing" resets the current paragraph. "Reset document line spacing" resets all paragraphs. These spacing choices are also in the Format menu: press Alt, then 3.
 A new paragraph keeps the spacing of the paragraph before it.
 
 6.6 Make a list
-1. Say "Bulleted list" or "Numbered list".
+1. Say "Bulleted list" or "Numbered list", or press Control+Shift+L or Control+Shift+7.
 2. Speak or type the first item.
-3. Say "New paragraph" for the next item.
-4. Say "End list" when you want to return to ordinary text.
+3. For the next item, say "New paragraph", or press Enter.
+4. To return to ordinary text, say "End list", or press Alt, 4, then F.
 A bulleted list marks each item with a dot. A numbered list gives each item a number.
 
 6.7 Make a table
-1. Say "Create table with", followed by the number of rows, "rows and", the number of columns, and "columns". For example, say "Create table with two rows and two columns".
+1. Say "Create table with", the number of rows, "rows and", the number of columns, and "columns". For example, say "Create table with two rows and two columns". Or press Control+Alt+T and type the size.
 2. Speak the text for the first cell. A cell is one box in the table.
-3. Say "Next cell" to move to the next box.
-4. Say "Read table" to check your work.
-You can also use "Previous cell", "Next row", "Previous row", "Next column", and "Previous column".
+3. To move to the next box, say "Next cell", or press Tab.
+4. To check your work, say "Read table", or press Alt, 8, then A.
+You can also say "Previous cell", "Next row", "Previous row", "Next column", and "Previous column". The keys are Shift+Tab, Alt+Down Arrow, Alt+Up Arrow, Alt+Right Arrow, and Alt+Left Arrow.
 Say "Read cell" to hear the current cell. "Clear cell" removes its words.
 "Add row" and "Add column" make the table larger. "Delete row" and "Delete column" remove those parts.
-Say "Leave table" to write after the table. "Delete table" removes the table. Say "Undo" at once if that was a mistake.
+Say "Leave table" to write after the table. "Delete table" removes the table. Say "Undo" at once if that was a mistake. All table commands are in the Table menu: press Alt, then 8.
 The editor makes simple tables with straight rows and columns. It may not open more complex tables from other programs.
 
 6.8 Save, copy, close, or reopen a document
-Companion saves as you write. Say "Save document" to save under the current name.
-To keep a second file, say "Save as" or "Save document as", followed by its new name. For example, say "Save as My Letter Copy" or "Save document as My Letter Copy". The first file stays in place.
+Companion saves as you write. To save under the current name, say "Save document", or press Control+S.
+To keep a second file, say "Save as", followed by its new name. For example, say "Save as My Letter Copy". Or press Control+Shift+S and type the name. The first file stays in place.
 To rename the file, say "Name document", followed by the new name. For example, say "Name document My Letter". Say "Undo" right after a rename to restore the earlier name.
-Say "Leave document", "Exit document", or "Go back" when you are done. Companion asks whether to save.
+When you are done, say "Leave document" or "Go back", or press Control+W or Escape. Companion asks whether to save.
 Say "Yes" to keep the current file name, or to name an untitled file. Say "No" to discard changes made since you last opened, saved, or named the file.
 Press Escape at the save or name prompt to keep editing. Check the file name Companion reads before leaving.
 Say "Resume document" to return to the current document while Companion remains open.
-After reopening the app, say "List documents", then choose a file. To open a file by name, say "Open document", followed by the saved name. For example, say "Open document My Letter".
+After reopening the app, say "List documents", then choose a file. Or choose Word processor, then press Control+R for recent files or Control+O to open one. To open a file by name, say "Open document", followed by the saved name, such as "Open document My Letter".
 Say "Open documents" to open the document folder in Windows. "Where are my documents?" reads its location.
 Files are kept in Documents, inside the Voice Companion folder. They use the .docx file type.
 Companion can reopen the simple files it creates. It may refuse a complex Word file to avoid changing it incorrectly.
 
 6.9 Document command menu
 In a document, press Alt for File, Edit, Format, Insert, Read and navigate, Dictation, Table, and More commands. Use arrows and Enter. Type a letter to find an item. Escape goes back a level, then back to the document. Each action uses the same rules as its voice command. If a value is needed, type or say it and press Enter. Escape cancels the prompt. Alt+T lets you type any voice command.
-Ctrl+S saves. Ctrl+Shift+S saves as. F2 names the document. Ctrl+O opens a file. Ctrl+N creates one. Ctrl+W closes it after a save prompt. Ctrl+Z undoes. Ctrl+A selects all. Ctrl+C copies, Ctrl+X cuts, and Ctrl+V pastes. Ctrl+F finds text. Ctrl+H replaces text; enter the old words followed by with and the new words. Ctrl+B, Ctrl+I, and Ctrl+U toggle bold, italic, and underline. Ctrl+L, Ctrl+E, Ctrl+R, and Ctrl+J set left, center, right, and full alignment. Ctrl+Shift+F chooses a font. Ctrl+Shift+P chooses its size. Ctrl+1, Ctrl+2, and Ctrl+5 set single, double, and one-and-a-half spacing. Ctrl+Enter makes a new paragraph. Ctrl+Shift+R reads the document. F4 starts dictation. Shift+F4 pauses it. F1 opens help. Alt+O opens Word processor options. In a table, Tab and Shift+Tab move among cells. Alt+Up and Alt+Down move among rows. Alt+Left and Alt+Right move among columns.
+Control+S saves. Control+Shift+S saves as. F2 names the document. Control+O opens a file. Control+N creates one. Control+W closes it after a save prompt. Control+Z undoes. Control+A selects all. Control+C copies, Control+X cuts, and Control+V pastes. Control+F finds text. Control+H replaces text; enter the old words followed by with and the new words. Control+B, Control+I, and Control+U toggle bold, italic, and underline. Control+L, Control+E, Control+R, and Control+J set left, center, right, and full alignment. Control+Shift+F chooses a font. Control+Shift+P chooses its size. Control+1, Control+2, and Control+5 set single, double, and one-and-a-half spacing. Control+Enter makes a new paragraph. Control+Shift+R reads the document. F4 starts dictation. Shift+F4 pauses it. F1 opens help. Alt+O opens Word processor options. In a table, Tab and Shift+Tab move among cells. Alt+Up and Alt+Down move among rows. Alt+Left and Alt+Right move among columns.
 
 7. WRITE A NOTE
 
 7.1 Start and save a note
 Notepad is for a short plain text note. Use the Word processor when you need headings, fonts, or tables.
-1. Say "Write a note" or choose Notepad.
-2. Speak your note.
-3. Say "Read from top" to listen to it.
-4. Say "Save note" to save it.
-Say "Go back" to save the current note and return to the main menu. Going to sleep also saves the text you have entered.
+1. Say "Write a note", or choose Notepad on the main menu.
+2. Speak or type your note. Press Enter after typed words.
+3. To listen to it, say "Read from top", or press Control+Shift+R.
+4. To save it, say "Save note", or press Control+S.
+To save the note and return to the main menu, say "Go back", or press Escape. Going to sleep also saves the text you have entered. For Notepad help, say "Help with notepad", or press F1.
 
 7.2 Review or change a note
 Use "Next word", "Previous word", "Next line", and "Previous line" to review.
@@ -462,10 +475,10 @@ The same selection and editing rules apply to the current note. Keep a saved cop
 
 7.3 Open a saved note
 Say "List notes" to hear your saved notes. You can also say "Open a note" or "My notes". The newest note comes first.
-On the Notepad screen, press Ctrl+O to list your notes. The note you are writing is saved first.
+On the Notepad screen, you can also press Control+O to list your notes. The note you are writing is saved first.
 Use the Up and Down Arrow keys, or say "Next" and "Previous", to move through the list. You hear the first words and the date of each note.
 Press Enter or say "OK" to open a note. Companion reads it to you. Then speak to add to it.
-Say "Save note" or "Go back" to save your changes. They go into the same note, not a new copy.
+To save your changes, say "Save note" or "Go back", or press Control+S or Escape. They go into the same note, not a new copy.
 You can also say "Open note" and a number from the list. For example, say "Open note 2".
 If you have no saved notes yet, Companion tells you how to start one.
 
@@ -473,8 +486,8 @@ If you have no saved notes yet, Companion tells you how to start one.
 
 8.1 Connect an email account
 Connect an account before relying on Companion to send or organize email.
-1. Say "Add account".
-2. Choose Gmail, Outlook or Exchange, Yahoo, or Thunderbird as your email service.
+1. Say "Add account". Or press Alt+O, choose Email options, then choose Add an email account.
+2. Choose Gmail, Outlook or Exchange, Yahoo, or Thunderbird as your email service. Say its name, or press G, O, Y, or T, then Enter.
 3. Follow the sign-in prompts. Ask your helper if you need help with the sign-in page.
 4. Open the inbox and send a test message to someone you know.
 Google and Microsoft use their usual sign-in pages. Work or school accounts may need your organization's approval.
@@ -487,15 +500,17 @@ If account setup is not available, ask your helper to check the app's email setu
 Say "Add another account" to connect a second address. Say "List email accounts" to hear the saved accounts.
 To switch accounts, say "Switch to", followed by the email service name. For example, say "Switch to Yahoo" or "Switch to Outlook" if only one account of that type is connected.
 With two accounts of the same type, say "Switch to" followed by the full address.
-Say "Which email account?" to hear the account in use. Check it before sending mail.
+To hear the account in use, say "Which email account?". Check it before sending mail.
+With the keyboard, press Alt+O and choose Email options. Sending account names the account in use. Choose another account there to switch.
 "Check Gmail", "Check Outlook", and "Check Yahoo" open that account when exactly one of its type is connected.
 
 8.3 Add and find contacts
 A contact is a saved name and email address.
-To save a contact, say "Add contact", followed by the person's name, "as", and their email address. For example, say "Add contact Bob as bob@example.com". Say "List contacts" to hear saved names.
+To save a contact, say "Add contact", followed by the person's name, "as", and their email address. For example, say "Add contact Bob as bob@example.com". Or press Control+Shift+K in the inbox. Type the name, the word as, and the address, then press Enter.
+To hear saved names, say "List contacts", or press Control+K in email. Use arrows to hear each name. Press Enter to hear the address.
 To find a contact, say "Find contact", followed by the saved name. For example, say "Find contact Bob". Use the saved contact's name when Companion asks who to email.
 Each email account has its own contact list. Local contacts can be used without internet access.
-When Gmail is selected, say "Connect Google Contacts" or "Sync Google Contacts" to request access to Google Contacts.
+When Gmail is selected, say "Connect Google Contacts" to request access to Google Contacts. Or press Alt+O, choose Email options, then choose Connect Google Contacts.
 Approve that access only if you want to link those contacts. A helper can assist with the permission page.
 Google Calendar and Google Drive are not connected in this version.
 
@@ -511,34 +526,34 @@ When speaking an email address, say "at" for @ and "dot" for each period. For ex
 
 9.2 Change To, CC, BCC, or Subject
 The To field holds the main recipient's address. CC sends a copy to another person. BCC sends a copy without showing that address to the other recipients.
-Say "Go to To", "Go to CC", "Go to BCC", "Go to Subject", or "Go to Body" to reach a part of the draft.
+To reach a part of the draft, say "Go to To", "Go to CC", "Go to BCC", "Go to Subject", or "Go to Body". Or press Tab and Shift+Tab.
 Type the address or subject and press Enter. Left Arrow and Right Arrow review characters. Backspace and Delete remove characters.
 To set the To field by voice, say "Email to", followed by the address. For example, say "Email to sam@example.com".
 To set the subject, say "Subject is", followed by the subject text. For example, say "Subject is Hello from me".
 Say "CC" or "BCC" to add a copy address. Say "Skip" if you do not want to add one.
 "Read recipient", "Read subject", "Read CC", and "Read BCC" let you check those parts.
-Tab moves to the next draft field. Shift+Tab moves to the previous field.
 
 9.3 Write and format the message
 Ordinary speech adds text to the message. "New paragraph" starts a paragraph. "Read paragraph" reads it back.
-The text selection and formatting commands in chapters 5 and 6 work in the message body too.
+The text selection and formatting commands in chapters 5 and 6 work in the message body too. In the body, say "Toggle bold", "Toggle italic", or "Toggle underline", or press Control+B, Control+I, or Control+U.
 You can change a font, text size, line spacing, heading, list, or table. Address and subject boxes use plain text.
 The person reading your mail may see different fonts or spacing in their email app.
-Use "Type literally" to write words that might be heard as commands. Use "Undo" to reverse an edit in the body.
+Use "Type literally" to write words that might be heard as commands. Use "Undo" to reverse an edit in the body. To hear the whole draft, say "Read email draft", or press Control+Shift+R. For help, say "Help with writing email", or press F1.
 
 9.4 Save or cancel a draft
-Say "Save draft" to keep a message for later. Say "List email drafts" to find saved drafts.
-To reopen a saved draft, say "Open email draft", followed by its name. For example, say "Open email draft Untitled" if that is the saved name.
-Say "Cancel", "Cancel draft", "Go back", or "Back to inbox" to leave an unsent draft and discard its changes.
+To keep a message for later, say "Save draft", or press Control+S. Say "List email drafts" to hear the saved drafts.
+To reopen a saved draft, say "Open email draft". Or press Control+O in the inbox. Use arrows to choose a draft, then press Enter.
+To open a draft by name, say "Open email draft", followed by its name, such as "Open email draft Untitled".
+To leave an unsent draft and discard its changes, say "Cancel", "Cancel draft", or "Back to inbox", or press Escape.
 These cancel commands work in a new message, reply, reply-all message, or forward. They work from each draft field.
 Save the draft first if you want to keep it. "Leave email" saves the draft and returns to the main menu.
 Canceling cannot take back a message already sent. If you reopened a saved draft, canceling keeps its earlier saved copy.
 
 9.5 Review and send
-1. Say "Send email", "Send it", or "Send that". From the keyboard, press Control+Enter in the draft.
+1. Say "Send email", "Send it", or "Send that", or press Control+Enter or Alt+S in the draft.
 2. Listen to the sending account, addresses, subject, and message.
-3. If something is wrong, say "Cancel send". Fix it, then start the review again.
-4. Say "Yes" only when the review is right.
+3. If something is wrong, say "Cancel send", or press Alt+N. Fix it, then start the review again.
+4. Say "Yes", or press Alt+Y, only when the review is right.
 Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead of sending it.
 After the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.
 If Companion says the result is uncertain, check your sent mail and ask the recipient before trying again.
@@ -546,61 +561,58 @@ If Companion says the result is uncertain, check your sent mail and ask the reci
 10. READ AND ORGANIZE EMAIL
 
 10.1 Read messages
-1. Say "Email" or "Check email" to open the chosen inbox.
+1. Say "Email" or "Check email", or choose Email on the main menu.
 2. Listen to the sender, subject, and date of the selected message.
-3. Say "Next message" or "Previous message" to hear another summary.
-4. Say "That one" or "Open current message" to read its body.
+3. To hear another summary, say "Next message" or "Previous message", or press Down Arrow or Up Arrow.
+4. To read its body, say "That one" or "Open current message", or press Enter.
 To choose a message by number, say "Read message" or "Open message", followed by its number. For example, say "Read message 1" or "Open message 1".
-Say "Message details" to repeat the sender, subject, and date. Say "Continue reading" for more of a long message.
-Say "Read from beginning" to read it again. "Back to folder" or "Go back" returns to the message list.
-From the keyboard, press Up Arrow or Down Arrow to choose a message. Enter opens it. Escape returns to the list.
+To repeat the sender, subject, and date, say "Message details", or press Control+I. For more of a long message, say "Continue reading", or press Down Arrow.
+Say "Read from beginning" to read it again. To return to the message list, say "Back to folder" or "Go back", or press Escape.
 
 10.2 Go to folders
-Say "Go to folder" to hear a folder list. Use "Next", "Previous", and "That one" to choose.
+To hear a folder list, say "Go to folder", or press Control+Y. Use "Next", "Previous", and "That one", or arrows and Enter, to choose.
 To open a folder by name, say "Go to folder", "Open folder", or "Go to", followed by the folder name. For example, say "Go to folder Receipts", "Open folder Receipts", or "Go to Receipts".
-Use "Back to inbox" to return to Inbox. "Which folder" tells you where you are.
+Say "Back to inbox" to return to Inbox, or choose Inbox in the Control+Y list. To hear where you are, say "Which folder", or press Control+Shift+I.
 To open a folder within another folder, give its full location. For example, say "Go to Projects slash 2026" or "2026 inside of Projects".
 If two folders have the same name, listen to each full location. Choose the right one with "Next" and "That one".
-From the keyboard, press Control+Y to open folders. Use arrows and Enter. Escape cancels the folder list.
+Escape cancels the folder list.
 
 10.3 Select, move, or delete messages
-Say "Mark", "Select", "Mark message", or "Select message" to mark the message you hear.
-Move to another summary and mark it too. "What is selected" reads the total. "Clear selection" removes the marks.
-Say "Delete" to move marked messages to Trash. With no marks, it acts on the current message.
-Say "Move" to choose a destination folder from a list. To name the folder directly, say "Move to", followed by its name. For example, say "Move to Saved".
+To mark the message you hear, say "Mark", "Select", or "Mark message", or press Space. Space again removes the mark.
+Move to another summary and mark it too. To hear the total, say "What is selected", or press Control+Shift+S. To remove the marks, say "Clear selection", or press Control+Shift+A.
+To move marked messages to Trash, say "Delete", or press Delete. With no marks, it acts on the current message.
+To choose a destination folder from a list, say "Move", or press Control+Shift+V. To name the folder directly, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message even if other messages are marked.
 Listen to the action and names, then answer Yes or No. Check the folder before repeating an action with an uncertain result.
-From the keyboard, press Space to mark or unmark a message. Shift+Up Arrow and Shift+Down Arrow extend the selection.
-Control+A marks messages on the loaded page. Delete requests deletion. Control+Shift+V chooses a folder for moving mail.
+To extend the marks, say "Extend selection next" or "Extend selection previous", or press Shift+Down Arrow or Shift+Up Arrow.
+To mark every message on the loaded page, say "Select all messages", or press Control+A.
 Inside an open message, Control+A selects text to copy; it does not mark other messages.
 
 10.4 Reply or forward
-Open the message first. Say "Reply", "Reply all", or "Forward".
-From the keyboard, press Control+R to reply, Control+Shift+R to reply to all, or Control+F to forward.
+Open the message first. Say "Reply", "Reply all", or "Forward". Or press Control+R, Control+Shift+R, or Control+F.
 Reply all includes the sender and the other recipients listed on the message. Check the addresses before sending.
 For a forward, enter the new address when asked. Speak your added text, then use the review and send steps in chapter 9.
 Gmail and Yahoo forwarding do not include the original attachments in this version.
 Say "Cancel" or "Back to inbox" to discard the response draft. Say "Save draft" first if you want to keep it.
 
 10.5 Create and manage folders
-To create a folder, say "Create folder", followed by the new name. For example, say "Create folder Receipts".
+To create a folder, say "Create folder", followed by the new name, such as "Create folder Receipts". Or press Control+Shift+E.
 To create a folder within another folder, say "Create folder", the new name, "inside", and the parent folder name. For example, say "Create folder 2026 inside Receipts". Omit the parent name to choose it from a list, as in "Create folder 2026 inside".
-To rename a folder, say "Rename folder" and choose it. Then say "Rename to", followed by the new name, such as "Rename to Bills". To give both names at once, say "Rename folder", the old name, "to", and the new name. For example, say "Rename folder Receipts to Bills".
-Say "Move folder" to choose a folder and its new location. To give both names at once, say "Move folder", the folder name, "into", and the new parent folder name. For example, say "Move folder Bills into Archive".
-Say "Delete folder" to choose from a list. To name the folder directly, say "Delete folder", followed by its name. For example, say "Delete folder Bills".
+To rename a folder, say "Rename folder", or press F2, and choose it. Then say "Rename to", followed by the new name, such as "Rename to Bills". To give both names at once, say "Rename folder", the old name, "to", and the new name. For example, say "Rename folder Receipts to Bills".
+To choose a folder and its new location, say "Move folder", or press Control+Shift+M. To give both names at once, say "Move folder", the folder name, "into", and the new parent folder name. For example, say "Move folder Bills into Archive".
+To choose a folder to delete from a list, say "Delete folder", or press Control+Shift+D. To name the folder directly, say "Delete folder", followed by its name. For example, say "Delete folder Bills".
 Listen to the full folder location and the action. Say "Yes" to go ahead or "No" to cancel.
 You can delete only folders you created that contain no messages or other folders. Built-in folders such as Inbox are protected.
 Some email services restrict folder changes. For example, Gmail labels with child labels have limits on renaming, moving, or deleting.
-From the keyboard, press Control+Shift+E to create a folder, F2 to rename one, or Control+Shift+D to delete one.
 
 10.6 Read links and load more mail
 In email that keeps web-style formatting, Companion reads links and buttons as part of the message.
 K moves to the next link. B moves to the next button. Hold Shift to move backward. Tab moves through both.
 Press Enter to open a safe link. A button with no usable link is read but cannot run a script from the email.
-Voice choices include "Next link", "Previous link", "Next button", "Previous button", "List links", and "List buttons".
+Voice choices include "Next link", "Previous link", "Next button", and "Previous button". To hear every link, say "List links", or press F7. To hear every button, say "List buttons", or press F8.
 Say "Activate current link" or "Activate current button" to use the selected item. To choose by number, say "Open link" or "Open button", followed by its number. For example, say "Open link 1" or "Open button 1".
-Say "Next messages" or "Previous messages" for another page of mail. "List messages" or F5 refreshes the folder.
-Home and End reach the first and last messages in the folder. Messages from another page may need to load first.
+For another page of mail, say "Next messages" or "Previous messages", or press Page Down or Page Up in the message list. To refresh the folder, say "List messages", or press F5.
+To reach the first or last message in the folder, say "First message" or "Last message", or press Home or End. Messages from another page may need to load first. For email help, say "Help with email", or press F1.
 The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
 
 11. BROWSE THE WEB
@@ -621,13 +633,13 @@ When Keep browser window open is on and a page remains open, Resume where you le
 Use arrows and Enter, or say the name of a menu item. Press Escape from this menu to return to the main menu.
 
 11.2 Search or open an address
-1. Choose Search or enter address.
+1. Choose Search or enter address. From a page, you can also say "Search", or press Control+L.
 2. Say your search, or type it and press Enter. For example, type weather in Houston.
 3. Wait for the page title and site name.
 4. Use the page reading commands to explore the result.
 To open a website, enter its address. For example, type example.com. You do not need to type www or https.
 With your voice, say "Open website", followed by the address. Use "dot" for a period and "slash" for /. For example, say "Open website example dot com". Companion asks you to check the address before opening the site.
-Control+L opens the address and search box from a page. Escape cancels entry.
+Escape cancels entry.
 Google is the default search engine. In Web browser options, you can also choose Bing, Brave Search, or DuckDuckGo.
 To change the default, say "Search engine" or "Default search engine", followed by the engine name. For example, say "Search engine Brave Search" or "Default search engine Google".
 To use a different engine for one search, say its name, followed by your search words. For example, say "Bing weather". This does not change your default.
@@ -638,8 +650,10 @@ Say "Try Brave Search", "Try Bing", or "Try DuckDuckGo" to repeat the search the
 Companion reads the page in its own window. Use the page view in the Companion window for the keys below.
 Up Arrow and Down Arrow read blocks of page text, including paragraphs, list items, and text between links. Buttons and form fields include their names and types. A picture used as a button is read as a button. Checkboxes include their checked state. Password values are not read. Left Arrow and Right Arrow read characters.
 Control+Left Arrow and Control+Right Arrow read words. Control+Up Arrow and Control+Down Arrow read paragraphs.
-Control+Home and Control+End reach the page ends. Home and End reach the ends of the current line.
-"Read page" starts at the top. "Continue reading" reads the next part.
+To reach the page ends, say "Top of page" or "Bottom of page", or press Control+Home or Control+End.
+To reach the ends of the current line, say "Go to start of line" or "Go to end of line", or press Home or End.
+To move a longer way, say "Page down" or "Page up", or press Page Down or Page Up.
+"Read page" starts at the top. For the next part, say "Continue reading", or press Down Arrow.
 The page view follows the place you choose. After you move to a heading, arrow reading continues from that heading.
 When a website changes a form without opening a new page, the page view updates. For example, after an email step, you can move through the new password step. A hidden old field is no longer active.
 A newly loaded page may start reading on its own. Turn off Automatic page reading in Web browser options if you prefer.
@@ -655,12 +669,12 @@ You can also move by voice. Say "Next heading", "Previous link", or "Next form c
 These keys move through the page. They do not type letters until you enter a text box for editing.
 
 11.5 Open links and use lists
-Move to a link or button, then press Enter. Say "Open current link" or "Activate current element" for the same task.
-Say "Find login" or "Find contact us" to look for a matching item. Listen to the choice before you accept it.
+Move to a link or button. Then say "Open current link" or "Activate current element", or press Enter.
+To look for a matching item, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. Listen to the choice before you accept it.
 F7 or Insert+F7 opens a link list. F6 or Insert+F6 opens a heading list.
 The links list follows the page's Tab order. Each item says the link name. The headings list says each heading name and its level number.
-You can also say "List links", "List headings", or "List fields".
-Use arrows, Home, or End to choose an item, then press Enter. Press Escape or say "Close list" to return to the page.
+You can also say "List links" or "List headings". To list the form fields, say "List fields", or press F8.
+Use arrows, Home, or End to choose an item, then press Enter. To return to the page, say "Close list", or press Escape.
 In a links or headings list, type the first letter of a name to find a match. Type more letters promptly to narrow the match. You can type the full name, including spaces. Backspace removes the last letter from your search.
 Repeat a first letter to move through matching names. The search stops at the last match. Pause before starting a new name. Typing chooses an item; it does not open it. Press Enter to open the chosen link or move to the chosen heading.
 A heading choice moves your reading place. A link choice opens its address.
@@ -672,7 +686,7 @@ A heading choice moves your reading place. A link choice opens its address.
 4. In a single-line box, press Enter to use the website's default button, such as Next, Continue, or Log in. Tab saves your answer and moves to the next control. Use Control+Enter for a box with several lines.
 5. Press Escape to cancel editing and return to page reading.
 Tab saves your entry and moves to the next control. Shift+Tab moves to the previous control. Letter keys enter text while you are editing.
-You can say "Save field" to keep your entry. Say "Cancel field editing" to leave its earlier value unchanged.
+To keep your entry, say "Save field", or press Tab. To leave its earlier value unchanged, say "Cancel field editing", or press Escape.
 Say "Select all" to select the text in the active box. Say "Read selection" to check it, or "Scratch" to remove it.
 For a checkbox, press Space or say "Check checkbox", "Uncheck checkbox", or "Toggle checkbox".
 In a choice box, arrows change the choice. Home and End choose the first and last options.
@@ -684,11 +698,11 @@ In a box like this, say "Search for" followed by your words to search that websi
 Read-only boxes cannot be changed. Passwords are hidden in the page text and spoken review.
 
 11.7 Fill in and review a form by voice
-Say "Fill out this form". Companion asks for one answer at a time.
+Say "Fill out this form". Companion asks for one answer at a time. With the keyboard, use Tab to reach each field and type each answer. See part 11.6.
 Speak the answer to a text question. Use the option name for a choice. Use Yes or No for a checkbox.
 Say "Skip" to leave an answer alone. Say "Cancel form" to stop the guided questions.
 Some forms reveal more questions after an answer. Companion checks for them as you go.
-Say "Review form" to hear the answers. Say "Review and submit form" to start the review before sending.
+Say "Review form" to hear the answers. With the keyboard, press F8 for the field list, or Tab through the fields. Say "Review and submit form" to start the review before sending.
 Say "Continue review" to hear the next part. If an answer is wrong, say "Change this field" or name the field.
 To choose a field by number, say "Change field", followed by the number. For example, say "Change field two". Give the new answer, then review again.
 Say "Yes" only when all answers and the named button are right. "No" stops the submission.
@@ -700,15 +714,15 @@ File uploads and some custom controls may need help. If a page cannot be read, d
 Say "Ask for help" to hear which page needs attention.
 
 11.8 Read a web table and leave a page
-Move to a table with T or "Next table".
+To move to a table, say "Next table", or press T.
 Control+Alt+Up Arrow and Control+Alt+Down Arrow move through rows. Control+Alt+Left Arrow and Control+Alt+Right Arrow move through columns.
 Control+Alt+Home and Control+Alt+End reach the first and last columns. Control+Alt+Page Up and Control+Alt+Page Down reach the first and last rows.
 Voice choices include "Next row", "Previous column", "First row", "Last row", "First column", and "Last column".
 Companion reads the cell text. It also reads the heading and the row and column numbers when available.
 Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same.
-F5 or "Refresh page" reloads the page. Alt+T lets you type an app command.
+To reload the page, say "Refresh page", or press F5. For web help, say "Help with web", or press F1.
 Escape from ordinary page reading opens the web browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
-"Leave website" also opens the web browser menu. "Close browser" or "Main menu" leaves the browser activity.
+Saying "Leave website" also opens the web browser menu. "Close browser" or "Main menu" leaves the browser activity.
 
 11.9 Identify graphics, lists, regions, and frames
 Companion uses names supplied by the website. A name should tell you what an item is or what it does. If a useful name is missing, Companion says that the item is unlabeled. It does not guess what a picture shows.
@@ -725,7 +739,7 @@ Readable frame content appears where the frame occurs on the page. Companion mar
 12.1 Save the current page
 A favorite saves a page address so you can open it later. Older website favorites appear in the same saved list.
 1. Open the page you want to save.
-2. Say "New favorite". You can also choose it from the web browser menu.
+2. Say "New favorite", or choose New favorite in the web browser menu.
 3. Say a short name, or type the name and press Enter.
 4. Listen for the saved name.
 A name can have up to 60 characters. Choose a new name if the one you gave is already used.
@@ -734,7 +748,7 @@ To save with a name in one command, say "Save favorite as", followed by the name
 12.2 Open or find a favorite
 A period added by speech recognition does not change which saved name you mean.
 While browsing, say "Go to", followed by the saved name. For example, say "Go to My news" to open that favorite. You can use this from the web browser menu too.
-Choose Go to favorite. Use arrows and Enter to choose the saved page.
+With the keyboard, choose Go to favorite in the web browser menu. Use arrows and Enter to choose the saved page.
 Press the first letter of a name to move among matching names. Type several letters promptly to choose a closer match.
 For example, type n, then p, to find a name that starts with np. Pause before starting a different name.
 You can also say enough of the name to identify it. If two names match, say more or use the arrows.
@@ -744,14 +758,14 @@ If your chosen browser cannot start, Companion tries the included Firefox browse
 If a page cannot open, you stay in the web browser menu. Check internet access, then try the favorite again.
 
 12.3 Rename or delete a favorite
-Choose Rename favorite, then select a name with arrows and Enter. Say the new name, or type it and press Enter.
-Choose Delete favorite, then select a name with arrows and Enter. That removes the saved favorite.
+Say "Rename favorite", or choose it in the web browser menu. Then select a name with arrows and Enter. Say the new name, or type it and press Enter.
+Say "Delete favorite", or choose it in the web browser menu. Then select a name with arrows and Enter. That removes the saved favorite.
 Deleting a favorite does not delete the website or its contents. Escape cancels naming or closes the list.
 In either list, type the first letter or several letters of a name to find it, just as you do when opening a favorite.
 
 12.4 Open a page from history
 Web history is a saved list of recent page addresses. It keeps up to 200 entries, newest first.
-1. Choose Web history in the web browser menu.
+1. Say "Web history", or choose Web history in the web browser menu.
 2. Use arrows to hear page names, or type letters to find a name.
 3. Press Enter to open the page.
 Your history remains saved when you close and reopen Companion. Back and Forward use the pages in the currently open browser session.
@@ -767,11 +781,11 @@ Favorites and history remain saved with either setting.
 13. LISTEN TO RADIO
 
 13.1 Find and play a station
-1. Choose Radio on the main menu.
-2. Say "Search radio".
+1. Say "Radio". Or choose Media on the main menu, then Radio.
+2. Say "Search radio", or press Control+F.
 3. Give a station name, such as WGN, or a type of music.
-4. Use "Next" and "Previous" to hear the results.
-5. Say "That one" to play the chosen station.
+4. To hear the results, say "Next" and "Previous", or press Down Arrow and Up Arrow.
+5. To play the chosen station, say "That one", or press Enter.
 To search in one command, say "Search radio for", followed by the station name or music type. For example, say "Search radio for jazz".
 To browse a genre, say "Browse genre", followed by its name. For example, say "Browse genre jazz". To play a result by number, say "Play station", followed by the number, such as "Play station 1".
 If a name matches more than one station, choose its number when asked. You do not need to say Play again.
@@ -783,13 +797,13 @@ The radio menu has an actions list and a results list. Tab or Shift+Tab moves be
 Use arrows, Home, End, and first-letter keys to choose an item. Enter opens an action or plays a station.
 Escape from station results says "Station actions." The next Escape says "Radio menu." Press Escape again to reach the Media menu.
 Control+F opens search. Control+Shift+P lists saved stations. F5 refreshes the station lists.
-Say "Radio menu", "Actions", or "Results" to choose a list by voice.
+Say "Radio menu", "Actions", or "Results" to choose a list by voice. For radio help, say "Help with radio", or press F1. To run an action by voice, say its name, such as "List stations" or "Record current station".
 When a station is selected, actions include saving it, recording it, scheduling a recording, and playing or pausing audio.
 
 13.3 Control audio
 Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
 Say "Pause radio" or "Stop podcast" to make clear which audio you mean. "Stop talking" silences the app's speech instead.
-Space pauses or resumes audio in the radio or podcast area. Control+R resumes. Control+S stops.
+In the radio or podcast area, Space pauses or resumes audio. Control+R resumes. Control+S stops.
 Control+Left Arrow moves back 15 seconds. Control+Right Arrow moves forward 15 seconds. Some streams do not support this.
 Companion can lower media volume while it speaks, then restore it. Change this choice in Voice options.
 Control+P pauses or resumes radio and podcasts from any screen in Companion. This includes Options.
@@ -798,7 +812,7 @@ You can also say "Keep audio playing in the background on" or "Keep audio playin
 
 13.4 Choose a station list
 The Station database setting chooses which lists to search. All is the default. It searches all the lists the app can use.
-Say "Station database" to hear the current choice. "Choose station database Radio Browser" chooses that source.
+Say "Station database" to hear the current choice. "Choose station database Radio Browser" chooses that source. With the keyboard, choose Station database in the radio actions list.
 "Choose station database IPRD", "Choose station database RadioSure", and "Choose station database All" choose the other lists.
 Companion searches Radio Browser online. IPRD is a saved station list. The app checks it for new stations about once a day.
 A helper can import a RadioSure station file with "Import RadioSure" followed by its full file location.
@@ -810,36 +824,36 @@ TuneIn and ooTunes are not connected in this version. If you are unsure which li
 14.1 Save a preset
 A preset is a saved station. It lets you play a station again without a new search.
 1. Find or play the station you want.
-2. Say "Save preset" or "Add preset".
+2. Say "Save preset" or "Add preset", or press Control+D.
 3. To give the preset a short name, say "Save preset as", followed by the name you want. For example, say "Save preset as Jazz".
 4. Listen for the saved name.
 In Radio, you can also say "Add favorite" or "Save favorite". To give a name, say "Save favorite as", followed by the name, such as "Save favorite as Jazz".
 
 14.2 Play saved stations
-Say "List presets", "Preset list", "List favorites", or "Favorites list" in Radio.
-Use "Next" and "Previous" to hear names. Say "That one", "Okay", or "Confirm" to play the chosen station.
+In Radio, say "List presets" or "List favorites", or press Control+Shift+P.
+To hear names, say "Next" and "Previous", or use the arrows. To play the chosen station, say "That one", or press Enter.
 To play a saved station directly, say "Play preset", followed by its saved name or list number. For example, say "Play preset Jazz" or "Play preset 1".
 Saved stations stay available after you close Companion. If one no longer plays, search for it again.
 
 14.3 Delete a saved station
-Choose a station in the preset list, then say "Delete preset". To give the name directly, say "Delete preset", followed by its saved name. For example, say "Delete preset Jazz".
+Choose a station in the preset list, then say "Delete preset", or press Delete. To give the name directly, say "Delete preset", followed by its saved name. For example, say "Delete preset Jazz".
 Listen to the name. Say "Yes" to remove it or "No" to keep it.
 Removing a preset does not remove the station from the internet.
 
 15. RECORD RADIO
 
 15.1 Record a station now
-Choose a station first, then open its recording action.
+Choose a station first. Then say "Record current station", or choose that action and press Enter.
 To give the details in one command, say "Record station", the station number, "for", the length, and "minutes". For example, say "Record station 1 for 30 minutes".
 In a recording form, use Tab and Shift+Tab to reach the fields, OK, and Cancel. Arrows change a listed choice.
 Press Enter to move through the fields. Pressing Enter on OK or the last field starts the recording. Press Escape to cancel.
-Say "Stop recording" to finish early. Say "List recordings" to hear the saved recordings. To play one, say "Play recording", followed by its number. For example, say "Play recording 1".
+To finish early, say "Stop recording", or choose Stop recording in the actions list. To hear the saved recordings, say "List recordings", or choose List saved recordings. To play one, say "Play recording", followed by its number. For example, say "Play recording 1".
 Recording supports some direct audio streams. It cannot record every station format. Check the file after recording.
 
 15.2 Schedule a recording
 To schedule a recording by voice, give the station number, day, time, and length. Say "Schedule station", the number, the day, "at", the time, "for", the length, and "minutes". For example, say "Schedule station 1 tomorrow at 8 PM for 30 minutes". Add "Every day" for a daily recording.
-You can also choose the station's scheduling action. Set the day, time, length in minutes, and whether to repeat the recording each day.
-Say "Next field" or "Previous field" to move through the form. To reach a field directly, say "Go to", followed by its name, such as "Go to Time". To change a value, say the field name, followed by the value. For example, say "Time 8 PM". Say "Okay" when the form is ready.
+You can also say "Schedule recording", or choose that action and press Enter. Set the day, time, length in minutes, and whether to repeat the recording each day.
+To move through the form, say "Next field" or "Previous field", or press Tab or Shift+Tab. To reach a field directly, say "Go to", followed by its name, such as "Go to Time". To change a value, say the field name, followed by the value. For example, say "Time 8 PM". When the form is ready, say "Okay", or press Enter on OK.
 Keep Companion running and the computer awake until the recording is done. A sleeping or shut-down computer cannot record.
 
 15.3 Cancel a scheduled recording
@@ -854,23 +868,23 @@ You can then check the list again. Other plans and saved audio stay in place.
 16. LISTEN TO PODCASTS
 
 16.1 Find a show and play an episode
-1. Choose Podcasts.
-2. Say "Search podcasts for", followed by a topic or show name. For example, say "Search podcasts for history". You can also choose Search podcasts in the actions list.
-3. Use "Next" and "Previous" to hear show names.
-4. Say "That one" to open the show.
-5. Use "Next episode" and "Previous episode" to hear episode names.
-6. Say "That one" to play the selected episode.
+1. Say "Podcasts". Or choose Media on the main menu, then Podcasts.
+2. Say "Search podcasts for", followed by a topic or show name, such as "Search podcasts for history". Or press Control+F and type the words.
+3. To hear show names, say "Next" and "Previous", or use the arrows.
+4. To open the show, say "That one", or press Enter.
+5. To hear episode names, say "Next episode" and "Previous episode", or use the arrows.
+6. To play the selected episode, say "That one", or press Enter.
 Say "Search podcast" to hear a prompt for a show name. To browse a category, say "Browse podcasts category", followed by the category name. For example, say "Browse podcasts category science".
 To open a show by number, say "Open podcast", followed by its number. For example, say "Open podcast 2". Say "Open feed" to open the selected show.
 To play an episode by number, say "Play episode" or "Play", followed by its number. For example, say "Play episode 2" or "Play 2".
-"Back to podcasts" returns from episodes to the show results.
+To return from episodes to the show results, say "Back to podcasts", or press Escape.
 
 16.2 Use the podcast menus and keys
 Tab and Shift+Tab move between actions and results. Use arrows, Home, End, and first-letter keys to choose.
 Press Enter on a show to open its episode list. Press Enter on an episode or downloaded file to play it.
 Escape returns from episodes to shows, then actions, then the main menu.
 Control+F searches. Control+Shift+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes subscribed shows.
-Say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action" to move by voice.
+Say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action" to move by voice. For podcast help, say "Help with podcasts", or press F1.
 Actions also offer downloads, playback, chapters, and the previous or next episode or show.
 
 16.3 Pause, seek, or move by chapter
@@ -879,7 +893,7 @@ At the main menu, audio stops unless Keep audio playing in the background is on.
 Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
 To move within the audio, say "Back", "Fast forward", or "Forward", followed by the amount of time. For example, say "Back 15 seconds", "Fast forward 30 minutes", or "Forward one hour and 20 minutes".
 Give the time in seconds, minutes, or hours. Some live streams and episodes cannot move this way.
-Say "Next chapter" or "Previous chapter" when the episode has chapter marks.
+When the episode has chapter marks, say "Next chapter" or "Previous chapter", or choose that action in the actions list.
 Space pauses or resumes audio in Podcasts. Control+Left Arrow and Control+Right Arrow seek where supported.
 A new voice request stops the app's current spoken message so it can answer your request.
 
@@ -887,15 +901,15 @@ A new voice request stops the app's current spoken message so it can answer your
 
 17.1 Subscribe to a show
 A subscription saves a show and checks for its new episodes.
-Open a show, then say "Subscribe". To choose a show by number, say "Subscribe to podcast", followed by its list number. For example, say "Subscribe to podcast 1".
-Say "List subscriptions", "List podcasts", "Podcast list", or "Subscription list" to hear saved shows.
+Open a show, then say "Subscribe", or choose Subscribe to selected podcast in the actions list. To choose a show by number, say "Subscribe to podcast", followed by its list number. For example, say "Subscribe to podcast 1".
+To hear saved shows, say "List subscriptions" or "List podcasts", or press Control+Shift+P.
 Choose a show with "Next", "Previous", and "That one". "Browse podcasts" returns to the current search results.
-Companion checks saved shows at startup and about every six hours while running. "Refresh subscriptions" checks sooner.
+Companion checks saved shows at startup and about every six hours while running. To check sooner, say "Refresh subscriptions", or press F5.
 If a show cannot be reached, its last saved episode list stays available.
 
 17.2 Download and play an episode
-Say "Download this episode" to save the selected episode for offline use. To choose by number, say "Download episode", followed by its number. For example, say "Download episode 1".
-Say "List downloads" to hear saved files. Then say "Play download", followed by the file's number. For example, say "Play download 1". Files are kept in the Podcast Downloads folder.
+To save the selected episode for offline use, say "Download this episode", or press Control+D. To choose by number, say "Download episode", followed by its number. For example, say "Download episode 1".
+To hear saved files, say "List downloads", or choose List downloaded episodes in the actions list. Then say "Play download", followed by the file's number. For example, say "Play download 1". Files are kept in the Podcast Downloads folder.
 The download limit is 500 MB for each episode. New searches and downloads need internet access.
 Some podcast hosts do not allow downloads. If one fails, try another episode or ask your helper about the message.
 
@@ -907,11 +921,11 @@ You can choose any whole number from 1 to 10,000. Say "Auto download all episode
 Saving every episode may use a lot of disk space. Companion pauses automatic downloads when disk space is low.
 When you set a limit, the app removes older automatic downloads after new downloads succeed. It keeps the newest episodes up to your limit.
 Files you saved with "Download episode" are not removed by this limit.
-Say "Manual downloads" to stop future automatic downloads for that show. Files already saved remain in place.
+To stop future automatic downloads for that show, say "Manual downloads", or choose that action. Files already saved remain in place. Automatic downloads is in the actions list too.
 You can also set the limit in Podcasts options. Keep Companion running for automatic checks and downloads.
 
 17.4 Remove a subscription
-Choose Remove selected subscription in the podcast actions list, or press Delete on a selected saved show.
+Say "Remove selected subscription", or choose it in the podcast actions list. You can also press Delete on a selected saved show.
 Listen to the show name. Answer Yes to remove the subscription or No to keep it.
 Check the message before agreeing so you do not remove the wrong show.
 
@@ -924,8 +938,9 @@ Say "Options" or press Alt+O. The app opens the Options menu.
 3. Use arrows to change a listed choice. Press Space to check or uncheck a box.
 4. Type in a text box when needed.
 5. Press Enter in a setting or choose OK to save. You hear Options saved. Options closes and returns you to your last task. It names that place, such as Main menu or Back to document. Choose Cancel or press Escape to leave changes unsaved.
-By voice, use "Next", "Previous", and "Okay" to open a category. Say the setting name and its value when supported.
-Say "Cancel" or "Back" to return to categories without saving. Say "Close settings" to leave Options.
+By voice, use "Next", "Previous", and "Okay" to open a category, or say its name. To change a setting, say "Set", the setting name, "to", and the value. For example, say "Set Speech rate to 4".
+Each button in Options also has its own spoken command, such as "Add account" or "Check for updates". You can say it outside Options.
+To return to categories without saving, say "Cancel" or "Back", or press Escape. To leave Options, say "Close settings".
 Opening another category or tool before choosing OK discards unsaved setting changes.
 
 18.2 Choose how much speech you hear
@@ -966,7 +981,7 @@ The Sending account setting chooses the address used for new mail. The Messages 
 The Announce email header names setting controls whether Companion says From, Subject, or another header name before its value.
 In Spoken email headers, choose which details to hear: From, Subject, Date, or Size. Keep at least one header selected.
 Press Space to include or remove a header. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
-Choose Add an email account to start the setup steps in chapter 8.
+Choose Add an email account to start the setup steps in chapter 8. Choose Connect Google Contacts to link the Google contacts of a Gmail account.
 
 18.5 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents.
@@ -1004,15 +1019,15 @@ Each setting controls its own Yes or No prompt. Document save questions still ap
 19. SLEEP, EXIT, AND COMPUTER POWER
 
 19.1 Put the microphone to sleep
-Say "Go to sleep" to pause ordinary voice requests. Say "Wake up" to continue.
+To pause ordinary voice requests, say "Go to sleep", or press F12. To continue, say "Wake up", or press F12 again.
 Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
 If an email is waiting for your approval to send, that approval is canceled. Review the message again before sending it.
 The keyboard still works while voice commands are asleep. Sleep is different from closing the app or putting Windows to sleep.
 
 19.2 Close Companion
-Say "Exit Companion", "Close Companion", "Shut down Companion", or "Return to Windows" to close the app.
-You can press Alt+F4 to request exit. Escape at the main menu also requests exit.
-At the exit prompt, No is selected by default. Say "Yes" to exit or "No" to keep working.
+To close the app, say "Exit Companion" or "Close Companion", or press Alt+F4. You can also choose Exit Voice Companion on the main menu.
+Escape at the main menu also requests exit.
+At the exit prompt, No is selected by default. To exit, say "Yes", or press Alt+Y. To keep working, say "No", or press Alt+N.
 If a document is open, answer its save question first. Escape cancels the exit request and keeps the document open.
 Exiting Companion does not shut down Windows.
 
@@ -1029,7 +1044,7 @@ The startup choice and the computer power choices are separate settings.
 20. CHECK FOR UPDATES
 
 20.1 Find a newer version
-Choose Check for updates on the main menu, or say "Check for updates".
+Say "Check for updates", or choose Check for updates on the main menu.
 Companion also checks at startup when automatic checks are on. If an update is offered, say "Yes" to install or "No" to keep working.
 A later update offer waits until you have returned to the main menu or a suitable pause in your work.
 If the check fails, you can keep using the current version and try again later.
@@ -1050,14 +1065,14 @@ Companion does not force Windows to restart. It tells you if a restart is needed
 
 20.3 Read the release notes
 Release notes explain what changed in a version and how to use the changes.
-Say "What's new", "What is new", or "Release notes". You can also choose What's new in Help.
+Say "What's new" or "Release notes". Or press F1 on the main menu, press End to reach What's new, then press Enter.
 Use "Continue reading", "Next paragraph", "Previous paragraph", and the other reading commands to review them.
-Say "Close help" to return to your task. The notes identify the current version and the earlier version used for comparison.
+To return to your task, say "Close help", or press Escape until Help closes. The notes identify the current version and the earlier version used for comparison.
 
 21. FIND YOUR GUIDE FILES
 
 21.1 Open the guide folder
-Say "Open user guides", "Open guides folder", or "Where are my user guides".
+Say "Open user guides" or "Open guides folder", or press Control+Shift+G on the main menu.
 You can also use the Voice Companion User Guides shortcut on the desktop or in the Start menu.
 Open Documents, then the Voice Companion folder, then User Guides. Opening the guide folder does not leave your current task in Companion.
 After an update, close and reopen a guide that was already open so you see its new text.
@@ -1093,7 +1108,7 @@ A site may ask for human verification or use a control Companion cannot read. As
 Some email folder changes and forwarded attachments are limited by the service or this version. Review the related chapters before trying again.
 
 22.4 A guide or update will not open
-Close any open guide files, then say "Open user guides" again. This asks Companion to refresh its guide copies.
+Close any open guide files, then say "Open user guides", or press Control+Shift+G, again. This asks Companion to refresh its guide copies.
 If your Documents folder is not available, ask your helper to restore access to it.
 For a failed update, keep using the current app if it opens. Try Check for updates again later.
 Use the installed desktop icon. If it opens an older version, ask your helper to check the installation.
@@ -1142,16 +1157,16 @@ Use Up Arrow and Down Arrow. Say "Next", "Previous", "Home", or "End". Home reac
 Press Enter or say "Open", "Okay", or "That one" on the current item. You can also say its name. Say "C drive" to open that drive, or "Open" followed by a file name. A unique name can be used without its extension. If more than one name matches, use arrows or say the full path. Programs and unknown file types are not run.
 
 24.4 Go to the parent folder
-Escape goes up one folder. Say "Go back" or "Parent folder" for the same action. From Documents, then Voice Companion, Escape returns to Documents. At the top of a drive, Escape returns to the drive list. At the drive list, Escape returns to the main menu. Ctrl+D or "Drive list" returns to drives. Say "Main menu" to leave File manager.
+Escape goes up one folder. Say "Go back" or "Parent folder" for the same action. From Documents, then Voice Companion, Escape returns to Documents. At the top of a drive, Escape returns to the drive list. At the drive list, Escape returns to the main menu. Control+D or "Drive list" returns to drives. Say "Main menu" to leave File manager.
 
 24.5 Select several items
-Space checks or unchecks the current file or folder. Move to another item and press Space to add it. Moving does not clear the marked items. You can say "Select", "Unselect", "Mark", "Unmark", "Check", or "Uncheck". Add an item name to act on it directly. For example, say "Select notes.txt". Say "Select all" or press Ctrl+A to mark all files and folders in this list. Say "Clear selection" or press Ctrl+Shift+A to clear marks. Drives cannot be selected for file actions.
+Space checks or unchecks the current file or folder. Move to another item and press Space to add it. Moving does not clear the marked items. You can say "Select", "Unselect", "Mark", "Unmark", "Check", or "Uncheck". Add an item name to act on it directly. For example, say "Select notes.txt". Say "Select all" or press Control+A to mark all files and folders in this list. Say "Clear selection" or press Control+Shift+A to clear marks. Drives cannot be selected for file actions.
 
 24.6 Copy and paste
-Ctrl+C or "Copy" copies the marked items. If nothing is marked, it uses the current item. Open the folder where you want the copies. Ctrl+V or "Paste" puts them there. The clipboard is shared with File Explorer. You can copy in one app and paste in the other. If a name already exists, the action stops and tells you. It does not replace that file.
+Control+C or "Copy" copies the marked items. If nothing is marked, it uses the current item. Open the folder where you want the copies. Control+V or "Paste" puts them there. The clipboard is shared with File Explorer. You can copy in one app and paste in the other. If a name already exists, the action stops and tells you. It does not replace that file.
 
 24.7 Cut and move
-Ctrl+X or "Cut" marks the items to move. Open the target folder, then press Ctrl+V or say "Paste". Cut does not remove the files until paste succeeds. A folder cannot be placed inside itself. Windows checks access to the source and target folders.
+Control+X or "Cut" marks the items to move. Open the target folder, then press Control+V or say "Paste". Cut does not remove the files until paste succeeds. A folder cannot be placed inside itself. Windows checks access to the source and target folders.
 
 24.8 Rename one item
 Select just one item, or clear marks and move to it. Press F2 or say "Rename". Type or say the new name, with its extension, then press Enter. You can also say "Rename to" followed by the new name. Escape or "Cancel" leaves the name unchanged. A name that already exists is not replaced.
@@ -1163,7 +1178,7 @@ Delete or "Delete" asks you to confirm the named items. No is the first choice. 
 Press Alt or say "File manager menu". Use arrows and Enter to choose an action. Each menu item reads its keyboard shortcut and voice command. Escape closes the menu. F1 or "File manager help" repeats the main commands. Press Alt+T to type a command when needed. While a slow location is loading, Escape cancels that opening request. File changes already in progress must finish; do not repeat the action until you hear its result.
 
 24.11 Find and sort items
-Type the first letter of a file, folder, or drive to select it. Repeat a letter to cycle matches. Type more letters within a short pause to narrow the list. Backspace removes a letter. Escape clears this name filter before moving up a folder. Ctrl+E opens name search from any File Manager control. Ctrl+F also searches names in this list. Ctrl+Shift+F searches names in this folder and its subfolders. Ctrl+Shift+X clears search. Say Search files for followed by a name, Search subfolders for followed by a name, or Clear search.
+Type the first letter of a file, folder, or drive to select it. Repeat a letter to cycle matches. Type more letters within a short pause to narrow the list. Backspace removes a letter. Escape clears this name filter before moving up a folder. Control+E opens name search from any File Manager control. Control+F also searches names in this list. Control+Shift+F searches names in this folder and its subfolders. Control+Shift+X clears search. Say Search files for followed by a name, Search subfolders for followed by a name, or Clear search.
 Alt+S opens Sort. Alt+N sorts by name, Alt+C by date created, Alt+M by date modified, and Alt+D by date added. Alt+A chooses ascending and Alt+Z descending. The older Control+Shift number and arrow keys also work. Say Sort by name, Sort by date created, Sort by date modified, Sort by date added, Sort ascending, or Sort descending for the same actions. Date added means first seen by this app in this folder. Dates that Windows does not supply sort last. Folders stay before files.
 Tab and Shift+Tab cycle the list and the Search, Search subfolders, Sort, Clear search, Drives, and Main menu buttons. Enter activates a button. Alt+Home returns to the main menu. A subfolder search stops at 5,000 matches or 100,000 checked items. Narrow the search if you reach the limit. Links and junctions are not followed. Escape cancels a search.
 
@@ -1173,7 +1188,11 @@ Tab and Shift+Tab cycle the list and the Search, Search subfolders, Sort, Clear 
 Enter on a supported file opens it inside Voice Companion. The reader supports Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB. It does not need Microsoft Word. Files open read-only. Your source file is not changed. Choose Open a document in Word processor to edit a supported DOCX file. Word files with features the editor cannot keep open in the reader. Other supported files open for reading. Legacy DOC files and other unsupported types are not launched in another app.
 
 25.2 Read with keys or speech
-Use arrows to read by character or line. Ctrl+Left and Ctrl+Right move by word. You can select and copy text with the usual text keys. Say "Read document", "Continue reading", "Next word", "Previous line", "Next sentence", or "Next paragraph". Say "Go to beginning of document" or "Go to end of document". Say "Find" followed by text to move to a match.
+Use arrows to read by character or line. Control+Left and Control+Right move by word. You can select and copy text with the usual text keys. Voice choices include "Continue reading", "Next word", "Previous line", "Next sentence", and "Next paragraph".
+To read the whole document, say "Read document", or press Control+Shift+R.
+To reach an end, say "Go to beginning of document" or "Go to end of document", or press Control+Home or Control+End.
+To move to a match, say "Find" followed by the text. Or press Control+F, type the text, and press Enter.
+To move by heading, table, link, or list, say "Next heading" or "Next table", or press H, T, K, or L. Hold Shift to move back. For reader help, say "Help with document reader", or press F1.
 
 25.3 Return to your files
 Escape or "Back to files" closes the reader view and returns to the same folder and item. "Main menu" returns to the app menu. You can use Options while reading. Saving Options names the reader when it returns you there.
@@ -1184,12 +1203,12 @@ HTML and book text are read without scripts or remote content. PDF pages have pa
 26. MEDIA PLAYER
 
 26.1 Open and play a file
-Choose Media from the main menu, then Media player. Radio and Podcasts are also in Media. Ctrl+O opens the drive list. Use arrows and Enter to open a drive, folder, then a sound or video file. Escape goes up one folder. Escape at drives returns to the player. You can also press Enter on a sound or video file in File manager. Companion says the file name and starts to play it.
+Choose Media from the main menu, then Media player. Radio and Podcasts are also in Media. Control+O opens the drive list. Use arrows and Enter to open a drive, folder, then a sound or video file. Escape goes up one folder. Escape at drives returns to the player. You can also press Enter on a sound or video file in File manager. Companion says the file name and starts to play it.
 
 26.2 Control playback
-Space plays or pauses. Ctrl+S stops. Left and Right move back or forward 15 seconds. You hear how far you moved and where you are now, such as 1 minute 23 seconds of 4 minutes 5 seconds. At the start or end of the file, you hear that instead. Up and Down change volume. Ctrl+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. To move a different amount, say Back or Forward, followed by the time. For example, say Forward 2 minutes. Choose Playback speed, enter a number from 0.5 to 3, then press Enter.
+Space plays or pauses. Control+S stops. Left and Right move back or forward 15 seconds. You hear how far you moved and where you are now, such as 1 minute 23 seconds of 4 minutes 5 seconds. At the start or end of the file, you hear that instead. Up and Down change volume. Control+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. To move a different amount, say Back or Forward, followed by the time. For example, say Forward 2 minutes. To change speed, say "Playback speed", or choose it in the player menu. Then enter a number from 0.5 to 3 and press Enter.
 
 26.3 Use the player menu
-While a file plays, press Escape or Alt to open the player menu. You can also say Player menu. Use Up Arrow and Down Arrow to choose an item, then press Enter. Left and Right Arrow also move through the menu. Space, Ctrl+S, and Ctrl+I still work. Alt closes the menu and goes back to the player. Escape in the menu leaves the player. If you opened the file in File manager, you go back to the same folder and file. If not, you go back to Media. Audio stops unless Keep audio playing in the background is on. When you choose Media player from the Media menu, the menu is already open.
+While a file plays, press Escape or Alt to open the player menu. You can also say Player menu. Use Up Arrow and Down Arrow to choose an item, then press Enter. Left and Right Arrow also move through the menu. Space, Control+S, and Control+I still work. Alt closes the menu and goes back to the player. Escape in the menu leaves the player. If you opened the file in File manager, you go back to the same folder and file. If not, you go back to Media. Audio stops unless Keep audio playing in the background is on. When you choose Media player from the Media menu, the menu is already open. For player help, say "Help with media player", or press F1.
 
 

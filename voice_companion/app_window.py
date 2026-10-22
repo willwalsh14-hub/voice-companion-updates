@@ -286,6 +286,19 @@ class CompanionWindow:
                         self.commands.put(('keyboard','Letter:'+event.char));return 'break'
                     if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
                         self.commands.put(('keyboard',file_key));return 'break'
+                if not self.command_entry_active and mode!='task_input':
+                    from input_parity import screen_key
+                    direct=screen_key(mode,key,event.state,self.context,self.email_field,typed.get())
+                    if direct:
+                        if self.keyboard_output:self.keyboard_output.interrupt()
+                        flush_pending_edit();cancel_phonetic()
+                        if mode=='email_draft' and self.email_field:
+                            # Keep what was typed in the address or subject box before acting.
+                            self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'key':direct}));return 'break'
+                        if mode=='note' and typed.get().strip():
+                            # Add the typed words to the note first, as Enter would.
+                            self.commands.put(typed.get().strip());typed.delete(0,'end')
+                        self.commands.put(('keyboard',direct));return 'break'
                 if mode in ('document','word_processor','document_menu','recent_documents','media_menu','local_media','task_input'):
                     from task_navigation import SHORTCUTS
                     if mode=='document' and self.context.get('document_table') and key in ('Tab','ISO_Left_Tab'):

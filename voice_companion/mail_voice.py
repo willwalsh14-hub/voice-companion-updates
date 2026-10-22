@@ -495,7 +495,8 @@ class MailSession:
                 return self.list_boundary(command in ('last message','end of list'))
             if command in ('next','previous') and self.rows:
                 command += ' message'
-            if self.view == 'message' and command in ('message details','who is this from','read message details'):
+            if command in ('message details','who is this from','read message details') and (self.view == 'message' or self.rows and self.current):
+                # In the list this repeats the summary of the message you are on.
                 return self._summary(self.current)
             if self.view=='message' and command in ('next link','previous link','next button','previous button'):
                 direction,role=command.split();return self.message_element(role,-1 if direction=='previous' else 1)

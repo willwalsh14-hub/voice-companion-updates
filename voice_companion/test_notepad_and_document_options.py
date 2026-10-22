@@ -267,7 +267,7 @@ class SavedNotesTests(unittest.TestCase):
         for name in ('START HERE - Veteran.txt', 'START HERE - Veteran.html'):
             text = (SOURCE / name).read_text(encoding='utf-8')
             self.assertIn('List notes', text)
-            self.assertIn('Ctrl+O', text)
+            self.assertRegex(text, r'(?:Ctrl|Control)\+O')  # The guide spells keys as Control+.
 
 
 if __name__ == '__main__':
