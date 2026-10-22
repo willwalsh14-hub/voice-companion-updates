@@ -5,6 +5,7 @@ on graph.microsoft.com so an access token cannot be sent to another host.
 """
 import base64
 import json
+import time
 import re
 from datetime import datetime, timezone
 from email import policy
@@ -69,6 +70,8 @@ def gmail_body(raw):
 
 GMAIL_BATCH_URL = 'https://gmail.googleapis.com/batch/gmail/v1'
 GMAIL_BATCH_SIZE = 50  # Google advises 50 or fewer calls per batch to avoid rate limits.
+GMAIL_BATCH_PAUSE = 3600  # After a failed batch, fetch one message at a time for an hour.
+_gmail_batch_paused_until = 0.0
 GMAIL_METADATA = '?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date'
 
 
@@ -124,17 +127,21 @@ class MailboxClient:
         outgoing = request.Request(GMAIL_BATCH_URL, data=body.encode('utf-8'), method='POST',
                                    headers={'Authorization': 'Bearer ' + self.token,
                                             'Content-Type': 'multipart/mixed; boundary=' + boundary})
+        global _gmail_batch_paused_until
+        # Batching only saves requests. If it fails for any reason, the caller
+        # fetches each message alone, as it did before batching, so the inbox
+        # still opens.
         try:
             with self.opener(outgoing, timeout=30) as response:
                 content = response.read(6 * 1024 * 1024)
                 if response.read(1):
-                    raise MailboxError('The mail response is too large.')
+                    raise ValueError('The batch reply is too large.')
                 content_type = response.headers.get('Content-Type', '')
-        except MailboxError:
-            raise
-        except Exception as exc:
-            raise MailboxError('The mail service could not complete this request. Try again later.') from exc
+        except Exception:
+            _gmail_batch_paused_until = time.monotonic() + GMAIL_BATCH_PAUSE
+            return {}
         if not content_type.lower().startswith('multipart/'):
+            _gmail_batch_paused_until = time.monotonic() + GMAIL_BATCH_PAUSE
             return {}
         try:
             reply = BytesParser(policy=policy.default).parsebytes(
@@ -219,6 +226,8 @@ class MailboxClient:
             ids = [item['id'] for item in data.get('messages', [])]
             details = {}
             for start in range(0, len(ids), GMAIL_BATCH_SIZE):
+                if time.monotonic() < _gmail_batch_paused_until:
+                    break
                 details.update(self._gmail_batch(ids[start:start + GMAIL_BATCH_SIZE]))
             for item in data.get('messages', []):
                 info = details.get(item['id'])

@@ -101,7 +101,10 @@ def word(root, title, notes):
         props=OxmlElement('w:pPr');indent=OxmlElement('w:ind')
         indent.set(qn('w:left'),str(360*(level+1)));indent.set(qn('w:hanging'),'360');props.append(indent);node.append(props)
         abstract.append(node)
-    numbering.append(abstract)
+    # Word requires list definitions before the lists, or it joins the numbering.
+    first_num=numbering.find(qn('w:num'))
+    if first_num is None: numbering.append(abstract)
+    else: first_num.addprevious(abstract)
     for s in notes['sections']:
         doc.add_heading(s['title'],1)
         num=numbering.add_num(abstract_id)

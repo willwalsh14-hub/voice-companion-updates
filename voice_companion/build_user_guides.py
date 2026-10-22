@@ -102,7 +102,12 @@ def number_list(doc):
     level=OxmlElement('w:lvl');level.set(qn('w:ilvl'),'0')
     for tag,value in [('start','1'),('numFmt','decimal'),('lvlText','%1.'),('lvlJc','left')]:
         node=OxmlElement('w:'+tag);node.set(qn('w:val'),value);level.append(node)
-    abstract.append(level);root.append(abstract)
+    abstract.append(level)
+    # Word requires every list definition before the first list; out of order,
+    # Word repairs the file by joining the numbered lists into one long list.
+    first_num=root.find(qn('w:num'))
+    if first_num is None:root.append(abstract)
+    else:first_num.addprevious(abstract)
     numid=max([int(n.get(qn('w:numId'))) for n in root.findall(qn('w:num'))]+[0])+1
     num=OxmlElement('w:num');num.set(qn('w:numId'),str(numid))
     ref=OxmlElement('w:abstractNumId');ref.set(qn('w:val'),str(abstract_id));num.append(ref)
@@ -226,6 +231,8 @@ def validate(blocks):
     assert [p.text for p in doc.paragraphs if p.style.name=='Heading 2']==parts
     from docx.oxml.ns import qn
     numbering=doc.part.numbering_part.element
+    kinds=[child.tag for child in numbering if child.tag in (qn('w:abstractNum'),qn('w:num'))]
+    assert qn('w:abstractNum') not in kinds[kinds.index(qn('w:num')):], 'Word list definitions must come before the lists'
     for paragraph in doc.paragraphs:
         if paragraph.style.name!='List Number':continue
         numid=paragraph._p.find(qn('w:pPr')).find(qn('w:numPr')).find(qn('w:numId')).get(qn('w:val'))
