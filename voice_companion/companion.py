@@ -31,7 +31,7 @@ from cloud_recognition import CloudRecognition
 from privacy_controls import narration_allowed,cloud_recognition_allowed
 from parakeet_recognition import ParakeetRecognition
 from browser_navigation import prepare_address
-from web_assistant import WebSession
+from web_assistant import RefreshPacer, WebSession
 from audio_resample import PCM16Resampler, stereo_to_mono
 from app_window import CompanionWindow
 from reading_navigation import ReadingCursor, reading_request
@@ -3523,7 +3523,7 @@ def main():
             except OSError: pass
         settings_quiet_until=0
         settings_audio_blocked=False
-        last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
+        web_refresh=RefreshPacer();startup_speaking=True;startup_quiet_until=time.monotonic()+.3
         microphone_retry_at=0
         while True:
             poll_dictation_echo()
@@ -3542,11 +3542,12 @@ def main():
                 if mode=='exit':return 0
                 continue
             logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
-            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.3 and (APP_WINDOW is None or time.monotonic()-getattr(APP_WINDOW,'last_navigation',0)>.12):
-                last_web_refresh=time.monotonic()
+            if logical_mode=='web' and web_session and web_refresh.due(time.monotonic(),0 if APP_WINDOW is None else getattr(APP_WINDOW,'last_navigation',0)):
+                started=time.monotonic()
                 try:
                     refresh_browser_view(mode)
                 except Exception:pass
+                web_refresh.done(started,time.monotonic())
             if KEYBOARD_SPEECH and KEYBOARD_SPEECH.narration_interrupt.is_set():
                 KEYBOARD_SPEECH.narration_interrupt.clear()
                 voice.Speak('',3)

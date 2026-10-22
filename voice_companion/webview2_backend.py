@@ -93,7 +93,9 @@ class WebViewPipe:
                 if value.get('method')=='Host.ready':self.ready.set();continue
                 if value.get('method')=='Host.error':self.error=value.get('params',{}).get('message','Browser initialization failed.');self.ready.set();continue
                 if self.connection:
-                    try:self.connection.send(json.dumps(value))
+                    # Forward the host's JSON text as it is; encoding it again
+                    # doubled the work for every large page snapshot.
+                    try:self.connection.send(line.rstrip('\r\n'))
                     except Exception:break
         except (OSError,ValueError):pass
         finally:

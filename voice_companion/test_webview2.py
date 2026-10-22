@@ -5,6 +5,7 @@ from webview2_backend import WebView2Backend
 from test_web_live import LiveWebTests
 from test_consumer_web import ConsumerWebTests
 from test_web_semantics import SemanticWebTests
+from test_web_performance import BusyPageTests
 
 
 class WebViewFixture:
@@ -96,6 +97,7 @@ class EmbeddedLiveTests(WebViewFixture,LiveWebTests):
         self.assertTrue(all(page.is_closed() for page in pages));self.assertIsNone(owned.context)
 class EmbeddedConsumerTests(WebViewFixture,ConsumerWebTests):pass
 class EmbeddedSemanticTests(WebViewFixture,SemanticWebTests):pass
+class EmbeddedPerformanceTests(WebViewFixture,BusyPageTests):pass
 
 
 if __name__=='__main__':unittest.main()
