@@ -502,6 +502,37 @@ class CatalogParityTests(unittest.TestCase):
                         self.assertEqual(results[0],results[1])
 
 
+
+INVENTORY=Path(__file__).resolve().parents[1]/'tools'/'input_parity_inventory.py'
+
+
+@unittest.skipUnless(INVENTORY.exists(),'The inventory script is kept in the repository, not the installer.')
+class InventoryTests(unittest.TestCase):
+    def inventory(self):
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('input_parity_inventory',INVENTORY)
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        return module
+
+    def test_every_action_has_a_voice_and_a_keyboard_way(self):
+        module=self.inventory()
+        with redirect_stdout(io.StringIO()):rows=module.rows()
+        self.assertGreater(len(rows),400)
+        self.assertEqual(module.problems(rows),[])
+        # Every key added for parity is listed in the inventory.
+        text=' '.join(row[3] for row in rows)
+        for keys in SCREEN_KEYS.values():
+            for key in keys:
+                written={'Next':'Page Down','Prior':'Page Up'}.get(key,key)
+                self.assertIn(written.replace('Ctrl+Down','Ctrl+Down Arrow').split(' Arrow')[0],text,key)
+
+    def test_committed_inventory_matches_the_app(self):
+        module=self.inventory()
+        with redirect_stdout(io.StringIO()):expected=module.render()
+        self.assertEqual(module.TARGET.read_text(encoding='utf-8'),expected,
+                         'Run python3 tools/input_parity_inventory.py and commit tools/input-parity-inventory.md.')
+
+
 @unittest.skipUnless(__import__('sys').platform=='win32','Windows Tk keyboard integration')
 class WindowScreenKeyTests(unittest.TestCase):
     def setUp(self):

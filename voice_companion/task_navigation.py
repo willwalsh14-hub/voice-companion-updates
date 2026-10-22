@@ -257,7 +257,11 @@ class TaskNavigation:
             self.prompt = (command, 'document' if mode in ('document', 'document_menu') else mode)
             prompt={'{value}':'Document command. Type or say the full command, then Enter.',
                     'replace {value}':'Replace text. Type or say the old text, with, then the new text. Press Enter.',
-                    'create table with {value}':'Table size. Type or say the rows and columns, such as two rows and two columns. Press Enter.'}.get(command)
+                    'create table with {value}':'Table size. Type or say the rows and columns, such as two rows and two columns. Press Enter.',
+                    'find {value}':'Find. Type or say the words to find, then press Enter.',
+                    'add contact {value}':'Add contact. Type or say the name, the word as, then the email address. Press Enter.',
+                    'find lesson {value}':'Find lesson. Type or say a subject, then press Enter.',
+                    'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')
             return 'task_input'
         return m.handle(command, 'document' if mode == 'document_menu' else 'awake' if mode in ('media_menu','word_processor') else mode, typed=True)
@@ -293,7 +297,7 @@ class TaskNavigation:
             template, target = self.prompt
             if command in ('cancel','escape','go back'):
                 self.prompt=None
-                m.speak('Canceled. Back to '+target.replace('_',' ')+'.'); return target
+                m.speak('Canceled. Back to '+{'file_reader':'document reader','mailbox':'email','web':'the web page'}.get(target,target.replace('_',' '))+'.'); return target
             if not text.strip():m.speak('Enter a value, or press Escape to cancel.');return mode
             result=self.handle(template.format(value=text.strip()), target) if target == 'local_media' else m.handle(template.format(value=text.strip()), target, typed=True)
             self.prompt=None
