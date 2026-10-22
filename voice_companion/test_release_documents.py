@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import unittest.mock
 from unittest.mock import patch
 from zipfile import ZipFile
 from xml.etree import ElementTree as ET
@@ -23,6 +24,22 @@ def fixture(root):
 
 
 class ReleaseDocumentTests(unittest.TestCase):
+    def test_user_guide_word_lists_each_restart_at_one(self):
+        import build_user_guides as guides
+        with tempfile.TemporaryDirectory() as folder:
+            with unittest.mock.patch.object(guides,'ROOT',Path(folder)):
+                title,blocks=guides.sections();guides.build_word(title,blocks)
+            doc=Document(Path(folder)/(guides.STEM+'.docx'))
+            numbering=doc.part.numbering_part.element
+            kinds=[c.tag for c in numbering if c.tag in (qn('w:abstractNum'),qn('w:num'))]
+            self.assertNotIn(qn('w:abstractNum'),kinds[kinds.index(qn('w:num')):],'Word joins lists when definitions come after lists')
+            steps=[p for p in doc.paragraphs if p.style.name=='List Number']
+            lists={p._p.find(qn('w:pPr')).find(qn('w:numPr')).find(qn('w:numId')).get(qn('w:val')) for p in steps}
+            from guide_text import STEP
+            expected=sum(1 for _,ps in blocks for i,v in enumerate(ps)
+                         if (m:=STEP.fullmatch(v)) and (m[1]=='1' or i==0 or not STEP.fullmatch(ps[i-1])))
+            self.assertEqual(len(lists),expected)  # one Word list per step list in the guide
+
     def test_same_outline_content_and_numbering_in_all_formats(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);(root/'companion.py').write_text("APP_VERSION = '1.2.3-test'\n")
@@ -37,6 +54,8 @@ class ReleaseDocumentTests(unittest.TestCase):
             ids=[p._p.find(qn('w:pPr')).find(qn('w:numPr')).find(qn('w:numId')).get(qn('w:val')) for p in topics]
             self.assertNotEqual(ids[0],ids[1])
             numbering=doc.part.numbering_part.element
+            kinds=[c.tag for c in numbering if c.tag in (qn('w:abstractNum'),qn('w:num'))]
+            self.assertNotIn(qn('w:abstractNum'),kinds[kinds.index(qn('w:num')):],'Word joins lists when definitions come after lists')
             for numid in ids:
                 number=next(n for n in numbering.findall(qn('w:num')) if n.get(qn('w:numId'))==numid)
                 override=number.find(qn('w:lvlOverride'))
