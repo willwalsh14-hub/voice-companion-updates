@@ -201,6 +201,9 @@ DOCUMENT_NAMING_ACTION = "name document"
 DOCUMENT_CLOSE_TARGET = "awake"
 DOCUMENT_BASELINE = None
 CONFIRM_CHOICE = "yes"
+# Chrome and extension setup (chrome_setup.py); None when not running.
+CHROME_SETUP = None
+CHROME_SETUP_RETURN = 'awake'
 POWER_ACTION = None
 POWER_RETURN_MODE = "awake"
 EXIT_RETURN_MODE = "awake"
@@ -263,7 +266,7 @@ def app_context(mode):
                 context['media_input']=not field['choices']
             else:context['media_button']='OK' if nav.field_index==len(nav.form['fields']) else 'Cancel'
         else:context['media_form']=None
-    if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
+    if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None or chrome_confirming(logical):context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and (web_session.pending or web_session.submit_pending):context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
@@ -525,7 +528,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
         return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
@@ -646,7 +649,9 @@ def _navigation_key(key,mode):
         web_session.list_prefix='';web_session.list_prefix_time=0
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
     if key=='Alt+F4':return 'exit companion'
-    confirming=THUNDERBIRD_SETUP is not None or pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    if mode=='chrome_setup' and not chrome_confirming(mode):
+        return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
+    confirming=THUNDERBIRD_SETUP is not None or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -752,6 +757,9 @@ def screen_menu():
     from screen_menus import ScreenMenu
     if SCREEN_MENU is None or SCREEN_MENU.app is not sys.modules[__name__]:SCREEN_MENU=ScreenMenu(sys.modules[__name__])
     return SCREEN_MENU
+
+def chrome_confirming(mode):
+    return mode=='chrome_setup' and CHROME_SETUP is not None and CHROME_SETUP.question is not None
 
 def task_navigation():
     global TASK_NAV
@@ -909,7 +917,7 @@ def fast_command_request(command, mode):
     if command in ('word processor','open word processor','notepad','open notepad'):return True
     if re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command):return True
     if command in POWER_COMMANDS:return True
-    if mode in ('settings','power_confirm','exit_confirm','media','help','browser_menu'): return True
+    if mode in ('settings','power_confirm','exit_confirm','media','help','browser_menu','chrome_setup'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
@@ -1847,6 +1855,9 @@ def _handle(text, mode, typed=False):
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
+    if mode=='chrome_setup':
+        import chrome_setup
+        return chrome_setup.handle(sys.modules[__name__],text,mode)
     try:
         menu_result=screen_menu().handle(text,mode)
         if menu_result is not None:return menu_result
@@ -1854,6 +1865,10 @@ def _handle(text, mode, typed=False):
         if task_result is not None:return task_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
+    # A whole command only; in a document, email or note these words are text.
+    if command in ('set up chrome','setup chrome','chrome setup','connect chrome','install chrome','install google chrome','set up the browser extension','install the browser extension','install browser extension','add the chrome extension','install the chrome extension') and mode!='search' and not writing_dictation(mode,typed):
+        import chrome_setup
+        return chrome_setup.begin(sys.modules[__name__],mode)
     if command in ('regular browser','open regular browser','connect regular browser'):
         return open_browser_menu()
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
@@ -3494,6 +3509,7 @@ def main():
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
+        mode = __import__('chrome_setup').startup_request(sys.modules[__name__],mode)
         sync_app_context(mode,True)
         if input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
         # Listen and process keys while the asynchronous startup speech plays.
@@ -3540,6 +3556,8 @@ def main():
             mode = poll_file_manager(mode)
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
+            if CHROME_SETUP is not None:
+                mode = __import__('chrome_setup').poll(sys.modules[__name__],mode)
             update_audio_ducking()
             if APP_WINDOW is not None and APP_WINDOW.closed.is_set():
                 flush_keyboard_edits(True)

@@ -130,7 +130,7 @@ Contents
   22.4 A guide or update will not open
   22.5 Understand privacy and online services
 23 Regular Browser Connection
-  23.1 Set up the extension
+  23.1 Set up Chrome and the extension
   23.2 Read and use your browser
   23.3 Understand this testing connection
 24 File Manager
@@ -1162,11 +1162,16 @@ The app skips history entries with private sign-in data. It also removes sign-in
 
 23. REGULAR BROWSER CONNECTION
 
-23.1 Set up the extension
-You need this extension only to use your own Chrome or Edge, with the sites you are already signed in to. Embedded Edge works without it.
-1. Ask your trainer to open Browser Connection Setup in the Voice Companion Start menu folder. Set up the included Chrome or Edge extension once. The installer includes the local host. Python is not needed.
-2. If you used the earlier test connection, reload the extension on your browser's Extensions page after this update. Its name and ID stay the same.
-3. Open Companion. Open a website in Chrome or Edge. The browser links on its own. No Connect button is needed for each site or tab. Return to Companion.
+23.1 Set up Chrome and the extension
+You need this only to use your own Chrome, with the sites you are already signed in to. Embedded Edge works without it.
+1. Say "Set up Chrome". Or open Options, choose Web browser options, and choose Set up Chrome and the Voice Companion extension. Companion asks before each change. Say yes or no, or press Y or N.
+2. If Chrome is missing, Companion offers to install it. This takes a few minutes. Companion tells you how it is going. If Windows asks for permission, press Alt+Y.
+3. Companion then adds the extension and opens Chrome. Chrome asks you to turn it on. Press Tab until you hear "Enable extension", then press Enter. Companion reads the Chrome buttons to you while you do this.
+4. If Chrome does not ask, press Alt+F to open the Chrome menu. Press Down Arrow until you hear "Voice Companion Browser Connection", then press Enter. Then choose Enable extension. If you are not in Chrome, press Alt+Tab.
+5. When the extension links, you hear "Chrome is linked to Voice Companion." If it does not link in two minutes, Companion offers the Chrome Web Store page. There, press Tab until you hear "Add to Chrome", then press Enter. Chrome asks again. Press Tab until you hear "Add extension", then press Enter.
+6. Say "Status" to hear the current step again. Say "Cancel" to stop setup.
+7. The installer has a box named Set up Chrome and the Voice Companion extension when Voice Companion opens. It is off unless you tick it. When it is on, setup starts the next time Companion opens.
+8. If setup does not finish, ask your helper. A helper can open Voice Companion Browser Connection in the Chrome Web Store and choose Add to Chrome. For Edge or a test copy, a helper can follow Browser Connection Setup in the Voice Companion Start menu folder.
 
 23.2 Read and use your browser
 1. Open Web browser from Companion's main menu. Choose Resume where you left off to read the active browser tab. Search, favorites, web history, Go back and Go forward remain in this menu.
