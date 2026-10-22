@@ -113,7 +113,8 @@ class MenuKeyboardTests(unittest.TestCase):
         from yahoo_mailbox import YahooMailbox
         client=YahooMailbox('test@example.com','test')
         conn=Mock();conn.select.return_value=('OK',[b'1'])
-        conn.uid.side_effect=[('OK',[b'1']),('OK',[(b'1 (BODY[HEADER.FIELDS] {24}',b'From: Sam\nSubject: Hello\n\n'),b' RFC822.SIZE 2048 FLAGS (\\Seen))'])]
+        # One FETCH per page (sequence numbers, newest first); the UID names the message.
+        conn.fetch.return_value=('OK',[(b'1 (UID 7 BODY[HEADER.FIELDS] {24}',b'From: Sam\nSubject: Hello\n\n'),b' RFC822.SIZE 2048 FLAGS (\\Seen))'])
         with patch.object(client,'_with',side_effect=lambda operation:operation(conn)):
             rows,_=client.list_messages('INBOX')
             self.assertEqual(rows[0]['size'],2048);self.assertFalse(rows[0]['unread'])

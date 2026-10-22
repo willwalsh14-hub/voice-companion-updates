@@ -22,9 +22,10 @@ from field_selection import FieldSelection, selection_command
 from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
 from media_hub import MediaHub
-from email_delivery import DeliveryError, message_parts, submit
+from email_delivery import DeliveryError, delivery_note, message_parts, submit
 from mail_accounts import AccountError, ProtectedStore, account_token, connect
 from mail_voice import MailSession
+from mailbox_access import MailboxError
 from practice_tutorial import PracticeTutorial
 from cloud_recognition import CloudRecognition
 from privacy_controls import narration_allowed,cloud_recognition_allowed
@@ -1629,6 +1630,10 @@ def handle_mailbox_screen(text, command, mode, typed):
                   'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
             focus_email_entry()
             return 'email_draft'
+        except (MailboxError, AccountError) as exc:
+            # Say what went wrong (for example an expired app password), not a guess.
+            speak(str(exc))
+            return mode
         except Exception:
             speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
             return mode
@@ -2694,7 +2699,7 @@ def _handle(text, mode, typed=False):
                     email_draft.last_attempt_hash = ''
                     speak('The draft could not be saved, so the email was not sent. Check that the disk has space and try again.')
                     return mode
-                submit(provider, email_draft, token, sender=address)
+                accepted = submit(provider, email_draft, token, sender=address)
                 email_draft.last_accepted_hash = fingerprint
                 email_draft.save()
             except (AccountError, DeliveryError, ValueError, OSError, KeyError) as exc:
@@ -2704,7 +2709,7 @@ def _handle(text, mode, typed=False):
                 reason=str(exc) if isinstance(exc,(AccountError,DeliveryError,ValueError)) else 'The email connection could not complete the request.'
                 speak(reason+' The draft is saved locally.'+(' Check Sent Mail before trying again; do not send a duplicate.' if uncertain else ' It has not been sent. Correct the problem and review the draft again.'))
                 return mode
-            speak_status('Email sent successfully.')
+            speak_status('Email sent successfully.' + delivery_note(accepted))
             finish_mail_announcement()
             original_body = (mail_session.body_text if mail_session is not None and
                              email_draft.response_context and mail_session.view == 'message' else None)
