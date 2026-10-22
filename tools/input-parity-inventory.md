@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 565 |
-| Already had both ways | 455 |
-| Gaps found | 110 |
-| Gaps fixed (Added) | 102 |
+| Actions inventoried | 569 |
+| Already had both ways | 458 |
+| Gaps found | 111 |
+| Gaps fixed (Added) | 103 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -312,6 +312,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Keep browser window open | "Set Keep browser window open to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
 | Automatic page reading | "Set Automatic page reading to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
 | Guided browser | "Set Guided browser to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
+| Set up Chrome and the Voice Companion extension | "Set up chrome" | Alt+O, arrows to Web browser options, Tab to the button, Enter | Both |
 
 ## Radio options
 
@@ -821,11 +822,14 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Address or search box | "Search", "Open website ..." | Ctrl+L | Both |
 | Web browser menu | "Leave website" | Escape | Both |
 | Web help | "Help with web" | F1 | Added: F1 |
+| Close the browser window, even when kept open | "Close browser window" | Ctrl+Shift+W | Added: Ctrl+Shift+W |
+| Send keys to the website (app mode) or back to browse mode | "App mode", "Browse mode", "Focus mode" | Insert+Space, Ctrl+Alt+Space | Both |
 
 ## Web: forms
 
 | Action | Voice | Keyboard | Status |
 | --- | --- | --- | --- |
+| Find and change a slider | "Next slider" | Tab or Enter on the slider; arrows, Page Up, Page Down, Home, End; Escape | Both |
 | Enter a text box | "Edit current field" | E, Tab, or Enter on the box | Both |
 | Save or cancel a field | "Save field", "Cancel field editing" | Tab or Enter; Escape | Both |
 | Checkbox and radio button | "Toggle checkbox", "Select radio button" | Space | Both |
