@@ -7,20 +7,10 @@ pull requests. Update this file as items are finished.
 ## Must do before launch
 
 ### Privacy of the beta and the code
-- [ ] **Move the source code to a private repository; keep this one for releases only. (Will + Claude)**
-  This repository is public, so anyone can read the code, the GitHub issues,
-  and download the installer. Installed apps check for updates at
-  `github.com/willwalsh14-hub/voice-companion-updates/releases/latest/...`,
-  which only works without sign-in while this repository is public. So:
-  1. Will creates a new private repository (for example `voice-companion`).
-  2. Claude moves the source and build workflow there, and changes the
-     workflow to publish releases to this public repository using a
-     fine-grained token stored as a secret (`publish_release.py` already
-     takes the target repository from the update feed address).
-  3. This repository keeps only releases, so the update address in every
-     installed copy keeps working and no app change is needed.
-  4. Bug reports move to the private repository so testers' reports are not public.
-- [ ] Until then, remind testers that GitHub issues here are public.
+- Decision (Will, October 21): the code stays in this public repository.
+  Anyone can read the code, the GitHub issues and the release installers.
+- [ ] Remind testers that GitHub issues here are public: no passwords, email
+      contents or personal details in bug reports (the bug form says this too).
 
 ### Trust and installation
 - [ ] **Code-sign the installer and app (Will: buy a code-signing certificate, e.g. an OV or EV certificate or Azure Trusted Signing).**
@@ -39,8 +29,10 @@ pull requests. Update this file as items are finished.
       restricted scopes. Start early; it takes weeks.
 - [ ] **Outlook:** complete Microsoft publisher verification for the app
       registration so users do not see an "unverified" warning.
-- [ ] **Browser extension:** publish 0.4.1 or later to the Chrome Web Store
-      (and Edge Add-ons) so users never need Developer mode or "Load unpacked".
+- [x] **Browser extension:** approved and live on the Chrome Web Store
+      (version 0.4.0, October 17, 2026).
+- [ ] **Will:** upload extension 0.4.1 (shipped in app 0.2.152-test) to the
+      Chrome Web Store, and decide whether it is still needed (see below).
 - [ ] Review `PRIVACY-POLICY.md` against what the app actually sends
       (OpenAI narration when the AI voice is on, Google and Microsoft mail APIs,
       station and podcast directories, GitHub for updates).
