@@ -65,6 +65,8 @@ def spoken_node(node):
         return name + ', ' + ('radio button' if role == 'radio' else role) + ', ' + state + '.'
     if role == 'heading':
         return name + ', heading level ' + str(properties.get('level', 'unknown')) + '.'
+    if role == 'combobox' and properties.get('editable') in ('plaintext', 'richtext'):
+        return name + ', edit combo box' + (', unavailable.' if properties.get('disabled') else '.')
     if role in ('button', 'link', 'textbox', 'combobox', 'listbox'):
         return name + ', ' + {'textbox': 'edit field', 'combobox': 'combo box', 'listbox': 'list box'}.get(role, role) + (', unavailable.' if properties.get('disabled') else '.')
     if role in ('StaticText', 'RootWebArea', 'alert', 'status'):

@@ -259,7 +259,8 @@ def app_context(mode):
         context['web_elements']=web_session.snapshot.get('elements',[])
         field=getattr(web_session,'keyboard_field',None)
         context['web_browse']=field is None
-        context['web_choice']=bool(field and __import__('web_browse').kind(field) in ('combobox','listbox'))
+        context['web_choice']=__import__('web_browse').choice_field(field)
+        context['web_combo_edit']=__import__('web_browse').editable_combo(field)
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
         document_identity=(web_session.document_state or {}).get('epoch',getattr(web_session,'page_revision',0))
         if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(document_identity)+':'+str(field.get('frame_index','main'))+':'+field['key']
@@ -318,6 +319,10 @@ def apply_keyboard_edit(payload,mode):
     elif context['mode']=='web':
         web_session.keyboard_field['value']=payload['after'];web_session.web_edit_caret=payload['caret']
         web_session.selection=payload.get('selection')
+        # A site's search box shows suggestions as you type: send it each change.
+        if payload['before']!=payload['after'] and context.get('web_combo_edit'):
+            notice=web_session.combo_typed()
+            if notice:speak(notice)
     else:
         logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
         editor=document if logical=='document' else email_draft

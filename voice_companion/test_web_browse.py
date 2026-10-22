@@ -97,4 +97,106 @@ class WebBrowseTests(unittest.TestCase):
                 ctx=app.app_context('web');self.assertTrue(ctx['readonly']);self.assertEqual(ctx['text'],'Page text')
                 app.apply_keyboard_edit(dict(source=ctx['source'],before='Page text',after='Page text',caret=4,readonly=True,seq=1),'web')
                 self.assertEqual(session.reading.position,4);self.assertEqual(session.browse.position,4)
+
+class EditableComboTests(unittest.TestCase):
+    """Search boxes such as YouTube's are combo boxes you type into, with suggestions."""
+    SEARCH=dict(key='s',role='combobox',tag='input',type='text',label='Search',value='',start=0,end=20,href='')
+    def test_text_input_combo_boxes_are_editable_and_choices_are_not(self):
+        from web_browse import editable_combo,kind
+        editable=[self.SEARCH,
+                  dict(key='g',role='combobox',tag='textarea',type='textarea',label='Search'),
+                  dict(key='d',role='combobox',tag='input',type='text',label='Color',datalist=True),
+                  dict(key='c',role='combobox',tag='div',type='',label='City',combo_edit=True,combo_input_key='i'),
+                  dict(key='e',role='combobox',tag='div',type='',label='Note',editable=True)]
+        choices=[dict(key='x',role='field',tag='select',type='select-one',label='Choice',selected_label='One'),
+                 dict(key='b',role='combobox',tag='button',type='button',label='Custom choice',selected_label='Alpha'),
+                 dict(key='v',role='combobox',tag='div',type='',label='Estado',selected_label='Texas'),
+                 dict(key='r',role='combobox',tag='input',type='checkbox',label='Odd'),
+                 dict(key='l',role='listbox',tag='div',type='',label='List')]
+        for item in editable:
+            self.assertTrue(editable_combo(item),item);self.assertEqual(kind(item),'combobox')
+        for item in choices:self.assertFalse(editable_combo(item),item)
+        # The page records what it found; that wins over the tag guess.
+        self.assertFalse(editable_combo(dict(self.SEARCH,combo_edit=False)))
+        self.assertEqual(describe(self.SEARCH),'Search, edit combo box.')
+        self.assertEqual(describe(dict(self.SEARCH,value='cats',required=True)),'Search, edit combo box, cats, required.')
+        self.assertEqual(describe(choices[0]),'Choice, combobox, One.')
+        self.assertEqual(describe(choices[1]),'Custom choice, combobox, Alpha.')
+    def test_quick_keys_find_editable_combo_as_edit_field_and_combo_box(self):
+        elements=[dict(key='x',role='field',tag='select',type='select-one',label='Choice',selected_label='One',start=0,end=5),dict(self.SEARCH,start=6,end=20)]
+        cursor=BrowseCursor({'elements':elements})
+        self.assertEqual(cursor.move('e'),'Search, edit combo box.')
+        cursor=BrowseCursor({'elements':elements})
+        self.assertIn('Choice',cursor.move('c'));self.assertIn('Search, edit combo box',cursor.move('c'))
+        self.assertIn('Search',cursor.move('f',True) and cursor.move('f'))
+    def test_suggestion_voice_commands(self):
+        self.assertEqual(voice_browse_key('next suggestion'),'Down')
+        self.assertEqual(voice_browse_key('Previous suggestion.'),'Up')
+    def session(self,folder,item=None):
+        backend=Mock();backend.document_stamp.return_value=None;backend.field_value.return_value=''
+        backend.combo_move.return_value={'options':['cats','cat videos'],'active':0,'value':'cats','expanded':True}
+        session=WebSession(folder,backend);item=dict(item or self.SEARCH)
+        session.snapshot={'text':'Search, edit combo box','elements':[item],'url':'https://video.test/'};session.browse=BrowseCursor(session.snapshot);session.browse.move('c')
+        return session,backend
+    def test_editable_combo_is_typed_into_and_arrows_read_suggestions(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session,backend=self.session(folder)
+            self.assertIn('Search, edit combo box',session.keyboard('Activate'))
+            backend.focus.assert_called_once();self.assertEqual(session.keyboard_field['label'],'Search')
+            # Letters are text here, never option shortcuts.
+            session.keyboard_field['value']='cat';session.combo_typed()
+            backend.type_combo.assert_called_with(session.keyboard_field,'cat')
+            self.assertEqual(session.keyboard('Down'),'cats, 1 of 2.')
+            backend.choose_form_option.assert_not_called()
+            # The site wrote the suggestion into the box; the editor follows it.
+            self.assertEqual(session.keyboard_field['value'],'cats');self.assertEqual(session.web_edit_caret,4)
+            backend.combo_move.return_value={'options':['cats','cat videos'],'active':None,'value':'cat','expanded':True}
+            self.assertEqual(session.keyboard('Up'),'No suggestion selected. Field text: cat.')
+            backend.combo_move.return_value={'options':[],'active':None,'value':'zzz','expanded':False}
+            self.assertEqual(session.keyboard('Down'),'No suggestions. Keep typing, or press Tab to move on.')
+    def test_voice_typing_in_editable_combo_reaches_the_site(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session,backend=self.session(folder)
+            backend.combo_state.return_value={'options':['cats','cat videos'],'active':None,'value':'cat','expanded':True}
+            result=session.command('type cat')
+            backend.type_combo.assert_called_with(session.keyboard_field,'cat')
+            self.assertIn('Text entered. 2 suggestions.',result);self.assertIn('Down',result)
+            backend.type_combo.reset_mock()
+            session.dictate_to_focus('dogs');backend.type_combo.assert_called()
+    def test_escape_closes_suggestions_first_then_cancels_and_restores(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session,backend=self.session(folder,dict(self.SEARCH,value='old'))
+            backend.field_value.return_value='old';session.keyboard('Activate')
+            session.keyboard_field['value']='new'
+            backend.combo_close.return_value={'closed':True,'value':'new'}
+            self.assertEqual(session.keyboard('Escape'),'Suggestions closed.')
+            self.assertIsNotNone(session.keyboard_field);backend.blur_field.assert_not_called()
+            backend.combo_close.return_value={'closed':False,'value':'new'}
+            self.assertIn('Field editing canceled',session.keyboard('Escape'))
+            self.assertIsNone(session.keyboard_field)
+            backend.type_combo.assert_called_with(unittest.mock.ANY,'old');backend.blur_field.assert_called_once()
+    def test_choice_combo_boxes_keep_option_keys(self):
+        with tempfile.TemporaryDirectory() as folder:
+            item=dict(key='b',role='combobox',tag='button',type='button',label='Custom choice',selected_label='Alpha',start=0,end=10,
+                      options=[{'label':'Alpha','selected':True},{'label':'Beta'}])
+            session,backend=self.session(folder,item)
+            backend.snapshot.return_value=dict(session.snapshot)
+            session.keyboard('Activate');session.keyboard('Down')
+            backend.choose_form_option.assert_called_once();backend.combo_move.assert_not_called();backend.type_combo.assert_not_called()
+    def test_application_context_and_keyboard_edits_for_editable_combo(self):
+        import companion as app
+        with tempfile.TemporaryDirectory() as folder:
+            session,backend=self.session(folder);session.keyboard('Activate')
+            with patch.object(app,'web_session',session),patch.object(app,'APP_WINDOW',None):
+                ctx=app.app_context('web')
+                self.assertFalse(ctx['web_choice']);self.assertTrue(ctx['web_combo_edit']);self.assertFalse(ctx['readonly'])
+                self.assertTrue(app.apply_keyboard_edit(dict(source=ctx['source'],before='',after='c',caret=1,seq=1),'web'))
+                self.assertEqual(session.keyboard_field['value'],'c');backend.type_combo.assert_called_with(session.keyboard_field,'c')
+                # A site error is spoken, not raised into the keyboard loop.
+                from web_assistant import WebError
+                backend.type_combo.side_effect=WebError('The page changed. Refresh it before continuing.')
+                with patch.object(app,'speak') as spoken:
+                    ctx=app.app_context('web')
+                    app.apply_keyboard_edit(dict(source=ctx['source'],before='c',after='ca',caret=2,seq=2),'web')
+                spoken.assert_called_once_with('The page changed. Refresh it before continuing.')
 if __name__=='__main__':unittest.main()

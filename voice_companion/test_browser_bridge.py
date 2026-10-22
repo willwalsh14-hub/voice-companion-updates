@@ -34,6 +34,11 @@ class BrowserBridgeTests(unittest.TestCase):
         self.assertEqual(spoken_node(node('radio', 'Unknown')), 'Unknown, radio button, state unavailable.')
         self.assertIn('mixed', spoken_node(node('checkbox', 'Group', checked='mixed')))
 
+    def test_search_box_combo_is_announced_as_editable(self):
+        # Chrome marks a typeable combo box (YouTube's search) as editable.
+        self.assertEqual(spoken_node(node('combobox', 'Search', editable='plaintext')), 'Search, edit combo box.')
+        self.assertEqual(spoken_node(node('combobox', 'Country')), 'Country, combo box.')
+
     def test_no_page_text_is_executed_and_field_values_are_not_spoken(self):
         spoken = []
         field = node('textbox', 'Password')

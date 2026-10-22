@@ -15,7 +15,7 @@ from urllib.parse import urlsplit, quote, unquote
 from privacy_controls import saved_address
 
 from browser_navigation import prepare_address
-from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
+from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,choice_field,describe,editable_combo,kind,text_field,voice_browse_key
 from reading_navigation import ReadingCursor, reading_request
 from storage import write_text_atomic
 from dictation_text import clean_dictation
@@ -44,6 +44,9 @@ def _label(item):
 
 def _voice_value(item,spoken,literal=False):
     if literal or item.get('type')=='password':return spoken
+    if editable_combo(item):
+        # Searches and suggestions: a recognizer's closing period is not part of the query.
+        return re.sub(r'(?<![.])[.!]$','',clean_dictation(spoken)).rstrip()
     if item.get('type')=='email':
         from email_draft import normalize_recipient
         return normalize_recipient(spoken)
@@ -279,6 +282,16 @@ class BrowserBackend:
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
+          const typable=n=>!!n&&n.nodeType===1&&(n.isContentEditable||n.tagName==='TEXTAREA'||n.tagName==='INPUT'&&['text','search','email','url','tel'].includes((n.type||'').toLowerCase())||(n.getAttribute('role')||'').trim()==='textbox');
+          const comboText=e=>{
+            if(e.tagName==='SELECT')return null;
+            const role=(e.getAttribute('role')||'').trim().split(/\\s+/)[0];
+            if(e.tagName==='INPUT'&&!role&&e.list&&typable(e))return e;
+            if(role!=='combobox')return null;
+            if(typable(e))return e;
+            const root=e.getRootNode(),owned=(e.getAttribute('aria-owns')||'').split(/\\s+/).filter(Boolean).map(id=>(root.getElementById?root.getElementById(id):null)||document.getElementById(id)).filter(Boolean);
+            return [...e.querySelectorAll('input,textarea,[contenteditable="true"],[role="textbox"]'),...owned].find(n=>typable(n)&&visible(n))||null;
+          };
           const allCache=new WeakMap();
           const all = root => {if(allCache.has(root))return allCache.get(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
             [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);allCache.set(root,nodes);return nodes;};
@@ -290,8 +303,13 @@ class BrowserBackend:
           let controlSerial=1+all(document).reduce((m,e)=>Math.max(m,/^n\\d+$/.test(e.getAttribute('data-voice-companion-key')||'')?Number(e.getAttribute('data-voice-companion-key').slice(1)):0),0);
           const controlKeyOwners=new Map();const controlKey=e=>{const existing=e.getAttribute('data-voice-companion-key');if(!/^n\\d+$/.test(existing||'')||controlKeyOwners.has(existing)&&controlKeyOwners.get(existing)!==e)e.setAttribute('data-voice-companion-key','n'+controlSerial++);const key=e.getAttribute('data-voice-companion-key');controlKeyOwners.set(key,e);return key;};
           const controls = [];
+          // Editable combo boxes (a site's search box with suggestions) are typed
+          // into. ARIA 1.0 puts the text box inside a combobox container; that
+          // container is the one control, and typing goes to its text box.
+          const comboInputs=new Map();
+          for(const e of all(modal||document).filter(n=>n.matches('[role="combobox"]'))){const t=comboText(e);if(t&&t!==e&&visible(e))comboInputs.set(t,e);}
           for (let i=0; i<nodes.length && controls.length<500; i++) {
-            const e=nodes[i]; if (!visible(e) || e.closest('[aria-hidden="true"],[inert]')) continue;
+            const e=nodes[i]; if (!visible(e) || e.closest('[aria-hidden="true"],[inert]') || comboInputs.has(e)) continue;
             const tag=e.tagName.toLowerCase(), type=(e.type || '').toLowerCase();
             if (['hidden','submit-image'].includes(type)) continue;
             let label=accessibleLabel(e);
@@ -311,6 +329,13 @@ class BrowserBackend:
                 value_truncated:type!=='password' && String(e.value || '').length>2000,
                 filled:type==='password'?!!e.value:false});
             const control=controls[controls.length-1];if(!control.selected_label)control.selected_label=control.options.find(option=>option.selected)?.label||'';
+            const comboInput=comboText(e);
+            if(control.role==='combobox'||comboInput){
+              control.combo_edit=!!comboInput;
+              if(comboInput&&comboInput!==e){control.combo_input_key=controlKey(comboInput);control.value=comboInput.isContentEditable?comboInput.innerText.slice(0,2000):String(comboInput.value||'').slice(0,2000);
+                control.selected_label=control.value;control.tabindex=comboInput.tabIndex;control.required=control.required||!!comboInput.required||comboInput.getAttribute('aria-required')==='true';control.readonly=control.readonly||!!comboInput.readOnly;}
+              if(comboInput===e&&tag==='input'&&e.list){control.datalist=true;control.options=[...e.list.options].filter(o=>(o.value||o.label).trim()).map(o=>({label:(o.value||o.label).trim().slice(0,120),value:o.value,disabled:o.disabled,selected:false}));}
+            }
           }
           // Read the full visible page. Sites may put most content outside main.
           /*SEMANTICS*/
@@ -529,7 +554,7 @@ class BrowserBackend:
         """Let the site's Enter handling select its native default submitter."""
         return self.activate(item,key='Enter')
 
-    def activate(self,item,key=None):
+    def activate(self,item,key=None,focused=False):
         import time
         self.last_action_started=False
         self._watch_dialogs()
@@ -567,7 +592,8 @@ class BrowserBackend:
         before_page.on('requestfailed',failed_request);before_page.on('response',failed_response)
         try:
             self.last_action_started=True
-            if key:element.press(key,timeout=10000)
+            if key and focused:self.page.keyboard.press(key)
+            elif key:element.press(key,timeout=10000)
             else:element.click(timeout=10000)
             if kind(item)=='button' or key:
                 try:
@@ -642,21 +668,99 @@ class BrowserBackend:
             before_page.remove_listener('requestfailed',failed_request);before_page.remove_listener('response',failed_response)
 
     def focus(self,item):
+        if editable_combo(item):self._text_element(item).focus();return
         element=self._element(item);element.focus()
         if kind(item) in ('combobox','listbox') and item.get('tag')!='select' and element.get_attribute('aria-expanded')=='false':
             if not (item.get('tag')=='button' and item.get('type')=='submit' and item.get('in_form')):element.click(timeout=10000)
 
     def blur_field(self,item):
+        if editable_combo(item):
+            element=self._text_element(item)
+            state=element.evaluate(COMBO_STATE,{})
+            if state['expanded'] and (state['focus_in_box'] or state['focus_in_list']):self.page.keyboard.press('Escape')
+            element.evaluate('e=>e.blur()');return
         element=self._element(item)
         if kind(item) in ('combobox','listbox') and element.get_attribute('aria-expanded')=='true':element.press('Escape')
         element.evaluate('e=>e.blur()')
 
     def field_value(self,item):
-        return self._element(item).evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
+        return self._text_element(item).evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
 
     def fill(self,item,value,private=False):
-        element=self._element(item)
+        element=self._text_element(item)
         element.fill(value,timeout=10000)
+
+    def _text_element(self,item):
+        """The text box typed into. An ARIA 1.0 combo box owns a separate text box."""
+        element=self._element(item)
+        key=item.get('combo_input_key')
+        if not key or key==item.get('key'):return element
+        frame=self.page.frames[item['frame_index']] if 'frame_index' in item else self.page
+        inner=frame.locator('[data-voice-companion-key="'+key+'"]')
+        if inner.count()!=1:raise WebError('The page changed. Refresh it before continuing.')
+        return inner
+
+    def combo_state(self,item,typed=None,wait=False):
+        """Suggestions the site shows for an editable combo box, and which one is active."""
+        element=self._text_element(item)
+        state=element.evaluate(COMBO_STATE,{'typed':typed})
+        # Sites fetch suggestions after typing; give them a moment to appear.
+        for _ in range(16 if wait and not state['options'] and not state.get('datalist') and state['value'].strip() else 0):
+            self.page.wait_for_timeout(50)
+            state=element.evaluate(COMBO_STATE,{'typed':typed})
+            if state['options']:break
+        return state
+
+    def _combo_focus(self,element,state):
+        # Keep keyboard focus where the site put it: in the box, or in its list.
+        if not (state['focus_in_box'] or state['focus_in_list']):element.focus()
+
+    def type_combo(self,item,value):
+        """Type into the site's box with real keys, so it updates its suggestions."""
+        element=self._text_element(item)
+        current=element.evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
+        if current==value:return False
+        state=element.evaluate(COMBO_STATE,{})
+        if not state['focus_in_box']:element.focus()
+        plain=element.evaluate("e=>!e.isContentEditable&&typeof e.setSelectionRange==='function'")
+        if plain and value.startswith(current) and '\n' not in value:
+            element.evaluate("e=>e.setSelectionRange(e.value.length,e.value.length)")
+            element.press_sequentially(value[len(current):],timeout=10000)
+        elif plain and current.startswith(value) and len(current)-len(value)<=40:
+            element.evaluate("e=>e.setSelectionRange(e.value.length,e.value.length)")
+            for _ in range(len(current)-len(value)):element.press('Backspace',timeout=10000)
+        else:element.fill(value,timeout=10000)
+        return True
+
+    def combo_move(self,item,key,typed=None):
+        """Press Up or Down for the site, then report the suggestion it made active."""
+        element=self._text_element(item)
+        before=self.combo_state(item,typed,wait=True)
+        self._combo_focus(element,before)
+        self.page.keyboard.press(key)
+        signature=lambda s:(s['active'],s['value'],s['focus_in_box'],s['focus_in_list'],tuple(s['options']))
+        state=element.evaluate(COMBO_STATE,{'typed':typed})
+        for _ in range(10):
+            if signature(state)!=signature(before):break
+            self.page.wait_for_timeout(30)
+            state=element.evaluate(COMBO_STATE,{'typed':typed})
+        return state
+
+    def combo_close(self,item):
+        """Escape closes the suggestions when they are open; the field stays active."""
+        element=self._text_element(item)
+        state=element.evaluate(COMBO_STATE,{})
+        if not state['expanded']:return {'closed':False,'value':state['value']}
+        self._combo_focus(element,state)
+        self.page.keyboard.press('Escape')
+        self.page.wait_for_timeout(50)
+        return {'closed':True,'value':element.evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")}
+
+    def combo_enter(self,item):
+        """Enter goes to the site where focus is: a highlighted suggestion or the box."""
+        element=self._text_element(item)
+        self._combo_focus(element,element.evaluate(COMBO_STATE,{}))
+        return self.activate(item,key='Enter',focused=True)
 
     def activate_choice(self,item):
         """One user action sends one native activation, with no state retries."""
@@ -821,10 +925,11 @@ class WebSession:
         item=self.browse.current() if self.browse else None
         if not item or item.get('disabled') or kind(item) not in ('edit','combobox','listbox'):return False
         self.backend.focus(item)
-        if kind(item) in ('combobox','listbox') and item.get('tag')!='select':
+        if choice_field(item) and item.get('tag')!='select':
             self._refresh_at(item);item=self.browse.current() or item
         field=dict(item);field['_page_url']=self.snapshot.get('url');field['_document_epoch']=(self.document_state or {}).get('epoch')
-        if kind(item)=='edit':
+        self.combo_choice=None
+        if text_field(item):
             value=self.backend.field_value(item) if hasattr(self.backend,'field_value') else item.get('value','')
             if not isinstance(value,str):
                 if item.get('value_truncated'):raise WebError('This field is too long for this browser integration.')
@@ -887,6 +992,97 @@ class WebSession:
             self._refresh_at(item);self.focus_current()
         return label+'.'
 
+    def combo_typed(self):
+        """Send an editable combo box's text to the site, so it shows its suggestions.
+
+        Returns a spoken problem, or an empty string when the site has the text."""
+        item=self.keyboard_field
+        if not editable_combo(item) or item.get('readonly') or not hasattr(self.backend,'type_combo'):return ''
+        try:
+            if self.backend.type_combo(item,item.get('value','')):self.combo_choice=None
+        except WebError as exc:return str(exc)
+        except Exception:return 'The website did not get that text. Press F5 to refresh the page.'
+        return ''
+
+    def _combo_value(self,value):
+        item=self.keyboard_field
+        if isinstance(value,str) and item is not None and value!=item.get('value'):
+            item['value']=value;self.web_edit_caret=len(value);self.selection=None;self._web_field_selection=None
+
+    def _combo_entered(self):
+        try:count=len(self.backend.combo_state(self.keyboard_field,wait=True).get('options') or [])
+        except Exception:count=0
+        if not count:return 'Text entered. Press Enter to submit, or Tab to move on.'
+        return 'Text entered. '+str(count)+(' suggestion' if count==1 else ' suggestions')+'. Press Down arrow or say next suggestion to hear them. Press Enter to submit.'
+
+    def combo_key(self,key):
+        """Up and Down move through the suggestions of an editable combo box."""
+        item=self.keyboard_field
+        notice=self.combo_typed()
+        if notice:return notice
+        if item.get('datalist'):return self._datalist_key(key)
+        state=self.backend.combo_move(item,'ArrowDown' if key=='Down' else 'ArrowUp',item.get('value',''))
+        self._combo_value(state.get('value'))
+        options=state.get('options') or [];active=state.get('active')
+        if isinstance(active,int) and 0<=active<len(options):return options[active]+', '+str(active+1)+' of '+str(len(options))+'.'
+        if not options:return 'No suggestions. Keep typing, or press Tab to move on.'
+        return 'No suggestion selected. Field text: '+(item.get('value') or 'blank')+'.'
+
+    def _datalist_key(self,key):
+        # A page's datalist is drawn by the browser, not the page, so its
+        # options are offered here; the field changes only when one is chosen.
+        options=self.backend.combo_state(self.keyboard_field).get('options') or []
+        if not options:return 'No suggestions. Keep typing, or press Tab to move on.'
+        index=getattr(self,'combo_choice',None)
+        if index is None or index>=len(options):index=0 if key=='Down' else len(options)-1
+        else:
+            index+=1 if key=='Down' else -1
+            if not 0<=index<len(options):return 'End of list.' if key=='Down' else 'Start of list.'
+        self.combo_choice=index;self.combo_options=options
+        return options[index]+', '+str(index+1)+' of '+str(len(options))+'.'
+
+    def combo_escape(self):
+        item=self.keyboard_field
+        if item.get('datalist'):
+            if getattr(self,'combo_choice',None) is not None:self.combo_choice=None;return 'Suggestions closed.'
+        else:
+            notice=self.combo_typed()
+            if notice:return notice
+            state=self.backend.combo_close(item)
+            if state.get('closed'):
+                self._combo_value(state.get('value'));return 'Suggestions closed.'
+        # Canceling puts back the text the field had before editing.
+        try:
+            self.backend.type_combo(item,item.get('_original_value',''))
+            self.backend.blur_field(item)
+        except Exception:pass
+        self.keyboard_field=None;self.combo_choice=None
+        return 'Field editing canceled. Press Escape again for the web browser menu.'
+
+    def combo_done(self):
+        """Enter: the site submits the typed text or uses the highlighted suggestion."""
+        item=self.keyboard_field
+        notice=self.combo_typed()
+        if notice:return notice
+        if item.get('datalist') and getattr(self,'combo_choice',None) is not None:
+            label=self.combo_options[self.combo_choice];self.combo_choice=None
+            self.backend.fill(item,label);self._combo_value(label)
+            return label+' entered. Press Enter again to submit, or Tab to move on.'
+        before=self._stamp();page=getattr(self.backend,'page',None)
+        self.progress('Loading page.')
+        action=self.backend.combo_enter(item)
+        if isinstance(action,dict) and action.get('validation'):return action['validation']
+        after=self._stamp()
+        same=bool(before and after) and getattr(self.backend,'page',None) is page and all(before.get(k)==after.get(k) for k in ('url','epoch'))
+        if same and hasattr(self.backend,'field_exists') and self.backend.field_exists(item):
+            # The site used the suggestion in the box and stayed on this page.
+            value=self.backend.field_value(item)
+            self._refresh_at(item);self._combo_value(value)
+            item['_original_value']=item.get('value','')
+            return (value or 'Blank')+'.'
+        self.keyboard_field=None
+        return self._refresh(wait=False)
+
     def running_browser(self):
         """The browser actually showing pages, which differs from the preference after a fallback."""
         running = getattr(self.backend, 'browser', None)
@@ -930,7 +1126,8 @@ class WebSession:
             if key.startswith('Read:'):return self.read_key(key[5:])
             if key in ('PageTop','PageBottom'):return self.page_boundary(key=='PageBottom')
             if key.startswith('Leave:'):return self.leave_field(key.split(':')[1])
-            if self.keyboard_field and kind(self.keyboard_field) in ('combobox','listbox') and (key in ('Up','Down','Left','Right','Home','End','Activate','Space','Done') or key.startswith('ChoiceLetter:')):return self.choice_key(key)
+            if self.keyboard_field and editable_combo(self.keyboard_field) and key in ('Up','Down'):return self.combo_key(key)
+            if self.keyboard_field and choice_field(self.keyboard_field) and (key in ('Up','Down','Left','Right','Home','End','Activate','Space','Done') or key.startswith('ChoiceLetter:')):return self.choice_key(key)
             if self.keyboard_field and key.startswith(('Quick:','Table:')):self.commit_keyboard_field()
             if key.startswith('Quick:'):
                 parts=key.split(':');old_index=self.browse.index;message=self.browse.move(parts[-1],len(parts)>2)
@@ -950,6 +1147,7 @@ class WebSession:
             elif key=='Forward':return self.command('go forward')
             elif key=='Done':
                 field=self.keyboard_field
+                if field and editable_combo(field):return self.combo_done()
                 if field:
                     self.commit_keyboard_field()
                     if field.get('tag')!='textarea' and not field.get('editable') and hasattr(self.backend,'submit_default'):
@@ -959,6 +1157,7 @@ class WebSession:
                         return action.get('validation') or action.get('notice') or message
                 return 'Page view.'
             elif key=='Escape':
+                if self.keyboard_field and editable_combo(self.keyboard_field):return self.combo_escape()
                 if self.keyboard_field:self.keyboard_field=None;return 'Field editing canceled. Press Escape again for the web browser menu.'
                 if (self.snapshot or {}).get('modal_key'):
                     self.backend.page.keyboard.press('Escape')
@@ -1029,6 +1228,7 @@ class WebSession:
         if item.get('readonly') and text!=item.get('_original_value'):raise WebError('This field is read-only. Its contents were not changed.')
         if kind(item)=='edit' and text!=item.get('_original_value'):
             self.backend.fill(item,text,private=item.get('type')=='password')
+        elif editable_combo(item) and hasattr(self.backend,'type_combo'):self.backend.type_combo(item,text)
         if hasattr(self.backend,'blur_field'):self.backend.blur_field(item)
         self.keyboard_field=None;self.submit_pending=None;self.review_submission=None;self._refresh_at(item)
 
@@ -1036,7 +1236,7 @@ class WebSession:
         if self.keyboard_field:
             item=self.keyboard_field
             if item.get('readonly'):return 'This field is read-only.'
-            if item.get('type')=='password' or not (item.get('tag')=='textarea' or item.get('editable')):return 'This field is single-line.'
+            if item.get('type')=='password' or editable_combo(item) or not (item.get('tag')=='textarea' or item.get('editable')):return 'This field is single-line.'
             self._insert_field_text('\n')
             return 'New line.'
         if not self.snapshot: return 'Open a website first.'
@@ -1045,14 +1245,17 @@ class WebSession:
 
     def select_focused(self, spoken):
         if not self.snapshot: return 'Open a website first.'
-        if self.keyboard_field and kind(self.keyboard_field)=='edit' and self.keyboard_field.get('type')!='password':
+        if self.keyboard_field and text_field(self.keyboard_field) and self.keyboard_field.get('type')!='password':
             if self.keyboard_field.get('readonly') and spoken.lower().strip() in ('scratch','scratch that'):return 'This field is read-only. Its contents were not changed.'
             model=getattr(self,'_web_field_selection',None)
             if model is None:self._web_field_selection=model=FieldSelection()
             value=self.keyboard_field.get('value','')
             span=getattr(self,'selection',None) or (getattr(self,'web_edit_caret',0),)*2
             result,selected=model.select(value,spoken,*span)
-            if model.edited_text is not None:self.keyboard_field['value']=model.edited_text
+            if model.edited_text is not None:
+                self.keyboard_field['value']=model.edited_text
+                notice=self.combo_typed()
+                if notice:return notice
             self.selection=selected if selected and selected[0]!=selected[1] else None
             if selected:self.web_edit_caret=selected[1]
             return result
@@ -1073,7 +1276,7 @@ class WebSession:
         self.submit_pending = None
         self.review_submission = None
         if not self.keyboard_field and self.browse and self.browse.current():
-            if kind(self.browse.current())!='edit':return 'No text field is active. Move to a field and press Enter, or say edit current field.'
+            if not text_field(self.browse.current()):return 'No text field is active. Move to a field and press Enter, or say edit current field.'
             self.focus_current()
         if self.keyboard_field:
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
@@ -1081,6 +1284,7 @@ class WebSession:
             except ValueError as exc:return str(exc)
             self._insert_field_text(value)
             self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value
+            if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
         except Exception: return 'I could not enter that text. Check the browser field before trying again.'
@@ -1599,7 +1803,7 @@ class WebSession:
             if item['type']=='file':
                 self.form_index += 1
                 continue
-            if kind(item) in ('combobox','listbox'):
+            if choice_field(item):
                 options = [o['label'] for o in item.get('options', []) if o['label'] and not o.get('disabled')]
                 return ('Field ' + str(self.form_index + 1) + ': ' + _label(item) +
                         '. Choices: ' + ', '.join(options) + '. Which one? Say skip to leave it unchanged.')
@@ -1633,7 +1837,7 @@ class WebSession:
             if value.casefold() not in ('yes','no'):
                 return 'Say yes or no for ' + _label(item) + ', or say skip.'
             value = value.casefold()
-        elif kind(item) in ('combobox','listbox'):
+        elif choice_field(item):
             options = [o['label'] for o in item.get('options', []) if o['label'].casefold() == value.casefold() and not o.get('disabled')]
             if len(options) != 1:
                 return 'I could not identify one choice. ' + self._ask_field()
@@ -1642,7 +1846,7 @@ class WebSession:
             try:value=_voice_value(item,spoken)
             except ValueError as exc:return str(exc)
         try:
-            if kind(item) in ('combobox','listbox','checkbox','radio'):
+            if choice_field(item) or kind(item) in ('checkbox','radio'):
                 self.backend.choose_form_option(item, value)
             else:
                 self.backend.fill(item, value)
@@ -1700,7 +1904,7 @@ class WebSession:
             label = _label(c)
             if c.get('type') == 'password': value = 'entered privately' if c.get('filled') else 'empty; enter privately'
             elif c.get('type') == 'file': value = 'file selected' if c.get('value') else 'no file selected'
-            elif kind(c) in ('combobox','listbox'): value = c.get('selected_label') or 'nothing selected'
+            elif choice_field(c): value = c.get('selected_label') or 'nothing selected'
             elif kind(c) in ('checkbox','radio'): value = 'checked' if c.get('checked') else 'not checked'
             else: value = _plain(c.get('value')) or 'blank'
             parts.append(label + ': ' + value + (', required' if c.get('required') else ''))
@@ -1767,7 +1971,7 @@ class WebSession:
                    ((not c.get('filled')) if c.get('type') == 'password' else
                     (not any(other.get('type')=='radio' and other.get('radio_group')==c.get('radio_group') and other.get('frame_index')==c.get('frame_index') and other.get('checked') for other in self._form_controls(current))) if c.get('type')=='radio' and c.get('radio_group') else
                     (not c.get('checked')) if kind(c) in ('checkbox','radio') else
-                    (not c.get('selected_label')) if kind(c) in ('combobox','listbox') and c.get('tag')!='select' else
+                    (not c.get('selected_label')) if choice_field(c) and c.get('tag')!='select' else
                     (not c.get('value')))]
         if missing:
             return 'Required fields appear empty: ' + ', '.join(_label(c) for c in missing) + '. Complete them before submitting.'
@@ -1816,7 +2020,7 @@ class WebSession:
     def fill(self, number, value):
         try:
             item = self._choice(number)
-            if item['role'] != 'field': raise WebError('That number is not a field. Say list fields.')
+            if item['role'] != 'field' and not editable_combo(item): raise WebError('That number is not a field. Say list fields.')
             if item['type'] in ('file','checkbox','radio','submit'):
                 raise WebError('This field needs direct interaction in Edge with your helper.')
             value=_voice_value(item,value)
@@ -1875,7 +2079,7 @@ class WebSession:
             if self.keyboard_field:self.commit_keyboard_field()
             return 'Page view.'
         letter=re.fullmatch(r'(?:select|choose|find) (?:option )?(?:starting|beginning) with ([a-z])',command)
-        if letter and self.keyboard_field and kind(self.keyboard_field) in ('combobox','listbox'):return self.keyboard('ChoiceLetter:'+letter[1])
+        if letter and self.keyboard_field and choice_field(self.keyboard_field):return self.keyboard('ChoiceLetter:'+letter[1])
         if command in ('list headings','show headings','headings list','heading list'):return self.list_headings()
         if self.list_focus in ('links','headings') and not (self.pending or self.submit_pending):
             if command in ('cancel','go back','close list','back to page','escape'):
@@ -1889,14 +2093,24 @@ class WebSession:
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
         browse_key=voice_browse_key(command)
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
-        if not self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')) and self.browse and self.browse.current() and kind(self.browse.current())=='edit':self.focus_current()
+        if not self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')) and self.browse and self.browse.current() and text_field(self.browse.current()):self.focus_current()
         if self.keyboard_field and command.startswith(('type ', 'enter text ', 'dictate ')):
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             value=spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1]
             try:value=_voice_value(self.keyboard_field,value)
             except ValueError as exc:return str(exc)
             self.keyboard_field['value']=value;self.web_edit_caret=len(value);self.selection=None
+            if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
             return 'Text entered. Say save field, next control, or cancel field editing.'
+        # In a site's own search box, "search for" searches that site.
+        search=re.match(r'^\s*search(?: for)?\s+(?!the web\b)(.+)',spoken,re.I|re.S)
+        combo=self.keyboard_field if self.keyboard_field else self.browse.current() if self.browse and self.form_index is None and not self.list_focus else None
+        if search and editable_combo(combo) and not combo.get('readonly'):
+            if not self.keyboard_field:self.focus_current()
+            try:value=_voice_value(self.keyboard_field,search[1])
+            except ValueError as exc:return str(exc)
+            self.keyboard_field['value']=value;self.web_edit_caret=len(value);self.selection=None
+            return self.combo_typed() or self.combo_done()
         if self.form_index is None and not self.list_focus and self.browse:
             item=self.browse.current()
             if command in ('read current element','current element','what element am i on'):
@@ -1917,7 +2131,7 @@ class WebSession:
         if selection_command(spoken): return self.select_focused(spoken)
         if command in ('new line','insert new line','line break','carriage return','insert carriage return'): return self.insert_line_break()
         request = reading_request(command)
-        if request and self.keyboard_field and kind(self.keyboard_field)=='edit':
+        if request and self.keyboard_field and text_field(self.keyboard_field):
             if self.keyboard_field.get('type')=='password':return 'Password field. Its value is masked.'
             unit,direction=request
             if unit=='line' and direction and self.keyboard_field.get('tag')!='textarea' and not self.keyboard_field.get('editable'):return self.leave_field('Up' if direction<0 else 'Down')
@@ -2083,6 +2297,10 @@ class WebSession:
             return self.find(spoken)
         if self.keyboard_field and command in ('cancel','go back','browse mode'):
             self.keyboard_field=None;return 'Browse mode.'
+        if self.input_mode == 'mixed' and self.keyboard_field and editable_combo(self.keyboard_field) and not command.startswith(('open ', 'go to ', 'look up ',
+                 'what ', 'help ', 'list ', 'read ', 'fill ', 'submit ', 'click ', 'choose ', 'save ')):
+            # Keep the field's own copy and the site's box the same.
+            return self.dictate_to_focus(spoken)
         if self.input_mode == 'mixed' and not command.startswith(('open ', 'go to ', 'search ', 'look up ',
                  'what ', 'help ', 'list ', 'read ', 'fill ', 'submit ', 'click ', 'choose ', 'save ')):
             try:
@@ -2097,3 +2315,37 @@ DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.r
 from web_accessible_names import ACCESSIBLE_LABEL
 
 LIVE_IDENTITY='e=>{const label=('+ACCESSIBLE_LABEL+')(e);return {label,tag:e.tagName.toLowerCase(),type:(e.type||\'\').toLowerCase(),href:e.tagName===\'A\'?e.href:\'\',disabled:!!e.disabled||e.getAttribute(\'aria-disabled\')===\'true\'};}'
+
+# Editable combo boxes: read the site's suggestions for one text box. The site
+# owns its list; this only reports what it shows and which suggestion is active.
+COMBO_STATE=r'''(e,arg)=>{
+  const accessibleLabel='''+ACCESSIBLE_LABEL+r''';
+  const deep=()=>{let a=document.activeElement;while(a?.shadowRoot?.activeElement)a=a.shadowRoot.activeElement;return a;};
+  const shown=n=>!!n&&n.getClientRects().length>0&&getComputedStyle(n).visibility!=='hidden'&&!n.closest('[aria-hidden="true"],[inert]');
+  const root=e.getRootNode(),byId=id=>id?((root.getElementById?root.getElementById(id):null)||document.getElementById(id)):null;
+  const combo=e.closest('[role="combobox"]')||e,focused=deep(),typed=arg&&typeof arg.typed==='string'?arg.typed:null;
+  const value=e.isContentEditable?e.innerText:String(e.value||'');
+  const focusInBox=!!focused&&(focused===e||e.contains(focused));
+  if(e.tagName==='INPUT'&&e.list&&!e.getAttribute('role')){
+    const wanted=value.trim().toLowerCase();
+    const options=[...new Set([...e.list.options].filter(o=>!o.disabled).map(o=>(o.value||o.label).trim()).filter(t=>t&&(!wanted||t.toLowerCase().includes(wanted))))];
+    return {options,active:null,value,expanded:false,datalist:true,focus_in_box:focusInBox,focus_in_list:false};
+  }
+  const ids=[e,combo].flatMap(n=>((n.getAttribute('aria-controls')||'')+' '+(n.getAttribute('aria-owns')||'')).split(/\s+/)).filter(Boolean);
+  const popups=[...new Set(ids.map(byId))].filter(n=>n&&n!==e&&!n.contains(e));
+  const descendant=byId(e.getAttribute('aria-activedescendant')||combo.getAttribute('aria-activedescendant'));
+  const owner=descendant?.closest('[role="listbox"],[role="grid"],[role="tree"]');if(owner)popups.push(owner);
+  if(combo!==e)popups.push(...combo.querySelectorAll('[role="listbox"]'));
+  // A site may not link its list to the box: use the one visible list of options.
+  if(!popups.some(shown)){const lists=[...document.querySelectorAll('[role="listbox"]')].filter(l=>shown(l)&&l.querySelector('[role="option"]'));if(lists.length===1)popups.push(lists[0]);}
+  const options=[...new Set(popups.filter(shown).flatMap(p=>p.matches('[role="option"]')?[p]:[...p.querySelectorAll('[role="option"]')]))].filter(shown);
+  const labels=options.map(o=>accessibleLabel(o));
+  const inside=n=>!!n&&!!focused&&(n===focused||n.contains(focused));
+  let active=descendant?options.findIndex(o=>o===descendant||o.contains(descendant)):-1;
+  if(active<0)active=options.findIndex(inside);
+  if(active<0)active=options.findIndex(o=>o.getAttribute('aria-selected')==='true');
+  // Sites such as YouTube copy the highlighted suggestion into the box.
+  if(active<0&&typed!==null&&value!==typed)active=labels.findIndex(l=>l.trim().toLowerCase()===value.trim().toLowerCase());
+  const expanded=combo.getAttribute('aria-expanded')==='true'||e.getAttribute('aria-expanded')==='true'||options.length>0;
+  return {options:labels,active:active<0?null:active,value,expanded,datalist:false,focus_in_box:focusInBox,focus_in_list:!focusInBox&&popups.some(inside)};
+}'''
