@@ -124,7 +124,8 @@ def apply_settings(m,values):
     m.PREFERENCES['ai_consent']=bool(values.get('ai_consent'))
     save_preferences(m);m.save_speech_settings()
     m.APP.mkdir(parents=True,exist_ok=True)
-    (m.APP/'email-list-size.txt').write_text(values['email_list_size'],encoding='utf-8')
+    from storage import write_text_atomic
+    write_text_atomic(m.APP/'email-list-size.txt',values['email_list_size'])
     if m.mail_session:
         m.mail_session.all_messages=values['email_list_size']=='all';m.mail_session.list_size=10 if m.mail_session.all_messages else int(values['email_list_size'])
     account=values.get('email_account','')
@@ -138,7 +139,9 @@ def apply_settings(m,values):
         m.email_draft.dictating=m.INPUT_MODE!='commands';m.email_draft.automatic_dictation=m.INPUT_MODE!='commands'
     if m.web_session:
         m.web_session.choose_browser(values['browser']);m.web_session.input_mode=m.INPUT_MODE
-    else:(m.APP/'browser-choice.txt').write_text(values['browser'],encoding='utf-8')
+    else:
+        from storage import write_text_atomic
+        write_text_atomic(m.APP/'browser-choice.txt',values['browser'])
     m.media().choose_source(values['radio_source'])
     limits=values.get('podcast_limits',{})
     feed=session.context['podcast_feeds'].get(values.get('podcast_feed'))

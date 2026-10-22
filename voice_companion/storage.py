@@ -22,3 +22,19 @@ def keep_previous(path: Path, count=3):
         print('Could not update recovery copy:', exc, file=sys.stderr)
         # The primary save still proceeds. Its contents are written to a
         # separate temporary file and then atomically replace the old file.
+
+
+def write_text_atomic(path, text, encoding='utf-8'):
+    """Write a small settings file so a crash or power cut never leaves it half written.
+
+    The text goes to a temporary file in the same folder, which then replaces the
+    old file in one step. Readers see either the old contents or the new ones.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + '.writing')
+    with open(temporary, 'w', encoding=encoding) as file:
+        file.write(text)
+        file.flush()
+        os.fsync(file.fileno())
+    os.replace(temporary, path)

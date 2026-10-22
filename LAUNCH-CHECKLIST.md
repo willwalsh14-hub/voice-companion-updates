@@ -39,13 +39,19 @@ pull requests. Update this file as items are finished.
 
 ### Reliability work (Claude)
 - [ ] Split command handling in `companion.py` into smaller parts with an
-      explicit priority order, without changing behaviour. (In progress,
-      separate pull request.)
+      explicit priority order, without changing behaviour. Safety net in place:
+      `tools/routing_snapshot.py` records 4,046 phrase-and-screen results. First
+      piece moved: the email inbox screen (`handle_mailbox_screen`). Next: the
+      web, document and email-draft screens, then a priority table for the
+      early checks in `_handle`.
+- [ ] Widen the routing snapshot to more screen states (an open email message,
+      a web page with a list or form field focused, a pending send review,
+      media playing). Paths not reached by the snapshot are not yet protected.
 - [ ] Reduce shared global state in `companion.py` so tests and features do
       not leak into each other.
-- [ ] Write all settings files atomically (`speech-settings.json`,
-      `email-list-size.txt`, `browser-choice.txt`); a power cut mid-write
-      currently resets speech settings to defaults.
+- [x] Write all settings files atomically (`speech-settings.json`,
+      `email-list-size.txt`, `browser-choice.txt`). Done in the routing
+      safety-net pull request; ships with the next release.
 - [ ] Replace hand-made test fakes with real library behaviour where it
       matters (mail providers, file system, browser).
 - [ ] Add an opt-in "Send problem report" command that saves a short,

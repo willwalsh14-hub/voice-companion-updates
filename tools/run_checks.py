@@ -6,6 +6,9 @@ Usage (from the repository root):
   python3 tools/run_checks.py --live          # also the real-browser tests, in Chromium
   python3 tools/run_checks.py --compare main  # same checks on origin/main; report only NEW failures
 
+Every run also checks command routing against tools/routing-snapshot.json
+(see tools/routing_snapshot.py): any phrase that now behaves differently fails.
+
 Windows-only tests skip themselves on Linux, and a few fail here for environment
 reasons (Windows fonts, eSpeak binaries, missing packages). --compare separates
 those from real regressions: only failures that main does not have are reported.
@@ -91,6 +94,15 @@ def main():
     args = parser.parse_args()
     failures, total = run(ROOT, args)
     print(f'Ran {total} tests. {len(failures)} failing.')
+    # Command routing: every phrase on every screen must behave as recorded.
+    routing = subprocess.run([sys.executable, str(Path(__file__).with_name('routing_snapshot.py')), '--check'],
+                             cwd=ROOT, env=environment(False), capture_output=True, text=True, timeout=1800)
+    print(routing.stdout.strip().splitlines()[-1] if routing.stdout.strip() else 'Routing snapshot did not run.')
+    if routing.returncode:
+        print(routing.stdout[-4000:] + routing.stderr[-2000:])
+        print('Command routing changed. If that is intended, run tools/routing_snapshot.py --update '
+              'and explain the changed records in the pull request.')
+        sys.exit(1)
     if not args.compare:
         for name in sorted(failures): print('  ' + name)
         sys.exit(1 if failures else 0)

@@ -1020,12 +1020,12 @@ def update_audio_ducking(active=None):
 
 
 def save_speech_settings():
-    APP.mkdir(parents=True, exist_ok=True)
-    (APP / 'speech-settings.json').write_text(
+    from storage import write_text_atomic
+    write_text_atomic(APP / 'speech-settings.json',
         json.dumps({'pitch':SPEECH_PITCH,'rate': SPEECH_RATE, 'volume': SPEECH_VOLUME, 'punctuation': PUNCTUATION_LEVEL, 'verbosity':VERBOSITY, 'input_mode':INPUT_MODE,
                     'ai_enabled': bool(AI_SPEECH and AI_SPEECH.enabled), 'ai_voice': AI_VOICE_NAME,
                     'espeak_enabled': bool(ESPEAK_SPEECH and ESPEAK_SPEECH.enabled), 'espeak_voice': ESPEAK_VOICE_NAME,
-                    'voice': voice.Voice.GetDescription() if not TEXT_MODE else ''}), encoding='utf-8')
+                    'voice': voice.Voice.GetDescription() if not TEXT_MODE else ''}))
 
 
 
@@ -1511,6 +1511,60 @@ def finish_exit(mode):
     speak_status('Shutting down. Goodbye.')
     wait_for_speech(30000)
     return 'exit'
+
+
+def handle_mailbox_screen(text, command, mode, typed):
+    """The email inbox screen: folders, reading, reply and forward, leaving."""
+    global email_draft, mail_session
+    if mail_session is None:
+        # The mailbox closed underneath this command (for example, the sending
+        # account changed). Return to the main menu rather than failing.
+        return 'awake'
+    if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
+        speak(mail_session.process(text))
+        return 'mailbox'
+    response_actions = {'reply': 'reply', 'reply to message': 'reply',
+                        'reply all': 'reply_all', 'reply to all': 'reply_all',
+                        'forward': 'forward', 'forward message': 'forward'}
+    if command in response_actions:
+        try:
+            context = mail_session.response_context(response_actions[command])
+            email_draft = VoiceEmail(APP / 'Email Drafts')
+            email_draft.dictating = INPUT_MODE != 'commands'
+            email_draft.automatic_dictation = INPUT_MODE != 'commands'
+            email_draft.provider = mail_session.provider
+            email_draft.recipient = context['recipient']
+            email_draft.cc = context['cc']
+            email_draft.subject = context['subject']
+            email_draft.response_context = context
+            email_draft.compose_step = 'recipient' if context['action'] == 'forward' else 'body'
+            email_draft.save()
+            recipient_note = ('Say email to followed by the forwarding address. '
+                              if context['action'] == 'forward' else
+                              'Recipient ' + email_draft.recipient +
+                              ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
+            attachment_note = (' Original attachments are not included in this forward.'
+                               if context['action'] == 'forward' and mail_session.provider != 'outlook' else '')
+            speak('New ' + command + ' draft. ' + recipient_note +
+                  'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
+            focus_email_entry()
+            return 'email_draft'
+        except Exception:
+            speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
+            return mode
+    if command in ('go back', 'back') and mail_session.view == 'message':
+        speak(mail_session.process('back to folder'))
+        return mode
+    if command.startswith('go to website '):
+        # Leave the inbox for the website, as from the main menu.
+        mail_session = None
+        return _handle(text, 'awake', typed)
+    if command in ('go back', 'back', 'exit', 'leave email', 'main menu', 'close inbox'):
+        mail_session = None
+        pass
+        return 'awake'
+    speak(mail_session.process(text))
+    return 'mailbox'
 
 
 def _handle(text, mode, typed=False):
@@ -2489,55 +2543,7 @@ def _handle(text, mode, typed=False):
         speak_web_result(web_session.command(text),revision)
         return 'web'
     if mode == 'mailbox':
-        if mail_session is None:
-            # The mailbox closed underneath this command (for example, the sending
-            # account changed). Return to the main menu rather than failing.
-            return 'awake'
-        if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
-            speak(mail_session.process(text))
-            return 'mailbox'
-        response_actions = {'reply': 'reply', 'reply to message': 'reply',
-                            'reply all': 'reply_all', 'reply to all': 'reply_all',
-                            'forward': 'forward', 'forward message': 'forward'}
-        if command in response_actions:
-            try:
-                context = mail_session.response_context(response_actions[command])
-                email_draft = VoiceEmail(APP / 'Email Drafts')
-                email_draft.dictating = INPUT_MODE != 'commands'
-                email_draft.automatic_dictation = INPUT_MODE != 'commands'
-                email_draft.provider = mail_session.provider
-                email_draft.recipient = context['recipient']
-                email_draft.cc = context['cc']
-                email_draft.subject = context['subject']
-                email_draft.response_context = context
-                email_draft.compose_step = 'recipient' if context['action'] == 'forward' else 'body'
-                email_draft.save()
-                recipient_note = ('Say email to followed by the forwarding address. '
-                                  if context['action'] == 'forward' else
-                                  'Recipient ' + email_draft.recipient +
-                                  ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
-                attachment_note = (' Original attachments are not included in this forward.'
-                                   if context['action'] == 'forward' and mail_session.provider != 'outlook' else '')
-                speak('New ' + command + ' draft. ' + recipient_note +
-                      'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
-                focus_email_entry()
-                return 'email_draft'
-            except Exception:
-                speak('Open and read a message first. If the account cannot read it, ask your helper to reconnect mail.')
-                return mode
-        if command in ('go back', 'back') and mail_session.view == 'message':
-            speak(mail_session.process('back to folder'))
-            return mode
-        if command.startswith('go to website '):
-            # Leave the inbox for the website, as from the main menu.
-            mail_session = None
-            return _handle(text, 'awake', typed)
-        if command in ('go back', 'back', 'exit', 'leave email', 'main menu', 'close inbox'):
-            mail_session = None
-            pass
-            return 'awake'
-        speak(mail_session.process(text))
-        return 'mailbox'
+        return handle_mailbox_screen(text, command, mode, typed)
     # Keep active writing in its editor. A dictated sentence that happens to
     # start with "open document" must not replace the current document.
     if mode == 'email_draft':

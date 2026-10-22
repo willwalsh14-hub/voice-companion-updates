@@ -9,6 +9,7 @@ from mail_accounts import AccountError, account_token
 from mailbox_access import MailboxClient, MailboxError
 from yahoo_mailbox import YahooMailbox
 from reading_navigation import ReadingCursor, reading_request
+from storage import write_text_atomic
 
 NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'three': 3, 'third': 3, 'four': 4, 'fourth': 4,
@@ -431,7 +432,7 @@ class MailSession:
             self.list_size = 10 if self.all_messages else int(value)
             try:
                 Path(self.folder).mkdir(parents=True, exist_ok=True)
-                (Path(self.folder) / 'email-list-size.txt').write_text(value, encoding='utf-8')
+                write_text_atomic(Path(self.folder) / 'email-list-size.txt', value)
             except OSError:
                 return 'I could not save that email list setting. Try again.'
             self.previous_cursors.clear()

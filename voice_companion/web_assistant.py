@@ -17,6 +17,7 @@ from privacy_controls import saved_address
 from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,describe,kind,voice_browse_key
 from reading_navigation import ReadingCursor, reading_request
+from storage import write_text_atomic
 from dictation_text import clean_dictation
 from ai_dictation import prepare_dictation
 
@@ -1130,7 +1131,7 @@ class WebSession:
             self.review_submission = None
         if not self.injected_backend:
             self.folder.mkdir(parents=True, exist_ok=True)
-            (self.folder / 'browser-choice.txt').write_text(name, encoding='utf-8')
+            write_text_atomic(self.folder / 'browser-choice.txt', name)
         if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+name.capitalize()+'.'
         return 'Selected ' + name.capitalize() + '. Say open website followed by the address. This uses a separate browser profile.'
 
