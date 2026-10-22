@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 450 |
-| Already had both ways | 386 |
+| Actions inventoried | 451 |
+| Already had both ways | 387 |
 | Gaps found | 64 |
 | Gaps fixed (Added) | 56 |
 | Not applicable (N/A, with reason) | 8 |
@@ -312,6 +312,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Keep browser window open | "Set Keep browser window open to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
 | Automatic page reading | "Set Automatic page reading to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
 | Guided browser | "Set Guided browser to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
+| Set up Chrome and the Voice Companion extension | "Set up chrome" | Alt+O, arrows to Web browser options, Tab to the button, Enter | Both |
 
 ## Radio options
 

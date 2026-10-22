@@ -202,6 +202,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | address": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -610,6 +616,12 @@
 ],
 "screen_after": "media"
 },
+"awake | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | close": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -756,6 +768,12 @@
 "awake | confirm website": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -1405,9 +1423,39 @@
 ],
 "screen_after": "awake"
 },
+"awake | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
+"awake | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
+"awake | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | install it": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
+"awake | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -3001,9 +3049,21 @@
 ],
 "screen_after": "awake"
 },
+"awake | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "awake"
+},
+"awake | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -3022,6 +3082,12 @@
 "awake | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "awake"
+},
+"awake | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -4077,6 +4143,15 @@
 "Hello world. Second sentence. add preset as"
 ]
 },
+"document | add the chrome extension": {
+"said": [
+"add the chrome extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. add the chrome extension"
+]
+},
 "document | address": {
 "said": [
 "address"
@@ -4689,6 +4764,15 @@
 "Hello world. Second sentence. choose station database"
 ]
 },
+"document | chrome setup": {
+"said": [
+"chrome setup"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. chrome setup"
+]
+},
 "document | close": {
 "said": [
 "Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing."
@@ -4903,6 +4987,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. confirm website"
+]
+},
+"document | connect chrome": {
+"said": [
+"connect chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. connect chrome"
 ]
 },
 "document | connect email account": {
@@ -5856,6 +5949,33 @@
 "Hello world. Second sentence. index"
 ]
 },
+"document | install browser extension": {
+"said": [
+"install browser extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install browser extension"
+]
+},
+"document | install chrome": {
+"said": [
+"install chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install chrome"
+]
+},
+"document | install google chrome": {
+"said": [
+"install google chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install google chrome"
+]
+},
 "document | install it": {
 "said": [
 "install it"
@@ -5863,6 +5983,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. install it"
+]
+},
+"document | install the browser extension": {
+"said": [
+"install the browser extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install the browser extension"
+]
+},
+"document | install the chrome extension": {
+"said": [
+"install the chrome extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install the chrome extension"
 ]
 },
 "document | install update": {
@@ -8197,6 +8335,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | set up chrome": {
+"said": [
+"set up chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. set up chrome"
+]
+},
 "document | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
@@ -8204,6 +8351,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | set up the browser extension": {
+"said": [
+"set up the browser extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. set up the browser extension"
 ]
 },
 "document | set voice to": {
@@ -8231,6 +8387,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | setup chrome": {
+"said": [
+"setup chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. setup chrome"
 ]
 },
 "document | show": {
@@ -9609,6 +9774,15 @@
 "Hello world. add preset as"
 ]
 },
+"email_draft | add the chrome extension": {
+"said": [
+"add the chrome extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. add the chrome extension"
+]
+},
 "email_draft | address": {
 "said": [
 "address"
@@ -10307,6 +10481,15 @@
 "Hello world. choose station database"
 ]
 },
+"email_draft | chrome setup": {
+"said": [
+"chrome setup"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. chrome setup"
+]
+},
 "email_draft | close": {
 "said": [
 "close"
@@ -10522,6 +10705,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. confirm website"
+]
+},
+"email_draft | connect chrome": {
+"said": [
+"connect chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. connect chrome"
 ]
 },
 "email_draft | connect email account": {
@@ -11522,6 +11714,33 @@
 "Hello world. index"
 ]
 },
+"email_draft | install browser extension": {
+"said": [
+"install browser extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install browser extension"
+]
+},
+"email_draft | install chrome": {
+"said": [
+"install chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install chrome"
+]
+},
+"email_draft | install google chrome": {
+"said": [
+"install google chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install google chrome"
+]
+},
 "email_draft | install it": {
 "said": [
 "install it"
@@ -11529,6 +11748,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. install it"
+]
+},
+"email_draft | install the browser extension": {
+"said": [
+"install the browser extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install the browser extension"
+]
+},
+"email_draft | install the chrome extension": {
+"said": [
+"install the chrome extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install the chrome extension"
 ]
 },
 "email_draft | install update": {
@@ -13880,6 +14117,15 @@
 "Hello world."
 ]
 },
+"email_draft | set up chrome": {
+"said": [
+"set up chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. set up chrome"
+]
+},
 "email_draft | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
@@ -13887,6 +14133,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | set up the browser extension": {
+"said": [
+"set up the browser extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. set up the browser extension"
 ]
 },
 "email_draft | set voice to": {
@@ -13914,6 +14169,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | setup chrome": {
+"said": [
+"setup chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. setup chrome"
 ]
 },
 "email_draft | show": {
@@ -15141,6 +15405,12 @@
 "said": [],
 "screen_after": "help"
 },
+"help | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | address": {
 "said": [],
 "screen_after": "help"
@@ -15432,6 +15702,12 @@
 "said": [],
 "screen_after": "help"
 },
+"help | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | close": {
 "said": [],
 "screen_after": "help"
@@ -15530,6 +15806,12 @@
 },
 "help | confirm website": {
 "said": [],
+"screen_after": "help"
+},
+"help | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | connect email account": {
@@ -15974,8 +16256,38 @@
 "said": [],
 "screen_after": "help"
 },
+"help | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
+"help | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
+"help | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | install it": {
 "said": [],
+"screen_after": "help"
+},
+"help | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
+"help | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | install update": {
@@ -17092,8 +17404,20 @@
 ],
 "screen_after": "help"
 },
+"help | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | set up email": {
 "said": [],
+"screen_after": "help"
+},
+"help | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | set voice to": {
@@ -17109,6 +17433,12 @@
 "help | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "help"
+},
+"help | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "help"
 },
@@ -17890,6 +18220,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | address": {
 "calls": [
 "call.process('address')"
@@ -18478,6 +18814,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | close": {
 "calls": [
 "call.process('close')"
@@ -18666,6 +19008,12 @@
 ],
 "said": [
 "session handled: confirm website"
+],
+"screen_after": "mailbox"
+},
+"mailbox | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -19560,12 +19908,42 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
+"mailbox | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
+"mailbox | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | install it": {
 "calls": [
 "call.process('install it')"
 ],
 "said": [
 "session handled: install it"
+],
+"screen_after": "mailbox"
+},
+"mailbox | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
+"mailbox | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -21685,9 +22063,21 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "mailbox"
+},
+"mailbox | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -21709,6 +22099,12 @@
 "mailbox | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "mailbox"
+},
+"mailbox | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -22832,6 +23228,12 @@
 ],
 "screen_after": "note"
 },
+"note | add the chrome extension": {
+"said": [
+"add the chrome extension"
+],
+"screen_after": "note"
+},
 "note | address": {
 "said": [
 "address"
@@ -23242,6 +23644,12 @@
 ],
 "screen_after": "note"
 },
+"note | chrome setup": {
+"said": [
+"chrome setup"
+],
+"screen_after": "note"
+},
 "note | close": {
 "said": [
 "close"
@@ -23383,6 +23791,12 @@
 "note | confirm website": {
 "said": [
 "confirm website"
+],
+"screen_after": "note"
+},
+"note | connect chrome": {
+"said": [
+"connect chrome"
 ],
 "screen_after": "note"
 },
@@ -24027,9 +24441,39 @@
 ],
 "screen_after": "note"
 },
+"note | install browser extension": {
+"said": [
+"install browser extension"
+],
+"screen_after": "note"
+},
+"note | install chrome": {
+"said": [
+"install chrome"
+],
+"screen_after": "note"
+},
+"note | install google chrome": {
+"said": [
+"install google chrome"
+],
+"screen_after": "note"
+},
 "note | install it": {
 "said": [
 "install it"
+],
+"screen_after": "note"
+},
+"note | install the browser extension": {
+"said": [
+"install the browser extension"
+],
+"screen_after": "note"
+},
+"note | install the chrome extension": {
+"said": [
+"install the chrome extension"
 ],
 "screen_after": "note"
 },
@@ -25592,9 +26036,21 @@
 ],
 "screen_after": "note"
 },
+"note | set up chrome": {
+"said": [
+"set up chrome"
+],
+"screen_after": "note"
+},
 "note | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "note"
+},
+"note | set up the browser extension": {
+"said": [
+"set up the browser extension"
 ],
 "screen_after": "note"
 },
@@ -25613,6 +26069,12 @@
 "note | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "note"
+},
+"note | setup chrome": {
+"said": [
+"setup chrome"
 ],
 "screen_after": "note"
 },
@@ -26605,6 +27067,12 @@
 ],
 "screen_after": "web"
 },
+"web | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | address": {
 "calls": [
 "call.command('address')",
@@ -27262,6 +27730,12 @@
 ],
 "screen_after": "web"
 },
+"web | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | close": {
 "calls": [
 "call.command('close')",
@@ -27467,6 +27941,12 @@
 ],
 "said": [
 "session handled: confirm website"
+],
+"screen_after": "web"
+},
+"web | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -28454,6 +28934,24 @@
 ],
 "screen_after": "web"
 },
+"web | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
+"web | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
+"web | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | install it": {
 "calls": [
 "call.command('install it')",
@@ -28461,6 +28959,18 @@
 ],
 "said": [
 "session handled: install it"
+],
+"screen_after": "web"
+},
+"web | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
+"web | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -30802,9 +31312,21 @@
 ],
 "screen_after": "web"
 },
+"web | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "web"
+},
+"web | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -30827,6 +31349,12 @@
 "web | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "web"
+},
+"web | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
