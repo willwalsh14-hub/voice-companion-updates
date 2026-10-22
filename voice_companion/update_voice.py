@@ -22,16 +22,24 @@ class ProgressSpeech:
     def __init__(self,folder,speech_file=None):
         self.speech_file=speech_file;self.folder=Path(folder);self.messages=queue.Queue(maxsize=64);self.stopped=threading.Event()
         self.thread=threading.Thread(target=self._run,daemon=True);self.thread.start()
+    def _put(self,message):
+        # If the speech thread has stopped, nothing empties the queue. Dropping the
+        # oldest message keeps the newest; the status window must never fail here.
+        while True:
+            try:self.messages.put_nowait(message);return
+            except queue.Full:
+                try:self.messages.get_nowait()
+                except queue.Empty:pass
     def say(self,percent,interrupt=True):
         if interrupt:
             while True:
                 try:self.messages.get_nowait()
                 except queue.Empty:break
-        self.messages.put_nowait(('percent',percent,interrupt))
+        self._put(('percent',percent,interrupt))
     def announce(self,text):
-        self.messages.put_nowait(('notice',text,True))
+        self._put(('notice',text,True))
     def finish(self):
-        self.messages.put_nowait(('complete',None,False))
+        self._put(('complete',None,False))
     def _run(self):
         import pythoncom
         pythoncom.CoInitialize()

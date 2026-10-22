@@ -66,6 +66,14 @@ class VoiceEmail(VoiceDocument):
 
     def __post_init__(self):
         super().__post_init__()
+        if not self._opening:
+            # File names drop punctuation, so "Dad's party" and "Dads party" would
+            # share a file. A new draft never takes another draft's message or state file.
+            numbered = re.fullmatch(r'(Untitled) (\d+)', self.title)
+            base, number = (numbered[1], int(numbered[2]) + 1) if numbered else (self.title, 2)
+            while self.path.exists() or self.state_path.exists():
+                self.title = f'{base} {number}'
+                number += 1
         self._discard_baseline = {}
         self._discard_attempt_hash = self.last_attempt_hash
 

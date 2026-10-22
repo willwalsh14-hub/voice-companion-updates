@@ -2955,7 +2955,7 @@ def handle(text, mode, typed=False):
 
 
 def poll_app_updates(mode):
-    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT, CONFIRM_CHOICE
+    global UPDATE_OFFER, UPDATE_RETURN_MODE, UPDATE_LAST_PERCENT, CONFIRM_CHOICE, UPDATE_MANUAL
     if UPDATES is None: return mode
     while not UPDATES.events.empty():
         event, payload = UPDATES.events.get_nowait()
@@ -2963,10 +2963,13 @@ def poll_app_updates(mode):
             UPDATES.release = payload
             UPDATE_OFFER = True
         elif event == 'current' and payload:
+            UPDATE_MANUAL = False
             speak('Voice Companion is up to date.')
         elif event == 'unconfigured':
+            UPDATE_MANUAL = False
             speak('The update server is not configured yet. Ask your trainer to set it up.')
         elif event == 'check_failed' and payload:
+            UPDATE_MANUAL = False
             speak('I could not check for updates. You can keep using the app and try later.')
         elif event in ('download_failed', 'canceled'):
             if mode == 'update_download':
@@ -3000,6 +3003,8 @@ def poll_app_updates(mode):
     if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
         UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
         UPDATE_OFFER = False
+        # The manual check has its answer; later automatic offers wait for the main screen.
+        UPDATE_MANUAL = False
         CONFIRM_CHOICE='yes'
         speak('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
         return 'update_offer'
