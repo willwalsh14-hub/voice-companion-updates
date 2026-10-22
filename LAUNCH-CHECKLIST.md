@@ -89,10 +89,12 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 - [x] Listing or cancelling a damaged scheduled recording stopped the app.
 
 ## Later
-- [x] Main builds for 0.2.154 and 0.2.155 each failed once and passed on rerun.
-      Build annotations (new in 0.2.156) showed the cause: a race in
-      test_native_settings typed into the previous Options dialog before the
-      next one was drawn. The test now waits for the dialog announcement.
+- [x] Main builds for 0.2.154 and 0.2.155 each failed once and passed on rerun
+      (logs unreadable). The 0.2.156 pull request failed the same step, and
+      the new build annotations showed a race in test_native_settings: it typed
+      into the previous Options dialog before the next one was drawn. Fixed;
+      most likely the same cause. If a main build fails again, read the
+      annotations.
 - [ ] Known and kept by design: in Dictation only mode, a sentence starting
       with "find" still runs the editor's find command.
 - [ ] A volunteer tester group beyond the private beta, with a short weekly
