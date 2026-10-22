@@ -211,6 +211,64 @@ class MediaPlayerMenuTests(unittest.TestCase):
         self.assertEqual(app.poll_file_manager('files'),'files')
         self.assertEqual(self.said[-1],'This media file could not play. Choose another file.')
 
+    def browse_to_song(self):
+        """Open the song the way a user does: File manager, arrows, Enter."""
+        from file_manager import FileManager
+        from test_file_manager import FakeFiles,settle
+        music=self.root/'Music';music.mkdir()
+        for name in ('Anthem.mp3','Reveille.mp3','Taps.mp3','Zulu.mp3'):(music/name).write_bytes(b'audio')
+        self.song=music/'Taps.mp3'
+        app.FILE_MANAGER=manager=FileManager(FakeFiles(self.root))
+        manager.refresh(str(music));settle(manager)
+        mode='files'
+        for _ in range(2):mode=self.key('Down',mode)
+        self.assertTrue(self.said[-1].startswith('Taps.mp3'),self.said[-1])
+        mode=self.key('Enter',mode);settle(manager)
+        mode=app.poll_file_manager(mode)
+        self.assertEqual(mode,'local_media')
+        self.assertEqual(self.said[-1],'Playing Taps.mp3. Press Escape or Alt for the player menu.')
+        return manager,mode
+
+    def test_escape_in_menu_returns_to_file_manager_on_the_same_file(self):
+        manager,mode=self.browse_to_song()
+        mode=self.key('Escape',mode)
+        self.assertTrue(self.said[-1].startswith('Player menu.'))
+        mode=self.key('Escape',mode)
+        self.assertEqual(mode,'files')
+        self.assertIs(app.FILE_MANAGER,manager)
+        self.assertEqual(manager.location,str(self.song.parent))
+        self.assertEqual(self.said[-1],'File manager. '+manager.say_current())
+        self.assertTrue(self.said[-1].startswith('File manager. Taps.mp3'),self.said[-1])
+        self.assertIn('3 of 4.',self.said[-1])
+        self.assertIn(('stop',15,None),self.player.calls)
+        # Down Arrow now moves on in that folder.
+        self.key('Down',mode);self.assertTrue(self.said[-1].startswith('Zulu.mp3'),self.said[-1])
+
+    def test_keep_audio_playing_returns_to_file_manager_without_stopping(self):
+        app.PREFERENCES['keep_audio_playing']=True
+        manager,mode=self.browse_to_song()
+        mode=self.key('Escape',self.key('Escape',mode))
+        self.assertEqual(mode,'files')
+        self.assertNotIn(('stop',15,None),self.player.calls)
+        self.assertFalse(self.player.paused)
+
+    def test_file_picked_inside_media_player_still_returns_to_media(self):
+        from file_manager import FileManager
+        from test_file_manager import FakeFiles
+        mode=app.handle('media player','media_menu')
+        with patch('file_manager.FileManager',side_effect=lambda:FileManager(FakeFiles(self.root))):
+            self.assertEqual(app.handle(app.navigation_key('Ctrl+O',mode),mode),'files')
+        mode=app.task_navigation().selected_file(self.song)
+        mode=self.key('Escape',self.key('Escape',mode))
+        self.assertEqual(mode,'media_menu')
+
+    def test_player_after_media_menu_forgets_file_manager_origin(self):
+        manager,mode=self.browse_to_song()
+        mode=self.key('Escape',self.key('Escape',mode))
+        self.assertEqual(mode,'files')
+        mode=app.handle('media menu',mode);mode=app.handle('media player',mode)
+        self.assertEqual(self.key('Escape',mode),'media_menu')
+
     def test_podcast_seek_names_the_jump_and_place(self):
         self.player.kind='podcast';self.player.duration=3600.0;self.player.position=600
         self.assertEqual(app.MEDIA_HUB.command('fast forward one hour and 20 minutes'),'Moved forward to the end of the episode.')

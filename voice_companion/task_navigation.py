@@ -86,6 +86,8 @@ class TaskNavigation:
         # In the media player, arrows control playback while the menu is closed.
         # Escape or Alt opens the menu; then arrows move through its items.
         self.player_menu = True
+        # The File manager a file was opened from; leaving the player returns there.
+        self.player_files = None
         self.reader_return = 'files'
 
     def remember(self, path):
@@ -200,6 +202,7 @@ class TaskNavigation:
                 # A browser or player failure must be spoken, not stop the app.
                 raise OSError('This media file could not play. Choose another file.') from error
             self.media_title = path.name
+            self.player_files = self.app.FILE_MANAGER if kind is None else None
             self.picker=None
             self.indices['local_media'] = 0
             self.player_menu = False
@@ -322,6 +325,7 @@ class TaskNavigation:
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
             return self.enter('media_menu', 'Media menu')
         if command in ('media player','open media player'):
+            self.player_files = None
             return self.enter('local_media', 'Media player')
         if command in ('document menu','document commands','menu') and mode == 'document':
             self.group = None
@@ -370,6 +374,11 @@ class TaskNavigation:
             if mode == 'recent_documents': return self.enter('word_processor', 'Word processor menu')
             if mode == 'local_media':
                 if not m.PREFERENCES.get('keep_audio_playing',False) and m.MEDIA_HUB and m.MEDIA_HUB.player.kind=='local':m.MEDIA_HUB.player.control('stop')
+                files, self.player_files = self.player_files, None
+                if files is not None and files is m.FILE_MANAGER and files.location is not None:
+                    # Opened from File manager: go back to the same folder and file.
+                    files.menu = False
+                    m.speak('File manager. '+files.say_current()); return 'files'
                 return self.enter('media_menu', 'Media menu')
             m.announce_main_menu(); return 'awake'
         if command in ('next','previous','home','end'):
