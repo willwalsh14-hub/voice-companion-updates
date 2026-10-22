@@ -718,11 +718,10 @@ class BrowserBackend:
     def type_combo(self,item,value):
         """Type into the site's box with real keys, so it updates its suggestions."""
         element=self._text_element(item)
-        current=element.evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
+        # Called for each typed key, so read the box with one short script.
+        current,focused,plain=element.evaluate("e=>{let a=document.activeElement;while(a?.shadowRoot?.activeElement)a=a.shadowRoot.activeElement;return [e.isContentEditable?e.innerText:String(e.value||''),!!a&&(a===e||e.contains(a)),!e.isContentEditable&&typeof e.setSelectionRange==='function'];}")
         if current==value:return False
-        state=element.evaluate(COMBO_STATE,{})
-        if not state['focus_in_box']:element.focus()
-        plain=element.evaluate("e=>!e.isContentEditable&&typeof e.setSelectionRange==='function'")
+        if not focused:element.focus()
         if plain and value.startswith(current) and '\n' not in value:
             element.evaluate("e=>e.setSelectionRange(e.value.length,e.value.length)")
             element.press_sequentially(value[len(current):],timeout=10000)
