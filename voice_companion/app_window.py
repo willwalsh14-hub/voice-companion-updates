@@ -364,6 +364,7 @@ class CompanionWindow:
                     elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
                     elif field and self.context.get('web_choice') and key in ('Up','Down','Left','Right','Home','End'):request='Web:'+key
                     elif field and self.context.get('web_choice') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalnum():request='Web:ChoiceLetter:'+event.char
+                    elif field and self.context.get('web_combo_edit') and not control and not shift and not event.state&(8|0x20000) and key in ('Up','Down'):request='Web:'+key
                     elif field and not self.context.get('web_private') and not control and not shift and key in ('Up','Down','Left','Right'):
                         value=editor.get('1.0','end-1c');caret=len(editor.get('1.0','insert'))
                         multiline=field.get('tag')=='textarea' or field.get('editable')
@@ -371,7 +372,7 @@ class CompanionWindow:
                     elif key=='F5':request='Web:Refresh'
                     elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
                     elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgmps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
-                    elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control):request='Web:Done' if field and not self.context.get('web_choice') else 'Web:Activate'
+                    elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control or self.context.get('web_combo_edit')):request='Web:Done' if field and not self.context.get('web_choice') else 'Web:Activate'
                     elif not field and not shift and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Read:'+('Control:' if control else '')+key
                     elif not field and key=='space':request='Web:Space'
                     elif key=='Left' and event.state&(8|0x20000):request='Web:Back'
@@ -410,7 +411,8 @@ class CompanionWindow:
                         activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
-                    if request=='Web:Escape' and self.context.get('web_field'):local['web_escape_pending']=True
+                    # Escape in a search box with suggestions may only close them; keep typing there.
+                    if request=='Web:Escape' and self.context.get('web_field') and not self.context.get('web_combo_edit'):local['web_escape_pending']=True
                     if self.context.get('web_browse') and request.startswith(('Web:Quick:','Web:Read:','Web:Table:','Web:Page')):
                         local['web_navigation_pending']=True
                         if local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None

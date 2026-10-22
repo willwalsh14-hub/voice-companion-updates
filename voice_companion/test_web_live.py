@@ -6,6 +6,57 @@ from playwright.sync_api import sync_playwright
 from web_assistant import BrowserBackend,WebSession,WebError
 from web_browse import BrowseCursor
 PAGE='''<html><title>Fixture</title><body><h1 id="title">Fixture heading</h1><p>Readable text.</p><a href="https://fixture.test/next">Next page</a><form onsubmit="event.preventDefault();window.sent=(window.sent||0)+1"><label for="name">Name</label><input id="name" required><label for="secret">Password</label><input id="secret" type="password"><label><input type="checkbox" id="agree">Agree</label><label><input type="radio" name="plan" value="a" required>Plan A</label><label><input type="radio" name="plan" value="b" required checked>Plan B</label><label>Choice<select><option>One</option><option>Two</option></select></label><label for="notes">Notes</label><textarea id="notes"></textarea><input type="submit" value="Submit application"><input disabled required aria-label="Unavailable"></form><table><caption>Prices</caption><tr><th scope="col">Product</th><th scope="col">Cost</th></tr><tr><th scope="row">Apple</th><td>One dollar</td></tr><tr><td colspan="2">Summary</td></tr></table><div aria-hidden="true"><a href="https://fixture.test/hidden">Hidden link</a></div><div id="shadow"></div><iframe src="https://fixture.test/frame"></iframe><script>document.getElementById('shadow').attachShadow({mode:'open'}).innerHTML='<button aria-labelledby="slabel"><span id="slabel">Shadow action</span></button>';window.sent=0;</script></body></html>'''
+# Modelled on YouTube's search box: an ARIA 1.2 text input with role combobox.
+# Suggestions arrive a moment after typing, arrows set aria-activedescendant and
+# copy the suggestion into the box, Escape restores the typed text, and Enter
+# shows results without loading a new document.
+YOUTUBE_SEARCH='''<title>Video site</title><div id="masthead"><form id="search-form" action="/results" role="search">
+<div id="container"><input id="search" name="search_query" type="text" autocomplete="off" autocorrect="off" spellcheck="false" role="combobox" aria-haspopup="false" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions" aria-label="Search" placeholder="Search"></div>
+<button id="search-icon" type="submit" aria-label="Search">Go</button></form></div>
+<div id="suggestions" role="listbox" style="display:none"></div><h1>Home</h1><p id="results">Recommended videos</p>
+<script>
+const words=['cats','cat videos','catalina','dogs','dog videos'];
+const input=document.getElementById('search'),box=document.getElementById('suggestions');let typed='',active=-1;window.keys=0;
+const options=()=>[...box.querySelectorAll('[role=option]')];
+const hide=()=>{box.style.display='none';input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');active=-1;};
+input.addEventListener('input',()=>{typed=input.value;active=-1;setTimeout(()=>{const v=typed.toLowerCase(),m=v?words.filter(w=>w.startsWith(v)):[];
+  box.innerHTML=m.map((w,i)=>'<div role="option" id="sbse'+i+'" aria-selected="false">'+w+'</div>').join('');
+  box.style.display=m.length?'block':'none';input.setAttribute('aria-expanded',String(m.length>0));input.removeAttribute('aria-activedescendant');},60);});
+input.addEventListener('keydown',e=>{window.keys++;const o=options();
+  if((e.key==='ArrowDown'||e.key==='ArrowUp')&&o.length&&box.style.display!=='none'){e.preventDefault();
+    active=e.key==='ArrowDown'?(active+1>=o.length?-1:active+1):(active<0?o.length-1:active-1);
+    o.forEach((n,i)=>n.setAttribute('aria-selected',String(i===active)));
+    if(active>=0){input.setAttribute('aria-activedescendant',o[active].id);input.value=o[active].textContent;}else{input.removeAttribute('aria-activedescendant');input.value=typed;}}
+  else if(e.key==='Escape'){input.value=typed;hide();}
+  else if(e.key==='Enter'){e.preventDefault();const q=input.value;hide();history.pushState({},'','/results?search_query='+encodeURIComponent(q));
+    document.title='Results';document.querySelector('h1').textContent='Results for '+q;document.getElementById('results').textContent='Video one';}});
+input.addEventListener('blur',hide);
+document.getElementById('search-form').addEventListener('submit',e=>{e.preventDefault();});
+</script>'''
+
+# The ARIA 1.0 pattern: a combobox container owns the text box, and arrows
+# move real keyboard focus into the list of suggestions.
+CITY_COMBO='''<form onsubmit="event.preventDefault();window.sent++"><label id="city-label">City</label>
+<div role="combobox" aria-labelledby="city-label" aria-expanded="false" aria-owns="cities" aria-haspopup="listbox">
+<input id="city" type="text" aria-autocomplete="list" aria-controls="cities" aria-labelledby="city-label"></div>
+<ul id="cities" role="listbox" aria-labelledby="city-label" hidden></ul>
+<label>Notes<textarea id="notes"></textarea></label></form>
+<script>
+window.sent=0;const places=['New York','Newark','Boston'];
+const combo=document.querySelector('[role=combobox]'),input=document.getElementById('city'),list=document.getElementById('cities');
+const options=()=>[...list.querySelectorAll('[role=option]')];
+const close=()=>{list.hidden=true;combo.setAttribute('aria-expanded','false');};
+input.addEventListener('input',()=>{const v=input.value.toLowerCase(),m=v?places.filter(p=>p.toLowerCase().startsWith(v)):[];
+  list.innerHTML=m.map((p,i)=>'<li role="option" tabindex="-1" id="opt-'+i+'" aria-selected="false">'+p+'</li>').join('');
+  list.hidden=!m.length;combo.setAttribute('aria-expanded',String(m.length>0));});
+input.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!list.hidden){e.preventDefault();options()[0].focus();}});
+list.addEventListener('focusin',e=>options().forEach(o=>o.setAttribute('aria-selected',String(o===e.target))));
+list.addEventListener('keydown',e=>{const o=options(),i=o.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'){e.preventDefault();o[Math.min(o.length-1,i+1)].focus();}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(i<=0)input.focus();else o[i-1].focus();}
+  else if(e.key==='Enter'){e.preventDefault();input.value=o[i].textContent;close();input.focus();}
+  else if(e.key==='Escape'){e.preventDefault();close();input.focus();}});
+</script>'''
 class LiveWebTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -177,6 +228,95 @@ class LiveWebTests(unittest.TestCase):
         self.session._refresh();self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Custom choice')
         self.assertIn('Beta.',self.session.keyboard('ChoiceLetter:b'));self.assertIn('Bravo.',self.session.keyboard('Down'))
         self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Next')
+
+    def type_into_field(self,text):
+        """What the application does for each typed key: update the field, then the site."""
+        self.session.keyboard_field['value']=text;self.session.web_edit_caret=len(text)
+        self.assertEqual(self.session.combo_typed(),'')
+
+    def test_youtube_style_search_combo_types_and_arrows_through_suggestions(self):
+        self.page.set_content(YOUTUBE_SEARCH);self.session._refresh(read=False)
+        self.assertIn('Search, edit combo box',self.session.reading.text)
+        self.assertEqual(self.session.keyboard('Quick:c'),'Search, edit combo box.')
+        self.assertIn('Search, edit combo box',self.session.keyboard('Activate'))
+        self.assertEqual(self.session.keyboard_field['label'],'Search')
+        self.type_into_field('cat')
+        # Real key events reach the site, which shows its suggestions.
+        self.assertEqual(self.page.locator('#search').input_value(),'cat')
+        self.assertGreaterEqual(self.page.evaluate('window.keys'),3)
+        self.assertEqual(self.session.keyboard('Down'),'cats, 1 of 3.')
+        self.assertEqual(self.page.locator('#search').input_value(),'cats')
+        self.assertEqual(self.session.keyboard_field['value'],'cats')
+        self.assertEqual(self.session.keyboard('Down'),'cat videos, 2 of 3.')
+        self.assertEqual(self.session.keyboard('Up'),'cats, 1 of 3.')
+        self.assertEqual(self.session.keyboard('Up'),'No suggestion selected. Field text: cat.')
+        self.assertEqual(self.session.keyboard('Down'),'cats, 1 of 3.')
+        self.assertEqual(self.session.keyboard('Escape'),'Suggestions closed.')
+        self.assertIsNotNone(self.session.keyboard_field)
+        self.assertEqual(self.session.keyboard_field['value'],'cat');self.assertEqual(self.page.locator('#search').input_value(),'cat')
+        self.type_into_field('cat v')
+        self.assertEqual(self.session.keyboard('Down'),'cat videos, 1 of 1.')
+        result=self.session.keyboard('Done')
+        self.assertTrue(self.page.url.endswith('/results?search_query=cat%20videos'),self.page.url)
+        self.assertIn('Results for cat videos',self.session.reading.text);self.assertIsNone(self.session.keyboard_field)
+        self.assertIn('Page loaded',result)
+
+    def test_youtube_style_search_typed_text_backspace_and_voice_search(self):
+        self.page.set_content(YOUTUBE_SEARCH);self.session._refresh(read=False)
+        self.session.keyboard('Quick:e');self.assertEqual(self.session.keyboard_field['label'],'Search')
+        self.type_into_field('dogs');self.type_into_field('do')
+        self.assertEqual(self.page.locator('#search').input_value(),'do')
+        self.assertEqual(self.session.keyboard('Down'),'dogs, 1 of 2.')
+        self.assertEqual(self.session.keyboard('Escape'),'Suggestions closed.')
+        result=self.session.keyboard('Escape')
+        self.assertIn('Field editing canceled',result);self.assertIsNone(self.session.keyboard_field)
+        self.assertEqual(self.page.locator('#search').input_value(),'')
+        result=self.session.command('type cat')
+        self.assertIn('Text entered. 3 suggestions.',result)
+        self.assertEqual(self.page.locator('#search').input_value(),'cat')
+        result=self.session.command('Search for dog videos.')
+        self.assertTrue(self.page.url.endswith('/results?search_query=dog%20videos'),self.page.url)
+        self.assertIn('Results for dog videos',self.session.reading.text)
+
+    def test_aria_one_combo_container_with_focus_moving_listbox(self):
+        self.page.set_content(CITY_COMBO);self.session._refresh(read=False)
+        self.assertIn('City, edit combo box',self.session.reading.text)
+        self.assertEqual(len([c for c in self.session.snapshot['controls'] if c['label']=='City']),1)
+        self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'City')
+        result=self.session.command('type new')
+        self.assertIn('Text entered. 2 suggestions.',result)
+        self.assertEqual(self.page.locator('#city').input_value(),'new')
+        self.assertEqual(self.session.keyboard('Down'),'New York, 1 of 2.')
+        self.assertEqual(self.page.evaluate('document.activeElement.id'),'opt-0')
+        self.assertEqual(self.session.keyboard('Down'),'Newark, 2 of 2.')
+        self.assertEqual(self.session.keyboard('Done'),'Newark.')
+        self.assertEqual(self.page.locator('#city').input_value(),'Newark')
+        self.assertEqual(self.session.keyboard_field['value'],'Newark');self.assertEqual(self.page.evaluate('window.sent'),0)
+        self.session.keyboard('Tab');self.assertEqual(self.session.keyboard_field['label'],'Notes')
+        self.assertEqual(self.page.locator('#city').input_value(),'Newark')
+
+    def test_datalist_field_types_and_offers_its_options(self):
+        self.page.set_content('<form onsubmit="event.preventDefault();window.sent++"><label>Color<input id="color" list="colors"></label><datalist id="colors"><option value="Red"><option value="Rose"><option value="Blue"></datalist></form><script>window.sent=0</script>')
+        self.session._refresh(read=False)
+        self.assertIn('Color, edit combo box',self.session.reading.text)
+        self.session.keyboard('Quick:e');self.assertEqual(self.session.keyboard_field['label'],'Color')
+        self.assertEqual(self.session.keyboard('Down'),'Red, 1 of 3.')
+        self.type_into_field('r')
+        self.assertEqual(self.session.keyboard('Down'),'Red, 1 of 2.')
+        self.assertEqual(self.session.keyboard('Down'),'Rose, 2 of 2.')
+        self.assertEqual(self.session.keyboard('Down'),'End of list.')
+        self.assertIn('Rose entered',self.session.keyboard('Done'))
+        self.assertEqual(self.page.locator('#color').input_value(),'Rose');self.assertEqual(self.session.keyboard_field['value'],'Rose')
+        self.assertEqual(self.page.evaluate('window.sent'),0)
+        self.session.keyboard('Tab');self.assertEqual(self.page.locator('#color').input_value(),'Rose')
+
+    def test_select_only_combo_boxes_keep_choice_keys(self):
+        self.page.set_content('<select aria-label="Choice"><option>One</option><option>Two</option></select><div role="combobox" aria-label="Estado" tabindex="0" aria-expanded="false">Elija</div>')
+        self.session._refresh(read=False)
+        self.assertIn('Choice, combo box',self.session.reading.text);self.assertIn('Estado, combo box',self.session.reading.text)
+        self.assertNotIn('edit combo box',self.session.reading.text)
+        self.session.keyboard('Quick:c');self.session.keyboard('Activate')
+        self.assertEqual(self.session.keyboard('Down'),'Two.')
 
     def test_later_dom_updates_refresh_buffer_without_read_page(self):
         self.session.auto_read=False;self.session._refresh();previous=self.session.page_revision

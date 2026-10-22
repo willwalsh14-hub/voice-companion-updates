@@ -677,6 +677,10 @@ Say "Select all" to select the text in the active box. Say "Read selection" to c
 For a checkbox, press Space or say "Check checkbox", "Uncheck checkbox", or "Toggle checkbox".
 In a choice box, arrows change the choice. Home and End choose the first and last options.
 You can say "Next option", "Previous option", "First option", "Last option", or "Select option" followed by its name.
+Some text boxes suggest answers as you type, such as the search box on YouTube. Companion calls this an edit combo box.
+Type or say your words. Then press Down Arrow or Up Arrow to hear each suggestion. You can also say "Next suggestion" or "Previous suggestion".
+Press Enter to use the suggestion you heard, or the words you typed. Escape closes the suggestions and keeps you in the box. Press Escape again to cancel editing.
+In a box like this, say "Search for" followed by your words to search that website.
 Read-only boxes cannot be changed. Passwords are hidden in the page text and spoken review.
 
 11.7 Fill in and review a form by voice
