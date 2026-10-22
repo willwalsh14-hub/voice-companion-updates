@@ -1226,6 +1226,7 @@ class WebSession:
                     else:self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
+                if role=='button' and skip_ad_button({'url':self.snapshot.get('url',''),'elements':[item]}):return self.skip_ad()
                 if role in ('button','menuitem','menuitemradio','menuitemcheckbox'):
                     self.progress('Loading page.')
                     action=self.backend.activate(item)

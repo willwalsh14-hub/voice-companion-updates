@@ -138,6 +138,14 @@ class SkipAdTests(unittest.TestCase):
         self.assertEqual(self.session.reading.position, position)
         self.assertEqual(self.session.command('skip the ad'), 'No Skip ad button is showing now.')
 
+    def test_enter_on_the_skip_button_skips_without_reloading_the_page(self):
+        self.session.auto_read = True
+        self.backend.ad = True; self.backend.revision += 1; self.session.refresh_changed()
+        item = skip_ad_button(self.session.snapshot)
+        self.session.browse.index = self.session.browse.elements.index(item)
+        self.assertEqual(self.session.keyboard('Activate'), 'Ad skipped.')
+        self.assertEqual(self.backend.pressed, ['n9'])
+
     def test_skip_ad_is_text_while_writing_in_a_field(self):
         self.backend.ad = True; self.backend.revision += 1; self.session.refresh_changed()
         field = next(c for c in self.backend.controls if c['label'] == 'Full name')
