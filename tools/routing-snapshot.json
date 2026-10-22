@@ -300,7 +300,7 @@
 },
 "awake | beginning of list": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1013,7 +1013,7 @@
 },
 "awake | end of list": {
 "said": [
-"Exit Voice Companion (E), 12 of 12."
+"Exit Voice Companion (E), 13 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1173,7 +1173,7 @@
 },
 "awake | first item": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1395,7 +1395,7 @@
 },
 "awake | last item": {
 "said": [
-"Exit Voice Companion (E), 12 of 12."
+"Exit Voice Companion (E), 13 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1828,7 +1828,7 @@
 },
 "awake | next": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -2026,7 +2026,7 @@
 },
 "awake | open email draft": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"Email drafts list. Untitled (U), 1 of 6. Arrows move, Home and End reach boundaries, Enter selects, and Escape closes the list."
 ],
 "screen_after": "awake"
 },
@@ -2401,7 +2401,7 @@
 },
 "awake | previous": {
 "said": [
-"Exit Voice Companion (E), 12 of 12."
+"Exit Voice Companion (E), 13 of 13."
 ],
 "screen_after": "awake"
 },
@@ -3069,7 +3069,7 @@
 },
 "awake | start of list": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -19268,11 +19268,8 @@
 "screen_after": "mailbox"
 },
 "mailbox | list drafts": {
-"calls": [
-"call.process('list drafts')"
-],
 "said": [
-"session handled: list drafts"
+"Your email drafts are: Untitled, Untitled 10, Untitled 11, Untitled 12, Untitled 13, Untitled 14, Untitled 15, Untitled 16, Untitled 17, Untitled 18, Untitled 19, Untitled 2, Untitled 20, Untitled 21, Untitled 22, Untitled 23, Untitled 24, Untitled 25, Untitled 26, Untitled 27. There are more drafts."
 ],
 "screen_after": "mailbox"
 },
@@ -19283,11 +19280,8 @@
 "screen_after": "mailbox"
 },
 "mailbox | list email drafts": {
-"calls": [
-"call.process('list email drafts')"
-],
 "said": [
-"session handled: list email drafts"
+"Your email drafts are: Untitled, Untitled 10, Untitled 11, Untitled 12, Untitled 13, Untitled 14, Untitled 15, Untitled 16, Untitled 17, Untitled 18, Untitled 19, Untitled 2, Untitled 20, Untitled 21, Untitled 22, Untitled 23, Untitled 24, Untitled 25, Untitled 26, Untitled 27. There are more drafts."
 ],
 "screen_after": "mailbox"
 },
@@ -19556,11 +19550,8 @@
 "screen_after": "mailbox"
 },
 "mailbox | my email drafts": {
-"calls": [
-"call.process('my email drafts')"
-],
 "said": [
-"session handled: my email drafts"
+"Your email drafts are: Untitled, Untitled 10, Untitled 11, Untitled 12, Untitled 13, Untitled 14, Untitled 15, Untitled 16, Untitled 17, Untitled 18, Untitled 19, Untitled 2, Untitled 20, Untitled 21, Untitled 22, Untitled 23, Untitled 24, Untitled 25, Untitled 26, Untitled 27. There are more drafts."
 ],
 "screen_after": "mailbox"
 },
@@ -19990,11 +19981,8 @@
 "screen_after": "mailbox"
 },
 "mailbox | open email draft": {
-"calls": [
-"call.process('open email draft')"
-],
 "said": [
-"session handled: open email draft"
+"Email drafts list. Untitled (U), 1 of 42. Arrows move, Home and End reach boundaries, Enter selects, and Escape closes the list."
 ],
 "screen_after": "mailbox"
 },
