@@ -216,6 +216,10 @@ class FakeGmail:
 
 
 class GmailBatchListingTests(unittest.TestCase):
+    def setUp(self):
+        import mailbox_access
+        patcher = patch.object(mailbox_access, '_gmail_batch_paused_until', 0.0); patcher.start(); self.addCleanup(patcher.stop)
+
     def test_thousand_message_list_uses_batches_with_same_rows_and_order(self):
         from mailbox_access import MailboxClient
         from mail_voice import MailSession
@@ -254,15 +258,52 @@ class GmailBatchListingTests(unittest.TestCase):
         with self.assertRaises(MailboxError):
             MailboxClient('gmail', 'token', gmail).list_messages('INBOX')
 
-    def test_failed_batch_request_is_a_mailbox_error(self):
-        from mailbox_access import MailboxClient, MailboxError
-        gmail = FakeGmail(5)
+    def batch_failing(self, gmail, error):
         original = gmail.__call__
         def opener(req, timeout):
-            if req.full_url == GMAIL_BATCH: raise OSError('connection reset')
+            if req.full_url == GMAIL_BATCH: raise error
             return original(req, timeout)
-        with self.assertRaises(MailboxError):
-            MailboxClient('gmail', 'token', opener).list_messages('INBOX')
+        return opener
+
+    def test_failed_batch_request_falls_back_to_one_message_at_a_time(self):
+        # Before batching, listing fetched each message alone. If the batch
+        # address fails for any reason, the inbox must still open the same way.
+        from urllib.error import HTTPError
+        from mailbox_access import MailboxClient
+        for error in (OSError('connection reset'),
+                      HTTPError(GMAIL_BATCH, 404, 'Not Found', {}, None),
+                      HTTPError(GMAIL_BATCH, 400, 'Bad Request', {}, None)):
+            with self.subTest(error=str(error)):
+                gmail = FakeGmail(5)
+                rows, _ = MailboxClient('gmail', 'token', self.batch_failing(gmail, error)).list_messages('INBOX')
+                expected, _ = MailboxClient('gmail', 'token', FakeGmail(5)).list_messages('INBOX')
+                self.assertEqual(rows, expected)
+
+    def test_batch_is_not_retried_after_it_fails(self):
+        from mailbox_access import MailboxClient
+        gmail = FakeGmail(5); attempts = []
+        original = gmail.__call__
+        def opener(req, timeout):
+            if req.full_url == GMAIL_BATCH: attempts.append(1); raise OSError('refused')
+            return original(req, timeout)
+        client = MailboxClient('gmail', 'token', opener)
+        client.list_messages('INBOX'); client.list_messages('INBOX')
+        self.assertEqual(len(attempts), 1)
+
+    def test_batch_reply_that_is_not_multipart_falls_back(self):
+        from mailbox_access import MailboxClient
+        gmail = FakeGmail(5)
+        original = gmail.__call__
+        class Reply:
+            headers = {'Content-Type': 'text/html'}
+            def read(self, n=-1): return b'' if getattr(self, 'done', False) else setattr(self, 'done', True) or b'<html>error</html>'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+        def opener(req, timeout):
+            if req.full_url == GMAIL_BATCH: return Reply()
+            return original(req, timeout)
+        rows, _ = MailboxClient('gmail', 'token', opener).list_messages('INBOX')
+        self.assertEqual(len(rows), 5)
 
 
 class GoogleContactsTests(unittest.TestCase):
