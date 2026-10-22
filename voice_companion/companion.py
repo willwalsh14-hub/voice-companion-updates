@@ -34,6 +34,7 @@ from web_assistant import WebSession
 from audio_resample import PCM16Resampler, stereo_to_mono
 from app_window import CompanionWindow
 from reading_navigation import ReadingCursor, reading_request
+import notepad  # Saved notes; imported here so the Windows build always packages it.
 from voice_pitch import sapi_speak
 from dictation_text import clean_dictation
 from ai_dictation import dictation_scope, prepare_dictation
@@ -141,6 +142,7 @@ TEXT_MODE = False
 note_buffer = []
 note_selection = FieldSelection()
 note_reading = ReadingCursor()
+OPEN_NOTE = None  # The saved note being changed, so saving updates it instead of adding a copy.
 last_podcasts = []
 MEDIA_HUB = None
 MEDIA_NAV = None
@@ -666,6 +668,7 @@ def _navigation_key(key,mode):
         target=order[(order.index(current)+(1 if key=='Tab' else -1))%len(order)]
         return 'go to '+('to' if target=='recipient' else target)
     if mode=='document' and key=='F2':return 'name document'
+    if mode=='note' and key=='Ctrl+O':return 'list notes'
     if mode=='mailbox':
         if key=='Delete' and mail_session and mail_session.folder_picker:
             picker=mail_session.folder_picker
@@ -1462,18 +1465,80 @@ def recover_audio_overflow(recognizer, utterance):
 
 
 def save_note(text):
-    APP.mkdir(parents=True, exist_ok=True)
-    path = APP / 'notes.txt'
-    with path.open('a', encoding='utf-8') as f:
-        f.write(f'\n[{datetime.now():%Y-%m-%d %H:%M}] {text}\n')
-    speak('Saved your note.')
+    """Save the note being written. Returns False, keeping the text, if it could not be saved."""
+    global OPEN_NOTE
+    opened = OPEN_NOTE
+    try:
+        if opened is not None and not text.strip():
+            OPEN_NOTE = None
+            speak('The note is empty, so your saved note was not changed.')
+            return True
+        if opened is not None and notepad.replace(APP, opened, text):
+            OPEN_NOTE = None
+            speak('Saved your note.')
+            return True
+        notepad.add(APP, text)
+    except OSError:
+        speak('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
+        return False
+    OPEN_NOTE = None
+    speak('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
+    return True
 
 
 def flush_note(mode):
+    """Save a note in progress. Returns False if it could not be saved."""
     if mode == 'note' and note_buffer:
-        save_note(' '.join(note_buffer))
+        if save_note(' '.join(note_buffer)) is False:
+            return False
         note_buffer.clear()
         note_selection.text = None
+    return True
+
+
+NOTE_NUMBER = re.compile(r'open (?:the |my )?(?:saved )?note (?:number )?(\w+(?: \w+)?)')
+
+
+def saved_notes():
+    try:
+        return notepad.newest_first(notepad.read_notes(APP)), None
+    except OSError:
+        return [], 'Your notes could not be read. Close any program using your notes file, then try again.'
+
+
+def list_saved_notes():
+    notes, problem = saved_notes()
+    if problem:
+        speak(problem)
+    elif not notes:
+        speak('You have no saved notes yet. Say Write a note to start one.')
+    else:
+        speak(open_named_list('Notes', [(notepad.label(n), 'open note ' + str(i + 1)) for i, n in enumerate(notes)]))
+
+
+def open_saved_note(spoken, mode):
+    """Open a note by its place in the notes list, newest first."""
+    global OPEN_NOTE
+    from document_editor import spoken_number
+    notes, problem = saved_notes()
+    if problem:
+        speak(problem);return mode
+    if not notes:
+        speak('You have no saved notes yet. Say Write a note to start one.');return mode
+    # Recognizers often hear "open note two" as "to" or "too", and "one" as "won".
+    value = spoken_number({'to': '2', 'too': '2', 'won': '1', 'for': '4'}.get(spoken, spoken))
+    number = int(value) if value and value.isdigit() else None
+    if number is None or not 1 <= number <= len(notes):
+        speak(('There is 1 note.' if len(notes) == 1 else 'There are ' + str(len(notes)) + ' notes.')
+              + ' Say open note and a number from 1 to ' + str(len(notes)) + ', or say list notes.')
+        return mode
+    note = notes[number - 1]
+    OPEN_NOTE = note
+    note_buffer[:] = [note.text] if note.text else []
+    note_selection.text = None
+    speak('Opened the note from ' + notepad.spoken_date(note.stamp) + '. ' + (note.text.strip() or 'It is empty.'))
+    speak_prompt('Speak to add to it. Say save note when finished.')
+    return 'note'
 
 
 def podcast_search(topic):
@@ -1576,7 +1641,14 @@ def _handle(text, mode, typed=False):
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
+    global OPEN_NOTE
     global SEARCH_RETURN_MODE,NAMED_LIST
+    # Phrases that list saved notes. On the Notepad screen only the clear commands
+    # count; a sentence such as "My notes are on the desk" is text.
+    NOTE_LIST_COMMANDS = ('list notes', 'list my notes', 'list saved notes', 'list the notes', 'open notes', 'open my notes',
+                          'open a note', 'open note', 'open saved notes', 'open a saved note', 'open saved note',
+                          'show notes', 'show my notes', 'show saved notes')
+    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have')
     command=normalized_command(text)
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
@@ -2501,7 +2573,8 @@ def _handle(text, mode, typed=False):
             return 'document'
         note_buffer.clear()
         note_selection.text = None
-        speak_prompt('Dictation started. Speak naturally. Say save note when finished.')
+        OPEN_NOTE = None
+        speak_prompt('Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note.')
         return 'note'
     if pending_website is not None:
         address, host = pending_website
@@ -2672,16 +2745,29 @@ def _handle(text, mode, typed=False):
             unit, direction = request
             speak(note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction))
             return mode
+        if command in NOTE_LIST_COMMANDS:
+            # Save the note in progress first, so switching notes never loses words.
+            if flush_note(mode):
+                OPEN_NOTE = None
+                list_saved_notes()
+            return mode
+        number = NOTE_NUMBER.fullmatch(command)
+        if number:
+            if not flush_note(mode):return mode
+            OPEN_NOTE = None
+            return open_saved_note(number[1], mode)
         if command in ('go back', 'back', 'exit', 'exit note', 'main menu', 'back to main menu'):
-            flush_note(mode)
+            if not flush_note(mode):return mode
+            OPEN_NOTE = None
             speak('Note saved.')
             return 'awake'
         if command in ('save note', 'finish note', 'done dictating'):
             if note_buffer:
-                save_note(' '.join(note_buffer))
+                if save_note(' '.join(note_buffer)) is False:return mode
                 note_buffer.clear()
                 note_selection.text = None
             else:
+                OPEN_NOTE = None
                 speak('The note was empty.')
             return 'awake'
         if INPUT_MODE == 'commands':
@@ -2692,6 +2778,11 @@ def _handle(text, mode, typed=False):
             note_buffer.append(cleaned)
             dictation_feedback('Added: '+cleaned)
         return 'note'
+    if command in NOTE_LIST_ELSEWHERE:
+        list_saved_notes()
+        return mode
+    if NOTE_NUMBER.fullmatch(command):
+        return open_saved_note(NOTE_NUMBER.fullmatch(command)[1], mode)
     if command in ('list documents', 'what documents do i have', 'my documents'):
         folder = documents_folder()
         names = sorted((p.stem for p in folder.glob('*.docx')), key=str.casefold) if folder.exists() else []
@@ -2783,7 +2874,8 @@ def _handle(text, mode, typed=False):
     if re.search(r'\b(note|dictate)\b', command):
         note_buffer.clear()
         note_selection.text = None
-        speak_prompt('Dictation started. Speak naturally. Say save note when finished.')
+        OPEN_NOTE = None
+        speak_prompt('Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note.')
         return 'note'
     provider_websites = {'gmail': 'https://mail.google.com/',
                          'outlook': 'https://outlook.live.com/mail/',

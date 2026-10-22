@@ -84,6 +84,7 @@ def option_explanation(field):
     if field.kind=='headers':return 'Choose which email details are read: From, Subject, Date, and Size. Keep at least one. Space adds or removes a detail. Alt Up and Alt Down change its place. OK saves; Cancel keeps the earlier order.'
     if field.key in ('rate','pitch'):choices='Choose a whole number from minus ten to ten. Zero is the normal setting.'
     elif field.key=='volume':choices='Choose a number from zero to one hundred for the speech volume.'
+    elif field.key=='document_font':choices='Choose a font for new documents, such as Arial, Calibri, or Verdana. Type a first letter to jump to a font.'
     elif field.key=='document_size':choices='Choose a text size from 6 to 72 points for new documents.'
     elif field.key=='podcast_limit':choices='Choose manual, all, or a whole number from 1 to 10,000. This limit applies to the show you selected.'
     elif field.choices:choices='Choices are '+', '.join(field.choices)+'.'

@@ -46,6 +46,7 @@ Contents
 7 Write A Note
   7.1 Start and save a note
   7.2 Review or change a note
+  7.3 Open a saved note
 8 Set Up Email
   8.1 Connect an email account
   8.2 Choose another account
@@ -457,6 +458,15 @@ Use "Next sentence", "Previous sentence", "Next paragraph", and "Previous paragr
 Use "Commands only" to review without adding speech as text. Say "Normal mode" when you want to write again.
 To enter words that sound like commands, say "Type literally", followed by those words. For example, say "Type literally new line" to write the words new line.
 The same selection and editing rules apply to the current note. Keep a saved copy of any note you need.
+
+7.3 Open a saved note
+Say "List notes" to hear your saved notes. You can also say "Open a note" or "My notes". The newest note comes first.
+On the Notepad screen, press Ctrl+O to list your notes. The note you are writing is saved first.
+Use the Up and Down Arrow keys, or say "Next" and "Previous", to move through the list. You hear the first words and the date of each note.
+Press Enter or say "OK" to open a note. Companion reads it to you. Then speak to add to it.
+Say "Save note" or "Go back" to save your changes. They go into the same note, not a new copy.
+You can also say "Open note" and a number from the list. For example, say "Open note 2".
+If you have no saved notes yet, Companion tells you how to start one.
 
 8. SET UP EMAIL
 
@@ -956,7 +966,7 @@ Choose Add an email account to start the setup steps in chapter 8.
 18.5 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents.
 These defaults do not change text in an existing document or draft. Font size choices run from 6 to 72 points.
-Choose Open Documents folder to open your saved document folder in Windows.
+Font for new documents is a list of common fonts, such as Arial, Calibri, Times New Roman, and Verdana. Use the Up and Down Arrow keys, or type the first letter of a font. You can also say "Font" and its name, such as "Font Arial".
 In Notepad options, choose Open Notepad to return to your note or start a new one.
 
 18.6 Web browser options

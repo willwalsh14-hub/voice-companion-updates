@@ -13,6 +13,28 @@ class Field:
 CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Word processor', 'Notepad', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
 DEFAULTS = {'dictation_echo':'phrase by phrase','dictation_type':'old school','cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
+# Fonts that come with Windows 11 or Microsoft Office, in alphabetical order so
+# a first letter moves through them. A saved font outside this list is added.
+DOCUMENT_FONTS = ('Aptos', 'Arial', 'Calibri', 'Cambria', 'Candara', 'Comic Sans MS', 'Consolas', 'Courier New',
+                  'Georgia', 'Segoe UI', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana')
+
+
+def font_choices(context):
+    names = list(DOCUMENT_FONTS) + [str(x).strip() for x in context.get('document_fonts', ()) if str(x).strip()]
+    unique = {name.casefold(): name for name in reversed(names)}
+    return tuple(sorted(unique.values(), key=str.casefold))
+
+
+def spoken_font(value, choices):
+    """Match a spoken font name: any case, extra punctuation, or the first words only."""
+    plain = lambda text: re.sub(r'[^0-9a-z]+', ' ', str(text).casefold()).strip()
+    wanted = plain(value)
+    if not wanted: return None
+    exact = [c for c in choices if plain(c) == wanted or plain(c).replace(' ', '') == wanted.replace(' ', '')]
+    if exact: return exact[0]
+    starts = [c for c in choices if plain(c).startswith(wanted + ' ')]
+    return starts[0] if len(starts) == 1 else None
+
 
 def fields(category, context):
     if category!='Startup and exit options':category=category.removesuffix(' options')
@@ -24,7 +46,7 @@ def fields(category, context):
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation')),Field('dictation_type','Dictation type','choice',('old school','ai-based')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition; Old school only','check')],
         'Email':[Field('email_format','Email format','choice',('plain text','html')),Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('add_account','Add an email account','action')],
         'Notepad':[Field('open_notepad','Open Notepad','action')],
-        'Documents':[Field('document_font','Font for new documents','text'),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify')),Field('open_documents','Open Documents folder','action')],
+        'Documents':[Field('document_font','Font for new documents','choice',font_choices(context)),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify'))],
         'Web browser':[Field('web_search_engine','Default search engine','choice',('google','bing','brave','duckduckgo')),Field('web_keep_open','Keep browser window open','check'),Field('web_auto_read','Automatic page reading','check'),Field('browser','Guided browser','choice',('webview2','edge','chrome','brave','firefox'))],
         'Radio':[Field('keep_audio_playing','Keep audio playing in the background','check'),Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],
         'Podcasts':[Field('keep_audio_playing','Keep audio playing in the background','check'),Field('podcast_feed','Podcast subscription','choice',tuple(context.get('podcasts',()))),Field('podcast_limit','Automatic downloads for this subscription','combo',('manual','all','1','2','3','5','10','20','50','100','1000')),Field('podcast_subscriptions','List subscriptions','action')],
@@ -37,6 +59,11 @@ class SettingsSession:
     def __init__(self, values, context):
         self.original = copy.deepcopy(DEFAULTS | values)
         self.values = copy.deepcopy(DEFAULTS | values)
+        # Keep the saved font in the list, even when it is not a common one.
+        context = dict(context)
+        saved_font = str(self.values.get('document_font') or '').strip()
+        if saved_font and saved_font.casefold() not in (f.casefold() for f in DOCUMENT_FONTS):
+            context['document_fonts'] = tuple(context.get('document_fonts', ())) + (saved_font,)
         self.values['capital_letters']={'with a sound':'play a sound','with a higher pitch':'raise pitch','with a lower pitch':'lower pitch'}.get(self.values['capital_letters'],self.values['capital_letters'])
         self.context = context
         if self.values.get('engine')=='windows' and 'SAPI' in context.get('engines',('SAPI',)):self.values['engine']='SAPI'
@@ -65,6 +92,10 @@ class SettingsSession:
             value=bool(value)
         else:
             value=str(value).strip()
+            if key=='document_font' and field.kind=='choice' and value not in field.choices:
+                found=spoken_font(value,field.choices)
+                if found is None:raise ValueError('That font is not in the list. Choose a font such as Arial, Calibri, Times New Roman, or Verdana.')
+                value=found
             if field.kind=='choice':
                 found=next((c for c in field.choices if c.casefold()==value.casefold()),None)
                 if found is None: raise ValueError('Choose one of the available '+field.label+' options.')
@@ -83,6 +114,10 @@ class SettingsSession:
         command=command.strip().rstrip('.!?')
         aliases={'windows startup':'start with windows','start automatically with windows':'start with windows','phonetic pronunciation':'phonetic enabled','phonetics':'phonetic enabled','audio ducking':'duck audio','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
         for alias,name in aliases.items():command=re.sub(r'^(?:set )?'+re.escape(alias)+r'\b',name,command,flags=re.I)
+        # "Font Arial", "Font, Arial." or "set font to Verdana" chooses the font for new documents.
+        command=re.sub(r'^(?:(?:set|use|choose|select) )?(?:the )?font size\b[\s,:;-]*','document size ',command,flags=re.I)
+        command=re.sub(r'^(?:(?:set|use|choose|select) )?(?:the )?font(?: name)?(?! for new documents)\b[\s,:;-]*(?:to\b[\s,:;-]*)?','document font ',command,flags=re.I)
+        command=re.sub(r'^((?:document|default) font|font for new documents)[\s,:;-]+',r'\1 ',command,flags=re.I)
         engine=re.fullmatch(r'(?:use|select|choose) (?:synthesizer )?(sapi|sapi voice|windows|windows speech|microsoft|espeak|espeak ng|ai voice)',command,re.I)
         if engine:return 'engine',{'sapi':'SAPI','sapi voice':'SAPI','windows speech':'windows','microsoft':'windows','espeak ng':'espeak','ai voice':'ai'}.get(engine[1].lower(),engine[1].lower())
         from speech_controls import request
