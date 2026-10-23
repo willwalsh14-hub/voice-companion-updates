@@ -28,7 +28,16 @@ def _display():
     return sys.platform == 'win32' or bool(os.environ.get('DISPLAY'))
 
 
-@unittest.skipUnless(_display(), 'needs a display for a real Tk window')
+def _window_tests(cls):
+    # Windows: in its own process after the release tests (real_window_tests.py).
+    # Elsewhere: only with a display, where it adds Tk's Windows Alt bindings itself.
+    if sys.platform == 'win32':
+        from real_window_tests import real_window
+        return real_window(cls)
+    return unittest.skipUnless(_display(), 'needs a display for a real Tk window')(cls)
+
+
+@_window_tests
 class AltKeyWindowTests(unittest.TestCase):
     def setUp(self):
         try:

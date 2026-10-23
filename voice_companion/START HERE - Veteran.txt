@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.160-test.
+Guide version: 0.2.161-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -197,7 +197,7 @@ To open the item you hear, say "That one", "Okay", or "Confirm", or press Enter.
 To reach the first or last item, say "Start of list" or "End of list", or press Home or End.
 You hear "Start of list" or "End of list" if you try to move past the first or last item. The list does not wrap around.
 To find an item, say its name, or press its first letter. Then press Enter to open it. Text boxes use those keys for typing instead.
-On the main menu, Alt says that you are in the main menu. On most other screens, press Alt to open a menu of that screen's actions. Use arrows and Enter to choose. Each item says its key and voice command. Press a number to open a group or choose an item. Type a letter to find an item. Escape goes back one level. Press Alt again to close the menu.
+On the main menu, Alt says that you are in the main menu. On most other screens, press Alt to open a menu of that screen's actions. Use arrows and Enter to choose. Each item says its key and voice command. Press a number to open a group or choose an item. Type a letter to find an item. Escape goes back one level. Press Alt again to close the menu. If a screen has no Alt menu, or you must answer a question first, Alt tells you why.
 
 1.4 Set up your microphone
 Voice Companion uses the microphone selected in Windows. You can use a built-in microphone or a working headset.
