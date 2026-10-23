@@ -91,7 +91,9 @@ class MailRelay:
             try: pipe.close()
             except OSError: pass
 
-    def request(self, method, params=None, timeout=60):
+    def request(self, method, params=None, timeout=60, progress=None, every=15):
+        """Ask the add-on and wait for its answer. progress(), when given, is called
+        every `every` seconds while waiting, so a slow step is never silent."""
         if not self.connected.is_set():
             raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
         ident = next(self.ids)
@@ -103,7 +105,13 @@ class MailRelay:
                 if pipe is None: raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
                 pipe.send_bytes(encode({'id': ident, 'method': method, 'params': params or {}}))
             import user_stop
-            if not user_stop.wait(waiter['event'], timeout) or waiter['answer'] is None:
+            waited, answered = 0, False
+            while not answered and waited < timeout:
+                step = min(every if progress else timeout, timeout - waited)
+                answered = user_stop.wait(waiter['event'], step)
+                waited += step
+                if not answered and waited < timeout and progress: progress()
+            if not answered or waiter['answer'] is None:
                 raise ThunderbirdUnavailable('Thunderbird did not answer.')
         finally:
             self.pending.pop(ident, None)

@@ -16,6 +16,9 @@ INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
 # (companion.thunderbird_starter). It raises MailboxError with a plain reason
 # when Thunderbird cannot connect without the user's yes.
 STARTER = None
+# Says a short line while a slow Thunderbird step runs (Voice Companion's status speech).
+PROGRESS = None
+STILL_SENDING = 'Still sending through Thunderbird. Press Escape to stop waiting.'
 NOT_CONNECTED = ('Thunderbird is not connected to Voice Companion. '
                  'Say add account and choose Thunderbird, and Voice Companion checks what is missing.')
 
@@ -202,8 +205,15 @@ def submit(draft, account):
                            'type': 'replyToAll' if context['action'] == 'reply_all' else 'replyToSender'}
     elif context.get('action') == 'forward' and context.get('source_id') is not None:
         params['forward'] = {'messageId': ThunderbirdMailbox._message(context['source_id'])}
+    from user_stop import Stopped
     try:
-        result = relay().request('send', params, timeout=120)
+        say = PROGRESS
+        result = relay().request('send', params, timeout=120,
+                                 progress=(lambda: say(STILL_SENDING)) if say else None)
+    except Stopped as exc:
+        # Thunderbird may still finish sending; do not invite a duplicate.
+        raise DeliveryError('Stopped waiting. Thunderbird may still send this message. '
+                            'Check the Sent folder before sending it again.') from exc
     except MailboxError as exc:
         raise DeliveryError(str(exc), uncertain=False) from exc
     except ThunderbirdUnavailable as exc:

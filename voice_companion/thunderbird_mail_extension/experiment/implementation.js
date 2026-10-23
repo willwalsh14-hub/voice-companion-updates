@@ -302,6 +302,17 @@ function getNewMail(accountId, path, inbox) {
   });
 }
 
+// ---- Closing Thunderbird with Voice Companion ------------------------------------
+
+// Voice Companion started Thunderbird for mail, and is closing: close Thunderbird the
+// normal way. Never while a message is being written; Thunderbird then stays open.
+function quitThunderbird() {
+  const composing = Services.wm.getEnumerator('msgcompose');
+  if (composing && composing.hasMoreElements()) return {quit: false, reason: 'composing'};
+  Services.tm.dispatchToMainThread(() => Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit));
+  return {quit: true};
+}
+
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     armedUntil = 0; captured = null; pending = null;
@@ -384,6 +395,10 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
           const found = captured;
           captured = null;
           return found || {url: '', where: ''};
+        },
+
+        async quitThunderbird() {
+          try { return quitThunderbird(); } catch (error) { return {quit: false, reason: 'error'}; }
         },
 
         async getNewMail(accountId, path, inbox) {

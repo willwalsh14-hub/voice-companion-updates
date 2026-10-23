@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.162-test'
+APP_VERSION = '0.2.163-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -1901,8 +1901,31 @@ def thunderbird_starter(system=None):
         quiet_thunderbird(relay)
 
 
+THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it closes it on exit
+
+
+def close_started_thunderbird(relay_source=None):
+    """On exit: close Thunderbird if Voice Companion started it (never one the user opened).
+    Thunderbird stays open while a message is being written."""
+    if not THUNDERBIRD_STARTED:
+        return None
+    relay = (relay_source or mail_relay)()
+    if relay is None or not relay.connected.is_set():
+        return None
+    user_stop.begin_command()   # Alt+F4 asked to stop waits; this short request must still run
+    try:
+        return relay.request('quit', {}, timeout=5)
+    except Exception:
+        return None
+
+
 def quiet_thunderbird(relay):
     """Thunderbird was started for mail: keep its window out of the way and the keyboard in Voice Companion."""
+    global THUNDERBIRD_STARTED
+    if not THUNDERBIRD_STARTED:
+        THUNDERBIRD_STARTED = True
+        import atexit
+        atexit.register(close_started_thunderbird)
     try:
         relay.request('minimize', {}, timeout=10)
     except Exception:
@@ -4852,6 +4875,7 @@ if __name__ == '__main__':
                     # A Thunderbird account starts Thunderbird when it is used, never "open it yourself".
                     import thunderbird_mailbox
                     thunderbird_mailbox.STARTER=thunderbird_starter
+                    thunderbird_mailbox.PROGRESS=speak_status
                     start_thunderbird_quietly()
                 except OSError:pass
         except Exception:

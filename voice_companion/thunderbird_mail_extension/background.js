@@ -368,9 +368,57 @@ class MailBridge {
     try {
       sent = await this.api.compose.sendMessage(tab.id, {mode: 'sendNow'});
     } catch (error) {
-      throw MailBridge.fail('send', 'Thunderbird could not send this message. It is still open as a draft in Thunderbird.');
+      // Say why in plain words; Thunderbird's own text can include addresses, so it is not passed on.
+      // Keep the message in Drafts and close its window, so nothing is left open and hidden.
+      const saved = await this.saveDraftAndClose(tab);
+      throw MailBridge.fail('send', MailBridge.sendFailure(error) + ' ' + (saved
+        ? 'Your message is saved in Drafts in Thunderbird.'
+        : 'Your message is still open in Thunderbird.'));
     }
+    // Sent. Thunderbird usually closes its compose window now, but a window can stay
+    // open (Will, Office 365: "Write: testing" was left behind). Close it if it is.
+    await this.closeCompose(tab);
     return {headerMessageId: sent && sent.headerMessageId || ''};
+  }
+
+  // Voice Companion is closing and started Thunderbird: close Thunderbird too.
+  async quit() {
+    const setup = this.api.voiceCompanionSetup;
+    if (!setup || typeof setup.quitThunderbird !== 'function') return {quit: false, reason: 'unavailable'};
+    return setup.quitThunderbird();
+  }
+
+  async saveDraftAndClose(tab) {
+    try {
+      await this.api.compose.saveMessage(tab.id, {mode: 'draft'});
+    } catch (error) {
+      return false;
+    }
+    await this.closeCompose(tab);
+    return true;
+  }
+
+  // Why sending failed, in plain words, from Thunderbird's error text (never the text itself).
+  static sendFailure(error) {
+    const text = String(error && error.message || '');
+    if (/timed out|timeout/i.test(text)) {
+      return 'Thunderbird could not reach your mail server to send. The connection timed out.';
+    }
+    if (/authenticat|password|login|log in|sign.?in|oauth|5\.7\.(?:3|57|139)/i.test(text)) {
+      return 'Your mail server did not accept the sign-in for sending.';
+    }
+    if (/refused|could not connect|unable to connect|connection|offline|network/i.test(text)) {
+      return 'Thunderbird could not connect to your mail server to send.';
+    }
+    return 'Thunderbird could not send this message.';
+  }
+
+  async closeCompose(tab) {
+    if (!this.api.windows || tab.windowId === undefined) return;
+    try {
+      const open = await this.api.windows.get(tab.windowId);
+      if (open) await this.api.windows.remove(tab.windowId);
+    } catch (error) { /* already closed */ }
   }
 }
 
@@ -379,7 +427,7 @@ MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for it
 MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
-  'captureSignIn', 'takeSignIn', 'minimize'];
+  'captureSignIn', 'takeSignIn', 'minimize', 'quit'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api) {

@@ -86,6 +86,15 @@ function load(api) {
   assert.equal(message.options.mode, 'sendNow');
   assert.deepEqual(JSON.parse(JSON.stringify(state.minimized.at(-1))), {windowId: message.windowId, info: {state: 'minimized'}});
 
+  // Thunderbird closed its compose window itself: nothing else is closed.
+  assert.deepEqual(state.openCompose, []); assert.deepEqual(state.closedByAddon, []);
+  // Office 365 (Will, 0.2.162): the message went, but "Write: testing" stayed open.
+  state.composeStaysOpen = true;
+  await call('send', {identityId: 'id1', to: ['boss@work.example'], subject: 'testing', html: '<p>Hi</p>', plain: 'Hi'});
+  assert.deepEqual(state.openCompose, [], 'the leftover compose window is closed');
+  assert.deepEqual(state.closedByAddon, [state.sent.at(-1).windowId]);
+  state.composeStaysOpen = false;
+
   // Reply keeps Thunderbird's quoted original under the new text.
   await call('send', {identityId: 'id1', to: ['replies@example.com'], subject: 'Re: Message 25',
     html: '<html><body><p>Thanks</p></body></html>', plain: 'Thanks', reply: {messageId: 25, type: 'replyToAll'}});
@@ -106,6 +115,24 @@ function load(api) {
   const failure = await bridge.handle({id: 9, method: 'send', params: {identityId: 'id1', to: ['sam@example.com'], subject: 'x', html: '', plain: 'x'}});
   assert.equal(failure.error.code, 'send');
   assert.doesNotMatch(JSON.stringify(failure), /sam@example\.com/);
+  // Will, Office 365: the send timed out, and the message sat in a hidden Thunderbird window.
+  state.composeStaysOpen = true;
+  state.failSend = 'The message could not be sent because the connection to Outgoing server (SMTP) smtp.office365.com timed out. Try again.';
+  const timedOut = await bridge.handle({id: 10, method: 'send', params: {identityId: 'id1', to: ['boss@work.example'], subject: 'testing', html: '<p>Hi</p>', plain: 'Hi'}});
+  assert.equal(timedOut.error.message, 'Thunderbird could not reach your mail server to send. The connection timed out. Your message is saved in Drafts in Thunderbird.');
+  assert.equal(state.drafts.at(-1).subject, 'testing');
+  assert.equal(state.drafts.at(-1).options.mode, 'draft');
+  assert.deepEqual(state.openCompose, [], 'the failed message window is closed');
+  state.failSend = '535 5.7.139 Authentication unsuccessful for will@work.example';
+  const signIn = await bridge.handle({id: 11, method: 'send', params: {identityId: 'id1', to: ['x@work.example'], subject: 's', html: '', plain: 'x'}});
+  assert.match(signIn.error.message, /did not accept the sign-in/);
+  assert.doesNotMatch(JSON.stringify(signIn), /will@work/);
+  // A draft that cannot be saved stays open, and that is said.
+  state.failSave = true; state.failSend = 'Unknown problem';
+  const unsaved = await bridge.handle({id: 12, method: 'send', params: {identityId: 'id1', to: ['x@work.example'], subject: 's', html: '', plain: 'x'}});
+  assert.equal(unsaved.error.message, 'Thunderbird could not send this message. Your message is still open in Thunderbird.');
+  assert.equal(state.openCompose.length, 1);
+  state.failSave = false; state.composeStaysOpen = false; state.openCompose = [];
   state.failSend = false;
 
   // Unknown or malformed requests are refused.
@@ -169,6 +196,7 @@ function load(api) {
   await pagingChecks();
   await mailCheckChecks();
   await experimentChecks();
+  await quitChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
 
@@ -228,6 +256,28 @@ async function pagingChecks() {
   state.messages = state.messages.filter(m => m.folderId !== inbox); now += 10 * 60 * 1000;
   const empty = await call('list', {folderId: inbox, offset: 0, limit: 10, last: true});
   assert.deepEqual(empty.rows, []); assert.equal(empty.offset, 0); assert.equal(empty.next, null);
+}
+
+// Will, 0.2.162: Thunderbird that Voice Companion started should close with Voice Companion.
+async function quitChecks() {
+  const app = {composing: 1, quits: []};
+  const api = loadExperiment(null, fakeOAuth(), fakeMailServices(), app);
+  // A message is being written: Thunderbird stays open.
+  assert.deepEqual(plain(await api.quitThunderbird()), {quit: false, reason: 'composing'});
+  await new Promise(r => setTimeout(r, 5));
+  assert.deepEqual(app.quits, []);
+  // Nothing open: Thunderbird is asked to close the normal way (it may still ask about unsent mail).
+  app.composing = 0;
+  assert.deepEqual(plain(await api.quitThunderbird()), {quit: true});
+  await new Promise(r => setTimeout(r, 5));
+  assert.deepEqual(app.quits, [2]);
+  // The add-on asks through the Experiment; without it, it says so.
+  const {api: messenger} = createFakeMessenger();
+  const bridge = load(messenger);
+  messenger.voiceCompanionSetup.quitThunderbird = async () => ({quit: true});
+  assert.deepEqual(plain((await bridge.handle({id: 3, method: 'quit', params: {}})).result), {quit: true});
+  delete messenger.voiceCompanionSetup.quitThunderbird;
+  assert.deepEqual(plain((await bridge.handle({id: 4, method: 'quit', params: {}})).result), {quit: false, reason: 'unavailable'});
 }
 
 async function freshnessChecks() {
@@ -407,12 +457,16 @@ function fakeOAuth() {
   return {OAuth2, ExternalRequest, InternalRequest, signIn};
 }
 
-function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices()) {
+function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app = {composing: 0, quits: []}) {
   const modules = url => (url.includes('OAuth2') ? {OAuth2: oauth.OAuth2} : url.includes('MailServices') ? {MailServices: mail.MailServices}
     : {ExtensionCommon: {ExtensionAPI: class {}}});
   const context = vm.createContext({
     ChromeUtils: {importESModule: modules, generateQI: names => function QueryInterface() { return this; }},
-    Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null)}, io: mail.io},
+    Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null),
+                    getEnumerator: type => ({hasMoreElements: () => type === 'msgcompose' && app.composing > 0})},
+               io: mail.io, tm: {dispatchToMainThread: run => setTimeout(run, 0)},
+               startup: {quit: how => app.quits.push(how)}},
+    Ci: {nsIAppStartup: {eAttemptQuit: 2}},
     setTimeout, WeakRef, Symbol, Object, URL,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);
