@@ -288,10 +288,13 @@ class MailSession:
         self.page_cursor = cursor
         self.selected = {index for index, row in enumerate(self.rows, 1)
                          if row['id'] in self.marked_ids}
+        # Thunderbird: why the newest mail may be missing, said after the list (never silent).
+        notice = getattr(client, 'notice', '') or ''
+        notice = (' ' + notice) if isinstance(notice, str) and notice else ''
         if not self.rows:
-            return 'Empty list. No messages on this page of ' + self.folder_name + '.'
+            return 'Empty list. No messages on this page of ' + self.folder_name + '.' + notice
         self.current = 1
-        return self.folder_name + '. ' + self._summary(1,True) + (' More messages are available.' if self.next_cursor else '')
+        return self.folder_name + '. ' + self._summary(1,True) + (' More messages are available.' if self.next_cursor else '') + notice
 
     def _summary(self, number, announce_boundary=False):
         row = self.rows[number - 1]

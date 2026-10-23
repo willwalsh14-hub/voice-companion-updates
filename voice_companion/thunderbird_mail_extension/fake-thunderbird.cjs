@@ -10,6 +10,13 @@ const {createFakeMessenger} = require('./fake-messenger.cjs');
 const {api, state} = createFakeMessenger();
 // Like a person finishing Thunderbird's add account page shortly after it opens.
 state.addAfterSetupMs = Number(process.env.FAKE_THUNDERBIRD_ADD_MS || 300);
+// New mail waiting on the server, and how Thunderbird's check for it goes.
+if (process.env.FAKE_THUNDERBIRD_SERVER_MAIL) {
+  state.server.push({id: 26, folderId: 'account1://INBOX', date: new Date(Date.UTC(2026, 9, 26, 9)), author: 'Newest <newest@example.com>',
+    subject: 'Message 26', read: false, size: 1026, recipients: ['me@gmail.com'], ccList: [], headerMessageId: 'msg26@example.com',
+    html: '', plain: 'Plain text of message 26', replyTo: ''});
+}
+state.mailCheck = process.env.FAKE_THUNDERBIRD_MAIL_CHECK || 'ok';
 const messageListeners = [], disconnectListeners = [];
 
 function write(message) {
@@ -46,5 +53,9 @@ api.runtime.connectNative = name => {
   };
 };
 
-const context = vm.createContext({console, setTimeout, messenger: api, JSON});
+const context = vm.createContext({console, setTimeout, clearTimeout, messenger: api, JSON});
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
+// A short wait for the mail check, so a check that never ends does not slow the tests.
+if (process.env.FAKE_THUNDERBIRD_CHECK_MS) {
+  vm.runInContext('MailBridge.MAIL_CHECK_MS = ' + Number(process.env.FAKE_THUNDERBIRD_CHECK_MS), context);
+}

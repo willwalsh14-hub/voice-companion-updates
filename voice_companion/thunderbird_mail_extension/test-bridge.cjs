@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const {createFakeMessenger} = require('./fake-messenger.cjs');
 
 function load(api) {
-  const context = vm.createContext({console, setTimeout, VOICE_COMPANION_TEST: true, messenger: api});
+  const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api});
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
   return new (vm.runInContext('MailBridge', context))(api);
 }
@@ -165,9 +165,97 @@ function load(api) {
   assert.equal(state.windows[1].state, 'normal');
   assert.deepEqual(await call('minimize'), {minimized: 0});
 
+  await freshnessChecks();
+  await mailCheckChecks();
   await experimentChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+
+// ---- The newest mail comes first, and Thunderbird checks the server before listing ----
+
+const DAY = 24 * 60 * 60 * 1000;
+
+function fakeMessage(id, date, extra = {}) {
+  return {id, folderId: 'account1://INBOX', date, author: `Sender ${id} <s${id}@example.com>`, subject: `Message ${id}`, read: true,
+    size: 100, recipients: ['me@gmail.com'], ccList: [], headerMessageId: `m${id}@example.com`, html: '', plain: '', replyTo: '', ...extra};
+}
+
+async function freshnessChecks() {
+  let {api, state} = createFakeMessenger();
+  let bridge = load(api);
+  const call = async (method, params) => {
+    const answer = await bridge.handle({id: 8, method, params});
+    if (answer.error) throw new Error(answer.error.message);
+    return JSON.parse(JSON.stringify(answer.result));
+  };
+  const inbox = 'account1://INBOX';
+
+  // New mail is on the server but not yet in Thunderbird (it was just started in the background,
+  // or has not checked for a while). Listing asks Thunderbird to check that folder first.
+  state.server.push(fakeMessage(26, new Date(Date.UTC(2026, 9, 26, 9)), {read: false}));
+  let first = await call('list', {folderId: inbox, offset: 0, limit: 10});
+  assert.equal(first.rows[0].id, 26, 'the message that just arrived is first');
+  assert.equal(first.mailCheck, 'checked');
+  assert.deepEqual(state.mailChecks, [{accountId: 'account1', path: '/INBOX', inbox: true}]);
+  // Later pages of the same list do not check again (that would move messages between pages).
+  const second = await call('list', {folderId: inbox, offset: 10, limit: 10});
+  assert.equal(second.rows[0].id, 16);
+  assert.equal(second.mailCheck, undefined);
+  assert.equal(state.mailChecks.length, 1);
+  // Other folders are checked by their own path.
+  await call('list', {folderId: 'account1://Receipts', offset: 0, limit: 10});
+  assert.deepEqual(state.mailChecks.at(-1), {accountId: 'account1', path: '/Receipts', inbox: false});
+
+  // When the check fails, is offline, or is slow, the list still comes, and says why it may be old.
+  state.mailCheck = 'fail';
+  assert.equal((await call('list', {folderId: inbox, offset: 0, limit: 10})).mailCheck, 'failed');
+  state.mailCheck = 'offline';
+  assert.equal((await call('list', {folderId: inbox, offset: 0, limit: 10})).mailCheck, 'offline');
+  state.mailCheck = 'hang';
+  bridge.constructor.MAIL_CHECK_MS = 50;
+  const started = Date.now();
+  const slow = await call('list', {folderId: inbox, offset: 0, limit: 10});
+  assert.equal(slow.mailCheck, 'slow');
+  assert.equal(slow.rows[0].id, 26);
+  assert.ok(Date.now() - started < 2000, 'a check that never ends does not hold up the list');
+  const getNewMail = api.voiceCompanionSetup.getNewMail;
+  api.voiceCompanionSetup.getNewMail = async () => { throw new Error('Folder busy'); };
+  assert.equal((await call('list', {folderId: inbox, offset: 0, limit: 10})).mailCheck, 'failed');
+  // Experiments turned off in Thunderbird, or an older Experiment: listed as before, nothing to say.
+  delete api.voiceCompanionSetup.getNewMail;
+  assert.equal((await call('list', {folderId: inbox, offset: 0, limit: 10})).mailCheck, 'unavailable');
+  api.voiceCompanionSetup.getNewMail = getNewMail;
+
+  // Thunderbird lists in database order, which is not date order: newest by date still comes first.
+  ({api, state} = createFakeMessenger());
+  bridge = load(api);
+  const now = Date.now();
+  state.messages = [fakeMessage(1, new Date(now - 2 * DAY)), fakeMessage(2, new Date(now - 400 * DAY)),
+    fakeMessage(3, new Date(now - 3 * DAY)), fakeMessage(4, new Date(now - 60 * DAY)), fakeMessage(5, new Date(now - DAY / 2))];
+  first = await call('list', {folderId: inbox, offset: 0, limit: 10});
+  assert.deepEqual(first.rows.map(r => r.id), [5, 1, 3, 4, 2]);
+  assert.equal(first.next, null);
+  const page2 = await call('list', {folderId: inbox, offset: 0, limit: 20});
+  assert.deepEqual(page2.rows.map(r => r.id), [5, 1, 3, 4, 2]);
+
+  // A big Gmail inbox: 60,000 messages. The newest arrived last, so it is at the end of Thunderbird's list.
+  ({api, state} = createFakeMessenger());
+  bridge = load(api);
+  state.messages = [];
+  for (let i = 1; i <= 60000; i++) state.messages.push(fakeMessage(i, new Date(now - 3000 * DAY + i * 60000)));
+  state.messages.push(fakeMessage(60001, new Date(now - 60000)));
+  state.messages.push(fakeMessage(60002, new Date(now - 120000)));
+  first = await call('list', {folderId: inbox, offset: 0, limit: 10});
+  assert.deepEqual(first.rows.slice(0, 4).map(r => r.id), [60001, 60002, 60000, 59999]);
+  assert.equal(first.next, 10);
+  // All of it is years old, and the newest is last: still first in the list.
+  for (const m of state.messages) m.date = new Date(m.date.getTime() - 2000 * DAY);
+  first = await call('list', {folderId: inbox, offset: 0, limit: 100});
+  assert.deepEqual(first.rows.slice(0, 3).map(r => r.id), [60001, 60002, 60000]);
+  assert.equal(first.rows.length, 100);
+  const deep = await call('list', {folderId: inbox, offset: 100, limit: 100});
+  assert.deepEqual(deep.rows.slice(0, 2).map(r => r.id), [59902, 59901]);
+}
 
 // ---- The Experiment (experiment/implementation.js) against a simulated Thunderbird window ----
 
@@ -269,10 +357,12 @@ function fakeOAuth() {
   return {OAuth2, ExternalRequest, InternalRequest, signIn};
 }
 
-function loadExperiment(win, oauth = fakeOAuth()) {
+function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices()) {
+  const modules = url => (url.includes('OAuth2') ? {OAuth2: oauth.OAuth2} : url.includes('MailServices') ? {MailServices: mail.MailServices}
+    : {ExtensionCommon: {ExtensionAPI: class {}}});
   const context = vm.createContext({
-    ChromeUtils: {importESModule: url => (url.includes('OAuth2') ? {OAuth2: oauth.OAuth2} : {ExtensionCommon: {ExtensionAPI: class {}}})},
-    Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null)}},
+    ChromeUtils: {importESModule: modules, generateQI: names => function QueryInterface() { return this; }},
+    Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null)}, io: mail.io},
     setTimeout, WeakRef, Symbol, Object, URL,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);
@@ -284,6 +374,64 @@ function loadExperiment(win, oauth = fakeOAuth()) {
 }
 
 const plain = value => JSON.parse(JSON.stringify(value));
+
+// Thunderbird's mail accounts as the Experiment sees them (nsIMsgFolder, nsIMsgIncomingServer).
+// Folder addresses encode each part, as Thunderbird does: [Gmail] is %5BGmail%5D.
+function fakeMailServices() {
+  const calls = [];
+  const mail = {calls, io: {offline: false}, status: 0, answer: true};
+  const finish = listener => { if (mail.answer) setTimeout(() => listener.OnStopRunningUrl({spec: 'imap://x'}, mail.status), 5); };
+  const folder = (server, uri, flags = 0) => ({URI: uri, flags,
+    updateFolderWithListener(win, listener) { calls.push({how: 'update', uri, win}); if (mail.throws) throw new Error('busy'); finish(listener); }});
+  const imap = {type: 'imap'}, pop = {type: 'pop3'}, local = {type: 'none'};
+  const gmailRoot = 'imap://me%40gmail.com@imap.gmail.com';
+  imap.rootFolder = {URI: gmailRoot, descendants: [folder(imap, gmailRoot + '/INBOX', 0x1000),
+    folder(imap, gmailRoot + '/%5BGmail%5D'), folder(imap, gmailRoot + '/%5BGmail%5D/Sent%20Mail'), folder(imap, gmailRoot + '/Receipts')],
+    getFolderWithFlags(flags) { return this.descendants.find(f => f.flags & flags) || null; }};
+  const popInbox = folder(pop, 'mailbox://me@pop.example.com/Inbox', 0x1000);
+  pop.rootFolder = {URI: 'mailbox://me@pop.example.com', descendants: [popInbox], getFolderWithFlags: () => popInbox};
+  pop.getNewMessages = (target, win, listener) => { calls.push({how: 'pop', uri: target.URI, win}); finish(listener); };
+  const localInbox = folder(local, 'mailbox://nobody@Local%20Folders/Inbox', 0x1000);
+  local.rootFolder = {URI: 'mailbox://nobody@Local%20Folders', descendants: [localInbox], getFolderWithFlags: () => localInbox};
+  const servers = {account1: imap, account2: pop, account3: local};
+  mail.MailServices = {accounts: {getAccount: id => (servers[id] ? {incomingServer: servers[id]} : null)}};
+  return mail;
+}
+
+async function mailCheckChecks() {
+  const mail = fakeMailServices();
+  const api = loadExperiment(null, fakeOAuth(), mail);
+  const gmail = 'imap://me%40gmail.com@imap.gmail.com';
+  // IMAP (Gmail): the folder named by its add-on path is updated from the server, with no window.
+  assert.deepEqual(plain(await api.getNewMail('account1', '/INBOX', true)), {checked: true, offline: false});
+  assert.deepEqual(mail.calls.at(-1), {how: 'update', uri: gmail + '/INBOX', win: null});
+  assert.deepEqual(plain(await api.getNewMail('account1', '/[Gmail]/Sent Mail', false)), {checked: true, offline: false});
+  assert.equal(mail.calls.at(-1).uri, gmail + '/%5BGmail%5D/Sent%20Mail');
+  // A path that is not found: the inbox is still found by its kind; any other folder is not checked.
+  assert.deepEqual(plain(await api.getNewMail('account1', '/Inbox', true)), {checked: true, offline: false});
+  assert.equal(mail.calls.at(-1).uri, gmail + '/INBOX');
+  const before = mail.calls.length;
+  assert.deepEqual(plain(await api.getNewMail('account1', '/Missing', false)), {checked: false, offline: false});
+  assert.deepEqual(plain(await api.getNewMail('account9', '/INBOX', true)), {checked: false, offline: false});
+  assert.equal(mail.calls.length, before);
+  // The server refused (for example, Gmail needs the user to sign in again).
+  mail.status = 0x804B000D;
+  assert.deepEqual(plain(await api.getNewMail('account1', '/INBOX', true)), {checked: false, offline: false});
+  mail.status = 0;
+  mail.throws = true;
+  assert.deepEqual(plain(await api.getNewMail('account1', '/INBOX', true)), {checked: false, offline: false});
+  mail.throws = false;
+  // POP: Thunderbird's Get Messages for the inbox. Local Folders: nothing to fetch.
+  assert.deepEqual(plain(await api.getNewMail('account2', '/Inbox', true)), {checked: true, offline: false});
+  assert.deepEqual(mail.calls.at(-1), {how: 'pop', uri: 'mailbox://me@pop.example.com/Inbox', win: null});
+  const count = mail.calls.length;
+  assert.deepEqual(plain(await api.getNewMail('account3', '/Inbox', true)), {checked: true, offline: false});
+  assert.equal(mail.calls.length, count);
+  // Thunderbird set to work offline: nothing is asked of the server, and it says so.
+  mail.io.offline = true;
+  assert.deepEqual(plain(await api.getNewMail('account1', '/INBOX', true)), {checked: false, offline: true});
+  assert.equal(mail.calls.length, count);
+}
 
 async function experimentChecks() {
   // Thunderbird 128 to 149: openAccountSetup() opens a tab; address and name are filled in.
@@ -447,5 +595,6 @@ async function experimentChecks() {
   assert.ok(schema[0].functions.every(f => f.async === true && f.type === 'function'));
   assert.ok(fs.existsSync(path.join(__dirname, declared.parent.script)));
   const [major, minor] = manifest.version.split('.').map(Number);
-  assert.ok(major > 1 || minor >= 1, 'the add-on version was raised so installed copies are replaced');
+  // 1.2.0 checks for new mail before listing; a higher version replaces installed 1.1 copies.
+  assert.ok(major > 1 || minor >= 2, 'the add-on version was raised so installed copies are replaced');
 }

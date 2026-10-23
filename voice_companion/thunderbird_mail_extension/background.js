@@ -7,8 +7,11 @@
 const HOST = 'com.voicecompanion.mail';
 const PROTOCOL = 3;
 const RETRY_MS = 30000;
-const MAX_MESSAGES = 50000;
+const MAX_MESSAGES = 50000;      // the newest this many are kept for paging; older ones are read past
 const PAGE_SIZES = [10, 20, 30, 40, 50, 100];
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Recent mail first: most lists are filled from the last week, without reading years of mail.
+const RECENT_DAYS = [7, 31, 366];
 
 class MailBridge {
   constructor(api) {
@@ -77,26 +80,70 @@ class MailBridge {
     return {messagesTotal: info.totalMessageCount, unread: info.unreadMessageCount};
   }
 
-  async list({folderId, offset = 0, limit = 10}) {
-    if (!PAGE_SIZES.includes(limit) || !Number.isInteger(offset) || offset < 0) throw MailBridge.fail('page', 'Invalid message page.');
-    await this.folder(folderId);
-    const headers = [];
-    let page = await this.api.messages.query({folderId, messagesPerPage: 1000, autoPaginationTimeout: 0});
+  // Thunderbird shows only mail it has downloaded. It checks the server on its own every few
+  // minutes, but not at once after it starts in the background, and not if the check failed.
+  // So before a list, ask it to check this folder now, and wait a limited time.
+  // Answers 'checked', 'failed', 'offline', 'slow', or 'unavailable' (no Experiment).
+  async checkMail(folder) {
+    const setup = this.api.voiceCompanionSetup;
+    if (!setup || typeof setup.getNewMail !== 'function') return 'unavailable';
+    let timer;
+    const slow = new Promise(resolve => { timer = setTimeout(() => resolve('slow'), MailBridge.MAIL_CHECK_MS); });
+    const check = (async () => {
+      const result = await setup.getNewMail(String(folder.accountId || ''), String(folder.path || ''),
+        (folder.specialUse || []).includes('inbox'));
+      if (result && result.offline) return 'offline';
+      return result && result.checked ? 'checked' : 'failed';
+    })().catch(() => 'failed');
+    try {
+      return await Promise.race([check, slow]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Every message in the folder dated after fromDate (all when null), newest first.
+  // Thunderbird answers in its own database order, page by page, so every page is read.
+  async headers(folderId, fromDate) {
+    const query = {folderId, messagesPerPage: 1000, autoPaginationTimeout: 0};
+    if (fromDate) query.fromDate = fromDate;
+    const newest = (a, b) => b.date - a.date || b.id - a.id;
+    let found = [];
+    let page = await this.api.messages.query(query);
     while (page) {
-      for (const header of page.messages || []) {
-        headers.push({id: header.id, date: new Date(header.date).getTime() || 0, header});
-        if (headers.length >= MAX_MESSAGES) break;
-      }
-      if (!page.id || headers.length >= MAX_MESSAGES) break;
+      for (const header of page.messages || []) found.push({id: header.id, date: new Date(header.date).getTime() || 0, header});
+      // A huge folder: keep the newest, never the first ones read (those are the oldest).
+      if (found.length >= 2 * MAX_MESSAGES) found = found.sort(newest).slice(0, MAX_MESSAGES);
+      if (!page.id) break;
       page = await this.api.messages.continueList(page.id);
     }
+    found.sort(newest);
+    return found.slice(0, MAX_MESSAGES);
+  }
+
+  async list({folderId, offset = 0, limit = 10}) {
+    if (!PAGE_SIZES.includes(limit) || !Number.isInteger(offset) || offset < 0) throw MailBridge.fail('page', 'Invalid message page.');
+    const folder = await this.folder(folderId);
+    // Only the first page checks the server, so later pages of the same list do not shift.
+    const mailCheck = offset === 0 ? await this.checkMail(folder) : undefined;
+    // One more than the page shows tells whether more messages follow.
+    const needed = offset + limit + 1;
+    let headers = null;
+    const now = Date.now();
+    for (const days of RECENT_DAYS) {
+      const recent = await this.headers(folderId, new Date(now - days * DAY_MS));
+      // Everything newer than the cut-off is here, so the newest messages are complete.
+      if (recent.length >= needed) { headers = recent; break; }
+    }
+    if (!headers) headers = await this.headers(folderId, null);
     // Newest first, like Gmail and Outlook in Voice Companion.
-    headers.sort((a, b) => b.date - a.date || b.id - a.id);
     const rows = headers.slice(offset, offset + limit).map(({header}) => ({
       id: header.id, from: header.author || '', subject: header.subject || '',
       date: header.date ? new Date(header.date).toISOString() : '', size: header.size, unread: header.read === false
     }));
-    return {rows, next: headers.length > offset + limit ? offset + limit : null};
+    const answer = {rows, next: headers.length > offset + limit ? offset + limit : null};
+    if (mailCheck) answer.mailCheck = mailCheck;
+    return answer;
   }
 
   static textOf(part, type, found = []) {
@@ -307,6 +354,7 @@ class MailBridge {
   }
 }
 
+MailBridge.MAIL_CHECK_MS = 15000;   // longest wait for Thunderbird's check for new mail
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
   'captureSignIn', 'takeSignIn', 'minimize'];

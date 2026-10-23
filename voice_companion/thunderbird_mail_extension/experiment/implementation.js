@@ -19,6 +19,10 @@
  *    else about Thunderbird's sign-in changes, and outside that time nothing is
  *    touched.
  *
+ *  - getNewMail: ask Thunderbird to check the mail server for one folder now, the
+ *    same as when a person opens that folder, so Voice Companion lists the newest
+ *    mail. Thunderbird's add-on interface has no way to ask for this.
+ *
  * It never reads or changes accounts, passwords or settings, and it logs nothing.
  */
 'use strict';
@@ -235,6 +239,64 @@ function unhook() {
   }
 }
 
+// ---- Checking the server for new mail -------------------------------------------
+
+const INBOX_FLAG = 0x00001000;   // nsMsgFolderFlags.Inbox
+
+function mailServices() {
+  return ChromeUtils.importESModule('resource:///modules/MailServices.sys.mjs').MailServices;
+}
+
+// A folder's path as Thunderbird's add-on interface gives it ("/INBOX", "/[Gmail]/Sent Mail"):
+// the folder address after the account's, each part decoded.
+function folderPath(root, folder) {
+  const rootURI = String(root.URI || ''), uri = String(folder.URI || '');
+  if (uri === rootURI) return '/';
+  if (!rootURI || !uri.startsWith(rootURI + '/')) return null;
+  try { return uri.slice(rootURI.length).split('/').map(decodeURIComponent).join('/'); } catch (error) { return null; }
+}
+
+function findFolder(accountId, path, inbox) {
+  const account = mailServices().accounts.getAccount(accountId);
+  const server = account && account.incomingServer;
+  const root = server && server.rootFolder;
+  if (!root) return null;
+  for (const folder of root.descendants || []) {
+    if (folderPath(root, folder) === path) return {server, folder};
+  }
+  const found = inbox && root.getFolderWithFlags(INBOX_FLAG);
+  return found ? {server, folder: found} : null;
+}
+
+// Thunderbird reports success as 0 (NS_OK); failures have the top bit set.
+const succeeded = status => (Number(status) >>> 0) < 0x80000000;
+
+function getNewMail(accountId, path, inbox) {
+  if (Services.io.offline) return Promise.resolve({checked: false, offline: true});
+  const found = findFolder(accountId, path, inbox);
+  if (!found) return Promise.resolve({checked: false, offline: false});
+  const {server, folder} = found;
+  return new Promise(resolve => {
+    const listener = {
+      QueryInterface: ChromeUtils.generateQI(['nsIUrlListener']),
+      OnStartRunningUrl() {},
+      OnStopRunningUrl(url, status) { resolve({checked: succeeded(status), offline: false}); },
+    };
+    try {
+      if (server.type === 'imap') {
+        // What Thunderbird does when a folder is opened: fetch the server's new messages for it.
+        folder.updateFolderWithListener(null, listener);
+      } else if (server.type === 'pop3' && inbox) {
+        server.getNewMessages(folder, null, listener);
+      } else {
+        resolve({checked: true, offline: false});   // local folders: nothing on a server to fetch
+      }
+    } catch (error) {
+      resolve({checked: false, offline: false});
+    }
+  });
+}
+
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     armedUntil = 0; captured = null; pending = null;
@@ -317,6 +379,10 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
           const found = captured;
           captured = null;
           return found || {url: '', where: ''};
+        },
+
+        async getNewMail(accountId, path, inbox) {
+          try { return await getNewMail(accountId, path, Boolean(inbox)); } catch (error) { return {checked: false, offline: false}; }
         },
       },
     };

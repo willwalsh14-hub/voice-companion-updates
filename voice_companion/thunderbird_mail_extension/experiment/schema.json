@@ -1,7 +1,7 @@
 [
   {
     "namespace": "voiceCompanionSetup",
-    "description": "Thunderbird's own add email account page, driven by Voice Companion. Never reads or changes accounts, passwords or settings.",
+    "description": "Thunderbird's own add email account page, driven by Voice Companion, and a check for new mail in one folder. Never reads or changes accounts, passwords or settings.",
     "functions": [
       {
         "name": "openAccountSetup",
@@ -74,6 +74,26 @@
         "async": true,
         "description": "The sign-in address handed over, once. Resolves to {url, where}.",
         "parameters": []
+      },
+      {
+        "name": "getNewMail",
+        "type": "function",
+        "async": true,
+        "description": "Ask the mail server for new messages in one folder now, as when the folder is opened. Resolves to {checked, offline}.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "type": "string"
+          },
+          {
+            "name": "inbox",
+            "type": "boolean"
+          }
+        ]
       }
     ]
   }
