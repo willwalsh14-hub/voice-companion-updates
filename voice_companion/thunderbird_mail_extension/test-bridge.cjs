@@ -214,10 +214,16 @@ function fakeWindow({opener = 'openAccountSetup', form = () => setupForm(), hub 
     if (!parts) return;
     win.parts = parts;
     if (hub) {
-      // Account Hub keeps its form inside custom elements in the main window.
-      const host = new FakeElement('account-hub-email');
-      host.shadowRoot = new FakeElement('shadow', {}, parts);
-      document.children.push(new FakeElement('account-hub-container', {}, [host]));
+      // As in Thunderbird 158: <account-hub-container> in the body, its dialog in its own
+      // shadow root, the email view inside, each step and the footer with shadow roots too.
+      const step = new FakeElement('email-auto-form');
+      step.shadowRoot = new FakeElement('shadow', {}, parts.filter(p => p.localName !== 'button'));
+      const footer = new FakeElement('account-hub-footer');
+      footer.shadowRoot = new FakeElement('shadow', {}, parts.filter(p => p.localName === 'button'));
+      const view = new FakeElement('account-hub-email', {}, [step, footer]);
+      const container = new FakeElement('account-hub-container');
+      container.shadowRoot = new FakeElement('shadow', {}, [new FakeElement('dialog', {}, [view])]);
+      document.children.push(container);
     } else {
       const page = new FakeElement('page', {}, parts);
       page.documentURI = 'about:accountsetup';
@@ -298,7 +304,12 @@ async function experimentChecks() {
   api = loadExperiment(win);
   assert.deepEqual(plain(await api.openAccountSetup('a@b.com', '', true)), {opened: true, prefilled: true});
   assert.equal(win.focused, 1, 'shown when asked');
-  assert.equal((await api.setupPage()).needsPassword, true);
+  const hubPage = plain(await api.setupPage());
+  assert.equal(hubPage.title, 'Set up your existing email address');
+  assert.equal(hubPage.button, 'Continue');
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
+  assert.equal(win.parts.at(-1).clicks, 1);
+  assert.equal(hubPage.needsPassword, true);
   assert.deepEqual(plain(await api.fillPassword('app pass')), {filled: true});
   const password = win.parts.find(p => p.id === 'password');
   assert.equal(password.value, 'app pass');
