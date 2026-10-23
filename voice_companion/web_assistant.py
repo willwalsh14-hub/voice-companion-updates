@@ -970,20 +970,20 @@ class BrowserBackend:
                     state['focus']=inner['focus'];break
         return state
 
-    def press_page_key(self,key):
-        """App mode: one real key press for the page, and what it changed."""
+    def press_page_key(self,key,focus=None):
+        """App mode: one real key press for the page, and what it changed.
+
+        Two quick page reads and the key itself; nothing waits. A site that
+        answers a moment later is heard at the next check (WebSession.app_changes).
+        focus is an element to give keyboard focus first (the browse cursor's
+        element, for the first key after switching to app mode)."""
         self._watch_dialogs()
+        if focus is not None:
+            try:self.focus_for_keys(focus)
+            except Exception:pass
         before=self.page_key_state(drain=True)
         self.page.keyboard.press(key)
-        snapshot=lambda s:json.dumps(s.get('focus'),sort_keys=True)
-        after=self.page_key_state()
-        # Sites answer some keys a moment later; wait briefly for a change.
-        for _ in range(6):
-            if after.get('live') or snapshot(after)!=snapshot(before):break
-            self.page.wait_for_timeout(25)
-            after=self.page_key_state()
-        after['live']=after.get('live',[])+self.page_key_state(drain=True).get('live',[])
-        return before,after
+        return before,self.page_key_state(drain=True)
 
     def focus_for_keys(self,item):
         """Give keyboard focus to an element without clicking it."""
@@ -1108,6 +1108,11 @@ class RefreshPacer:
         self.next_at=max(started+self.interval,finished+min(self.longest,self.factor*self.cost))
 
 
+# Elements that take keys at once when app mode starts on them.
+APP_FOCUS_KINDS=('link','button','edit','combobox','listbox','checkbox','radio','slider','spinbutton','switch','tab',
+                 'menuitem','menuitemcheckbox','menuitemradio','treeitem','option')
+
+
 class WebSession:
     def __init__(self, folder, backend=None, progress=None):
         self.progress=progress or (lambda text:None)
@@ -1149,6 +1154,7 @@ class WebSession:
         self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
         # App mode is remembered per site until leaving the web screen.
         self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
+        self.app_focus_pending=None;self.app_state=None;self.refresh_now=False
 
     def address_allowed(self,url):
         try:
@@ -1405,22 +1411,30 @@ class WebSession:
             return BROWSE_MODE+(self._browse_at_focus() if was_app else '')
         self.app_mode_hosts.add(self._host());self.mode_announced=True
         # Keys go where the browse cursor is, as they would for a mouse user.
+        # Focus moves with the first key, so switching modes itself is instant.
         item=self.browse.current() if self.browse else None
-        if item and not item.get('disabled') and kind(item) in ('link','button','edit','combobox','listbox','checkbox','radio','slider','spinbutton','switch','tab','menuitem','menuitemcheckbox','menuitemradio','treeitem','option'):
-            try:self.backend.focus_for_keys(item)
-            except Exception:pass
-        try:self.backend.page_key_state(drain=True)  # Start listening for page announcements.
-        except Exception:pass
+        self.app_focus_pending=item if item and not item.get('disabled') and kind(item) in APP_FOCUS_KINDS else None
+        self.app_state=None
         return APP_MODE
 
     def _browse_at_focus(self):
-        """After app mode, put the browse cursor where keyboard focus ended."""
+        """After app mode, put the browse cursor where keyboard focus ended.
+
+        The element is found in the page view Companion already has, so this
+        is one quick question to the page. The view itself catches up at the
+        next check (refresh_now asks for that check at once)."""
+        self.app_focus_pending=None;self.app_state=None;self.refresh_now=True
         try:key=self.backend.focused_key()
         except Exception:key=None
-        try:self._refresh(read=False,preserve=True,wait=False)
-        except Exception:return ''
-        item=next((e for e in self.browse.elements if key and e.get('key')==key and 'frame_index' not in e),None)
-        if not item:return ''
+        if not key:return ''
+        find=lambda:next((e for e in self.browse.elements if e.get('key')==key and 'frame_index' not in e),None) if self.browse else None
+        item=find()
+        if not item:
+            # An element the page made while keys went to it: read the page now.
+            try:self._refresh(read=False,preserve=True,wait=False)
+            except Exception:return ''
+            item=find()
+            if not item:return ''
         self.browse.index=self.browse.elements.index(item);self.browse.position=item.get('start',0)
         self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
         return ' '+describe(item)
@@ -1428,13 +1442,27 @@ class WebSession:
     def pass_key(self,key):
         """App mode: the key goes to the page; say what changed."""
         if not self.app_mode:return ''  # A key typed just before leaving app mode.
-        try:before,after=self.backend.press_page_key(key)
+        focus=getattr(self,'app_focus_pending',None);self.app_focus_pending=None
+        try:before,after=self.backend.press_page_key(key,focus) if focus else self.backend.press_page_key(key)
         except Exception:return 'The page did not take that key. Press F5 to refresh the page.'
+        self.app_state=after
         from web_modes import page_key_feedback
         notice=page_key_feedback(key,before,after)
         dialog=getattr(self.backend,'dialog_notice','')
         if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+'. '+notice).strip()
         return notice
+
+    def app_changes(self):
+        """App mode check between keys: what the page said or where its focus went.
+
+        The page view is not read again while keys go to the page; a busy page
+        (a video's clock, new comments) would hold up every key."""
+        if not hasattr(self.backend,'page_key_state'):return ''
+        try:state=self.backend.page_key_state(drain=True)
+        except Exception:return ''
+        before=getattr(self,'app_state',None);self.app_state=state
+        from web_modes import page_change_feedback
+        return page_change_feedback(before,state)
 
     def begin_slider(self,item):
         """Arrow keys now change this slider on the page, until Escape or Tab."""
@@ -1867,6 +1895,7 @@ class WebSession:
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
+        self.refresh_now=False
         suggestions=self.suggestions_notice()
         return self._refresh_changed() or suggestions
 
@@ -1897,6 +1926,7 @@ class WebSession:
         previous=self.document_state or {}
         if stamp.get('url')!=previous.get('url'):return self._refresh(wait=False)
         if stamp.get('epoch')!=previous.get('epoch'):return self._refresh(read=False,wait=False)
+        if self.app_mode:return self.app_changes()
         if self.form_index is not None or self.pending or self.submit_pending:return ''
         if not self.keyboard_field and not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True,wait=False)
         if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames','frame_states')):return ''

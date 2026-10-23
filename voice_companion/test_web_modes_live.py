@@ -143,8 +143,9 @@ class WebModeLiveTests(unittest.TestCase):
         self.load(YOUTUBE_PLAYER)
         self.session.command('next slider')
         self.assertEqual(self.session.command('Virtual cursor off.'), 'App mode.')
-        self.assertEqual(self.page.evaluate("document.activeElement.className"), 'ytp-progress-bar')
+        # The first key goes to the element at the browse cursor.
         self.assertEqual(self.session.keyboard('Pass:End'), '4:05 of 4:05.')
+        self.assertEqual(self.page.evaluate("document.activeElement.className"), 'ytp-progress-bar')
         self.assertTrue(self.session.command('Browse mode.').startswith('Browse mode. Seek slider'))
         self.assertEqual(self.session.command('focus mode'), 'App mode.')
         self.assertTrue(self.session.command('virtual cursor on').startswith('Browse mode.'))
@@ -194,6 +195,114 @@ class WebModeLiveTests(unittest.TestCase):
         self.session.keyboard_field['value'] = 'cat v';self.session.combo_typed()
         self.page.wait_for_function("document.querySelectorAll('[role=option]').length===1")
         self.assertEqual(self.session.suggestions_notice(time.monotonic() + 1), 'New suggestions available.')
+
+
+
+class Counted:
+    """Counts the page work Companion asks for: page reads, scripts, key presses and waits."""
+    def __init__(self, backend):
+        self.backend = backend; self.page = backend.page
+        self.counts = {'snapshot': 0, 'evaluate': 0, 'press': 0, 'wait': 0}
+        self.originals = (backend.snapshot, self.page.evaluate, self.page.keyboard.press, self.page.wait_for_timeout)
+        snapshot, evaluate, press, wait = self.originals
+        def count(name, action):
+            def counted(*args, **kwargs):
+                self.counts[name] += 1; return action(*args, **kwargs)
+            return counted
+        backend.snapshot = count('snapshot', snapshot); self.page.evaluate = count('evaluate', evaluate)
+        self.page.keyboard.press = count('press', press); self.page.wait_for_timeout = count('wait', wait)
+
+    def reset(self):
+        for name in self.counts: self.counts[name] = 0
+
+    def restore(self):
+        del self.backend.snapshot; del self.page.evaluate; del self.page.keyboard.press; del self.page.wait_for_timeout
+
+
+# A busy page: many comments, a clock that changes, and a player that answers
+# the K key a moment later, as YouTube does.
+BUSY_PLAYER = YOUTUBE_PLAYER.replace('<p>After the player</p>', '<p id="clock">0</p>' + ''.join(
+    '<div class="comment"><a href="/user%d">User %d</a><p>Comment %d text.</p><button>Reply</button></div>' % (n, n, n)
+    for n in range(400)) + '<p>After the player</p>') + \
+    '<script>let tick=0;setInterval(()=>{document.getElementById("clock").textContent=String(++tick)},50);' \
+    'document.addEventListener("keydown",e=>{if(e.key==="d")setTimeout(()=>{document.querySelector(".ytp-bezel").textContent="Delayed answer"},250);});</script>'
+
+
+class AppModeSpeedTests(unittest.TestCase):
+    """Switching modes is immediate, and each key costs the page only a few quick calls."""
+    setUpClass = classmethod(live.LiveWebTests.setUpClass.__func__)
+    tearDownClass = classmethod(live.LiveWebTests.tearDownClass.__func__)
+    setUp = live.LiveWebTests.setUp
+
+    def load(self, markup):
+        self.page.set_content(markup)
+        self.session._refresh(read=False)
+        self.counted = Counted(self.backend); self.addCleanup(self.counted.restore)
+
+    def test_switching_to_app_mode_does_no_page_work(self):
+        self.load(BUSY_PLAYER)
+        self.session.command('next slider')
+        self.counted.reset()
+        self.assertEqual(self.session.keyboard('ToggleAppMode'), 'App mode.')
+        self.assertEqual(self.counted.counts, {'snapshot': 0, 'evaluate': 0, 'press': 0, 'wait': 0})
+        # The first key still goes to the slider at the browse cursor.
+        self.assertEqual(self.session.keyboard('Pass:End'), '4:05 of 4:05.')
+        self.assertEqual(self.page.evaluate("document.activeElement.className"), 'ytp-progress-bar')
+
+    def test_switching_back_to_browse_mode_does_not_read_the_page_again(self):
+        self.load(BUSY_PLAYER)
+        self.session.command('next slider')
+        self.session.keyboard('ToggleAppMode'); self.session.keyboard('Pass:Tab')
+        self.counted.reset()
+        result = self.session.keyboard('ToggleAppMode')
+        self.assertEqual(result, 'Browse mode. Pause (k), button.')
+        self.assertEqual(self.counted.counts['snapshot'], 0)
+        self.assertLessEqual(self.counted.counts['evaluate'], 1)
+        self.assertEqual(self.counted.counts['wait'], 0)
+        self.assertEqual(self.session.browse.current()['label'], 'Pause (k)')
+        # The page changed while keys went to it; the next check catches up at once.
+        self.assertTrue(self.session.refresh_now)
+        self.page.evaluate("document.querySelector('h1').textContent='New title text'")
+        self.session.refresh_changed()
+        self.assertFalse(self.session.refresh_now)
+        self.assertIn('New title text', self.session.reading.text)
+        self.assertEqual(self.session.browse.current()['label'], 'Pause (k)')
+
+    def test_a_page_key_makes_few_calls_and_never_waits(self):
+        self.load(BUSY_PLAYER)
+        self.session.keyboard('ToggleAppMode')
+        self.session.keyboard('Pass:k')  # The first key also places focus.
+        for key, said in (('k', 'Play.'), ('j', ''), ('Tab', 'Seek slider, 1:13 of 4:05.'), ('ArrowRight', '1:18 of 4:05.')):
+            with self.subTest(key=key):
+                self.counted.reset()
+                started = time.monotonic()
+                self.assertEqual(self.session.keyboard('Pass:' + key), said)
+                self.assertLess(time.monotonic() - started, 0.5)
+                self.assertEqual(self.counted.counts['snapshot'], 0)
+                self.assertEqual(self.counted.counts['wait'], 0)
+                self.assertEqual(self.counted.counts['press'], 1)
+                self.assertLessEqual(self.counted.counts['evaluate'], 2)
+
+    def test_a_late_page_answer_is_said_by_the_next_check(self):
+        self.load(BUSY_PLAYER)
+        self.session.keyboard('ToggleAppMode')
+        self.assertEqual(self.session.keyboard('Pass:d'), '')
+        self.page.wait_for_function("document.querySelector('.ytp-bezel').textContent==='Delayed answer'")
+        self.counted.reset()
+        self.assertEqual(self.session.refresh_changed(), 'Delayed answer.')
+        self.assertEqual(self.session.refresh_changed(), '')
+        # In app mode the page is not read again while it changes (the clock).
+        self.assertEqual(self.counted.counts['snapshot'], 0)
+        # Focus that moves by itself is said too.
+        self.page.evaluate("document.getElementById('comment').focus()")
+        self.assertEqual(self.session.refresh_changed(), 'Comment, edit.')
+
+    def test_a_new_page_in_app_mode_is_still_announced(self):
+        self.load(BUSY_PLAYER)
+        self.session.keyboard('ToggleAppMode')
+        self.page.goto('https://fixture.test/next')
+        self.assertIn('Page loaded', self.session.refresh_changed())
+        self.assertIn('Destination', self.session.reading.text)
 
 
 if __name__ == '__main__':

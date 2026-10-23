@@ -334,6 +334,8 @@ def sync_app_context(mode,focus=False):
         KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
     if focus or context!=UI_CONTEXT_CACHE:
         UI_CONTEXT_CACHE=dict(context);context['focus']=focus;APP_WINDOW.set_context(context)
+        return True
+    return False
 
 def apply_keyboard_edit(payload,mode):
     context=app_context(mode)
@@ -412,11 +414,16 @@ def process_keyboard_batch(mode):
     global KEYBOARD_BATCH,KEYBOARD_BATCH_TEXT,KEYBOARD_BATCH_STATUS,SLEEP_RETURN_MODE
     previous=KEYBOARD_BATCH;KEYBOARD_BATCH=True
     if not previous:KEYBOARD_BATCH_STATUS=False
+    # App mode page keys go to the page through the browser's own channel; they
+    # do not move the window's keyboard focus. Unless another page opened, the
+    # window is not refocused or given the page again after them.
+    page_keys_only=True;page_before=getattr(getattr(web_session,'backend',None),'page',None)
     try:
         # Bound each batch so microphone controls continue to be serviced.
         for _ in range(100):
             try:command=APP_WINDOW.commands.get_nowait()
             except queue.Empty:break
+            if not (isinstance(command,tuple) and command[0]=='keyboard' and str(command[1]).startswith('Web:Pass:')):page_keys_only=False
             if isinstance(command,tuple) and command[0]=='text_edit':
                 # UI-thread caret speech is already current; acknowledge without canceling it.
                 KEYBOARD_BATCH_TEXT=None
@@ -459,8 +466,8 @@ def process_keyboard_batch(mode):
         text=KEYBOARD_BATCH_TEXT;KEYBOARD_BATCH_TEXT=None
         APP_WINDOW.feedback(punctuation_for_speech(text))
     if mode=='web' and APP_WINDOW is not None:
-        sync_app_context(mode,True)
-        if hasattr(APP_WINDOW,'wait_for_context'):APP_WINDOW.wait_for_context()
+        refocus=not page_keys_only or getattr(getattr(web_session,'backend',None),'page',None) is not page_before
+        if sync_app_context(mode,refocus) and hasattr(APP_WINDOW,'wait_for_context'):APP_WINDOW.wait_for_context()
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
@@ -3841,7 +3848,8 @@ def main():
                 if mode=='exit':return 0
                 continue
             logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
-            if logical_mode=='web' and web_session and web_refresh.due(time.monotonic(),0 if APP_WINDOW is None else getattr(APP_WINDOW,'last_navigation',0)):
+            # refresh_now: back in browse mode after app mode, read the page view again at once.
+            if logical_mode=='web' and web_session and (getattr(web_session,'refresh_now',False) is True or web_refresh.due(time.monotonic(),0 if APP_WINDOW is None else getattr(APP_WINDOW,'last_navigation',0))):
                 started=time.monotonic()
                 try:
                     refresh_browser_view(mode)

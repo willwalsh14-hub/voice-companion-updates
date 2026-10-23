@@ -118,3 +118,46 @@ keyboard browser parity checks", which now also run `EmbeddedPerformanceTests`).
   the light DOM, is seen at the next snapshot, not by the change counter.
 - The host's 35-second watchdog still decides when a hung embedded browser is
   given up on. With these fixes no normal call comes close to that.
+
+## App mode and browse mode (branch `claude/guided-browsers`)
+
+Will reported: "App mode vs browse mode is very very laggy." Measured with
+`tools/webview_benchmark.py` (its app mode section), headless Chromium, before
+and after this branch.
+
+### What ran on each switch and key
+
+- **Switching to browse mode read the whole page again** (a full snapshot,
+  about 0.4 s on the busy page) before "Browse mode" could be spoken. The
+  element with focus is now found in the page view Companion already has. The
+  view catches up at the main loop's next check, which runs at once
+  (`refresh_now`).
+- **Switching to app mode moved focus to the browse cursor's element first.**
+  That now happens with the first key, so the switch itself does no page work.
+- **Each key sent to the page waited for an answer**: up to six 25 ms waits,
+  each followed by a page read, so a key the page answers silently (K on a
+  video) took about 0.2 s. A key now costs two quick page reads and the key
+  press. A late answer from the page is said at the next check.
+- **In app mode the main loop kept reading the whole page** whenever it
+  changed (a video clock changes every second). Each read held up the next key
+  for 0.4 to 1.1 s. In app mode the check now asks only for focus changes and
+  page announcements; a new page is still read and announced.
+- **After every key the window was refocused and given the page text again**
+  (Windows: `SetForegroundWindow`, `focus_force`, comparing the whole page
+  text). Page keys do not move keyboard focus, so this now happens only after
+  other keys or when a page key opened another page or tab.
+
+### Results (busy page, milliseconds, median unless noted)
+
+- Switch to app mode: 51 before, 0 after.
+- Switch back to browse mode: 444 before, 3 after.
+- K key in app mode: 206 before, 15 after.
+- Down Arrow in app mode: 208 before, 13 after.
+- Tab in app mode (focus moves): 24 before, 24 after.
+- Main loop check in app mode: 448 before (worst 1,101), 13 after (worst 31);
+  page reads in 10 checks: 12 before, 0 after.
+
+Tests that keep these bounds: `test_web_modes_live.AppModeSpeedTests` (no page
+read or wait on a switch, at most two page reads and one key press per key,
+late answers said by the next check) and `test_web_modes.AppModeWindowTests`
+(no window refocus after page keys).

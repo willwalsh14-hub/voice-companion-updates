@@ -134,6 +134,47 @@ class EditorRaceTests(unittest.TestCase):
         self.assertTrue(show_context_text({'mode': 'document', 'source': 'd'}, {'mode': 'document', 'source': 'd', 'focus': True, 'ack': 0}, seq=3))
 
 
+class AppModeWindowTests(unittest.TestCase):
+    """Each page key in app mode returns at once: the window is not refocused
+    or given the whole page again when nothing on it changed."""
+    def setUp(self):
+        import queue
+        self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.backend = FakeBackend();self.backend.page = object()
+        self.backend.press_page_key = lambda key, focus=None: ({'focus': None}, {'focus': None})
+        self.session = WebSession(self.temp.name, self.backend);self.session._refresh()
+        self.window = Mock();self.window.commands = queue.Queue()
+        for name in ('APP_WINDOW', 'UI_CONTEXT_CACHE', 'speak', 'KEYBOARD_SPEECH'):
+            value = {'APP_WINDOW': self.window, 'UI_CONTEXT_CACHE': None, 'speak': Mock(), 'KEYBOARD_SPEECH': None}[name]
+            patcher = patch.object(app, name, value);patcher.start();self.addCleanup(patcher.stop)
+        patcher = patch.object(app, 'web_session', self.session);patcher.start();self.addCleanup(patcher.stop)
+
+    def run_keys(self, *keys):
+        self.window.set_context.reset_mock();self.window.wait_for_context.reset_mock()
+        for key in keys:self.window.commands.put(('keyboard', key))
+        return app.process_keyboard_batch('web')
+
+    def test_page_keys_do_not_refocus_the_window(self):
+        self.run_keys('Web:ToggleAppMode')
+        self.assertTrue(self.session.app_mode)
+        self.window.set_context.assert_called()  # The window learns about app mode.
+        self.run_keys('Web:Pass:k', 'Web:Pass:j')
+        self.window.set_context.assert_not_called()
+        self.window.wait_for_context.assert_not_called()
+
+    def test_other_keys_and_a_new_page_still_refocus(self):
+        self.run_keys('Web:ToggleAppMode')
+        self.run_keys('Web:ToggleAppMode')
+        self.assertFalse(self.session.app_mode)
+        self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
+        self.run_keys('Web:ToggleAppMode')
+        # A key that opened another page or tab: the window takes focus back.
+        self.backend.press_page_key = lambda key, focus=None: (setattr(self.backend, 'page', object()), ({'focus': None}, {'focus': None}))[1]
+        self.run_keys('Web:Pass:Enter')
+        self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
+        self.window.wait_for_context.assert_called_once()
+
+
 class ComboBackend(FakeBackend):
     def __init__(self):
         super().__init__()

@@ -178,6 +178,30 @@ def main():
         if spent is not None:
             print(f"Press Skip ad: {spent*1000:.0f} ms (click and wait {parts.get('activate', 0)*1000:.0f} ms), "
                   f"snapshots {counter.snapshots}, skips {page.evaluate('window.skips')}, said: {str(result)[:70]!r}")
+    # App mode on the busy page: switching modes, keys sent to the page, and the
+    # main loop's checks while keys go to the page.
+    release()
+    session.keyboard('PageTop'); session.keyboard('Quick:b')
+    to_app, to_browse = [], []
+    for _ in range(5):
+        release()
+        to_app.append(timed(lambda: session.keyboard('ToggleAppMode'))[0])
+        session.keyboard('Pass:Shift')  # the first key also moves focus
+        to_browse.append(timed(lambda: session.keyboard('ToggleAppMode'))[0])
+    print(f'Switch to app mode: median {statistics.median(to_app)*1000:.0f} ms; '
+          f'back to browse mode: median {statistics.median(to_browse)*1000:.0f} ms')
+    session.keyboard('ToggleAppMode')
+    for key in ('k', 'ArrowDown', 'Tab'):
+        times = []
+        for _ in range(8):
+            release(); times.append(timed(lambda: session.keyboard('Pass:' + key))[0])
+        print(f'App mode key {key}: median {statistics.median(times)*1000:.0f} ms, worst {max(times)*1000:.0f} ms')
+    counter.snapshots = 0; checks = []
+    for _ in range(10):
+        release(); checks.append(timed(session.refresh_changed)[0]); page.wait_for_timeout(300)
+    print(f'App mode check (main loop): median {statistics.median(checks)*1000:.0f} ms, worst {max(checks)*1000:.0f} ms, '
+          f'page reads {counter.snapshots} in 10 checks')
+    session.keyboard('ToggleAppMode')
     for _, request_route in pending:
         try: request_route.abort()
         except Exception: pass

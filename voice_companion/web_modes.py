@@ -202,3 +202,29 @@ def page_key_feedback(key, before, after):
     for text in dict.fromkeys((after or {}).get('live') or []):
         parts.append(text if text.endswith(('.', '!', '?')) else text + '.')
     return ' '.join(p for p in parts if p)
+
+
+def page_change_feedback(before, after):
+    """Speech for changes the page made by itself between keys in app mode.
+
+    A site may answer a key a moment later, or move focus on its own. Said:
+    new focus, a changed slider value, checked or expanded state, and page
+    announcements. Text typed into a box is echoed when typed, not here."""
+    if not after:
+        return ''
+    parts = []
+    old, new = (before or {}).get('focus'), after.get('focus')
+    if before is not None and new and (not old or new.get('id') != old.get('id')):
+        parts.append(describe_focus(new))
+    elif before is not None and new and old:
+        role = new.get('role') or ''
+        value = lambda f: (f.get('value_text'), f.get('value_now'))
+        if role in ('slider', 'spinbutton', 'scrollbar', 'progressbar', 'meter') and value(new) != value(old):
+            parts.append(slider_value(new) + '.')
+        if new.get('checked') != old.get('checked') and new.get('checked') is not None:
+            parts.append('Checked.' if new.get('checked') else 'Not checked.')
+        if new.get('expanded') != old.get('expanded') and new.get('expanded') in ('true', 'false'):
+            parts.append('Expanded.' if new['expanded'] == 'true' else 'Collapsed.')
+    for text in dict.fromkeys(after.get('live') or []):
+        parts.append(text if text.endswith(('.', '!', '?')) else text + '.')
+    return ' '.join(p for p in parts if p)
