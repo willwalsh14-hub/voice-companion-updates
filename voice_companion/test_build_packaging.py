@@ -71,3 +71,32 @@ class PackagingTests(unittest.TestCase):
             with patch.dict(os.environ, {'PYTHONPATH':str(root)}):
                 self.assertEqual(package(options,out,err),0)
             self.assertEqual(json.loads(out.read_text()),args+['companion.py'])
+
+
+import os
+from unittest.mock import patch
+
+
+class PackagedCheckCleanupTests(unittest.TestCase):
+    """0.2.160: the packaged bookmark check passed, then failed the build because
+    embedded Edge still held a file in its temporary profile for a moment."""
+    def test_a_briefly_locked_profile_is_removed_once_free(self):
+        import shutil, tempfile
+        import packaged_browser_check
+        folder = tempfile.mkdtemp(); open(os.path.join(folder, 'BrowserMetrics.pma'), 'w').close()
+        real, tries = shutil.rmtree, []
+        def busy_then_free(path):
+            tries.append(path)
+            if len(tries) < 3: raise PermissionError('[WinError 5] Access is denied')
+            real(path)
+        with patch('shutil.rmtree', busy_then_free):
+            self.assertTrue(packaged_browser_check.remove_folder(folder, pause=0))
+        self.assertFalse(os.path.exists(folder)); self.assertEqual(len(tries), 3)
+
+    def test_a_profile_that_stays_locked_does_not_fail_the_check(self):
+        import shutil, tempfile
+        import packaged_browser_check
+        folder = tempfile.mkdtemp(); self.addCleanup(shutil.rmtree, folder, True)
+        def locked(path): raise PermissionError('[WinError 5] Access is denied')
+        with patch('shutil.rmtree', locked):
+            self.assertFalse(packaged_browser_check.remove_folder(folder, attempts=2, pause=0))
