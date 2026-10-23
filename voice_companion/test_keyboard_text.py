@@ -510,6 +510,8 @@ class WindowKeyboardTests(unittest.TestCase):
                 self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym=key,state=8))
                 self.wait(lambda:not self.window.commands.empty())
                 self.assertEqual(self.window.commands.get(),('keyboard',request))
+                # Let the key go, as a person does: a held Alt+Left goes back only once.
+                self.call(lambda:self.window.editor.event_generate('<KeyRelease>',keysym=key,state=8))
 
     def test_explicit_alt_t_allows_a_command_and_escape_returns_to_page(self):
         self.window.set_context(dict(mode='web',source='page',text='Page text',caret=0,ack=0,readonly=True,web_browse=True))
