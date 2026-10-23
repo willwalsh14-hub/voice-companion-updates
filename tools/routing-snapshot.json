@@ -835,8 +835,8 @@
 "awake | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2399,8 +2399,8 @@
 "awake | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2458,8 +2458,8 @@
 "awake | open web browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2469,8 +2469,8 @@
 "awake | open web browsing": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2841,8 +2841,8 @@
 "awake | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -3747,8 +3747,8 @@
 "awake | web browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -3769,8 +3769,8 @@
 "awake | web browsing": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -5347,8 +5347,8 @@
 "document | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -7657,8 +7657,8 @@
 "document | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -8302,8 +8302,8 @@
 "document | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -11461,8 +11461,8 @@
 "email_draft | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -13830,8 +13830,8 @@
 "email_draft | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -14475,8 +14475,8 @@
 "email_draft | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -16909,8 +16909,8 @@
 "help | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -17996,8 +17996,8 @@
 "help | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -18316,8 +18316,8 @@
 "help | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -20310,8 +20310,8 @@
 "mailbox | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -22399,8 +22399,8 @@
 "mailbox | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -22975,8 +22975,8 @@
 "mailbox | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -25414,8 +25414,8 @@
 "note | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -26961,8 +26961,8 @@
 "note | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -27393,8 +27393,8 @@
 "note | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -29175,7 +29175,7 @@
 "calls": [
 "call.leave(False)",
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()"
+"call.take_browser_notice()"
 ],
 "said": [
 "Web browser menu."
@@ -29834,8 +29834,8 @@
 "web | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.menu.start(resume=False)"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -31092,7 +31092,7 @@
 "calls": [
 "call.leave(False)",
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()"
+"call.take_browser_notice()"
 ],
 "said": [
 "Web browser menu."
@@ -32154,8 +32154,8 @@
 "web | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.menu.start(resume=False)"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -32786,8 +32786,8 @@
 "web | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.menu.start(resume=False)"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -34065,7 +34065,7 @@
 "calls": [
 "call.leave(False)",
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()"
+"call.take_browser_notice()"
 ],
 "said": [
 "Web browser menu."

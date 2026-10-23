@@ -1,4 +1,8 @@
-"""Real Firefox DOM tests using synthetic HTTPS pages; no accounts or real submissions."""
+"""Real Chromium DOM tests using synthetic HTTPS pages; no accounts or real submissions.
+
+Both guided browsers are Chromium browsers: Chrome, and embedded Edge (WebView2).
+These shared tests run in Playwright's Chromium, in installed Chrome
+(ChromeLiveTests, Windows) and in embedded Edge (test_webview2.py, Windows)."""
 import os,sys,tempfile,unittest,time,threading
 from unittest.mock import Mock,patch
 from pathlib import Path
@@ -61,13 +65,11 @@ class LiveWebTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.driver=sync_playwright().start()
-        if not Path(cls.driver.firefox.executable_path).is_file():
+        if not Path(cls.driver.chromium.executable_path).is_file():
             cls.driver.stop()
-            if os.getenv('VOICE_COMPANION_REQUIRE_WEB_TESTS'):raise RuntimeError('Firefox runtime is required for web release checks.')
-            raise unittest.SkipTest('Install Firefox runtime for live DOM checks.')
-        options={'headless':True,'timeout':15000}
-        if sys.platform!='win32':options['env']={**os.environ,'MOZ_DISABLE_CONTENT_SANDBOX':'1','MOZ_DISABLE_RDD_SANDBOX':'1','MOZ_DISABLE_GMP_SANDBOX':'1'}
-        cls.browser=cls.driver.firefox.launch(**options)
+            if os.getenv('VOICE_COMPANION_REQUIRE_WEB_TESTS'):raise RuntimeError('The Chromium runtime is required for web release checks.')
+            raise unittest.SkipTest('Install the Chromium runtime for live DOM checks.')
+        cls.browser=cls.driver.chromium.launch(headless=True,timeout=15000)
     @classmethod
     def tearDownClass(cls):cls.browser.close();cls.driver.stop()
     def setUp(self):
@@ -485,11 +487,7 @@ class LiveWebTests(unittest.TestCase):
         if self.page.context.browser:
             context=self.page.context.browser.new_context()
         else:
-            options={'headless':True,'channel':{'chrome':'chrome','edge':'msedge'}.get(self.browser_name)}
-            if self.browser_name=='brave':
-                roots=[os.environ.get('PROGRAMFILES',''),os.environ.get('PROGRAMFILES(X86)',''),os.environ.get('LOCALAPPDATA','')]
-                options={'headless':True,'executable_path':str(next(Path(root)/'BraveSoftware/Brave-Browser/Application/brave.exe' for root in roots if (Path(root)/'BraveSoftware/Brave-Browser/Application/brave.exe').is_file()))}
-            browser=self.adapter.playwright.chromium.launch(**options);self.addCleanup(browser.close);context=browser.new_context()
+            browser=self.adapter.playwright.chromium.launch(headless=True,channel='chrome');self.addCleanup(browser.close);context=browser.new_context()
         self.addCleanup(context.close)
         context.route('https://fixture.test/**',lambda r:r.fulfill(content_type='text/html',body='<title>Kept page</title><h1>Kept page</h1>'))
         owned=BrowserBackend(self.temp.name);owned.context=context;owned.page=context.new_page();owned.start=lambda:None
@@ -564,9 +562,4 @@ class ChromeLiveTests(LiveWebTests):
     @classmethod
     def tearDownClass(cls):cls.adapter.close();cls.profile.cleanup()
 
-@unittest.skipUnless(sys.platform=='win32','Installed Windows Edge browser')
-class EdgeLiveTests(ChromeLiveTests):browser_name='edge'
-
-@unittest.skipUnless(sys.platform=='win32','Installed Windows Brave browser')
-class BraveLiveTests(ChromeLiveTests):browser_name='brave'
 if __name__=='__main__':unittest.main()

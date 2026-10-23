@@ -159,13 +159,20 @@ $securityResult = Invoke-UnitTests 'Privacy and security checks' @('test_securit
 if ($securityResult -ne 0) { throw 'Privacy or security checks failed.' }
 $recoveryResult = Invoke-UnitTests 'Updater recovery checks' @('test_update_recovery','-v')
 if ($recoveryResult -ne 0) { throw 'Updater recovery and bookmark opening checks failed.' }
+# The bundled Firefox engine plays radio, podcasts and media files (media_player.py).
+# Guided websites use embedded Edge or Chrome, both Chromium browsers.
 $browserRuntime = Join-Path $PSScriptRoot 'browser-runtime'
 $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
-if ($LASTEXITCODE -ne 0) { throw 'The guided Firefox runtime could not be installed.' }
+if ($LASTEXITCODE -ne 0) { throw 'The Firefox engine for the audio player could not be installed.' }
 $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-$liveResult = Invoke-UnitTests 'Real browser checks' @('-q','test_web_live','test_consumer_web','test_consumer_audio','test_web_semantics','test_web_modes_live')
+$audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audio')
+if ($audioResult -ne 0) { throw 'The audio player checks failed.' }
+# Page checks run in Playwright's Chromium (prepared above for the extension checks).
+$env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
+$liveResult = Invoke-UnitTests 'Real browser checks' @('-q','test_web_live','test_consumer_web','test_web_semantics','test_web_modes_live','test_web_history')
 if ($liveResult -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
+$env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEB_TESTS
 $modelZip = Join-Path $PSScriptRoot 'vosk-model.zip'
 $modelFolder = Join-Path $PSScriptRoot 'model'

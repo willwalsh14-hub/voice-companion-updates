@@ -1,10 +1,14 @@
-"""Open saved URLs in the actual frozen browser, without a public network."""
+"""Open saved URLs in the actual frozen guided browser, without a public network.
+
+Embedded Edge (WebView2) is the default guided browser and is built into the
+app, so the packaged check uses it."""
 import tempfile
-from web_assistant import WebSession,BrowserBackend
+from web_assistant import WebSession
 
 def check(app=None):
     with tempfile.TemporaryDirectory(prefix='VC bookmark check ') as folder:
-        backend=BrowserBackend(folder+'/profile','firefox',headless=True)
+        from webview2_backend import WebView2Backend
+        backend=WebView2Backend(folder+'/profile',headless=True)
         session=WebSession(folder,backend)
         url='https://bookmark.example/News?part=One#Top'
         try:

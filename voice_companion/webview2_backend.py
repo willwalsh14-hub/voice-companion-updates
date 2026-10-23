@@ -154,7 +154,7 @@ class WebViewPipe:
 
 class WebView2Backend(BrowserBackend):
     def __init__(self,folder,headless=False,executable=None,driver=None):
-        super().__init__(folder,'edge',headless);self.browser='webview2';self.host=None;self.remote_browser=None;self.executable=executable;self.external_driver=driver;self.start_failure=None
+        super().__init__(folder,'webview2',headless);self.host=None;self.remote_browser=None;self.executable=executable;self.external_driver=driver;self.start_failure=None
 
     START_ATTEMPTS=2
 

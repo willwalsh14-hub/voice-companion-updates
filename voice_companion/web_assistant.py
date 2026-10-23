@@ -149,53 +149,89 @@ def navigation_interrupted(error):
 
 
 DEFAULT_BROWSER = 'webview2'
+# Guided browsing offers two browsers: embedded Edge (WebView2, the default,
+# owned by Companion) and Chrome. Edge, Brave and Firefox were removed as
+# choices; a saved choice of one of them becomes embedded Edge, said once.
+GUIDED_BROWSERS = ('webview2', 'chrome')
+RETIRED_BROWSERS = ('edge', 'brave', 'firefox')
+BROWSER_NAMES = {'webview2': 'embedded Edge', 'chrome': 'Chrome', 'edge': 'Edge', 'brave': 'Brave', 'firefox': 'Firefox'}
 GOOGLE_SIGN_IN_NOTICE = ('Google does not allow signing in inside embedded Edge. To use a Google account on this site, '
-                         'say use Firefox, or use your regular browser with the Voice Companion extension')
+                         'say use Chrome, or use your regular browser with the Voice Companion extension')
+BROWSER_CHOICES = 'Guided websites can use embedded Edge or Chrome. Say use embedded Edge, or say use Chrome.'
 
 
-def find_brave(environ=None, app_path=None):
-    """Where brave.exe is: the usual install folders, then the path Windows records
-    for it (App Paths), which also covers installs in other folders."""
-    environ = os.environ if environ is None else environ
-    suffix = Path('BraveSoftware/Brave-Browser/Application/brave.exe')
-    for variable in ('PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA'):
-        root = environ.get(variable, '')
-        if root and (Path(root) / suffix).is_file():
-            return Path(root) / suffix
-    if app_path is None:
-        app_path = _registered_app_path
-    registered = (app_path('brave.exe') or '').strip().strip('"')
-    if registered and Path(registered).is_file():
-        return Path(registered)
-    return None
+def browser_name(browser):
+    """How a browser is named when spoken: 'webview2' is embedded Edge."""
+    return BROWSER_NAMES.get(str(browser), str(browser).capitalize())
 
 
-def _registered_app_path(name):
+def retired_browser_notice(name):
+    """What is said when someone asks for a browser that is no longer a guided choice."""
+    own = (' To use your own ' + browser_name(name) + ' browser, connect it with the Voice Companion extension.'
+           if name in ('edge', 'brave') else '')
+    return browser_name(name) + ' is no longer a guided browser. ' + BROWSER_CHOICES + own
+
+
+def browser_key(value):
+    """The stored name (webview2 or chrome) for a spoken or shown browser name."""
+    return {'embedded edge': 'webview2', 'webview2': 'webview2', 'chrome': 'chrome', 'google chrome': 'chrome'}.get(
+        _plain(value).lower(), DEFAULT_BROWSER)
+
+
+def browser_setting(folder):
+    """The Guided browser option as Options shows it. Nothing is rewritten here,
+    so the Web browser screen still says once that an old choice changed."""
     try:
-        import winreg
-    except ImportError:
-        return None
-    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        choice = (Path(folder) / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
+    except OSError:
+        choice = DEFAULT_BROWSER
+    return 'Chrome' if choice == 'chrome' else 'embedded Edge'
+
+
+def guided_backend(folder, browser):
+    """A guided browser owned by Companion (never the user's connected browser)."""
+    if browser == 'webview2':
+        from webview2_backend import WebView2Backend
+        return WebView2Backend(folder)
+    return BrowserBackend(folder, browser)
+
+
+def saved_browser_choice(folder):
+    """The saved guided browser, and a notice to say once when an old choice was replaced.
+
+    A saved choice of Edge, Brave or Firefox becomes embedded Edge. The file is
+    rewritten, so the notice is given only once."""
+    path = Path(folder) / 'browser-choice.txt'
+    try:
+        choice = path.read_text(encoding='utf-8').strip().lower()
+    except OSError:
+        return None, ''
+    if choice in GUIDED_BROWSERS:
+        return choice, ''
+    if choice in RETIRED_BROWSERS:
         try:
-            with winreg.OpenKey(hive, 'Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\' + name) as key:
-                value = winreg.QueryValue(key, None)
+            write_text_atomic(path, DEFAULT_BROWSER)
         except OSError:
-            continue
-        if value:
-            return value.strip().strip('"')
-    return None
+            pass
+        return DEFAULT_BROWSER, ('Your guided browser was ' + browser_name(choice) + '. Guided websites now use embedded Edge or Chrome, '
+                                 'so Companion now uses embedded Edge. To use Chrome instead, say use Chrome.')
+    return None, ''
 
 
 class BrowserBackend:
-    """Playwright uses a dedicated profile, never the user's normal one."""
-    BROWSERS = ('edge', 'chrome', 'brave', 'firefox','webview2')
+    """Playwright uses a dedicated profile, never the user's normal one.
 
-    def __init__(self, folder, browser='edge', headless=False):
+    Guided Chrome is the installed Google Chrome, started with its own profile.
+    The connected regular browser (connected_browser.py) reuses this class for
+    the user's own Chrome, Edge or Brave tab."""
+    BROWSERS = GUIDED_BROWSERS
+
+    def __init__(self, folder, browser='chrome', headless=False):
         self.folder = Path(folder)
         self.browser = browser.lower()
         self.headless = headless
-        if self.browser not in self.BROWSERS:
-            raise WebError('Choose Edge, Chrome, Brave, or Firefox.')
+        if self.browser not in self.BROWSERS and not getattr(self, 'regular', False):
+            raise WebError(BROWSER_CHOICES)
         self.playwright = self.context = self.page = None
 
     def start(self):
@@ -207,24 +243,13 @@ class BrowserBackend:
         if self.context or self.playwright:self.close()
         try:
             from playwright.sync_api import sync_playwright
-            bundled = Path(getattr(__import__('sys'), '_MEIPASS', Path(__file__).parent)) / 'browser-runtime'
-            if bundled.exists(): os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(bundled)
             self.folder.mkdir(parents=True, exist_ok=True)
             from browser_process import browser_process_environment
             with browser_process_environment(self.folder):
                 self.playwright = sync_playwright().start()
-            if self.browser == 'firefox':
-                engine, kwargs = self.playwright.firefox, {}
-            else:
-                engine = self.playwright.chromium
-                kwargs = {'channel': {'edge':'msedge', 'chrome':'chrome'}.get(self.browser)}
-                if self.browser == 'brave':
-                    executable = find_brave()
-                    if not executable: raise WebError('Brave is not installed in a standard Windows location.')
-                    kwargs = {'executable_path': str(executable)}
             with browser_process_environment(self.folder):
-                self.context = engine.launch_persistent_context(
-                    str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
+                self.context = self.playwright.chromium.launch_persistent_context(
+                    str(self.folder), headless=self.headless, accept_downloads=False, channel='chrome')
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.set_default_timeout(10000)
         except Exception as exc:
@@ -232,8 +257,8 @@ class BrowserBackend:
             import traceback
             try:(self.folder/'browser-error.txt').write_text(traceback.format_exc(),encoding='utf-8')
             except OSError:pass
-            raise WebError('The guided ' + self.browser.capitalize() +
-                           ' browser could not start. Ask your helper to check that browser and the installation.') from exc
+            raise WebError('The guided ' + browser_name(self.browser) +
+                           ' browser could not start. If Chrome is not installed, say set up Chrome.') from exc
 
     def close(self):
         if getattr(self,'_embedded',None):
@@ -1040,6 +1065,11 @@ class BrowserBackend:
 EdgeBackend = BrowserBackend
 
 
+# "Use Chrome", "switch to embedded Edge", and the removed browsers, which are explained.
+BROWSER_REQUEST=(r'(?:use|switch to|choose) (?:the )?(?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|web view 2|web view two|webview two|'
+                 r'google chrome|chrome|microsoft edge|edge|brave browser|brave|mozilla firefox|fire fox|firefox)(?: browser)?')
+
+
 SKIP_AD=re.compile(r'skip (?:the |this )?(?:ads?|advert|advertisement)s?')
 
 
@@ -1657,7 +1687,8 @@ class WebSession:
     def adopt_connected_browser(self):
         # Only a saved choice of embedded Edge ignores a tab linked through the
         # extension. As the default, embedded Edge gives way to the user's own browser.
-        if self.injected_backend or (self.browser=='webview2' and self._saved_browser()=='webview2'):return False
+        saved=self.saved_choice if hasattr(self,'saved_choice') else self._saved_browser()
+        if self.injected_backend or (self.browser=='webview2' and saved=='webview2'):return False
         from browser_cdp_relay import current
         from connected_browser import ConnectedBrowserBackend
         relay=current()
@@ -1673,21 +1704,31 @@ class WebSession:
         return True
 
     def _saved_browser(self):
-        try:
-            choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
-        except OSError:
-            return None
-        return choice if choice in BrowserBackend.BROWSERS else None
+        choice,notice=saved_browser_choice(self.folder)
+        if notice:self.browser_notice=notice
+        # Kept in memory: the extension check runs before every key and command.
+        self.saved_choice=choice
+        return choice
 
     def _browser_preference(self):
         # Embedded Edge (WebView2) is the default: it is owned by Companion and needs
         # no browser extension. A saved choice is always kept.
         return self._saved_browser() or DEFAULT_BROWSER
 
+    def take_browser_notice(self):
+        """Said once: a saved choice of a removed browser now uses embedded Edge."""
+        notice=getattr(self,'browser_notice','');self.browser_notice=''
+        return notice
+
+    BROWSER_ALIASES={'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview2':'webview2',
+                     'webview 2':'webview2','web view 2':'webview2','web view two':'webview2','webview two':'webview2',
+                     'chrome':'chrome','google chrome':'chrome','edge':'edge','microsoft edge':'edge',
+                     'brave':'brave','brave browser':'brave','firefox':'firefox','fire fox':'firefox','mozilla firefox':'firefox'}
+
     def choose_browser(self, name):
-        name = {'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview 2':'webview2'}.get(name.lower(),name.lower())
-        if name not in BrowserBackend.BROWSERS:
-            return 'Choose embedded Edge WebView2, Edge, Chrome, Brave, or Firefox.'
+        name=self.BROWSER_ALIASES.get(_plain(name).rstrip('.!?').lower(),_plain(name).rstrip('.!?').lower())
+        if name in RETIRED_BROWSERS:return retired_browser_notice(name)
+        if name not in GUIDED_BROWSERS:return BROWSER_CHOICES
         if self.browser != name or getattr(self.backend,'browser',name)!=name:
             if not self.injected_backend:
                 try: self.backend.close()
@@ -1701,8 +1742,9 @@ class WebSession:
         if not self.injected_backend:
             self.folder.mkdir(parents=True, exist_ok=True)
             write_text_atomic(self.folder / 'browser-choice.txt', name)
-        if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+name.capitalize()+'.'
-        return 'Selected ' + name.capitalize() + '. Say open website followed by the address. This uses a separate browser profile.'
+            self.saved_choice=name
+        if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+browser_name(name)+'.'
+        return 'Selected ' + browser_name(name) + '. Say open website followed by the address. This uses a separate browser profile.'
 
     def _stamp(self):
         state=self.backend.document_stamp() if hasattr(self.backend,'document_stamp') else None
@@ -1744,7 +1786,8 @@ class WebSession:
             # Each site keeps its own mode; say which one this page uses.
             self.mode_announced=self.app_mode
             result=(APP_MODE if self.app_mode else BROWSE_MODE)+' '+result
-        return result
+        notice=self.take_browser_notice()
+        return notice+' '+result if notice else result
 
     def _refresh_page(self,read=None,preserve=False,wait=True):
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
@@ -1972,14 +2015,26 @@ class WebSession:
         try:
             self.backend.goto(url)
             return ''
-        except WebError:
-            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser=='firefox':raise
-            embedded=self.backend.browser=='webview2'
-            self.backend.close()
-            self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
-            self.backend.goto(url)
-            return ('Embedded Edge could not start. Using the included Firefox browser. Ask your helper to check the Microsoft WebView2 component. '
-                    if embedded else 'The chosen browser could not start. Using the included Firefox browser. ')
+        except WebError as failure:
+            if self.injected_backend or getattr(self.backend,'regular',False):raise
+            # The other guided browser: Chrome when embedded Edge cannot start,
+            # embedded Edge when Chrome cannot start (Chrome is not installed).
+            failed=self.backend.browser
+            other='chrome' if failed=='webview2' else 'webview2'
+            try:self.backend.close()
+            except Exception:pass
+            self.backend=guided_backend(self.folder/('Browser Profile '+other),other)
+            try:self.backend.goto(url)
+            except WebError:
+                try:self.backend.close()
+                except Exception:pass
+                if failed=='webview2':
+                    raise WebError('Embedded Edge could not start, and Chrome is not installed. Say set up Chrome to install Chrome. '
+                                   'Or ask your helper to check the Microsoft WebView2 component.') from failure
+                raise WebError('Chrome could not start, and embedded Edge could not start either. Ask your helper to check the Microsoft WebView2 component.') from failure
+            if failed=='webview2':
+                return 'Embedded Edge could not start. Using Chrome for now. Ask your helper to check the Microsoft WebView2 component. '
+            return 'Chrome could not start. Using embedded Edge for now. If Chrome is not installed, say set up Chrome. '
 
     def open(self, url):
         self.navigation_succeeded=False
@@ -2214,7 +2269,7 @@ class WebSession:
     def handoff(self):
         if not self.snapshot: return 'No website is open. Ask your helper to open the site with you.'
         url = urlsplit(self.snapshot['url'])
-        return ('Ask your helper to look at the ' + self.running_browser().capitalize() + ' window titled ' + _plain(self.snapshot['title']) +
+        return ('Ask your helper to look at the ' + browser_name(self.running_browser()) + ' window titled ' + _plain(self.snapshot['title']) +
                 '. The site is ' + (url.hostname or 'unknown') + '. ' +
                 ('The form has ' + str(len(self.form_answers)) + ' answers entered by voice. ' if self.form_answers else '') +
                 'Review the site address, all form fields, and the final action together. I have not sent your answers to anyone.')
@@ -2301,7 +2356,7 @@ class WebSession:
         manual = [_label(item) for item in self.form_fields if item['type']=='file']
         return ('That is the end of the text fields. ' +
                 ('These need private or manual entry: ' + ', '.join(manual) + '. ' if manual else '') +
-                'Say review form to hear the answers entered by voice. Review every answer and other controls in Edge with your helper before submitting.')
+                'Say review form to hear the answers entered by voice. Review every answer and other controls in the browser with your helper before submitting.')
 
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
@@ -2362,7 +2417,7 @@ class WebSession:
     def review_form(self):
         if not self.snapshot: return 'Open a website first.'
         try: current = self.backend.snapshot()
-        except Exception: return 'I could not read the current form. Ask your helper to inspect Edge.'
+        except Exception: return 'I could not read the current form. Ask your helper to look at the browser window.'
         if current['url'] != self.snapshot['url']:
             return 'The page changed. Say read page, then review form again.'
         self.review_submission = None
@@ -2449,9 +2504,9 @@ class WebSession:
             return 'The form moved to a different page. Say read page before trying again.'
         controls = current.get('controls', [])
         if current.get('controls_truncated') or current.get('visible_frames'):
-            return 'I cannot inspect the whole form on this page. Ask your helper to review it in Edge.'
+            return 'I cannot inspect the whole form on this page. Ask your helper to review it in the browser.'
         if any(c.get('value_truncated') for c in self._form_controls(current)):
-            return 'A form answer is too long for safe spoken review. Ask your helper to check it in Edge.'
+            return 'A form answer is too long for safe spoken review. Ask your helper to check it in the browser.'
         missing = [c for c in self._form_controls(current) if c.get('required') and not c.get('disabled') and not c.get('readonly') and
                    ((not c.get('filled')) if c.get('type') == 'password' else
                     (not any(other.get('type')=='radio' and other.get('radio_group')==c.get('radio_group') and other.get('frame_index')==c.get('frame_index') and other.get('checked') for other in self._form_controls(current))) if c.get('type')=='radio' and c.get('radio_group') else
@@ -2463,7 +2518,7 @@ class WebSession:
         private = [c for c in controls if c['type']=='file' and c.get('required')]
         if private and not self.private_fields_confirmed:
             return ('This form has required private fields: ' + ', '.join(_label(c) for c in private) +
-                    '. Complete them privately in Edge. Then say private fields complete before reviewing submission.')
+                    '. Complete them privately in the browser window. Then say private fields complete before reviewing submission.')
         buttons = [c for c in controls if c['role'] == 'button' and
                    (c.get('in_form') or re.search(r'\b(submit|apply|continue|next|send)\b', _label(c), re.I))]
         if len(buttons) != 1:
@@ -2471,7 +2526,7 @@ class WebSession:
         button = buttons[0]
         if re.search(r'\b(pay|purchase|transfer|withdraw|deposit|wire|send money)\b',
                      _label(button) + ' ' + current.get('title',''), re.I):
-            return 'This may move money. Ask your helper to review the accounts, amount, and final action in Edge.'
+            return 'This may move money. Ask your helper to review the accounts, amount, and final action in the browser.'
         self.review_parts = self._form_parts(current)
         if not self.review_parts: return 'I found no readable form fields. Ask your helper to inspect this page.'
         self.review_cursor = 0
@@ -2507,7 +2562,7 @@ class WebSession:
             item = self._choice(number)
             if item['role'] != 'field' and not editable_combo(item): raise WebError('That number is not a field. Say list fields.')
             if item['type'] in ('file','checkbox','radio','submit'):
-                raise WebError('This field needs direct interaction in Edge with your helper.')
+                raise WebError('This field needs direct interaction in the browser with your helper.')
             value=_voice_value(item,value)
             self.backend.fill(item, value)
             return 'Password entered.' if item['type']=='password' else 'Filled ' + _label(item) + ' with ' + value + '. Review the form before submitting it.'
@@ -2635,14 +2690,14 @@ class WebSession:
             if self.browse:self.browse.set_position(self.reading.position)
             self.auto_focus_position();self.cursor_changed()
             return result
-        match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command)
+        match = re.fullmatch(BROWSER_REQUEST, command)
         if match: return self.choose_browser(match[1])
         if command in ('which browser','what browser am i using'):
             running = self.running_browser()
             # The preference is kept after a fallback; say which browser is really showing the page.
-            return ('Guided websites use ' + self.browser.capitalize() + '.' +
-                    (' This page is open in ' + running.capitalize() + ' because ' + self.browser.capitalize() + ' could not start.' if running != self.browser else '') +
-                    ' Say use Chrome, use Brave, use Firefox, or use Edge to change it.')
+            return ('Guided websites use ' + browser_name(self.browser) + '.' +
+                    (' This page is open in ' + browser_name(running) + ' because ' + browser_name(self.browser) + ' could not start.' if running != self.browser else '') +
+                    ' Say use Chrome or use embedded Edge to change it.')
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None
@@ -2717,7 +2772,7 @@ class WebSession:
                 return self.choose(str(self.choices.index(matches[0]) + 1))
         if command in ('read page','read this page','what is on this page','refresh page'):
             try: return self._refresh(read=True)
-            except Exception: return 'The page could not be read. Ask your helper to inspect Edge.'
+            except Exception: return 'The page could not be read. Ask your helper to look at the browser window.'
         if command in ('list links','show links','what links are here','read links'): return self.list_links()
         if command in ('next links','more links','next link','following link','move down','next'): return self.move_link(1)
         if command in ('previous links','prior links','previous link','prior link','move up','previous'): return self.move_link(-1)

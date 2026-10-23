@@ -12,7 +12,11 @@ SITES = ('https://example.org/', 'https://www.w3.org/WAI/', 'https://fullcirclea
 def audit():
     results = []
     with tempfile.TemporaryDirectory() as folder, sync_playwright() as driver:
-        browser = driver.firefox.launch(headless=True)
+        # Guided browsing uses Chromium browsers: Chrome, or Playwright's Chromium.
+        try:
+            browser = driver.chromium.launch(headless=True, channel='chrome')
+        except Exception:
+            browser = driver.chromium.launch(headless=True)
         try:
             for url in SITES:
                 entry = {'url': url, 'status': 'blocked', 'checks': []}

@@ -30,7 +30,7 @@ class NativeSettingsTests(unittest.TestCase):
     def open_panel(self):
         self.saved=[];self.notices=[]
         context={'engines':('windows',),'windows_voices':('Test voice',),'espeak_voices':(),'ai_voices':('coral',),'accounts':(),'podcasts':(),'podcast_limits':{}}
-        values=DEFAULTS|{'rate':'0','volume':'100','punctuation':'some','input_mode':'mixed','engine':'windows','windows_voice':'Test voice','ai_voice':'coral','email_list_size':'10','browser':'firefox','radio_source':'all','podcast_limit':'manual','ai_consent':False,'remove_ai':False,'api_key':''}
+        values=DEFAULTS|{'rate':'0','volume':'100','punctuation':'some','input_mode':'mixed','engine':'windows','windows_voice':'Test voice','ai_voice':'coral','email_list_size':'10','browser':'Chrome','radio_source':'all','podcast_limit':'manual','ai_consent':False,'remove_ai':False,'api_key':''}
         self.session=SettingsSession(values,context)
         def save(values):self.saved.append(values);self.panel.accepted()
         self.panel=NativeSettings(self.session,self.notices.append,save,lambda key:None).start()

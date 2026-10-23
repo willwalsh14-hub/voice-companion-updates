@@ -1476,7 +1476,10 @@ def open_browser_menu():
     try:web_session.adopt_connected_browser()
     except Exception:
         speak('The regular browser tab could not be read. Reconnect it using the extension, then open this menu again.')
-    speak(web_session.menu.start(resume=(PREFERENCES.get('web_keep_open',False) or getattr(web_session.backend,'regular',False)) and bool(web_session.snapshot)))
+    notice=web_session.take_browser_notice()
+    if not isinstance(notice,str):notice=''
+    menu=web_session.menu.start(resume=(PREFERENCES.get('web_keep_open',False) or getattr(web_session.backend,'regular',False)) and bool(web_session.snapshot))
+    speak((notice+' ' if notice else '')+menu)
     return 'browser_menu'
 
 def handle_browser_menu(text):
@@ -3414,7 +3417,7 @@ def _handle(text, mode, typed=False):
         webbrowser.open(provider_websites['yahoo mail' if provider == 'yahoo' else provider])
         speak('Opened ' + provider + ' in your usual browser. Voice Companion is not connected to this account.')
         return 'awake'
-    if re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(?:embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command) or command in ('which browser','what browser am i using'):
+    if re.fullmatch(__import__('web_assistant').BROWSER_REQUEST, command) or command in ('which browser','what browser am i using'):
         web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
