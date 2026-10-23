@@ -34,6 +34,8 @@ const MAX_CAPTURE_MS = 30 * 60 * 1000;
 
 function descendants(root, found, depth) {
   if (!root || depth > 12) return found;
+  // Account Hub's container keeps its dialog in its own shadow root.
+  if (root.shadowRoot) descendants(root.shadowRoot, found, depth + 1);
   for (const element of root.querySelectorAll('*')) {
     found.push(element);
     if (element.shadowRoot) descendants(element.shadowRoot, found, depth + 1);
