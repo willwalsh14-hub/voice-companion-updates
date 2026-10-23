@@ -107,14 +107,16 @@ class BookmarkRecoveryTests(unittest.TestCase):
                 app.handle('go to bookmark','browser_menu');self.assertEqual(app.handle('enter','browser_menu'),'browser_menu')
                 self.assertIsNotNone(session.favorites.get('News'))
 
-    def test_missing_selected_browser_uses_included_firefox_without_changing_preference(self):
+    def test_missing_chrome_uses_embedded_edge_without_changing_preference(self):
         with tempfile.TemporaryDirectory() as folder:
-            session=WebSession(folder,FakeBackend());old=Mock(browser='edge',regular=False);old.goto.side_effect=WebError('not installed')
-            session.backend=old;session.injected_backend=False;session.browser='edge'
-            fallback=FakeBackend();fallback.browser='firefox'
-            with patch('web_assistant.BrowserBackend',return_value=fallback):
-                self.assertIn('included Firefox',session.open('example.com'))
-            self.assertTrue(session.navigation_succeeded);self.assertEqual(session.browser,'edge');old.close.assert_called_once()
+            session=WebSession(folder,FakeBackend());old=Mock(browser='chrome',regular=False);old.goto.side_effect=WebError('not installed')
+            session.backend=old;session.injected_backend=False;session.browser='chrome'
+            fallback=FakeBackend();fallback.browser='webview2'
+            with patch('web_assistant.guided_backend',return_value=fallback) as created:
+                result=session.open('example.com')
+            self.assertIn('Chrome could not start. Using embedded Edge',result);self.assertIn('say set up Chrome',result)
+            created.assert_called_once_with(Path(folder)/'Browser Profile webview2','webview2')
+            self.assertTrue(session.navigation_succeeded);self.assertEqual(session.browser,'chrome');old.close.assert_called_once()
 
     def test_disconnected_extension_never_falls_back_to_another_browser(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.159-test.
+Guide version: 0.2.160-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -16,6 +16,7 @@ Contents
   2.3 Enter words that sound like commands
   2.4 Type a voice command
   2.5 Answer Yes or No
+  2.6 Check the time and date
 3 Using Help And Lessons
   3.1 Open a Help topic
   3.2 Read part of a topic
@@ -51,6 +52,7 @@ Contents
   8.1 Connect an email account
   8.2 Choose or remove an account
   8.3 Add and find contacts
+  8.4 Add a Thunderbird account
 9 Write An Email
   9.1 Start a new message
   9.2 Change To, CC, BCC, or Subject
@@ -107,11 +109,12 @@ Contents
   18.1 Open, change, and save a setting
   18.2 Choose how much speech you hear
   18.3 Voice and Synthesizer options
-  18.4 Input and Email options
-  18.5 Word processor and Notepad options
-  18.6 Web browser options
-  18.7 Radio and Podcasts options
-  18.8 Auto-update and Startup and exit options
+  18.4 Audio ducking
+  18.5 Input and Email options
+  18.6 Word processor and Notepad options
+  18.7 Web browser options
+  18.8 Radio and Podcasts options
+  18.9 Auto-update and Startup and exit options
 19 Sleep, Exit, And Computer Power
   19.1 Put the microphone to sleep
   19.2 Close Companion
@@ -239,6 +242,15 @@ When Companion asks a question, listen to the item name and the action first.
 To do the action, say "Yes", or press Alt+Y. To stop it, say "No" or "Cancel", or press Alt+N or Escape.
 You can also use arrows or Tab to choose Yes or No, then press Enter.
 At a Yes or No prompt, Home selects Yes and End selects No.
+
+2.6 Check the time and date
+- To hear the time, say "What time is it?", or press F12.
+- To hear the day and date, say "What's the date?", or press F12 twice quickly.
+- Insert+F12 does the same thing as F12. Press it once for the time, or twice for the date.
+- You can also say "Time", "What's the time?", "Date", "Today's date", "What date is it?", or "What day is it?".
+- F12 works on every screen, in menus, and while the microphone is asleep. Your place does not change.
+- In a document, email, or note, the single word "Time" or "Date" is written as text. Ask a full question there, such as "What time is it?"
+- A screen reader may answer Insert+F12 itself. F12 alone always reaches Companion.
 
 3. USING HELP AND LESSONS
 
@@ -500,7 +512,10 @@ Yahoo uses an app password, not your normal password. To make one, sign in to Ya
 When you choose Yahoo, Companion asks for your email address. Type it or say it, then press Enter.
 Next, type or paste the app password, then press Enter. Press Control+V to paste. For privacy, do not say it aloud. You hear "Hidden character" for each letter.
 Companion checks the password with Yahoo. It tells you if it worked. If not, it tells you what to do. If Yahoo stops accepting a saved app password, make a new one. Then say "Add account" and choose Yahoo again. The new password replaces the old one. Say "Change address" to fix the address. Press Escape or say "Cancel" to stop.
-Thunderbird is a free email program. Companion uses the email accounts already set up in it. When you choose Thunderbird, Companion checks what is missing and tells you the next step. It may offer to open the Thunderbird website, install its connection in Thunderbird, or start Thunderbird. Say yes or no, or press Y or N. Your helper adds your email account in Thunderbird once. Keep Thunderbird open while you use email in Companion. It can stay minimized.
+Thunderbird is a free email program. It keeps your email sign-in, so Companion does not need its own. When you choose Thunderbird, Companion checks what is missing and fixes it when you say yes. Say yes or no, or press Y or N.
+If Thunderbird is not on the computer, Companion offers to install it. It takes a few minutes. If Windows asks whether to allow changes, press Alt+Y. Companion then adds its connection to Thunderbird and starts it.
+If Thunderbird has no email account yet, Companion helps you add one. See 8.4.
+You never need to open Thunderbird yourself. When you use a Thunderbird account, Companion starts Thunderbird in the background. Thunderbird stays minimized, and your keys stay in Companion. If it takes more than a moment, you hear "Starting Thunderbird". Then your command goes on by itself.
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
 
@@ -512,6 +527,8 @@ Use Up Arrow and Down Arrow, then press Enter. Or say "Next" and "That one". You
 Companion switches to that account and opens its inbox. Press Escape or say "Cancel" to keep the account you have.
 You can also say "Switch to", followed by the email service name. For example, say "Switch to Yahoo" if only one Yahoo account is connected.
 With two accounts of the same type, say "Switch to" followed by the full address.
+Thunderbird accounts always say Thunderbird first, such as "Thunderbird, sam@gmail.com". You hear this in the account list, in "List email accounts", when you switch, and when you review a message before sending.
+The same address can be connected two ways: straight to Gmail, and through Thunderbird. Then you hear two accounts, "Gmail, sam@gmail.com" and "Thunderbird, sam@gmail.com". To choose one by voice, say the kind and then the address. For example, say "Thunderbird, sam at gmail dot com". Or say "Switch to Thunderbird, sam at gmail dot com".
 To hear the account in use, say "Which email account?". Check it before sending mail.
 With the keyboard, press Alt+O and choose Email options. Sending account names the account in use. Choose another account there to switch.
 "Check Gmail", "Check Outlook", and "Check Yahoo" open that account when exactly one of its type is connected.
@@ -526,7 +543,7 @@ For Gmail or Microsoft, you can also stop its access in your Google or Microsoft
 For Yahoo, delete the app password in Yahoo Account security if you no longer need it.
 For Thunderbird, removing only stops Companion from using that account. Thunderbird does not change.
 To connect the account again later, say "Add account".
-Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, Which account, or Remove account.
+Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, Which account, Remove account, or Add Thunderbird account.
 
 8.3 Add and find contacts
 A contact is a saved name and email address.
@@ -537,6 +554,28 @@ Each email account has its own contact list. Local contacts can be used without 
 When Gmail is selected, say "Connect Google Contacts" to request access to Google Contacts. Or press Alt+O, choose Email options, then choose Connect Google Contacts.
 Approve that access only if you want to link those contacts. A helper can assist with the permission page.
 Google Calendar and Google Drive are not connected in this version.
+
+8.4 Add a Thunderbird account
+You can add a first, second, or third email account to Thunderbird without leaving Companion. Each address becomes its own account in Companion. You can add one right after another.
+1. Say "Add Thunderbird account". Or press Alt, 6, then 5 in email.
+2. Type or say the email address, then press Enter.
+3. The first time, Companion asks for the name people see on your email. Type or say it, then press Enter.
+4. Companion opens the Thunderbird page for adding an account. It stays in the background. Companion fills in your name and address, and reads the page to you.
+5. Say "Continue in Thunderbird" to choose the main button on that page. Companion reads the page again when it changes.
+6. Sign in when asked. The ways to sign in are below.
+7. Wait for Companion. It tells you when the account is ready. The new account is connected and selected.
+How you sign in depends on the email service:
+- Gmail and Outlook: the sign-in page opens in the Companion web browser. Sign in there as on any web page. Thunderbird gets the answer by itself. This needs Thunderbird 153 or newer. With an older Thunderbird, Gmail and Outlook sign in like Yahoo, below.
+- To use the other browser, say "Open sign-in page in Chrome" or "Open sign-in page in embedded Edge".
+- Most other email: Thunderbird asks for a password. Companion opens a private box. Type or paste the password, then press Enter. It goes straight to Thunderbird. Companion does not say it or save it.
+- Yahoo and AOL: Thunderbird shows their sign-in page in its own window. Companion cannot read that window. Say "Show Thunderbird" to bring it to the front. Then use a screen reader, or ask a helper. Press Alt+Tab to come back.
+While Companion waits, you can say:
+- "What does Thunderbird say?" to hear the page again.
+- "Enter Thunderbird password" to open the private password box.
+- "Show Thunderbird" to bring Thunderbird to the front.
+- "Stop waiting for Thunderbird" to stop. Nothing is removed.
+If Thunderbird already has the address, Companion connects it at once.
+Companion waits up to 15 minutes. If you finish in Thunderbird later, say "Add account" and choose Thunderbird. Companion connects every new address it finds.
 
 9. WRITE AN EMAIL
 
@@ -753,7 +792,9 @@ Control+Alt+Up Arrow and Control+Alt+Down Arrow move through rows. Control+Alt+L
 Control+Alt+Home and Control+Alt+End reach the first and last columns. Control+Alt+Page Up and Control+Alt+Page Down reach the first and last rows.
 Voice choices include "Next row", "Previous column", "First row", "Last row", "First column", and "Last column".
 Companion reads the cell text. It also reads the heading and the row and column numbers when available.
-Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same.
+Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same. You can also say "Back" or "Forward".
+Companion says "Going back" at once. Then it says the page title and puts you where you were on that page, such as on the link you followed.
+If there is no page to go back to, Companion says "There is no previous page." Ads that change by themselves do not stop you from going back.
 To reload the page, say "Refresh page", or press F5. For web help, say "Help with web", or press F1.
 Escape from ordinary page reading opens the web browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
 Saying "Leave website" also opens the web browser menu. "Main menu" leaves the browser activity.
@@ -774,17 +815,26 @@ Readable frame content appears where the frame occurs on the page. Companion mar
 Some websites have their own keys. For example, on YouTube, K plays or pauses a video. J and L skip back and ahead. M turns the sound off, and F fills the screen.
 In browse mode, Companion uses letter keys to move through the page. To send your keys to the website instead, use app mode.
 To use app mode, say "App mode", or press Insert+Space. To go back, say "Browse mode", or press Insert+Space again. You can also say "Focus mode" for app mode.
-NVDA and JAWS keep Insert+Space for themselves. If one of them is running, press Control+Alt+Space instead. It works the same way.
+JAWS, NVDA, and Narrator keep Insert+Space for themselves. If one of them is running, press Control+Shift+Space instead. It works the same way. Control+Alt+Space also still works.
+When one of these screen readers is running, the first web page you open says which key to use. You hear this once each time Companion starts.
+Companion switches modes at once. In app mode, each key goes to the website right away, even when you type fast or hold an arrow key.
 In app mode, every key goes to the website, even Escape and the arrows. Companion tells you where the website moves you and what changes. It also reads short messages from the website, such as Paused.
 F5, F6, F7, Control+L, Alt+Left Arrow, and Alt+Right Arrow keep their usual jobs in app mode.
-To leave the page from app mode, press Insert+Space first. Then press Escape for the web browser menu.
+To leave the page from app mode, press Insert+Space or Control+Shift+Space first. Then press Escape for the web browser menu.
 When you go back to browse mode, your reading place moves to where you were in app mode.
 Each website keeps its own mode while you use the web browser. When you go to a different website, Companion says which mode it uses. Leaving the page always goes back to browse mode.
 A slider sets a level, such as the place in a video or the sound volume. Companion reads its name and value. For example, it says "Seek slider, 1:23 of 4:05".
 To find a slider, say "Next slider", or press Tab until you reach it. When Tab reaches a slider, you can use it at once. If you reached it another way, press Enter to start using it.
 Then use Left Arrow and Right Arrow, or Up Arrow and Down Arrow, to change it. Page Up and Page Down make bigger changes. Home and End go to the start and the end. Companion says the new value each time.
 Press Escape to stop using the slider and go back to browse mode. Tab also moves on to the next control.
-Choice boxes and text boxes work the same way. When Tab reaches one, you can use it at once. Press Enter on one you reached another way.
+Text boxes work like this:
+- Up Arrow, Down Arrow, or Tab onto a text box makes it ready. Just start typing.
+- This is true for every kind of text box. That includes search, email, password, number, and multi-line boxes.
+- It is also true for a search box that shows suggestions, such as the search box on YouTube.
+- Arrow keys leave the box at its first or last line. Tab moves on to the next control.
+Choice boxes and sliders work like this:
+- When you arrow past a choice box or a slider, Companion only reads it. Its value never changes by accident.
+- Press Enter to start using it. Tab onto it also starts using it.
 
 12. FAVORITES AND WEB HISTORY
 
@@ -806,7 +856,7 @@ For example, type n, then p, to find a name that starts with np. Pause before st
 You can also say enough of the name to identify it. If two names match, say more or use the arrows.
 To open a favorite by name, say "Open favorite", followed by the saved name. For example, say "Open favorite News". Say "List favorites" to open the favorite list.
 Home and End reach the first and last items. An empty list says it is empty. Escape returns to the web browser menu.
-If your chosen browser cannot start, Companion tries the included Firefox browser. Your browser choice stays saved. Your favorites stay saved too.
+If your chosen browser cannot start, Companion tries the other guided browser. Your browser choice stays saved. Your favorites stay saved too.
 If a page cannot open, you stay in the web browser menu. Check internet access, then try the favorite again.
 
 12.3 Rename or delete a favorite
@@ -1015,13 +1065,41 @@ You can also say "Capital letters play a sound", "Capital letters raise pitch", 
 Delayed letter hints, such as Alpha after A, use your normal voice. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice for quick feedback. Private password text is not read aloud.
 
 18.3 Voice and Synthesizer options
-In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Check Lower media volume while Companion speaks if you want audio to become quieter while the app speaks.
+In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Voice options also hold the audio ducking settings. See 18.4 Audio ducking.
 Listen to the voice sample before saving rate, volume, or pitch. Control silences the sample. Escape cancels the category.
 In Synthesizer options, you can choose SAPI, eSpeak, or an AI voice when available. This category also contains the private AI service key settings.
 The checkbox Allow narration text to be sent to OpenAI controls consent for online speech. A blank key box keeps the saved key.
 Check Remove saved AI key and choose OK to remove the saved key. Ask your helper if you need to set up an AI voice.
 
-18.4 Input and Email options
+18.4 Audio ducking
+Audio ducking makes other sound quieter while Companion speaks. When Companion stops, the sound comes back up slowly. This works like audio ducking on an iPhone with VoiceOver.
+Audio ducking is on when you first get the app. It lowers sound from these places:
+- Web pages in the guided browser, such as videos and music.
+- Chrome, Edge, Brave, and Firefox, even when you opened them yourself.
+- Radio and podcasts in Companion.
+Other programs keep their sound unless you choose Also lower other apps. Screen readers, such as NVDA, JAWS, and Narrator, are never lowered.
+The sound stays low through short pauses between phrases. This stops it from going up and down while you move through a list.
+Ducking level sets how much quieter the sound gets. The choices are:
+- Light: 25 percent quieter.
+- Medium: 50 percent quieter.
+- Strong: 75 percent quieter. This is the default.
+To change these settings with the keyboard:
+1. Press Alt+O to open Options.
+2. Choose Voice options.
+3. Tab to Audio ducking. Press Space to turn it on or off.
+4. Tab to Ducking level. Use the arrows to choose Light, Medium, or Strong.
+5. Tab to Also lower other apps. Press Space to turn it on or off.
+6. Choose OK to save. Cancel keeps your old choices.
+To change these settings by voice, say one of these. They save at once.
+- "Audio ducking off" or "Turn audio ducking off".
+- "Audio ducking on" or "Turn audio ducking on".
+- "Ducking level light", "Ducking level medium", or "Ducking level strong".
+- "Ducking level 50 percent" also works.
+- "Lower other apps on" or "Lower other apps off".
+If you close Companion while the sound is low, the sound comes back. If the computer or app stops all at once, the sound comes back the next time Companion starts.
+If a program is still too quiet, open the Windows volume mixer and raise it there. Companion keeps your new level.
+
+18.5 Input and Email options
 In Input options, you can choose Normal, Commands only, or Dictation only. The choice affects how spoken words are used.
 Dictation type is a separate choice. Old school keeps the speech entry you used before. It is the default.
 Choose AI-based to use the local AI speech model and light cleanup. The model adds stops and capital letters as you speak. Cleanup removes um, uh, and clear repeated starts. For example, "I I, um, want to go" becomes "I want to go".
@@ -1038,25 +1116,28 @@ In Spoken email headers, choose which details to hear: From, Subject, Date, or S
 Press Space to include or remove a header. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
 Choose Add an email account to start the setup steps in chapter 8. Choose Connect Google Contacts to link the Google contacts of a Gmail account.
 
-18.5 Word processor and Notepad options
+18.6 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents.
 These defaults do not change text in an existing document or draft. Font size choices run from 6 to 72 points.
 Font for new documents is a list of common fonts, such as Arial, Calibri, Times New Roman, and Verdana. Use the Up and Down Arrow keys, or type the first letter of a font. You can also say "Font" and its name, such as "Font Arial".
 In Notepad options, choose Open Notepad to return to your note or start a new one.
 
-18.6 Web browser options
+18.7 Web browser options
 The Default search engine setting lets you choose Google, Bing, Brave Search, or DuckDuckGo.
 Keep browser window open controls whether a page stays open when you leave page reading. It is off by default.
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
 HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
-The Guided browser setting lets you choose webview2, Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
-Embedded Edge, shown as webview2, is the usual choice. You can also say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
-Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, Companion uses its own Firefox and tells you. Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Firefox", or use your regular browser with the extension.
+The Guided browser setting lets you choose embedded Edge or Chrome. Companion uses a separate browser profile for its pages.
+- Embedded Edge is the usual choice. Say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
+- Chrome uses Google Chrome on your PC. Say "Use Chrome". If Chrome is not installed, say "Set up Chrome".
+- Edge, Brave, and Firefox are no longer guided browsers. If you chose one of them before, Companion now uses embedded Edge and tells you once.
+Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, Companion uses Chrome and tells you. If Chrome is not installed either, Companion tells you to say "Set up Chrome".
+Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Chrome", or use your regular browser with the extension.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.
 
-18.7 Radio and Podcasts options
+18.8 Radio and Podcasts options
 Both categories have Keep audio playing in the background. It is off at first. With it on, audio keeps playing when you return to the main menu.
 In Radio options, you can choose a Station database, List radio presets, or List scheduled recordings.
 Station database chooses which station lists to search. Presets are saved stations. Scheduled recordings are future recordings.
@@ -1064,7 +1145,7 @@ In Podcasts options, choose a Podcast subscription, then set Automatic downloads
 Choose manual, all, or a whole-number limit. List subscriptions opens the saved-show list.
 The limit applies only to the chosen show.
 
-18.8 Auto-update and Startup and exit options
+18.9 Auto-update and Startup and exit options
 In Auto-update options, you can turn Check automatically at startup on or off. Choose Check for updates now to check at any time.
 In Startup and exit options, Start with Windows is off by default. Turn it on to open the installed app when you sign in to Windows.
 The app starts in sleep mode and waits for "Wake up" or keyboard input. Uninstalling Companion removes that startup choice.
@@ -1074,7 +1155,7 @@ Each setting controls its own Yes or No prompt. Document save questions still ap
 19. SLEEP, EXIT, AND COMPUTER POWER
 
 19.1 Put the microphone to sleep
-To pause ordinary voice requests, say "Go to sleep", or press F12. To continue, say "Wake up", or press F12 again.
+To pause ordinary voice requests, say "Go to sleep", or press Control+F12. To continue, say "Wake up", or press Control+F12 again.
 Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
 If an email is waiting for your approval to send, that approval is canceled. Review the message again before sending it.
 The keyboard still works while voice commands are asleep. Sleep is different from closing the app or putting Windows to sleep.
@@ -1182,14 +1263,15 @@ The app skips history entries with private sign-in data. It also removes sign-in
 
 23.1 Set up Chrome and the extension
 You need this only to use your own Chrome, with the sites you are already signed in to. Embedded Edge works without it.
-1. Say "Set up Chrome". Or open Options, choose Web browser options, and choose Set up Chrome and the Voice Companion extension. Companion asks before each change. Say yes or no, or press Y or N.
+1. Say "Set up Chrome". Or choose Set up Chrome in the Web browser menu, or in the web page's Alt menu. Or open Options, choose Web browser options, and choose Set up Chrome and the Voice Companion extension. Companion asks before each change. Say yes or no, or press Y or N.
 2. If Chrome is missing, Companion offers to install it. This takes a few minutes. Companion tells you how it is going. If Windows asks for permission, press Alt+Y.
 3. Companion then adds the extension and opens Chrome. Chrome asks you to turn it on. Press Tab until you hear "Enable extension", then press Enter. Companion reads the Chrome buttons to you while you do this.
 4. If Chrome does not ask, press Alt+F to open the Chrome menu. Press Down Arrow until you hear "Voice Companion Browser Connection", then press Enter. Then choose Enable extension. If you are not in Chrome, press Alt+Tab.
 5. When the extension links, you hear "Chrome is linked to Voice Companion." If it does not link in two minutes, Companion offers the Chrome Web Store page. There, press Tab until you hear "Add to Chrome", then press Enter. Chrome asks again. Press Tab until you hear "Add extension", then press Enter.
 6. Say "Status" to hear the current step again. Say "Cancel" to stop setup.
-7. The installer has a box named Set up Chrome and the Voice Companion extension when Voice Companion opens. It is off unless you tick it. When it is on, setup starts the next time Companion opens.
-8. If setup does not finish, ask your helper. A helper can open Voice Companion Browser Connection in the Chrome Web Store and choose Add to Chrome. For Edge or a test copy, a helper can follow Browser Connection Setup in the Voice Companion Start menu folder.
+7. When you open Web browser and Chrome is not ready, Companion asks: "Chrome is not set up yet. Set it up now?" This happens when Chrome is your guided browser but is not installed. It also happens when you open your regular browser and your Chrome is not linked. Press Y for yes or N for no, or say yes or no. Enter and Escape mean no. If you say no, Companion uses embedded Edge and does not ask again until you choose Chrome again.
+8. The installer has a box named Set up Chrome and the Voice Companion extension when Voice Companion opens. It is off unless you tick it. When it is on, setup starts the next time Companion opens.
+9. If setup does not finish, ask your helper. A helper can open Voice Companion Browser Connection in the Chrome Web Store and choose Add to Chrome. For Edge or a test copy, a helper can follow Browser Connection Setup in the Voice Companion Start menu folder.
 
 23.2 Read and use your browser
 1. Open Web browser from Companion's main menu. Choose Resume where you left off to read the active browser tab. Search, favorites, web history, Go back and Go forward remain in this menu.
@@ -1199,7 +1281,7 @@ You need this only to use your own Chrome, with the sites you are already signed
 
 23.3 Understand this testing connection
 1. This uses your ordinary Chrome or Edge tab. The browser shows its normal notice while connected. Sites may still block access. PayPal sign-in has not been tested.
-2. Companion links normal website tabs in this browser. New tabs and sites link on their own. When you switch tabs, Companion uses the active tab. Browser settings pages stay outside the link. It does not import your cookies. Firefox uses the existing guided browser.
+2. Companion links normal website tabs in this browser. New tabs and sites link on their own. When you switch tabs, Companion uses the active tab. Browser settings pages stay outside the link. It does not import your cookies.
 3. If the link stops, keep Companion open. The extension tries again on its own. Companion does not open a separate guided browser in its place. Closing the connection leaves your regular browser tabs open.
 
 Booking calendars

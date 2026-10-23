@@ -17,6 +17,30 @@
 ],
 "screen_after": "awake"
 },
+"awake | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "awake"
+},
+"awake | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "awake"
+},
+"awake | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "awake"
+},
+"awake | Ducking under the fence was hard.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | Find a way to call Bob.": {
 "calls": [
 "call.search('Find a way to call Bob.', provider=None)",
@@ -39,6 +63,12 @@
 "User guide. I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"awake | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "awake"
 },
 "awake | No, thanks.": {
 "said": [
@@ -88,9 +118,33 @@
 ],
 "screen_after": "awake"
 },
+"awake | The date of the party is Friday.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | The trial period is over": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Time to go home.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Time.": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "awake"
+},
+"awake | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "awake"
 },
@@ -115,6 +169,30 @@
 "awake | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "awake"
+},
+"awake | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "awake"
+},
+"awake | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "awake"
+},
+"awake | What time is the meeting?": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "awake"
 },
@@ -743,7 +821,7 @@
 },
 "awake | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -835,8 +913,8 @@
 "awake | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -906,6 +984,12 @@
 "awake | current": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
 ],
 "screen_after": "awake"
 },
@@ -2399,8 +2483,8 @@
 "awake | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2458,8 +2542,8 @@
 "awake | open web browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2469,8 +2553,8 @@
 "awake | open web browsing": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -2841,8 +2925,8 @@
 "awake | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -3747,8 +3831,8 @@
 "awake | web browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -3769,8 +3853,8 @@
 "awake | web browsing": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -4137,6 +4221,42 @@
 "Hello world. Second sentence. Capital letters are important."
 ]
 },
+"document | Date.": {
+"said": [
+"Date."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Date."
+]
+},
+"document | Ducking level, loud.": {
+"said": [
+"Ducking level, loud."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Ducking level, loud."
+]
+},
+"document | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | Ducking under the fence was hard.": {
+"said": [
+"Ducking under the fence was hard."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Ducking under the fence was hard."
+]
+},
 "document | Find a way to call Bob.": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
@@ -4162,6 +4282,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Help with the dishes tonight"
+]
+},
+"document | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | No, thanks.": {
@@ -4236,6 +4365,15 @@
 "Hello world. Second sentence. Switch to the left lane at the light."
 ]
 },
+"document | The date of the party is Friday.": {
+"said": [
+"The date of the party is Friday."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. The date of the party is Friday."
+]
+},
 "document | The trial period is over": {
 "said": [
 "The trial period is over"
@@ -4243,6 +4381,33 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. The trial period is over"
+]
+},
+"document | Time to go home.": {
+"said": [
+"Time to go home."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Time to go home."
+]
+},
+"document | Time.": {
+"said": [
+"Time."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Time."
+]
+},
+"document | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Update contact details as soon as you can.": {
@@ -4279,6 +4444,42 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Volume two of the series is out."
+]
+},
+"document | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | What time is the meeting?": {
+"said": [
+"What time is the meeting?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. What time is the meeting?"
+]
+},
+"document | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Yes, please.": {
@@ -5210,7 +5411,7 @@
 },
 "document | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -5347,8 +5548,8 @@
 "document | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -5455,6 +5656,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. current"
+]
+},
+"document | date and time": {
+"said": [
+"date and time"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. date and time"
 ]
 },
 "document | delete": {
@@ -7657,8 +7867,8 @@
 "document | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -8302,8 +8512,8 @@
 "document | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -10164,6 +10374,42 @@
 "Hello world. Capital letters are important."
 ]
 },
+"email_draft | Date.": {
+"said": [
+"Date."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Date."
+]
+},
+"email_draft | Ducking level, loud.": {
+"said": [
+"Ducking level, loud."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Ducking level, loud."
+]
+},
+"email_draft | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | Ducking under the fence was hard.": {
+"said": [
+"Ducking under the fence was hard."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Ducking under the fence was hard."
+]
+},
 "email_draft | Find a way to call Bob.": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
@@ -10189,6 +10435,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Help with the dishes tonight"
+]
+},
+"email_draft | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | No, thanks.": {
@@ -10263,6 +10518,15 @@
 "Hello world. Switch to the left lane at the light."
 ]
 },
+"email_draft | The date of the party is Friday.": {
+"said": [
+"The date of the party is Friday."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. The date of the party is Friday."
+]
+},
 "email_draft | The trial period is over": {
 "said": [
 "The trial period is over"
@@ -10270,6 +10534,33 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. The trial period is over"
+]
+},
+"email_draft | Time to go home.": {
+"said": [
+"Time to go home."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Time to go home."
+]
+},
+"email_draft | Time.": {
+"said": [
+"Time."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Time."
+]
+},
+"email_draft | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Update contact details as soon as you can.": {
@@ -10306,6 +10597,42 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Volume two of the series is out."
+]
+},
+"email_draft | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | What time is the meeting?": {
+"said": [
+"What time is the meeting?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. What time is the meeting?"
+]
+},
+"email_draft | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Yes, please.": {
@@ -11324,7 +11651,7 @@
 },
 "email_draft | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -11461,8 +11788,8 @@
 "email_draft | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -11569,6 +11896,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. current"
+]
+},
+"email_draft | date and time": {
+"said": [
+"date and time"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. date and time"
 ]
 },
 "email_draft | delete": {
@@ -13830,8 +14166,8 @@
 "email_draft | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -14475,8 +14811,8 @@
 "email_draft | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -16331,6 +16667,28 @@
 ],
 "screen_after": "help"
 },
+"help | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "help"
+},
+"help | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "help"
+},
+"help | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "help"
+},
+"help | Ducking under the fence was hard.": {
+"said": [],
+"screen_after": "help"
+},
 "help | Find a way to call Bob.": {
 "said": [],
 "screen_after": "help"
@@ -16342,6 +16700,12 @@
 "help | Help with the dishes tonight": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
+],
+"screen_after": "help"
+},
+"help | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
 ],
 "screen_after": "help"
 },
@@ -16383,8 +16747,28 @@
 "said": [],
 "screen_after": "help"
 },
+"help | The date of the party is Friday.": {
+"said": [],
+"screen_after": "help"
+},
 "help | The trial period is over": {
 "said": [],
+"screen_after": "help"
+},
+"help | Time to go home.": {
+"said": [],
+"screen_after": "help"
+},
+"help | Time.": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "help"
+},
+"help | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
+],
 "screen_after": "help"
 },
 "help | Update contact details as soon as you can.": {
@@ -16402,6 +16786,28 @@
 "help | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "help"
+},
+"help | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "help"
+},
+"help | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "help"
+},
+"help | What time is the meeting?": {
+"said": [],
+"screen_after": "help"
+},
+"help | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "help"
 },
@@ -16909,8 +17315,8 @@
 "help | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -16959,6 +17365,12 @@
 },
 "help | current": {
 "said": [],
+"screen_after": "help"
+},
+"help | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
+],
 "screen_after": "help"
 },
 "help | delete": {
@@ -17996,8 +18408,8 @@
 "help | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -18316,8 +18728,8 @@
 "help | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -19227,6 +19639,33 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Ducking under the fence was hard.": {
+"calls": [
+"call.process('Ducking under the fence was hard.')"
+],
+"said": [
+"session handled: Ducking under the fence was hard."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Find a way to call Bob.": {
 "calls": [
 "call.process('Find a way to call Bob.')"
@@ -19250,6 +19689,12 @@
 "User guide. I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"mailbox | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "mailbox"
 },
 "mailbox | No, thanks.": {
 "calls": [
@@ -19311,12 +19756,42 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | The date of the party is Friday.": {
+"calls": [
+"call.process('The date of the party is Friday.')"
+],
+"said": [
+"session handled: The date of the party is Friday."
+],
+"screen_after": "mailbox"
+},
 "mailbox | The trial period is over": {
 "calls": [
 "call.process('The trial period is over')"
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Time to go home.": {
+"calls": [
+"call.process('Time to go home.')"
+],
+"said": [
+"session handled: Time to go home."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Time.": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "mailbox"
 },
@@ -19341,6 +19816,33 @@
 "mailbox | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What time is the meeting?": {
+"calls": [
+"call.process('What time is the meeting?')"
+],
+"said": [
+"session handled: What time is the meeting?"
+],
+"screen_after": "mailbox"
+},
+"mailbox | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "mailbox"
 },
@@ -20198,7 +20700,7 @@
 },
 "mailbox | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -20310,8 +20812,8 @@
 "mailbox | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -20411,6 +20913,12 @@
 ],
 "said": [
 "session handled: current"
+],
+"screen_after": "mailbox"
+},
+"mailbox | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
 ],
 "screen_after": "mailbox"
 },
@@ -22399,8 +22907,8 @@
 "mailbox | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -22975,8 +23483,8 @@
 "mailbox | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -24604,6 +25112,30 @@
 ],
 "screen_after": "note"
 },
+"note | Date.": {
+"said": [
+"Date."
+],
+"screen_after": "note"
+},
+"note | Ducking level, loud.": {
+"said": [
+"Ducking level, loud."
+],
+"screen_after": "note"
+},
+"note | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "note"
+},
+"note | Ducking under the fence was hard.": {
+"said": [
+"Ducking under the fence was hard."
+],
+"screen_after": "note"
+},
 "note | Find a way to call Bob.": {
 "said": [
 "Find a way to call Bob."
@@ -24619,6 +25151,12 @@
 "note | Help with the dishes tonight": {
 "said": [
 "Help with the dishes tonight"
+],
+"screen_after": "note"
+},
+"note | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
 ],
 "screen_after": "note"
 },
@@ -24670,9 +25208,33 @@
 ],
 "screen_after": "note"
 },
+"note | The date of the party is Friday.": {
+"said": [
+"The date of the party is Friday."
+],
+"screen_after": "note"
+},
 "note | The trial period is over": {
 "said": [
 "The trial period is over"
+],
+"screen_after": "note"
+},
+"note | Time to go home.": {
+"said": [
+"Time to go home."
+],
+"screen_after": "note"
+},
+"note | Time.": {
+"said": [
+"Time."
+],
+"screen_after": "note"
+},
+"note | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "note"
 },
@@ -24697,6 +25259,30 @@
 "note | Volume two of the series is out.": {
 "said": [
 "Volume two of the series is out."
+],
+"screen_after": "note"
+},
+"note | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "note"
+},
+"note | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "note"
+},
+"note | What time is the meeting?": {
+"said": [
+"What time is the meeting?"
+],
+"screen_after": "note"
+},
+"note | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "note"
 },
@@ -25322,7 +25908,7 @@
 },
 "note | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -25414,8 +26000,8 @@
 "note | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -25485,6 +26071,12 @@
 "note | current": {
 "said": [
 "current"
+],
+"screen_after": "note"
+},
+"note | date and time": {
+"said": [
+"date and time"
 ],
 "screen_after": "note"
 },
@@ -26961,8 +27553,8 @@
 "note | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -27393,8 +27985,8 @@
 "note | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.snapshot.__bool__()"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -28639,6 +29231,34 @@
 ],
 "screen_after": "web"
 },
+"web | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "web"
+},
+"web | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "web"
+},
+"web | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "web"
+},
+"web | Ducking under the fence was hard.": {
+"calls": [
+"call.command('Ducking under the fence was hard.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Ducking under the fence was hard."
+],
+"screen_after": "web"
+},
 "web | Find a way to call Bob.": {
 "calls": [
 "call.command('Find a way to call Bob.')",
@@ -28664,6 +29284,12 @@
 "User guide. I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"web | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "web"
 },
 "web | No, thanks.": {
 "calls": [
@@ -28729,6 +29355,16 @@
 ],
 "screen_after": "web"
 },
+"web | The date of the party is Friday.": {
+"calls": [
+"call.command('The date of the party is Friday.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: The date of the party is Friday."
+],
+"screen_after": "web"
+},
 "web | The trial period is over": {
 "calls": [
 "call.command('The trial period is over')",
@@ -28736,6 +29372,28 @@
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "web"
+},
+"web | Time to go home.": {
+"calls": [
+"call.command('Time to go home.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Time to go home."
+],
+"screen_after": "web"
+},
+"web | Time.": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "web"
+},
+"web | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "web"
 },
@@ -28760,6 +29418,34 @@
 "web | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "web"
+},
+"web | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "web"
+},
+"web | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "web"
+},
+"web | What time is the meeting?": {
+"calls": [
+"call.command('What time is the meeting?')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: What time is the meeting?"
+],
+"screen_after": "web"
+},
+"web | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "web"
 },
@@ -29175,7 +29861,7 @@
 "calls": [
 "call.leave(False)",
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()"
+"call.take_browser_notice()"
 ],
 "said": [
 "Web browser menu."
@@ -29718,7 +30404,7 @@
 },
 "web | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -29834,8 +30520,8 @@
 "web | connect regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.menu.start(resume=False)"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -29937,6 +30623,12 @@
 ],
 "said": [
 "session handled: current"
+],
+"screen_after": "web"
+},
+"web | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
 ],
 "screen_after": "web"
 },
@@ -31092,7 +31784,7 @@
 "calls": [
 "call.leave(False)",
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()"
+"call.take_browser_notice()"
 ],
 "said": [
 "Web browser menu."
@@ -32154,8 +32846,8 @@
 "web | open regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.menu.start(resume=False)"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -32786,8 +33478,8 @@
 "web | regular browser": {
 "calls": [
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()",
-"call.menu.start(resume=False)"
+"call.take_browser_notice()",
+"call.backend.regular.__bool__()"
 ],
 "said": [
 "Web browser menu."
@@ -34065,7 +34757,7 @@
 "calls": [
 "call.leave(False)",
 "call.adopt_connected_browser()",
-"call.backend.regular.__bool__()"
+"call.take_browser_notice()"
 ],
 "said": [
 "Web browser menu."

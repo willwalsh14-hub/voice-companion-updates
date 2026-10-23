@@ -61,7 +61,8 @@ MENUS = {
             ('Add account', '', 'add account'),
             ('Switch account', '', 'switch account'),
             ('Which account', '', 'which email account'),
-            ('Remove account', '', 'remove email account')]),
+            ('Remove account', '', 'remove email account'),
+            ('Add Thunderbird account', '', 'add thunderbird account')]),
         ('Options and help', [
             ('Email options', '', '@options:Email'),
             ('Messages per page', '', 'email list size'),
@@ -121,6 +122,7 @@ MENUS = {
             ('Web browser menu', 'Escape', 'web browser menu')]),
         ('Options and help', [
             ('Web browser options', '', '@options:Web browser'),
+            ('Set up Chrome', '', 'set up chrome'),
             ('Web help', 'F1', 'help with web')]),
     ]),
     'help': ('Help menu', [

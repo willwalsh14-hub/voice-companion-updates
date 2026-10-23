@@ -10,7 +10,7 @@ from reading_navigation import ReadingCursor
 from email_reader import render_html,spoken_range,message_controls
 from mail_voice import MailSession
 from test_web_assistant import FakeBackend
-from web_assistant import WebSession,BrowserBackend
+from web_assistant import WebSession,BrowserBackend,WebError
 
 class BrowserAccessibilityTests(unittest.TestCase):
     def test_control_silences_all_engines_without_microphone_or_focus_dependency(self):
@@ -124,14 +124,15 @@ class BrowserAccessibilityTests(unittest.TestCase):
                     backend=BrowserBackend(folder,browser,headless=True);backend.start()
                     embedded.assert_called_once_with(Path(folder),True);embedded.return_value.start.assert_called_once()
                 continue
-            driver=Mock();driver.chromium.launch_persistent_context.return_value.pages=[Mock()];driver.firefox.launch_persistent_context.return_value.pages=[Mock()]
-            with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))),patch.object(Path,'is_file',return_value=True),patch.dict(os.environ,{'PROGRAMFILES':'C:\\Program Files'}):
+            driver=Mock();driver.chromium.launch_persistent_context.return_value.pages=[Mock()]
+            with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))):
                 backend=BrowserBackend(folder,browser,headless=True);backend.start()
-                engine=driver.firefox if browser=='firefox' else driver.chromium
-                args=engine.launch_persistent_context.call_args.kwargs
-                self.assertTrue(args['headless'])
-                if browser in ('chrome','edge'):self.assertEqual(args['channel'],'chrome' if browser=='chrome' else 'msedge')
-                if browser=='brave':self.assertTrue(args['executable_path'].endswith('brave.exe'))
+                args=driver.chromium.launch_persistent_context.call_args.kwargs
+                self.assertTrue(args['headless']);self.assertEqual(args['channel'],'chrome')
+        # Edge, Brave and Firefox are no longer guided browsers.
+        self.assertEqual(set(BrowserBackend.BROWSERS),{'webview2','chrome'})
+        for browser in ('edge','brave','firefox'):
+            with self.subTest(browser=browser),self.assertRaises(WebError):BrowserBackend(tempfile.gettempdir(),browser)
 
 class EmailControlTests(unittest.TestCase):
     def session(self,body):

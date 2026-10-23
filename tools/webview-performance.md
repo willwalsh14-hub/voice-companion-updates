@@ -118,3 +118,64 @@ keyboard browser parity checks", which now also run `EmbeddedPerformanceTests`).
   the light DOM, is seen at the next snapshot, not by the change counter.
 - The host's 35-second watchdog still decides when a hung embedded browser is
   given up on. With these fixes no normal call comes close to that.
+
+## App mode and browse mode (branch `claude/guided-browsers`)
+
+Will reported: "App mode vs browse mode is very very laggy." Measured with
+`tools/webview_benchmark.py` (its app mode section), headless Chromium, before
+and after this branch.
+
+### What ran on each switch and key
+
+- **Switching to browse mode read the whole page again** (a full snapshot,
+  about 0.4 s on the busy page) before "Browse mode" could be spoken. The
+  element with focus is now found in the page view Companion already has. The
+  view catches up at the main loop's next check, which runs at once
+  (`refresh_now`).
+- **Switching to app mode moved focus to the browse cursor's element first.**
+  That now happens with the first key, so the switch itself does no page work.
+- **Each key sent to the page waited for an answer**: up to six 25 ms waits,
+  each followed by a page read, so a key the page answers silently (K on a
+  video) took about 0.2 s. A key now costs two quick page reads and the key
+  press. A late answer from the page is said at the next check.
+- **In app mode the main loop kept reading the whole page** whenever it
+  changed (a video clock changes every second). Each read held up the next key
+  for 0.4 to 1.1 s. In app mode the check now asks only for focus changes and
+  page announcements; a new page is still read and announced.
+- **After every key the window was refocused and given the page text again**
+  (Windows: `SetForegroundWindow`, `focus_force`, comparing the whole page
+  text). Page keys do not move keyboard focus, so this now happens only after
+  other keys or when a page key opened another page or tab.
+
+- **Keys typed or held faster than they were handled each waited for page
+  reads.** Keys that arrive together now go to the page one after another,
+  and the page is read once, after the last. A key right after another uses
+  the state read after that key, so it needs one page read, not two.
+- **Every page read sent the whole 40 KB focus script** (in embedded Edge it
+  also went through the host twice). The script is placed in the page once
+  and then called by name.
+
+### Results (busy page, milliseconds, median unless noted)
+
+Before is this branch before the app mode work; after is the final branch.
+
+- Switch to app mode: 57 before, 0 after.
+- Switch back to browse mode: 424 before, 3 after.
+- K key (play or pause): 212 before, 6 after.
+- J key: 208 before, 8 after.
+- L key: 221 before, 7 after.
+- Down Arrow: 220 before, 9 after.
+- Tab (focus moves): 19 before, 11 after.
+- Right Arrow on the seek slider: 208 before, 7 after.
+- Typing a letter in the search box: 20 before, 11 after.
+- Twenty keys arriving together: 433 in all before (21.7 a key), 118 after
+  (5.9 a key).
+- Main loop check in app mode: 499 before (worst 1,056), 13 after (worst 28);
+  page reads in 10 checks: 12 before, 0 after.
+
+Tests that keep these bounds: `test_web_modes_live.AppModeSpeedTests` (no page
+read or wait on a switch, one key press and at most two page reads per key,
+one read for a key right after another, a short call instead of the script,
+no reads between keys that arrive together, late answers said by the next
+check) and `test_web_modes.AppModeWindowTests`
+(no window refocus after page keys; queued page keys are sent together).

@@ -29,12 +29,13 @@ SCREEN_KEYS = {
     'tutorial': {'Ctrl+Shift+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
                  'Ctrl+F': 'find lesson {value}', 'Ctrl+Shift+F': 'explain command {value}',
                  'Ctrl+Down': 'continue reading'},
-    'sleep': {'F12': 'wake up'},
+    'sleep': {'Ctrl+F12': 'wake up'},
 }
-# F12 puts the microphone to sleep from any main screen; on the sleep screen it wakes it.
+# Control+F12 puts the microphone to sleep from any main screen; while asleep it wakes it.
+# F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
               'recent_documents', 'media_menu', 'local_media', 'help', 'tutorial', 'document', 'files', 'document_menu'):
-    SCREEN_KEYS.setdefault(_mode, {})['F12'] = 'go to sleep'
+    SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
 # Formatting keys apply to the message body, not to an address or subject box.

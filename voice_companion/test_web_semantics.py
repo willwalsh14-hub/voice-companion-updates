@@ -473,8 +473,4 @@ class ChromeSemanticWebTests(SemanticWebTests):
     browser_name='chrome'
     setUpClass=classmethod(consumer_helpers.ChromeConsumerWebTests.setUpClass.__func__)
 
-@unittest.skipUnless(sys.platform=='win32','Windows Edge semantic checks')
-class EdgeSemanticWebTests(ChromeSemanticWebTests):browser_name='edge'
 
-@unittest.skipUnless(sys.platform=='win32','Windows Brave semantic checks')
-class BraveSemanticWebTests(ChromeSemanticWebTests):browser_name='brave'

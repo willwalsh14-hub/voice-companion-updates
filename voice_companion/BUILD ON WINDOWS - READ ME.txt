@@ -28,7 +28,7 @@ UPDATING AN OLDER INSTALLATION
 
 Run the new VoiceCompanion-Setup.exe normally. You do not uninstall the old version. Versions 0.2.0 through 0.2.54 use the same installer identity, install folder, Start menu group, and desktop shortcut. Setup replaces the program files and updates the existing installation. Your account sign-in remains in Windows user data. Documents are in your Windows Documents\Voice Companion folder; older documents are copied there when opened in the updated app. After Setup, open the desktop icon and say "What version?" It must answer 0.2.96-test. The builder also checks the installed EXE hashes and version after Setup finishes.
 
-The separate VoiceCompanion-Diagnostics.exe is for trainer checks. The veteran does not need Python, pip, Inno Setup, or Word. These are build-computer tools; Setup includes the Python runtime, dependencies, both speech models, and guided Firefox. Other browsers need their own installation.
+The separate VoiceCompanion-Diagnostics.exe is for trainer checks. The veteran does not need Python, pip, Inno Setup, or Word. These are build-computer tools; Setup includes the Python runtime, dependencies, both speech models, embedded Edge for guided websites, and the Firefox engine that plays radio, podcasts and media files. Guided Chrome needs Google Chrome installed; say "set up Chrome" to install it.
 
 BEFORE GIVING IT TO THE VETERAN
 

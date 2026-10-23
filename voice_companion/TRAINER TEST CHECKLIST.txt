@@ -128,7 +128,7 @@ ___ Turn that setting off. Leave a page and check that Resume is absent.
 Result: ____________________
 
 11. Read and use web pages
-___ Test in Edge, Chrome, Brave, and Firefox where installed.
+___ Test guided websites in embedded Edge and in Chrome. Say "use Firefox" and confirm Companion explains the two choices.
 ___ Read lines and words. Move to a heading, then check that arrow reading starts there.
 ___ Try heading, link, button, text-box, table, and other quick keys.
 ___ Open link and heading lists. Choose an item, then return to the page.

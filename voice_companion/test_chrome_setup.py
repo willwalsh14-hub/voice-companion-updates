@@ -485,3 +485,82 @@ class CompanionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class OfferWhenOpeningWebBrowserTests(unittest.TestCase):
+    """Opening Web browser offers Chrome setup when Chrome is chosen but not ready."""
+    def setUp(self):
+        import companion
+        from test_web_assistant import FakeBackend
+        from web_assistant import WebSession
+        self.app = companion
+        self.system = FakeSystem(chrome=False)
+        self.spoken = []
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, FakeBackend())
+        self.session.browser = 'chrome'
+        self.relay = []
+        patches = [patch.object(companion, 'speak', self.spoken.append), patch.object(companion, 'speak_status', self.spoken.append),
+                   patch.object(companion, 'CHROME_SETUP', None), patch.object(companion, 'CHROME_SETUP_RETURN', 'awake'),
+                   patch.object(companion, 'web_session', self.session), patch.object(companion, 'APP_WINDOW', None),
+                   patch.object(chrome_setup, 'WindowsChrome', lambda: self.system),
+                   patch.object(chrome_setup, 'FocusReader', lambda speak: FakeFocus()),
+                   patch.object(chrome_setup, 'relay_connected', lambda app: bool(self.relay)),
+                   patch('browser_cdp_relay.prepare'), patch('browser_cdp_relay.current', return_value=None)]
+        for item in patches:
+            item.start(); self.addCleanup(item.stop)
+
+    def test_chosen_chrome_that_is_missing_is_offered_and_yes_installs(self):
+        self.assertEqual(self.app.open_browser_menu(), 'chrome_setup')
+        self.assertEqual(self.spoken[-1], MESSAGES['offer_chrome'])
+        # Enter means no here; Y and N answer, as elsewhere.
+        self.assertEqual(self.app.CONFIRM_CHOICE, 'no')
+        self.assertEqual(self.app._navigation_key('Enter', 'chrome_setup'), 'no')
+        self.assertEqual(self.app._navigation_key('y', 'chrome_setup'), 'yes')
+        self.assertEqual(self.app._handle('yes', 'chrome_setup'), 'chrome_setup')
+        self.assertEqual(self.spoken[-1], MESSAGES['installing'])
+        self.app.CHROME_SETUP.worker.join(5)
+        self.assertTrue(self.system.install_started.is_set())
+
+    def test_no_uses_embedded_edge_and_is_not_asked_again_until_chrome_is_chosen(self):
+        self.app.open_browser_menu()
+        self.assertEqual(self.app._handle('No.', 'chrome_setup'), 'browser_menu')
+        self.assertEqual(self.spoken[-2], MESSAGES['offer_declined'])
+        self.assertTrue(self.spoken[-1].startswith('Web browser menu.'))
+        self.assertEqual(self.app.open_browser_menu(), 'browser_menu')
+        self.assertTrue(self.spoken[-1].startswith('Web browser menu.'))
+        self.session.injected_backend = True
+        self.session.choose_browser('chrome')
+        self.assertEqual(self.app.open_browser_menu(), 'chrome_setup')
+
+    def test_escape_cancels_the_offer(self):
+        self.app.open_browser_menu()
+        self.assertEqual(self.app._navigation_key('Escape', 'chrome_setup'), 'no')
+
+    def test_nothing_is_asked_when_chrome_is_ready_or_embedded_edge_is_used(self):
+        self.system.chrome = True
+        self.assertEqual(self.app.open_browser_menu(), 'browser_menu')
+        self.system.chrome = False; self.session.browser = 'webview2'
+        self.assertEqual(self.app.open_browser_menu(), 'browser_menu')
+        self.assertTrue(all(MESSAGES['offer_chrome'] not in said for said in self.spoken))
+
+    def test_your_own_chrome_without_the_extension_is_offered(self):
+        self.system.chrome = True; self.session.browser = 'webview2'
+        self.assertEqual(self.app._handle('Open regular browser.', 'awake'), 'chrome_setup')
+        self.assertEqual(self.spoken[-1], MESSAGES['offer_extension'])
+        self.assertEqual(self.app._handle(self.app._navigation_key('y', 'chrome_setup'), 'chrome_setup'), 'chrome_setup')
+        self.assertEqual(self.system.added, 1)
+        # Linked already: nothing to ask.
+        self.app.CHROME_SETUP = None; self.relay.append(1)
+        self.assertEqual(self.app._handle('regular browser', 'awake'), 'browser_menu')
+
+    def test_set_up_chrome_is_in_the_web_browser_menu_and_the_page_alt_menu(self):
+        self.system.chrome = True
+        self.app.open_browser_menu()
+        names = [name for name, action in self.session.menu.choices(self.session, False)]
+        self.assertIn('Set up Chrome', names)
+        self.session.menu.index = names.index('Set up Chrome')
+        self.assertEqual(self.app.handle_browser_menu('enter'), 'chrome_setup')
+        self.assertEqual(self.spoken[-1], MESSAGES['ask_extension'])
+        import screen_menus
+        self.assertIn(('Set up Chrome', '', 'set up chrome'), [entry for _, entries in screen_menus.MENUS['web'][1] for entry in entries])

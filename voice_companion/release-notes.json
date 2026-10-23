@@ -1,28 +1,45 @@
 {
-  "version": "0.2.159-test",
+  "version": "0.2.160-test",
   "status": "Testing build",
-  "date": "October 22, 2026",
-  "baseline": "0.2.158-test",
-  "scope": "Switch between email accounts from the folder list or the email menu, and remove an account you no longer want.",
+  "date": "October 23, 2026",
+  "baseline": "0.2.159-test",
+  "scope": "Web pages and app mode are faster, Back works, browser sound gets quieter while Companion speaks, you can check the time and date, and Thunderbird is easier to set up.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose an account, then a folder",
+          "title": "Time and date",
           "details": [
-            "With more than one email account, press Control+Y or say Go to folder. Companion lists your accounts first.",
-            "Choose one with the arrow keys and Enter, or say its number or name. Then you hear that account's folders.",
-            "Press Escape to go back one step.",
-            "With one account, nothing changes."
+            "Press F12 to hear the time. Press F12 twice quickly to hear the date. Insert+F12 does the same.",
+            "You can also say What time is it, What's the time, Time, What's the date, Today's date, or What date is it.",
+            "In a document, email or note, the single word Time or Date is written as text. Ask a full question there instead.",
+            "To put the microphone to sleep, press Control+F12. F12 now tells the time."
           ]
         },
         {
-          "title": "Remove an email account",
+          "title": "Audio ducking",
           "details": [
-            "Say Remove email account, or press Alt, 6, 4 in email. Choose the account, then say yes.",
-            "Your email stays with your email service. Companion just stops using that account.",
-            "Nothing is removed unless you say yes. Pressing Enter alone means no."
+            "Sound from web pages and videos now gets quieter while Companion speaks. This works in embedded Edge and Chrome.",
+            "In Options, open Voice options. Turn Audio ducking on or off. Choose a level: light, medium or strong.",
+            "You can also say Turn audio ducking off, or Ducking level medium.",
+            "Screen readers are never made quieter."
+          ]
+        },
+        {
+          "title": "Add a Thunderbird account",
+          "details": [
+            "Say Add Thunderbird account, or press Alt, 6, 5 in email. Companion fills in Thunderbird's add account page and reads it to you.",
+            "Gmail and Outlook sign in pages open in embedded Edge or Chrome. This needs Thunderbird 153 or newer.",
+            "Yahoo signs in only in Thunderbird's own window. Companion tells you when that happens.",
+            "Thunderbird accounts now say Thunderbird first, such as Thunderbird, will at gmail dot com."
+          ]
+        },
+        {
+          "title": "App mode key",
+          "details": [
+            "Press Control+Shift+Space to switch between app mode and browse mode. Screen readers do not use this key.",
+            "Insert+Space still works when no screen reader is running. Companion tells you once which key to use."
           ]
         }
       ]
@@ -31,22 +48,40 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Email menu",
+          "title": "Faster web",
           "details": [
-            "Switch account in the email menu now lists your accounts. Choose one to open its inbox.",
-            "The email menu has a new Remove account item."
+            "App mode and browse mode now switch at once.",
+            "In app mode, keys reach the web page at once, even when you type fast."
           ]
         },
         {
-          "title": "Folder list",
+          "title": "Back and Forward",
           "details": [
-            "Escape now closes the folder list and says nothing was changed. Before, it read the whole email help."
+            "Alt+Left and the Back item now go back to the last page. You hear Going back, then the page title.",
+            "You go back to the place where you were, such as the link you followed."
           ]
         },
         {
-          "title": "Embedded Edge",
+          "title": "Text boxes and choice boxes",
           "details": [
-            "If embedded Edge is slow to start, Companion tries again. Before, it went straight to Firefox."
+            "Arrow or Tab to any text box, and you can type right away. This includes number boxes and search boxes.",
+            "Arrowing past a choice box or a slider only reads it, so its value never changes by mistake. Press Enter or Tab to use it.",
+        "On YouTube, Add a comment is now read by its name. Arrow to it and type. When you press Tab, your words go into the comment box."
+          ]
+        },
+        {
+          "title": "Browsers",
+          "details": [
+            "You can now use embedded Edge or Chrome. Edge, Brave and Firefox were taken out.",
+            "If embedded Edge does not start, Companion uses Chrome.",
+            "When you open the web browser and Chrome is not set up, Companion offers to set it up."
+          ]
+        },
+        {
+          "title": "Thunderbird",
+          "details": [
+            "Companion starts Thunderbird for you when you need it. You are no longer asked to open it.",
+            "If Thunderbird is not installed, one yes installs it."
           ]
         },
         {

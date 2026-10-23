@@ -9,7 +9,7 @@ import zipfile
 from pathlib import Path
 
 SOURCE = Path(__file__).parent / 'thunderbird_mail_extension'
-FILES = ('manifest.json', 'background.js')
+FILES = ('manifest.json', 'background.js', 'experiment/schema.json', 'experiment/implementation.js')
 
 
 def build(output):

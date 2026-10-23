@@ -26,23 +26,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STUBS = Path(__file__).resolve().parent / 'linux-test-stubs'
 FAILURE = re.compile(r'^(?:FAIL|ERROR): (\S+) \((\S+)\)', re.M)
-CHROMIUM_SHIM = '''
-# Test-only: run the repository's Firefox live tests in Playwright's Chromium.
-import playwright.sync_api as api
-_original = api.sync_playwright
-class _Wrapped:
-    def __init__(self, inner): self._inner = inner
-    def start(self):
-        driver = self._inner.start()
-        try: type(driver).firefox = property(lambda self: self.chromium)
-        except Exception: pass
-        return driver
-    def __enter__(self): return self.start()
-    def __exit__(self, *a): return self._inner.__exit__(*a)
-api.sync_playwright = lambda: _Wrapped(_original())
-'''
-
-
 def release_modules(source):
     """The test files build-windows.ps1 runs together as its release checks."""
     script = (source / 'build-windows.ps1').read_text(encoding='utf-8')
@@ -55,10 +38,6 @@ def release_modules(source):
 def environment(live):
     env = os.environ.copy()
     paths = []
-    if live and importlib.util.find_spec('playwright'):
-        shim = Path(tempfile.mkdtemp(prefix='vc-chromium-shim-'))
-        (shim / 'sitecustomize.py').write_text(CHROMIUM_SHIM, encoding='utf-8')
-        paths.append(str(shim))
     # Stand-ins only for packages that are not really installed.
     if not importlib.util.find_spec('vosk') or not importlib.util.find_spec('websockets'):
         paths.append(str(STUBS))
@@ -75,7 +54,7 @@ def run(source, args):
     groups = ([[m] for m in sorted(p.stem for p in source.glob('test_*.py'))] + [['smoke_tests']]
               if args.each else [release_modules(source)])
     if args.live:
-        groups.append(['test_web_live', 'test_consumer_web', 'test_web_semantics', 'test_web_fixes', 'test_web_modes_live'])
+        groups.append(['test_web_live', 'test_consumer_web', 'test_web_semantics', 'test_web_fixes', 'test_web_modes_live', 'test_web_history', 'test_web_fields'])
     for modules in groups:
         result = subprocess.run([sys.executable, '-m', 'unittest', '-q', *modules], cwd=source, env=env,
                                 capture_output=True, text=True, timeout=3600)
