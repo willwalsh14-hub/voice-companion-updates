@@ -144,6 +144,12 @@ def main():
         relay.close()
     ok = all(report['checks'].values())
     print(json.dumps(report, indent=2))
+    # Also as GitHub annotations, which can be read through the API (check-runs/<id>/annotations).
+    summary = {'thunderbird': report['thunderbird'], 'add_on': report.get('add_on_version'), 'checks': report['checks'],
+               'best_effort': report['best_effort'], 'page': report.get('page')}
+    text = json.dumps(summary).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+    for start in range(0, len(text), 3500):
+        print('::notice title=Thunderbird trial part %d::%s' % (start // 3500 + 1, text[start:start + 3500]))
     return 0 if ok else 1
 
 
