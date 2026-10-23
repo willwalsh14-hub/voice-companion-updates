@@ -87,11 +87,14 @@ class AltKeyWindowTests(unittest.TestCase):
         self.assertIn(('keyboard', 'Alt'), list(self.window.commands.queue))
         self.assertEqual(self.given_to_windows(), [])
 
-    def test_right_alt_alone_opens_the_menu_too(self):
+    def test_right_alt_is_routed_to_companion_too(self):
+        # Tk on Windows cannot make a synthetic Right Alt key ("no keycode for
+        # keysym Alt_R"), so check that Right Alt runs the same handlers as Left Alt.
         self.screen(mode='mailbox')
-        self.keys(('KeyPress', 'Alt_R', 0), ('KeyRelease', 'Alt_R', 8))
-        self.assertIn(('keyboard', 'Alt'), list(self.window.commands.queue))
-        self.assertEqual(self.given_to_windows(), [])
+        bindings = self.call(lambda: [self.window.root.tk.call('bind', 'all', sequence)
+                                      for sequence in ('<KeyRelease>', '<KeyRelease-Alt_L>', '<KeyRelease-Alt_R>')])
+        self.assertEqual(bindings[1], bindings[0]); self.assertEqual(bindings[2], bindings[0])
+        self.assertNotIn('WinMenuKey', bindings[2])
 
     def test_alt_with_a_key_does_not_open_the_menu(self):
         self.screen(mode='mailbox')
