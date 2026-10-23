@@ -145,6 +145,10 @@ class CompanionWindow:
             self.email_selection_edit = (request['field_name'],request['edited_text'])
         return request['result']
 
+    def reclaim_focus(self):
+        """Take the keyboard back after another program (Thunderbird started for mail) took it."""
+        if not self.closed.is_set(): self.ui_actions.put(('reclaim_focus', None))
+
     def clear_email_field(self):
         self.last_email_request = None
         if not self.closed.is_set(): self.ui_actions.put(('clear_email', None))
@@ -801,7 +805,7 @@ class CompanionWindow:
                         if field.get('account_entry')!=old.get('account_entry'):
                             typed.delete(0,'end')
                             if field.get('account_entry'):
-                                entry_label.configure(text='Yahoo app password (private); paste or type, then press Enter. Escape cancels:' if field.get('account_private') else 'Yahoo email address; type, then press Enter. Escape cancels:')
+                                entry_label.configure(text=field.get('account_label') or ('Yahoo app password (private); paste or type, then press Enter. Escape cancels:' if field.get('account_private') else 'Yahoo email address; type, then press Enter. Escape cancels:'))
                                 typed.focus_force()
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
@@ -906,6 +910,10 @@ class CompanionWindow:
                         root.deiconify()
                         root.lift()
                         typed.focus_force()
+                    if action == 'reclaim_focus':
+                        root.deiconify()
+                        root.lift()
+                        root.focus_force()
                     if action == 'clear_email':
                         self.email_field = None
                         typed.delete(0, 'end')

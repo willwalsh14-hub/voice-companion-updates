@@ -285,7 +285,8 @@ class SwitchAccountTests(AccountScreenTestCase):
         accounts = dict(MENUS['mailbox'][1])['Accounts']
         self.assertEqual([(label, command) for label, _, command in accounts],
                          [('Add account', 'add account'), ('Switch account', 'switch account'),
-                          ('Which account', 'which email account'), ('Remove account', 'remove email account')])
+                          ('Which account', 'which email account'), ('Remove account', 'remove email account'),
+                          ('Add Thunderbird account', 'add thunderbird account')])
         self.open_inbox()
         companion.handle('email menu', 'mailbox')
         companion.handle('6', 'mailbox')

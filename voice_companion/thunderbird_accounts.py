@@ -1,19 +1,26 @@
 """Add another email account to Thunderbird from Voice Companion, and say when it is ready.
 
 Thunderbird add-ons cannot create email accounts (its accounts API only lists
-them and reports changes), and only Thunderbird may run its own sign-in. So:
+them and reports changes), and only Thunderbird may run its own sign-in. So,
+all from Voice Companion's own screen:
 
-  1. Voice Companion asks for the address in its own speaking text box.
+  1. Voice Companion asks for the address (and, the first time, the name
+     people see) in its own speaking text box.
   2. If Thunderbird already has that address, it is connected at once.
   3. Otherwise the Voice Companion connection opens Thunderbird's own
-     "add email account" page and fills in the address where it can.
-     Thunderbird looks up the settings, and asks for the sign-in: a password
-     typed in Thunderbird, or the provider's sign-in page (in the web browser
-     from Thunderbird 153, in a Thunderbird window before that).
-  4. A Watch asks Thunderbird for its accounts every few seconds. When the new
+     "add email account" page in the background, fills in the name and
+     address, and reads the page aloud. "Continue in Thunderbird" presses its
+     main button; a password typed privately in Voice Companion goes into its
+     password box.
+  4. Google and Microsoft sign in through a web page (Thunderbird 151 and
+     newer). The connection hands that page to Voice Companion, which opens it
+     in its own browser, embedded Edge or Chrome. The answer goes back to
+     Thunderbird on this computer. Yahoo and AOL sign in only in Thunderbird's
+     own window, which Voice Companion cannot read.
+  5. A Watch asks Thunderbird for its accounts every few seconds. When the new
      address appears, Voice Companion saves it, selects it and says so.
 
-No password passes through Voice Companion. Nothing here is logged.
+Passwords are never spoken, kept or logged.
 """
 import queue
 import threading
@@ -21,7 +28,8 @@ import time
 
 from account_picker import label
 
-POLL_SECONDS = 5
+POLL_SECONDS = 2
+PAGE_SECONDS = 20     # after "continue", the page is read when it changes, or after this long
 REMINDER_SECONDS = 5 * 60
 WAIT_SECONDS = 15 * 60
 # Thunderbird opens these providers' own sign-in pages (OAuth) instead of asking for a password.
@@ -33,6 +41,24 @@ SIGN_IN_PROVIDERS = {
 }
 EXTERNAL_SIGN_IN_VERSION = 153   # Thunderbird opens sign-in pages in the web browser from this version on
 
+NAME_PROMPT = ('What name should people see on email you send? Type or say it, such as Will Walsh, then press Enter. '
+               'Say cancel to stop.')
+NAME_LABEL = 'Your name, as people see it on email; type, then press Enter. Escape cancels:'
+PASSWORD_PROMPT = ('Thunderbird needs the password for this email account. Type or paste it here, then press Enter. '
+                   'It goes straight to Thunderbird and is not spoken. For Yahoo, AOL or iCloud, use an app password. '
+                   'Say cancel to skip.')
+PASSWORD_LABEL = 'Email account password for Thunderbird (private); paste or type, then press Enter. Escape cancels:'
+PASSWORD_SENT = 'The password is in Thunderbird. Continuing.'
+PASSWORD_NOT_SENT = 'Thunderbird has no password box open right now. Nothing was typed. Say what does Thunderbird say to hear the page.'
+CONTINUE_COMMANDS = ('continue in thunderbird', 'thunderbird continue', 'continue thunderbird', 'continue adding account',
+                     'continue adding the account', 'continue adding thunderbird account', 'press continue in thunderbird')
+READ_COMMANDS = ('what does thunderbird say', 'read thunderbird', 'read the thunderbird page', 'read thunderbird page',
+                 'thunderbird status', 'what is thunderbird doing')
+SHOW_COMMANDS = ('show thunderbird', 'go to thunderbird', 'bring thunderbird forward', 'show the thunderbird window')
+PASSWORD_COMMANDS = ('enter thunderbird password', 'type thunderbird password', 'thunderbird password',
+                     'enter the thunderbird password', 'enter password for thunderbird')
+NOT_ADDING = 'Voice Companion is not adding a Thunderbird account right now. Say add Thunderbird account to start.'
+NO_SIGN_IN = 'No sign-in page from Thunderbird is waiting.'
 ADDRESS_PROMPT = 'Type or say the email address to add to Thunderbird, then press Enter. Say cancel to stop.'
 ADDRESS_LABEL = 'Email address to add to Thunderbird; type, then press Enter. Escape cancels:'
 ADDRESS_AGAIN = 'That is not a complete email address. Type or say it again, such as sam at gmail dot com. Say cancel to stop.'
@@ -91,15 +117,20 @@ def sign_in_words(address, version=None):
     return 'Then ' + company + ' asks you to sign in. The sign-in page opens ' + where + '.'
 
 
+def company(address):
+    return SIGN_IN_PROVIDERS.get(address.rsplit('@', 1)[-1].casefold(), '')
+
+
 def opened_message(address, opened, prefilled, copied, version=None):
+    if opened and prefilled:
+        # Voice Companion reads the page next and can press its buttons.
+        return 'Thunderbird has opened its add account page for ' + address + ', with your name and address filled in.'
     if opened:
         start = 'Thunderbird is open to add ' + address + '. '
-        if prefilled:
-            fill = 'The address is filled in. '
-        elif copied:
-            fill = 'The address is copied. In Thunderbird, paste it in the email address box with Control V. '
+        if copied:
+            fill = 'The address is copied. Say show Thunderbird, then paste it in the email address box with Control V. '
         else:
-            fill = 'In Thunderbird, type the address in the email address box. '
+            fill = 'Say show Thunderbird, then type the address in the email address box. '
         steps = 'Type your name if that box is empty, then choose Continue. '
     else:
         start = 'Thunderbird could not open its add account page by itself. '
@@ -137,6 +168,8 @@ class Watch:
         self.sleep = sleep or self.stopped.wait
         self.events = queue.Queue()
         self.thread = None
+        self.lock = threading.Lock()
+        self.pressed = None     # (page before "continue", when): read the page when it changes
 
     def start(self):
         self.thread = threading.Thread(target=self.run, name='Thunderbird account watch', daemon=True)
@@ -145,6 +178,35 @@ class Watch:
 
     def stop(self):
         self.stopped.set()
+
+    def after_press(self, before):
+        with self.lock:
+            self.pressed = (before, self.clock())
+
+    def _ask(self, method, params=None):
+        try:
+            return self.request(method, params or {})
+        except Exception:
+            return None
+
+    def check_sign_in(self):
+        found = self._ask('takeSignIn')
+        if isinstance(found, dict) and (found.get('url') or found.get('where') == 'thunderbird'):
+            self.events.put(('sign_in', found))
+
+    def check_page(self):
+        with self.lock:
+            pressed = self.pressed
+        if pressed is None:
+            return
+        before, when = pressed
+        page = self._ask('setupPage')
+        if page is None:
+            return
+        if page != before or self.clock() - when >= PAGE_SECONDS:
+            with self.lock:
+                self.pressed = None
+            self.events.put(('page', page))
 
     def check(self):
         """One look at Thunderbird's accounts: the found list when a new address is there, else None."""
@@ -163,6 +225,8 @@ class Watch:
             if found is not None:
                 self.events.put(('ready', found))
                 return
+            self.check_sign_in()
+            self.check_page()
             waited = self.clock() - started
             if waited >= self.limit:
                 self.events.put(('gave_up', None))
@@ -171,6 +235,36 @@ class Watch:
                 reminded = True
                 self.events.put(('reminder', None))
             self.sleep(self.poll)
+
+
+def page_words(page):
+    """Thunderbird's add account page, in a few short sentences."""
+    if not page or not page.get('open'):
+        return ('Thunderbird\'s add account page is not open. If you closed it, say add Thunderbird account to start again.')
+    words = []
+    if page.get('title'):
+        words.append('Thunderbird shows: ' + page['title'].rstrip('.') + '.')
+    for note in page.get('notes') or []:
+        words.append(note.rstrip('.') + '.')
+    if page.get('needsPassword'):
+        words.append('It needs the password for this account.')
+    if page.get('canContinue') and page.get('button'):
+        words.append('Say continue in Thunderbird to choose ' + page['button'] + '.')
+    elif page.get('button'):
+        words.append(page['button'] + ' is not available yet.')
+    return ' '.join(words) or 'Thunderbird is working. Say what does Thunderbird say to check again.'
+
+
+def sign_in_opening(address):
+    who = company(address) or 'The'
+    return (who + ' sign-in page is opening in Voice Companion\'s browser. Sign in there. '
+            'Thunderbird gets the answer by itself, and Voice Companion tells you when the account is ready.')
+
+
+def sign_in_in_thunderbird(address):
+    who = company(address) or 'This provider'
+    return (who + ' signs in only in Thunderbird\'s own window, not in Voice Companion. Say show Thunderbird to bring it '
+            'forward, then sign in with a screen reader or a helper. Voice Companion tells you when the account is ready.')
 
 
 def reminder_message(address):

@@ -65,7 +65,7 @@ FIRST_START = 'Starting Thunderbird for the first time.'
 FIRST_START_FAILED = ('Thunderbird is installed, but it is not ready yet. Restart the computer, then say '
                       'add Thunderbird account.')
 FIRST_CLOSE_FAILED = ('Thunderbird is installed and open. Close Thunderbird, then say add Thunderbird account to finish.')
-INSTALL_SECONDS = 15 * 60
+INSTALL_SECONDS = 10 * 60     # each way: winget, then Mozilla's installer
 PROFILE_SECONDS = 90
 CLOSE_SECONDS = 30
 WINGET_ID = 'Mozilla.Thunderbird'
