@@ -100,3 +100,21 @@ class PackagedCheckCleanupTests(unittest.TestCase):
         def locked(path): raise PermissionError('[WinError 5] Access is denied')
         with patch('shutil.rmtree', locked):
             self.assertFalse(packaged_browser_check.remove_folder(folder, attempts=2, pause=0))
+
+
+class RealWindowTestRunTests(unittest.TestCase):
+    """Real-window key tests run in their own process after the release tests."""
+    def test_window_tests_skip_in_the_shared_run_and_run_on_their_own(self):
+        import real_window_tests
+        class Sample(unittest.TestCase):
+            def test_key(self): pass
+        with patch.object(real_window_tests.sys, 'platform', 'win32'):
+            with patch.dict(os.environ, {real_window_tests.APART: '1'}):
+                self.assertTrue(getattr(real_window_tests.real_window(type('A', (Sample,), {})), '__unittest_skip__', False))
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop(real_window_tests.APART, None)
+                self.assertFalse(getattr(real_window_tests.real_window(type('B', (Sample,), {})), '__unittest_skip__', False))
+        script = (Path(__file__).parent / 'build-windows.ps1').read_text(encoding='utf-8')
+        for name in ('test_keyboard_text.WindowKeyboardTests', 'test_input_parity.WindowScreenKeyTests', 'test_time_date_windows.WindowClockKeyTests'):
+            self.assertIn("'" + name + "'", script)
+        self.assertLess(script.index("VOICE_COMPANION_WINDOW_TESTS_APART = '1'"), script.index('$releaseTests = Start-Process'))

@@ -65,6 +65,9 @@ pull requests. Update this file as items are finished.
   - Arrow and Tab into text boxes on sites Will uses; tell Claude any site where typing does not go in.
 - [ ] Num Lock read as Alt (key_state.py, branch claude/numlock-alt): the Windows trial showed real Alt key presses sent by the test did not arrive as expected. Investigate before releasing.
 
+- [ ] Window freeze in Windows release tests (0.2.158 to 0.2.160): a new window sometimes never ran its first update (thread inside Tk mainloop, 'checks done': 0). From 0.2.160 the real-window key tests run in their own process after the other release tests (real_window_tests.py). If they still freeze there, the window itself can freeze and must be fixed before launch. Leads: main-thread COM (test_file_manager Dispatch), windows left by failed tests, cross-thread activation messages.
+- [ ] Alt opened the Windows system menu (Will, Oct 23): Tk's Windows Alt bindings on "all" outrank Companion's. Fix on claude/alt-windows (PR #47 trial); it likely also explains the Num Lock trial failures (PR #40, #45).
+
 ### Reliability work (Claude)
 - [ ] Split command handling in `companion.py` into smaller parts with an
       explicit priority order, without changing behaviour. Safety net in place:

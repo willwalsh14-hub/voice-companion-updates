@@ -4,6 +4,7 @@ F12, or Insert+F12, sends one request; a second quick press sends the date
 request. Control+F12 is microphone sleep. On Windows, Tk reports Num Lock with
 state bit 8, so F12 must work with that bit set.
 """
+from real_window_tests import real_window
 import sys
 import threading
 import time
@@ -11,7 +12,7 @@ import unittest
 from datetime import datetime
 
 
-@unittest.skipUnless(sys.platform == 'win32', 'Windows Tk keyboard integration')
+@real_window
 class WindowClockKeyTests(unittest.TestCase):
     def setUp(self):
         from app_window import CompanionWindow

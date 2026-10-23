@@ -134,6 +134,8 @@ if ($LASTEXITCODE -ne 0) { throw 'The accessible user guides could not be genera
 if ($LASTEXITCODE -ne 0) { throw 'The bundled offline OCR models could not load.' }
 $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
 $releaseErrors = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Errors.txt'
+# Real-window key tests run afterwards, each class in its own process (real_window_tests.py).
+$env:VOICE_COMPANION_WINDOW_TESTS_APART = '1'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
   -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox','test_chrome_setup',
     'test_media_update_fixes','test_web_fixes','test_document_fixes','test_core_email_fixes','test_storage','test_embedded_edge_default','test_thunderbird_mail','test_thunderbird_setup','test_web_performance',
@@ -148,6 +150,10 @@ if ($releaseTests.ExitCode -ne 0) {
     Write-BuildAnnotation 'Release tests failed' ((($failed | Select-Object -First 15) -join "`n") + "`n---`n" + $tail)
   }
   throw "The document, email, or browser release checks failed. See $releaseErrors"
+}
+Remove-Item Env:VOICE_COMPANION_WINDOW_TESTS_APART
+foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests')) {
+  if ((Invoke-UnitTests ('Window key tests ' + $windowTests) @('-v', $windowTests)) -ne 0) { throw ('The real window key tests failed: ' + $windowTests + '. See the annotation.') }
 }
 & $python prepare_espeak.py (Join-Path $PSScriptRoot 'espeak')
 if ($LASTEXITCODE -ne 0) { throw 'The local eSpeak speech runtime could not be prepared.' }

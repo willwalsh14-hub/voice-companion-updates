@@ -1,3 +1,4 @@
+from real_window_tests import real_window
 import io,re,tempfile,unittest
 from contextlib import ExitStack,redirect_stdout
 from pathlib import Path
@@ -540,7 +541,7 @@ class InventoryTests(unittest.TestCase):
                          'Run python3 tools/input_parity_inventory.py and commit tools/input-parity-inventory.md.')
 
 
-@unittest.skipUnless(__import__('sys').platform=='win32','Windows Tk keyboard integration')
+@real_window
 class WindowScreenKeyTests(unittest.TestCase):
     def setUp(self):
         from app_window import CompanionWindow
