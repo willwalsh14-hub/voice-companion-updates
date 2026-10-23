@@ -180,7 +180,7 @@ $arguments = @('--clean', '--noconfirm', '--onedir', '--contents-directory', '.'
   '--add-data', 'Voice Companion Release Notes - DAISY 3.zip:.',
   '--add-data', 'Voice Companion Release Notes.brf:.',
   '--add-data', 'START HERE - Veteran - DAISY 3.zip:.', '--hidden-import', 'sounddevice',
-  '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter','chrome_setup',
+  '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter', '--hidden-import', 'chrome_setup',
   '--hidden-import', 'thunderbird_bridge', '--hidden-import', 'thunderbird_mailbox', '--hidden-import', 'thunderbird_setup',
   '--collect-all', 'win32com', '--collect-all', 'vosk',
   '--collect-all', 'google_auth_oauthlib', '--collect-all', 'msal',
@@ -224,6 +224,7 @@ function Invoke-PyInstaller([string]$name, [string[]]$options, [string]$entry = 
     if (Test-Path $errorLog) { Get-Content -LiteralPath $errorLog -Tail 100 | Out-Host }
     Write-Output 'Recent standard output:'
     if (Test-Path $outputLog) { Get-Content -LiteralPath $outputLog -Tail 40 | Out-Host }
+    if (Test-Path $errorLog) { Write-BuildAnnotation ('Packaging ' + $name + ' failed') ((Get-Content -LiteralPath $errorLog -Tail 40) -join "`n") }
     throw "Could not package $name. Send both PyInstaller log files along with VoiceCompanion-Build-Log.txt."
   }
   Write-Output "$name packaged successfully."
