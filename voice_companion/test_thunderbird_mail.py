@@ -158,7 +158,8 @@ class ThunderbirdOfflineTests(unittest.TestCase):
         from build_thunderbird_addon import build
         with tempfile.TemporaryDirectory() as folder:
             with zipfile.ZipFile(build(Path(folder) / 'mail.xpi')) as archive:
-                self.assertEqual(sorted(archive.namelist()), ['background.js', 'manifest.json'])
+                self.assertEqual(sorted(archive.namelist()), ['background.js', 'experiment/implementation.js',
+                                                              'experiment/schema.json', 'manifest.json'])
 
     def test_send_review_accepts_a_thunderbird_draft(self):
         # The send step listed only Gmail, Outlook and Yahoo, so a Thunderbird

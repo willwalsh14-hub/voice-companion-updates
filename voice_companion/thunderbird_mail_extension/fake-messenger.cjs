@@ -20,6 +20,17 @@ function createFakeMessenger() {
     messages: [],
     composed: [], sent: [], minimized: [], moved: [], deleted: [],
     failSend: false,
+    // Thunderbird's own "add email account" page (the Experiment): what it was asked,
+    // and, like a person finishing that page, the account it adds a moment later.
+    setupOpened: [], setupResult: {opened: true, prefilled: true}, addAfterSetupMs: null,
+    windows: [{id: 1, type: 'normal', state: 'normal'}, {id: 2, type: 'popup', state: 'normal'}],
+  };
+  let nextAccount = 3;
+  state.addAccount = email => {
+    const id = 'account' + nextAccount++;
+    state.accounts.push({id, name: email, type: 'imap', rootFolder: {id: id + '://', isRoot: true, path: '/'},
+      identities: [{id: 'id' + id, email, name: ''}]});
+    state.folders.push({id: id + '://INBOX', accountId: id, path: '/INBOX', name: 'Inbox', specialUse: ['inbox']});
   };
   for (let i = 1; i <= 25; i++) {
     state.messages.push({
@@ -99,8 +110,22 @@ function createFakeMessenger() {
         return {mode: 'sendNow', headerMessageId: 'sent' + tabId + '@thunderbird.test', messages: []};
       },
     },
-    windows: {update: async (windowId, info) => { state.minimized.push({windowId, info}); }},
-    runtime: {getManifest: () => ({version: '1.0.0'})},
+    windows: {
+      update: async (windowId, info) => {
+        state.minimized.push({windowId, info});
+        const win = state.windows.find(w => w.id === windowId);
+        if (win && info.state) win.state = info.state;
+      },
+      getAll: async ({windowTypes} = {}) => state.windows.filter(w => !windowTypes || windowTypes.includes(w.type)).map(w => ({...w})),
+    },
+    voiceCompanionSetup: {
+      openAccountSetup: async email => {
+        state.setupOpened.push(email);
+        if (state.addAfterSetupMs !== null && email) setTimeout(() => state.addAccount(email), state.addAfterSetupMs);
+        return {...state.setupResult};
+      },
+    },
+    runtime: {getManifest: () => ({version: require('./manifest.json').version})},
   };
   function newTab(info) {
     const id = nextTab++;

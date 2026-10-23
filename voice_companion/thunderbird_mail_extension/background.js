@@ -184,6 +184,33 @@ class MailBridge {
     return true;
   }
 
+  // Thunderbird's own "add email account" page, with the address filled in where possible.
+  // Thunderbird then asks for the sign-in itself; this add-on never sees a password.
+  async openAccountSetup({email = ''}) {
+    if (typeof email !== 'string' || email.length > 254 || (email && !/^[^\s@]+@[^\s@]+$/.test(email))) {
+      throw MailBridge.fail('address', 'That is not a complete email address.');
+    }
+    const setup = this.api.voiceCompanionSetup;
+    if (!setup || typeof setup.openAccountSetup !== 'function') return {opened: false, prefilled: false};
+    try {
+      const result = await setup.openAccountSetup(email);
+      return {opened: Boolean(result && result.opened), prefilled: Boolean(result && result.prefilled)};
+    } catch (error) {
+      return {opened: false, prefilled: false};
+    }
+  }
+
+  // Started by Voice Companion in the background: keep Thunderbird's windows out of the way.
+  async minimize() {
+    if (!this.api.windows || !this.api.windows.getAll) return {minimized: 0};
+    let count = 0;
+    for (const win of await this.api.windows.getAll({windowTypes: ['normal']})) {
+      if (win.state === 'minimized') continue;
+      try { await this.api.windows.update(win.id, {state: 'minimized'}); count++; } catch (error) { /* only a courtesy */ }
+    }
+    return {minimized: count};
+  }
+
   static innerBody(html) {
     const match = /<body[^>]*>([\s\S]*)<\/body>/i.exec(html || '');
     return match ? match[1] : (html || '');
@@ -227,7 +254,7 @@ class MailBridge {
 }
 
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
-  'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send'];
+  'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'minimize'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api) {

@@ -113,5 +113,138 @@ function load(api) {
   assert.equal((await bridge.handle({method: 'accounts'})).error.code, 'invalid');
   assert.equal((await bridge.handle({id: 4, method: 'send', params: {to: ['a@b.c']}})).error.message, 'Choose a Thunderbird account first.');
 
+  // Adding an account: Thunderbird's own page opens with the address; bad input is refused.
+  assert.deepEqual(await call('openAccountSetup', {email: 'new@outlook.com'}), {opened: true, prefilled: true});
+  assert.deepEqual(state.setupOpened, ['new@outlook.com']);
+  await assert.rejects(call('openAccountSetup', {email: 'not an address'}), /not a complete email address/);
+  await assert.rejects(call('openAccountSetup', {email: 'x'.repeat(250) + '@a.bc'}), /not a complete email address/);
+  state.setupResult = {opened: true, prefilled: false};
+  assert.deepEqual(await call('openAccountSetup', {email: 'b@example.com'}), {opened: true, prefilled: false});
+  // Experiments can be turned off in Thunderbird: the answer is "not opened", never an error.
+  const experiment = api.voiceCompanionSetup;
+  delete api.voiceCompanionSetup;
+  assert.deepEqual(await call('openAccountSetup', {email: 'c@example.com'}), {opened: false, prefilled: false});
+  api.voiceCompanionSetup = {openAccountSetup: async () => { throw new Error('Window gone'); }};
+  assert.deepEqual(await call('openAccountSetup', {email: 'c@example.com'}), {opened: false, prefilled: false});
+  api.voiceCompanionSetup = experiment;
+
+  // Started in the background: only normal (main) windows are minimized, once.
+  assert.deepEqual(await call('minimize'), {minimized: 1});
+  assert.equal(state.windows[0].state, 'minimized');
+  assert.equal(state.windows[1].state, 'normal');
+  assert.deepEqual(await call('minimize'), {minimized: 0});
+
+  await experimentChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+
+// ---- The Experiment (experiment/implementation.js) against a simulated Thunderbird window ----
+
+class FakeElement {
+  constructor(tag, attributes = {}, children = []) {
+    Object.assign(this, {tag, attributes, children, value: attributes.value || '', disabled: false, shadowRoot: null,
+      visible: attributes.visible !== false, events: []});
+  }
+  getClientRects() { return this.visible ? [{}] : []; }
+  dispatchEvent(event) { this.events.push(event.type); return true; }
+  *all() { for (const child of this.children) { yield child; yield* child.all(); } }
+  querySelectorAll(selector) {
+    const items = [...this.all()];
+    if (selector === '*') return items;
+    if (selector === 'input[type="email"]') return items.filter(e => e.tag === 'input' && e.attributes.type === 'email');
+    throw new Error('Unexpected selector ' + selector);
+  }
+}
+
+function fakeWindow({opener = 'openAccountSetup', box = () => new FakeElement('input', {type: 'email'}), shadow = false} = {}) {
+  const document = new FakeElement('document');
+  const tabmail = new FakeElement('tabmail');
+  tabmail.opened = [];
+  tabmail.openTab = (kind, info) => tabmail.opened.push({kind, info});
+  document.children.push(tabmail);
+  document.getElementById = id => (id === 'tabmail' ? tabmail : null);
+  const win = {document, calls: [], windowState: 2, STATE_MINIMIZED: 2, restored: 0, focused: 0,
+    restore() { this.restored++; this.windowState = 1; }, focus() { this.focused++; },
+    setTimeout: (fn, ms) => setTimeout(fn, 1)};
+  const open = () => {
+    win.calls.push(opener);
+    const input = box();
+    win.input = input;
+    if (!input) return;
+    // Account Hub keeps its form inside custom elements; the old page is a tab.
+    if (shadow) { const host = new FakeElement('account-hub'); host.shadowRoot = new FakeElement('shadow', {}, [input]); document.children.push(host); }
+    else tabmail.currentTabInfo = {browser: {contentDocument: new FakeElement('page', {}, [new FakeElement('input', {type: 'text'}), input])}};
+  };
+  if (opener) win[opener] = async () => { setTimeout(open, 5); };
+  return win;
+}
+
+function loadExperiment(win) {
+  const context = vm.createContext({
+    ChromeUtils: {importESModule: () => ({ExtensionCommon: {ExtensionAPI: class {}}})},
+    Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null)}},
+    setTimeout,
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);
+  const Api = vm.runInContext('voiceCompanionSetup', context);
+  return new Api().getAPI({}).voiceCompanionSetup;
+}
+
+async function experimentChecks() {
+  for (const event of ['input', 'change']) assert.ok(event);
+  global.Event = class { constructor(type) { this.type = type; } };
+  const withEvent = win => { const original = win; return original; };
+
+  // Thunderbird 128 to 149: openAccountSetup() opens the page; the address box is filled in.
+  let win = fakeWindow();
+  let api = loadExperiment(withEvent(win));
+  FakeElement.prototype.ownerGlobal = {Event: global.Event};
+  let answer = JSON.parse(JSON.stringify(await api.openAccountSetup('will@gmail.com')));
+  assert.deepEqual(answer, {opened: true, prefilled: true});
+  assert.deepEqual(win.calls, ['openAccountSetup']);
+  assert.equal(win.input.value, 'will@gmail.com');
+  assert.deepEqual(win.input.events, ['input', 'change']);
+  assert.equal(win.restored, 1, 'a minimized Thunderbird is brought back');
+  assert.equal(win.focused, 1);
+
+  // Account Hub: the box is inside a custom element's shadow root.
+  win = fakeWindow({shadow: true});
+  assert.deepEqual(JSON.parse(JSON.stringify(await loadExperiment(win).openAccountSetup('a@b.com'))), {opened: true, prefilled: true});
+  assert.equal(win.input.value, 'a@b.com');
+
+  // Something already typed there is never replaced.
+  win = fakeWindow({box: () => new FakeElement('input', {type: 'email', value: 'typed@example.com'})});
+  assert.deepEqual(JSON.parse(JSON.stringify(await loadExperiment(win).openAccountSetup('a@b.com'))), {opened: true, prefilled: false});
+  assert.equal(win.input.value, 'typed@example.com');
+
+  // Older and newer names of the opener, then the page itself as a tab.
+  for (const opener of ['openAccountSetupTab', 'AddMailAccount', 'openAccountHub']) {
+    win = fakeWindow({opener});
+    assert.equal((await loadExperiment(win).openAccountSetup('a@b.com')).opened, true);
+    assert.deepEqual(win.calls, [opener]);
+  }
+  win = fakeWindow({opener: null, box: () => null});
+  const tabmail = win.document.getElementById('tabmail');
+  answer = JSON.parse(JSON.stringify(await loadExperiment(win).openAccountSetup('')));
+  assert.deepEqual(answer, {opened: true, prefilled: false});
+  assert.equal(tabmail.opened[0].info.url, 'about:accountsetup');
+
+  // The box never appears (a hidden box does not count): opened, not filled.
+  win = fakeWindow({box: () => new FakeElement('input', {type: 'email', visible: false})});
+  assert.deepEqual(JSON.parse(JSON.stringify(await loadExperiment(win).openAccountSetup('a@b.com'))), {opened: true, prefilled: false});
+
+  // No Thunderbird main window: nothing opened.
+  const none = loadExperiment(null);
+  assert.deepEqual(JSON.parse(JSON.stringify(await none.openAccountSetup('a@b.com'))), {opened: false, prefilled: false});
+
+  // The manifest declares the Experiment, and its schema matches the function.
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8'));
+  const declared = manifest.experiment_apis.voiceCompanionSetup;
+  assert.deepEqual(declared.parent.paths, [['voiceCompanionSetup']]);
+  const schema = JSON.parse(fs.readFileSync(path.join(__dirname, declared.schema), 'utf8'));
+  assert.equal(schema[0].namespace, 'voiceCompanionSetup');
+  assert.deepEqual(schema[0].functions.map(f => [f.name, f.async]), [['openAccountSetup', true]]);
+  assert.ok(fs.existsSync(path.join(__dirname, declared.parent.script)));
+  const [major, minor] = manifest.version.split('.').map(Number);
+  assert.ok(major > 1 || minor >= 1, 'the add-on version was raised so installed copies are replaced');
+}

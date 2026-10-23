@@ -14,6 +14,11 @@ look for them at each start (extensions.startupScanScopes with the profile
 scope). Thunderbird does not require Mozilla-signed add-ons. No administrator
 rights are needed and nothing outside the user's own Thunderbird profile changes.
 
+The same steps get Thunderbird ready for "add Thunderbird account"
+(thunderbird_accounts.py). Then a profile without an email account is fine:
+adding the first account is the point. An older copy of the add-on is replaced
+while Thunderbird is closed; Thunderbird loads the new copy when it starts.
+
 Everything that touches Windows goes through WindowsSystem, so tests use a fake.
 """
 import configparser
@@ -21,6 +26,7 @@ import json
 import os
 import re
 import subprocess
+import zipfile
 from collections import namedtuple
 from pathlib import Path, PureWindowsPath
 
@@ -321,6 +327,19 @@ def install_addon(profile, package):
         raise
 
 
+def package_version(package):
+    """The version in the add-on package's manifest.json, or None if it cannot be read."""
+    try:
+        with zipfile.ZipFile(package) as archive:
+            return str(json.loads(archive.read('manifest.json').decode('utf-8')).get('version') or '') or None
+    except (OSError, ValueError, KeyError, zipfile.BadZipFile):
+        return None
+
+
+def version_tuple(text):
+    return tuple(int(part) for part in re.findall(r'\d+', str(text or '')))
+
+
 def refresh_addon(profile, package):
     """Replace an older copy of the add-on. Only while Thunderbird is closed: it locks the file."""
     try:
@@ -335,10 +354,27 @@ def refresh_addon(profile, package):
 class Setup:
     """start() and answer() each return a Step: what to say, and the yes or no question now waiting."""
 
-    def __init__(self, system, package, connect, relay, progress):
+    def __init__(self, system, package, connect, relay, progress, ready=None, adding=False):
         self.system, self.package = system, Path(package)
         self.connect, self.relay, self.progress = connect, relay, progress
+        # ready(setup) -> Step: what happens once Thunderbird is connected (default: connect its accounts).
+        self.ready, self.adding = ready, adding
         self.program = self.profile = None
+        self.version = None    # Thunderbird's major version, when Windows records it
+
+    def _step(self, message, question):
+        """While adding an account, "say add account and choose Thunderbird" becomes "say add Thunderbird account"."""
+        if self.adding:
+            message = message.replace('say add account and choose Thunderbird', 'say add Thunderbird account')
+        return Step(message, question)
+
+    def addon_outdated(self):
+        """True when the connected add-on is older than the one this copy of Voice Companion ships."""
+        relay = self._relay()
+        bundled = package_version(self.package)
+        if relay is None or not bundled:
+            return False
+        return version_tuple(getattr(relay, 'version', '')) < version_tuple(bundled)
 
     def _relay(self):
         try:
@@ -352,6 +388,8 @@ class Setup:
 
     def _finish(self):
         from mail_accounts import AccountError
+        if self.ready is not None:
+            return self.ready(self)
         try:
             address = self.connect()
         except (AccountError, OSError, ValueError) as exc:
@@ -361,7 +399,7 @@ class Setup:
     def _wait(self, first):
         relay = self._relay()
         if relay is None:
-            return Step(NO_RELAY, None)
+            return self._step(NO_RELAY, None)
         self.progress(first)
         waited = 0
         while waited < WAIT_SECONDS:
@@ -370,33 +408,35 @@ class Setup:
             if relay.connected.wait(PROGRESS_SECONDS):
                 return self._finish()
             waited += PROGRESS_SECONDS
-        return Step(NO_CONNECTION, None)
+        return self._step(NO_CONNECTION, None)
 
     def start(self):
+        self.program, version = find_program(self.system)
+        self.version = major_version(version)
         if self._connected():
             return self._finish()
-        self.program, version = find_program(self.system)
         if not self.program:
-            return Step(NOT_INSTALLED, 'download')
-        major = major_version(version)
+            return self._step(NOT_INSTALLED, 'download')
+        major = self.version
         if major is not None and major < MIN_VERSION:
-            return Step(TOO_OLD, None)
+            return self._step(TOO_OLD, None)
         running = self.system.running()
         self.profile, has_account = choose_profile(self.system)
-        if not has_account:
-            return Step(NO_ACCOUNT_OPEN, None) if running else Step(NO_ACCOUNT, 'start_for_account')
+        # Adding the first account needs only a profile (Thunderbird has been opened once).
+        if not has_account and not (self.adding and self.profile is not None):
+            return self._step(NO_ACCOUNT_OPEN, None) if running else self._step(NO_ACCOUNT, 'start_for_account')
         state = addon_state(self.profile)
         if state == 'missing':
-            return Step(ADDON_MISSING, 'install')
+            return self._step(ADDON_MISSING, 'install')
         if state == 'off':
-            return Step(ADDON_OFF, None)
+            return self._step(ADDON_OFF, None)
         if state == 'blocked':
-            return Step(ADDON_BLOCKED, None)
+            return self._step(ADDON_BLOCKED, None)
         if state == 'waiting' and running:
-            return Step(ADDON_RESTART, None)
+            return self._step(ADDON_RESTART, None)
         if not running:
             refresh_addon(self.profile, self.package)
-            return Step(NOT_RUNNING, 'start')
+            return self._step(NOT_RUNNING, 'start')
         return self._wait(WAITING)
 
     def _launch(self):
@@ -408,27 +448,27 @@ class Setup:
 
     def answer(self, question, yes):
         if question == 'download':
-            if not yes: return Step(NOT_OPENING_SITE, None)
+            if not yes: return self._step(NOT_OPENING_SITE, None)
             try:
                 self.system.open_site(SITE_URL)
             except OSError:
-                return Step(SITE_FAILED, None)
-            return Step(OPENING_SITE, None)
+                return self._step(SITE_FAILED, None)
+            return self._step(OPENING_SITE, None)
         if question == 'start_for_account':
-            if not yes: return Step(NOT_STARTING_FOR_ACCOUNT, None)
-            return Step(STARTING_FOR_ACCOUNT if self._launch() else START_FAILED, None)
+            if not yes: return self._step(NOT_STARTING_FOR_ACCOUNT, None)
+            return self._step(STARTING_FOR_ACCOUNT if self._launch() else START_FAILED, None)
         if question == 'install':
-            if not yes: return Step(ADDON_NOT_INSTALLED, None)
+            if not yes: return self._step(ADDON_NOT_INSTALLED, None)
             try:
                 install_addon(self.profile, self.package)
             except OSError:
-                return Step(ADDON_FAILED, None)
+                return self._step(ADDON_FAILED, None)
             if self.system.running():
-                return Step(ADDON_INSTALLED + ADDON_RESTART, None)
-            return Step(ADDON_INSTALLED + NOT_RUNNING, 'start')
+                return self._step(ADDON_INSTALLED + ADDON_RESTART, None)
+            return self._step(ADDON_INSTALLED + NOT_RUNNING, 'start')
         if question == 'start':
-            if not yes: return Step(NOT_STARTING, None)
+            if not yes: return self._step(NOT_STARTING, None)
             if not self._launch():
-                return Step(START_FAILED, None)
+                return self._step(START_FAILED, None)
             return self._wait(STARTING)
-        return Step('', None)
+        return self._step('', None)

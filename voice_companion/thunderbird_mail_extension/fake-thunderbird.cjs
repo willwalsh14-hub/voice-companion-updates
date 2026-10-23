@@ -8,6 +8,8 @@ const vm = require('node:vm');
 const {createFakeMessenger} = require('./fake-messenger.cjs');
 
 const {api, state} = createFakeMessenger();
+// Like a person finishing Thunderbird's add account page shortly after it opens.
+state.addAfterSetupMs = Number(process.env.FAKE_THUNDERBIRD_ADD_MS || 300);
 const messageListeners = [], disconnectListeners = [];
 
 function write(message) {

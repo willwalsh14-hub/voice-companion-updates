@@ -1,0 +1,17 @@
+[
+  {
+    "namespace": "voiceCompanionSetup",
+    "description": "Opens Thunderbird's own page for adding an email account. It never reads or changes accounts, passwords or settings.",
+    "functions": [
+      {
+        "name": "openAccountSetup",
+        "type": "function",
+        "async": true,
+        "description": "Open Thunderbird's add email account page and, where possible, fill in the address. Resolves to {opened, prefilled}.",
+        "parameters": [
+          {"name": "email", "type": "string", "description": "The address to fill in, or an empty string."}
+        ]
+      }
+    ]
+  }
+]

@@ -142,6 +142,8 @@ account_setup = False
 ACCOUNT_ENTRY = None
 # Thunderbird setup waiting for a yes or no: {'flow': thunderbird_setup.Setup, 'question': ...}.
 THUNDERBIRD_SETUP = None
+# Waiting for Thunderbird to finish adding an account: {'watch': thunderbird_accounts.Watch, 'address': ...}.
+THUNDERBIRD_WATCH = None
 # The list of connected email accounts while it is open (account_picker.py):
 # {'purpose': 'folders' | 'inbox' | 'remove', 'accounts': [(provider, address)], 'index': 0,
 #  'current': selected account, 'mode': screen, 'confirm': account waiting for yes or no,
@@ -1749,6 +1751,8 @@ def handle_mailbox_screen(text, command, mode, typed):
 def account_entry_step(text, command, mode):
     """One spoken or typed answer during Yahoo setup. The password is never taken by voice."""
     global ACCOUNT_ENTRY
+    if ACCOUNT_ENTRY.get('provider') == 'thunderbird':
+        return thunderbird_address_step(text, command, mode)
     if command in ('cancel', 'cancel account setup', 'cancel setup', 'stop', 'go back', 'escape', 'never mind', 'main menu'):
         ACCOUNT_ENTRY = None
         speak('Yahoo setup canceled. No account was saved.')
@@ -1959,7 +1963,8 @@ def close_account_picker(mode):
             speak('Folder list canceled.')
             return mode
         mail_session = session
-        speak('Folder list canceled. Back to ' + account[1] + ', ' + session.folder_name + '.')
+        from account_picker import label
+        speak('Folder list canceled. Back to ' + label(account) + ', ' + session.folder_name + '.')
         return mode
     speak('Folder list canceled.')
     return mode
@@ -1968,6 +1973,7 @@ def close_account_picker(mode):
 def choose_mail_account(index, mode):
     """Act on the account chosen in the list."""
     global ACCOUNT_PICKER, FOLDER_ACCOUNT_RETURN, mail_session, pending_send
+    import account_picker as words
     picker = ACCOUNT_PICKER
     account = picker['accounts'][index]
     picker['index'] = index
@@ -1989,7 +1995,7 @@ def choose_mail_account(index, mode):
             return mode
         pending_send = None
         mail_session = MailSession(provider, APP, progress=mail_progress)
-        speak('Switched to ' + address + '. ' + mail_session.process('open inbox'))
+        speak('Switched to ' + words.label((provider, address)) + '. ' + mail_session.process('open inbox'))
         return 'mailbox'
     # Folders: this account's folder list. Escape there comes back to the accounts.
     FOLDER_ACCOUNT_RETURN = picker['origin']
@@ -2004,7 +2010,7 @@ def choose_mail_account(index, mode):
             return mode
         pending_send = None
         mail_session = MailSession(provider, APP, progress=mail_progress)
-        speak('Switched to ' + address + '. ' + mail_session.process('go to folder'))
+        speak('Switched to ' + words.label((provider, address)) + '. ' + mail_session.process('go to folder'))
     if not getattr(mail_session, 'folder_picker', None):
         FOLDER_ACCOUNT_RETURN = None
     return mode
@@ -2021,11 +2027,12 @@ def switch_mail_account(provider, address, mode):
     if mode == 'email_draft' and email_draft:
         email_draft.provider = provider
         email_draft.save()
+    from account_picker import label
     if mode == 'mailbox':
         mail_session = MailSession(provider, APP, progress=mail_progress)
-        speak('Switched to ' + address + '. ' + mail_session.process('open inbox'))
+        speak('Switched to ' + label((provider, address)) + '. ' + mail_session.process('open inbox'))
     else:
-        speak('Switched to ' + provider.capitalize() + ' account ' + address + '.')
+        speak('Switched to ' + label((provider, address)) + '.')
     return mode
 
 
@@ -2077,8 +2084,10 @@ def remove_mail_account(account, mode):
     return 'awake' if mode == 'mailbox' else mode
 
 
-def new_thunderbird_setup():
-    """Thunderbird setup on this computer, with the add-on package this copy of the app ships."""
+def new_thunderbird_setup(adding=False):
+    """Thunderbird setup on this computer, with the add-on package this copy of the app ships.
+
+    adding: for "add Thunderbird account"; once Thunderbird is connected, ask for the new address."""
     import thunderbird_setup
     from thunderbird_bridge import current, prepare
     from mail_accounts import thunderbird_connect
@@ -2089,7 +2098,216 @@ def new_thunderbird_setup():
     def relay():
         return current() or (prepare(APP) if os.name == 'nt' else None)
     return thunderbird_setup.Setup(thunderbird_setup.WindowsSystem(), package,
-                                   lambda: thunderbird_connect(ProtectedStore(APP)), relay, speak_status)
+                                   lambda: thunderbird_connect(ProtectedStore(APP)), relay, speak_status,
+                                   ready=thunderbird_add_ready if adding else thunderbird_connect_ready, adding=adding)
+
+
+def thunderbird_connect_ready(setup):
+    """Thunderbird is connected: connect its new addresses, or offer to add another account to it."""
+    import account_picker
+    import thunderbird_accounts as words
+    from thunderbird_setup import Step
+    from thunderbird_mailbox import accounts
+    store = ProtectedStore(APP)
+    try:
+        found = accounts()
+        pairs = words.identities(found)
+        if not pairs:
+            return Step('Thunderbird is connected, but it has no email accounts yet. Add one now? Say yes or no.', 'add_another')
+        added = words.save_identities(store, found, select=True)
+    except (MailboxError, AccountError) as exc:
+        return Step(str(exc), None)
+    except OSError:
+        return Step('Voice Companion could not save the Thunderbird accounts. Close other programs, then say add account and choose Thunderbird.', None)
+    if not added:
+        names = '; '.join(account_picker.label(('thunderbird', identity['email'])) for _, identity in pairs)
+        return Step(('Your Thunderbird account is already connected: ' if len(pairs) == 1 else
+                     'Your Thunderbird accounts are already connected: ') + names +
+                    '. Add another email account to Thunderbird? Say yes or no.', 'add_another')
+    selected = store.selected()
+    if len(added) == 1:
+        message = account_picker.label(selected) + ' is connected and selected.'
+    else:
+        message = (str(len(added)) + ' Thunderbird accounts are connected: ' + ', '.join(added) + '. ' +
+                   account_picker.label(selected) + ' is selected.')
+    return Step(message + ' Say check email to open it. To add another email account to Thunderbird, say add Thunderbird account.', None)
+
+
+def thunderbird_add_ready(setup):
+    """Thunderbird is connected for "add Thunderbird account": ask for the address."""
+    global THUNDERBIRD_VERSION
+    import thunderbird_accounts as words
+    from thunderbird_setup import Step
+    from thunderbird_mailbox import accounts
+    if setup.addon_outdated():
+        return Step(words.NEEDS_UPDATE, None)
+    THUNDERBIRD_VERSION = setup.version
+    note = ''
+    try:
+        # Addresses added in Thunderbird earlier are connected now, and said, so the list is complete.
+        added = words.save_identities(ProtectedStore(APP), accounts(), select=False)
+        if added:
+            note = ('Thunderbird already had ' + ' and '.join(added) + '. ' +
+                    ('It is' if len(added) == 1 else 'They are') + ' now connected too. ')
+    except (MailboxError, AccountError) as exc:
+        return Step(str(exc), None)
+    except OSError:
+        pass
+    return Step(note + words.ADDRESS_PROMPT, 'address')
+
+
+THUNDERBIRD_VERSION = None
+
+
+def start_thunderbird_add(mode):
+    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address."""
+    global THUNDERBIRD_SETUP
+    try:
+        flow = new_thunderbird_setup(adding=True)
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
+        return thunderbird_setup_step(flow.start(), mode)
+    except Exception:
+        THUNDERBIRD_SETUP = None
+        speak('Thunderbird setup stopped because of a problem. Nothing was changed. Say add Thunderbird account to try again.')
+        return mode
+
+
+def ask_thunderbird_address(message, mode):
+    """Open the speaking text box for the address to add to Thunderbird."""
+    global ACCOUNT_ENTRY
+    ACCOUNT_ENTRY = {'provider': 'thunderbird', 'step': 'address', 'version': THUNDERBIRD_VERSION}
+    speak(message)
+    sync_app_context(mode, True)
+    return mode
+
+
+def thunderbird_address_step(text, command, mode):
+    """The address typed or said for "add Thunderbird account"."""
+    global ACCOUNT_ENTRY
+    import thunderbird_accounts as words
+    if command in ('cancel', 'cancel account setup', 'cancel setup', 'stop', 'go back', 'escape', 'never mind', 'main menu'):
+        ACCOUNT_ENTRY = None
+        speak(words.CANCELED)
+        sync_app_context(mode, True)
+        return mode
+    if command == 'account entry empty':
+        speak(words.EMPTY)
+        return mode
+    if command == 'account entry busy':
+        speak(words.BUSY)
+        return mode
+    if command in ('help', 'what do i do', 'repeat', 'what now', 'say that again'):
+        speak(words.ADDRESS_PROMPT)
+        return mode
+    try:
+        address = normalize_recipient(text.strip().rstrip('.'))
+    except ValueError:
+        speak(words.ADDRESS_AGAIN)
+        return mode
+    version = ACCOUNT_ENTRY.get('version')
+    ACCOUNT_ENTRY = None
+    sync_app_context(mode, True)
+    speak(add_thunderbird_address(address, version, mode))
+    return mode
+
+
+def add_thunderbird_address(address, version, mode):
+    """Connect the address if Thunderbird has it; otherwise open Thunderbird's own page to add it, and wait."""
+    global mail_session, pending_send
+    import account_picker
+    import thunderbird_accounts as words
+    from thunderbird_bridge import ThunderbirdError, ThunderbirdUnavailable, current
+    from thunderbird_mailbox import accounts
+    store = ProtectedStore(APP)
+    try:
+        found = accounts()
+    except MailboxError as exc:
+        return str(exc) + ' Then say add Thunderbird account.'
+    has = [identity['email'] for _, identity in words.identities(found) if identity['email'].casefold() == address.casefold()]
+    if has:
+        account = ('thunderbird', has[0])
+        if any(p == 'thunderbird' and a.casefold() == address.casefold() for p, a in connected_accounts(store)):
+            return account_picker.label(account) + ' is already connected. Say switch account to use it.'
+        try:
+            words.save_identities(store, found, select=False)
+            store.select(*account)
+        except (AccountError, OSError):
+            return 'Voice Companion could not save this account. Close other programs, then say add Thunderbird account again.'
+        if mode not in ('mailbox', 'email_draft'):
+            mail_session = None; pending_send = None
+        return ('Thunderbird already has ' + has[0] + '. ' + account_picker.label(account) +
+                ' is now connected and selected. Say check email to open it.')
+    result = {}
+    try:
+        result = current().request('openAccountSetup', {'email': address}, timeout=30) or {}
+    except ThunderbirdUnavailable:
+        return 'Thunderbird stopped answering. Open Thunderbird, then say add Thunderbird account.'
+    except (ThunderbirdError, AttributeError):
+        result = {}    # an older connection: the spoken steps still work
+    prefilled = bool(result.get('prefilled'))
+    copied = False
+    if not prefilled:
+        try:
+            from document_editor import copy_to_clipboard
+            import document_editor
+            copy_to_clipboard(address)
+            copied = bool(getattr(document_editor, 'CLIPBOARD_WRITE_OK', False))
+        except Exception:
+            copied = False
+    start_thunderbird_watch(address, found)
+    return words.opened_message(address, bool(result.get('opened')), prefilled, copied, version)
+
+
+def start_thunderbird_watch(address, found):
+    global THUNDERBIRD_WATCH
+    import thunderbird_accounts as words
+    from thunderbird_bridge import current
+    stop_thunderbird_watch()
+    THUNDERBIRD_WATCH = {'watch': words.Watch(current().request, address, found).start(), 'address': address}
+
+
+def stop_thunderbird_watch():
+    global THUNDERBIRD_WATCH
+    if THUNDERBIRD_WATCH is not None:
+        THUNDERBIRD_WATCH['watch'].stop()
+    THUNDERBIRD_WATCH = None
+
+
+def poll_thunderbird_watch(mode):
+    """On the main loop: say when Thunderbird has added the account, and connect it."""
+    global THUNDERBIRD_WATCH, mail_session, pending_send
+    waiting = THUNDERBIRD_WATCH
+    if waiting is None:
+        return
+    try:
+        event, found = waiting['watch'].events.get_nowait()
+    except queue.Empty:
+        return
+    import thunderbird_accounts as words
+    address = waiting['address']
+    if event == 'reminder':
+        speak_status(words.reminder_message(address))
+        return
+    THUNDERBIRD_WATCH = None
+    if event != 'ready':
+        speak_status(words.gave_up_message(address))
+        return
+    known = waiting['watch'].known
+    new = [identity['email'] for _, identity in words.identities(found) if identity.get('id') not in known]
+    store = ProtectedStore(APP)
+    # An open mailbox or draft keeps its account; elsewhere the new account is selected.
+    choose = mode not in ('mailbox', 'email_draft')
+    chosen = next((a for a in new if a.casefold() == address.casefold()), new[0]) if choose else None
+    try:
+        words.save_identities(store, found, select=False)
+        if chosen:
+            store.select('thunderbird', chosen)
+            mail_session = None; pending_send = None
+    except (AccountError, OSError):
+        speak_status('Thunderbird added ' + ' and '.join(new) + ', but Voice Companion could not save it. '
+                     'Say add account and choose Thunderbird to try again.')
+        return
+    speak_status(words.ready_message(new, chosen))
 
 
 THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok', 'do it', 'go ahead')
@@ -2101,6 +2319,8 @@ def thunderbird_setup_step(step, mode):
     global THUNDERBIRD_SETUP, CONFIRM_CHOICE
     flow = THUNDERBIRD_SETUP['flow'] if THUNDERBIRD_SETUP else None
     THUNDERBIRD_SETUP = None
+    if step.question == 'address':
+        return ask_thunderbird_address(step.message, mode)
     if step.question:
         THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
         CONFIRM_CHOICE = 'yes'
@@ -2116,6 +2336,13 @@ def thunderbird_setup_answer(command, mode):
         speak(THUNDERBIRD_SETUP['message'])
         return mode
     flow, question = THUNDERBIRD_SETUP['flow'], THUNDERBIRD_SETUP['question']
+    if question == 'add_another':
+        THUNDERBIRD_SETUP = None
+        if command in THUNDERBIRD_YES:
+            return start_thunderbird_add(mode)
+        speak('Okay. Nothing else was changed.')
+        sync_app_context(mode, True)
+        return mode
     try:
         step = flow.answer(question, command in THUNDERBIRD_YES)
     except Exception:
@@ -2901,9 +3128,18 @@ def _handle(text, mode, typed=False):
             speak_prompt('No text field is active. Say normal mode to choose a task.')
         return mode
     store = ProtectedStore(APP)
+    import thunderbird_accounts
+    if command in thunderbird_accounts.STOP_WAITING_COMMANDS:
+        waiting = THUNDERBIRD_WATCH is not None
+        stop_thunderbird_watch()
+        speak(thunderbird_accounts.STOPPED_WAITING if waiting else thunderbird_accounts.NOT_WAITING)
+        return mode
     direct_connection = re.fullmatch(
         r'(?:connect|add|set up|setup|sign in to|log in to)\s+(?:my\s+|an?\s+)?'
         r'(gmail|google mail|outlook|microsoft 365|exchange|yahoo|thunderbird)(?:\s+(?:email|mail|account))?', command)
+    if command in thunderbird_accounts.ADD_COMMANDS and (direct_connection or not writing_dictation(mode, typed)):
+        account_setup = False
+        return start_thunderbird_add(mode)
     if direct_connection:
         account_setup = True
         selected_type = direct_connection[1]
@@ -2954,7 +3190,9 @@ def _handle(text, mode, typed=False):
         selected = store.selected()
         if not accounts: speak_prompt('No email account is connected. Say add account.')
         else:
-            speak(open_named_list('Email accounts',[(p.capitalize()+' '+a+(' selected' if selected==(p,a) else ''),'switch to '+a) for p,a in accounts]))
+            # The kind comes first, so the same address through Thunderbird and directly are two items.
+            import account_picker
+            speak(open_named_list('Email accounts',[(account_picker.label((p,a),selected),'switch to '+account_picker.name(p).casefold()+' '+a) for p,a in accounts]))
         return mode
     # Whole commands only; while writing, these words are text.
     if command in ACCOUNT_SWITCH_COMMANDS + ACCOUNT_REMOVE_COMMANDS and not writing_dictation(mode, typed):
@@ -3001,11 +3239,15 @@ def _handle(text, mode, typed=False):
         return mode
     match_account = re.fullmatch(r'(?:switch to|use|select) (.+)', command)
     if match_account and not ('@' in match_account[1] or ' at ' in match_account[1] or match_account[1] in
-                              ('gmail','outlook','exchange','microsoft 365','yahoo')):
+                              ('gmail','outlook','exchange','microsoft 365','yahoo','thunderbird')):
         match_account = None
     choice = match_account[1] if match_account else None
+    account_kind = None
     if match_account and ('@' in choice or ' at ' in choice):
-        try: choice = normalize_recipient(choice)
+        # "Switch to Thunderbird, will at gmail dot com" or "... will@gmail.com through Thunderbird".
+        from account_picker import spoken_account
+        account_kind, spoken_address = spoken_account(choice)
+        try: choice = normalize_recipient(spoken_address)
         except ValueError:
             # "Use the side door at noon." while writing is text, not an account name.
             if not writing_dictation(mode, typed):
@@ -3015,12 +3257,15 @@ def _handle(text, mode, typed=False):
     if match_account:
         accounts = store.accounts()
         if '@' in choice:
-            matches = [(p,a) for p,a in accounts if a.casefold() == choice.casefold()]
+            matches = [(p,a) for p,a in accounts if a.casefold() == choice.casefold() and account_kind in (None, p)]
         else:
             provider = 'outlook' if choice in ('exchange','microsoft 365') else choice
             matches = [(p,a) for p,a in accounts if p == provider]
         if len(matches) != 1:
-            speak('I cannot identify one connected account. Say list email accounts, then switch to its full email address.' if matches else
+            from account_picker import label as account_label
+            speak(('That address is connected ' + str(len(matches)) + ' ways. Say ' +
+                   ', or '.join('switch to ' + account_label(m) for m in matches) + '.' if '@' in choice else
+                   'I cannot identify one connected account. Say list email accounts, then switch to its full email address.') if matches else
                   'That account is not connected. Say add account or list email accounts.')
             return mode
         return switch_mail_account(*matches[0], mode)
@@ -3174,7 +3419,8 @@ def _handle(text, mode, typed=False):
                                ' uses the original message in your mailbox' +
                                ('. Original attachments are not included' if context['action'] == 'forward' and provider != 'outlook' else '')
                                if context else '')
-                speak('Review before sending. From ' + address + '. To ' + recipient +
+                import account_picker
+                speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
                       copied + '. Subject ' + (subject or 'no subject') + '. Message: ' + (body or 'no message body') + source_note +
                       '. Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
