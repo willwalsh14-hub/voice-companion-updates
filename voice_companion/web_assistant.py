@@ -218,6 +218,13 @@ def saved_browser_choice(folder):
     return None, ''
 
 
+# A box that looks like a text box but holds no editor (YouTube's "Add a
+# comment..."). The site opens the real box when it is clicked.
+STAND_IN_BOX="e=>!e.isContentEditable&&!e.matches('input,textarea,select')&&!e.querySelector('input,textarea,[contenteditable]:not([contenteditable=\"false\"])')"
+# After the click: the text box that now has keyboard focus, marked for typing.
+STAND_IN_TARGET="()=>{let a=document.activeElement;while(a?.shadowRoot?.activeElement)a=a.shadowRoot.activeElement;if(!a||!(a.isContentEditable||a.matches('input,textarea')))return false;for(const old of document.querySelectorAll('[data-voice-companion-typing]'))old.removeAttribute('data-voice-companion-typing');a.setAttribute('data-voice-companion-typing','1');return true;}"
+
+
 class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one.
 
@@ -875,19 +882,46 @@ class BrowserBackend:
             state=element.evaluate(COMBO_STATE,{})
             if state['expanded'] and (state['focus_in_box'] or state['focus_in_list']):self.page.keyboard.press('Escape')
             element.evaluate('e=>e.blur()');return
-        element=self._element(item)
+        element=self._text_element(item) if kind(item)=='edit' else self._element(item)
         if kind(item) in ('combobox','listbox') and element.get_attribute('aria-expanded')=='true':element.press('Escape')
         element.evaluate('e=>e.blur()')
 
     def field_value(self,item):
-        return self._text_element(item).evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
+        element=self._text_element(item)
+        # A stand-in box shows a hint such as "Add a comment..."; it holds no text yet.
+        if element.evaluate(STAND_IN_BOX):return ''
+        return element.evaluate("e=>e.isContentEditable?e.innerText:String(e.value||'')")
 
     def fill(self,item,value,private=False):
         element=self._text_element(item)
+        if element.evaluate(STAND_IN_BOX):element=self._open_stand_in(item,element)
         element.fill(value,timeout=10000)
+
+    def _open_stand_in(self,item,element):
+        """Open the real text box behind a stand-in, and return it.
+
+        Some sites show a box that only looks like a text box (YouTube's "Add a
+        comment..."). Clicking it opens the real one. This happens only when
+        there is text to put in, so arrowing past never opens anything."""
+        from playwright.sync_api import TimeoutError as BrowserTimeout
+        frame=self.page if 'frame_index' not in item else self.page.frames[item['frame_index']]
+        element.click(timeout=10000)
+        try:
+            frame.wait_for_function(STAND_IN_TARGET,timeout=3000)
+        except BrowserTimeout:
+            raise WebError('The text box did not open for typing, so your text is kept here. If the site asks you to sign in, sign in, then press Tab again.') from None
+        target=frame.locator('[data-voice-companion-typing="1"]')
+        self.stand_in_target=(item.get('key'),target)
+        return target
 
     def _text_element(self,item):
         """The text box typed into. An ARIA 1.0 combo box owns a separate text box."""
+        opened=getattr(self,'stand_in_target',None)
+        if opened and opened[0]==item.get('key'):
+            try:
+                if opened[1].count()==1:return opened[1]
+            except Exception:pass
+            self.stand_in_target=None
         element=self._element(item)
         key=item.get('combo_input_key')
         if not key or key==item.get('key'):return element

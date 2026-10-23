@@ -30,7 +30,16 @@ EDIT_FIELDS = (
     ('role textbox', '<div id="f" role="textbox" contenteditable="true" tabindex="0" aria-label="Comment"></div>', 'Comment'),
     ('editable combo box', '<label for="f">Search videos</label><input id="f" role="combobox" aria-expanded="false" aria-autocomplete="list">', 'Search videos'),
     ('suggestion list', '<label>City<input id="f" list="cities"></label><datalist id="cities"><option value="Boston"></datalist>', 'City'),
+    # YouTube's search box (October 2026): a combo box named only by its placeholder.
+    ('YouTube search', '<yt-searchbox role="search"><form action="/results"><div><input id="f" class="ytSearchboxComponentInput" name="search_query" placeholder="Search" role="combobox" aria-autocomplete="list" aria-controls="i1" aria-expanded="true" autocomplete="off" type="text"><div id="i1" role="listbox" hidden="true"></div></div></form></yt-searchbox>', 'Search'),
 )
+
+# YouTube's comment box (October 2026): "Add a comment..." only looks like a
+# text box. Clicking it hides it and opens the real box, which takes focus.
+STAND_IN = """<ytd-comment-simplebox-renderer><div id="placeholder-area"><yt-formatted-string id="simplebox-placeholder" role="textbox" tabindex="0">Add a comment...</yt-formatted-string></div><div id="comment-dialog" hidden></div></ytd-comment-simplebox-renderer>
+<script>(()=>{const box=document.getElementById('simplebox-placeholder');box.addEventListener('click',()=>{if(box.dataset.locked)return;
+document.getElementById('placeholder-area').hidden=true;const dialog=document.getElementById('comment-dialog');dialog.hidden=false;
+dialog.innerHTML='<div id="f" contenteditable="true" role="textbox" aria-label="Add a comment..."></div><button>Comment</button>';dialog.firstChild.focus();});})()</script>"""
 
 # Real pages put line breaks and spaces between tags.
 PAGE = '<title>Form</title>\n<h1>Form page</h1>\n  <p>Text before the field.</p>\n  <div>\n    {field}\n  </div>\n  <p>Text after the field.</p>\n'
@@ -173,6 +182,39 @@ class EditFieldTests(unittest.TestCase):
         self.session.keyboard('Read:Up')
         self.assertEqual(self.session.keyboard('Activate'), 'Volume, slider, 5.')
         self.assertEqual(self.session.keyboard('Slider:Right'), '6.')
+
+    def comment_box_opened(self):
+        return self.page.evaluate("!document.getElementById('comment-dialog').hidden")
+
+    def test_a_stand_in_comment_box_is_named_and_typing_opens_the_real_box(self):
+        for how in ('arrow', 'tab'):
+            with self.subTest(how=how):
+                self.load(STAND_IN)
+                said = self.arrow_onto('Add a comment...') if how == 'arrow' else self.session.keyboard('Tab')
+                self.assertIn('Add a comment...', said); self.assertNotIn('Unlabeled', said)
+                self.assertIsNotNone(self.session.keyboard_field)
+                # The hint is not text in the box.
+                self.assertEqual(self.session.keyboard_field['value'], '')
+                self.assertFalse(self.comment_box_opened(), 'moving onto the box must not open it')
+                self.assertEqual(self.type_and_save('Great video').strip(), 'Great video')
+                self.assertTrue(self.comment_box_opened())
+
+    def test_arrowing_past_a_stand_in_box_never_opens_it(self):
+        self.load(STAND_IN)
+        self.arrow_onto('Add a comment...')
+        self.assertIn('Text after the field.', self.session.keyboard('Read:Down'))
+        self.assertFalse(self.comment_box_opened())
+
+    def test_text_is_kept_when_a_stand_in_box_does_not_open(self):
+        # Signed out, YouTube asks you to sign in instead of opening the box.
+        self.load(STAND_IN)
+        self.page.evaluate("document.getElementById('simplebox-placeholder').dataset.locked='1'")
+        self.arrow_onto('Add a comment...')
+        self.session.dictate_to_focus('Great video', literal=True)
+        said = self.session.keyboard('Tab')
+        self.assertIn('did not open for typing', said); self.assertIn('kept', said)
+        self.assertIsNotNone(self.session.keyboard_field)
+        self.assertEqual(self.session.keyboard_field['value'], 'Great video')
 
 
 if __name__ == '__main__':
