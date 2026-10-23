@@ -44,6 +44,12 @@
           ]
         },
         {
+          "title": "Embedded Edge",
+          "details": [
+            "If embedded Edge is slow to start, Companion tries again. Before, it went straight to Firefox."
+          ]
+        },
+        {
           "title": "Browser extension",
           "details": [
             "The browser extension did not change. You do not need to reload it."

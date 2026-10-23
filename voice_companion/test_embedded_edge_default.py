@@ -113,5 +113,42 @@ class FindBraveTests(unittest.TestCase):
             local.parent.mkdir(parents=True); local.write_text('x')
             self.assertEqual(web_assistant.find_brave(env, lambda name: str(other)), local)
 
+
+class EmbeddedStartRetryTests(unittest.TestCase):
+    """A slow first start must not send the user to Firefox, and a real failure
+    must keep its reason for the logs."""
+    def backend(self, outcomes):
+        import webview2_backend
+        attempts = []
+        class Pipe:
+            def __init__(self, folder, headless, executable):
+                attempts.append(1)
+                outcome = outcomes[len(attempts) - 1]
+                if isinstance(outcome, Exception): raise outcome
+                self.endpoint = 'ws://127.0.0.1:1/token'; self.closed = mock.Mock(is_set=lambda: False)
+            def close(self): pass
+        page = mock.Mock(is_closed=lambda: False)
+        driver = mock.Mock(); driver.chromium.connect_over_cdp.return_value = mock.Mock(contexts=[mock.Mock(pages=[page])])
+        folder = tempfile.mkdtemp()
+        backend = webview2_backend.WebView2Backend(Path(folder), headless=True, driver=driver)
+        patcher = mock.patch.object(webview2_backend, 'WebViewPipe', Pipe); patcher.start(); self.addCleanup(patcher.stop)
+        return backend, attempts, page
+
+    def test_second_try_succeeds_after_a_slow_first_start(self):
+        backend, attempts, page = self.backend([WebError('Embedded Edge could not start.'), 'ok'])
+        backend.start()
+        self.assertEqual(len(attempts), 2)
+        self.assertIs(backend.page, page)
+        self.assertIsNone(backend.start_failure)
+
+    def test_real_failure_keeps_its_reason(self):
+        backend, attempts, _ = self.backend([TimeoutError('connect timed out'), TimeoutError('connect timed out again')])
+        with self.assertRaises(WebError) as raised:
+            backend.start()
+        self.assertEqual(len(attempts), 2)
+        self.assertIn('connect timed out again', backend.start_failure)
+        self.assertIsInstance(raised.exception.__cause__, TimeoutError)
+        self.assertIn('Embedded Edge could not connect', str(raised.exception))
+
 if __name__ == '__main__':
     unittest.main()

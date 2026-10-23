@@ -134,22 +134,33 @@ class WebViewPipe:
 
 class WebView2Backend(BrowserBackend):
     def __init__(self,folder,headless=False,executable=None,driver=None):
-        super().__init__(folder,'edge',headless);self.browser='webview2';self.host=None;self.remote_browser=None;self.executable=executable;self.external_driver=driver
+        super().__init__(folder,'edge',headless);self.browser='webview2';self.host=None;self.remote_browser=None;self.executable=executable;self.external_driver=driver;self.start_failure=None
+
+    START_ATTEMPTS=2
 
     def start(self):
         if self.page and not self.page.is_closed() and self.host and not self.host.closed.is_set():self.sync_active_tab();return
         self.close()
+        # The first start on a computer can be slow while WebView2 prepares its
+        # profile. Try once more before giving up, so the user is not moved to
+        # Firefox for a one-time delay. The real reason is kept for the logs.
+        failure=None
+        for attempt in range(self.START_ATTEMPTS):
+            try:
+                self._start_once();self.start_failure=None;return
+            except Exception as exc:
+                failure=exc;self.start_failure=type(exc).__name__+': '+str(exc)[:500]
+                self.close()
+        raise WebError('Embedded Edge could not connect. Retry, or choose another guided browser in Options. Check that Microsoft Edge WebView2 Runtime is installed.') from failure
+
+    def _start_once(self):
         from playwright.sync_api import sync_playwright
-        try:
-            self.host=WebViewPipe(self.folder,self.headless,self.executable)
-            self.playwright=self.external_driver or sync_playwright().start()
-            self.remote_browser=self.playwright.chromium.connect_over_cdp(self.host.endpoint,timeout=15000,no_defaults=True)
-            self.context=self.remote_browser.contexts[0]
-            self.page=self.context.pages[0]
-            self.page.set_default_timeout(10000)
-        except Exception:
-            self.close()
-            raise WebError('Embedded Edge could not connect. Retry, or choose another guided browser in Options. Check that Microsoft Edge WebView2 Runtime is installed.') from None
+        self.host=WebViewPipe(self.folder,self.headless,self.executable)
+        self.playwright=self.external_driver or sync_playwright().start()
+        self.remote_browser=self.playwright.chromium.connect_over_cdp(self.host.endpoint,timeout=20000,no_defaults=True)
+        self.context=self.remote_browser.contexts[0]
+        self.page=self.context.pages[0]
+        self.page.set_default_timeout(10000)
 
     def refocus(self):
         if not self.host or self.host.closed.is_set():return False
