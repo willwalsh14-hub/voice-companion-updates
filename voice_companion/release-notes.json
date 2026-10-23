@@ -11,7 +11,7 @@
         {
           "title": "Sign in to send",
           "details": [
-            "Work and Microsoft accounts sometimes ask you to sign in again before you can send.",
+            "A work account may ask you to sign in again before you can send.",
             "Voice Companion now opens that sign-in page in its own browser, so you can finish it.",
             "After you sign in, Thunderbird sends the message. Check the Sent folder before you send it again."
           ]
