@@ -333,14 +333,15 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
             screen,said,_=self.both('awake','Ctrl+Shift+G','Open user guides.')
         self.assertEqual(screen,'awake')
 
-    def test_f12_puts_the_microphone_to_sleep_and_wakes_it(self):
+    def test_control_f12_puts_the_microphone_to_sleep_and_wakes_it(self):
+        # F12 alone says the time; see test_time_date.py.
         for mode in ('awake','note','files','document','web','mailbox','help'):
             with self.subTest(mode=mode):
-                self.assertEqual(app.navigation_key('F12',mode),'go to sleep')
+                self.assertEqual(app.navigation_key('Ctrl+F12',mode),'go to sleep')
         app.SLEEP_RETURN_MODE='awake'
-        self.assertEqual(self.press('F12','awake'),'sleep')
+        self.assertEqual(self.press('Ctrl+F12','awake'),'sleep')
         self.assertEqual(app.handle('go to sleep','awake'),'sleep')
-        self.assertEqual(app.navigation_key('F12','sleep'),'wake up')
+        self.assertEqual(app.navigation_key('Ctrl+F12','sleep'),'wake up')
         self.assertEqual(app.handle_keyboard('wake up','sleep'),'awake')
 
     def test_mail_folder_selection_and_contact_keys_match_voice(self):

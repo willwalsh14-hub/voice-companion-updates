@@ -309,12 +309,20 @@ class CompanionWindow:
                     self.commands.put(typed.get().strip());typed.delete(0,'end')
                 self.commands.put(('keyboard','Alt'));return 'break'
             root.bind_all('<KeyRelease>',alt_release,add='+')
+            from time_date import PressCounter,clock_key,key_request
+            clock_presses=PressCounter()
             def shortcut(event):
                 if event.keysym.lower()=='p' and event.state&4 and not event.state&(1|8|0x20000):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
                     return 'break'
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
+                if clock_key(key,event.state):
+                    # F12 or Insert+F12 says the time; twice quickly, the date. It works on every
+                    # screen, in menus, lists and questions, and never reaches a web page.
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard',key_request(clock_presses.press())));return 'break'
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 watch_alt(event)

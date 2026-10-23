@@ -38,7 +38,7 @@ def open_settings(m,mode):
         m.speak('The settings panel requires the app window. Voice settings commands are still available.');return mode
     if m.SETTINGS_PANEL and not m.SETTINGS_PANEL.closed.is_set():return 'settings'
     values,context=snapshot(m);session=SettingsSession(values,context)
-    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.APP_WINDOW.commands.put(('keyboard','Control')),preview=lambda values,text:m.APP_WINDOW.settings_results.put(('preview',(values,text)))).start()
+    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.APP_WINDOW.commands.put(('keyboard','Control')),keyboard=lambda key:m.APP_WINDOW.commands.put(('keyboard',key)),preview=lambda values,text:m.APP_WINDOW.settings_results.put(('preview',(values,text)))).start()
     return 'settings'
 
 def stop_preview(m):

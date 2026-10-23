@@ -16,6 +16,7 @@ Contents
   2.3 Enter words that sound like commands
   2.4 Type a voice command
   2.5 Answer Yes or No
+  2.6 Check the time and date
 3 Using Help And Lessons
   3.1 Open a Help topic
   3.2 Read part of a topic
@@ -240,6 +241,15 @@ When Companion asks a question, listen to the item name and the action first.
 To do the action, say "Yes", or press Alt+Y. To stop it, say "No" or "Cancel", or press Alt+N or Escape.
 You can also use arrows or Tab to choose Yes or No, then press Enter.
 At a Yes or No prompt, Home selects Yes and End selects No.
+
+2.6 Check the time and date
+- To hear the time, say "What time is it?", or press F12.
+- To hear the day and date, say "What's the date?", or press F12 twice quickly.
+- Insert+F12 does the same thing as F12. Press it once for the time, or twice for the date.
+- You can also say "Time", "What's the time?", "Date", "Today's date", "What date is it?", or "What day is it?".
+- F12 works on every screen, in menus, and while the microphone is asleep. Your place does not change.
+- In a document, email, or note, the single word "Time" or "Date" is written as text. Ask a full question there, such as "What time is it?"
+- A screen reader may answer Insert+F12 itself. F12 alone always reaches Companion.
 
 3. USING HELP AND LESSONS
 
@@ -1117,7 +1127,7 @@ Each setting controls its own Yes or No prompt. Document save questions still ap
 19. SLEEP, EXIT, AND COMPUTER POWER
 
 19.1 Put the microphone to sleep
-To pause ordinary voice requests, say "Go to sleep", or press F12. To continue, say "Wake up", or press F12 again.
+To pause ordinary voice requests, say "Go to sleep", or press Control+F12. To continue, say "Wake up", or press Control+F12 again.
 Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
 If an email is waiting for your approval to send, that approval is canceled. Review the message again before sending it.
 The keyboard still works while voice commands are asleep. Sleep is different from closing the app or putting Windows to sleep.

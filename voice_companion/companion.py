@@ -36,6 +36,7 @@ from audio_resample import PCM16Resampler, stereo_to_mono
 from app_window import CompanionWindow
 from reading_navigation import ReadingCursor, reading_request
 import notepad  # Saved notes; imported here so the Windows build always packages it.
+import time_date  # F12 and spoken requests for the time and date.
 from voice_pitch import sapi_speak
 from dictation_text import clean_dictation
 from ai_dictation import dictation_scope, prepare_dictation
@@ -464,7 +465,9 @@ def process_keyboard_batch(mode):
                 else:
                     key=command[1]
                     if key=='Control':KEYBOARD_BATCH_TEXT=None
-                    command='open options' if key=='settings' else navigation_key(key,SLEEP_RETURN_MODE if mode=='sleep' else mode)
+                    # Control+F12 wakes the microphone; other keys work in the screen behind sleep.
+                    asleep=mode=='sleep' and key in __import__('input_parity').SCREEN_KEYS['sleep']
+                    command='open options' if key=='settings' else navigation_key(key,'sleep' if asleep else SLEEP_RETURN_MODE if mode=='sleep' else mode)
                 if command is None:continue
             mode=resume_from_sleep() if mode=='sleep' and command.lower() in ('wake up','wake companion') else handle_keyboard(command,mode)
             if mode=='exit':break
@@ -635,8 +638,34 @@ def commit_email_field_tab(payload,mode):
     if payload.get('key'):return navigation_key(payload['key'],mode)
     return 'send email' if payload.get('send') else navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
 
+# The PC's clock. Tests replace it with a fixed moment.
+CLOCK = datetime.now
+
+
+def speak_clock(kind):
+    """Say the time ('time'), the date ('date') or both ('both')."""
+    speak(time_date.announcement(kind, CLOCK()))
+
+
+def clock_text_entry(mode, typed=False):
+    """True where a single word such as "Time." or "Date." is text, not a request."""
+    if writing_dictation(mode, typed):return True
+    if mode=='note' and typed and INPUT_MODE!='commands':return True  # Words typed into the note box.
+    if mode in ('search','document_name','task_input','podcast'):return True
+    manager=globals().get('FILE_MANAGER')
+    if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):return True
+    if mode=='media' and MEDIA_NAV is not None and getattr(MEDIA_NAV,'form',None):return True
+    return mode=='web' and web_session is not None and bool(getattr(web_session,'keyboard_field',None))
+
+
 def navigation_key(key,mode):
     global KEYBOARD_NAVIGATION
+    if key in time_date.KEY_REQUESTS:
+        # F12 or Insert+F12 works everywhere, even in setup, lists and questions; it changes nothing.
+        previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+        try:interrupt_speech();speak_clock(time_date.KEY_REQUESTS[key])
+        finally:KEYBOARD_NAVIGATION=previous
+        return None
     if ACCOUNT_ENTRY is not None and key!='Control':
         # Setup owns the keyboard: keys must not reach the menu behind the text box.
         if key=='Escape':return 'cancel account setup'
@@ -2230,6 +2259,10 @@ def _handle(text, mode, typed=False):
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
+    # "What time is it?" works on every screen. Where people write, "Time." alone is text.
+    clock=time_date.clock_request(text,clock_text_entry(mode,typed))
+    if clock:
+        speak_clock(clock);return mode
     if ACCOUNT_PICKER is not None and not text.startswith('@sm:'):
         picked = account_picker_step(text, command, mode)
         if picked is not None:
