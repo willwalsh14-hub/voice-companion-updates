@@ -46,6 +46,8 @@ SENTENCES = (
     'go to main menu', 'go to options', 'go to website example dot com', 'open website VA dot gov.',
     'change font to Arial', 'replace paragraph with New text', 'change world to friend',
     'delete line', 'new paragraph', 'read paragraph', 'next word', 'select first paragraph',
+    'Turn audio ducking off.', 'Ducking level, strong.', 'Ducking level, loud.', 'Lower other apps on.',
+    'Ducking under the fence was hard.',
 )
 
 

@@ -173,14 +173,19 @@ class MediaHubTests(unittest.TestCase):
         player.set_ducked(True)
         player.set_ducked(True)
         player.set_ducked(False)
-        self.assertEqual(player.page.values,[True,False])
+        self.assertEqual(player.page.values,[{'ducked':True,'factor':.18},{'ducked':False,'factor':.18}])
+        player.set_ducked(True,.5)
+        self.assertEqual(player.page.values[-1],{'ducked':True,'factor':.5})
+        player.set_ducked(False)
         import companion
         hub=MediaHub(self.temp.name,player=player)
         with patch.object(companion,'MEDIA_HUB',hub),patch.object(companion,'SPEECH_PAUSED',False), \
+             patch.object(companion,'AUDIO_DUCKER',None),patch.object(companion,'TEXT_MODE',True), \
              patch.object(companion,'speech_busy',return_value=True):
             companion.update_audio_ducking()
             self.assertTrue(player.ducked)
         with patch.object(companion,'MEDIA_HUB',hub),patch.object(companion,'SPEECH_PAUSED',False), \
+             patch.object(companion,'AUDIO_DUCKER',None),patch.object(companion,'TEXT_MODE',True), \
              patch.object(companion,'speech_busy',return_value=False):
             companion.update_audio_ducking()
             self.assertFalse(player.ducked)

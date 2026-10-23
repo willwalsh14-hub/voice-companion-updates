@@ -1112,12 +1112,64 @@ def wait_for_speech(timeout_ms):
         time.sleep(0.01)
     return True
 
+AUDIO_DUCKER = None
+
+
+def audio_ducker():
+    """The worker that lowers browser and media sound while Companion speaks (Windows only)."""
+    global AUDIO_DUCKER
+    if AUDIO_DUCKER is None and not TEXT_MODE and os.name == 'nt':
+        import atexit
+        from audio_ducking import AudioDucker, WindowsAudioSessions
+        AUDIO_DUCKER = AudioDucker(WindowsAudioSessions, APP / 'audio-ducking.json')
+        AUDIO_DUCKER.recover()
+        AUDIO_DUCKER.start()
+        # Never leave other programs quiet when Companion closes or stops on an error.
+        atexit.register(AUDIO_DUCKER.close)
+    return AUDIO_DUCKER
+
+
+def audio_ducking_request(command):
+    """Spoken audio ducking commands, already normalized ("Turn audio ducking off.", "Ducking level, strong.").
+
+    Returns (setting, value), with value None for a level that is not one of the choices."""
+    switch=(re.fullmatch(r'(?:(?:set|turn|switch) )?(?:the )?(?:audio )?ducking(?: to)? (on|off)',command) or
+            re.fullmatch(r'(?:turn|switch) (on|off) (?:the )?(?:audio )?ducking',command) or
+            re.fullmatch(r'(?:set )?duck audio(?: to)? (on|off)',command))
+    if switch:return 'duck_audio',switch[1]=='on'
+    enable=re.fullmatch(r'(enable|disable) (?:the )?(?:audio )?ducking',command)
+    if enable:return 'duck_audio',enable[1]=='enable'
+    level=re.fullmatch(r'(?:(?:set|change|use|choose|make) )?(?:the )?(?:audio )?ducking level(?: to)?(?: (.+))?',command)
+    if level:
+        from audio_ducking import spoken_level
+        return 'duck_level',spoken_level(level[1] or '')
+    others=(re.fullmatch(r'(?:(?:set|turn|switch) )?(?:also )?(?:lower|duck) other apps(?: too)?(?: to)? (on|off)',command) or
+            re.fullmatch(r'(?:turn|switch) (on|off) (?:also )?(?:lower|duck)(?:ing)? (?:of )?other apps(?: too)?',command))
+    if others:return 'duck_other_apps',others[1]=='on'
+    return None
+
+
 def update_audio_ducking(active=None):
+    from audio_ducking import level_factor
+    enabled = bool(PREFERENCES.get('duck_audio', True))
+    lowered = enabled and bool((not SPEECH_PAUSED and speech_busy()) if active is None else active)
+    factor = level_factor(PREFERENCES.get('duck_level'))
+    ducker = None
+    try:
+        ducker = audio_ducker()
+        if ducker is not None:
+            ducker.request(lowered, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
+    except Exception as exc:
+        print('Audio ducking unavailable:', exc, file=sys.stderr)
+        ducker = None
     if MEDIA_HUB is None:
         return
-    player = MEDIA_HUB.player
+    # The radio player runs in a Firefox that Companion started, so Windows session
+    # ducking already lowers it. Lower it inside the page only when that is not
+    # working, so it is never lowered twice.
+    session_ducking = ducker is not None and ducker.available is not False
     try:
-        player.set_ducked(PREFERENCES.get('duck_audio',True) and ((not SPEECH_PAUSED and speech_busy()) if active is None else active))
+        MEDIA_HUB.player.set_ducked(lowered and not session_ducking, factor)
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
@@ -2344,6 +2396,21 @@ def _handle(text, mode, typed=False):
         PREFERENCES['web_search_engine']=engine;save_preferences()
         if web_session:web_session.search_engine=engine
         speak('Default search engine '+{'google':'Google','bing':'Bing','brave':'Brave Search','duckduckgo':'DuckDuckGo'}[engine]+'.');return mode
+    ducking_request=audio_ducking_request(command)
+    if ducking_request:
+        key,value=ducking_request
+        if value is None:
+            if not writing_dictation(mode,typed):
+                speak('Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent.')
+                return mode
+        else:
+            PREFERENCES[key]=value
+            try:save_preferences()
+            except OSError:speak('The audio ducking setting could not be saved. It works until Voice Companion closes.')
+            speak({'duck_audio':'Audio ducking '+('on. Browser and media sound gets quieter while Companion speaks.' if value else 'off. Browser and media sound stays at full volume.'),
+                   'duck_level':'Ducking level '+str(value)+'.',
+                   'duck_other_apps':'Lower other apps '+('on. Other programs also get quieter while Companion speaks. Screen readers are never lowered.' if value else 'off. Only browsers and Companion media get quieter.')}[key])
+            return mode
     keep_open_request=re.fullmatch(r'(?:(?:set|turn) )?keep browser window open(?: to)? (on|off)',command)
     if keep_open_request:
         PREFERENCES['web_keep_open']=keep_open_request[1]=='on';save_preferences()

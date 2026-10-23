@@ -43,7 +43,7 @@ class PlayerLikeMediaPlayer:
             self.position=max(0.0,min(end,target));return self.position
         return self.position
     def adjust(self,setting,value):return value
-    def set_ducked(self,ducked):pass
+    def set_ducked(self,ducked,factor=0.18):pass
     def close(self):self.kind=None
 
 
