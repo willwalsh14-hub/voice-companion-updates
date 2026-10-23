@@ -405,7 +405,7 @@ class WindowAltKeyTests(unittest.TestCase):
     def tearDown(self):
         if self.window.thread.is_alive(): self.call(lambda: self.window.root.destroy())
         self.window.thread.join(5)
-        self.assertFalse(self.window.thread.is_alive(), self.state())
+        if self.window.thread.is_alive(): self.fail(self.state())
     def call(self, function):
         import threading
         done = threading.Event(); errors = []
@@ -413,22 +413,16 @@ class WindowAltKeyTests(unittest.TestCase):
             try: self.window.root.update_idletasks(); function()
             except Exception as exc: errors.append(exc)
             finally: done.set()
-        self.window.ui_actions.put(('ui_call', run)); self.assertTrue(done.wait(5), self.state())
+        self.window.ui_actions.put(('ui_call', run))
+        if not done.wait(5): self.fail(self.state())
         if errors: raise errors[0]
     def state(self):
-        # Shown when the window stops answering, so the build log says why.
-        import sys, threading, traceback
-        frame = sys._current_frames().get(self.window.thread.ident)
-        others = [t.name for t in threading.enumerate() if t is not self.window.thread and t is not threading.current_thread()]
-        return {'thread alive': self.window.thread.is_alive(), 'ready': self.window.ready.is_set(), 'problem': repr(self.window.problem),
-                'waiting updates': self.window.ui_actions.qsize(), 'window errors': self.window.ui_errors,
-                'window thread is at': ''.join(traceback.format_stack(frame)[-12:]) if frame else None,
-                'other threads': others}
+        return self.window.debug_state()
     def wait(self, condition):
         import time
         end = time.monotonic() + 5
         while not condition() and time.monotonic() < end: time.sleep(.015)
-        self.assertTrue(condition(), self.state())
+        if not condition(): self.fail(self.state())
     def test_one_failed_update_does_not_stop_the_window(self):
         def broken(): raise ValueError('test failure inside the window')
         self.window.ui_actions.put(('ui_call', broken))

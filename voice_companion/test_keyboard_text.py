@@ -409,12 +409,12 @@ class WindowKeyboardTests(unittest.TestCase):
                 function()
             except Exception as exc:errors.append(exc)
             finally:done.set()
-        self.window.ui_actions.put(('ui_call',run));self.assertTrue(done.wait(5))
+        self.window.ui_actions.put(('ui_call',run));(done.wait(5) or self.fail(self.window.debug_state()))
         if errors:raise errors[0]
     def wait(self,condition):
         end=time.monotonic()+5
         while not condition() and time.monotonic()<end:time.sleep(.015)
-        self.assertTrue(condition())
+        if not condition():self.fail(self.window.debug_state())
     def context(self,mode='document',readonly=False):
         self.window.set_context(dict(mode=mode,source='test',text='abc def',caret=0,selection=None,echo='characters',phonetic=True,delay=.5,ack=0,readonly=readonly))
         self.wait(lambda:self.window.context.get('source')=='test')
