@@ -131,3 +131,15 @@ class WindowCallbackErrorTests(unittest.TestCase):
         handler = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == 'callback_error')
         names = {node.attr for node in ast.walk(handler) if isinstance(node, ast.Attribute)}
         self.assertFalse(names & {'last_traceback', 'last_value', 'last_type', 'last_exc'})
+
+
+
+class OwnLauncherTests(unittest.TestCase):
+    """Antivirus false alarms (Will, October 2026): the build compiles PyInstaller's launcher
+    itself instead of using the stock one that malware also ships."""
+    def test_the_build_compiles_pyinstallers_launcher_from_source(self):
+        script = (Path(__file__).parent / 'build-windows.ps1').read_text(encoding='utf-8')
+        compile_at = script.index("$env:PYINSTALLER_COMPILE_BOOTLOADER = '1'")
+        self.assertIn("--no-binary pyinstaller 'pyinstaller==6.22.3'", script[compile_at:compile_at + 400])
+        self.assertLess(compile_at, script.index('function Invoke-PyInstaller'))
+        self.assertIn("throw 'PyInstaller could not build its own launcher", script)
