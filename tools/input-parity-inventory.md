@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 569 |
+| Actions inventoried | 573 |
 | Already had both ways | 458 |
-| Gaps found | 111 |
-| Gaps fixed (Added) | 103 |
+| Gaps found | 115 |
+| Gaps fixed (Added) | 107 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -477,8 +477,9 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Action | Voice | Keyboard | Status |
 | --- | --- | --- | --- |
 | Add account | "Add account" | Alt, 6, 1 | Added: Alt menu path |
-| Switch account | "List email accounts" | Alt, 6, 2 | Added: Alt menu path |
+| Switch account | "Switch account" | Alt, 6, 2 | Added: Alt menu path |
 | Which account | "Which email account" | Alt, 6, 3 | Added: Alt menu path |
+| Remove account | "Remove email account" | Alt, 6, 4 | Added: Alt menu path |
 
 ## Alt menu, Email: Options and help
 
@@ -749,6 +750,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Choose Gmail, Outlook, Yahoo or Thunderbird | Say the service name | G, O, Y or T, or arrows, Enter | Both |
 | Thunderbird setup | "Thunderbird" | T or arrows to Thunderbird, Enter | Both |
 | List, switch or check the account | "List email accounts", "Switch to Yahoo", "Which email account?" | Alt+O, Email options, Sending account | Both |
+| Switch account from a list | "Switch account", then the number, name or address | Email menu: Alt, 6, 2; arrows, Enter | Added: account list to choose from |
+| Remove an email account | "Remove email account", then "Yes" | Email menu: Alt, 6, 4; arrows, Enter, Y | Added: voice and Alt menu item |
 | List contacts / find a contact | "List contacts", "Find contact Bob" | Ctrl+K in email, arrows, Enter | Added: Ctrl+K |
 | Add a contact | "Add contact Bob as bob@example.com" | Ctrl+Shift+K in the inbox, type, Enter | Added: Ctrl+Shift+K |
 | Connect Google Contacts | "Connect Google Contacts" | Alt+O, Email options, Connect Google Contacts | Added: Options button |
@@ -785,6 +788,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Next or previous page of mail | "Next messages", "Previous messages" | Page Down, Page Up | Added: Page Down, Page Up |
 | Refresh the list | "List messages" | F5 | Both |
 | Go to a folder | "Go to folder", "Go to Receipts" | Ctrl+Y, arrows, Enter | Both |
+| Folders of another account | "Go to folder", then the account | Ctrl+Y, arrows, Enter (Escape goes back to the accounts) | Added: account list first when several accounts are connected |
 | Which folder | "Which folder" | Ctrl+Shift+I | Added: Ctrl+Shift+I |
 | Back to Inbox | "Back to inbox" | Ctrl+Y, Inbox, Enter | Both |
 | Mark a message | "Mark", "Select message" | Space | Both |

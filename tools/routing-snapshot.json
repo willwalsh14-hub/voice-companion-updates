@@ -148,6 +148,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | accounts": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | action": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -508,9 +514,21 @@
 ],
 "screen_after": "awake"
 },
+"awake | change account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
 "awake | change address": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | change email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "awake"
 },
@@ -601,6 +619,30 @@
 "awake | check yahoo": {
 "said": [
 "That account is not connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | choose account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | choose an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | choose an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | choose email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "awake"
 },
@@ -861,15 +903,45 @@
 ],
 "screen_after": "email_draft"
 },
+"awake | current": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | delete": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
+"awake | delete account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | delete an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | delete an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
 "awake | delete bookmark": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | delete email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "awake"
 },
@@ -882,6 +954,12 @@
 "awake | delete line": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | delete mail account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "awake"
 },
@@ -960,6 +1038,30 @@
 "awake | discard this email": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | disconnect account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | disconnect an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | disconnect an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | disconnect email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "awake"
 },
@@ -1249,6 +1351,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | folders": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | follow link": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1334,6 +1442,12 @@
 "screen_after": "document"
 },
 "awake | go to favorite": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | go to folder": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -1789,6 +1903,12 @@
 "awake | mixed mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "awake"
+},
+"awake | mode": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -2393,6 +2513,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | origin": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | outlook": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -2406,6 +2532,12 @@
 "screen_after": "awake"
 },
 "awake | pause": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | pending": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -2585,6 +2717,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | purpose": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | question": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -2716,6 +2854,42 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"awake | remove": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | remove account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | remove an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | remove an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | remove email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | remove mail account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
 },
 "awake | remove preset": {
 "said": [
@@ -3019,6 +3193,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | session": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | set email list size": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
@@ -3314,6 +3494,30 @@
 "awake | sure": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | switch account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | switch accounts": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | switch email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | switch email accounts": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "awake"
 },
@@ -4122,6 +4326,15 @@
 "Hello world. Second sentence. account entry empty"
 ]
 },
+"document | accounts": {
+"said": [
+"accounts"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. accounts"
+]
+},
 "document | action": {
 "said": [
 "action"
@@ -4662,6 +4875,15 @@
 "Hello world. Second sentence. cc"
 ]
 },
+"document | change account": {
+"said": [
+"change account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. change account"
+]
+},
 "document | change address": {
 "said": [
 "change address"
@@ -4669,6 +4891,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. change address"
+]
+},
+"document | change email account": {
+"said": [
+"change email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. change email account"
 ]
 },
 "document | change email list size": {
@@ -4804,6 +5035,42 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. check yahoo"
+]
+},
+"document | choose account": {
+"said": [
+"choose account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. choose account"
+]
+},
+"document | choose an account": {
+"said": [
+"choose an account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. choose an account"
+]
+},
+"document | choose an email account": {
+"said": [
+"choose an email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. choose an email account"
+]
+},
+"document | choose email account": {
+"said": [
+"choose email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. choose email account"
 ]
 },
 "document | choose radio source": {
@@ -5181,6 +5448,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | current": {
+"said": [
+"current"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. current"
+]
+},
 "document | delete": {
 "said": [
 "delete"
@@ -5190,7 +5466,43 @@
 "Hello world. Second sentence. delete"
 ]
 },
+"document | delete account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | delete an account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | delete an email account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | delete bookmark": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | delete email account": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
 ],
@@ -5215,6 +5527,15 @@
 "screen_after": "document",
 "text": [
 ""
+]
+},
+"document | delete mail account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | delete preset": {
@@ -5332,6 +5653,42 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. discard this email"
+]
+},
+"document | disconnect account": {
+"said": [
+"disconnect account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. disconnect account"
+]
+},
+"document | disconnect an account": {
+"said": [
+"disconnect an account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. disconnect an account"
+]
+},
+"document | disconnect an email account": {
+"said": [
+"disconnect an email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. disconnect an email account"
+]
+},
+"document | disconnect email account": {
+"said": [
+"disconnect email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. disconnect email account"
 ]
 },
 "document | do it": {
@@ -5748,6 +6105,15 @@
 "Hello world. Second sentence. flow"
 ]
 },
+"document | folders": {
+"said": [
+"folders"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. folders"
+]
+},
 "document | follow link": {
 "said": [
 "follow link"
@@ -5881,6 +6247,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. go to favorite"
+]
+},
+"document | go to folder": {
+"said": [
+"go to folder"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to folder"
 ]
 },
 "document | go to inbox": {
@@ -6547,6 +6922,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | mode": {
+"said": [
+"mode"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. mode"
 ]
 },
 "document | more emails": {
@@ -7428,6 +7812,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | origin": {
+"said": [
+"origin"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. origin"
+]
+},
 "document | outlook": {
 "said": [
 "outlook"
@@ -7453,6 +7846,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. pause"
+]
+},
+"document | pending": {
+"said": [
+"pending"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. pending"
 ]
 },
 "document | play": {
@@ -7716,6 +8118,15 @@
 "Hello world. Second sentence. provider"
 ]
 },
+"document | purpose": {
+"said": [
+"purpose"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. purpose"
+]
+},
 "document | question": {
 "said": [
 "question"
@@ -7909,6 +8320,60 @@
 "screen_after": "help",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | remove": {
+"said": [
+"remove"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. remove"
+]
+},
+"document | remove account": {
+"said": [
+"remove account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. remove account"
+]
+},
+"document | remove an account": {
+"said": [
+"remove an account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. remove an account"
+]
+},
+"document | remove an email account": {
+"said": [
+"remove an email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. remove an email account"
+]
+},
+"document | remove email account": {
+"said": [
+"remove email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. remove email account"
+]
+},
+"document | remove mail account": {
+"said": [
+"remove mail account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. remove mail account"
 ]
 },
 "document | remove preset": {
@@ -8348,6 +8813,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. send this email"
+]
+},
+"document | session": {
+"said": [
+"session"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. session"
 ]
 },
 "document | set email list size": {
@@ -8796,6 +9270,42 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. sure"
+]
+},
+"document | switch account": {
+"said": [
+"switch account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. switch account"
+]
+},
+"document | switch accounts": {
+"said": [
+"switch accounts"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. switch accounts"
+]
+},
+"document | switch email account": {
+"said": [
+"switch email account"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. switch email account"
+]
+},
+"document | switch email accounts": {
+"said": [
+"switch email accounts"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. switch email accounts"
 ]
 },
 "document | switch to": {
@@ -9843,6 +10353,15 @@
 "Hello world. account entry empty"
 ]
 },
+"email_draft | accounts": {
+"said": [
+"accounts"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. accounts"
+]
+},
 "email_draft | action": {
 "said": [
 "action"
@@ -10469,6 +10988,15 @@
 "Hello world."
 ]
 },
+"email_draft | change account": {
+"said": [
+"change account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. change account"
+]
+},
 "email_draft | change address": {
 "said": [
 "change address"
@@ -10476,6 +11004,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. change address"
+]
+},
+"email_draft | change email account": {
+"said": [
+"change email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. change email account"
 ]
 },
 "email_draft | change email list size": {
@@ -10611,6 +11148,42 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. check yahoo"
+]
+},
+"email_draft | choose account": {
+"said": [
+"choose account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. choose account"
+]
+},
+"email_draft | choose an account": {
+"said": [
+"choose an account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. choose an account"
+]
+},
+"email_draft | choose an email account": {
+"said": [
+"choose an email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. choose an email account"
+]
+},
+"email_draft | choose email account": {
+"said": [
+"choose email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. choose email account"
 ]
 },
 "email_draft | choose radio source": {
@@ -10989,6 +11562,15 @@
 "Hello world."
 ]
 },
+"email_draft | current": {
+"said": [
+"current"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. current"
+]
+},
 "email_draft | delete": {
 "said": [
 "delete"
@@ -10998,7 +11580,43 @@
 "Hello world. delete"
 ]
 },
+"email_draft | delete account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | delete an account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | delete an email account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | delete bookmark": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | delete email account": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
 ],
@@ -11023,6 +11641,15 @@
 "screen_after": "email_draft",
 "text": [
 ""
+]
+},
+"email_draft | delete mail account": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | delete preset": {
@@ -11170,6 +11797,42 @@
 "screen_after": "mailbox",
 "text": [
 "Hello world."
+]
+},
+"email_draft | disconnect account": {
+"said": [
+"disconnect account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. disconnect account"
+]
+},
+"email_draft | disconnect an account": {
+"said": [
+"disconnect an account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. disconnect an account"
+]
+},
+"email_draft | disconnect an email account": {
+"said": [
+"disconnect an email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. disconnect an email account"
+]
+},
+"email_draft | disconnect email account": {
+"said": [
+"disconnect email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. disconnect email account"
 ]
 },
 "email_draft | do it": {
@@ -11588,6 +12251,15 @@
 "Hello world. flow"
 ]
 },
+"email_draft | folders": {
+"said": [
+"folders"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. folders"
+]
+},
 "email_draft | follow link": {
 "said": [
 "follow link"
@@ -11726,6 +12398,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. go to favorite"
+]
+},
+"email_draft | go to folder": {
+"said": [
+"go to folder"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go to folder"
 ]
 },
 "email_draft | go to inbox": {
@@ -12404,6 +13085,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | mode": {
+"said": [
+"mode"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. mode"
 ]
 },
 "email_draft | more emails": {
@@ -13295,6 +13985,15 @@
 "Hello world."
 ]
 },
+"email_draft | origin": {
+"said": [
+"origin"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. origin"
+]
+},
 "email_draft | outlook": {
 "said": [
 "outlook"
@@ -13320,6 +14019,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. pause"
+]
+},
+"email_draft | pending": {
+"said": [
+"pending"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. pending"
 ]
 },
 "email_draft | play": {
@@ -13583,6 +14291,15 @@
 "Hello world. provider"
 ]
 },
+"email_draft | purpose": {
+"said": [
+"purpose"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. purpose"
+]
+},
 "email_draft | question": {
 "said": [
 "question"
@@ -13776,6 +14493,60 @@
 "screen_after": "help",
 "text": [
 "Hello world."
+]
+},
+"email_draft | remove": {
+"said": [
+"remove"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. remove"
+]
+},
+"email_draft | remove account": {
+"said": [
+"remove account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. remove account"
+]
+},
+"email_draft | remove an account": {
+"said": [
+"remove an account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. remove an account"
+]
+},
+"email_draft | remove an email account": {
+"said": [
+"remove an email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. remove an email account"
+]
+},
+"email_draft | remove email account": {
+"said": [
+"remove email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. remove email account"
+]
+},
+"email_draft | remove mail account": {
+"said": [
+"remove mail account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. remove mail account"
 ]
 },
 "email_draft | remove preset": {
@@ -14220,6 +14991,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | session": {
+"said": [
+"session"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. session"
 ]
 },
 "email_draft | set email list size": {
@@ -14668,6 +15448,42 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. sure"
+]
+},
+"email_draft | switch account": {
+"said": [
+"switch account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. switch account"
+]
+},
+"email_draft | switch accounts": {
+"said": [
+"switch accounts"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. switch accounts"
+]
+},
+"email_draft | switch email account": {
+"said": [
+"switch email account"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. switch email account"
+]
+},
+"email_draft | switch email accounts": {
+"said": [
+"switch email accounts"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. switch email accounts"
 ]
 },
 "email_draft | switch to": {
@@ -15609,6 +16425,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | accounts": {
+"said": [],
+"screen_after": "help"
+},
 "help | action": {
 "said": [],
 "screen_after": "help"
@@ -15866,7 +16686,15 @@
 "said": [],
 "screen_after": "help"
 },
+"help | change account": {
+"said": [],
+"screen_after": "help"
+},
 "help | change address": {
+"said": [],
+"screen_after": "help"
+},
+"help | change email account": {
 "said": [],
 "screen_after": "help"
 },
@@ -15931,6 +16759,22 @@
 "screen_after": "help"
 },
 "help | check yahoo": {
+"said": [],
+"screen_after": "help"
+},
+"help | choose account": {
+"said": [],
+"screen_after": "help"
+},
+"help | choose an account": {
+"said": [],
+"screen_after": "help"
+},
+"help | choose an email account": {
+"said": [],
+"screen_after": "help"
+},
+"help | choose email account": {
 "said": [],
 "screen_after": "help"
 },
@@ -16113,11 +16957,31 @@
 "said": [],
 "screen_after": "help"
 },
+"help | current": {
+"said": [],
+"screen_after": "help"
+},
 "help | delete": {
 "said": [],
 "screen_after": "help"
 },
+"help | delete account": {
+"said": [],
+"screen_after": "help"
+},
+"help | delete an account": {
+"said": [],
+"screen_after": "help"
+},
+"help | delete an email account": {
+"said": [],
+"screen_after": "help"
+},
 "help | delete bookmark": {
+"said": [],
+"screen_after": "help"
+},
+"help | delete email account": {
 "said": [],
 "screen_after": "help"
 },
@@ -16126,6 +16990,10 @@
 "screen_after": "help"
 },
 "help | delete line": {
+"said": [],
+"screen_after": "help"
+},
+"help | delete mail account": {
 "said": [],
 "screen_after": "help"
 },
@@ -16178,6 +17046,22 @@
 "screen_after": "help"
 },
 "help | discard this email": {
+"said": [],
+"screen_after": "help"
+},
+"help | disconnect account": {
+"said": [],
+"screen_after": "help"
+},
+"help | disconnect an account": {
+"said": [],
+"screen_after": "help"
+},
+"help | disconnect an email account": {
+"said": [],
+"screen_after": "help"
+},
+"help | disconnect email account": {
 "said": [],
 "screen_after": "help"
 },
@@ -16373,6 +17257,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | folders": {
+"said": [],
+"screen_after": "help"
+},
 "help | follow link": {
 "said": [],
 "screen_after": "help"
@@ -16433,6 +17321,10 @@
 "screen_after": "help"
 },
 "help | go to favorite": {
+"said": [],
+"screen_after": "help"
+},
+"help | go to folder": {
 "said": [],
 "screen_after": "help"
 },
@@ -16755,6 +17647,10 @@
 "screen_after": "help"
 },
 "help | mixed mode": {
+"said": [],
+"screen_after": "help"
+},
+"help | mode": {
 "said": [],
 "screen_after": "help"
 },
@@ -17186,6 +18082,10 @@
 ],
 "screen_after": "help"
 },
+"help | origin": {
+"said": [],
+"screen_after": "help"
+},
 "help | outlook": {
 "said": [],
 "screen_after": "help"
@@ -17195,6 +18095,10 @@
 "screen_after": "help"
 },
 "help | pause": {
+"said": [],
+"screen_after": "help"
+},
+"help | pending": {
 "said": [],
 "screen_after": "help"
 },
@@ -17323,6 +18227,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | purpose": {
+"said": [],
+"screen_after": "help"
+},
 "help | question": {
 "said": [],
 "screen_after": "help"
@@ -17420,6 +18328,30 @@
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
+"screen_after": "help"
+},
+"help | remove": {
+"said": [],
+"screen_after": "help"
+},
+"help | remove account": {
+"said": [],
+"screen_after": "help"
+},
+"help | remove an account": {
+"said": [],
+"screen_after": "help"
+},
+"help | remove an email account": {
+"said": [],
+"screen_after": "help"
+},
+"help | remove email account": {
+"said": [],
+"screen_after": "help"
+},
+"help | remove mail account": {
+"said": [],
 "screen_after": "help"
 },
 "help | remove preset": {
@@ -17619,6 +18551,10 @@
 "screen_after": "help"
 },
 "help | send this email": {
+"said": [],
+"screen_after": "help"
+},
+"help | session": {
 "said": [],
 "screen_after": "help"
 },
@@ -17849,6 +18785,22 @@
 "screen_after": "help"
 },
 "help | sure": {
+"said": [],
+"screen_after": "help"
+},
+"help | switch account": {
+"said": [],
+"screen_after": "help"
+},
+"help | switch accounts": {
+"said": [],
+"screen_after": "help"
+},
+"help | switch email account": {
+"said": [],
+"screen_after": "help"
+},
+"help | switch email accounts": {
 "said": [],
 "screen_after": "help"
 },
@@ -18434,6 +19386,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | accounts": {
+"calls": [
+"call.process('accounts')"
+],
+"said": [
+"session handled: accounts"
+],
+"screen_after": "mailbox"
+},
 "mailbox | action": {
 "calls": [
 "call.process('action')"
@@ -18941,12 +19902,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | change account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | change address": {
 "calls": [
 "call.process('change address')"
 ],
 "said": [
 "session handled: change address"
+],
+"screen_after": "mailbox"
+},
+"mailbox | change email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "mailbox"
 },
@@ -19073,6 +20046,30 @@
 ],
 "said": [
 "session handled: check yahoo"
+],
+"screen_after": "mailbox"
+},
+"mailbox | choose account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | choose an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | choose an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | choose email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "mailbox"
 },
@@ -19408,6 +20405,15 @@
 ],
 "screen_after": "email_draft"
 },
+"mailbox | current": {
+"calls": [
+"call.process('current')"
+],
+"said": [
+"session handled: current"
+],
+"screen_after": "mailbox"
+},
 "mailbox | delete": {
 "calls": [
 "call.process('delete')"
@@ -19417,12 +20423,36 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | delete account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | delete an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | delete an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | delete bookmark": {
 "calls": [
 "call.process('delete bookmark')"
 ],
 "said": [
 "session handled: delete bookmark"
+],
+"screen_after": "mailbox"
+},
+"mailbox | delete email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "mailbox"
 },
@@ -19441,6 +20471,12 @@
 ],
 "said": [
 "session handled: delete line"
+],
+"screen_after": "mailbox"
+},
+"mailbox | delete mail account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "mailbox"
 },
@@ -19546,6 +20582,30 @@
 ],
 "said": [
 "session handled: discard this email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | disconnect account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | disconnect an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | disconnect an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | disconnect email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "mailbox"
 },
@@ -19940,6 +21000,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | folders": {
+"calls": [
+"call.process('folders')"
+],
+"said": [
+"session handled: folders"
+],
+"screen_after": "mailbox"
+},
 "mailbox | follow link": {
 "calls": [
 "call.process('follow link')"
@@ -20073,6 +21142,15 @@
 ],
 "said": [
 "session handled: go to favorite"
+],
+"screen_after": "mailbox"
+},
+"mailbox | go to folder": {
+"calls": [
+"call.process('go to folder')"
+],
+"said": [
+"session handled: go to folder"
 ],
 "screen_after": "mailbox"
 },
@@ -20656,6 +21734,15 @@
 "mailbox | mixed mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "mailbox"
+},
+"mailbox | mode": {
+"calls": [
+"call.process('mode')"
+],
+"said": [
+"session handled: mode"
 ],
 "screen_after": "mailbox"
 },
@@ -21443,6 +22530,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | origin": {
+"calls": [
+"call.process('origin')"
+],
+"said": [
+"session handled: origin"
+],
+"screen_after": "mailbox"
+},
 "mailbox | outlook": {
 "calls": [
 "call.process('outlook')"
@@ -21467,6 +22563,15 @@
 ],
 "said": [
 "session handled: pause"
+],
+"screen_after": "mailbox"
+},
+"mailbox | pending": {
+"calls": [
+"call.process('pending')"
+],
+"said": [
+"session handled: pending"
 ],
 "screen_after": "mailbox"
 },
@@ -21707,6 +22812,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | purpose": {
+"calls": [
+"call.process('purpose')"
+],
+"said": [
+"session handled: purpose"
+],
+"screen_after": "mailbox"
+},
 "mailbox | question": {
 "calls": [
 "call.process('question')"
@@ -21874,6 +22988,45 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"mailbox | remove": {
+"calls": [
+"call.process('remove')"
+],
+"said": [
+"session handled: remove"
+],
+"screen_after": "mailbox"
+},
+"mailbox | remove account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | remove an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | remove an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | remove email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | remove mail account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
 },
 "mailbox | remove preset": {
 "said": [
@@ -22301,6 +23454,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | session": {
+"calls": [
+"call.process('session')"
+],
+"said": [
+"session handled: session"
+],
+"screen_after": "mailbox"
+},
 "mailbox | set email list size": {
 "calls": [
 "call.process('set email list size')"
@@ -22689,6 +23851,30 @@
 ],
 "said": [
 "session handled: sure"
+],
+"screen_after": "mailbox"
+},
+"mailbox | switch account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | switch accounts": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | switch email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | switch email accounts": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "mailbox"
 },
@@ -23544,6 +24730,12 @@
 ],
 "screen_after": "note"
 },
+"note | accounts": {
+"said": [
+"accounts"
+],
+"screen_after": "note"
+},
 "note | action": {
 "said": [
 "action"
@@ -23906,9 +25098,21 @@
 ],
 "screen_after": "note"
 },
+"note | change account": {
+"said": [
+"change account"
+],
+"screen_after": "note"
+},
 "note | change address": {
 "said": [
 "change address"
+],
+"screen_after": "note"
+},
+"note | change email account": {
+"said": [
+"change email account"
 ],
 "screen_after": "note"
 },
@@ -23999,6 +25203,30 @@
 "note | check yahoo": {
 "said": [
 "check yahoo"
+],
+"screen_after": "note"
+},
+"note | choose account": {
+"said": [
+"choose account"
+],
+"screen_after": "note"
+},
+"note | choose an account": {
+"said": [
+"choose an account"
+],
+"screen_after": "note"
+},
+"note | choose an email account": {
+"said": [
+"choose an email account"
+],
+"screen_after": "note"
+},
+"note | choose email account": {
+"said": [
+"choose email account"
 ],
 "screen_after": "note"
 },
@@ -24254,15 +25482,45 @@
 ],
 "screen_after": "email_draft"
 },
+"note | current": {
+"said": [
+"current"
+],
+"screen_after": "note"
+},
 "note | delete": {
 "said": [
 "delete"
 ],
 "screen_after": "note"
 },
+"note | delete account": {
+"said": [
+"delete account"
+],
+"screen_after": "note"
+},
+"note | delete an account": {
+"said": [
+"delete an account"
+],
+"screen_after": "note"
+},
+"note | delete an email account": {
+"said": [
+"delete an email account"
+],
+"screen_after": "note"
+},
 "note | delete bookmark": {
 "said": [
 "delete bookmark"
+],
+"screen_after": "note"
+},
+"note | delete email account": {
+"said": [
+"delete email account"
 ],
 "screen_after": "note"
 },
@@ -24275,6 +25533,12 @@
 "note | delete line": {
 "said": [
 "delete line"
+],
+"screen_after": "note"
+},
+"note | delete mail account": {
+"said": [
+"delete mail account"
 ],
 "screen_after": "note"
 },
@@ -24353,6 +25617,30 @@
 "note | discard this email": {
 "said": [
 "discard this email"
+],
+"screen_after": "note"
+},
+"note | disconnect account": {
+"said": [
+"disconnect account"
+],
+"screen_after": "note"
+},
+"note | disconnect an account": {
+"said": [
+"disconnect an account"
+],
+"screen_after": "note"
+},
+"note | disconnect an email account": {
+"said": [
+"disconnect an email account"
+],
+"screen_after": "note"
+},
+"note | disconnect email account": {
+"said": [
+"disconnect email account"
 ],
 "screen_after": "note"
 },
@@ -24636,6 +25924,12 @@
 ],
 "screen_after": "note"
 },
+"note | folders": {
+"said": [
+"folders"
+],
+"screen_after": "note"
+},
 "note | follow link": {
 "said": [
 "follow link"
@@ -24724,6 +26018,12 @@
 "note | go to favorite": {
 "said": [
 "go to favorite"
+],
+"screen_after": "note"
+},
+"note | go to folder": {
+"said": [
+"go to folder"
 ],
 "screen_after": "note"
 },
@@ -25169,6 +26469,12 @@
 "note | mixed mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "note"
+},
+"note | mode": {
+"said": [
+"mode"
 ],
 "screen_after": "note"
 },
@@ -25759,6 +27065,12 @@
 ],
 "screen_after": "note"
 },
+"note | origin": {
+"said": [
+"origin"
+],
+"screen_after": "note"
+},
 "note | outlook": {
 "said": [
 "outlook"
@@ -25774,6 +27086,12 @@
 "note | pause": {
 "said": [
 "pause"
+],
+"screen_after": "note"
+},
+"note | pending": {
+"said": [
+"pending"
 ],
 "screen_after": "note"
 },
@@ -25951,6 +27269,12 @@
 ],
 "screen_after": "note"
 },
+"note | purpose": {
+"said": [
+"purpose"
+],
+"screen_after": "note"
+},
 "note | question": {
 "said": [
 "question"
@@ -26082,6 +27406,42 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"note | remove": {
+"said": [
+"remove"
+],
+"screen_after": "note"
+},
+"note | remove account": {
+"said": [
+"remove account"
+],
+"screen_after": "note"
+},
+"note | remove an account": {
+"said": [
+"remove an account"
+],
+"screen_after": "note"
+},
+"note | remove an email account": {
+"said": [
+"remove an email account"
+],
+"screen_after": "note"
+},
+"note | remove email account": {
+"said": [
+"remove email account"
+],
+"screen_after": "note"
+},
+"note | remove mail account": {
+"said": [
+"remove mail account"
+],
+"screen_after": "note"
 },
 "note | remove preset": {
 "said": [
@@ -26373,6 +27733,12 @@
 "note | send this email": {
 "said": [
 "send this email"
+],
+"screen_after": "note"
+},
+"note | session": {
+"said": [
+"session"
 ],
 "screen_after": "note"
 },
@@ -26671,6 +28037,30 @@
 "note | sure": {
 "said": [
 "sure"
+],
+"screen_after": "note"
+},
+"note | switch account": {
+"said": [
+"switch account"
+],
+"screen_after": "note"
+},
+"note | switch accounts": {
+"said": [
+"switch accounts"
+],
+"screen_after": "note"
+},
+"note | switch email account": {
+"said": [
+"switch email account"
+],
+"screen_after": "note"
+},
+"note | switch email accounts": {
+"said": [
+"switch email accounts"
 ],
 "screen_after": "note"
 },
@@ -27419,6 +28809,16 @@
 ],
 "screen_after": "web"
 },
+"web | accounts": {
+"calls": [
+"call.command('accounts')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: accounts"
+],
+"screen_after": "web"
+},
 "web | action": {
 "calls": [
 "call.command('action')",
@@ -27992,6 +29392,12 @@
 ],
 "screen_after": "web"
 },
+"web | change account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
 "web | change address": {
 "calls": [
 "call.command('change address')",
@@ -27999,6 +29405,12 @@
 ],
 "said": [
 "session handled: change address"
+],
+"screen_after": "web"
+},
+"web | change email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "web"
 },
@@ -28137,6 +29549,30 @@
 ],
 "said": [
 "session handled: check yahoo"
+],
+"screen_after": "web"
+},
+"web | choose account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | choose an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | choose an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | choose email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "web"
 },
@@ -28494,6 +29930,16 @@
 ],
 "screen_after": "email_draft"
 },
+"web | current": {
+"calls": [
+"call.command('current')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: current"
+],
+"screen_after": "web"
+},
 "web | delete": {
 "calls": [
 "call.command('delete')",
@@ -28501,6 +29947,24 @@
 ],
 "said": [
 "session handled: delete"
+],
+"screen_after": "web"
+},
+"web | delete account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | delete an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | delete an email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "web"
 },
@@ -28513,6 +29977,12 @@
 "menu handled"
 ],
 "screen_after": "browser_menu"
+},
+"web | delete email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
 },
 "web | delete favorite": {
 "calls": [
@@ -28531,6 +30001,12 @@
 ],
 "said": [
 "session handled: delete line"
+],
+"screen_after": "web"
+},
+"web | delete mail account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "web"
 },
@@ -28649,6 +30125,30 @@
 ],
 "said": [
 "session handled: discard this email"
+],
+"screen_after": "web"
+},
+"web | disconnect account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | disconnect an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | disconnect an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | disconnect email account": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "web"
 },
@@ -29090,6 +30590,16 @@
 ],
 "screen_after": "web"
 },
+"web | folders": {
+"calls": [
+"call.command('folders')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: folders"
+],
+"screen_after": "web"
+},
 "web | follow link": {
 "calls": [
 "call.command('follow link')",
@@ -29239,6 +30749,16 @@
 "menu handled"
 ],
 "screen_after": "browser_menu"
+},
+"web | go to folder": {
+"calls": [
+"call.command('go to folder')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to folder"
+],
+"screen_after": "web"
 },
 "web | go to inbox": {
 "calls": [
@@ -29898,6 +31418,16 @@
 "web | mixed mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "web"
+},
+"web | mode": {
+"calls": [
+"call.command('mode')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: mode"
 ],
 "screen_after": "web"
 },
@@ -30756,6 +32286,16 @@
 ],
 "screen_after": "web"
 },
+"web | origin": {
+"calls": [
+"call.command('origin')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: origin"
+],
+"screen_after": "web"
+},
 "web | outlook": {
 "calls": [
 "call.command('outlook')",
@@ -30783,6 +32323,16 @@
 ],
 "said": [
 "session handled: pause"
+],
+"screen_after": "web"
+},
+"web | pending": {
+"calls": [
+"call.command('pending')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: pending"
 ],
 "screen_after": "web"
 },
@@ -31056,6 +32606,16 @@
 ],
 "screen_after": "web"
 },
+"web | purpose": {
+"calls": [
+"call.command('purpose')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: purpose"
+],
+"screen_after": "web"
+},
 "web | question": {
 "calls": [
 "call.command('question')",
@@ -31239,6 +32799,46 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"web | remove": {
+"calls": [
+"call.command('remove')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: remove"
+],
+"screen_after": "web"
+},
+"web | remove account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | remove an account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | remove an email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | remove email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | remove mail account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
 },
 "web | remove preset": {
 "calls": [
@@ -31700,6 +33300,16 @@
 ],
 "screen_after": "web"
 },
+"web | session": {
+"calls": [
+"call.command('session')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: session"
+],
+"screen_after": "web"
+},
 "web | set email list size": {
 "calls": [
 "call.command('set email list size')",
@@ -32119,6 +33729,30 @@
 ],
 "said": [
 "session handled: sure"
+],
+"screen_after": "web"
+},
+"web | switch account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | switch accounts": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | switch email account": {
+"said": [
+"No email account is connected. Say add account."
+],
+"screen_after": "web"
+},
+"web | switch email accounts": {
+"said": [
+"No email account is connected. Say add account."
 ],
 "screen_after": "web"
 },
