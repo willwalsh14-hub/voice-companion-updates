@@ -153,6 +153,39 @@ GOOGLE_SIGN_IN_NOTICE = ('Google does not allow signing in inside embedded Edge.
                          'say use Firefox, or use your regular browser with the Voice Companion extension')
 
 
+def find_brave(environ=None, app_path=None):
+    """Where brave.exe is: the usual install folders, then the path Windows records
+    for it (App Paths), which also covers installs in other folders."""
+    environ = os.environ if environ is None else environ
+    suffix = Path('BraveSoftware/Brave-Browser/Application/brave.exe')
+    for variable in ('PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA'):
+        root = environ.get(variable, '')
+        if root and (Path(root) / suffix).is_file():
+            return Path(root) / suffix
+    if app_path is None:
+        app_path = _registered_app_path
+    registered = (app_path('brave.exe') or '').strip().strip('"')
+    if registered and Path(registered).is_file():
+        return Path(registered)
+    return None
+
+
+def _registered_app_path(name):
+    try:
+        import winreg
+    except ImportError:
+        return None
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        try:
+            with winreg.OpenKey(hive, 'Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\' + name) as key:
+                value = winreg.QueryValue(key, None)
+        except OSError:
+            continue
+        if value:
+            return value.strip().strip('"')
+    return None
+
+
 class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one."""
     BROWSERS = ('edge', 'chrome', 'brave', 'firefox','webview2')
@@ -186,10 +219,7 @@ class BrowserBackend:
                 engine = self.playwright.chromium
                 kwargs = {'channel': {'edge':'msedge', 'chrome':'chrome'}.get(self.browser)}
                 if self.browser == 'brave':
-                    candidates = [Path(os.environ.get('PROGRAMFILES', '')) / 'BraveSoftware/Brave-Browser/Application/brave.exe',
-                                  Path(os.environ.get('PROGRAMFILES(X86)', '')) / 'BraveSoftware/Brave-Browser/Application/brave.exe',
-                                  Path(os.environ.get('LOCALAPPDATA', '')) / 'BraveSoftware/Brave-Browser/Application/brave.exe']
-                    executable = next((p for p in candidates if p.is_file()), None)
+                    executable = find_brave()
                     if not executable: raise WebError('Brave is not installed in a standard Windows location.')
                     kwargs = {'executable_path': str(executable)}
             with browser_process_environment(self.folder):

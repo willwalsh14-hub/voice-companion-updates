@@ -89,6 +89,15 @@ jobs:
             choco install brave --yes --no-progress
             if ($LASTEXITCODE -ne 0) { throw 'Verified Brave installation for browser checks failed.' }
           }
+          # Brave's installer can return before brave.exe is in place. Wait for it,
+          # so the later browser checks never start without Brave.
+          $braveFound = $null
+          for ($wait = 0; $wait -lt 60 -and -not $braveFound; $wait++) {
+            $braveFound = $braveCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+            if (-not $braveFound) { Start-Sleep -Seconds 2 }
+          }
+          if (-not $braveFound) { Write-Output '::error title=Brave missing::Brave did not appear after installation.'; throw 'Brave is not installed for browser checks.' }
+          Write-Output ('Brave is at ' + $braveFound)
           $env:VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS = '1'
           & ./voice_companion/build-windows.ps1 -Parakeet -NoPublish -Unattended
       - name: Preserve checked installer before publishing
