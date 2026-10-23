@@ -88,7 +88,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,203)))
         checkbox=self.u.GetDlgItem(hwnd,203)
         for _ in range(3):self.panel.command('next setting')
-        self.wait(lambda:any('Lower media volume while Companion speaks' in message for message in self.notices))
+        self.wait(lambda:any('Audio ducking: lower browser and media sound while Companion speaks' in message for message in self.notices))
         before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
         # Queue real keystrokes so IsDialogMessage handles checkbox activation.
         self.u.PostMessageW(checkbox,0x100,0x20,0);self.u.PostMessageW(checkbox,0x101,0x20,0)

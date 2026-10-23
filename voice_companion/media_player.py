@@ -110,7 +110,7 @@ class MediaPlayer:
                 a.onplaying=()=>document.getElementById('status').textContent='Playing.';
                 a.onpause=()=>document.getElementById('status').textContent='Paused.';
             }a.pause();a.src=url;
-            a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked?0.18:1);
+            a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked||1);
             document.getElementById('title').textContent=title;
             document.getElementById('status').textContent='Loading audio.';
             let timer;
@@ -136,7 +136,7 @@ class MediaPlayer:
             const a=document.getElementById('audio');
             if(setting==='volume'){
                 const volume=Math.max(0,Math.min(1,(window.voiceCompanionVolume??1)+value));
-                window.voiceCompanionVolume=volume;a.volume=volume*(window.voiceCompanionDucked?0.18:1);return volume;
+                window.voiceCompanionVolume=volume;a.volume=volume*(window.voiceCompanionDucked||1);return volume;
             }
             a.playbackRate=value;return a.playbackRate;
         }''',{'setting':setting,'value':value})
@@ -146,18 +146,21 @@ class MediaPlayer:
             raise ValueError('Open a media file first.')
         return self.page.evaluate("() => {const a=document.getElementById('audio');return {paused:a.paused,position:a.currentTime,duration:Number.isFinite(a.duration)?a.duration:null};}")
 
-    def set_ducked(self, ducked):
-        """Lower radio and podcast playback while Companion speaks."""
+    def set_ducked(self, ducked, factor=0.18):
+        """Lower radio and podcast playback while Companion speaks.
+
+        factor is the share of the volume that stays while lowered (0.25 is 75 percent quieter)."""
         ducked=bool(ducked)
-        if self.ducked==ducked: return
+        factor=max(0.0,min(1.0,float(factor)))
+        if self.ducked==ducked and (not ducked or getattr(self,'duck_factor',None)==factor): return
         if not self.page or self.page.is_closed() or not self.kind:
             self.ducked=False
             return
-        self.page.evaluate('''ducked => {
-            window.voiceCompanionDucked=ducked;
-            document.getElementById('audio').volume=(window.voiceCompanionVolume??1)*(ducked?0.18:1);
-        }''',ducked)
-        self.ducked=ducked
+        self.page.evaluate('''({ducked,factor}) => {
+            window.voiceCompanionDucked=ducked?factor:0;
+            document.getElementById('audio').volume=(window.voiceCompanionVolume??1)*(ducked?factor:1);
+        }''',{'ducked':ducked,'factor':factor})
+        self.ducked=ducked;self.duck_factor=factor
 
     def control(self, action, seconds=15, position=None):
         if not self.page or self.page.is_closed() or not self.kind: return None
