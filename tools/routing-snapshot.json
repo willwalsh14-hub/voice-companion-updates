@@ -17,6 +17,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "awake"
+},
 "awake | Ducking level, loud.": {
 "said": [
 "Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
@@ -112,9 +118,27 @@
 ],
 "screen_after": "awake"
 },
+"awake | The date of the party is Friday.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | The trial period is over": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Time to go home.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Time.": {
+"said": [
+"9:55 PM."
 ],
 "screen_after": "awake"
 },
@@ -145,6 +169,30 @@
 "awake | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "awake"
+},
+"awake | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "awake"
+},
+"awake | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "awake"
+},
+"awake | What time is the meeting?": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "awake"
 },
@@ -773,7 +821,7 @@
 },
 "awake | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -936,6 +984,12 @@
 "awake | current": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
 ],
 "screen_after": "awake"
 },
@@ -4167,6 +4221,15 @@
 "Hello world. Second sentence. Capital letters are important."
 ]
 },
+"document | Date.": {
+"said": [
+"Date."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Date."
+]
+},
 "document | Ducking level, loud.": {
 "said": [
 "Ducking level, loud."
@@ -4302,6 +4365,15 @@
 "Hello world. Second sentence. Switch to the left lane at the light."
 ]
 },
+"document | The date of the party is Friday.": {
+"said": [
+"The date of the party is Friday."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. The date of the party is Friday."
+]
+},
 "document | The trial period is over": {
 "said": [
 "The trial period is over"
@@ -4309,6 +4381,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. The trial period is over"
+]
+},
+"document | Time to go home.": {
+"said": [
+"Time to go home."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Time to go home."
+]
+},
+"document | Time.": {
+"said": [
+"Time."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Time."
 ]
 },
 "document | Turn audio ducking off.": {
@@ -4354,6 +4444,42 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Volume two of the series is out."
+]
+},
+"document | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | What time is the meeting?": {
+"said": [
+"What time is the meeting?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. What time is the meeting?"
+]
+},
+"document | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Yes, please.": {
@@ -5285,7 +5411,7 @@
 },
 "document | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -5530,6 +5656,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. current"
+]
+},
+"document | date and time": {
+"said": [
+"date and time"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. date and time"
 ]
 },
 "document | delete": {
@@ -10239,6 +10374,15 @@
 "Hello world. Capital letters are important."
 ]
 },
+"email_draft | Date.": {
+"said": [
+"Date."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Date."
+]
+},
 "email_draft | Ducking level, loud.": {
 "said": [
 "Ducking level, loud."
@@ -10374,6 +10518,15 @@
 "Hello world. Switch to the left lane at the light."
 ]
 },
+"email_draft | The date of the party is Friday.": {
+"said": [
+"The date of the party is Friday."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. The date of the party is Friday."
+]
+},
 "email_draft | The trial period is over": {
 "said": [
 "The trial period is over"
@@ -10381,6 +10534,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. The trial period is over"
+]
+},
+"email_draft | Time to go home.": {
+"said": [
+"Time to go home."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Time to go home."
+]
+},
+"email_draft | Time.": {
+"said": [
+"Time."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Time."
 ]
 },
 "email_draft | Turn audio ducking off.": {
@@ -10426,6 +10597,42 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Volume two of the series is out."
+]
+},
+"email_draft | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | What time is the meeting?": {
+"said": [
+"What time is the meeting?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. What time is the meeting?"
+]
+},
+"email_draft | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Yes, please.": {
@@ -11444,7 +11651,7 @@
 },
 "email_draft | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -11689,6 +11896,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. current"
+]
+},
+"email_draft | date and time": {
+"said": [
+"date and time"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. date and time"
 ]
 },
 "email_draft | delete": {
@@ -16451,6 +16667,12 @@
 ],
 "screen_after": "help"
 },
+"help | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "help"
+},
 "help | Ducking level, loud.": {
 "said": [
 "Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
@@ -16525,8 +16747,22 @@
 "said": [],
 "screen_after": "help"
 },
+"help | The date of the party is Friday.": {
+"said": [],
+"screen_after": "help"
+},
 "help | The trial period is over": {
 "said": [],
+"screen_after": "help"
+},
+"help | Time to go home.": {
+"said": [],
+"screen_after": "help"
+},
+"help | Time.": {
+"said": [
+"9:55 PM."
+],
 "screen_after": "help"
 },
 "help | Turn audio ducking off.": {
@@ -16550,6 +16786,28 @@
 "help | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "help"
+},
+"help | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "help"
+},
+"help | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "help"
+},
+"help | What time is the meeting?": {
+"said": [],
+"screen_after": "help"
+},
+"help | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "help"
 },
@@ -17107,6 +17365,12 @@
 },
 "help | current": {
 "said": [],
+"screen_after": "help"
+},
+"help | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
+],
 "screen_after": "help"
 },
 "help | delete": {
@@ -19375,6 +19639,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Ducking level, loud.": {
 "said": [
 "Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
@@ -19486,12 +19756,36 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | The date of the party is Friday.": {
+"calls": [
+"call.process('The date of the party is Friday.')"
+],
+"said": [
+"session handled: The date of the party is Friday."
+],
+"screen_after": "mailbox"
+},
 "mailbox | The trial period is over": {
 "calls": [
 "call.process('The trial period is over')"
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Time to go home.": {
+"calls": [
+"call.process('Time to go home.')"
+],
+"said": [
+"session handled: Time to go home."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Time.": {
+"said": [
+"9:55 PM."
 ],
 "screen_after": "mailbox"
 },
@@ -19522,6 +19816,33 @@
 "mailbox | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What time is the meeting?": {
+"calls": [
+"call.process('What time is the meeting?')"
+],
+"said": [
+"session handled: What time is the meeting?"
+],
+"screen_after": "mailbox"
+},
+"mailbox | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "mailbox"
 },
@@ -20379,7 +20700,7 @@
 },
 "mailbox | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -20592,6 +20913,12 @@
 ],
 "said": [
 "session handled: current"
+],
+"screen_after": "mailbox"
+},
+"mailbox | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
 ],
 "screen_after": "mailbox"
 },
@@ -24785,6 +25112,12 @@
 ],
 "screen_after": "note"
 },
+"note | Date.": {
+"said": [
+"Date."
+],
+"screen_after": "note"
+},
 "note | Ducking level, loud.": {
 "said": [
 "Ducking level, loud."
@@ -24875,9 +25208,27 @@
 ],
 "screen_after": "note"
 },
+"note | The date of the party is Friday.": {
+"said": [
+"The date of the party is Friday."
+],
+"screen_after": "note"
+},
 "note | The trial period is over": {
 "said": [
 "The trial period is over"
+],
+"screen_after": "note"
+},
+"note | Time to go home.": {
+"said": [
+"Time to go home."
+],
+"screen_after": "note"
+},
+"note | Time.": {
+"said": [
+"Time."
 ],
 "screen_after": "note"
 },
@@ -24908,6 +25259,30 @@
 "note | Volume two of the series is out.": {
 "said": [
 "Volume two of the series is out."
+],
+"screen_after": "note"
+},
+"note | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "note"
+},
+"note | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "note"
+},
+"note | What time is the meeting?": {
+"said": [
+"What time is the meeting?"
+],
+"screen_after": "note"
+},
+"note | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "note"
 },
@@ -25533,7 +25908,7 @@
 },
 "note | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -25696,6 +26071,12 @@
 "note | current": {
 "said": [
 "current"
+],
+"screen_after": "note"
+},
+"note | date and time": {
+"said": [
+"date and time"
 ],
 "screen_after": "note"
 },
@@ -28850,6 +29231,12 @@
 ],
 "screen_after": "web"
 },
+"web | Date.": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "web"
+},
 "web | Ducking level, loud.": {
 "said": [
 "Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
@@ -28968,6 +29355,16 @@
 ],
 "screen_after": "web"
 },
+"web | The date of the party is Friday.": {
+"calls": [
+"call.command('The date of the party is Friday.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: The date of the party is Friday."
+],
+"screen_after": "web"
+},
 "web | The trial period is over": {
 "calls": [
 "call.command('The trial period is over')",
@@ -28975,6 +29372,22 @@
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "web"
+},
+"web | Time to go home.": {
+"calls": [
+"call.command('Time to go home.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Time to go home."
+],
+"screen_after": "web"
+},
+"web | Time.": {
+"said": [
+"9:55 PM."
 ],
 "screen_after": "web"
 },
@@ -29005,6 +29418,34 @@
 "web | Volume two of the series is out.": {
 "said": [
 "Speech volume must be a whole number from zero to one hundred percent."
+],
+"screen_after": "web"
+},
+"web | What day is it?": {
+"said": [
+"Thursday, October 22, 2026."
+],
+"screen_after": "web"
+},
+"web | What time is it?": {
+"said": [
+"9:55 PM."
+],
+"screen_after": "web"
+},
+"web | What time is the meeting?": {
+"calls": [
+"call.command('What time is the meeting?')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: What time is the meeting?"
+],
+"screen_after": "web"
+},
+"web | What's the date?": {
+"said": [
+"Thursday, October 22, 2026."
 ],
 "screen_after": "web"
 },
@@ -29963,7 +30404,7 @@
 },
 "web | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -30182,6 +30623,12 @@
 ],
 "said": [
 "session handled: current"
+],
+"screen_after": "web"
+},
+"web | date and time": {
+"said": [
+"9:55 PM. Thursday, October 22, 2026."
 ],
 "screen_after": "web"
 },

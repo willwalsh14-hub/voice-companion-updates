@@ -1,6 +1,6 @@
 # Voice Companion launch checklist
 
-Status as of October 21, 2026 (version 0.2.154-test in progress). Items marked **Will**
+Status as of October 21, 2026 (version 0.2.160-test in progress). Items marked **Will**
 need you or an account only you control; everything else Claude can do in
 pull requests. Update this file as items are finished.
 
@@ -56,6 +56,14 @@ pull requests. Update this file as items are finished.
       Enable extension prompt get focus and get read?); YouTube in embedded Edge
       (speed, Skip ad, app mode with K/J/L, seek and volume sliders); Alt in
       the email inbox and in a draft.
+
+- [ ] **Will or a tester (0.2.160):** on a real PC:
+  - F12 once and twice, and Insert+F12; Control+F12 sleeps and wakes.
+  - Browser sound gets quieter while Companion speaks (embedded Edge and Chrome), each ducking level, and NVDA is never lowered.
+  - Add Thunderbird account with Thunderbird 153 or newer: Continue comes on after the address is filled in; Gmail sign-in opens in embedded Edge and in Chrome.
+  - Back on a few sites; app mode with Control+Shift+Space on YouTube (K, J, L, sliders) feels instant.
+  - Arrow and Tab into text boxes on sites Will uses; tell Claude any site where typing does not go in.
+- [ ] Num Lock read as Alt (key_state.py, branch claude/numlock-alt): the Windows trial showed real Alt key presses sent by the test did not arrive as expected. Investigate before releasing.
 
 ### Reliability work (Claude)
 - [ ] Split command handling in `companion.py` into smaller parts with an

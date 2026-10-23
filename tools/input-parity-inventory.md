@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 575 |
-| Already had both ways | 459 |
-| Gaps found | 116 |
-| Gaps fixed (Added) | 108 |
+| Actions inventoried | 580 |
+| Already had both ways | 461 |
+| Gaps found | 119 |
+| Gaps fixed (Added) | 111 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -255,7 +255,9 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Voice pitch | "Set Voice pitch to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
 | Speech rate | "Set Speech rate to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
 | Speech volume | "Set Speech volume to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Lower media volume while Companion speaks | "Set Lower media volume while Companion speaks to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+| Audio ducking | "Set Audio ducking to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+| Ducking level | "Set Ducking level to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+| Also lower other apps while Companion speaks | "Set Also lower other apps while Companion speaks to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
 
 ## Synthesizer options
 
@@ -480,6 +482,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Switch account | "Switch account" | Alt, 6, 2 | Added: Alt menu path |
 | Which account | "Which email account" | Alt, 6, 3 | Added: Alt menu path |
 | Remove account | "Remove email account" | Alt, 6, 4 | Added: Alt menu path |
+| Add Thunderbird account | "Add thunderbird account" | Alt, 6, 5 | Added: Alt menu path |
 
 ## Alt menu, Email: Options and help
 
@@ -652,8 +655,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Action | Voice | Keyboard | Status |
 | --- | --- | --- | --- |
-| Wake up the microphone | "Wake up" | Any arrow key or Enter while asleep; F12 | Added: F12 |
-| Put the microphone to sleep | "Go to sleep" | F12 on any main screen | Added: F12 |
+| Wake up the microphone | "Wake up" | Any arrow key or Enter while asleep; Ctrl+F12 | Added: Ctrl+F12 |
+| Put the microphone to sleep | "Go to sleep" | Ctrl+F12 on any main screen | Added: Ctrl+F12 |
+| Hear the time | "What time is it?", "What's the time?", "Time" | F12 or Insert+F12 on any screen, even while asleep | Added: F12, Insert+F12 and the spoken request |
+| Hear the day and date | "What's the date?", "Today's date", "What day is it?", "Date" | F12 or Insert+F12 twice quickly on any screen | Added: F12 twice and the spoken request |
 | Hear the version | "What version?" | Ctrl+Shift+V on the main menu | Added: Ctrl+Shift+V |
 | Type a command | N/A | Alt+T, type, Enter | N/A - this is the keyboard way to give any spoken command |
 | Normal mode, Commands only, Dictation only | "Normal mode", "Commands only", "Dictation only" | Alt+O, Input options, Command and dictation mode | Both |
