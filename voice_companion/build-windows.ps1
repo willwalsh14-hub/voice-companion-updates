@@ -116,6 +116,17 @@ if (-not $NoPublish) {
 & $python -m pip install --disable-pip-version-check --upgrade 'pip==26.2.1'
 if ($LASTEXITCODE -ne 0) { throw 'Could not update the package installer securely.' }
 & $python -m pip install --disable-pip-version-check -r requirements.txt 'pyinstaller==6.22.3' 'pyinstaller-hooks-contrib==2026.7'
+# Build PyInstaller's launcher here, from source, rather than using the stock
+# launcher shared by every PyInstaller program. Antivirus tools learn the stock
+# launcher from malware that also uses it, and then flag Voice Companion too.
+$env:PYINSTALLER_COMPILE_BOOTLOADER = '1'
+& $python -m pip install --disable-pip-version-check --force-reinstall --no-deps --no-binary pyinstaller 'pyinstaller==6.22.3'
+$bootloaderExit = $LASTEXITCODE
+Remove-Item Env:PYINSTALLER_COMPILE_BOOTLOADER
+if ($bootloaderExit -ne 0) { throw 'PyInstaller could not build its own launcher from source. Check that the Visual Studio C++ build tools are installed.' }
+$bootloader = & $python -c "import pathlib, PyInstaller; print(pathlib.Path(PyInstaller.__file__).parent / 'bootloader' / 'Windows-64bit-intel' / 'runw.exe')"
+if (-not (Test-Path -LiteralPath $bootloader)) { throw "PyInstaller's launcher was not built: $bootloader" }
+Write-Output ('PyInstaller launcher built here: ' + (Get-FileHash -LiteralPath $bootloader -Algorithm SHA256).Hash)
 if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
 & $python build_webview2.py
 if ($LASTEXITCODE -ne 0) { throw 'The embedded Edge host could not be built.' }
