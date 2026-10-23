@@ -401,10 +401,16 @@ class MailBridge {
   // Why sending failed, in plain words, from Thunderbird's error text (never the text itself).
   static sendFailure(error) {
     const text = String(error && error.message || '');
+    // Microsoft 365: the organization has turned off sending from mail programs (SMTP AUTH),
+    // or an administrator must approve Thunderbird. Only the organization can change this.
+    if (/SmtpClientAuthentication|5\.7\.139|admin(istrator)? (approval|consent)|AADSTS65001|AADSTS90094/i.test(text)) {
+      return 'Your organization does not allow sending from mail programs like Thunderbird. ' +
+        'Ask your IT administrator to turn on Authenticated SMTP for your mailbox.';
+    }
     if (/timed out|timeout/i.test(text)) {
       return 'Thunderbird could not reach your mail server to send. The connection timed out.';
     }
-    if (/authenticat|password|login|log in|sign.?in|oauth|5\.7\.(?:3|57|139)/i.test(text)) {
+    if (/authenticat|password|login|log in|sign.?in|oauth|5\.7\.(?:3|57)/i.test(text)) {
       return 'Your mail server did not accept the sign-in for sending.';
     }
     if (/refused|could not connect|unable to connect|connection|offline|network/i.test(text)) {

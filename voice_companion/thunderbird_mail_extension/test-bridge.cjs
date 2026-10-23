@@ -123,10 +123,14 @@ function load(api) {
   assert.equal(state.drafts.at(-1).subject, 'testing');
   assert.equal(state.drafts.at(-1).options.mode, 'draft');
   assert.deepEqual(state.openCompose, [], 'the failed message window is closed');
-  state.failSend = '535 5.7.139 Authentication unsuccessful for will@work.example';
+  state.failSend = '535 5.7.3 Authentication unsuccessful for will@work.example';
   const signIn = await bridge.handle({id: 11, method: 'send', params: {identityId: 'id1', to: ['x@work.example'], subject: 's', html: '', plain: 'x'}});
   assert.match(signIn.error.message, /did not accept the sign-in/);
   assert.doesNotMatch(JSON.stringify(signIn), /will@work/);
+  // Microsoft 365 with sending from mail programs turned off by the organization.
+  state.failSend = '535 5.7.139 Authentication unsuccessful, SmtpClientAuthentication is disabled for the Tenant.';
+  const tenant = await bridge.handle({id: 13, method: 'send', params: {identityId: 'id1', to: ['x@work.example'], subject: 's', html: '', plain: 'x'}});
+  assert.match(tenant.error.message, /Your organization does not allow sending from mail programs like Thunderbird\. Ask your IT administrator to turn on Authenticated SMTP/);
   // A draft that cannot be saved stays open, and that is said.
   state.failSave = true; state.failSend = 'Unknown problem';
   const unsaved = await bridge.handle({id: 12, method: 'send', params: {identityId: 'id1', to: ['x@work.example'], subject: 's', html: '', plain: 'x'}});
