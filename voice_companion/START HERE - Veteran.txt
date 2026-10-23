@@ -49,7 +49,7 @@ Contents
   7.3 Open a saved note
 8 Set Up Email
   8.1 Connect an email account
-  8.2 Choose another account
+  8.2 Choose or remove an account
   8.3 Add and find contacts
 9 Write An Email
   9.1 Start a new message
@@ -504,14 +504,29 @@ Thunderbird is a free email program. Companion uses the email accounts already s
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
 
-8.2 Choose another account
+8.2 Choose or remove an account
 Say "Add another account" to connect a second address. Say "List email accounts" to hear the saved accounts.
-To switch accounts, say "Switch to", followed by the email service name. For example, say "Switch to Yahoo" or "Switch to Outlook" if only one account of that type is connected.
+To choose another account from a list, say "Switch account". Or press Alt, 6, then 2 in email.
+You hear each account, such as "Gmail, sam@gmail.com, 2 of 3". The account in use is first. It is called current.
+Use Up Arrow and Down Arrow, then press Enter. Or say "Next" and "That one". You can also say the account number, the service name, or the address. For example, say "2", "Yahoo", or "sam at gmail dot com".
+Companion switches to that account and opens its inbox. Press Escape or say "Cancel" to keep the account you have.
+You can also say "Switch to", followed by the email service name. For example, say "Switch to Yahoo" if only one Yahoo account is connected.
 With two accounts of the same type, say "Switch to" followed by the full address.
 To hear the account in use, say "Which email account?". Check it before sending mail.
 With the keyboard, press Alt+O and choose Email options. Sending account names the account in use. Choose another account there to switch.
 "Check Gmail", "Check Outlook", and "Check Yahoo" open that account when exactly one of its type is connected.
-Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, or Which account.
+To remove an account from Companion, say "Remove email account". Or press Alt, 6, then 4 in email.
+1. Choose the account from the list, the same way as above.
+2. Listen to the question. It names the account.
+3. Say "Yes" to remove it, or "No" to keep it. Or press Y or N.
+Nothing is removed until you say yes. Pressing Enter alone answers no.
+Removing an account only removes its saved sign-in from Companion. Your email stays with your email service. Your other accounts do not change.
+If you remove the account in use, Companion picks the next account and tells you which one.
+For Gmail or Microsoft, you can also stop its access in your Google or Microsoft account. Open the account's security page, and remove Voice Companion from the apps list. A helper can assist.
+For Yahoo, delete the app password in Yahoo Account security if you no longer need it.
+For Thunderbird, removing only stops Companion from using that account. Thunderbird does not change.
+To connect the account again later, say "Add account".
+Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, Which account, or Remove account.
 
 8.3 Add and find contacts
 A contact is a saved name and email address.
@@ -583,6 +598,9 @@ Press Alt to open the email menu. Its groups are Messages, Select, Go to folder,
 
 10.2 Go to folders
 To hear a folder list, say "Go to folder", or press Control+Y. Use "Next", "Previous", and "That one", or arrows and Enter, to choose.
+With more than one email account, Companion first lists your accounts. The account in use is first. Choose an account with arrows and Enter. Or say its number, service name, or address. Then you hear that account's folders.
+Escape in the folder list goes back to the account list. Escape in the account list closes it, and you stay where you were.
+"Go to folder", followed by a folder name, always uses the account you are in.
 To open a folder by name, say "Go to folder", "Open folder", or "Go to", followed by the folder name. For example, say "Go to folder Receipts", "Open folder Receipts", or "Go to Receipts".
 Say "Back to inbox" to return to Inbox, or choose Inbox in the Control+Y list. To hear where you are, say "Which folder", or press Control+Shift+I.
 To open a folder within another folder, give its full location. For example, say "Go to Projects slash 2026" or "2026 inside of Projects".
