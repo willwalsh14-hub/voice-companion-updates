@@ -1240,8 +1240,11 @@ class WebSession:
         return True
 
     def auto_focus_position(self):
+        """Arrowing onto any edit field or editable combo box makes it ready to type.
+
+        Combo boxes you pick from and sliders are only read; Enter or Tab uses them."""
         item=self.browse.current() if self.browse else None
-        if not item or kind(item)!='edit' or item.get('disabled') or item.get('readonly'):return False
+        if not item or not text_field(item) or item.get('disabled') or item.get('readonly'):return False
         if not item.get('start',0)<=self.reading.position<item.get('end',0):return False
         return self.focus_current()
 
