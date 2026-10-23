@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 import key_state
-from input_parity import chord
+from input_parity import chord, screen_key
 from screen_menus import overlay_key
 from web_modes import page_key, toggle_chord, window_request
 
@@ -66,6 +66,9 @@ class WindowsStateTests(unittest.TestCase):
         self.assertEqual(chord('F5', NUM_LOCK_WIN | SCROLL_LOCK_WIN), 'F5')
         self.assertEqual(chord('n', 4 | NUM_LOCK_WIN), 'Ctrl+N')
         self.assertIsNone(chord('Next', ALT_WIN))
+        # Control+S saves a note with Num Lock on; Control+Alt+S is left alone.
+        self.assertEqual(screen_key('note', 's', 4 | NUM_LOCK_WIN, {}), 'Ctrl+S')
+        self.assertIsNone(screen_key('note', 's', 4 | ALT_WIN | NUM_LOCK_WIN, {}))
 
 
 class LinuxStateTests(unittest.TestCase):
@@ -98,6 +101,29 @@ class NoRawAltBitTests(unittest.TestCase):
                 found = [line.strip() for line in source if raw.search(line)]
             with self.subTest(module=name):
                 self.assertEqual(found, [])
+
+    def test_tests_send_the_platform_alt_state_not_the_x11_bit(self):
+        # A test that sends 8 (or 12 for Control+Alt) means Alt only on Linux.
+        # On Windows Tk, 8 is Num Lock, so such a test checks the wrong key there.
+        # Tests send key_state.ALT_STATE instead.
+        literal = r'(0x[0-9a-fA-F]+|\d+)'
+        patterns = (
+            re.compile(r'\bstate\s*=\s*' + literal + r'\b'),            # event_generate(..., state=12)
+            re.compile(r"\('[\w]+',\s*" + literal + r",\s*'"),           # ('Right', 12, 'Web:Table:Right')
+            re.compile(r'(?<![\w.])' + literal + r'\s*\|\s*' + literal + r'\b'),  # screen_key(..., 8|4, ...)
+        )
+        problems = []
+        for name in sorted(os.listdir(HERE)):
+            if not (name.startswith('test_') and name.endswith('.py')) or name == 'test_key_state.py':
+                continue
+            with open(os.path.join(HERE, name), encoding='utf-8') as source:
+                for number, line in enumerate(source, 1):
+                    for pattern in patterns:
+                        for match in pattern.finditer(line):
+                            values = [int(value, 0) for value in match.groups() if value]
+                            if any(0 < value < 0x100 and value & key_state.MOD1 for value in values):
+                                problems.append(f'{name}:{number}: {line.strip()}')
+        self.assertEqual(problems, [])
 
 
 if __name__ == '__main__':

@@ -265,7 +265,7 @@ class WindowKeyboardTests(unittest.TestCase):
                 editor.event_generate('<KeyPress>',keysym=modifier)
                 editor.event_generate('<KeyPress>',keysym=key,state=state)
                 editor.event_generate('<KeyRelease>',keysym=modifier)
-            editor.event_generate('<KeyPress>',keysym='2',state=12)
+            editor.event_generate('<KeyPress>',keysym='2',state=4|ALT_STATE)
         self.call(keys)
         self.wait(lambda:('keyboard','Ctrl+Alt+2') in self.window.commands.queue)
         for chord in ('Insert+F','Insert+Shift+Down','CapsLock+F','CapsLock+Down'):
@@ -453,7 +453,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.context(mode='web',readonly=True)
         self.window.set_context({**self.window.context,'web_browse':True})
         self.wait(lambda:self.window.context.get('web_browse'))
-        for key,state,expected in [('k',0,'Web:Quick:k'),('h',1,'Web:Quick:Previous:h'),('Right',12,'Web:Table:Right'),('Tab',0,'Web:Tab'),('Escape',0,'Web:Escape')]:
+        for key,state,expected in [('k',0,'Web:Quick:k'),('h',1,'Web:Quick:Previous:h'),('Right',4|ALT_STATE,'Web:Table:Right'),('Tab',0,'Web:Tab'),('Escape',0,'Web:Escape')]:
             self.call(lambda k=key,s=state:self.window.editor.event_generate('<KeyPress>',keysym=k,state=s))
             self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
         self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'abc def'))

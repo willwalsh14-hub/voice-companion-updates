@@ -7,7 +7,9 @@ Set-Location $PSScriptRoot
 function Write-BuildAnnotation([string]$Title, [string]$Message) {
   if (-not $env:GITHUB_ACTIONS) { return }
   $clean = ($Message -replace '%','%25' -replace "`r",'' -replace "`n",'%0A')
-  if ($clean.Length -gt 3500) { $clean = $clean.Substring($clean.Length - 3500) }
+  # Keep the start (the failed test names) and the end (the last output).
+  # Keeping only the end once hid two of three failed test names.
+  if ($clean.Length -gt 3500) { $clean = $clean.Substring(0, 1500) + '%0A[...]%0A' + $clean.Substring($clean.Length - 1950) }
   Write-Output ('::error title=' + $Title + '::' + $clean)
 }
 # Run a unittest step and, on GitHub, put the failed test names and the end of
