@@ -112,18 +112,24 @@ function mainButton(win) {
   return null;
 }
 
-// What Voice Companion asked to fill in; tried again whenever the page is read, until it is in.
+// What Voice Companion asked to fill in. Account Hub resets its form while it loads, which can
+// clear a box just filled, so it is filled again whenever it is found empty, until Continue.
 let pending = null;
 
 function fillPending(win) {
   if (!pending || !win) return false;
   try {
     const result = fill(win, pending.email, pending.name);
-    if (result !== null) pending = null;
+    if (result === false) pending = null;     // someone typed something else: leave it alone
     return result === true;
   } catch (error) {
     return false;
   }
+}
+
+function addressFilled(win) {
+  const [box] = inputs(win, 'email');
+  return Boolean(box && box.value);
 }
 
 function page(win) {
@@ -147,7 +153,8 @@ function page(win) {
   const fields = elements.filter(e => e.localName === 'input')
     .map(e => String(e.getAttribute('type') || 'text') + (e.id ? '#' + e.id : '')).slice(0, 12);
   return {open: true, title: text(title).slice(0, 200), notes, button: button ? text(button).slice(0, 60) : '',
-    canContinue: Boolean(button && !button.disabled), needsPassword: passwords.some(p => !p.value), fields};
+    canContinue: Boolean(button && !button.disabled), needsPassword: passwords.some(p => !p.value), fields,
+    addressFilled: addressFilled(win)};
 }
 
 // ---- Sign-in in Voice Companion's browser -------------------------------------
@@ -236,16 +243,17 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
             if (tabmail) { tabmail.openTab('contentTab', {url: 'about:accountsetup'}); opened = true; }
           }
           if (!opened) return {opened: false, prefilled: false};
-          let prefilled = false;
+          let prefilled = false, steady = 0;
           pending = email ? {email, name} : null;
           try {
-            for (let i = 0; pending && i < FILL_TRIES; i++) {
-              const before = pending;
-              prefilled = fillPending(win);
-              if (!pending) { prefilled = prefilled || false; break; }
-              if (before !== pending) break;
+            // Filled, and still filled a moment later (after the hub's own reset).
+            for (let i = 0; pending && i < FILL_TRIES && steady < 5; i++) {
+              fillPending(win);
+              prefilled = Boolean(pending) && addressFilled(win);
+              steady = prefilled ? steady + 1 : 0;
               await wait(win, FILL_WAIT_MS);
             }
+            prefilled = Boolean(pending) && addressFilled(win);
           } catch (error) { prefilled = false; }
           return {opened: true, prefilled};
         },
@@ -259,6 +267,7 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
           fillPending(win);
           const button = win && mainButton(win);
           if (!button || button.disabled) return {pressed: false};
+          pending = null;        // past the first step: nothing more to fill in
           button.click();
           return {pressed: true};
         },

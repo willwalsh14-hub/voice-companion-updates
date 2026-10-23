@@ -124,7 +124,7 @@ function load(api) {
   assert.equal(state.setupCalls.at(-1).show, true);
 
   // The page is read and driven; a password goes in once and is never answered back.
-  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: []});
+  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: [], addressFilled: false});
   assert.deepEqual(await call('setupContinue'), {pressed: true});
   state.setupPage.needsPassword = true;
   const filled = await bridge.handle({id: 7, method: 'fillPassword', params: {password: 'pw-123456'}});
@@ -292,7 +292,7 @@ async function experimentChecks() {
   // The page is read: title, visible messages only, and the main button.
   assert.deepEqual(plain(await api.setupPage()), {open: true, title: 'Set up your existing email address',
     notes: ['Thunderbird failed to find the settings'], button: 'Continue', canContinue: true, needsPassword: false,
-    fields: ['text#realName', 'email']});
+    fields: ['text#realName', 'email'], addressFilled: true});
   assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
   assert.equal(win.parts.at(-1).clicks, 1);
   assert.equal(win.parts.at(-2).clicks, 0, 'never Back');
@@ -334,6 +334,26 @@ async function experimentChecks() {
   assert.equal(win.parts[1].value, 'Late Name');
   assert.equal(late.canContinue, true);
   assert.equal((await api.setupPage()).title, 'Set up your existing email address');
+
+  // As in Thunderbird 158: the hub resets its form just after it appears, clearing the boxes.
+  // They are filled in again, so the address is there when Voice Companion reads the page.
+  win = fakeWindow({hub: true});
+  api = loadExperiment(win);
+  const resetSoon = new Promise(resolve => setTimeout(() => {
+    for (const part of win.parts) if (part.localName === 'input') part.value = '';
+    resolve();
+  }, 40));
+  assert.deepEqual(plain(await api.openAccountSetup('reset@example.org', 'Reset Name', false)), {opened: true, prefilled: true});
+  await resetSoon;
+  const afterReset = plain(await api.setupPage());
+  assert.equal(win.parts[2].value, 'reset@example.org');
+  assert.equal(win.parts[1].value, 'Reset Name');
+  assert.equal(afterReset.addressFilled, true);
+  assert.doesNotMatch(JSON.stringify(afterReset), /reset@example\.org/, 'the page report never carries what is typed');
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
+  win.parts[2].value = '';                     // the next step: nothing is filled in any more
+  await api.setupPage();
+  assert.equal(win.parts[2].value, '');
 
   // Something already typed is never replaced; a disabled button is not pressed.
   win = fakeWindow({form: () => { const parts = setupForm({email: new FakeElement('input', {type: 'email', value: 'typed@example.com'})});
