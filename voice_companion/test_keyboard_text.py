@@ -12,6 +12,7 @@ from unittest.mock import Mock,patch
 import companion
 from app_window import CompanionWindow
 from document_editor import VoiceDocument,Paragraph,TextRun
+from key_state import ALT_STATE  # 0x20000 on Windows; 0x8 there is Num Lock.
 from keyboard_speech import KeyboardSpeech
 from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typing_feedback,phonetic,character
 from settings_model import DEFAULTS,CATEGORIES,fields
@@ -309,7 +310,7 @@ class WindowKeyboardTests(unittest.TestCase):
         def sort_keys():
             self.assertIs(self.window.root.focus_get(),self.window.file_list)
             self.window.file_list.event_generate('<KeyPress>',keysym='3',state=5)
-            self.window.file_list.event_generate('<KeyPress>',keysym='s',state=8)
+            self.window.file_list.event_generate('<KeyPress>',keysym='s',state=ALT_STATE)
         self.call(sort_keys)
         self.wait(lambda:('keyboard','Alt+S') in self.window.commands.queue)
         for command in (('keyboard','Letter:a'),('keyboard','Letter:l'),'search files',('keyboard','Ctrl+Shift+3')):
@@ -322,7 +323,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(context);self.wait(lambda:self.window.context.get('mode')=='files')
         self.call(lambda:self.window.file_list.focus_force())
         self.call(lambda:self.assertEqual(tuple(self.window.file_list.curselection()),(0,2)))
-        self.call(lambda:self.window.file_list.event_generate('<KeyPress>',keysym='t',state=8))
+        self.call(lambda:self.window.file_list.event_generate('<KeyPress>',keysym='t',state=ALT_STATE))
         self.wait(lambda:self.window.command_entry_active)
         self.call(lambda:self.window.typed.focus_force())
         self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='Escape'))
@@ -507,7 +508,7 @@ class WindowKeyboardTests(unittest.TestCase):
             self.window.set_context(dict(mode='web',source='page',text='Page text',caret=0,ack=0,readonly=not editing,web_browse=not editing,web_field={'key':'name','type':'text'} if editing else None))
             self.wait(lambda:self.window.context.get('web_field') is not None if editing else self.window.context.get('web_browse'))
             for key,request in (('Left','Web:Back'),('Right','Web:Forward')):
-                self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym=key,state=8))
+                self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym=key,state=ALT_STATE))
                 self.wait(lambda:not self.window.commands.empty())
                 self.assertEqual(self.window.commands.get(),('keyboard',request))
 
@@ -646,7 +647,7 @@ class WindowKeyboardTests(unittest.TestCase):
                 self.call(lambda widget=widget:widget.focus_force())
                 if widget==self.window.typed:self.call(lambda:(self.window.typed.delete(0,'end'),self.window.typed.insert(0,'Preserved header')))
                 for key,expected in (('y','Alt+Y'),('n','Alt+N')):
-                    self.call(lambda key=key,widget=widget:widget.event_generate('<KeyPress>',keysym=key,state=8))
+                    self.call(lambda key=key,widget=widget:widget.event_generate('<KeyPress>',keysym=key,state=ALT_STATE))
                     self.wait(lambda expected=expected:('keyboard',expected) in self.window.commands.queue)
                 if source:self.call(lambda:self.assertEqual(self.window.editor.get('1.0','end-1c'),'Preserved text'))
                 if widget==self.window.typed:self.call(lambda:self.assertEqual(self.window.typed.get(),'Preserved header'))
@@ -680,7 +681,7 @@ class WindowKeyboardTests(unittest.TestCase):
         self.window.set_context(dict(mode='email_draft',source='draft-send',text='Hello',caret=0,readonly=False,ack=0))
         self.wait(lambda:self.window.context.get('mode')=='email_draft')
         self.call(lambda:self.window.editor.focus_force())
-        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='s',state=8))
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='s',state=ALT_STATE))
         self.wait(lambda:('keyboard','Alt+S') in self.window.commands.queue)
     def test_reading_keys_speak_and_cursor_acknowledgment_preserves_feedback(self):
         output=Mock(problem=None);self.window.keyboard_output=output
@@ -838,7 +839,7 @@ class WindowKeyboardTests(unittest.TestCase):
         for mode in ('web','media','exit_confirm'):
             self.window.set_context(dict(mode=mode,source=None,text='',echo='characters',phonetic=False,delay=.5,ack=0,focus=True,confirmation='no' if mode=='exit_confirm' else None))
             self.call(lambda:self.window.typed.focus_force())
-            self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='F4',state=8))
+            self.call(lambda:self.window.typed.event_generate('<KeyPress>',keysym='F4',state=ALT_STATE))
             self.wait(lambda:not self.window.commands.empty());self.assertEqual(self.window.commands.get(),('keyboard','Alt+F4'))
 
     def test_f5_reloads_from_web_links_and_headings_lists(self):
