@@ -264,6 +264,10 @@ class DuckerTests(unittest.TestCase):
             self.assertLess(time.monotonic() - started, 2, 'Closing must not hang.')
         finally:
             release.set()
+            # Let the worker finish putting the volume back before the test folder is removed.
+            ducker.thread.join(5)
+        self.assertFalse(ducker.thread.is_alive())
+        self.assertEqual(chrome._volume, 1.0)
 
     def test_frequent_speech_checks_do_not_flood_windows_audio(self):
         self.windows.add('chrome', 5100)
