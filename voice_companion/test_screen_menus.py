@@ -391,8 +391,13 @@ class WindowAltKeyTests(unittest.TestCase):
         if errors: raise errors[0]
     def state(self):
         # Shown when the window stops answering, so the build log says why.
-        return {'thread alive': self.window.thread.is_alive(), 'problem': repr(self.window.problem),
-                'waiting updates': self.window.ui_actions.qsize(), 'window errors': self.window.ui_errors}
+        import sys, threading, traceback
+        frame = sys._current_frames().get(self.window.thread.ident)
+        others = [t.name for t in threading.enumerate() if t is not self.window.thread and t is not threading.current_thread()]
+        return {'thread alive': self.window.thread.is_alive(), 'ready': self.window.ready.is_set(), 'problem': repr(self.window.problem),
+                'waiting updates': self.window.ui_actions.qsize(), 'window errors': self.window.ui_errors,
+                'window thread is at': ''.join(traceback.format_stack(frame)[-12:]) if frame else None,
+                'other threads': others}
     def wait(self, condition):
         import time
         end = time.monotonic() + 5
