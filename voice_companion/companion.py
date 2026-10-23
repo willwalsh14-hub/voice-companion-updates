@@ -1479,7 +1479,7 @@ def close_browser_window():
     announce_main_menu()
     return 'awake'
 
-def open_browser_menu():
+def open_browser_menu(regular=False):
     global web_session
     if os.name=='nt':
         try:
@@ -1493,6 +1493,15 @@ def open_browser_menu():
         speak('The regular browser tab could not be read. Reconnect it using the extension, then open this menu again.')
     notice=web_session.take_browser_notice()
     if not isinstance(notice,str):notice=''
+    linked=getattr(web_session.backend,'regular',False) is True
+    if not linked and getattr(web_session,'chrome_offer_declined',False) is not True:
+        # Chrome chosen but not ready (or your own Chrome not linked): offer setup right here.
+        import chrome_setup
+        missing=chrome_setup.missing_for_web(sys.modules[__name__],web_session.browser,regular)
+        if missing:
+            if notice:speak(notice)
+            web_session.menu.start()
+            return chrome_setup.offer(sys.modules[__name__],'browser_menu',missing)
     menu=web_session.menu.start(resume=(PREFERENCES.get('web_keep_open',False) or getattr(web_session.backend,'regular',False)) and bool(web_session.snapshot))
     speak((notice+' ' if notice else '')+menu)
     return 'browser_menu'
@@ -1502,6 +1511,9 @@ def handle_browser_menu(text):
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
     if notice:speak(notice)
     if action=='main':return 'awake'
+    if action=='chrome':
+        import chrome_setup
+        return chrome_setup.begin(sys.modules[__name__],'browser_menu')
     if action=='search':
         SEARCH_RETURN_MODE='browser_menu'
         speak('Search or enter address. Say or type your search or address, then press Enter. Escape returns to the web browser menu.');return 'search'
@@ -2190,7 +2202,7 @@ def _handle(text, mode, typed=False):
         import chrome_setup
         return chrome_setup.begin(sys.modules[__name__],mode)
     if command in ('regular browser','open regular browser','connect regular browser'):
-        return open_browser_menu()
+        return open_browser_menu(regular=True)
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
     background_request=re.fullmatch(r'(?:set )?keep audio playing in (?:the )?background (on|off)',command)
     if background_request and mode!='settings':

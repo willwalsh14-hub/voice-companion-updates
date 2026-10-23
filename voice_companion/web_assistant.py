@@ -1783,6 +1783,8 @@ class WebSession:
         name=self.BROWSER_ALIASES.get(_plain(name).rstrip('.!?').lower(),_plain(name).rstrip('.!?').lower())
         if name in RETIRED_BROWSERS:return retired_browser_notice(name)
         if name not in GUIDED_BROWSERS:return BROWSER_CHOICES
+        # Choosing Chrome again may offer its setup again when the Web browser opens.
+        if name=='chrome':self.chrome_offer_declined=False
         if self.browser != name or getattr(self.backend,'browser',name)!=name:
             if not self.injected_backend:
                 try: self.backend.close()

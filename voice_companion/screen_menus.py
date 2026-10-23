@@ -121,6 +121,7 @@ MENUS = {
             ('Web browser menu', 'Escape', 'web browser menu')]),
         ('Options and help', [
             ('Web browser options', '', '@options:Web browser'),
+            ('Set up Chrome', '', 'set up chrome'),
             ('Web help', 'F1', 'help with web')]),
     ]),
     'help': ('Help menu', [

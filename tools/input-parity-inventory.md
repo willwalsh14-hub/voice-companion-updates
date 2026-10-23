@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 573 |
-| Already had both ways | 458 |
-| Gaps found | 115 |
-| Gaps fixed (Added) | 107 |
+| Actions inventoried | 575 |
+| Already had both ways | 459 |
+| Gaps found | 116 |
+| Gaps fixed (Added) | 108 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -573,6 +573,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Action | Voice | Keyboard | Status |
 | --- | --- | --- | --- |
 | Web browser options | "Options, then Web browser options" | Alt, 4, 1 | Added: Alt menu path |
+| Set up Chrome | "Set up chrome" | Alt, 4, 2 | Added: Alt menu path |
 | Web help | "Help with web" | F1 | Both |
 
 ## Alt menu, Help: Help
@@ -645,6 +646,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Go back | "Go back" | First letters, arrows, Enter | Both |
 | Go forward | "Go forward" | First letters, arrows, Enter | Both |
 | Web history | "Web history" | First letters, arrows, Enter | Both |
+| Set up Chrome | "Set up Chrome" | First letters, arrows, Enter | Both |
 
 ## Start, wake and commands
 
