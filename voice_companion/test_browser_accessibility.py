@@ -1,4 +1,5 @@
 """Regression coverage for reported browser, editing and HTML-email failures."""
+import os
 import queue,tempfile,unittest
 from pathlib import Path
 from unittest.mock import Mock,patch
@@ -124,7 +125,7 @@ class BrowserAccessibilityTests(unittest.TestCase):
                     embedded.assert_called_once_with(Path(folder),True);embedded.return_value.start.assert_called_once()
                 continue
             driver=Mock();driver.chromium.launch_persistent_context.return_value.pages=[Mock()];driver.firefox.launch_persistent_context.return_value.pages=[Mock()]
-            with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))),patch.object(Path,'is_file',return_value=True):
+            with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))),patch.object(Path,'is_file',return_value=True),patch.dict(os.environ,{'PROGRAMFILES':'C:\\Program Files'}):
                 backend=BrowserBackend(folder,browser,headless=True);backend.start()
                 engine=driver.firefox if browser=='firefox' else driver.chromium
                 args=engine.launch_persistent_context.call_args.kwargs
