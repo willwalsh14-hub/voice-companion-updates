@@ -405,7 +405,9 @@ class WindowAltKeyProcessTests(unittest.TestCase):
         result = subprocess.run([sys.executable, '-m', 'unittest', '-v', 'test_screen_menus.WindowAltKeyTests'],
                                 cwd=str(Path(__file__).parent), capture_output=True, text=True, timeout=240,
                                 env={**__import__('os').environ, 'VOICE_COMPANION_WINDOW_TESTS': '1'})
-        self.assertEqual(result.returncode, 0, (result.stdout + result.stderr)[-6000:])
+        output = result.stdout + result.stderr
+        failures = output[output.find('====='):] if '=====' in output else output
+        self.assertEqual(result.returncode, 0, (failures[:5000] + '\n...\n' + output[-1500:]) if len(failures) > 6500 else failures)
         self.assertIn('OK', result.stderr)
 
 
@@ -451,17 +453,23 @@ class WindowAltKeyTests(unittest.TestCase):
     def test_alt_alone_opens_and_alt_with_a_key_does_not(self):
         self.window.set_context(dict(mode='mailbox', source=None, text='', caret=0, ack=0, focus=True))
         self.wait(lambda: self.window.context.get('mode') == 'mailbox')
-        typed = self.window.typed
-        self.call(lambda: (typed.event_generate('<KeyPress>', keysym='Alt_L'), typed.event_generate('<KeyRelease>', keysym='Alt_L', state=8)))
+        # Tk sends key events to the focused window, so give it focus first, as the
+        # other window tests do. Widgets are not kept in locals: a widget left in a
+        # failed test's traceback would be freed on the wrong thread.
+        self.call(lambda: self.window.typed.focus_force())
+        self.call(lambda: (self.window.typed.event_generate('<KeyPress>', keysym='Alt_L'),
+                           self.window.typed.event_generate('<KeyRelease>', keysym='Alt_L', state=8)))
         self.wait(lambda: ('keyboard', 'Alt') in self.window.commands.queue)
         self.window.commands.queue.clear()
-        self.call(lambda: (typed.event_generate('<KeyPress>', keysym='Alt_L'), typed.event_generate('<KeyPress>', keysym='t', state=8),
-                           typed.event_generate('<KeyRelease>', keysym='Alt_L', state=8)))
+        self.call(lambda: (self.window.typed.event_generate('<KeyPress>', keysym='Alt_L'),
+                           self.window.typed.event_generate('<KeyPress>', keysym='t', state=8),
+                           self.window.typed.event_generate('<KeyRelease>', keysym='Alt_L', state=8)))
         import time; time.sleep(.2)
         self.assertNotIn(('keyboard', 'Alt'), self.window.commands.queue)
     def test_open_menu_takes_arrow_keys_from_the_message(self):
         self.window.set_context(dict(mode='mailbox', source=None, text='', caret=0, ack=0, focus=True, screen_menu=True))
         self.wait(lambda: self.window.context.get('screen_menu'))
+        self.call(lambda: self.window.typed.focus_force())
         self.call(lambda: self.window.typed.event_generate('<KeyPress>', keysym='Down'))
         self.wait(lambda: ('keyboard', 'Down') in self.window.commands.queue)
 
