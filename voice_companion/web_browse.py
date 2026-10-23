@@ -41,6 +41,8 @@ def voice_browse_key(command):
 def kind(item):
     role=item.get('role','');tag=item.get('tag','');type=item.get('type','')
     if role=='button':return role
+    # A number box is typed into, though browsers call it a spin button.
+    if tag=='input' and type=='number':return 'edit'
     if role in ('slider','spinbutton','progressbar','meter','scrollbar','switch','tab','menuitem','menuitemcheckbox','menuitemradio','treeitem','option'):return role
     if type in ('checkbox','radio'):return type
     if role=='listbox' or tag=='select' and (item.get('multiple') or item.get('size',0)>1):return 'listbox'
@@ -92,11 +94,17 @@ def describe(item):
     if item.get('required'):state+=', required'
     return ('Link '+name+state+'.') if role=='link' else name+(', '+spoken_role if spoken_role else '')+state+'.'
 
+def tab_index(item):
+    """An element's place in Tab order. Browsers report -1 for a contenteditable
+    box without a tabindex, yet Tab reaches it."""
+    tab=item.get('tabindex',0)
+    return 0 if tab<0 and item.get('editable') and item.get('tag') not in ('input','textarea','select') else tab
+
 def focus_order(items,elements=None):
     """Keep frame contents inside their owner while honoring HTML tabindex."""
     owners={e['child_frame_index']:e for e in (elements or items) if 'child_frame_index' in e}
     def rank(item):
-        tab=item.get('tabindex',0)
+        tab=tab_index(item)
         return (0 if tab>0 else 2 if tab<0 else 1,tab if tab>0 else 0,item.get('start',0))
     def scope_path(scope,seen=()):
         owner=owners.get(scope)
@@ -126,7 +134,7 @@ class BrowseCursor:
             if wanted=='edit' and editable_combo(e):return True
             if wanted=='button' and role in ('menuitem','menuitemradio','menuitemcheckbox'):return True
             if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider')
-            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider') and not e.get('disabled') and e.get('tabindex',0)>=0
+            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider') and not e.get('disabled') and tab_index(e)>=0
             return role==wanted
         if tab:
             ordered=focus_order([e for e in self.elements if match(e)],self.elements)

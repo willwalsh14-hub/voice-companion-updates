@@ -12,13 +12,16 @@ def choice_feedback(value,index,count):
     return str(value)
 
 class NativeSettings:
-    def __init__(self,session,announce,save,action,interrupt=None,preview=None):
+    def __init__(self,session,announce,save,action,interrupt=None,preview=None,keyboard=None):
         self.last_notice=""
         def announce_notice(message):
             self.last_notice=str(message);announce(message)
         self.session=session;self.announce=announce_notice;self.interrupt=interrupt or (lambda:None);self.save_callback=save;self.action_callback=action
         self.actions=queue.Queue();self.ready=threading.Event();self.closed=threading.Event();self.hwnd=None;self.pending=False
         self.preview=preview
+        # F12 says the time and, pressed twice quickly, the date, as on every other screen.
+        from time_date import PressCounter
+        self.keyboard=keyboard;self.clock_presses=PressCounter()
     def start(self):
         threading.Thread(target=self.run,name='Settings dialog',daemon=True).start()
         return self
@@ -282,6 +285,9 @@ class NativeSettings:
             if message.message==0x104 and message.wParam==0x73:
                 self.action_callback('exit_app');close();continue
             if message.message==0x100 and message.wParam==0x11:self.interrupt();continue
+            if message.message==0x100 and message.wParam==0x7B and self.keyboard and not (u.GetKeyState(0x11)&0x8000 or u.GetKeyState(0x10)&0x8000):
+                from time_date import key_request
+                self.keyboard(key_request(self.clock_presses.press()));continue
             if message.message in (0x100,0x104) and headers[0]:
                 target=get_focus();field=controls.get(target)
                 if field and field.kind=='headers':

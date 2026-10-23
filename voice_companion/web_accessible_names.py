@@ -11,6 +11,9 @@ const label=e=>{
   if(['list','listitem','region','main','navigation','complementary','banner','contentinfo','form','search'].includes(role))return '';
   if(e.matches('iframe,frame'))return e.getAttribute('title')||e.getAttribute('name')||'Unlabeled frame';
   if(e.matches('input,textarea')&&e.getAttribute('placeholder'))return e.getAttribute('placeholder');
+  // A text box with no name: its hint text, or for a stand-in box such as
+  // YouTube's "Add a comment...", the words it shows.
+  if(role==='textbox'&&!e.matches('input,textarea')){const hint=e.getAttribute('aria-placeholder')||e.getAttribute('placeholder')||e.getAttribute('data-placeholder')||(!e.isContentEditable&&!e.querySelector('[contenteditable]')?(e.innerText||e.textContent||''):'');if(hint.trim())return hint.trim().replace(/\s+/g,' ').slice(0,1000);}
   // Search-result title containers use visible content, not an invented label.
   if((!role||role==='generic')&&!e.isContentEditable&&!e.matches('input,textarea,select,svg,img'))return (e.innerText||e.textContent||'').trim().replace(/\s+/g,' ').slice(0,1000);
   if(role==='link'&&e.href){try{return 'Unlabeled link on '+new URL(e.href).hostname;}catch(_){}}

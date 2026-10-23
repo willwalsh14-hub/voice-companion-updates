@@ -36,6 +36,14 @@ def plain_store():
             mock.patch.object(mail_accounts.ProtectedStore, '_unseal', staticmethod(lambda path: json.loads(path.read_bytes())))]
 
 
+def simulated(**env):
+    """How the simulated Thunderbird starts for one test (fake-thunderbird.cjs reads these)."""
+    def mark(test):
+        test.thunderbird_env = {name: str(value) for name, value in env.items()}
+        return test
+    return mark
+
+
 @unittest.skipUnless(shutil.which('node'), 'Node.js runs the simulated Thunderbird')
 class ThunderbirdEndToEndTests(unittest.TestCase):
     def setUp(self):
@@ -50,15 +58,17 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         for patcher in [mock.patch.object(thunderbird_bridge, '_RELAY', self.relay),
                         mock.patch.object(regular_browser, 'data_folder', lambda: self.folder)] + plain_store():
             patcher.start(); self.addCleanup(patcher.stop)
+        env = dict(os.environ, **getattr(getattr(self, self._testMethodName), 'thunderbird_env', {}))
         self.thunderbird = subprocess.Popen(['node', str(HERE / 'thunderbird_mail_extension' / 'fake-thunderbird.cjs')],
-                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         first = read_message(self.thunderbird.stdout)
         self.assertEqual((first['protocol'], first['command']), (3, 'mail'))
         self.host = threading.Thread(target=thunderbird_bridge.native_stream,
                                      args=(first, self.thunderbird.stdout, self.thunderbird.stdin, endpoint, family), daemon=True)
         self.host.start()
         self.assertTrue(self.relay.connected.wait(10), 'Thunderbird did not connect')
-        self.assertEqual(self.relay.version, '1.0.0')
+        manifest = json.loads((HERE / 'thunderbird_mail_extension' / 'manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(self.relay.version, manifest['version'])
 
     def finish(self):
         """Close Thunderbird's input; it reports what it sent and moved."""
@@ -111,6 +121,65 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         self.assertIn('Message 25', spoken)
         self.assertIn('Sender 25', spoken)
 
+    @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1)
+    def test_list_shows_mail_that_just_reached_the_server(self):
+        # Will, October 23, 2026: Thunderbird with Gmail did not show the latest messages, while
+        # Voice Companion's own Gmail did. Thunderbird had not downloaded them yet: Voice Companion
+        # starts it in the background and lists at once, before Thunderbird checks the server.
+        mail_accounts.connect('thunderbird', self.folder)
+        address, account = mail_accounts.account_token('thunderbird', self.folder)
+        mailbox = ThunderbirdMailbox(address, account)
+        rows, cursor = mailbox.list_messages('inbox')
+        self.assertEqual([row['subject'] for row in rows[:2]], ['Message 26', 'Message 25'])
+        self.assertEqual(rows[0]['date'], 'October 26, 2026')
+        self.assertEqual(mailbox.notice, '')
+        more, _ = mailbox.list_messages('inbox', cursor)
+        self.assertEqual(more[0]['subject'], 'Message 16')   # later pages follow on, without a gap
+        session = MailSession('thunderbird', self.folder)
+        spoken = session.list_messages()
+        self.assertIn('Message 26', spoken)
+        self.assertNotIn('Thunderbird could not check', spoken)
+
+    def test_end_goes_to_the_oldest_page_in_one_request(self):
+        # Will, 0.2.161: End read every page in turn; a large work mailbox never finished.
+        mail_accounts.connect('thunderbird', self.folder)
+        session = MailSession('thunderbird', self.folder)
+        said = []; session.progress = said.append
+        session.list_messages()
+        requests = []
+        original = self.relay.request
+        def counted(method, params=None, timeout=60):
+            requests.append(method); return original(method, params, timeout)
+        with mock.patch.object(self.relay, 'request', counted):
+            spoken = session.list_boundary(True)
+        self.assertEqual(requests.count('list'), 1)
+        self.assertIn('Message 1.', spoken); self.assertIn('5 of 5', spoken)
+        self.assertEqual(session.page_cursor, '20')
+        self.assertEqual(said[-1], 'Going to the end of Inbox. Please wait.')
+        # Page Up from the end goes back one page at a time, then to the newest.
+        self.assertIn('Message 15', session.process('previous messages'))
+        self.assertIn('Message 25', session.process('previous messages'))
+
+    @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1, FAKE_THUNDERBIRD_MAIL_CHECK='fail')
+    def test_failed_mail_check_is_said_not_silent(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        spoken = MailSession('thunderbird', self.folder).list_messages()
+        self.assertIn('Message 25', spoken)      # the mail Thunderbird has is still listed
+        self.assertIn('Thunderbird could not reach your mail server, so the newest messages may be missing.', spoken)
+
+    @simulated(FAKE_THUNDERBIRD_MAIL_CHECK='offline')
+    def test_offline_thunderbird_is_said(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        spoken = MailSession('thunderbird', self.folder).list_messages()
+        self.assertIn('Thunderbird is set to work offline', spoken)
+
+    @simulated(FAKE_THUNDERBIRD_MAIL_CHECK='hang', FAKE_THUNDERBIRD_CHECK_MS=100)
+    def test_slow_mail_check_still_lists(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        spoken = MailSession('thunderbird', self.folder).list_messages()
+        self.assertIn('Message 25', spoken)
+        self.assertIn('Thunderbird is still getting your mail, so the newest messages may not be here yet.', spoken)
+
     def test_send_new_and_reply(self):
         mail_accounts.connect('thunderbird', self.folder)
         address, account = mail_accounts.account_token('thunderbird', self.folder)
@@ -137,7 +206,8 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
 class ThunderbirdOfflineTests(unittest.TestCase):
     def test_thunderbird_closed_gives_a_plain_message(self):
         with mock.patch.object(thunderbird_bridge, '_RELAY', None):
-            with self.assertRaisesRegex(MailboxError, 'Open Thunderbird'):
+            # Never "open Thunderbird yourself": the app starts it (STARTER); without that, say how to check.
+            with self.assertRaisesRegex(MailboxError, 'Say add account and choose Thunderbird'):
                 ThunderbirdMailbox('me@gmail.com', ACCOUNT).folders()
             draft = VoiceEmail(Path(tempfile.mkdtemp()), recipient='sam@example.com', subject='Hi')
             draft.paragraphs = [Paragraph('Hello')]
@@ -158,7 +228,8 @@ class ThunderbirdOfflineTests(unittest.TestCase):
         from build_thunderbird_addon import build
         with tempfile.TemporaryDirectory() as folder:
             with zipfile.ZipFile(build(Path(folder) / 'mail.xpi')) as archive:
-                self.assertEqual(sorted(archive.namelist()), ['background.js', 'manifest.json'])
+                self.assertEqual(sorted(archive.namelist()), ['background.js', 'experiment/implementation.js',
+                                                              'experiment/schema.json', 'manifest.json'])
 
     def test_send_review_accepts_a_thunderbird_draft(self):
         # The send step listed only Gmail, Outlook and Yahoo, so a Thunderbird
@@ -183,3 +254,27 @@ class ThunderbirdOfflineTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class EndOfLongListTests(unittest.TestCase):
+    """Services without a one-step End go page by page, but never without end."""
+    def test_page_by_page_end_stops_and_says_what_to_do(self):
+        class EndlessMailbox:
+            calls = 0
+            def list_messages(self, folder_id, cursor=None, limit=10):
+                EndlessMailbox.calls += 1
+                start = int(cursor or 0)
+                rows = [{'id': str(start + n), 'from': 'a@example.com', 'sender_name': 'A', 'subject': 'S' + str(start + n),
+                         'date': 'October 1, 2026', 'size': 1, 'unread': False} for n in range(limit)]
+                return rows, str(start + limit)
+        with tempfile.TemporaryDirectory() as folder:
+            session = MailSession('gmail', Path(folder))
+            said = []; session.progress = said.append
+            with mock.patch.object(MailSession, 'client', lambda self: EndlessMailbox()):
+                session.list_messages()
+                said.clear()
+                spoken = session.list_boundary(True)
+        self.assertIn('too long to go to the end here', spoken)
+        self.assertIn('Page Down', spoken)
+        self.assertLessEqual(EndlessMailbox.calls, MailSession.MAX_END_PAGES + 2)
+        self.assertEqual(said, ['Going to the end of Inbox. Please wait.'])

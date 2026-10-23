@@ -37,9 +37,13 @@ SITES=(('Hartgen Word training','https://hartgenconsultancy.com/word/'),
 def audit(timeout=20000):
     report={'version':APP_VERSION,'kind':'Read-only live public-site audit','sites':[],'media':[]}
     with tempfile.TemporaryDirectory() as folder,sync_playwright() as driver:
+        # Websites are read in Chrome, a guided browser; radio and podcasts play
+        # in the bundled Firefox engine, as the audio player does.
+        try:browser=driver.chromium.launch(headless=True,channel='chrome')
+        except Exception:browser=driver.chromium.launch(headless=True)
         options={'headless':True,'firefox_user_prefs':{'media.autoplay.default':0}}
         if os.name!='nt':options['env']={**os.environ,'MOZ_DISABLE_CONTENT_SANDBOX':'1','MOZ_DISABLE_RDD_SANDBOX':'1','MOZ_DISABLE_GMP_SANDBOX':'1'}
-        browser=driver.firefox.launch(**options)
+        audio_browser=driver.firefox.launch(**options)
         for name,url in SITES:
             entry={'name':name,'requested_url':url,'status':'blocked','checks':[]};start=time.monotonic()
             context=browser.new_context();page=context.new_page();page.set_default_timeout(8000)
@@ -161,7 +165,7 @@ def audit(timeout=20000):
             entry['seconds']=round(time.monotonic()-start,2);report['sites'].append(entry)
             print('LIVE SITE AUDIT '+json.dumps(entry),flush=True)
         for name in ('Radio','Podcast'):
-            entry={'name':name,'status':'blocked'};context=browser.new_context();page=context.new_page()
+            entry={'name':name,'status':'blocked'};context=audio_browser.new_context();page=context.new_page()
             audio_folder=Path(folder)/name;audio_folder.mkdir();(audio_folder/'audio-player.html').write_text(PLAYER_HTML)
             player=MediaPlayer(audio_folder);player.context=context;player.page=page;player.start=lambda:None
             hub=MediaHub(audio_folder,player=player)
@@ -192,7 +196,7 @@ def audit(timeout=20000):
             except Exception as exc:entry['reason']=type(exc).__name__+': '+str(exc)[:250]
             finally:context.close()
             report['media'].append(entry);print('LIVE MEDIA AUDIT '+json.dumps(entry),flush=True)
-        browser.close()
+        browser.close();audio_browser.close()
     report['passed']=sum(s['status']=='passed' for s in report['sites'])
     report['blocked']=sum(s['status']=='blocked' for s in report['sites'])
     report['failed']=sum(s['status']=='failed' for s in report['sites'])

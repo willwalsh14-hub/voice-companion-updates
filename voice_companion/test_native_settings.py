@@ -30,7 +30,7 @@ class NativeSettingsTests(unittest.TestCase):
     def open_panel(self):
         self.saved=[];self.notices=[]
         context={'engines':('windows',),'windows_voices':('Test voice',),'espeak_voices':(),'ai_voices':('coral',),'accounts':(),'podcasts':(),'podcast_limits':{}}
-        values=DEFAULTS|{'rate':'0','volume':'100','punctuation':'some','input_mode':'mixed','engine':'windows','windows_voice':'Test voice','ai_voice':'coral','email_list_size':'10','browser':'firefox','radio_source':'all','podcast_limit':'manual','ai_consent':False,'remove_ai':False,'api_key':''}
+        values=DEFAULTS|{'rate':'0','volume':'100','punctuation':'some','input_mode':'mixed','engine':'windows','windows_voice':'Test voice','ai_voice':'coral','email_list_size':'10','browser':'Chrome','radio_source':'all','podcast_limit':'manual','ai_consent':False,'remove_ai':False,'api_key':''}
         self.session=SettingsSession(values,context)
         def save(values):self.saved.append(values);self.panel.accepted()
         self.panel=NativeSettings(self.session,self.notices.append,save,lambda key:None).start()
@@ -88,7 +88,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,203)))
         checkbox=self.u.GetDlgItem(hwnd,203)
         for _ in range(3):self.panel.command('next setting')
-        self.wait(lambda:any('Lower media volume while Companion speaks' in message for message in self.notices))
+        self.wait(lambda:any('Audio ducking' in message for message in self.notices))
         before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
         # Queue real keystrokes so IsDialogMessage handles checkbox activation.
         self.u.PostMessageW(checkbox,0x100,0x20,0);self.u.PostMessageW(checkbox,0x101,0x20,0)

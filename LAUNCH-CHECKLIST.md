@@ -1,6 +1,6 @@
 # Voice Companion launch checklist
 
-Status as of October 21, 2026 (version 0.2.154-test in progress). Items marked **Will**
+Status as of October 21, 2026 (version 0.2.160-test in progress). Items marked **Will**
 need you or an account only you control; everything else Claude can do in
 pull requests. Update this file as items are finished.
 
@@ -56,6 +56,17 @@ pull requests. Update this file as items are finished.
       Enable extension prompt get focus and get read?); YouTube in embedded Edge
       (speed, Skip ad, app mode with K/J/L, seek and volume sliders); Alt in
       the email inbox and in a draft.
+
+- [ ] **Will or a tester (0.2.160):** on a real PC:
+  - F12 once and twice, and Insert+F12; Control+F12 sleeps and wakes.
+  - Browser sound gets quieter while Companion speaks (embedded Edge and Chrome), each ducking level, and NVDA is never lowered.
+  - Add Thunderbird account with Thunderbird 153 or newer: Continue comes on after the address is filled in; Gmail sign-in opens in embedded Edge and in Chrome.
+  - Back on a few sites; app mode with Control+Shift+Space on YouTube (K, J, L, sliders) feels instant.
+  - Arrow and Tab into text boxes on sites Will uses; tell Claude any site where typing does not go in.
+- [ ] Num Lock read as Alt (key_state.py, branch claude/numlock-alt): the Windows trial showed real Alt key presses sent by the test did not arrive as expected. Investigate before releasing.
+
+- [ ] Window freeze in Windows release tests (0.2.158 to 0.2.160): a new window sometimes never ran its first update (thread inside Tk mainloop, 'checks done': 0). From 0.2.160 the real-window key tests run in their own process after the other release tests (real_window_tests.py). If they still freeze there, the window itself can freeze and must be fixed before launch. Leads: main-thread COM (test_file_manager Dispatch), windows left by failed tests, cross-thread activation messages.
+- [ ] Alt opened the Windows system menu (Will, Oct 23): Tk's Windows Alt bindings on "all" outrank Companion's. Fix on claude/alt-windows (PR #47 trial); it likely also explains the Num Lock trial failures (PR #40, #45).
 
 ### Reliability work (Claude)
 - [ ] Split command handling in `companion.py` into smaller parts with an

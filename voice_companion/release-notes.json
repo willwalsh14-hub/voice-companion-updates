@@ -1,28 +1,18 @@
 {
-  "version": "0.2.159-test",
+  "version": "0.2.162-test",
   "status": "Testing build",
-  "date": "October 22, 2026",
-  "baseline": "0.2.158-test",
-  "scope": "Switch between email accounts from the folder list or the email menu, and remove an account you no longer want.",
+  "date": "October 23, 2026",
+  "baseline": "0.2.161-test",
+  "scope": "Thunderbird work and Microsoft accounts no longer freeze Voice Companion, and End goes to the last message at once.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose an account, then a folder",
+          "title": "Stop waiting for Thunderbird",
           "details": [
-            "With more than one email account, press Control+Y or say Go to folder. Companion lists your accounts first.",
-            "Choose one with the arrow keys and Enter, or say its number or name. Then you hear that account's folders.",
-            "Press Escape to go back one step.",
-            "With one account, nothing changes."
-          ]
-        },
-        {
-          "title": "Remove an email account",
-          "details": [
-            "Say Remove email account, or press Alt, 6, 4 in email. Choose the account, then say yes.",
-            "Your email stays with your email service. Companion just stops using that account.",
-            "Nothing is removed unless you say yes. Pressing Enter alone means no."
+            "If Thunderbird is slow, press Escape to stop waiting. Voice Companion tells you it stopped.",
+            "Closing Voice Companion with Alt+F4 works even while it waits for Thunderbird."
           ]
         }
       ]
@@ -31,28 +21,19 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Email menu",
+          "title": "End in a long mail folder",
           "details": [
-            "Switch account in the email menu now lists your accounts. Choose one to open its inbox.",
-            "The email menu has a new Remove account item."
+            "In Thunderbird mail, End now goes to the oldest message in one step.",
+            "Before, End loaded every page in turn. In a large work mailbox it never finished, and Voice Companion froze.",
+            "Page Up from the end goes back one page at a time, as before."
           ]
         },
         {
-          "title": "Folder list",
+          "title": "New Thunderbird accounts",
           "details": [
-            "Escape now closes the folder list and says nothing was changed. Before, it read the whole email help."
-          ]
-        },
-        {
-          "title": "Embedded Edge",
-          "details": [
-            "If embedded Edge is slow to start, Companion tries again. Before, it went straight to Firefox."
-          ]
-        },
-        {
-          "title": "Browser extension",
-          "details": [
-            "The browser extension did not change. You do not need to reload it."
+            "A newly added work or Microsoft account can take a while to download its mail.",
+            "Until it is done, you hear that the newest messages may not be here yet. Press F5 or say refresh messages to check again.",
+            "Work accounts that use Exchange now check for new mail too."
           ]
         }
       ]

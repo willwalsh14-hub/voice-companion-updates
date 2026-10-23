@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 573
-- Already had both ways: 458
-- Gaps found: 115
-- Gaps fixed (Added): 107
+- Actions inventoried: 580
+- Already had both ways: 461
+- Gaps found: 119
+- Gaps fixed (Added): 111
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1051,9 +1051,21 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
-### Lower media volume while Companion speaks
+### Audio ducking
 
-- Voice: "Set Lower media volume while Companion speaks to ..."
+- Voice: "Set Audio ducking to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Ducking level
+
+- Voice: "Set Ducking level to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Also lower other apps while Companion speaks
+
+- Voice: "Set Also lower other apps while Companion speaks to ..."
 - Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -1869,6 +1881,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 6, 4
 - Status: Added: Alt menu path
 
+### Add Thunderbird account
+
+- Voice: "Add thunderbird account"
+- Keyboard: Alt, 6, 5
+- Status: Added: Alt menu path
+
 ## Alt menu, Email: Options and help
 
 ### Email options
@@ -2147,6 +2165,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 4, 1
 - Status: Added: Alt menu path
 
+### Set up Chrome
+
+- Voice: "Set up chrome"
+- Keyboard: Alt, 4, 2
+- Status: Added: Alt menu path
+
 ### Web help
 
 - Voice: "Help with web"
@@ -2411,19 +2435,37 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: First letters, arrows, Enter
 - Status: Both
 
+### Set up Chrome
+
+- Voice: "Set up Chrome"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
 ## Start, wake and commands
 
 ### Wake up the microphone
 
 - Voice: "Wake up"
-- Keyboard: Any arrow key or Enter while asleep; F12
-- Status: Added: F12
+- Keyboard: Any arrow key or Enter while asleep; Ctrl+F12
+- Status: Added: Ctrl+F12
 
 ### Put the microphone to sleep
 
 - Voice: "Go to sleep"
-- Keyboard: F12 on any main screen
-- Status: Added: F12
+- Keyboard: Ctrl+F12 on any main screen
+- Status: Added: Ctrl+F12
+
+### Hear the time
+
+- Voice: "What time is it?", "What's the time?", "Time"
+- Keyboard: F12 or Insert+F12 on any screen, even while asleep
+- Status: Added: F12, Insert+F12 and the spoken request
+
+### Hear the day and date
+
+- Voice: "What's the date?", "Today's date", "What day is it?", "Date"
+- Keyboard: F12 or Insert+F12 twice quickly on any screen
+- Status: Added: F12 twice and the spoken request
 
 ### Hear the version
 
@@ -3254,7 +3296,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Send keys to the website (app mode) or back to browse mode
 
 - Voice: "App mode", "Browse mode", "Focus mode"
-- Keyboard: Insert+Space, Ctrl+Alt+Space
+- Keyboard: Insert+Space, Ctrl+Shift+Space, Ctrl+Alt+Space
 - Status: Both
 
 ## Web: forms

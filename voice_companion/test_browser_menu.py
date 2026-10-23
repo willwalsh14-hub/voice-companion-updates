@@ -80,10 +80,11 @@ class BrowserMenuTests(unittest.TestCase):
 
     def test_closed_retained_page_removes_resume_without_invalid_selection(self):
         self.session.open('example.com');self.run_command('end')
-        self.assertEqual(self.menu.index,8)
+        self.assertEqual(self.menu.index,9)
         self.session.snapshot=None
         names,index,_=self.menu.menu(self.session,True)
-        self.assertEqual(index,7);self.assertEqual(names[index],'Web history')
+        self.assertEqual(index,8);self.assertEqual(names[index],'Set up Chrome')
+        self.run_command('previous')
         self.assertIn('Web history',self.run_command('enter')[0])
 
     def test_empty_lists_and_name_cancel_do_not_change_page(self):

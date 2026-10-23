@@ -151,6 +151,14 @@ class ScreenMenuTests(unittest.TestCase):
         self.assertEqual(self.press('Down', 'awake'), 'awake')
         self.assertIn('Word processor', self.said[-1])
 
+    def test_alt_with_no_menu_always_says_why(self):
+        from screen_menus import alt_unavailable
+        self.assertIn('Y for yes', alt_unavailable(dict(mode='mailbox', confirmation='no')))
+        self.assertIn('Escape', alt_unavailable(dict(mode='list', named_list=True)))
+        self.assertIn('command is typed', alt_unavailable(dict(mode='mailbox'), typed_text='list messages'))
+        self.assertIn('command is typed', alt_unavailable(dict(mode='mailbox'), command_entry_active=True))
+        self.assertEqual(alt_unavailable(dict(mode='document')), 'This screen has no Alt menu.')
+
     def test_word_processor_file_manager_and_player_keep_their_own_alt(self):
         self.assertEqual(app.navigation_key('Alt', 'document'), 'document menu')
         self.assertEqual(app.navigation_key('Alt', 'files'), 'file manager menu')
@@ -228,9 +236,9 @@ class ScreenMenuTests(unittest.TestCase):
         self.press('Letter:a', mode)
         self.assertEqual(self.said[-1], 'Accounts (A), 6 of 7.')
         self.press('Enter', mode)
-        self.assertEqual(self.said[-1], 'Accounts menu. Add account (A), 1 of 4. Alt, 6, 1. Say add account.')
+        self.assertEqual(self.said[-1], 'Accounts menu. Add account (A), 1 of 5. Alt, 6, 1. Say add account.')
         self.press('Down', mode)
-        self.assertEqual(self.said[-1], 'Switch account (S), 2 of 4. Alt, 6, 2. Say switch account.')
+        self.assertEqual(self.said[-1], 'Switch account (S), 2 of 5. Alt, 6, 2. Say switch account.')
         self.press('Escape', mode)
         self.assertEqual(self.said[-1], 'Email menu. Accounts (A), 6 of 7.')
         self.press('Letter:1', mode)

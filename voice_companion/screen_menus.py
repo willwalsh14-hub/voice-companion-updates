@@ -61,7 +61,8 @@ MENUS = {
             ('Add account', '', 'add account'),
             ('Switch account', '', 'switch account'),
             ('Which account', '', 'which email account'),
-            ('Remove account', '', 'remove email account')]),
+            ('Remove account', '', 'remove email account'),
+            ('Add Thunderbird account', '', 'add thunderbird account')]),
         ('Options and help', [
             ('Email options', '', '@options:Email'),
             ('Messages per page', '', 'email list size'),
@@ -121,6 +122,7 @@ MENUS = {
             ('Web browser menu', 'Escape', 'web browser menu')]),
         ('Options and help', [
             ('Web browser options', '', '@options:Web browser'),
+            ('Set up Chrome', '', 'set up chrome'),
             ('Web help', 'F1', 'help with web')]),
     ]),
     'help': ('Help menu', [
@@ -213,6 +215,17 @@ def alt_menu_key(context, command_entry_active=False, typed_text=''):
     if typed_text.strip() and mode not in ('note', 'email_draft'):
         return None
     return 'Alt'
+
+
+def alt_unavailable(context, command_entry_active=False, typed_text=''):
+    """What to say when a lone Alt opens no menu, so the key is never silent."""
+    if command_entry_active or typed_text.strip() and context.get('mode') not in ('note', 'email_draft'):
+        return 'No Alt menu while a command is typed. Press Enter to run it, or Escape to clear it.'
+    if context.get('confirmation') is not None:
+        return 'Answer the question first. Press Y for yes or N for no.'
+    if any(context.get(name) for name in BUSY_CONTEXT):
+        return 'No Alt menu here. Finish this first, or press Escape to go back.'
+    return 'This screen has no Alt menu.'
 
 
 def overlay_key(keysym, char, state):

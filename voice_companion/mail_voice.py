@@ -288,10 +288,13 @@ class MailSession:
         self.page_cursor = cursor
         self.selected = {index for index, row in enumerate(self.rows, 1)
                          if row['id'] in self.marked_ids}
+        # Thunderbird: why the newest mail may be missing, said after the list (never silent).
+        notice = getattr(client, 'notice', '') or ''
+        notice = (' ' + notice) if isinstance(notice, str) and notice else ''
         if not self.rows:
-            return 'Empty list. No messages on this page of ' + self.folder_name + '.'
+            return 'Empty list. No messages on this page of ' + self.folder_name + '.' + notice
         self.current = 1
-        return self.folder_name + '. ' + self._summary(1,True) + (' More messages are available.' if self.next_cursor else '')
+        return self.folder_name + '. ' + self._summary(1,True) + (' More messages are available.' if self.next_cursor else '') + notice
 
     def _summary(self, number, announce_boundary=False):
         row = self.rows[number - 1]
@@ -316,6 +319,9 @@ class MailSession:
         return 'Start and end of list.' if first and last else 'Start of list.' if first else 'End of list.' if last else ''
 
 
+    # Going to the end one page at a time stops after this many pages, and says so.
+    MAX_END_PAGES = 100
+
     def list_boundary(self,bottom=False):
         names=('rows','next_cursor','current','view','body_text','body_offset','page_cursor','previous_cursors','selected')
         saved={name:getattr(self,name) for name in names if hasattr(self,name)}
@@ -333,13 +339,37 @@ class MailSession:
             if self.page_cursor is not None:self.list_messages()
             self.previous_cursors=[]
             return self._focus(1)
-        seen=set()
-        while self.next_cursor:
-            cursor=self.next_cursor;identity=repr(cursor)
-            if identity in seen:return 'The server repeated a page. I could not reach the end of the list.'
-            seen.add(identity);self.previous_cursors.append(self.page_cursor)
-            self.list_messages(cursor)
-            if not self.rows:return 'No messages returned on the last page.'
+        if not self.next_cursor:return self._focus(len(self.rows))   # the whole list is on this page
+        client=self.client() if getattr(self,'provider','')=='thunderbird' and self.list_size in (10,20,30,40,50,100) else None
+        if client is not None and hasattr(client,'last_page'):
+            # One request for the last page (Thunderbird), never every page in turn:
+            # a large mailbox took so long that Companion stopped answering.
+            if self.progress:self.progress('Going to the end of '+self.folder_name+'. Please wait.')
+            rows,next_cursor,offset=client.last_page(self.folder_id,self.list_size)
+            self.rows=rows;self.next_cursor=next_cursor
+            self.page_cursor=str(offset) if offset else None
+            self.previous_cursors=[None]+[str(start) for start in range(self.list_size,offset,self.list_size)] if offset else []
+            self.selected={index for index,row in enumerate(self.rows,1) if row['id'] in self.marked_ids}
+            if not self.rows:
+                self.current=None;self.view='folder';self.body_text='';self.body_offset=0
+                return 'Empty list. No messages in '+self.folder_name+'.'
+            return self._focus(len(self.rows))
+        seen=set();pages=0;progress=self.progress
+        if progress:progress('Going to the end of '+self.folder_name+'. Please wait.')
+        try:
+            # One "please wait", not one for every page.
+            self.progress=None
+            while self.next_cursor:
+                pages+=1
+                if pages>self.MAX_END_PAGES:
+                    return ('This folder is too long to go to the end here. You are on page '+str(pages)+
+                            '. Press Page Down for more, or press Home for the newest messages.')
+                cursor=self.next_cursor;identity=repr(cursor)
+                if identity in seen:return 'The server repeated a page. I could not reach the end of the list.'
+                seen.add(identity);self.previous_cursors.append(self.page_cursor)
+                self.list_messages(cursor)
+                if not self.rows:return 'No messages returned on the last page.'
+        finally:self.progress=progress
         return self._focus(len(self.rows))
 
     def _focus(self, number):

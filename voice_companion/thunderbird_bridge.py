@@ -93,17 +93,18 @@ class MailRelay:
 
     def request(self, method, params=None, timeout=60):
         if not self.connected.is_set():
-            raise ThunderbirdUnavailable('Thunderbird is not connected. Open Thunderbird, then try again.')
+            raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
         ident = next(self.ids)
         waiter = {'event': threading.Event(), 'answer': None}
         self.pending[ident] = waiter
         try:
             with self.send_lock:
                 pipe = self.pipe
-                if pipe is None: raise ThunderbirdUnavailable('Thunderbird is not connected. Open Thunderbird, then try again.')
+                if pipe is None: raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
                 pipe.send_bytes(encode({'id': ident, 'method': method, 'params': params or {}}))
-            if not waiter['event'].wait(timeout) or waiter['answer'] is None:
-                raise ThunderbirdUnavailable('Thunderbird did not answer. Check that Thunderbird is open, then try again.')
+            import user_stop
+            if not user_stop.wait(waiter['event'], timeout) or waiter['answer'] is None:
+                raise ThunderbirdUnavailable('Thunderbird did not answer.')
         finally:
             self.pending.pop(ident, None)
         answer = waiter['answer']
