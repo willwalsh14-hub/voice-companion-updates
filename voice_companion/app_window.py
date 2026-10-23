@@ -74,6 +74,9 @@ class CompanionWindow:
         self.closed = threading.Event()
         self.ready = threading.Event()
         self.ui_errors = []
+        # The last key events, as plain text, so a failed window test says
+        # which key the window saw and why it ignored it.
+        self.key_trace = __import__('collections').deque(maxlen=16)
         self.last_email_request = None
         self.email_selection_edit = None
         self.problem = None
@@ -122,7 +125,8 @@ class CompanionWindow:
             del frames,frame
         return {'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
                 'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
-                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()]}
+                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()],
+                'recent keys':list(self.key_trace)}
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
@@ -322,6 +326,7 @@ class CompanionWindow:
                     return 'break'
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
+                self.key_trace.append(f'press {key} state={event.state:#x}')
                 if clock_key(key,event.state):
                     # F12 or Insert+F12 says the time; twice quickly, the date. It works on every
                     # screen, in menus, lists and questions, and never reaches a web page.
@@ -528,7 +533,8 @@ class CompanionWindow:
                     # A held key repeats. Activating, or going back or forward,
                     # happens once per press.
                     if request in ('Web:Activate','Web:Space','Web:Done','Web:Back','Web:Forward'):
-                        if key in activation_keys:return 'break'
+                        if key in activation_keys:
+                            self.key_trace.append(f'held, ignored: {request} {key} state={event.state:#x}');return 'break'
                         activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
@@ -548,7 +554,10 @@ class CompanionWindow:
             root.bind_all('<Shift-Tab>',shortcut)
             file_list.bind('<KeyPress>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')
-            root.bind_all('<KeyRelease>',lambda event:activation_keys.discard(event.keysym),add='+')
+            def release_activation_key(event):
+                self.key_trace.append(f'release {event.keysym} state={event.state:#x} held={sorted(activation_keys)}')
+                activation_keys.discard(event.keysym)
+            root.bind_all('<KeyRelease>',release_activation_key,add='+')
             root.bind('<FocusOut>',lambda event:activation_keys.clear() if event.widget==root else None,add='+')
             for sequence in ('<F2>','<F5>','<F6>','<F7>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
                 root.bind_all(sequence,shortcut)
