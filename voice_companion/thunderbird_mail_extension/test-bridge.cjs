@@ -199,7 +199,7 @@ function setupForm({email = new FakeElement('input', {type: 'email'}), password 
   return parts;
 }
 
-function fakeWindow({opener = 'openAccountSetup', form = () => setupForm(), hub = false} = {}) {
+function fakeWindow({opener = 'openAccountSetup', form = () => setupForm(), hub = false, typing = false} = {}) {
   const document = new FakeElement('document');
   const tabmail = new FakeElement('tabmail');
   tabmail.opened = []; tabmail.tabInfo = [];
@@ -220,6 +220,15 @@ function fakeWindow({opener = 'openAccountSetup', form = () => setupForm(), hub 
       step.shadowRoot = new FakeElement('shadow', {}, parts.filter(p => p.localName !== 'button'));
       const footer = new FakeElement('account-hub-footer');
       footer.shadowRoot = new FakeElement('shadow', {}, parts.filter(p => p.localName === 'button'));
+      if (typing) {
+        win.typed = []; win.checks = [];
+        step.checkValidEmailForm = options => win.checks.push(options);
+        step.shadowRoot.host = step;
+        for (const part of step.shadowRoot.children) {
+          part.parentNode = step.shadowRoot;
+          if (part.localName === 'input') part.setUserInput = function (value) { win.typed.push(this.id || 'email'); this.value = value; };
+        }
+      }
       const view = new FakeElement('account-hub-email', {}, [step, footer]);
       const container = new FakeElement('account-hub-container');
       container.shadowRoot = new FakeElement('shadow', {}, [new FakeElement('dialog', {}, [view])]);
@@ -354,6 +363,15 @@ async function experimentChecks() {
   win.parts[2].value = '';                     // the next step: nothing is filled in any more
   await api.setupPage();
   assert.equal(win.parts[2].value, '');
+
+  // Thunderbird 158 turns Continue on only when the page sees typing: setUserInput is used
+  // when present, and the email step is asked to check itself.
+  win = fakeWindow({hub: true, typing: true});
+  api = loadExperiment(win);
+  await api.openAccountSetup('typed@example.org', 'Typed Name', false);
+  assert.deepEqual(win.typed.sort(), ['email', 'realName']);
+  assert.equal(win.parts[2].value, 'typed@example.org');
+  assert.ok(win.checks.length >= 1 && win.checks.every(c => c.showErrors === false), 'the email step re-checked itself');
 
   // Something already typed is never replaced; a disabled button is not pressed.
   win = fakeWindow({form: () => { const parts = setupForm({email: new FakeElement('input', {type: 'email', value: 'typed@example.com'})});
