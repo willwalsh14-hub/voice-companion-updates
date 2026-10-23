@@ -236,6 +236,12 @@ class ScreenReaderNoticeTests(unittest.TestCase):
     def test_program_list_never_fails(self):
         self.assertIsInstance(self.web_modes.running_programs(), set)
 
+    @unittest.skipUnless(__import__('os').name == 'nt', 'Windows program list')
+    def test_windows_program_list_includes_this_program(self):
+        import os, sys
+        programs = self.web_modes.running_programs()
+        self.assertIn(os.path.basename(sys.executable).lower(), programs)
+
 
 class ComboBackend(FakeBackend):
     def __init__(self):

@@ -6,6 +6,7 @@ from test_web_live import LiveWebTests
 from test_consumer_web import ConsumerWebTests
 from test_web_semantics import SemanticWebTests
 from test_web_performance import BusyPageTests
+from test_web_history import HistoryTests
 
 
 class WebViewFixture:
@@ -98,6 +99,21 @@ class EmbeddedLiveTests(WebViewFixture,LiveWebTests):
 class EmbeddedConsumerTests(WebViewFixture,ConsumerWebTests):pass
 class EmbeddedSemanticTests(WebViewFixture,SemanticWebTests):pass
 class EmbeddedPerformanceTests(WebViewFixture,BusyPageTests):pass
+
+
+class EmbeddedHistoryTests(WebViewFixture,HistoryTests,unittest.TestCase):
+    """Back and Forward in embedded Edge, through its own history list."""
+    def setUp(self):
+        HistoryTests.setUp(self)
+        self.adapter.page=self.page;self.backend=self.adapter;self.session.backend=self.adapter
+        self.addCleanup(setattr,self.adapter,'page',self.adapter.context.pages[0] if self.adapter.context.pages else None)
+
+    def test_the_host_answers_with_the_history_list(self):
+        self.session.open('https://history.test/first')
+        listing=self.adapter._navigation_history()
+        self.assertIsNotNone(listing)
+        history,go,close=listing;close()
+        self.assertEqual(history['entries'][history['currentIndex']]['url'],'https://history.test/first')
 
 
 if __name__=='__main__':unittest.main()

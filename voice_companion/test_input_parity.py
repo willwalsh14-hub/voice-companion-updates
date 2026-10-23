@@ -576,5 +576,33 @@ class WindowScreenKeyTests(unittest.TestCase):
             self.call(lambda k=keysym,s=state:self.window.typed.event_generate('<KeyPress>',keysym=k,state=s))
             self.wait(lambda e=expected:('keyboard',e) in self.window.commands.queue)
 
+    # Web page keys through the real window (claude/try-guided-browsers).
+    def web_page(self):
+        return dict(mode='web',source='web:1:page',text='Name, edit field\nAfter the field',caret=0,ack=0,readonly=True,focus=True,
+                    web_browse=True,web_revision=1,web_cursor_revision=1,web_elements=[])
+    def press(self,keysym,state=0):
+        self.call(lambda:(self.window.editor.focus_force(),self.window.editor.event_generate('<KeyPress>',keysym=keysym,state=state)))
+    def test_web_arrow_onto_a_field_then_typing_reaches_the_field(self):
+        self.window.set_context(self.web_page())
+        self.wait(lambda:self.window.context.get('mode')=='web')
+        self.press('Down')
+        self.wait(lambda:('keyboard','Web:Read:Down') in self.window.commands.queue)
+        field={'key':'n1','label':'Name','tag':'input','type':'text','role':'field'}
+        self.window.set_context(dict(mode='web',source='web:1:field:main:n1:document:1',text='',caret=0,ack=0,readonly=False,focus=True,
+                                     web_browse=False,web_field=field,web_revision=1,web_cursor_revision=2,web_elements=[]))
+        self.wait(lambda:self.window.context.get('web_field'))
+        self.press('a')
+        edits=lambda:[c[1] for c in list(self.window.commands.queue) if isinstance(c,tuple) and c[0]=='text_edit']
+        self.wait(lambda:any(e['after']=='a' and e['source']=='web:1:field:main:n1:document:1' for e in edits()))
+    def test_web_mode_keys_and_held_alt_left(self):
+        self.window.set_context(self.web_page())
+        self.wait(lambda:self.window.context.get('mode')=='web')
+        self.press('space',5)  # Control+Shift+Space
+        self.wait(lambda:('keyboard','Web:ToggleAppMode') in self.window.commands.queue)
+        self.press('Left',0x20000);self.press('Left',0x20000)  # Alt+Left held: one Back
+        self.wait(lambda:('keyboard','Web:Back') in self.window.commands.queue)
+        import time;time.sleep(.2)
+        self.assertEqual(list(self.window.commands.queue).count(('keyboard','Web:Back')),1)
+
 
 if __name__=='__main__':unittest.main()

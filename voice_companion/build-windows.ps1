@@ -105,7 +105,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
 & $python build_webview2.py
 if ($LASTEXITCODE -ne 0) { throw 'The embedded Edge host could not be built.' }
 $env:VOICE_COMPANION_REQUIRE_WEBVIEW2 = '1'
-$embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests')
+$embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests','test_webview2.EmbeddedHistoryTests')
 if ($embeddedResult -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEBVIEW2
 $extensionTestRuntime = Join-Path $buildEnv 'extension-test-browser'
