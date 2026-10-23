@@ -65,7 +65,8 @@
           "title": "Text boxes and choice boxes",
           "details": [
             "Arrow or Tab to any text box, and you can type right away. This includes number boxes and search boxes.",
-            "Arrowing past a choice box or a slider only reads it, so its value never changes by mistake. Press Enter or Tab to use it."
+            "Arrowing past a choice box or a slider only reads it, so its value never changes by mistake. Press Enter or Tab to use it.",
+        "On YouTube, Add a comment is now read by its name. Arrow to it and type. When you press Tab, your words go into the comment box."
           ]
         },
         {
