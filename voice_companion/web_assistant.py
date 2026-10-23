@@ -1841,6 +1841,10 @@ class WebSession:
             self.mode_announced=self.app_mode
             result=(APP_MODE if self.app_mode else BROWSE_MODE)+' '+result
         notice=self.take_browser_notice()
+        if self.snapshot:
+            from web_modes import screen_reader_notice_once
+            reader=screen_reader_notice_once()
+            if reader:notice=(notice+' '+reader).strip()
         return notice+' '+result if notice else result
 
     def _refresh_page(self,read=None,preserve=False,wait=True):

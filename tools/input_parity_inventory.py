@@ -173,7 +173,7 @@ HAND = [
     ('Web: page reading', 'Web browser menu', '"Leave website"', 'Escape', 'Both'),
     ('Web: page reading', 'Web help', '"Help with web"', 'F1', 'Added: F1'),
     ('Web: page reading', 'Close the browser window, even when kept open', '"Close browser window"', 'Ctrl+Shift+W', 'Added: Ctrl+Shift+W'),
-    ('Web: page reading', 'Send keys to the website (app mode) or back to browse mode', '"App mode", "Browse mode", "Focus mode"', 'Insert+Space, Ctrl+Alt+Space', 'Both'),
+    ('Web: page reading', 'Send keys to the website (app mode) or back to browse mode', '"App mode", "Browse mode", "Focus mode"', 'Insert+Space, Ctrl+Shift+Space, Ctrl+Alt+Space', 'Both'),
     ('Web: forms', 'Find and change a slider', '"Next slider"', 'Tab or Enter on the slider; arrows, Page Up, Page Down, Home, End; Escape', 'Both'),
     ('Web: forms', 'Enter a text box', '"Edit current field"', 'E, Tab, or Enter on the box', 'Both'),
     ('Web: forms', 'Save or cancel a field', '"Save field", "Cancel field editing"', 'Tab or Enter; Escape', 'Both'),

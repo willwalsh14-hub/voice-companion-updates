@@ -3,13 +3,18 @@
 Browse mode is Companion's page cursor: letters move by heading, link and so on.
 App mode sends each key straight to the web page, so a site's own shortcuts
 work (YouTube's K, J, L, F and M, for example). Insert+Space switches modes, as
-in common screen readers. Screen readers take Insert+Space for themselves, so
-Control+Alt+Space does the same job when one is running.
+in common screen readers. JAWS, NVDA and Narrator take Insert+Space for
+themselves before Companion sees it (JAWS: layered commands; NVDA and
+Narrator: their own browse and scan modes). Control+Shift+Space does the same
+job and is used by none of them; Control+Alt+Space also still works. The first
+web page in a session with one of them running says so once.
 
 A slider is a control such as a video's seek bar or a volume level. Enter on a
 slider, or Tab onto it, lets the arrow keys change it on the page.
 """
+import os
 import re
+import time
 
 APP_MODE = 'App mode.'
 BROWSE_MODE = 'Browse mode.'
@@ -41,14 +46,93 @@ def _modifiers(state):
     return bool(state & 4), bool(state & 1), bool(state & (8 | 0x20000))
 
 
+TOGGLE_KEY = 'Control+Shift+Space'
+
+
 def toggle_chord(keysym, state, insert_held=False):
-    """True for Insert+Space or Control+Alt+Space, the keys that switch modes."""
+    """True for the keys that switch modes: Insert+Space, Control+Shift+Space
+    and Control+Alt+Space."""
     if keysym != 'space':
         return False
     control, shift, alt = _modifiers(state)
     if insert_held and not (control or alt):
         return True
+    if control and shift and not alt:
+        return True
     return control and alt and not shift
+
+
+# Screen readers that keep Insert+Space, by their program names.
+SCREEN_READERS = (('jfw.exe', 'JAWS'), ('nvda.exe', 'NVDA'), ('narrator.exe', 'Narrator'))
+NOTICE_STATE = {'given': False, 'checked_at': -1e9, 'readers': ()}
+NOTICE_RECHECK = 30.0
+
+
+def running_programs():
+    """Lower-case names of the programs running now (Windows); empty elsewhere or on failure."""
+    if os.name != 'nt':
+        return set()
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class Entry(ctypes.Structure):
+            _fields_ = [('dwSize', wintypes.DWORD), ('cntUsage', wintypes.DWORD), ('th32ProcessID', wintypes.DWORD),
+                        ('th32DefaultHeapID', ctypes.c_size_t), ('th32ModuleID', wintypes.DWORD), ('cntThreads', wintypes.DWORD),
+                        ('th32ParentProcessID', wintypes.DWORD), ('pcPriClassBase', ctypes.c_long), ('dwFlags', wintypes.DWORD),
+                        ('szExeFile', ctypes.c_wchar * 260)]
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+        kernel.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
+        kernel.Process32FirstW.argtypes = kernel.Process32NextW.argtypes = [wintypes.HANDLE, ctypes.POINTER(Entry)]
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        snapshot = kernel.CreateToolhelp32Snapshot(2, 0)  # TH32CS_SNAPPROCESS
+        if not snapshot or snapshot == ctypes.c_void_p(-1).value:
+            return set()
+        names = set()
+        try:
+            entry = Entry(); entry.dwSize = ctypes.sizeof(Entry)
+            found = kernel.Process32FirstW(snapshot, ctypes.byref(entry))
+            while found:
+                names.add(entry.szExeFile.lower())
+                found = kernel.Process32NextW(snapshot, ctypes.byref(entry))
+        finally:
+            kernel.CloseHandle(snapshot)
+        return names
+    except Exception:
+        return set()
+
+
+def screen_readers(programs):
+    names = {str(p).lower() for p in programs}
+    return [reader for program, reader in SCREEN_READERS if program in names]
+
+
+def screen_reader_notice(readers):
+    if not readers:
+        return ''
+    names = readers[0] if len(readers) == 1 else ', '.join(readers[:-1]) + ' and ' + readers[-1]
+    verb, own = ('is', 'it uses Insert+Space for itself') if len(readers) == 1 else ('are', 'they use Insert+Space for themselves')
+    return (names + ' ' + verb + ' running, and ' + own + '. '
+            'To switch between browse mode and app mode, press ' + TOGGLE_KEY + '.')
+
+
+def screen_reader_notice_once(now=None):
+    """The notice for the first web page of the session while a screen reader runs.
+
+    Said once per session. Without a screen reader, the programs are looked at
+    again only after NOTICE_RECHECK seconds, so pages open quickly."""
+    if NOTICE_STATE['given']:
+        return ''
+    now = time.monotonic() if now is None else now
+    if now - NOTICE_STATE['checked_at'] < NOTICE_RECHECK:
+        return ''
+    NOTICE_STATE['checked_at'] = now
+    readers = screen_readers(running_programs())
+    if not readers:
+        return ''
+    NOTICE_STATE['given'] = True
+    return screen_reader_notice(readers)
 
 
 def page_key(keysym, char, state):
@@ -93,7 +177,7 @@ def window_request(keysym, char, state, context):
         return None
     if not context.get('web_app_mode'):
         return None
-    if keysym in MODIFIER_KEYS:
+    if keysym in MODIFIER_KEYS or toggle_chord(keysym, state):
         return None
     name = ('Alt+' if alt and not control else 'Control+' if control and not alt else '') + keysym
     if name in COMPANION_KEYS:

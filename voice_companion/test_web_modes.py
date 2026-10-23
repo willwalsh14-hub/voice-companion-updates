@@ -42,6 +42,14 @@ class ModeKeyTests(unittest.TestCase):
         self.assertFalse(toggle_chord('space', 4 | 1 | ALT))
         self.assertFalse(toggle_chord('k', 4 | ALT))
 
+    def test_control_shift_space_switches_modes_too(self):
+        # JAWS, NVDA and Narrator all keep Insert+Space for themselves.
+        self.assertTrue(toggle_chord('space', 4 | 1))
+        self.assertFalse(toggle_chord('space', 1))
+        self.assertTrue(toggle_chord('space', 4 | ALT))  # Control+Alt+Space still works.
+        # In app mode it is Companion's key, not the page's.
+        self.assertIsNone(window_request('space', ' ', 4 | 1, {'web_app_mode': True}))
+
     def test_keys_are_named_the_way_the_browser_expects(self):
         for keysym, char, state, expected in [('k', 'k', 0, 'k'), ('K', 'K', 1, 'K'), ('j', 'j', 0, 'j'),
                                               ('Left', '', 0, 'ArrowLeft'), ('Left', '', 1, 'Shift+ArrowLeft'),
@@ -182,6 +190,51 @@ class AppModeWindowTests(unittest.TestCase):
         self.run_keys('Web:Pass:Enter')
         self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
         self.window.wait_for_context.assert_called_once()
+
+
+class ScreenReaderNoticeTests(unittest.TestCase):
+    """With a screen reader running, the first web page says once which key switches modes."""
+    def setUp(self):
+        import web_modes
+        self.web_modes = web_modes
+        patcher = patch.object(web_modes, 'NOTICE_STATE', {'given': False, 'checked_at': -1e9, 'readers': ()})
+        patcher.start();self.addCleanup(patcher.stop)
+        self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+
+    def test_screen_readers_are_found_by_their_programs(self):
+        found = self.web_modes.screen_readers
+        self.assertEqual(found({'explorer.exe', 'jfw.exe'}), ['JAWS'])
+        self.assertEqual(found({'NVDA.exe', 'nvda_slave.exe'}), ['NVDA'])
+        self.assertEqual(found({'Narrator.exe'}), ['Narrator'])
+        self.assertEqual(found({'jfw.exe', 'narrator.exe'}), ['JAWS', 'Narrator'])
+        self.assertEqual(found({'chrome.exe'}), [])
+
+    def test_the_notice_names_the_screen_reader_and_the_key(self):
+        notice = self.web_modes.screen_reader_notice
+        self.assertEqual(notice(['JAWS']), 'JAWS is running, and it uses Insert+Space for itself. '
+                         'To switch between browse mode and app mode, press Control+Shift+Space.')
+        self.assertTrue(notice(['NVDA', 'Narrator']).startswith('NVDA and Narrator are running, and they use Insert+Space for themselves.'))
+        self.assertEqual(notice([]), '')
+
+    def test_said_once_with_the_first_page_while_one_runs(self):
+        with patch.object(self.web_modes, 'running_programs', return_value={'jfw.exe'}) as programs:
+            session = WebSession(self.temp.name, FakeBackend())
+            first = session._refresh(read=False)
+            self.assertTrue(first.startswith('JAWS is running'), first)
+            self.assertIn('Page loaded', first)
+            self.assertNotIn('JAWS', session._refresh(read=False))
+            self.assertNotIn('JAWS', WebSession(self.temp.name, FakeBackend())._refresh(read=False))
+        self.assertEqual(programs.call_count, 1)
+
+    def test_nothing_is_said_without_a_screen_reader_and_the_check_is_not_repeated_at_once(self):
+        with patch.object(self.web_modes, 'running_programs', return_value={'explorer.exe'}) as programs:
+            session = WebSession(self.temp.name, FakeBackend())
+            self.assertTrue(session._refresh(read=False).startswith('Page loaded'))
+            session._refresh(read=False)
+        self.assertEqual(programs.call_count, 1)
+
+    def test_program_list_never_fails(self):
+        self.assertIsInstance(self.web_modes.running_programs(), set)
 
 
 class ComboBackend(FakeBackend):

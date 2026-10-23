@@ -827,7 +827,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Web browser menu | "Leave website" | Escape | Both |
 | Web help | "Help with web" | F1 | Added: F1 |
 | Close the browser window, even when kept open | "Close browser window" | Ctrl+Shift+W | Added: Ctrl+Shift+W |
-| Send keys to the website (app mode) or back to browse mode | "App mode", "Browse mode", "Focus mode" | Insert+Space, Ctrl+Alt+Space | Both |
+| Send keys to the website (app mode) or back to browse mode | "App mode", "Browse mode", "Focus mode" | Insert+Space, Ctrl+Shift+Space, Ctrl+Alt+Space | Both |
 
 ## Web: forms
 

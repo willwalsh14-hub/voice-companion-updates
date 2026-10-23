@@ -263,6 +263,10 @@ class CompanionWindow:
                                 ctypes.windll.user32.keybd_event(0x14,0,2,0)
                         caps_modifier['used']=False
             root.bind_all('<KeyRelease>',release_document_modifier,add='+')
+            # A key let go in another window never reaches this one. A held
+            # Insert must not stay remembered and turn the next Space into a
+            # mode switch.
+            root.bind('<FocusOut>',lambda event:document_modifiers.discard('Insert') if event.widget==root else None,add='+')
             previous = ['', 0]
             field_selection = FieldSelection()
             # Alt pressed and let go with no other key opens the screen's Alt menu
@@ -348,7 +352,7 @@ class CompanionWindow:
                         self.commands.put(('keyboard',file_key));return 'break'
                 if mode=='web' and not self.command_entry_active and not self.context.get('web_private'):
                     from web_modes import toggle_chord
-                    # Insert+Space, or Control+Alt+Space when a screen reader owns Insert.
+                    # Insert+Space; Control+Shift+Space or Control+Alt+Space when a screen reader owns Insert.
                     if key=='Insert':document_modifiers.add(key);return 'break'
                     if toggle_chord(key,event.state,'Insert' in document_modifiers):
                         if self.keyboard_output:self.keyboard_output.interrupt()
