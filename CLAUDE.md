@@ -59,6 +59,53 @@ asked.
    that cannot run here. If one fails and its log cannot be read from this
    session, ask Will to paste the end of the failed step's log.
 
+## How releases are run (agreed with Will, October 22, 2026)
+
+Claude is Will's lead developer. Will wants finished, working releases without
+back-and-forth, and failures fixed so they do not come back.
+
+- **Approval.** Will may approve publishing in advance ("publish without me,
+  fix failures if they arise"). With that approval, merge as soon as all three
+  checks are green, fix any failure yourself, and message Will only when it is
+  live or when something truly needs him. Without it, ask before merging.
+- **Every failure must name itself.** `build-windows.ps1` writes the reason a
+  build stopped, and the failed test names with their output, into GitHub
+  annotations (`Write-BuildAnnotation`, `Invoke-UnitTests`). Read them with
+  `gh api repos/willwalsh14-hub/voice-companion-updates/check-runs/<id>/annotations`.
+  Never rerun or guess blind: if a step fails without a readable reason, first
+  make that step report its reason. One failed run should be enough to find
+  the cause.
+- **New Windows-only tests are tried before they join a release.** Anything that
+  cannot run on Linux (real Tk window keys, WebView2, Chrome or Windows UI
+  Automation, PowerShell, NVDA/JAWS) goes first on a separate `claude/try-...`
+  branch with a draft pull request, and joins a release only after it passes on
+  Windows. Do not hold a release for an untested test.
+- **Small releases.** A fix Will is waiting for (e.g. Gmail broken) ships alone.
+  Bundle big features only when nothing urgent is waiting.
+- **A test that passes on rerun is still a bug.** Find why (timing, focus,
+  threads, leftover state) and fix the cause, then note it in
+  LAUNCH-CHECKLIST.md.
+- **Check in on long work.** Helpers can stop when a session is interrupted.
+  Set a check-in (send_later) for long tasks and verify commits are still
+  arriving.
+
+## Windows test lessons
+
+- **Tk:** create every `StringVar`/`BooleanVar`/`IntVar` with its window
+  (`tk.StringVar(root, ...)`). Without it the variable joins the first Tk
+  window ever made; if that window lives on another thread, the new window
+  freezes. A check in `test_screen_menus.py` enforces this.
+- **Tk threads:** Tk objects must be freed on the thread that made them, or
+  Python stops with "Tcl_AsyncDelete: async handler deleted by the wrong
+  thread". Do not keep widgets in test locals or tracebacks.
+- **Synthetic key presses** in Tk go to the window with keyboard focus. Call
+  `focus_force()` first; a child process may not be allowed to take focus.
+- **The window's update loop** (`poll` in `app_window.py`) must never stop: it
+  records errors in `ui_errors` and always reschedules.
+- **Tests that patch `sys.modules`** (e.g. `patch.dict(sys.modules, ...)`)
+  clear and refill it, which can disturb other threads. Patch `builtins.__import__`
+  or the specific attribute instead.
+
 ## Code rules learned from earlier bugs
 
 - **Speech is messy input.** Recognizers add periods, commas and capitals
