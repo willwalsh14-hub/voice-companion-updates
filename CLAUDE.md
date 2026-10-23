@@ -6,6 +6,24 @@ people using it cannot see the screen, so a wrong word, a lost sentence or a
 silent failure is a real problem for them. Work to that standard without being
 asked.
 
+## About Will (read before writing anything for him)
+
+- Will is fully blind and an adaptive technology specialist. Accessibility,
+  user interface and user experience matter most to him.
+- He is picky and demanding about app design. Bugs must be squashed,
+  proactively: look for holes and sloppy code without being asked, and fix
+  them before testers find them. This app must be bug free before large groups
+  of people use it.
+- **How to present information to Will** (messages, pull requests, reports,
+  guides, release notes, anything in this repository):
+  - Organize by headings.
+  - Label every link clearly; never "click here" or a bare address.
+  - Use plain bulleted lists for notes, keyboard shortcuts and options.
+  - Use numbered lists only for step-by-step instructions.
+  - **Never use tables**, not even for comparisons. Use a heading or bullet
+    for each item instead.
+  - Short sentences in plain words.
+
 ## How work reaches users (read this first)
 
 - **A merge to `main` that changes anything under `voice_companion/` builds and
