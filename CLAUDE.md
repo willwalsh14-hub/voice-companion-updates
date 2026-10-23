@@ -116,6 +116,11 @@ back-and-forth, and failures fixed so they do not come back.
 - **Tk threads:** Tk objects must be freed on the thread that made them, or
   Python stops with "Tcl_AsyncDelete: async handler deleted by the wrong
   thread". Do not keep widgets in test locals or tracebacks.
+- **Never read another thread's frames eagerly.** `sys._current_frames()` in an
+  assertion message is evaluated on every call, even when the test passes; if
+  the window thread ends meanwhile, its Tk objects are freed on the test thread
+  and Python stops with "Tcl_AsyncDelete". Collect diagnostics only after a
+  failure (`if not ok: self.fail(window.debug_state())`) and release frames at once.
 - **Synthetic key presses** in Tk go to the window with keyboard focus. Call
   `focus_force()` first; a child process may not be allowed to take focus.
 - **The window's update loop** (`poll` in `app_window.py`) must never stop: it
