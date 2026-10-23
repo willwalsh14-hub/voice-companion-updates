@@ -46,6 +46,12 @@
             "If sending fails, you hear why, for example that the mail server did not answer.",
             "A message that fails is saved in Drafts, and no Thunderbird window is left open."
           ]
+        },
+        {
+          "title": "Safer PDF reading",
+          "details": [
+            "The part of Voice Companion that reads PDF files has the newest security fixes."
+          ]
         }
       ]
     }
