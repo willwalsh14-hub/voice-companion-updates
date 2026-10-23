@@ -274,6 +274,7 @@ class CompanionWindow:
             document_modifiers=set()
             caps_modifier={'before':False,'used':False,'synthetic':0}
             def release_document_modifier(event):
+                self.key_trace.append(f'release reached window: {event.keysym} state={event.state:#x}')
                 document_modifiers.discard(event.keysym)
                 if event.keysym=='Caps_Lock':
                     if caps_modifier['synthetic']:caps_modifier['synthetic']-=1;return
