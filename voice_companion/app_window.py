@@ -493,7 +493,9 @@ class CompanionWindow:
                     request='Letter:'+event.char.lower()
                 if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
                 if request:
-                    if request in ('Web:Activate','Web:Space','Web:Done'):
+                    # A held key repeats. Activating, or going back or forward,
+                    # happens once per press.
+                    if request in ('Web:Activate','Web:Space','Web:Done','Web:Back','Web:Forward'):
                         if key in activation_keys:return 'break'
                         activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()

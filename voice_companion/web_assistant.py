@@ -261,7 +261,141 @@ class BrowserBackend:
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
     def back(self):
-        self.page.go_back(wait_until='commit' if getattr(self,'regular',False) else 'domcontentloaded', timeout=30000)
+        if not self.history_step(-1):raise WebError('There is no previous page.')
+
+    def _history_identity(self):
+        """The document showing now: its address and when it was created."""
+        try:
+            value=self.page.evaluate('()=>[location.href,String(performance.timeOrigin)]')
+            return (value[0],value[1])
+        except Exception:return None
+
+    HISTORY_WAIT=30
+
+    def history_step(self,delta):
+        """Go back (delta -1) or forward (delta 1) one page, as Alt+Left and Alt+Right do.
+
+        Returns True when another page shows, False when there is none that way.
+        Three things made this unreliable:
+        - The driver waits for the new page's load events. A page the browser
+          kept in its back/forward cache (embedded Edge and everyday browsers
+          keep one) shows again without them, so Back waited 30 seconds and
+          then reported a failure, although the browser had gone back.
+        - An ad frame that moves to another address adds a history entry for
+          that frame only. Back then changed the ad, not the page, and an ad
+          that keeps moving could stop Back from ever leaving the page.
+        - The first page opened sits on top of the browser's blank start page,
+          which Back would open."""
+        from playwright.sync_api import TimeoutError as BrowserTimeout
+        page=self.page
+        start=self._history_identity() or (page.url,None)
+        moves=[]
+        def request(item):
+            try:
+                if item.is_navigation_request():moves.append('main' if item.frame==page.main_frame else 'frame')
+            except Exception:pass
+        def navigated(frame):
+            try:
+                if frame!=page.main_frame:moves.append('frame')
+            except Exception:pass
+        page.on('request',request);page.on('framenavigated',navigated)
+        try:
+            # First choice: go straight to the page's own previous entry.
+            plan=self._history_jump(delta)
+            if plan=='none':return False
+            if plan=='started':return self._history_arrival(start,delta,moves,True,direct=True)=='page'
+            # Otherwise step through the browser's history one entry at a time.
+            for hop in range(6):
+                moves.clear()
+                try:
+                    (page.go_back if delta<0 else page.go_forward)(wait_until='commit',timeout=800)
+                    answered=True
+                except BrowserTimeout:answered=False
+                except Exception as exc:
+                    if not navigation_interrupted(exc):raise
+                    answered=False
+                outcome=self._history_arrival(start,delta,moves,answered)
+                if outcome!='frame':return outcome=='page'
+            return False
+        finally:
+            for name,handler in (('request',request),('framenavigated',navigated)):
+                try:page.remove_listener(name,handler)
+                except Exception:pass
+
+    CDP_HISTORY=True
+
+    def _history_jump(self,delta):
+        """Start going to the previous (or next) page itself, skipping entries made
+        only by frames. Returns 'started', 'none' when there is no such page, or
+        None when this browser cannot say (then history is stepped through)."""
+        try:listing=self._navigation_history()
+        except Exception:listing=None
+        if listing:
+            history,go,close=listing
+            try:
+                entries,index=history['entries'],history['currentIndex']
+                # Every entry carries the address of the page it belongs to;
+                # entries made by a frame repeat the page's own address.
+                here=entries[index]['url'];position=index+delta
+                while 0<=position<len(entries) and entries[position]['url']==here:position+=delta
+                if not 0<=position<len(entries) or not str(entries[position]['url']).startswith(('http://','https://')):return 'none'
+                go(entries[position]['id']);return 'started'
+            except Exception:pass
+            finally:close()
+        # The page's own navigation list holds only its own entries, never a
+        # frame's. It covers pages on the same site.
+        try:return self.page.evaluate(NAVIGATION_JUMP,delta) or None
+        except Exception:return None
+
+    def _navigation_history(self):
+        """The browser's history entries for this tab, and a way to go to one."""
+        if not self.CDP_HISTORY or self.context is None or not hasattr(self.context,'new_cdp_session'):return None
+        session=self.context.new_cdp_session(self.page)
+        def close():
+            try:session.detach()
+            except Exception:pass
+        try:history=session.send('Page.getNavigationHistory')
+        except Exception:
+            close();raise
+        return history,lambda entry:session.send('Page.navigateToHistoryEntry',{'entryId':entry}),close
+
+    def _history_arrival(self,start,delta,moves,answered,direct=False):
+        """Wait for the step to show a page. Returns 'page', 'none' or 'frame'.
+
+        After a direct jump a page is known to be coming, so only the page counts."""
+        import time
+        deadline=time.monotonic()+self.HISTORY_WAIT;checks=0;page=self.page
+        while True:
+            now=self._history_identity()
+            if now is not None and now!=start:
+                if not now[0].startswith(('http://','https://')) and start[0].startswith(('http://','https://')):
+                    # The blank start page: return to the page the user was on.
+                    self._return_to(start,-delta)
+                    return 'none'
+                if now[1]!=start[1] and 'main' not in moves:
+                    # Shown again from the back/forward cache. The driver saw
+                    # no load events and lost the page's frames, so later waits
+                    # would hang and frames could not be read. Loading it again
+                    # gives a complete, current page.
+                    page.reload(wait_until='domcontentloaded',timeout=30000)
+                return 'page'
+            checks+=1
+            if direct:pass
+            elif answered and 'main' not in moves and 'frame' not in moves and checks>=3:return 'none'
+            elif 'frame' in moves and 'main' not in moves and (answered or checks>=6):return 'frame'
+            if time.monotonic()>deadline:
+                raise WebError(('The previous' if delta<0 else 'The next')+' page did not finish opening. Press F5 to refresh the page.')
+            page.wait_for_timeout(50)
+
+    def _return_to(self,place,delta):
+        import time
+        try:(self.page.go_back if delta<0 else self.page.go_forward)(wait_until='commit',timeout=5000)
+        except Exception:pass
+        deadline=time.monotonic()+10
+        while time.monotonic()<deadline:
+            now=self._history_identity()
+            if now is not None and now[0]==place[0]:return
+            self.page.wait_for_timeout(50)
 
     def document_stamp(self):
         stamp=self.page.evaluate(DOCUMENT_STAMP)
@@ -1358,8 +1492,8 @@ class WebSession:
                     text=self.reading.move('line',-1 if key=='ShiftTab' else 1)
                     self.browse.set_position(self.reading.position)
                     return message+' '+text
-            elif key=='Back':return self.command('go back')
-            elif key=='Forward':return self.command('go forward')
+            elif key=='Back':return self.history(-1)
+            elif key=='Forward':return self.history(1)
             elif key=='Done':
                 field=self.keyboard_field
                 if field and editable_combo(field):return self.combo_done()
@@ -1620,7 +1754,12 @@ class WebSession:
                 except Exception as exc:
                     if not navigation_interrupted(exc) or attempt==2:raise
                     if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
-        self.snapshot,captured_state = self._capture()
+        leaving=self.snapshot
+        snapshot,captured_state = self._capture()
+        if leaving and leaving.get('url')!=snapshot.get('url'):
+            # Another page: keep the reading place here for Back and Forward.
+            self._remember_place()
+        self.snapshot=snapshot
         self.pending_scroll=None
         try:self.menu.record(self.snapshot)
         except OSError:pass
@@ -1760,6 +1899,74 @@ class WebSession:
         if isinstance(action,dict) and action.get('validation'):return action['validation']
         self._refresh(read=False,preserve=True,wait=False)
         return 'Ad skipped.' if not skip_ad_button(self.snapshot) else 'The Skip ad button is still showing. Say skip ad again.'
+
+    def history(self,delta):
+        """Back (delta -1) or Forward (delta 1): Alt+Left, Alt+Right, the menus and voice.
+
+        The page that shows is read from the browser again, and the reading
+        place returns to where it was on that page (the link that was followed)."""
+        if not self.snapshot:return 'Open a website first.'
+        if self.keyboard_field and self.keyboard_field.get('type')=='password':self.keyboard_field=None
+        self.list_focus=None;self.pending=None;self.submit_pending=None;self.review_submission=None
+        self.form_index=None;self.keyboard_field=None;self.slider_field=None
+        self.progress('Going back.' if delta<0 else 'Going forward.')
+        self._remember_place()
+        try:
+            step=getattr(self.backend,'history_step',None)
+            if callable(step):moved=step(delta)
+            else:
+                (self.backend.back() if delta<0 else self.backend.forward());moved=True
+        except WebError as exc:return str(exc)
+        except Exception:
+            return ('The previous' if delta<0 else 'The next')+' page did not open. Press F5 to refresh the page.'
+        if not moved:
+            notice='There is no previous page.' if delta<0 else 'There is no next page.'
+            stamp=self._stamp();known=self.document_state or {}
+            if stamp and any(stamp.get(k)!=known.get(k) for k in ('url','epoch')):
+                # The browser showed its blank start page and came back: the
+                # page was loaded again, so read it again at the same place.
+                try:self._refresh(read=False);self._restore_place()
+                except Exception:pass
+            return notice
+        try:result=self._refresh(read=False)
+        except Exception:return 'The page could not be read. Press F5 to refresh the page.'
+        place=self._restore_place()
+        if place:return result+' '+place
+        if self.auto_read and not self.app_mode and result.endswith('.') and 'Site: ' in result and self.reading.text.strip():
+            result+=' '+self.reading.read(True)
+        return result
+
+    def _remember_place(self):
+        """Keep the reading place on this page, to return to it with Back or Forward."""
+        if not self.snapshot or not self.browse:return
+        url=self.snapshot.get('url')
+        item=self.browse.current()
+        if not url or not item or not item.get('start',0)<=self.reading.position<=item.get('end',0):
+            getattr(self,'places',{}).pop(url,None);return
+        same=[e for e in self.browse.elements if e.get('label')==item.get('label') and kind(e)==kind(item) and e.get('frame_url')==item.get('frame_url')]
+        places=self.__dict__.setdefault('places',{})
+        places.pop(url,None)
+        places[url]={'key':item.get('key'),'label':item.get('label'),'kind':kind(item),'frame_url':item.get('frame_url'),
+                     'occurrence':next((i for i,e in enumerate(same) if e is item),0),'offset':self.reading.position-item.get('start',0)}
+        while len(places)>50:places.pop(next(iter(places)))
+
+    def _restore_place(self):
+        """Put the reading place back where it was on this page. Returns what to say, or ''."""
+        place=getattr(self,'places',{}).get((self.snapshot or {}).get('url'))
+        if not place or not self.browse:return ''
+        same=lambda e:e.get('label')==place['label'] and kind(e)==place['kind'] and e.get('frame_url')==place['frame_url']
+        elements=self.browse.elements
+        target=next((e for e in elements if e.get('key')==place['key'] and same(e)),None)
+        if target is None:
+            # The page was loaded again, so its elements have new keys.
+            matches=[e for e in elements if same(e)]
+            target=matches[min(place['occurrence'],len(matches)-1)] if matches else None
+        if target is None:return ''
+        self.browse.index=elements.index(target)
+        self.browse.position=min(target.get('end',0),target.get('start',0)+max(0,place['offset']))
+        self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None
+        self.cursor_changed(True)
+        return describe(target)
 
     def _navigate(self,url):
         try:
@@ -2519,15 +2726,8 @@ class WebSession:
             number = {'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10}.get(match[1],match[1])
             return self.open_link(number)
         if command in ('continue reading','read more'): return self.read()
-        if command in ('back','go back','previous page'):
-            try: self.backend.back(); return self._refresh()
-            except Exception: return 'There is no previous page to read.'
-        if command in ('forward','go forward','next page'):
-            try:
-                previous_url=self.backend.page.url
-                result = self.backend.page.go_forward(wait_until='commit' if getattr(self.backend,'regular',False) else 'domcontentloaded',timeout=30000)
-                return self._refresh() if result is not None or self.backend.page.url!=previous_url else 'There is no next page to read.'
-            except Exception: return 'There is no next page to read.'
+        if command in ('back','go back','previous page','go to previous page','go back a page'):return self.history(-1)
+        if command in ('forward','go forward','next page','go to next page','go forward a page'):return self.history(1)
         if command in ('save favorite','add favorite','favorite this site'):
             if not self.snapshot: return 'Open a website first.'
             name = _plain(self.snapshot['title'])[:60]
@@ -2608,6 +2808,14 @@ def _frame_shown(frame,readable=False):
     finally:
         try:element.dispose()
         except Exception:pass
+
+
+# Embedded Edge has no list of history entries for Companion, but the page's
+# own navigation list (main page entries only, same site) can go straight to
+# the previous page without stopping at entries that only changed a frame.
+NAVIGATION_JUMP='''(delta)=>{const n=window.navigation;if(!n||!n.currentEntry||!(delta<0?n.canGoBack:n.canGoForward))return null;
+const entries=n.entries(),index=n.currentEntry.index+delta;if(index<0||index>=entries.length)return null;
+const result=n.traverseTo(entries[index].key);result.committed.catch(()=>{});result.finished.catch(()=>{});return 'started';}'''
 
 
 SNAPSHOT_AS_TEXT="()=>JSON.stringify((/*SNAPSHOT*/)(),(key,value)=>value===undefined?null:value)"

@@ -23,6 +23,8 @@ class WebViewPipe:
         self.connection=None;self.send_lock=threading.Lock();self.client_lock=threading.Lock()
         self.page_order=[];self.active_session='main-view'
         self.pending={};self.pending_lock=threading.Lock()
+        # Companion's own requests use negative ids; their answers are not sent on to the driver.
+        self.own_serial=-1000;self.own_replies={}
         root=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))
         host=Path(executable) if executable else root/'webview2'/'VoiceCompanion-WebView2.exe'
         if not host.is_file():raise WebError('The embedded Edge host is missing. Reinstall the complete Voice Companion build.')
@@ -89,7 +91,10 @@ class WebViewPipe:
                     # disposal; they must not trip the live-tab watchdog.
                     with self.pending_lock:
                         self.pending={key:value for key,value in self.pending.items() if key[0]!=session}
-                if isinstance(value.get('id'),int) and value['id']<0:continue
+                if isinstance(value.get('id'),int) and value['id']<0:
+                    waiting=self.own_replies.get(value['id'])
+                    if waiting is not None:waiting.append(value);self.own_replies.pop(value['id'],None)
+                    continue
                 if value.get('method')=='Host.ready':self.ready.set();continue
                 if value.get('method')=='Host.error':self.error=value.get('params',{}).get('message','Browser initialization failed.');self.ready.set();continue
                 if self.connection:
@@ -118,6 +123,21 @@ class WebViewPipe:
         finally:self.connection=None;self.client_lock.release()
 
     def focus(self):self._send({'id':-1,'method':'Host.focus'})
+
+    def call(self,method,params=None,session=None,timeout=5):
+        """Ask the embedded browser one protocol question for Companion itself."""
+        with self.pending_lock:
+            self.own_serial-=1;ident=self.own_serial
+        answer=[];self.own_replies[ident]=answer
+        message={'id':ident,'method':method,'params':params or {}}
+        if session:message['sessionId']=session
+        self._send(message)
+        deadline=time.monotonic()+timeout
+        while not answer and time.monotonic()<deadline and not self.closed.is_set():time.sleep(.01)
+        self.own_replies.pop(ident,None)
+        if not answer:raise WebError('Embedded Edge did not answer.')
+        if 'error' in answer[0]:raise WebError(str(answer[0]['error'].get('message','Embedded Edge refused the request.')))
+        return answer[0].get('result',{})
 
     def close(self):
         if getattr(self,'process',None):
@@ -161,6 +181,18 @@ class WebView2Backend(BrowserBackend):
         self.context=self.remote_browser.contexts[0]
         self.page=self.context.pages[0]
         self.page.set_default_timeout(10000)
+
+    # Embedded Edge cannot open a second protocol session for Companion; its
+    # history list is asked for through the host instead (_navigation_history).
+    CDP_HISTORY=False
+
+    def _navigation_history(self):
+        host=self.host
+        if not host or host.closed.is_set() or not self.context:return None
+        pages=self.context.pages;order=list(host.page_order)
+        session=order[pages.index(self.page)] if len(pages)==len(order) and self.page in pages else host.active_session
+        history=host.call('Page.getNavigationHistory',{},session)
+        return history,lambda entry:host.call('Page.navigateToHistoryEntry',{'entryId':entry},session),lambda:None
 
     def refocus(self):
         if not self.host or self.host.closed.is_set():return False
