@@ -151,6 +151,14 @@ class ScreenMenuTests(unittest.TestCase):
         self.assertEqual(self.press('Down', 'awake'), 'awake')
         self.assertIn('Word processor', self.said[-1])
 
+    def test_alt_with_no_menu_always_says_why(self):
+        from screen_menus import alt_unavailable
+        self.assertIn('Y for yes', alt_unavailable(dict(mode='mailbox', confirmation='no')))
+        self.assertIn('Escape', alt_unavailable(dict(mode='list', named_list=True)))
+        self.assertIn('command is typed', alt_unavailable(dict(mode='mailbox'), typed_text='list messages'))
+        self.assertIn('command is typed', alt_unavailable(dict(mode='mailbox'), command_entry_active=True))
+        self.assertEqual(alt_unavailable(dict(mode='document')), 'This screen has no Alt menu.')
+
     def test_word_processor_file_manager_and_player_keep_their_own_alt(self):
         self.assertEqual(app.navigation_key('Alt', 'document'), 'document menu')
         self.assertEqual(app.navigation_key('Alt', 'files'), 'file manager menu')
