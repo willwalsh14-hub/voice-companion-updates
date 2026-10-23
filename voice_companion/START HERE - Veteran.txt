@@ -107,11 +107,12 @@ Contents
   18.1 Open, change, and save a setting
   18.2 Choose how much speech you hear
   18.3 Voice and Synthesizer options
-  18.4 Input and Email options
-  18.5 Word processor and Notepad options
-  18.6 Web browser options
-  18.7 Radio and Podcasts options
-  18.8 Auto-update and Startup and exit options
+  18.4 Audio ducking
+  18.5 Input and Email options
+  18.6 Word processor and Notepad options
+  18.7 Web browser options
+  18.8 Radio and Podcasts options
+  18.9 Auto-update and Startup and exit options
 19 Sleep, Exit, And Computer Power
   19.1 Put the microphone to sleep
   19.2 Close Companion
@@ -1015,13 +1016,41 @@ You can also say "Capital letters play a sound", "Capital letters raise pitch", 
 Delayed letter hints, such as Alpha after A, use your normal voice. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice for quick feedback. Private password text is not read aloud.
 
 18.3 Voice and Synthesizer options
-In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Check Lower media volume while Companion speaks if you want audio to become quieter while the app speaks.
+In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Voice options also hold the audio ducking settings. See 18.4 Audio ducking.
 Listen to the voice sample before saving rate, volume, or pitch. Control silences the sample. Escape cancels the category.
 In Synthesizer options, you can choose SAPI, eSpeak, or an AI voice when available. This category also contains the private AI service key settings.
 The checkbox Allow narration text to be sent to OpenAI controls consent for online speech. A blank key box keeps the saved key.
 Check Remove saved AI key and choose OK to remove the saved key. Ask your helper if you need to set up an AI voice.
 
-18.4 Input and Email options
+18.4 Audio ducking
+Audio ducking makes other sound quieter while Companion speaks. When Companion stops, the sound comes back up slowly. This works like audio ducking on an iPhone with VoiceOver.
+Audio ducking is on when you first get the app. It lowers sound from these places:
+- Web pages in the guided browser, such as videos and music.
+- Chrome, Edge, Brave, and Firefox, even when you opened them yourself.
+- Radio and podcasts in Companion.
+Other programs keep their sound unless you choose Also lower other apps. Screen readers, such as NVDA, JAWS, and Narrator, are never lowered.
+The sound stays low through short pauses between phrases. This stops it from going up and down while you move through a list.
+Ducking level sets how much quieter the sound gets. The choices are:
+- Light: 25 percent quieter.
+- Medium: 50 percent quieter.
+- Strong: 75 percent quieter. This is the default.
+To change these settings with the keyboard:
+1. Press Alt+O to open Options.
+2. Choose Voice options.
+3. Tab to Audio ducking. Press Space to turn it on or off.
+4. Tab to Ducking level. Use the arrows to choose Light, Medium, or Strong.
+5. Tab to Also lower other apps. Press Space to turn it on or off.
+6. Choose OK to save. Cancel keeps your old choices.
+To change these settings by voice, say one of these. They save at once.
+- "Audio ducking off" or "Turn audio ducking off".
+- "Audio ducking on" or "Turn audio ducking on".
+- "Ducking level light", "Ducking level medium", or "Ducking level strong".
+- "Ducking level 50 percent" also works.
+- "Lower other apps on" or "Lower other apps off".
+If you close Companion while the sound is low, the sound comes back. If the computer or app stops all at once, the sound comes back the next time Companion starts.
+If a program is still too quiet, open the Windows volume mixer and raise it there. Companion keeps your new level.
+
+18.5 Input and Email options
 In Input options, you can choose Normal, Commands only, or Dictation only. The choice affects how spoken words are used.
 Dictation type is a separate choice. Old school keeps the speech entry you used before. It is the default.
 Choose AI-based to use the local AI speech model and light cleanup. The model adds stops and capital letters as you speak. Cleanup removes um, uh, and clear repeated starts. For example, "I I, um, want to go" becomes "I want to go".
@@ -1038,13 +1067,13 @@ In Spoken email headers, choose which details to hear: From, Subject, Date, or S
 Press Space to include or remove a header. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
 Choose Add an email account to start the setup steps in chapter 8. Choose Connect Google Contacts to link the Google contacts of a Gmail account.
 
-18.5 Word processor and Notepad options
+18.6 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents.
 These defaults do not change text in an existing document or draft. Font size choices run from 6 to 72 points.
 Font for new documents is a list of common fonts, such as Arial, Calibri, Times New Roman, and Verdana. Use the Up and Down Arrow keys, or type the first letter of a font. You can also say "Font" and its name, such as "Font Arial".
 In Notepad options, choose Open Notepad to return to your note or start a new one.
 
-18.6 Web browser options
+18.7 Web browser options
 The Default search engine setting lets you choose Google, Bing, Brave Search, or DuckDuckGo.
 Keep browser window open controls whether a page stays open when you leave page reading. It is off by default.
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
@@ -1056,7 +1085,7 @@ Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot sta
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.
 
-18.7 Radio and Podcasts options
+18.8 Radio and Podcasts options
 Both categories have Keep audio playing in the background. It is off at first. With it on, audio keeps playing when you return to the main menu.
 In Radio options, you can choose a Station database, List radio presets, or List scheduled recordings.
 Station database chooses which station lists to search. Presets are saved stations. Scheduled recordings are future recordings.
@@ -1064,7 +1093,7 @@ In Podcasts options, choose a Podcast subscription, then set Automatic downloads
 Choose manual, all, or a whole-number limit. List subscriptions opens the saved-show list.
 The limit applies only to the chosen show.
 
-18.8 Auto-update and Startup and exit options
+18.9 Auto-update and Startup and exit options
 In Auto-update options, you can turn Check automatically at startup on or off. Choose Check for updates now to check at any time.
 In Startup and exit options, Start with Windows is off by default. Turn it on to open the installed app when you sign in to Windows.
 The app starts in sleep mode and waits for "Wake up" or keyboard input. Uninstalling Companion removes that startup choice.

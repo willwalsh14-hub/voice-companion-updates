@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 573 |
-| Already had both ways | 458 |
+| Actions inventoried | 575 |
+| Already had both ways | 460 |
 | Gaps found | 115 |
 | Gaps fixed (Added) | 107 |
 | Not applicable (N/A, with reason) | 8 |
@@ -255,7 +255,9 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Voice pitch | "Set Voice pitch to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
 | Speech rate | "Set Speech rate to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
 | Speech volume | "Set Speech volume to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Lower media volume while Companion speaks | "Set Lower media volume while Companion speaks to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+| Audio ducking | "Set Audio ducking to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+| Ducking level | "Set Ducking level to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+| Also lower other apps while Companion speaks | "Set Also lower other apps while Companion speaks to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
 
 ## Synthesizer options
 

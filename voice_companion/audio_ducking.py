@@ -101,7 +101,9 @@ class AudioDucker:
         self.own_pid = os.getpid() if own_pid is None else own_pid
         self.clock = clock
         self.log = log or (lambda text: print(text, file=sys.stderr))
-        self.lock = threading.RLock()
+        self.lock = threading.RLock()       # short: speech requests and the fade level
+        self.work = threading.RLock()       # held while talking to Windows; speech never waits on it
+        self.options_changed = False
         self.wake = threading.Event()
         self.thread = None
         self.closed = False
@@ -130,7 +132,7 @@ class AudioDucker:
             if factor is not None and abs(float(factor) - self.factor) > 1e-6:
                 self.factor = max(0.0, min(1.0, float(factor)));changed = True
             if other_apps is not None and bool(other_apps) != self.other_apps:
-                self.other_apps = bool(other_apps);self.decisions.clear();changed = True
+                self.other_apps = bool(other_apps);self.options_changed = True;changed = True
             if active:
                 self.last_active = now
                 if not self.active:changed = True
@@ -153,27 +155,31 @@ class AudioDucker:
 
     # ----- one pass; the worker thread calls this, tests call it directly -----
     def step(self):
-        with self.lock:
-            now = self.clock()
-            elapsed = 0.0 if self.last_step is None else max(0.0, now - self.last_step)
-            self.last_step = now
-            target = self.target(now)
-            # Move a small step at a time, even after a long wait, so changes are smooth.
-            moved = min(max(elapsed, FADE_STEP_SECONDS), 2 * FADE_STEP_SECONDS)
-            span = max(0.05, 1.0 - self.factor)
-            if self.gain > target:
-                self.gain = max(target, self.gain - moved * span / ATTACK_SECONDS)
-            elif self.gain < target:
-                self.gain = min(target, self.gain + moved * span / RELEASE_SECONDS)
-            if self.gain >= 0.999:
-                self.gain = 1.0
-            if self.gain == 1.0 and not self.records and not self.recovering:
+        with self.work:
+            with self.lock:
+                now = self.clock()
+                elapsed = 0.0 if self.last_step is None else max(0.0, now - self.last_step)
+                self.last_step = now
+                target = self.target(now)
+                # Move a small step at a time, even after a long wait, so changes are smooth.
+                moved = min(max(elapsed, FADE_STEP_SECONDS), 2 * FADE_STEP_SECONDS)
+                span = max(0.05, 1.0 - self.factor)
+                if self.gain > target:
+                    self.gain = max(target, self.gain - moved * span / ATTACK_SECONDS)
+                elif self.gain < target:
+                    self.gain = min(target, self.gain + moved * span / RELEASE_SECONDS)
+                if self.gain >= 0.999:
+                    self.gain = 1.0
+                gain = self.gain
+                if self.options_changed:
+                    self.options_changed = False;self.decisions.clear()
+            if gain == 1.0 and not self.records and not self.recovering:
                 self._save_state()
                 return False
-            self._apply(self.gain)
+            self._apply(gain)
             self.recovering = False
             self._save_state()
-            return self.gain < 1.0 or bool(self.records)
+            return gain < 1.0 or bool(self.records)
 
     def _backend(self):
         if self.backend is None:
@@ -302,6 +308,7 @@ class AudioDucker:
         """Put every lowered session back right away (exit, crash handler, ducking turned off)."""
         with self.lock:
             self.active = False;self.last_active = None;self.gain = 1.0
+        with self.work:
             if self.records or self.recovering:
                 self.recovering = False
                 self._apply(1.0)
@@ -398,13 +405,17 @@ class AudioDucker:
             if not thread.is_alive():
                 return
         # No worker (or it is stuck): restore from this thread with a fresh connection.
+        if not self.work.acquire(timeout=timeout):
+            self.log('Audio ducking could not restore volume: Windows audio did not answer.')
+            return  # The saved originals are put back at the next start.
         try:
-            with self.lock:
-                self.backend = None
+            self.backend = None
             initialize_com()
             self.restore_all()
         except Exception as exc:
             self.log('Audio ducking could not restore volume: ' + str(exc))
+        finally:
+            self.work.release()
 
 
 def initialize_com():
@@ -452,6 +463,8 @@ class WindowsAudioSessions:
         self.kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
         self.kernel.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
         self.kernel.CreateToolhelp32Snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
+        self.kernel.Process32FirstW.argtypes = (wintypes.HANDLE, ctypes.c_void_p)
+        self.kernel.Process32NextW.argtypes = (wintypes.HANDLE, ctypes.c_void_p)
         self.kernel.GetProcessTimes.argtypes = (wintypes.HANDLE,) + (ctypes.POINTER(wintypes.FILETIME),) * 4
         self.ole = ctypes.OleDLL('ole32')
         self.ole.CoTaskMemFree.restype = None

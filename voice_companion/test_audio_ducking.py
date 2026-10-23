@@ -9,6 +9,7 @@ import json
 import struct
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -243,6 +244,26 @@ class DuckerTests(unittest.TestCase):
         self.assertEqual(chrome.get_volume(), float32(0.8))
         self.assertFalse(self.state.exists())
         ducker.close()  # A second close (atexit after a normal close) is harmless.
+
+    def test_speech_never_waits_for_a_stuck_windows_audio_call(self):
+        chrome = self.windows.add('chrome', 5100)
+        entered, release = threading.Event(), threading.Event()
+        original = chrome.get_volume
+        def stuck():
+            entered.set();release.wait(5);return original()
+        chrome.get_volume = stuck
+        ducker = AudioDucker(lambda: self.windows, self.state, own_pid=OWN, log=self.logged.append).start()
+        try:
+            ducker.request(True, 0.25, False)
+            self.assertTrue(entered.wait(2))
+            done = threading.Event()
+            threading.Thread(target=lambda: (ducker.request(False, 0.5, True), done.set()), daemon=True).start()
+            self.assertTrue(done.wait(0.5), 'A speech request waited on Windows audio.')
+            started = time.monotonic()
+            ducker.close(timeout=0.3)
+            self.assertLess(time.monotonic() - started, 2, 'Closing must not hang.')
+        finally:
+            release.set()
 
     def test_windows_audio_unavailable_is_reported_once_and_never_raises(self):
         def broken():

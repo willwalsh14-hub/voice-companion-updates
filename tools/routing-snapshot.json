@@ -17,6 +17,24 @@
 ],
 "screen_after": "awake"
 },
+"awake | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "awake"
+},
+"awake | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "awake"
+},
+"awake | Ducking under the fence was hard.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | Find a way to call Bob.": {
 "calls": [
 "call.search('Find a way to call Bob.', provider=None)",
@@ -39,6 +57,12 @@
 "User guide. I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"awake | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "awake"
 },
 "awake | No, thanks.": {
 "said": [
@@ -91,6 +115,12 @@
 "awake | The trial period is over": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "awake"
 },
@@ -4137,6 +4167,33 @@
 "Hello world. Second sentence. Capital letters are important."
 ]
 },
+"document | Ducking level, loud.": {
+"said": [
+"Ducking level, loud."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Ducking level, loud."
+]
+},
+"document | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | Ducking under the fence was hard.": {
+"said": [
+"Ducking under the fence was hard."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Ducking under the fence was hard."
+]
+},
 "document | Find a way to call Bob.": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
@@ -4162,6 +4219,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Help with the dishes tonight"
+]
+},
+"document | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | No, thanks.": {
@@ -4243,6 +4309,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. The trial period is over"
+]
+},
+"document | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Update contact details as soon as you can.": {
@@ -10164,6 +10239,33 @@
 "Hello world. Capital letters are important."
 ]
 },
+"email_draft | Ducking level, loud.": {
+"said": [
+"Ducking level, loud."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Ducking level, loud."
+]
+},
+"email_draft | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | Ducking under the fence was hard.": {
+"said": [
+"Ducking under the fence was hard."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Ducking under the fence was hard."
+]
+},
 "email_draft | Find a way to call Bob.": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
@@ -10189,6 +10291,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Help with the dishes tonight"
+]
+},
+"email_draft | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | No, thanks.": {
@@ -10270,6 +10381,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. The trial period is over"
+]
+},
+"email_draft | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Update contact details as soon as you can.": {
@@ -16331,6 +16451,22 @@
 ],
 "screen_after": "help"
 },
+"help | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "help"
+},
+"help | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "help"
+},
+"help | Ducking under the fence was hard.": {
+"said": [],
+"screen_after": "help"
+},
 "help | Find a way to call Bob.": {
 "said": [],
 "screen_after": "help"
@@ -16342,6 +16478,12 @@
 "help | Help with the dishes tonight": {
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
+],
+"screen_after": "help"
+},
+"help | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
 ],
 "screen_after": "help"
 },
@@ -16385,6 +16527,12 @@
 },
 "help | The trial period is over": {
 "said": [],
+"screen_after": "help"
+},
+"help | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
+],
 "screen_after": "help"
 },
 "help | Update contact details as soon as you can.": {
@@ -19227,6 +19375,27 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Ducking under the fence was hard.": {
+"calls": [
+"call.process('Ducking under the fence was hard.')"
+],
+"said": [
+"session handled: Ducking under the fence was hard."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Find a way to call Bob.": {
 "calls": [
 "call.process('Find a way to call Bob.')"
@@ -19250,6 +19419,12 @@
 "User guide. I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"mailbox | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "mailbox"
 },
 "mailbox | No, thanks.": {
 "calls": [
@@ -19317,6 +19492,12 @@
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "mailbox"
 },
@@ -24604,6 +24785,24 @@
 ],
 "screen_after": "note"
 },
+"note | Ducking level, loud.": {
+"said": [
+"Ducking level, loud."
+],
+"screen_after": "note"
+},
+"note | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "note"
+},
+"note | Ducking under the fence was hard.": {
+"said": [
+"Ducking under the fence was hard."
+],
+"screen_after": "note"
+},
 "note | Find a way to call Bob.": {
 "said": [
 "Find a way to call Bob."
@@ -24619,6 +24818,12 @@
 "note | Help with the dishes tonight": {
 "said": [
 "Help with the dishes tonight"
+],
+"screen_after": "note"
+},
+"note | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
 ],
 "screen_after": "note"
 },
@@ -24673,6 +24878,12 @@
 "note | The trial period is over": {
 "said": [
 "The trial period is over"
+],
+"screen_after": "note"
+},
+"note | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "note"
 },
@@ -28639,6 +28850,28 @@
 ],
 "screen_after": "web"
 },
+"web | Ducking level, loud.": {
+"said": [
+"Choose a ducking level: light, medium, or strong. Light is 25 percent quieter, medium is 50 percent, and strong is 75 percent."
+],
+"screen_after": "web"
+},
+"web | Ducking level, strong.": {
+"said": [
+"Ducking level strong, 75 percent quieter."
+],
+"screen_after": "web"
+},
+"web | Ducking under the fence was hard.": {
+"calls": [
+"call.command('Ducking under the fence was hard.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Ducking under the fence was hard."
+],
+"screen_after": "web"
+},
 "web | Find a way to call Bob.": {
 "calls": [
 "call.command('Find a way to call Bob.')",
@@ -28664,6 +28897,12 @@
 "User guide. I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"web | Lower other apps on.": {
+"said": [
+"Lower other apps on. Other programs also get quieter while Companion speaks. Screen readers are never lowered."
+],
+"screen_after": "web"
 },
 "web | No, thanks.": {
 "calls": [
@@ -28736,6 +28975,12 @@
 ],
 "said": [
 "session handled: The trial period is over"
+],
+"screen_after": "web"
+},
+"web | Turn audio ducking off.": {
+"said": [
+"Audio ducking off. Browser and media sound stays at full volume."
 ],
 "screen_after": "web"
 },
