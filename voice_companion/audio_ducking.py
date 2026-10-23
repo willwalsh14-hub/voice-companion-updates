@@ -69,7 +69,7 @@ def spoken_level(value):
         if text == re.sub(r'[^0-9a-z ]+', '', name).replace('  ', ' '):
             return name
     first = text.split(' ')[0]
-    names = {'light': 0, 'low': 0, 'little': 0, 'a': None, '25': 0, 'medium': 1, 'middle': 1, 'half': 1, '50': 1,
+    names = {'light': 0, 'low': 0, 'little': 0, '25': 0, 'medium': 1, 'middle': 1, 'half': 1, '50': 1,
              'strong': 2, 'high': 2, 'heavy': 2, '75': 2}
     if text in ('a little', 'a little quieter', 'a lot', 'a lot quieter'):
         return LEVEL_CHOICES[0 if 'little' in text else 2]
@@ -115,7 +115,6 @@ class AudioDucker:
         self.gain = 1.0
         self.last_active = None
         self.last_step = None
-        self.last_scan = None
         self.records = {}          # session key -> _Record
         self.decisions = {}        # session key -> whether it is lowered
         self.pending = {}          # exe name -> original volume, for sessions that ended while lowered
@@ -125,7 +124,7 @@ class AudioDucker:
 
     # ----- requests from Companion -----
     def request(self, active, factor=None, other_apps=None):
-        """Called whenever speech starts or the speech state is polled. Cheap; never blocks."""
+        """Called whenever speech starts or the speech state is polled. Cheap; never waits on Windows."""
         with self.lock:
             now = self.clock()
             changed = False
@@ -139,8 +138,9 @@ class AudioDucker:
             elif self.active:
                 changed = True
             self.active = bool(active)
-            busy = changed or self._busy(now)
-        if busy:
+        # Only a change wakes the worker; while lowered it checks on its own timer,
+        # so the speech poll loop never causes extra Windows audio calls.
+        if changed:
             self.wake.set()
 
     def target(self, now):

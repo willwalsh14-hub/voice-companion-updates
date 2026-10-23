@@ -265,6 +265,20 @@ class DuckerTests(unittest.TestCase):
         finally:
             release.set()
 
+    def test_frequent_speech_checks_do_not_flood_windows_audio(self):
+        self.windows.add('chrome', 5100)
+        calls = []
+        original = self.windows.sessions
+        self.windows.sessions = lambda: (calls.append(1), original())[1]
+        ducker = AudioDucker(lambda: self.windows, self.state, own_pid=OWN, log=self.logged.append).start()
+        self.addCleanup(ducker.close)
+        ducker.request(True, 0.25, False)
+        time.sleep(0.3)
+        before = len(calls)
+        for _ in range(100):  # The app's poll loop asks again and again while speaking.
+            ducker.request(True, 0.25, False);time.sleep(0.005)
+        self.assertLessEqual(len(calls) - before, 6, 'Each speech check must not list audio sessions again.')
+
     def test_windows_audio_unavailable_is_reported_once_and_never_raises(self):
         def broken():
             raise OSError('No audio device.')
