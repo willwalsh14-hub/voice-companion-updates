@@ -752,6 +752,7 @@ class CompanionWindow:
                     local['reading_after']=root.after_idle(latest_read)
                 else:root.after_idle(after)
             editor.bind('<KeyPress>',edit_key)
+            editor.bind('<KeyRelease>',lambda event:self.key_trace.append(f'release reached editor: {event.keysym} state={event.state:#x}'),add='+')  # TRIAL ONLY
             editor.bind('<<Paste>>',lambda event:'break' if self.context.get('readonly') else None)
             editor.bind('<<Cut>>',lambda event:'break' if self.context.get('readonly') else None)
             editor.bind('<FocusOut>',lambda event:cancel_phonetic())
