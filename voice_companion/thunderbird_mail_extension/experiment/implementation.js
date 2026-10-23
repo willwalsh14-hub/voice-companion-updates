@@ -27,7 +27,7 @@ var { ExtensionCommon } = ChromeUtils.importESModule('resource://gre/modules/Ext
 
 // Thunderbird has renamed this function over the years; the first one present is used.
 const OPENERS = ['openAccountSetup', 'openAccountSetupTab', 'AddMailAccount'];
-const FILL_TRIES = 30, FILL_WAIT_MS = 200;
+const FILL_TRIES = 75, FILL_WAIT_MS = 200;   // Account Hub can take several seconds to load the first time
 const BUTTON_IDS = ['forward', 'continueButton', 'createButton', 'reTestButton'];
 const LOOPBACK = /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?(?:\/|$)/i;
 const MAX_CAPTURE_MS = 30 * 60 * 1000;
@@ -112,11 +112,27 @@ function mainButton(win) {
   return null;
 }
 
+// What Voice Companion asked to fill in; tried again whenever the page is read, until it is in.
+let pending = null;
+
+function fillPending(win) {
+  if (!pending || !win) return false;
+  try {
+    const result = fill(win, pending.email, pending.name);
+    if (result !== null) pending = null;
+    return result === true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function page(win) {
   const roots = win ? setupRoots(win) : [];
-  if (!roots.length) return {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false};
+  if (!roots.length) return {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: []};
+  fillPending(win);
   const elements = descendants(roots[0], [], 0).filter(visible);
-  const title = (elements.find(e => /^h[1-3]$/.test(e.localName || '')) || {textContent: ''});
+  // The last visible heading is the current step's; the first is Thunderbird's own banner.
+  const title = elements.filter(e => /^h[1-3]$/.test(e.localName || '')).pop() || {textContent: ''};
   const notes = [];
   for (const element of elements) {
     const kind = (element.getAttribute('role') || '') + ' ' + String(element.className || '') + ' ' + element.id;
@@ -127,8 +143,11 @@ function page(win) {
   }
   const button = mainButton(win);
   const passwords = inputs(win, 'password');
+  // Which boxes are showing, by kind and id only (never their contents), so a problem can be named.
+  const fields = elements.filter(e => e.localName === 'input')
+    .map(e => String(e.getAttribute('type') || 'text') + (e.id ? '#' + e.id : '')).slice(0, 12);
   return {open: true, title: text(title).slice(0, 200), notes, button: button ? text(button).slice(0, 60) : '',
-    canContinue: Boolean(button && !button.disabled), needsPassword: passwords.some(p => !p.value)};
+    canContinue: Boolean(button && !button.disabled), needsPassword: passwords.some(p => !p.value), fields};
 }
 
 // ---- Sign-in in Voice Companion's browser -------------------------------------
@@ -193,7 +212,7 @@ function unhook() {
 
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
-    armedUntil = 0; captured = null;
+    armedUntil = 0; captured = null; pending = null;
     unhook();
   }
 
@@ -218,10 +237,13 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
           }
           if (!opened) return {opened: false, prefilled: false};
           let prefilled = false;
+          pending = email ? {email, name} : null;
           try {
-            for (let i = 0; email && i < FILL_TRIES; i++) {
-              const result = fill(win, email, name);
-              if (result !== null) { prefilled = result; break; }
+            for (let i = 0; pending && i < FILL_TRIES; i++) {
+              const before = pending;
+              prefilled = fillPending(win);
+              if (!pending) { prefilled = prefilled || false; break; }
+              if (before !== pending) break;
               await wait(win, FILL_WAIT_MS);
             }
           } catch (error) { prefilled = false; }
@@ -234,6 +256,7 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
 
         async setupContinue() {
           const win = mailWindow();
+          fillPending(win);
           const button = win && mainButton(win);
           if (!button || button.disabled) return {pressed: false};
           button.click();
