@@ -27,6 +27,8 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("Write-BuildAnnotation 'Build stopped' $_.Exception.Message",s)
         self.assertIn("Write-BuildAnnotation 'Release tests failed'",s)
         self.assertIn("'^(FAIL|ERROR): '",s)
+        # A long note keeps its start, where the failed test names are.
+        self.assertIn("$clean.Substring(0, 1200)",s)
         self.assertIn("throw ('Dependency security audit failed. ' + ($findings -join ' | '))",s)
 
     def test_every_packaging_option_has_its_flag(self):
