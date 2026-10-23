@@ -124,7 +124,7 @@ function load(api) {
   assert.equal(state.setupCalls.at(-1).show, true);
 
   // The page is read and driven; a password goes in once and is never answered back.
-  assert.deepEqual(await call('setupPage'), state.setupPage);
+  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: []});
   assert.deepEqual(await call('setupContinue'), {pressed: true});
   state.setupPage.needsPassword = true;
   const filled = await bridge.handle({id: 7, method: 'fillPassword', params: {password: 'pw-123456'}});
@@ -291,7 +291,8 @@ async function experimentChecks() {
 
   // The page is read: title, visible messages only, and the main button.
   assert.deepEqual(plain(await api.setupPage()), {open: true, title: 'Set up your existing email address',
-    notes: ['Thunderbird failed to find the settings'], button: 'Continue', canContinue: true, needsPassword: false});
+    notes: ['Thunderbird failed to find the settings'], button: 'Continue', canContinue: true, needsPassword: false,
+    fields: ['text#realName', 'email']});
   assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
   assert.equal(win.parts.at(-1).clicks, 1);
   assert.equal(win.parts.at(-2).clicks, 0, 'never Back');
@@ -315,6 +316,24 @@ async function experimentChecks() {
   assert.equal(password.value, 'app pass');
   assert.equal((await api.setupPage()).needsPassword, false);
   assert.doesNotMatch(JSON.stringify(plain(await api.setupPage())), /app pass/, 'a password is never read back');
+
+  // Account Hub loading slowly (as on a busy computer): filled in when the page is read later.
+  win = fakeWindow({hub: true});
+  const slowOpen = win.openAccountSetup;
+  let release;
+  win.openAccountSetup = async () => { win.calls.push('openAccountSetup'); await new Promise(r => { release = r; }); };
+  api = loadExperiment(win);
+  const opening = api.openAccountSetup('late@example.org', 'Late Name', false);
+  await new Promise(r => setTimeout(r, 5));
+  release();
+  assert.equal((await opening).prefilled, false, 'nothing there yet');
+  await slowOpen();                      // the hub arrives afterwards
+  await new Promise(r => setTimeout(r, 20));
+  const late = plain(await api.setupPage());
+  assert.equal(win.parts[2].value, 'late@example.org');
+  assert.equal(win.parts[1].value, 'Late Name');
+  assert.equal(late.canContinue, true);
+  assert.equal((await api.setupPage()).title, 'Set up your existing email address');
 
   // Something already typed is never replaced; a disabled button is not pressed.
   win = fakeWindow({form: () => { const parts = setupForm({email: new FakeElement('input', {type: 'email', value: 'typed@example.com'})});
