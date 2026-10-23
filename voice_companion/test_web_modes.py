@@ -12,7 +12,9 @@ from web_assistant import WebSession
 from web_browse import describe, voice_browse_key
 from web_modes import mode_request, page_key, page_key_feedback, toggle_chord, window_request
 
-ALT = 0x20000  # Tk's Alt flag on Windows; 8 elsewhere.
+from key_state import ALT_STATE
+
+ALT = 0x20000  # Tk's Alt flag on Windows; on Windows 8 is Num Lock.
 
 
 class SpokenModeTests(unittest.TestCase):
@@ -35,7 +37,7 @@ class SpokenModeTests(unittest.TestCase):
 class ModeKeyTests(unittest.TestCase):
     def test_insert_space_and_control_alt_space_switch_modes(self):
         self.assertTrue(toggle_chord('space', 0, insert_held=True))
-        for alt in (8, ALT):
+        for alt in (ALT_STATE, ALT):
             self.assertTrue(toggle_chord('space', 4 | alt))
         self.assertFalse(toggle_chord('space', 0))
         self.assertFalse(toggle_chord('space', 4))
@@ -69,7 +71,7 @@ class ModeKeyTests(unittest.TestCase):
         self.assertEqual(window_request('Home', '', 4, context), 'Web:Pass:Control+Home')
         self.assertEqual(window_request('Left', '', 0, context), 'Web:Pass:ArrowLeft')
         for keysym, char, state in [('F5', '', 0), ('F6', '', 0), ('F7', '', 0), ('Left', '', ALT),
-                                    ('Right', '', 8), ('l', '\x0c', 4), ('Alt_L', '', 0)]:
+                                    ('Right', '', ALT_STATE), ('l', '\x0c', 4), ('Alt_L', '', 0)]:
             with self.subTest(keysym=keysym, state=state):
                 self.assertIsNone(window_request(keysym, char, state, context))
         # Browse mode keeps every key for Companion.
