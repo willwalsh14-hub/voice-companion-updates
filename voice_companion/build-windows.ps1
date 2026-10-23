@@ -26,6 +26,19 @@ function Invoke-UnitTests([string]$Title, [string[]]$Arguments) {
   }
   return $code
 }
+# Run a packaged self-check and, on GitHub, put its own output (the error and
+# traceback) into the run annotations, so a failed check names its reason.
+function Invoke-PackagedCheck([string]$Title, [string]$Program, [string[]]$Arguments) {
+  $log = Join-Path $PSScriptRoot ('VoiceCompanion-Check-' + ($Title -replace '[^A-Za-z0-9]','') + '.txt')
+  $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $Program @Arguments 2>&1 | ForEach-Object { $line = "$_"; if ($line -eq 'System.Management.Automation.RemoteException') { '' } else { $line } } | Tee-Object -FilePath $log | Out-Host
+  $code = $LASTEXITCODE; $ErrorActionPreference = $previous
+  if ($code -ne 0) {
+    $tail = if (Test-Path $log) { (Get-Content -LiteralPath $log -Tail 60) -join "`n" } else { '(no output)' }
+    Write-BuildAnnotation ($Title + ' failed (exit code ' + $code + ')') $tail | Out-Host
+  }
+  return $code
+}
 trap {
   Write-BuildAnnotation 'Build stopped' $_.Exception.Message
   break
@@ -273,10 +286,8 @@ Copy-Item (Join-Path $PSScriptRoot 'dist\VoiceCompanion-UpdateVoice') (Join-Path
 & $python (Join-Path $PSScriptRoot 'check_update_voice.py') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\update-voice-runtime\VoiceCompanion-UpdateVoice.exe')
 if ($LASTEXITCODE -ne 0) { throw 'The packaged offline updater Status listener or microphone handoff failed.' }
 $exe = Join-Path $PSScriptRoot 'dist\VoiceCompanion\VoiceCompanion.exe'
-& $diagnosticTarget --check-runtime
-if ($LASTEXITCODE -ne 0) { throw 'A packaged runtime dependency is missing.' }
-& $diagnosticTarget --check-browser-bookmarks
-if ($LASTEXITCODE -ne 0) { throw 'Saved bookmarks failed in the actual packaged browser.' }
+if ((Invoke-PackagedCheck 'Packaged runtime check' $diagnosticTarget @('--check-runtime')) -ne 0) { throw 'A packaged runtime dependency is missing.' }
+if ((Invoke-PackagedCheck 'Packaged bookmark check' $diagnosticTarget @('--check-browser-bookmarks')) -ne 0) { throw 'Saved bookmarks failed in the actual packaged browser. See the Packaged bookmark check annotation.' }
 & $exe --check-update-environment
 if ($LASTEXITCODE -ne 0) { throw 'The packaged updater inherited application files or its working directory.' }
 & $exe --check-runtime

@@ -22,17 +22,19 @@ def check(app=None):
                     voice=win32com.client.Dispatch('SAPI.SpVoice')
                     stream=win32com.client.Dispatch('SAPI.SpFileStream')
                     stream.Open(folder+'/bookmark-speech.wav',3);voice.AudioOutputStream=stream
-                    with patch.object(app,'voice',voice),patch.object(app,'web_session',session),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',Mock()),patch.object(app,'KEYBOARD_SPEECH',None):
-                        mode=app.open_browser_menu()
+                    said=[]
+                    with patch.object(app,'voice',voice),patch.object(app,'web_session',session),patch.object(app,'speak',lambda text='',*a,**k:said.append(str(text))),patch.object(app,'APP_WINDOW',Mock()),patch.object(app,'KEYBOARD_SPEECH',None):
+                        mode=app.open_browser_menu();steps=['open: '+mode+': '+(said[-1] if said else '')]
                         for key in ('Down','Down','Enter','Enter'):
-                            mode=app.handle(app.navigation_key(key,mode),mode)
-                        if mode!='web' or not session.navigation_succeeded:raise AssertionError('App keyboard bookmark did not open')
+                            mode=app.handle(app.navigation_key(key,mode),mode);steps.append(key+': '+str(mode)+': '+(said[-1] if said else ''))
+                        if mode!='web' or not session.navigation_succeeded:
+                            raise AssertionError('App keyboard bookmark did not open (cycle '+str(cycle+1)+').\n'+'\n'.join(step[:300] for step in steps))
                     voice.WaitUntilDone(1000);stream.Close()
                 session.menu.start();session.menu.process('go to bookmark',session,False)
                 _,action=session.menu.process('enter',session,False)
                 if action!=('open',url):raise AssertionError('Bookmark address changed')
                 result=session.open(action[1])
-                if not session.navigation_succeeded or 'Bookmark opened' not in session.reading.text:raise AssertionError(result)
+                if not session.navigation_succeeded or 'Bookmark opened' not in session.reading.text:raise AssertionError('Bookmark did not open (cycle '+str(cycle+1)+'): '+str(result)[:500])
                 if session.snapshot['url']!=url:raise AssertionError('Bookmark path, query or fragment was lost')
                 session.leave(False)
             print('Packaged bookmark opens and browser restarts passed.',flush=True)
