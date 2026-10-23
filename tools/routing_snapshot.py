@@ -46,6 +46,8 @@ SENTENCES = (
     'go to main menu', 'go to options', 'go to website example dot com', 'open website VA dot gov.',
     'change font to Arial', 'replace paragraph with New text', 'change world to friend',
     'delete line', 'new paragraph', 'read paragraph', 'next word', 'select first paragraph',
+    'What time is it?', "What's the date?", 'What day is it?', 'Time.', 'Date.', 'date and time',
+    'Time to go home.', 'The date of the party is Friday.', 'What time is the meeting?',
 )
 
 
@@ -134,6 +136,9 @@ def record(phrases):
         mock.patch('subprocess.run', mock.MagicMock(name='run')),
         mock.patch('webbrowser.open', mock.MagicMock(name='browser')),
         mock.patch.object(os, 'startfile', mock.MagicMock(name='startfile'), create=True),
+        # A fixed clock and plain date format, so the time and date never change a record.
+        mock.patch.object(companion, 'CLOCK', lambda: __import__('datetime').datetime(2026, 10, 22, 21, 55)),
+        mock.patch('time_date.regional_long_date', lambda when: None),
     ]
     import media_hub
 

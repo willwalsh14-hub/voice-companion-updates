@@ -28,8 +28,10 @@ TARGET = Path(__file__).resolve().parent / 'input-parity-inventory.md'
 # 'N/A - reason' (one way does not make sense). No row may need the command box alone.
 HAND = [
     # Start, wake and commands
-    ('Start, wake and commands', 'Wake up the microphone', '"Wake up"', 'Any arrow key or Enter while asleep; F12', 'Added: F12'),
-    ('Start, wake and commands', 'Put the microphone to sleep', '"Go to sleep"', 'F12 on any main screen', 'Added: F12'),
+    ('Start, wake and commands', 'Wake up the microphone', '"Wake up"', 'Any arrow key or Enter while asleep; Ctrl+F12', 'Added: Ctrl+F12'),
+    ('Start, wake and commands', 'Put the microphone to sleep', '"Go to sleep"', 'Ctrl+F12 on any main screen', 'Added: Ctrl+F12'),
+    ('Start, wake and commands', 'Hear the time', '"What time is it?", "What\'s the time?", "Time"', 'F12 or Insert+F12 on any screen, even while asleep', 'Added: F12, Insert+F12 and the spoken request'),
+    ('Start, wake and commands', 'Hear the day and date', '"What\'s the date?", "Today\'s date", "What day is it?", "Date"', 'F12 or Insert+F12 twice quickly on any screen', 'Added: F12 twice and the spoken request'),
     ('Start, wake and commands', 'Hear the version', '"What version?"', 'Ctrl+Shift+V on the main menu', 'Added: Ctrl+Shift+V'),
     ('Start, wake and commands', 'Type a command', 'N/A', 'Alt+T, type, Enter', 'N/A - this is the keyboard way to give any spoken command'),
     ('Start, wake and commands', 'Normal mode, Commands only, Dictation only', '"Normal mode", "Commands only", "Dictation only"', 'Alt+O, Input options, Command and dictation mode', 'Both'),

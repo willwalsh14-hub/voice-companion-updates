@@ -17,7 +17,8 @@ BROWSE_MODE = 'Browse mode.'
 # Keys Companion keeps in app mode. Everything else goes to the page.
 # F5 reloads, F6 and F7 list headings and links, Alt+Left and Alt+Right go
 # back and forward, and Control+L starts a search, exactly as in browse mode.
-COMPANION_KEYS = {'F5', 'F6', 'F7', 'Alt+Left', 'Alt+Right', 'Control+L', 'Control+l'}
+# F12 says the time (twice, the date) and Control+F12 puts the microphone to sleep.
+COMPANION_KEYS = {'F5', 'F6', 'F7', 'F12', 'Control+F12', 'Alt+Left', 'Alt+Right', 'Control+L', 'Control+l'}
 
 # Tk key names for keys without a printed character, and the browser's names.
 PAGE_KEY_NAMES = {
