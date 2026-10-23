@@ -233,8 +233,8 @@ def overlay_key(keysym, char, state):
 
     None lets the key do its usual job (shortcuts, F keys, Alt combinations);
     '' swallows it so that it does not type into the page or message."""
-    control, alt = bool(state & 4), bool(state & (8 | 0x20000))
-    shift = bool(state & 1)
+    from key_state import modifiers
+    control, shift, alt = modifiers(state)
     if control or alt:
         return None
     named = {'Up': 'Up', 'Down': 'Down', 'Left': 'Left', 'Right': 'Right', 'Home': 'Home', 'End': 'End',

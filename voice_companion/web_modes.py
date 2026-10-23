@@ -44,7 +44,8 @@ SLIDER_KEYS = {'Up': 'ArrowUp', 'Down': 'ArrowDown', 'Left': 'ArrowLeft', 'Right
 
 
 def _modifiers(state):
-    return bool(state & 4), bool(state & 1), bool(state & (8 | 0x20000))
+    from key_state import modifiers
+    return modifiers(state)  # Num Lock is not Alt on Windows.
 
 
 TOGGLE_KEY = 'Control+Shift+Space'

@@ -4,6 +4,7 @@ from contextlib import ExitStack,redirect_stdout
 from pathlib import Path
 from unittest.mock import Mock,patch
 import companion as app
+from key_state import ALT_STATE  # 0x20000 on Windows; 0x8 there is Num Lock.
 from input_parity import catalog,SCREEN_KEYS,BODY_ONLY,chord,screen_key,screen_command
 from file_manager import MENU,FileManager
 from test_file_manager import FakeFiles,settle
@@ -71,7 +72,7 @@ class ScreenKeyTableTests(unittest.TestCase):
                         self.assertIsNone(screen_key(mode,keysym,state,{private:True}))
                     if key in ('Ctrl+S','Ctrl+F'):self.assertIsNone(screen_key('files',keysym,state,{}))
         # Keys keep their meaning elsewhere: Alt combinations and plain letters are never taken.
-        self.assertIsNone(screen_key('note','s',8|4,{}))
+        self.assertIsNone(screen_key('note','s',ALT_STATE|4,{}))
         self.assertIsNone(screen_key('note','s',0,{}))
         self.assertIsNone(screen_key('awake','F1',1,{}))
         # Sentence keys work only inside an open help topic, not in the topic list.

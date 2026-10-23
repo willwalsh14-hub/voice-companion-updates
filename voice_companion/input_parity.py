@@ -44,7 +44,8 @@ BODY_ONLY = {'Ctrl+B', 'Ctrl+I', 'Ctrl+U'}
 
 def chord(keysym, state):
     """The key name used in SCREEN_KEYS for a Tk key event."""
-    control, shift, alt = bool(state & 4), bool(state & 1), bool(state & (8 | 0x20000))
+    from key_state import modifiers
+    control, shift, alt = modifiers(state)  # Num Lock is not Alt on Windows.
     if alt or keysym in ('Control_L', 'Control_R', 'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R'):
         return None
     name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior'}.get(keysym, keysym)

@@ -8,6 +8,7 @@ import queue
 import threading
 import time
 from field_selection import FieldSelection
+from key_state import alt_held  # Tk state bit 0x8 is Num Lock on Windows, not Alt.
 from keyboard_text import caret_feedback,typing_feedback,phonetic,character as spoken_character
 
 
@@ -74,6 +75,9 @@ class CompanionWindow:
         self.closed = threading.Event()
         self.ready = threading.Event()
         self.ui_errors = []
+        # The last key events, as plain text, so a failed window test says
+        # which key the window saw and why it ignored it.
+        self.key_trace = __import__('collections').deque(maxlen=16)
         self.last_email_request = None
         self.email_selection_edit = None
         self.problem = None
@@ -122,7 +126,8 @@ class CompanionWindow:
             del frames,frame
         return {'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
                 'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
-                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()]}
+                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()],
+                'recent keys':list(self.key_trace)}
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
@@ -280,6 +285,7 @@ class CompanionWindow:
             document_modifiers=set()
             caps_modifier={'before':False,'used':False,'synthetic':0}
             def release_document_modifier(event):
+                self.key_trace.append(f'release reached window: {event.keysym} state={event.state:#x}')
                 document_modifiers.discard(event.keysym)
                 if event.keysym=='Caps_Lock':
                     if caps_modifier['synthetic']:caps_modifier['synthetic']-=1;return
@@ -332,11 +338,12 @@ class CompanionWindow:
             from time_date import PressCounter,clock_key,key_request
             clock_presses=PressCounter()
             def shortcut(event):
-                if event.keysym.lower()=='p' and event.state&4 and not event.state&(1|8|0x20000):
+                if event.keysym.lower()=='p' and event.state&4 and not event.state&1 and not alt_held(event.state):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
                     return 'break'
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
+                self.key_trace.append(f'press {key} state={event.state:#x}')
                 if clock_key(key,event.state):
                     # F12 or Insert+F12 says the time; twice quickly, the date. It works on every
                     # screen, in menus, lists and questions, and never reaches a web page.
@@ -361,7 +368,7 @@ class CompanionWindow:
                     self.commands.put(('keyboard','Ctrl+E'));return 'break'
                 if mode=='update_download':
                     if key in ('Tab','ISO_Left_Tab'):return update_tab(event)
-                    update_key='Alt+'+key.upper() if event.state&(8|0x20000) else key
+                    update_key='Alt+'+key.upper() if alt_held(event.state) else key
                     if update_key in ('F5','Alt+S','Escape','Alt+C'):
                         self.commands.put(('keyboard',update_key));return 'break'
                 if mode in ('document','file_reader') and not self.command_entry_active:
@@ -376,20 +383,20 @@ class CompanionWindow:
                         if prefix=='CapsLock':caps_modifier['used']=True
                         flush_pending_edit();send_text_position();cancel_phonetic()
                         self.commands.put(('keyboard',chord));return 'break'
-                if mode=='file_reader' and not self.command_entry_active and not control and not event.state&(8|0x20000):
+                if mode=='file_reader' and not self.command_entry_active and not control and not alt_held(event.state):
                     if key.lower() in ('h','t','k','l','b','n') or key=='Return':
                         send_text_position();self.commands.put(('keyboard',('Shift+' if shift else '')+key.upper() if key!='Return' else 'Enter'));return 'break'
-                if mode=='document_menu' and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():
+                if mode=='document_menu' and not control and not alt_held(event.state) and event.char and event.char.isalnum():
                     self.commands.put(('keyboard','MenuPick:'+event.char));return 'break'
                 if mode=='files' and not self.command_entry_active and not self.context.get('file_name_input'):
                     file_key=('Ctrl+Shift+' if shift else 'Ctrl+')+key.upper() if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Enter' if key=='Return' else 'Space' if key=='space' else key
                     if control and shift:
                         file_key='Ctrl+Shift+'+(chr(event.keycode) if 48<=event.keycode<=57 else key if key in ('Up','Down') else key.upper())
-                    if event.state&(8|0x20000) and key.lower() in ('s','n','c','m','d','a','z'):file_key='Alt+'+key.upper()
-                    if event.state&(8|0x20000) and key=='Home':file_key='Alt+Home'
+                    if alt_held(event.state) and key.lower() in ('s','n','c','m','d','a','z'):file_key='Alt+'+key.upper()
+                    if alt_held(event.state) and key=='Home':file_key='Alt+Home'
                     if control and key=='Home':file_key='Ctrl+Home'
                     if event.widget in self.file_buttons and not control and file_key not in ('Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Escape'):return
-                    if event.widget==file_list and not control and not event.state&(8|0x20000) and event.char and event.char.isprintable() and key!='space':
+                    if event.widget==file_list and not control and not alt_held(event.state) and event.char and event.char.isprintable() and key!='space':
                         self.commands.put(('keyboard','Letter:'+event.char));return 'break'
                     if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
                         self.commands.put(('keyboard',file_key));return 'break'
@@ -421,9 +428,9 @@ class CompanionWindow:
                         self.commands.put(('keyboard','Doc:PreviousCell' if shift or key=='ISO_Left_Tab' else 'Doc:NextCell'));return 'break'
                     chord=('Ctrl+Shift+' if shift else 'Ctrl+')+(key if key in ('Home','End','Left','Right') else 'Enter' if key=='Return' else key.upper()) if control else 'Alt' if key in ('Alt_L','Alt_R') else 'Shift+F4' if shift and key=='F4' else key
                     if control and shift and 48<=event.keycode<=57:chord='Ctrl+Shift+'+chr(event.keycode)
-                    if event.state&(8|0x20000) and key.lower()=='o':chord='Alt+O'
-                    elif control and event.state&(8|0x20000):chord='Ctrl+Alt+'+(key if key in ('Up','Down','Left','Right') else key.upper())
-                    elif event.state&(8|0x20000) and not control and key in ('Up','Down','Left','Right'):chord='Alt+'+key
+                    if alt_held(event.state) and key.lower()=='o':chord='Alt+O'
+                    elif control and alt_held(event.state):chord='Ctrl+Alt+'+(key if key in ('Up','Down','Left','Right') else key.upper())
+                    elif alt_held(event.state) and not control and key in ('Up','Down','Left','Right'):chord='Alt+'+key
                     requests=set(SHORTCUTS)|{'Alt','Ctrl+O','Ctrl+N','Ctrl+R','Alt+O'}
                     if mode=='document':requests-= {'Ctrl+Home','Ctrl+End'}
                     if mode=='local_media':requests|={'space','Left','Right','Up','Down','Escape','Tab','ISO_Left_Tab','Return','Ctrl+I'}
@@ -432,14 +439,14 @@ class CompanionWindow:
                         flush_pending_edit();cancel_phonetic()
                         self.commands.put(('keyboard','Space' if chord=='space' else 'Enter' if chord=='Return' else 'ShiftTab' if chord=='ISO_Left_Tab' else chord));return 'break'
                 if mode=='files' and self.context.get('file_name_input') and event.widget==typed and key!='Escape':return
-                if key.lower()=='t' and not control and event.state&(8|0x20000):
+                if key.lower()=='t' and not control and alt_held(event.state):
                     flush_pending_edit();self.command_entry_active=True;typed.focus_set();return 'break'
                 if mode in ('web','files') and self.command_entry_active and event.widget==typed and key=='Escape':
                     self.command_entry_active=False;typed.delete(0,'end');(file_list if mode=='files' else editor).focus_set();return 'break'
                 request=None
-                if self.context.get('confirmation') is not None and key.lower() in ('y','n') and event.state&(8|0x20000):
+                if self.context.get('confirmation') is not None and key.lower() in ('y','n') and alt_held(event.state):
                     self.commands.put(('keyboard','Alt+'+key.upper()));return 'break'
-                if key=='F4' and event.state&(8|0x20000):
+                if key=='F4' and alt_held(event.state):
                     user_stop.request();flush_pending_edit();self.commands.put(('keyboard','Alt+F4'));return 'break'
                 if key in ('Control_L','Control_R'):
                     cancel_phonetic()
@@ -450,7 +457,7 @@ class CompanionWindow:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                 if key in ('Home','End') and not control and not self.context.get('source') and not self.email_field and not typed.get():
                     self.commands.put(('keyboard',key));return 'break'
-                if key.lower()=='o' and event.state&(8|0x20000):
+                if key.lower()=='o' and alt_held(event.state):
                     flush_pending_edit();self.commands.put(('keyboard','settings'));return 'break'
                 # A name is editable text, even when empty. Its letters must
                 # never select a main-menu item or become an app command.
@@ -472,20 +479,20 @@ class CompanionWindow:
                 if request:pass
                 elif mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
                     request='Enter' if key=='Return' else 'Space' if key=='space' else key
-                elif mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
-                elif mode=='note' and control and not shift and not event.state&(8|0x20000) and key.lower()=='o':request='Ctrl+O'
-                elif mode=='web' and not control and event.state&(8|0x20000) and key in ('Left','Right'):request='Web:Back' if key=='Left' else 'Web:Forward'
+                elif mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not alt_held(event.state) and event.char and event.char.isalnum():request='Letter:'+event.char
+                elif mode=='note' and control and not shift and not alt_held(event.state) and key.lower()=='o':request='Ctrl+O'
+                elif mode=='web' and not control and alt_held(event.state) and key in ('Left','Right'):request='Web:Back' if key=='Left' else 'Web:Forward'
                 elif mode=='web' and key=='F5':request='Web:Refresh'
                 elif mode=='web' and key in ('F6','F7'):request=key
                 elif mode=='web' and control and key.lower()=='l':request='Web:Search'
-                elif mode=='web' and control and not shift and not event.state&(8|0x20000) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
+                elif mode=='web' and control and not shift and not alt_held(event.state) and key in ('Home','End') and not self.context.get('web_private'):request='Web:PageTop' if key=='Home' else 'Web:PageBottom'
                 if self.context.get('confirmation') is not None and key=='Return' and event.widget==typed and typed.get().strip().lower() in ('yes','no'):
                     self.commands.put(typed.get().strip().lower());typed.delete(0,'end');return 'break'
                 if request:pass
                 elif self.context.get('confirmation') is not None and key in ('Up','Down','Left','Right','Home','End','Tab','Return','Escape','space','y','Y','n','N'):
                     request='Enter' if key in ('Return','space') else 'ShiftTab' if key=='Tab' and shift else key
-                elif key=='F4' and event.state&8:request='Alt+F4'
-                elif mode=='web' and self.context.get('web_name_list') and not self.command_entry_active and not control and not event.state&(8|0x20000) and (event.char and event.char.isprintable() or key=='BackSpace'):
+                elif key=='F4' and alt_held(event.state):request='Alt+F4'
+                elif mode=='web' and self.context.get('web_name_list') and not self.command_entry_active and not control and not alt_held(event.state) and (event.char and event.char.isprintable() or key=='BackSpace'):
                     request='Web:ListBackspace' if key=='BackSpace' else 'Web:ListText:'+event.char
                 elif mode=='web' and (self.context.get('web_browse') or self.context.get('web_field')) and not (event.widget==typed and self.command_entry_active):
                     field=None if local.get('web_escape_pending') else self.context.get('web_field')
@@ -495,27 +502,27 @@ class CompanionWindow:
                             activation_keys.add(key)
                         self.commands.put(('web_private_value',dict(value=typed.get(),next=('PageTop' if key=='Home' else 'PageBottom') if control and key in ('Home','End') else 'Leave:'+key if key in ('Up','Down') else 'ShiftTab' if shift or key=='ISO_Left_Tab' else 'Tab' if key=='Tab' else 'Done',**({'field_source':self.context['web_field_source']} if self.context.get('web_field_source') else {}))));typed.delete(0,'end');return 'break'
                     elif key=='Escape':request='Web:Escape'
-                    elif control and event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
+                    elif control and alt_held(event.state) and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Table:'+key
                     elif field and self.context.get('web_choice') and key in ('Up','Down','Left','Right','Home','End'):request='Web:'+key
-                    elif field and self.context.get('web_choice') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalnum():request='Web:ChoiceLetter:'+event.char
-                    elif field and self.context.get('web_combo_edit') and not control and not shift and not event.state&(8|0x20000) and key in ('Up','Down'):request='Web:'+key
+                    elif field and self.context.get('web_choice') and not control and not alt_held(event.state) and len(event.char)==1 and event.char.isalnum():request='Web:ChoiceLetter:'+event.char
+                    elif field and self.context.get('web_combo_edit') and not control and not shift and not alt_held(event.state) and key in ('Up','Down'):request='Web:'+key
                     elif field and not self.context.get('web_private') and not control and not shift and key in ('Up','Down','Left','Right'):
                         value=editor.get('1.0','end-1c');caret=len(editor.get('1.0','insert'))
                         multiline=field.get('tag')=='textarea' or field.get('editable')
                         if key=='Up' and (not multiline or '\n' not in value[:caret]) or key=='Down' and (not multiline or '\n' not in value[caret:]) or key=='Left' and caret==0 or key=='Right' and caret==len(value):request='Web:Leave:'+key
                     elif key=='F5':request='Web:Refresh'
                     elif key in ('Tab','ISO_Left_Tab'):request='Web:ShiftTab' if shift or key=='ISO_Left_Tab' else 'Web:Tab'
-                    elif not field and not control and not event.state&(8|0x20000) and event.char.lower() in 'khfbxcetr alidgmps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
+                    elif not field and not control and not alt_held(event.state) and event.char.lower() in 'khfbxcetr alidgmps123456'.replace(' ','') and len(event.char)==1:request='Web:Quick:'+('Previous:' if shift else '')+event.char.lower()
                     elif key=='Return' and (not field or field.get('tag')!='textarea' and not field.get('editable') or control or self.context.get('web_combo_edit')):request='Web:Done' if field and not self.context.get('web_choice') else 'Web:Activate'
                     elif not field and not shift and key in ('Up','Down','Left','Right','Home','End','Prior','Next'):request='Web:Read:'+('Control:' if control else '')+key
                     elif not field and key=='space':request='Web:Space'
-                    elif key=='Left' and event.state&(8|0x20000):request='Web:Back'
+                    elif key=='Left' and alt_held(event.state):request='Web:Back'
 
-                elif self.context.get('help_reader') and not shift and not event.state&(8|0x20000) and key in ('Up','Down','Left','Right','Home','End') and not (event.widget==typed and self.command_entry_active):
+                elif self.context.get('help_reader') and not shift and not alt_held(event.state) and key in ('Up','Down','Left','Right','Home','End') and not (event.widget==typed and self.command_entry_active):
                     request='Help:'+('Ctrl+' if control and key in ('Left','Right') else '')+key
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
-                    if self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not event.state&(8|0x20000) and key.lower() in ('k','b'):
+                    if self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not alt_held(event.state) and key.lower() in ('k','b'):
                         request='Email:'+('previous ' if shift else 'next ')+('link' if key.lower()=='k' else 'button')
                     elif shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
                     elif key=='F2':request='F2'
@@ -532,18 +539,19 @@ class CompanionWindow:
                         self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':backward}))
                     else:self.commands.put(('keyboard','ShiftTab' if backward else 'Tab'))
                     return 'break'
-                elif mode=='email_draft' and ((control and key=='Return') or (key.lower()=='s' and event.state&(8|0x20000))):
+                elif mode=='email_draft' and ((control and key=='Return') or (key.lower()=='s' and alt_held(event.state))):
                     if self.email_field:
                         self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'send':True}));return 'break'
                     request='Ctrl+Enter' if control else 'Alt+S'
-                elif self.context.get('menu_letters') and not (mode in ('browser_menu','files') and self.command_entry_active) and not self.context.get('file_name_input') and not self.context.get('media_input') and not control and not event.state&(8|0x20000) and len(event.char)==1 and event.char.isalpha() and not typed.get():
+                elif self.context.get('menu_letters') and not (mode in ('browser_menu','files') and self.command_entry_active) and not self.context.get('file_name_input') and not self.context.get('media_input') and not control and not alt_held(event.state) and len(event.char)==1 and event.char.isalpha() and not typed.get():
                     request='Letter:'+event.char.lower()
-                if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not event.state&(8|0x20000):return 'break'
+                if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not alt_held(event.state):return 'break'
                 if request:
                     # A held key repeats. Activating, or going back or forward,
                     # happens once per press.
                     if request in ('Web:Activate','Web:Space','Web:Done','Web:Back','Web:Forward'):
-                        if key in activation_keys:return 'break'
+                        if key in activation_keys:
+                            self.key_trace.append(f'held, ignored: {request} {key} state={event.state:#x}');return 'break'
                         activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     flush_pending_edit();cancel_phonetic()
@@ -563,7 +571,10 @@ class CompanionWindow:
             root.bind_all('<Shift-Tab>',shortcut)
             file_list.bind('<KeyPress>',shortcut)
             root.bind_all('<KeyPress>',shortcut,add='+')
-            root.bind_all('<KeyRelease>',lambda event:activation_keys.discard(event.keysym),add='+')
+            def release_activation_key(event):
+                self.key_trace.append(f'release {event.keysym} state={event.state:#x} held={sorted(activation_keys)}')
+                activation_keys.discard(event.keysym)
+            root.bind_all('<KeyRelease>',release_activation_key,add='+')
             root.bind('<FocusOut>',lambda event:activation_keys.clear() if event.widget==root else None,add='+')
             for sequence in ('<F2>','<F5>','<F6>','<F7>','<Delete>','<Control-y>','<Control-r>','<Control-Shift-R>','<Control-f>','<Control-n>','<Control-Shift-V>','<Control-Shift-E>','<Control-Shift-D>','<Control-Return>'):
                 root.bind_all(sequence,shortcut)

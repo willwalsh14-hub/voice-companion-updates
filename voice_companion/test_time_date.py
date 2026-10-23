@@ -84,9 +84,9 @@ class KeyTests(unittest.TestCase):
         self.assertTrue(time_date.clock_key('F12',0,insert_held=True))
         # Lock keys and Alt do not matter. On Windows, Tk reports Num Lock as 8,
         # the bit that means Alt on Linux, so F12 must not depend on it.
-        for state in (2,8,0x10,0x20000,8|2):
+        for state in (2,8,0x10,0x20000,8|2):  # 8 is Num Lock on Windows.
             with self.subTest(state=state):self.assertTrue(time_date.clock_key('F12',state))
-        for state in (4,1,4|1,4|8):
+        for state in (4,1,4|1,4|8):  # 4|8 is Control with Num Lock on.
             with self.subTest(state=state):self.assertFalse(time_date.clock_key('F12',state))
         for keysym in ('F11','Insert','f','F1'):
             self.assertFalse(time_date.clock_key(keysym,0,insert_held=True))
