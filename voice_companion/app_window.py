@@ -4,6 +4,7 @@ The window lives on its own UI thread. Other threads only post text to a queue.
 Closing the window requests a clean shutdown of the microphone loop.
 """
 import queue
+import sys
 import threading
 import time
 from field_selection import FieldSelection
@@ -61,13 +62,7 @@ def show_context_text(old, field, seq, web_cursor_changed=False):
 
 
 class WakingQueue(queue.Queue):
-    """A queue that tells the window thread at once when something is added.
-
-    The window used to find new work only through a Tcl ``after`` timer. On
-    Windows that timer can stop firing while Tk waits for messages: Tcl 8.6
-    times ``after`` by the wall clock, and its message wait (GetMessage) has no
-    time limit. The window then looked frozen until some other message arrived.
-    """
+    """A queue that nudges the window thread when something is added."""
     def __init__(self, wake):
         super().__init__()
         self._wake = wake
@@ -77,21 +72,104 @@ class WakingQueue(queue.Queue):
         self._wake()
 
 
+def _windows_thread_report(thread_id, checks):
+    """What a stuck window thread is doing, as Windows sees it. For failure reports only.
+
+    Never waits on the window thread for long: every call has a time limit."""
+    import ctypes
+    from ctypes import wintypes
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    report = {'window thread id': thread_id}
+    report['main thread id'] = threading.main_thread().native_id
+
+    class GUITHREADINFO(ctypes.Structure):
+        _fields_ = [('cbSize', wintypes.DWORD), ('flags', wintypes.DWORD), ('hwndActive', wintypes.HWND),
+                    ('hwndFocus', wintypes.HWND), ('hwndCapture', wintypes.HWND), ('hwndMenuOwner', wintypes.HWND),
+                    ('hwndMoveSize', wintypes.HWND), ('hwndCaret', wintypes.HWND), ('rcCaret', wintypes.RECT)]
+    info = GUITHREADINFO(cbSize=ctypes.sizeof(GUITHREADINFO))
+    user.GetGUIThreadInfo.argtypes = [wintypes.DWORD, ctypes.POINTER(GUITHREADINFO)]
+    if user.GetGUIThreadInfo(thread_id, ctypes.byref(info)):
+        names = {1: 'caret blinking', 2: 'in move or size loop', 4: 'in menu mode', 8: 'in system menu mode', 16: 'in popup menu mode'}
+        report['modal state'] = [name for bit, name in names.items() if info.flags & bit] or 'none'
+        report['has active, focus, capture window'] = [bool(info.hwndActive), bool(info.hwndFocus), bool(info.hwndCapture)]
+    user.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user.IsHungAppWindow.argtypes = [wintypes.HWND]
+    user.IsWindowVisible.argtypes = [wintypes.HWND]
+    user.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
+                                         wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
+    user.SendMessageTimeoutW.restype = ctypes.c_ssize_t
+    user.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+
+    names = {t.native_id: t.name for t in threading.enumerate()}
+
+    def answers(hwnd, ms=200):
+        result = ctypes.c_size_t()
+        # SMTO_ABORTIFHUNG: answered only if the owner thread still handles sent messages.
+        return bool(user.SendMessageTimeoutW(hwnd, 0, 0, 0, 0x0002, ms, ctypes.byref(result)))
+
+    def describe(hwnd, ask=False):
+        name = ctypes.create_unicode_buffer(64)
+        user.GetClassNameW(hwnd, name, 64)
+        text = name.value + (' visible' if user.IsWindowVisible(hwnd) else ' hidden') + (' HUNG' if user.IsHungAppWindow(hwnd) else '')
+        if ask:
+            text += ' answers' if answers(hwnd) else ' DOES NOT ANSWER'
+        return text
+    user.GetForegroundWindow.restype = wintypes.HWND
+    foreground = user.GetForegroundWindow()
+    if foreground:
+        pid = wintypes.DWORD()
+        tid = user.GetWindowThreadProcessId(foreground, ctypes.byref(pid))
+        report['foreground window'] = describe(foreground) + ' thread ' + str(tid) + ' ' + (
+            names.get(tid, 'not a Python thread') if pid.value == kernel.GetCurrentProcessId() else 'another process')
+    own, others = [], []
+    process = kernel.GetCurrentProcessId()
+    PROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def each(hwnd, _):
+        pid = wintypes.DWORD()
+        tid = user.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == process:
+            (own if tid == thread_id else others).append((tid, hwnd))
+        return True
+    user.EnumWindows(PROC(each), 0)
+    report['window thread windows'] = [describe(hwnd) for _, hwnd in own[:12]]
+    report['other threads windows in this process'] = [
+        'thread ' + str(tid) + ' ' + names.get(tid, 'not a Python thread') + ': ' + describe(hwnd, ask=True) for tid, hwnd in others[:16]]
+    report['window thread answers a sent window message'] = answers(own[0][1], 500) if own else None
+
+    def cpu():
+        handle = kernel.OpenThread(0x0800, False, thread_id)  # THREAD_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return None
+        times = [wintypes.FILETIME() for _ in range(4)]
+        try:
+            kernel.GetThreadTimes(handle, *[ctypes.byref(t) for t in times])
+        finally:
+            kernel.CloseHandle(handle)
+        return sum((t.dwHighDateTime << 32 | t.dwLowDateTime) for t in times[2:]) / 1e7
+    first = cpu(); time.sleep(.2); second = cpu()
+    report['window thread CPU seconds in 0.2 s'] = None if first is None or second is None else round(second - first, 3)
+    before = checks()
+    report['posted wake accepted'] = bool(user.PostThreadMessageW(thread_id, 0, 0, 0))
+    time.sleep(.3)
+    report['checks after the posted wake'] = checks() - before
+    return report
+
+
 class CompanionWindow:
     def __init__(self, version, data_folder=None):
         self.version = version
         self.data_folder = data_folder
         self.settings_results = queue.Queue()
         self.settings_notices = queue.Queue()
-        # Set up before the queues: putting into them wakes the window thread.
-        self._wake_socket = None
-        self.wake_status = 'not started'
-        self.poll_interval_ms = 15
+        # Set before the queues: adding to them nudges the window thread.
+        self.native_thread_id = None
         self.polls = 0
-        self.wakeups = 0
         self.last_poll = None
         self.late_polls = []
-        self.native_window = None
         self.messages = WakingQueue(self._wake)
         self.commands = queue.Queue()
         self.ui_actions = WakingQueue(self._wake)
@@ -111,63 +189,37 @@ class CompanionWindow:
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
     def _wake(self):
-        """Ask the window thread to check its queues now. Safe from any thread; never blocks."""
-        sock = self._wake_socket
-        if sock is None: return
-        try: sock.send(b'\0')
-        except OSError: pass  # Buffer full (a wake is already waiting) or the window closed.
+        """Nudge the window thread: a Windows thread message ends a message wait at once.
 
-    def _start_wake(self, root):
-        """Let other threads wake the window through a local socket that Tcl watches.
-
-        A Tcl socket event wakes the Windows message wait (Tcl_ThreadAlert) and does
-        not depend on the clock, so new work is handled even if the timer stalls.
-        Runs on the window thread. If it cannot start, the timer alone is used."""
-        import socket
-        name = root.register(lambda: self._wake_poll())
-        root.tk.eval('namespace eval ::vcwake {variable chan {}; variable expected {}}\n'
-                     'proc ::vcwake::accept {c addr port} {\n'
-                     '  variable chan; variable expected\n'
-                     '  # Only this window\'s own connection is kept.\n'
-                     '  if {$chan ne {} || $addr ne {127.0.0.1} || $port ne $expected} {close $c; return}\n'
-                     '  set chan $c\n'
-                     '  fconfigure $c -blocking 0 -translation binary -buffering none\n'
-                     '  fileevent $c readable [list ::vcwake::readable $c]\n'
-                     '}\n'
-                     'proc ::vcwake::readable {c} {\n'
-                     '  read $c\n'
-                     '  if {[eof $c]} {close $c; return}\n'
-                     '  ' + name + '\n'
-                     '}\n')
-        server = root.tk.call('socket', '-server', '::vcwake::accept', '-myaddr', '127.0.0.1', 0)
-        port = int(root.tk.splitlist(root.tk.call('fconfigure', server, '-sockname'))[2])
-        client = socket.create_connection(('127.0.0.1', port), timeout=2)
-        client.setblocking(False)
-        root.tk.call('set', '::vcwake::expected', client.getsockname()[1])
-        self._wake_socket = client
-        self.wake_status = 'ready'
-
-    def _stop_wake(self):
-        sock, self._wake_socket = self._wake_socket, None
-        if sock is not None:
-            self.wake_status = 'stopped'
-            try: sock.close()
-            except OSError: pass
-
-    def _wake_poll(self):
-        """Replaced on the window thread once the window exists."""
+        Tcl 8.6 waits for window messages in GetMessage, with no time limit. A posted
+        message never blocks this thread and is ignored by the window."""
+        thread_id = self.native_thread_id
+        if thread_id is None:
+            return
+        try:
+            post = CompanionWindow._post_thread_message
+        except AttributeError:
+            import sys
+            post = None
+            if sys.platform == 'win32':
+                import ctypes
+                from ctypes import wintypes
+                post = ctypes.WinDLL('user32').PostThreadMessageW
+                post.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+            CompanionWindow._post_thread_message = post
+        if post is not None:
+            try: post(thread_id, 0, 0, 0)  # WM_NULL
+            except Exception: pass
 
     def _thread_main(self):
         try:self._run()
         finally:
-            self._stop_wake()
             if self.media_shortcut:self.media_shortcut.close()
             # Tcl interpreters and widget cycles must be released on their owner thread.
             self.closed.set()
             while True:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
-            self.__dict__.pop('_wake_poll',None)  # Its closure holds widgets: free them here.
             self.root=self.typed=self.editor=self.current=self.file_list=None
             self.file_toolbar=None;self.file_buttons=[];self.update_buttons=[]
             import gc
@@ -197,37 +249,18 @@ class CompanionWindow:
         last=self.last_poll
         state={'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'closed':self.closed.is_set(),
                'problem':repr(self.problem),'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
-               'checks done':self.polls,'checks started by a wake':self.wakeups,'wake':self.wake_status,
+               'checks done':self.polls,
                'seconds since last check':None if last is None else round(time.monotonic()-last[0],3),
                # Tcl 8.6 times "after" by the wall clock. A wall clock that moved
                # differently from the steady clock delays every window timer.
                'wall clock drift since last check':None if last is None else round((time.time()-last[1])-(time.monotonic()-last[0]),3),
                'late timer checks':list(self.late_polls)}
-        state.update(self._native_state())
+        if sys.platform=='win32' and self.native_thread_id and self.thread.is_alive():
+            try:state.update(_windows_thread_report(self.native_thread_id,lambda:self.polls))
+            except Exception as exc:state['Windows report']=repr(exc)
         state['window thread is at']=stack
         state['other threads']=[t.name for t in threading.enumerate()]
         return state
-
-    def _native_state(self):
-        """On Windows: does the window thread still answer window messages?"""
-        import sys
-        hwnd=self.native_window
-        if sys.platform!='win32' or not hwnd or not self.thread.is_alive():return {}
-        try:
-            import ctypes
-            from ctypes import wintypes
-            user=ctypes.WinDLL('user32',use_last_error=True)
-            user.IsHungAppWindow.argtypes=[wintypes.HWND];user.IsHungAppWindow.restype=wintypes.BOOL
-            user.SendMessageTimeoutW.argtypes=[wintypes.HWND,wintypes.UINT,wintypes.WPARAM,wintypes.LPARAM,wintypes.UINT,wintypes.UINT,ctypes.POINTER(ctypes.c_size_t)]
-            user.SendMessageTimeoutW.restype=ctypes.c_ssize_t
-            hung=bool(user.IsHungAppWindow(hwnd))
-            before=self.polls;result=ctypes.c_size_t()
-            # WM_NULL with SMTO_ABORTIFHUNG: answered only if the thread is waiting for messages.
-            answered=bool(user.SendMessageTimeoutW(hwnd,0,0,0,0x0002,1000,ctypes.byref(result)))
-            time.sleep(.1)
-            return {'Windows says hung':hung,'answers window messages':answered,'checks after a window message':self.polls-before}
-        except Exception as exc:
-            return {'Windows state':repr(exc)}
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
@@ -314,6 +347,7 @@ class CompanionWindow:
         try:
             import tkinter as tk
             from tkinter import scrolledtext
+            self.native_thread_id=threading.get_native_id()
             root = tk.Tk()
             self.root=root
             from media_shortcut import MediaShortcut
@@ -1078,55 +1112,28 @@ class CompanionWindow:
                         history.delete('1.0', '30.0')
                     history.see('end')
                     history.configure(state='disabled')
-            schedule={'after':None,'due':None,'polling':False}
-            def poll(woken=False):
+            due=[time.monotonic()]
+            def poll():
                 # One failed update must never stop the window: without the
                 # next check it would stop speaking and answering keys for good.
-                if schedule['polling']:return
                 now=time.monotonic()
-                if not woken and schedule['due'] is not None and now-schedule['due']>1 and len(self.late_polls)<20:
-                    # Record a stalled timer so a failure can name it.
-                    self.late_polls.append({'seconds late':round(now-schedule['due'],3),'wall clock drift':round((time.time()-self.last_poll[1])-(now-self.last_poll[0]),3) if self.last_poll else None})
-                schedule.update(after=None,due=None,polling=True)
-                self.polls+=1;self.wakeups+=bool(woken);self.last_poll=(now,time.time())
+                if now-due[0]>1 and len(self.late_polls)<20:
+                    # A late timer is recorded so a failure report can name it.
+                    self.late_polls.append({'seconds late':round(now-due[0],3),'wall clock drift':round((time.time()-self.last_poll[1])-(now-self.last_poll[0]),3) if self.last_poll else None})
+                self.polls+=1;self.last_poll=(now,time.time())
                 try:poll_once()
                 except Exception as exc:
                     import sys,traceback
                     self.ui_errors.append(''.join(traceback.format_exception(type(exc),exc,exc.__traceback__))[-3000:])
                     print('Voice Companion window error:\n'+self.ui_errors[-1],file=sys.stderr,flush=True)
                 finally:
-                    schedule['polling']=False
                     if not self.closed.is_set():
-                        try:
-                            schedule['after']=root.after(self.poll_interval_ms,poll)
-                            schedule['due']=time.monotonic()+self.poll_interval_ms/1000
-                        except tk.TclError:pass
-            def wake_poll():
-                # Another thread added work. Check now instead of waiting for the timer.
-                if schedule['polling'] or self.closed.is_set():return
-                if schedule['after'] is not None:
-                    try:root.after_cancel(schedule['after'])
-                    except tk.TclError:pass
-                    schedule['after']=None
-                poll(woken=True)
-            self._wake_poll=wake_poll
-            def find_native_window():
-                # For failure reports only: the top-level Windows handle, once Tk has made it.
-                import sys
-                if sys.platform!='win32':return
-                try:
-                    import ctypes
-                    from ctypes import wintypes
-                    user=ctypes.WinDLL('user32')
-                    user.GetAncestor.argtypes=[wintypes.HWND,wintypes.UINT];user.GetAncestor.restype=wintypes.HWND
-                    self.native_window=user.GetAncestor(root.winfo_id(),2)
-                except Exception:self.native_window=None
-            root.after_idle(find_native_window)
-            try:self._start_wake(root)
-            except Exception as exc:
-                self._stop_wake();self.wake_status='unavailable: '+repr(exc)
+                        due[0]=time.monotonic()+.015
+                        root.after(15, poll)
+
             self.ready.set()
-            schedule['after']=root.after(self.poll_interval_ms,poll);schedule['due']=time.monotonic()+self.poll_interval_ms/1000
+            due[0]=time.monotonic()+.015
+            root.after(15, poll)
             root.mainloop()
         except Exception as exc:
             self.problem = exc.with_traceback(None)

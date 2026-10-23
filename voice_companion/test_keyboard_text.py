@@ -222,25 +222,35 @@ class KeyboardTextTests(unittest.TestCase):
                 self.assertFalse((Path(folder)/'Untitled.docx').exists())
 
 class WindowWakeTests(unittest.TestCase):
-    """Adding work for the window wakes its thread at once, from any thread."""
-    def test_adding_work_or_a_message_wakes_the_window(self):
-        import socket
-        window=CompanionWindow('wake test')
-        reader,writer=socket.socketpair()
+    """Adding work for the window nudges its thread, without ever blocking."""
+    def test_adding_work_or_a_message_posts_a_thread_message(self):
+        window=CompanionWindow('wake test');posted=[]
+        saved=CompanionWindow.__dict__.get('_post_thread_message')
+        CompanionWindow._post_thread_message=lambda *args:posted.append(args)
         try:
-            writer.setblocking(False);window._wake_socket=writer
+            window.ui_actions.put(('cancel_phonetic',None))  # No window thread yet: nothing to nudge.
+            self.assertEqual(posted,[])
+            window.native_thread_id=4321
             window.ui_actions.put(('cancel_phonetic',None));window.set_context({'mode':'awake'});window.show('Hello')
-            reader.settimeout(2);self.assertEqual(reader.recv(16),b'\0\0\0')
-            window._stop_wake()
-            self.assertIsNone(window._wake_socket);self.assertEqual(window.wake_status,'stopped')
-            window.ui_actions.put(('cancel_phonetic',None))  # After closing: no error, nothing sent.
-            self.assertEqual(window.ui_actions.qsize(),3)
+            self.assertEqual(posted,[(4321,0,0,0)]*3)
+            self.assertEqual(window.ui_actions.qsize(),3);self.assertEqual(window.messages.get_nowait(),'Hello')
         finally:
-            reader.close();writer.close()
+            if saved is None:del CompanionWindow._post_thread_message
+            else:CompanionWindow._post_thread_message=saved
+    def test_a_failed_nudge_never_stops_the_caller(self):
+        window=CompanionWindow('wake test');window.native_thread_id=4321
+        saved=CompanionWindow.__dict__.get('_post_thread_message')
+        def broken(*args):raise OSError('no message queue')
+        CompanionWindow._post_thread_message=broken
+        try:
+            window.ui_actions.put(('cancel_phonetic',None));self.assertEqual(window.ui_actions.qsize(),1)
+        finally:
+            if saved is None:del CompanionWindow._post_thread_message
+            else:CompanionWindow._post_thread_message=saved
     def test_debug_state_names_a_stalled_window_without_tk(self):
         window=CompanionWindow('state test')
         state=window.debug_state()
-        for key in ('closed','checks done','seconds since last check','wall clock drift since last check','late timer checks','wake'):
+        for key in ('closed','checks done','seconds since last check','wall clock drift since last check','late timer checks'):
             self.assertIn(key,state)
         self.assertFalse(state['thread alive']);self.assertIsNone(state['seconds since last check'])
 
@@ -415,21 +425,6 @@ class WindowKeyboardTests(RealWindowMixin,unittest.TestCase):
         self.wait(lambda:not self.window.commands.empty())
         self.assertEqual(self.window.commands.get_nowait(),'name document help')
 
-    def test_new_work_is_handled_when_the_window_timer_stalls(self):
-        # Tcl 8.6 times "after" by the wall clock, and on Windows it waits for
-        # messages with no time limit. When the window's timer stalled, new screens
-        # and key requests waited until some unrelated message arrived: the window
-        # looked frozen. Work added from another thread must wake it directly.
-        def stall_timers():
-            import tkinter
-            root=self.window.root
-            # Every window timer now fires ten minutes late, as with a stalled Tcl timer.
-            root.after=lambda ms,func=None,*args:tkinter.Misc.after(root,ms if ms=='idle' else 600000,func,*args)
-        self.call(stall_timers)
-        self.context()
-        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))
-        self.wait(lambda:not self.window.commands.empty())
-        self.assertEqual(self.window.commands.get()[0],'text_edit')
     def test_shutdown_discards_delayed_view_updates_and_readback(self):
         def close_with_pending_readback():
             self.window.messages.put('Delayed readback')
