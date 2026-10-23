@@ -29,6 +29,20 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("'^(FAIL|ERROR): '",s)
         self.assertIn("throw ('Dependency security audit failed. ' + ($findings -join ' | '))",s)
 
+    def test_every_packaging_option_has_its_flag(self):
+        # A merge once left 'chrome_setup' without '--hidden-import' before it, and
+        # PyInstaller read it as a second program, failing the Windows build.
+        import re
+        s=Path(__file__).with_name('build-windows.ps1').read_text()
+        problems=[]
+        for line in s.splitlines():
+            if "'--hidden-import'" not in line:continue
+            items=re.findall(r"'([^']*)'",line)
+            for i,item in enumerate(items):
+                if item.startswith('--'):continue
+                if i==0 or not items[i-1].startswith('--'):problems.append((item,line.strip()[:80]))
+        self.assertEqual(problems,[])
+
     def test_builder_uses_launcher_and_current_data_syntax(self):
         s=Path(__file__).with_name('build-windows.ps1').read_text()
         self.assertIn("'build_packaging.py'",s)
