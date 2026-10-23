@@ -5,940 +5,3630 @@ Menu, Options and media action rows come from the app's own tables; the other ro
 in that script. A keyboard way is a key, a shortcut, or a menu item reached with arrows and Enter.
 The command box (Alt+T, type the command, Enter) also works everywhere but is not counted.
 
-| Count | Number |
-| --- | --- |
-| Actions inventoried | 580 |
-| Already had both ways | 461 |
-| Gaps found | 119 |
-| Gaps fixed (Added) | 111 |
-| Not applicable (N/A, with reason) | 8 |
+## Counts
+
+- Actions inventoried: 580
+- Already had both ways: 461
+- Gaps found: 119
+- Gaps fixed (Added): 111
+- Not applicable (N/A, with reason): 8
 
 ## Main menu
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| File manager | "File manager" | First letter, arrows, Enter | Both |
-| Word processor | "Word processor" | First letter, arrows, Enter | Both |
-| Notepad | "Write a note" | First letter, arrows, Enter | Both |
-| Email | "Email" | First letter, arrows, Enter | Both |
-| Web browser | "Web browser" | First letter, arrows, Enter | Both |
-| Media | "Media menu" | First letter, arrows, Enter | Both |
-| Options | "Options" | First letter, arrows, Enter | Both |
-| Check for updates | "Check for updates" | First letter, arrows, Enter | Both |
-| Help | "Help" | First letter, arrows, Enter | Both |
-| Shut down the computer | "Shut down computer" | First letter, arrows, Enter | Both |
-| Restart the computer | "Restart computer" | First letter, arrows, Enter | Both |
-| Exit Voice Companion | "Exit companion" | First letter, arrows, Enter | Both |
+### File manager
+
+- Voice: "File manager"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Word processor
+
+- Voice: "Word processor"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Notepad
+
+- Voice: "Write a note"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Email
+
+- Voice: "Email"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Web browser
+
+- Voice: "Web browser"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Media
+
+- Voice: "Media menu"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Options
+
+- Voice: "Options"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Check for updates
+
+- Voice: "Check for updates"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Help
+
+- Voice: "Help"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Shut down the computer
+
+- Voice: "Shut down computer"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Restart the computer
+
+- Voice: "Restart computer"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Exit Voice Companion
+
+- Voice: "Exit companion"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
 
 ## File manager
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open | "Open" | Enter | Both |
-| Select or unselect current item | "Toggle selection" | Space | Both |
-| Select all | "Select all" | Ctrl+A | Both |
-| Clear selection | "Clear selection" | Ctrl+Shift+A | Both |
-| Rename | "Rename" | F2 | Both |
-| Delete | "Delete" | Delete | Both |
-| Copy | "Copy" | Ctrl+C | Both |
-| Cut | "Cut" | Ctrl+X | Both |
-| Paste | "Paste" | Ctrl+V | Both |
-| Refresh | "Refresh" | F5 | Both |
-| Previous folder | "Go back" | Escape | Both |
-| Drive list | "Drive list" | Ctrl+D | Both |
-| Read file manager help | "File manager help" | F1 | Both |
-| Search current list | "Search files" | Ctrl+E | Both |
-| Search subfolders | "Search subfolders" | Ctrl+Shift+F | Both |
-| Clear search | "Clear search" | Ctrl+Shift+X | Both |
-| Sort files | "Sort files" | Alt+S | Both |
-| Name | "Sort by name" | Alt+N | Both |
-| Date created | "Sort by date created" | Alt+C | Both |
-| Date modified | "Sort by date modified" | Alt+M | Both |
-| Date added (first seen here) | "Sort by date added" | Alt+D | Both |
-| Ascending | "Sort ascending" | Alt+A | Both |
-| Descending | "Sort descending" | Alt+Z | Both |
-| Main menu | "Main menu" | Alt+Home | Both |
+### Open
+
+- Voice: "Open"
+- Keyboard: Enter
+- Status: Both
+
+### Select or unselect current item
+
+- Voice: "Toggle selection"
+- Keyboard: Space
+- Status: Both
+
+### Select all
+
+- Voice: "Select all"
+- Keyboard: Ctrl+A
+- Status: Both
+
+### Clear selection
+
+- Voice: "Clear selection"
+- Keyboard: Ctrl+Shift+A
+- Status: Both
+
+### Rename
+
+- Voice: "Rename"
+- Keyboard: F2
+- Status: Both
+
+### Delete
+
+- Voice: "Delete"
+- Keyboard: Delete
+- Status: Both
+
+### Copy
+
+- Voice: "Copy"
+- Keyboard: Ctrl+C
+- Status: Both
+
+### Cut
+
+- Voice: "Cut"
+- Keyboard: Ctrl+X
+- Status: Both
+
+### Paste
+
+- Voice: "Paste"
+- Keyboard: Ctrl+V
+- Status: Both
+
+### Refresh
+
+- Voice: "Refresh"
+- Keyboard: F5
+- Status: Both
+
+### Previous folder
+
+- Voice: "Go back"
+- Keyboard: Escape
+- Status: Both
+
+### Drive list
+
+- Voice: "Drive list"
+- Keyboard: Ctrl+D
+- Status: Both
+
+### Read file manager help
+
+- Voice: "File manager help"
+- Keyboard: F1
+- Status: Both
+
+### Search current list
+
+- Voice: "Search files"
+- Keyboard: Ctrl+E
+- Status: Both
+
+### Search subfolders
+
+- Voice: "Search subfolders"
+- Keyboard: Ctrl+Shift+F
+- Status: Both
+
+### Clear search
+
+- Voice: "Clear search"
+- Keyboard: Ctrl+Shift+X
+- Status: Both
+
+### Sort files
+
+- Voice: "Sort files"
+- Keyboard: Alt+S
+- Status: Both
+
+### Name
+
+- Voice: "Sort by name"
+- Keyboard: Alt+N
+- Status: Both
+
+### Date created
+
+- Voice: "Sort by date created"
+- Keyboard: Alt+C
+- Status: Both
+
+### Date modified
+
+- Voice: "Sort by date modified"
+- Keyboard: Alt+M
+- Status: Both
+
+### Date added (first seen here)
+
+- Voice: "Sort by date added"
+- Keyboard: Alt+D
+- Status: Both
+
+### Ascending
+
+- Voice: "Sort ascending"
+- Keyboard: Alt+A
+- Status: Both
+
+### Descending
+
+- Voice: "Sort descending"
+- Keyboard: Alt+Z
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt+Home
+- Status: Both
 
 ## Word processor document: File
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Save | "Save document" | Ctrl+S | Both |
-| Save as | "Save as" | Ctrl+Shift+S | Both |
-| Rename | "Name document" | F2 | Both |
-| Open | "Open" | Ctrl+O | Both |
-| New | "Create a document" | Ctrl+N | Both |
-| Close | "Leave document" | Ctrl+W | Both |
+### Save
+
+- Voice: "Save document"
+- Keyboard: Ctrl+S
+- Status: Both
+
+### Save as
+
+- Voice: "Save as"
+- Keyboard: Ctrl+Shift+S
+- Status: Both
+
+### Rename
+
+- Voice: "Name document"
+- Keyboard: F2
+- Status: Both
+
+### Open
+
+- Voice: "Open"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### New
+
+- Voice: "Create a document"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Close
+
+- Voice: "Leave document"
+- Keyboard: Ctrl+W
+- Status: Both
 
 ## Word processor document: Edit
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Undo | "Undo" | Ctrl+Z | Both |
-| Select all | "Select all" | Ctrl+A | Both |
-| Copy | "Copy selection" | Ctrl+C | Both |
-| Cut | "Cut selection" | Ctrl+X | Both |
-| Paste | "Paste" | Ctrl+V | Both |
-| Find text | "Find ..." | Ctrl+F | Both |
-| Replace text | "Replace ..." | Ctrl+H | Both |
-| Select text | "Select ..." | Ctrl+Alt+S | Both |
-| Delete selected text | "Delete selection" | Ctrl+Shift+Delete | Both |
-| Scratch last dictation | "Scratch that" | Ctrl+Shift+Z | Both |
-| Describe selection | "What is selected" | Insert+Shift+Down | Both |
-| Clear selection | "Clear selection" | Alt, 2, L | Both |
-| Set selection start | "Selection start at ..." | Alt, 2, M | Both |
-| Set selection end | "Selection end at ..." | Alt, 2, N | Both |
-| Insert before text | "Insert before ..." | Alt, 2, O | Both |
-| Insert after text | "Insert after ..." | Alt, 2, P | Both |
-| Replace current word | "Replace word with ..." | Alt, 2, Q | Both |
-| Replace current sentence | "Replace sentence with ..." | Alt, 2, R | Both |
-| Replace current paragraph | "Replace paragraph with ..." | Alt, 2, S | Both |
-| Delete current word | "Delete current word" | Alt, 2, T | Both |
-| Delete current line | "Delete current line" | Alt, 2, U | Both |
-| Delete current sentence | "Delete sentence" | Alt, 2, V | Both |
-| Delete current paragraph | "Delete current paragraph" | Alt, 2, W | Both |
+### Undo
+
+- Voice: "Undo"
+- Keyboard: Ctrl+Z
+- Status: Both
+
+### Select all
+
+- Voice: "Select all"
+- Keyboard: Ctrl+A
+- Status: Both
+
+### Copy
+
+- Voice: "Copy selection"
+- Keyboard: Ctrl+C
+- Status: Both
+
+### Cut
+
+- Voice: "Cut selection"
+- Keyboard: Ctrl+X
+- Status: Both
+
+### Paste
+
+- Voice: "Paste"
+- Keyboard: Ctrl+V
+- Status: Both
+
+### Find text
+
+- Voice: "Find ..."
+- Keyboard: Ctrl+F
+- Status: Both
+
+### Replace text
+
+- Voice: "Replace ..."
+- Keyboard: Ctrl+H
+- Status: Both
+
+### Select text
+
+- Voice: "Select ..."
+- Keyboard: Ctrl+Alt+S
+- Status: Both
+
+### Delete selected text
+
+- Voice: "Delete selection"
+- Keyboard: Ctrl+Shift+Delete
+- Status: Both
+
+### Scratch last dictation
+
+- Voice: "Scratch that"
+- Keyboard: Ctrl+Shift+Z
+- Status: Both
+
+### Describe selection
+
+- Voice: "What is selected"
+- Keyboard: Insert+Shift+Down
+- Status: Both
+
+### Clear selection
+
+- Voice: "Clear selection"
+- Keyboard: Alt, 2, L
+- Status: Both
+
+### Set selection start
+
+- Voice: "Selection start at ..."
+- Keyboard: Alt, 2, M
+- Status: Both
+
+### Set selection end
+
+- Voice: "Selection end at ..."
+- Keyboard: Alt, 2, N
+- Status: Both
+
+### Insert before text
+
+- Voice: "Insert before ..."
+- Keyboard: Alt, 2, O
+- Status: Both
+
+### Insert after text
+
+- Voice: "Insert after ..."
+- Keyboard: Alt, 2, P
+- Status: Both
+
+### Replace current word
+
+- Voice: "Replace word with ..."
+- Keyboard: Alt, 2, Q
+- Status: Both
+
+### Replace current sentence
+
+- Voice: "Replace sentence with ..."
+- Keyboard: Alt, 2, R
+- Status: Both
+
+### Replace current paragraph
+
+- Voice: "Replace paragraph with ..."
+- Keyboard: Alt, 2, S
+- Status: Both
+
+### Delete current word
+
+- Voice: "Delete current word"
+- Keyboard: Alt, 2, T
+- Status: Both
+
+### Delete current line
+
+- Voice: "Delete current line"
+- Keyboard: Alt, 2, U
+- Status: Both
+
+### Delete current sentence
+
+- Voice: "Delete sentence"
+- Keyboard: Alt, 2, V
+- Status: Both
+
+### Delete current paragraph
+
+- Voice: "Delete current paragraph"
+- Keyboard: Alt, 2, W
+- Status: Both
 
 ## Word processor document: Format
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Bold | "Toggle bold" | Ctrl+B | Both |
-| Italic | "Toggle italic" | Ctrl+I | Both |
-| Underline | "Toggle underline" | Ctrl+U | Both |
-| Remove bold | "Remove bold" | Alt, 3, D | Both |
-| Remove italic | "Remove italic" | Alt, 3, E | Both |
-| Remove underline | "Remove underline" | Alt, 3, F | Both |
-| Font | "Set font ..." | Ctrl+Shift+F | Both |
-| Font size | "Set font size ..." | Ctrl+Shift+P | Both |
-| Line spacing | "Line spacing ..." | Alt, 3, I | Both |
-| Single spacing | "Single space" | Ctrl+1 | Both |
-| Double spacing | "Double space" | Ctrl+2 | Both |
-| One and a half spacing | "Line spacing 1.5" | Ctrl+5 | Both |
-| Heading | "Heading one" | Ctrl+Alt+1 | Both |
-| Normal text | "Normal text" | Ctrl+Shift+N | Both |
-| Formatting details | "What formatting" | Insert+F | Both |
-| Align left | "Align left" | Ctrl+L | Both |
-| Align center | "Align center" | Ctrl+E | Both |
-| Align right | "Align right" | Ctrl+R | Both |
-| Justify | "Align justified" | Ctrl+J | Both |
-| Heading level | "Heading ..." | Alt, 3, T | Both |
-| Highlight text | "Highlight ..." | Ctrl+Shift+H | Both |
-| Word font | "Set word font ..." | Alt, 3, V | Both |
-| Word font size | "Set word size ..." | Alt, 3, W | Both |
-| Whole document spacing | "Document line spacing ..." | Alt, 3, X | Both |
-| Reset paragraph spacing | "Reset line spacing" | Alt, 3, Y | Both |
-| Reset document spacing | "Reset document line spacing" | Alt, 3, Z | Both |
-| Heading 2 | "Heading 2" | Ctrl+Alt+2 | Both |
-| Heading 3 | "Heading 3" | Ctrl+Alt+3 | Both |
-| Heading 4 | "Heading 4" | Ctrl+Alt+4 | Both |
-| Heading 5 | "Heading 5" | Ctrl+Alt+5 | Both |
-| Heading 6 | "Heading 6" | Ctrl+Alt+6 | Both |
+### Bold
+
+- Voice: "Toggle bold"
+- Keyboard: Ctrl+B
+- Status: Both
+
+### Italic
+
+- Voice: "Toggle italic"
+- Keyboard: Ctrl+I
+- Status: Both
+
+### Underline
+
+- Voice: "Toggle underline"
+- Keyboard: Ctrl+U
+- Status: Both
+
+### Remove bold
+
+- Voice: "Remove bold"
+- Keyboard: Alt, 3, D
+- Status: Both
+
+### Remove italic
+
+- Voice: "Remove italic"
+- Keyboard: Alt, 3, E
+- Status: Both
+
+### Remove underline
+
+- Voice: "Remove underline"
+- Keyboard: Alt, 3, F
+- Status: Both
+
+### Font
+
+- Voice: "Set font ..."
+- Keyboard: Ctrl+Shift+F
+- Status: Both
+
+### Font size
+
+- Voice: "Set font size ..."
+- Keyboard: Ctrl+Shift+P
+- Status: Both
+
+### Line spacing
+
+- Voice: "Line spacing ..."
+- Keyboard: Alt, 3, I
+- Status: Both
+
+### Single spacing
+
+- Voice: "Single space"
+- Keyboard: Ctrl+1
+- Status: Both
+
+### Double spacing
+
+- Voice: "Double space"
+- Keyboard: Ctrl+2
+- Status: Both
+
+### One and a half spacing
+
+- Voice: "Line spacing 1.5"
+- Keyboard: Ctrl+5
+- Status: Both
+
+### Heading
+
+- Voice: "Heading one"
+- Keyboard: Ctrl+Alt+1
+- Status: Both
+
+### Normal text
+
+- Voice: "Normal text"
+- Keyboard: Ctrl+Shift+N
+- Status: Both
+
+### Formatting details
+
+- Voice: "What formatting"
+- Keyboard: Insert+F
+- Status: Both
+
+### Align left
+
+- Voice: "Align left"
+- Keyboard: Ctrl+L
+- Status: Both
+
+### Align center
+
+- Voice: "Align center"
+- Keyboard: Ctrl+E
+- Status: Both
+
+### Align right
+
+- Voice: "Align right"
+- Keyboard: Ctrl+R
+- Status: Both
+
+### Justify
+
+- Voice: "Align justified"
+- Keyboard: Ctrl+J
+- Status: Both
+
+### Heading level
+
+- Voice: "Heading ..."
+- Keyboard: Alt, 3, T
+- Status: Both
+
+### Highlight text
+
+- Voice: "Highlight ..."
+- Keyboard: Ctrl+Shift+H
+- Status: Both
+
+### Word font
+
+- Voice: "Set word font ..."
+- Keyboard: Alt, 3, V
+- Status: Both
+
+### Word font size
+
+- Voice: "Set word size ..."
+- Keyboard: Alt, 3, W
+- Status: Both
+
+### Whole document spacing
+
+- Voice: "Document line spacing ..."
+- Keyboard: Alt, 3, X
+- Status: Both
+
+### Reset paragraph spacing
+
+- Voice: "Reset line spacing"
+- Keyboard: Alt, 3, Y
+- Status: Both
+
+### Reset document spacing
+
+- Voice: "Reset document line spacing"
+- Keyboard: Alt, 3, Z
+- Status: Both
+
+### Heading 2
+
+- Voice: "Heading 2"
+- Keyboard: Ctrl+Alt+2
+- Status: Both
+
+### Heading 3
+
+- Voice: "Heading 3"
+- Keyboard: Ctrl+Alt+3
+- Status: Both
+
+### Heading 4
+
+- Voice: "Heading 4"
+- Keyboard: Ctrl+Alt+4
+- Status: Both
+
+### Heading 5
+
+- Voice: "Heading 5"
+- Keyboard: Ctrl+Alt+5
+- Status: Both
+
+### Heading 6
+
+- Voice: "Heading 6"
+- Keyboard: Ctrl+Alt+6
+- Status: Both
 
 ## Word processor document: Insert
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| New line | "New line" | Enter | Both |
-| New paragraph | "New paragraph" | Ctrl+Enter | Both |
-| Table | "Create table with ..." | Ctrl+Alt+T | Both |
-| Bulleted list | "Bulleted list" | Ctrl+Shift+L | Both |
-| Numbered list | "Numbered list" | Ctrl+Shift+7 | Both |
-| End list | "End list" | Alt, 4, F | Both |
+### New line
+
+- Voice: "New line"
+- Keyboard: Enter
+- Status: Both
+
+### New paragraph
+
+- Voice: "New paragraph"
+- Keyboard: Ctrl+Enter
+- Status: Both
+
+### Table
+
+- Voice: "Create table with ..."
+- Keyboard: Ctrl+Alt+T
+- Status: Both
+
+### Bulleted list
+
+- Voice: "Bulleted list"
+- Keyboard: Ctrl+Shift+L
+- Status: Both
+
+### Numbered list
+
+- Voice: "Numbered list"
+- Keyboard: Ctrl+Shift+7
+- Status: Both
+
+### End list
+
+- Voice: "End list"
+- Keyboard: Alt, 4, F
+- Status: Both
 
 ## Word processor document: Read and navigate
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Read document | "Read document" | Ctrl+Shift+R | Both |
-| Read paragraph | "Read paragraph" | Alt, 5, B | Both |
-| Read sentence | "Read sentence" | Alt, 5, C | Both |
-| Read word | "Read word" | Alt, 5, D | Both |
-| Next heading | "Next heading" | Ctrl+Alt+Down | Both |
-| List headings | "List headings" | Ctrl+Alt+H | Both |
-| Navigate document | "Navigate document" | Ctrl+G | Both |
-| Beginning of document | "Go to beginning of document" | Ctrl+Home | Both |
-| End of document | "Go to end of document" | Ctrl+End | Both |
-| Document details | "Where am i" | Alt, 5, J | Both |
-| Next character | "Next character" | Alt, 5, K | Both |
-| Previous character | "Previous character" | Alt, 5, L | Both |
-| Next word | "Next word" | Alt, 5, M | Both |
-| Previous word | "Previous word" | Alt, 5, N | Both |
-| Next line | "Next line" | Alt, 5, O | Both |
-| Previous line | "Previous line" | Alt, 5, P | Both |
-| Next sentence | "Next sentence" | Alt, 5, Q | Both |
-| Previous sentence | "Previous sentence" | Alt, 5, R | Both |
-| Next paragraph | "Next paragraph" | Alt, 5, S | Both |
-| Previous paragraph | "Previous paragraph" | Alt, 5, T | Both |
+### Read document
+
+- Voice: "Read document"
+- Keyboard: Ctrl+Shift+R
+- Status: Both
+
+### Read paragraph
+
+- Voice: "Read paragraph"
+- Keyboard: Alt, 5, B
+- Status: Both
+
+### Read sentence
+
+- Voice: "Read sentence"
+- Keyboard: Alt, 5, C
+- Status: Both
+
+### Read word
+
+- Voice: "Read word"
+- Keyboard: Alt, 5, D
+- Status: Both
+
+### Next heading
+
+- Voice: "Next heading"
+- Keyboard: Ctrl+Alt+Down
+- Status: Both
+
+### List headings
+
+- Voice: "List headings"
+- Keyboard: Ctrl+Alt+H
+- Status: Both
+
+### Navigate document
+
+- Voice: "Navigate document"
+- Keyboard: Ctrl+G
+- Status: Both
+
+### Beginning of document
+
+- Voice: "Go to beginning of document"
+- Keyboard: Ctrl+Home
+- Status: Both
+
+### End of document
+
+- Voice: "Go to end of document"
+- Keyboard: Ctrl+End
+- Status: Both
+
+### Document details
+
+- Voice: "Where am i"
+- Keyboard: Alt, 5, J
+- Status: Both
+
+### Next character
+
+- Voice: "Next character"
+- Keyboard: Alt, 5, K
+- Status: Both
+
+### Previous character
+
+- Voice: "Previous character"
+- Keyboard: Alt, 5, L
+- Status: Both
+
+### Next word
+
+- Voice: "Next word"
+- Keyboard: Alt, 5, M
+- Status: Both
+
+### Previous word
+
+- Voice: "Previous word"
+- Keyboard: Alt, 5, N
+- Status: Both
+
+### Next line
+
+- Voice: "Next line"
+- Keyboard: Alt, 5, O
+- Status: Both
+
+### Previous line
+
+- Voice: "Previous line"
+- Keyboard: Alt, 5, P
+- Status: Both
+
+### Next sentence
+
+- Voice: "Next sentence"
+- Keyboard: Alt, 5, Q
+- Status: Both
+
+### Previous sentence
+
+- Voice: "Previous sentence"
+- Keyboard: Alt, 5, R
+- Status: Both
+
+### Next paragraph
+
+- Voice: "Next paragraph"
+- Keyboard: Alt, 5, S
+- Status: Both
+
+### Previous paragraph
+
+- Voice: "Previous paragraph"
+- Keyboard: Alt, 5, T
+- Status: Both
 
 ## Word processor document: Dictation
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Start dictation | "Start dictation" | F4 | Both |
-| Pause dictation | "Pause dictation" | Shift+F4 | Both |
+### Start dictation
+
+- Voice: "Start dictation"
+- Keyboard: F4
+- Status: Both
+
+### Pause dictation
+
+- Voice: "Pause dictation"
+- Keyboard: Shift+F4
+- Status: Both
 
 ## Word processor document: More commands
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Run any document voice command | "Run any document voice command" | Alt+T | N/A - this item is the keyboard way to type any spoken command |
-| Document help | "Help with documents" | F1 | Both |
-| Word processor options | "Word processor options" | Alt+O | Both |
+### Run any document voice command
+
+- Voice: "Run any document voice command"
+- Keyboard: Alt+T
+- Status: N/A - this item is the keyboard way to type any spoken command
+
+### Document help
+
+- Voice: "Help with documents"
+- Keyboard: F1
+- Status: Both
+
+### Word processor options
+
+- Voice: "Word processor options"
+- Keyboard: Alt+O
+- Status: Both
 
 ## Word processor document: Table
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Read table | "Read table" | Alt, 8, A | Both |
-| Read cell | "Read cell" | Alt, 8, B | Both |
-| Next cell | "Next cell" | Tab | Both |
-| Previous cell | "Previous cell" | Shift+Tab | Both |
-| Next row | "Next row" | Alt+Down | Both |
-| Previous row | "Previous row" | Alt+Up | Both |
-| Next column | "Next column" | Alt+Right | Both |
-| Previous column | "Previous column" | Alt+Left | Both |
-| Add row | "Add row" | Alt, 8, I | Both |
-| Add column | "Add column" | Alt, 8, J | Both |
-| Delete row | "Delete row" | Alt, 8, K | Both |
-| Delete column | "Delete column" | Alt, 8, L | Both |
-| Clear cell | "Clear cell" | Alt, 8, M | Both |
-| Delete table | "Delete table" | Alt, 8, N | Both |
-| Leave table | "Leave table" | Alt, 8, O | Both |
+### Read table
+
+- Voice: "Read table"
+- Keyboard: Alt, 8, A
+- Status: Both
+
+### Read cell
+
+- Voice: "Read cell"
+- Keyboard: Alt, 8, B
+- Status: Both
+
+### Next cell
+
+- Voice: "Next cell"
+- Keyboard: Tab
+- Status: Both
+
+### Previous cell
+
+- Voice: "Previous cell"
+- Keyboard: Shift+Tab
+- Status: Both
+
+### Next row
+
+- Voice: "Next row"
+- Keyboard: Alt+Down
+- Status: Both
+
+### Previous row
+
+- Voice: "Previous row"
+- Keyboard: Alt+Up
+- Status: Both
+
+### Next column
+
+- Voice: "Next column"
+- Keyboard: Alt+Right
+- Status: Both
+
+### Previous column
+
+- Voice: "Previous column"
+- Keyboard: Alt+Left
+- Status: Both
+
+### Add row
+
+- Voice: "Add row"
+- Keyboard: Alt, 8, I
+- Status: Both
+
+### Add column
+
+- Voice: "Add column"
+- Keyboard: Alt, 8, J
+- Status: Both
+
+### Delete row
+
+- Voice: "Delete row"
+- Keyboard: Alt, 8, K
+- Status: Both
+
+### Delete column
+
+- Voice: "Delete column"
+- Keyboard: Alt, 8, L
+- Status: Both
+
+### Clear cell
+
+- Voice: "Clear cell"
+- Keyboard: Alt, 8, M
+- Status: Both
+
+### Delete table
+
+- Voice: "Delete table"
+- Keyboard: Alt, 8, N
+- Status: Both
+
+### Leave table
+
+- Voice: "Leave table"
+- Keyboard: Alt, 8, O
+- Status: Both
 
 ## Word Processor
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Create a document | "Create a document" | Ctrl+N | Both |
-| Open a document | "Open a document" | Ctrl+O | Both |
-| Recent documents | "Recent documents" | Ctrl+R | Both |
-| Options | "Options" | Alt+O | Both |
+### Create a document
+
+- Voice: "Create a document"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Open a document
+
+- Voice: "Open a document"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### Recent documents
+
+- Voice: "Recent documents"
+- Keyboard: Ctrl+R
+- Status: Both
+
+### Options
+
+- Voice: "Options"
+- Keyboard: Alt+O
+- Status: Both
 
 ## Media Menu
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Radio | "Radio" | First letter, arrows, Enter | Both |
-| Podcasts | "Podcasts" | First letter, arrows, Enter | Both |
-| Media player | "Media player" | First letter, arrows, Enter | Both |
+### Radio
+
+- Voice: "Radio"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Podcasts
+
+- Voice: "Podcasts"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Media player
+
+- Voice: "Media player"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
 
 ## Local Media
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open a media file | "Open a media file" | Ctrl+O | Both |
-| Play or pause | "Play or pause" | Space | Both |
-| Stop | "Stop media" | Ctrl+S | Both |
-| Back 15 seconds | "Back 15 seconds" | Left | Both |
-| Forward 15 seconds | "Forward 15 seconds" | Right | Both |
-| Volume up | "Volume up" | Up | Both |
-| Volume down | "Volume down" | Down | Both |
-| Playback speed | "Playback speed" | First letter, arrows, Enter | Both |
-| Status | "Media status" | Ctrl+I | Both |
+### Open a media file
+
+- Voice: "Open a media file"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### Play or pause
+
+- Voice: "Play or pause"
+- Keyboard: Space
+- Status: Both
+
+### Stop
+
+- Voice: "Stop media"
+- Keyboard: Ctrl+S
+- Status: Both
+
+### Back 15 seconds
+
+- Voice: "Back 15 seconds"
+- Keyboard: Left
+- Status: Both
+
+### Forward 15 seconds
+
+- Voice: "Forward 15 seconds"
+- Keyboard: Right
+- Status: Both
+
+### Volume up
+
+- Voice: "Volume up"
+- Keyboard: Up
+- Status: Both
+
+### Volume down
+
+- Voice: "Volume down"
+- Keyboard: Down
+- Status: Both
+
+### Playback speed
+
+- Voice: "Playback speed"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Status
+
+- Voice: "Media status"
+- Keyboard: Ctrl+I
+- Status: Both
 
 ## Verbosity options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Verbosity | "Set Verbosity to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
-| Spoken punctuation | "Set Spoken punctuation to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
-| Echo dictated text | "Set Echo dictated text to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
-| Typing echo | "Set Typing echo to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
-| Delayed phonetic pronunciation | "Set Delayed phonetic pronunciation to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
-| Phonetic delay in seconds | "Set Phonetic delay in seconds to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
-| When encountering capital letters | "Set When encountering capital letters to ..." | Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save | Both |
+### Verbosity
+
+- Voice: "Set Verbosity to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Spoken punctuation
+
+- Voice: "Set Spoken punctuation to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Echo dictated text
+
+- Voice: "Set Echo dictated text to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Typing echo
+
+- Voice: "Set Typing echo to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Delayed phonetic pronunciation
+
+- Voice: "Set Delayed phonetic pronunciation to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Phonetic delay in seconds
+
+- Voice: "Set Phonetic delay in seconds to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### When encountering capital letters
+
+- Voice: "Set When encountering capital letters to ..."
+- Keyboard: Alt+O, arrows to Verbosity options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
 
 ## Voice options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Voice pitch | "Set Voice pitch to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Speech rate | "Set Speech rate to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Speech volume | "Set Speech volume to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Audio ducking | "Set Audio ducking to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Ducking level | "Set Ducking level to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
-| Also lower other apps while Companion speaks | "Set Also lower other apps while Companion speaks to ..." | Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save | Both |
+### Voice pitch
+
+- Voice: "Set Voice pitch to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Speech rate
+
+- Voice: "Set Speech rate to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Speech volume
+
+- Voice: "Set Speech volume to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Audio ducking
+
+- Voice: "Set Audio ducking to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Ducking level
+
+- Voice: "Set Ducking level to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Also lower other apps while Companion speaks
+
+- Voice: "Set Also lower other apps while Companion speaks to ..."
+- Keyboard: Alt+O, arrows to Voice options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
 
 ## Synthesizer options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Synthesizer | "Set Synthesizer to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
-| SAPI voice | "Set SAPI voice to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
-| eSpeak voice | "Set eSpeak voice to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
-| AI voice | "Set AI voice to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
-| AI API key | "Set api key to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
-| Allow narration text to be sent to OpenAI | "Set Allow narration text to be sent to OpenAI to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
-| Remove saved AI key | "Set Remove saved AI key to ..." | Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save | Both |
+### Synthesizer
+
+- Voice: "Set Synthesizer to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### SAPI voice
+
+- Voice: "Set SAPI voice to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### eSpeak voice
+
+- Voice: "Set eSpeak voice to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### AI voice
+
+- Voice: "Set AI voice to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### AI API key
+
+- Voice: "Set api key to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Allow narration text to be sent to OpenAI
+
+- Voice: "Set Allow narration text to be sent to OpenAI to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Remove saved AI key
+
+- Voice: "Set Remove saved AI key to ..."
+- Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
 
 ## Input options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Command and dictation mode | "Set Command and dictation mode to ..." | Alt+O, arrows to Input options, Tab to the field, arrows or Space, Enter to save | Both |
-| Dictation type | "Set Dictation type to ..." | Alt+O, arrows to Input options, Tab to the field, arrows or Space, Enter to save | Both |
-| Allow microphone audio to be sent to Azure for recognition | "Set cloud consent to ..." | Alt+O, arrows to Input options, Tab to the field, arrows or Space, Enter to save | Both |
+### Command and dictation mode
+
+- Voice: "Set Command and dictation mode to ..."
+- Keyboard: Alt+O, arrows to Input options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Dictation type
+
+- Voice: "Set Dictation type to ..."
+- Keyboard: Alt+O, arrows to Input options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Allow microphone audio to be sent to Azure for recognition
+
+- Voice: "Set cloud consent to ..."
+- Keyboard: Alt+O, arrows to Input options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
 
 ## Email options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Email format | "Set Email format to ..." | Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save | Both |
-| Sending account | "Set Sending account to ..." | Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save | Both |
-| Messages per list | "Set Messages per list to ..." | Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save | Both |
-| Announce email header names | "Set Announce email header names to ..." | Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save | Both |
-| Spoken email headers | "Set email header order to ..." | Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save | Both |
-| Add an email account | "Add account" | Alt+O, arrows to Email options, Tab to the button, Enter | Both |
-| Connect Google Contacts | "Connect google contacts" | Alt+O, arrows to Email options, Tab to the button, Enter | Added: Options button |
+### Email format
+
+- Voice: "Set Email format to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Sending account
+
+- Voice: "Set Sending account to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Messages per list
+
+- Voice: "Set Messages per list to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Announce email header names
+
+- Voice: "Set Announce email header names to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Spoken email headers
+
+- Voice: "Set email header order to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Add an email account
+
+- Voice: "Add account"
+- Keyboard: Alt+O, arrows to Email options, Tab to the button, Enter
+- Status: Both
+
+### Connect Google Contacts
+
+- Voice: "Connect google contacts"
+- Keyboard: Alt+O, arrows to Email options, Tab to the button, Enter
+- Status: Added: Options button
 
 ## Word processor options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Font for new documents | "Set Font for new documents to ..." | Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save | Both |
-| Font size for new documents | "Set Font size for new documents to ..." | Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save | Both |
-| Line spacing for new documents | "Set Line spacing for new documents to ..." | Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save | Both |
-| Alignment for new documents | "Set Alignment for new documents to ..." | Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save | Both |
+### Font for new documents
+
+- Voice: "Set Font for new documents to ..."
+- Keyboard: Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Font size for new documents
+
+- Voice: "Set Font size for new documents to ..."
+- Keyboard: Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Line spacing for new documents
+
+- Voice: "Set Line spacing for new documents to ..."
+- Keyboard: Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Alignment for new documents
+
+- Voice: "Set Alignment for new documents to ..."
+- Keyboard: Alt+O, arrows to Word processor options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
 
 ## Notepad options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open Notepad | "Write a note" | Alt+O, arrows to Notepad options, Tab to the button, Enter | Both |
+### Open Notepad
+
+- Voice: "Write a note"
+- Keyboard: Alt+O, arrows to Notepad options, Tab to the button, Enter
+- Status: Both
 
 ## Web browser options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Default search engine | "Set Default search engine to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
-| Keep browser window open | "Set Keep browser window open to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
-| Automatic page reading | "Set Automatic page reading to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
-| Guided browser | "Set Guided browser to ..." | Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save | Both |
-| Set up Chrome and the Voice Companion extension | "Set up chrome" | Alt+O, arrows to Web browser options, Tab to the button, Enter | Both |
+### Default search engine
+
+- Voice: "Set Default search engine to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Keep browser window open
+
+- Voice: "Set Keep browser window open to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Automatic page reading
+
+- Voice: "Set Automatic page reading to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Guided browser
+
+- Voice: "Set Guided browser to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Set up Chrome and the Voice Companion extension
+
+- Voice: "Set up chrome"
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the button, Enter
+- Status: Both
 
 ## Radio options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Keep audio playing in the background | "Set Keep audio playing in the background to ..." | Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save | Both |
-| Station database | "Set Station database to ..." | Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save | Both |
-| List radio presets | "List presets" | Alt+O, arrows to Radio options, Tab to the button, Enter | Both |
-| List scheduled recordings | "List scheduled recordings" | Alt+O, arrows to Radio options, Tab to the button, Enter | Both |
+### Keep audio playing in the background
+
+- Voice: "Set Keep audio playing in the background to ..."
+- Keyboard: Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Station database
+
+- Voice: "Set Station database to ..."
+- Keyboard: Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### List radio presets
+
+- Voice: "List presets"
+- Keyboard: Alt+O, arrows to Radio options, Tab to the button, Enter
+- Status: Both
+
+### List scheduled recordings
+
+- Voice: "List scheduled recordings"
+- Keyboard: Alt+O, arrows to Radio options, Tab to the button, Enter
+- Status: Both
 
 ## Podcasts options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Keep audio playing in the background | "Set Keep audio playing in the background to ..." | Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save | Both |
-| Podcast subscription | "Set Podcast subscription to ..." | Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save | Both |
-| Automatic downloads for this subscription | "Set Automatic downloads for this subscription to ..." | Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save | Both |
-| List subscriptions | "List subscriptions" | Alt+O, arrows to Podcasts options, Tab to the button, Enter | Both |
+### Keep audio playing in the background
+
+- Voice: "Set Keep audio playing in the background to ..."
+- Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Podcast subscription
+
+- Voice: "Set Podcast subscription to ..."
+- Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Automatic downloads for this subscription
+
+- Voice: "Set Automatic downloads for this subscription to ..."
+- Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### List subscriptions
+
+- Voice: "List subscriptions"
+- Keyboard: Alt+O, arrows to Podcasts options, Tab to the button, Enter
+- Status: Both
 
 ## Auto-update options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Check automatically at startup | "Set Check automatically at startup to ..." | Alt+O, arrows to Auto-update options, Tab to the field, arrows or Space, Enter to save | Both |
-| Check for updates now | "Check for updates" | Alt+O, arrows to Auto-update options, Tab to the button, Enter | Both |
+### Check automatically at startup
+
+- Voice: "Set Check automatically at startup to ..."
+- Keyboard: Alt+O, arrows to Auto-update options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Check for updates now
+
+- Voice: "Check for updates"
+- Keyboard: Alt+O, arrows to Auto-update options, Tab to the button, Enter
+- Status: Both
 
 ## Startup and exit options
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Start with Windows | "Set Start with Windows to ..." | Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save | Both |
-| Ask before exiting Voice Companion | "Set Ask before exiting Voice Companion to ..." | Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save | Both |
-| Ask before shutting down the computer | "Set Ask before shutting down the computer to ..." | Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save | Both |
-| Ask before restarting the computer | "Set Ask before restarting the computer to ..." | Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save | Both |
+### Start with Windows
+
+- Voice: "Set Start with Windows to ..."
+- Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Ask before exiting Voice Companion
+
+- Voice: "Set Ask before exiting Voice Companion to ..."
+- Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Ask before shutting down the computer
+
+- Voice: "Set Ask before shutting down the computer to ..."
+- Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Ask before restarting the computer
+
+- Voice: "Set Ask before restarting the computer to ..."
+- Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
 
 ## Radio
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Search stations | "Search stations" | Actions list: arrows to the action, Enter | Both |
-| Browse genre | "Browse genre" | Actions list: arrows to the action, Enter | Both |
-| Browse country | "Browse country" | Actions list: arrows to the action, Enter | Both |
-| Browse state | "Browse state" | Actions list: arrows to the action, Enter | Both |
-| Browse city | "Browse city" | Actions list: arrows to the action, Enter | Both |
-| Station database | "Station database" | Actions list: arrows to the action, Enter | Both |
-| List stations | "List stations" | Actions list: arrows to the action, Enter | Both |
-| List presets | "List presets" | Actions list: arrows to the action, Enter | Both |
-| Save preset | "Save preset" | Actions list: arrows to the action, Enter | Both |
-| Delete preset | "Delete preset" | Actions list: arrows to the action, Enter | Both |
-| Pause audio | "Pause audio" | Actions list: arrows to the action, Enter | Both |
-| Resume audio | "Resume audio" | Actions list: arrows to the action, Enter | Both |
-| Stop audio | "Stop audio" | Actions list: arrows to the action, Enter | Both |
-| Record selected station | "Record selected station" | Actions list: arrows to the action, Enter | Both |
-| Schedule selected station | "Schedule selected station" | Actions list: arrows to the action, Enter | Both |
-| Stop recording | "Stop recording" | Actions list: arrows to the action, Enter | Both |
-| List scheduled recordings | "List scheduled recordings" | Actions list: arrows to the action, Enter | Both |
-| Cancel selected scheduled recording | "Cancel selected scheduled recording" | Actions list: arrows to the action, Enter | Both |
-| List saved recordings | "List saved recordings" | Actions list: arrows to the action, Enter | Both |
-| Refresh station directories | "Refresh station directories" | Actions list: arrows to the action, Enter | Both |
-| Import RadioSure stations | "Import RadioSure stations" | Actions list: arrows to the action, Enter | Both |
+### Search stations
+
+- Voice: "Search stations"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Browse genre
+
+- Voice: "Browse genre"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Browse country
+
+- Voice: "Browse country"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Browse state
+
+- Voice: "Browse state"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Browse city
+
+- Voice: "Browse city"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Station database
+
+- Voice: "Station database"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List stations
+
+- Voice: "List stations"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List presets
+
+- Voice: "List presets"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Save preset
+
+- Voice: "Save preset"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Delete preset
+
+- Voice: "Delete preset"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Pause audio
+
+- Voice: "Pause audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Resume audio
+
+- Voice: "Resume audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Stop audio
+
+- Voice: "Stop audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Record selected station
+
+- Voice: "Record selected station"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Schedule selected station
+
+- Voice: "Schedule selected station"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Stop recording
+
+- Voice: "Stop recording"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List scheduled recordings
+
+- Voice: "List scheduled recordings"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Cancel selected scheduled recording
+
+- Voice: "Cancel selected scheduled recording"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List saved recordings
+
+- Voice: "List saved recordings"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Refresh station directories
+
+- Voice: "Refresh station directories"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Import RadioSure stations
+
+- Voice: "Import RadioSure stations"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
 
 ## Radio station actions
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Add to favorites | "Add to favorites" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
-| Record current station | "Record current station" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
-| Schedule recording | "Schedule recording" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
-| Pause audio | "Pause audio" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
-| Play | "Play" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
-| Stop recording | "Stop recording" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
-| Cancel scheduled recordings | "Cancel scheduled recordings" | Actions list: arrows to the action, Enter | Added: voice (say the action name) |
+### Add to favorites
+
+- Voice: "Add to favorites"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
+
+### Record current station
+
+- Voice: "Record current station"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
+
+### Schedule recording
+
+- Voice: "Schedule recording"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
+
+### Pause audio
+
+- Voice: "Pause audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
+
+### Play
+
+- Voice: "Play"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
+
+### Stop recording
+
+- Voice: "Stop recording"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
+
+### Cancel scheduled recordings
+
+- Voice: "Cancel scheduled recordings"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Added: voice (say the action name)
 
 ## Podcasts
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Search podcasts | "Search podcasts" | Actions list: arrows to the action, Enter | Both |
-| Browse podcast category | "Browse podcast category" | Actions list: arrows to the action, Enter | Both |
-| List podcast shows | "List podcast shows" | Actions list: arrows to the action, Enter | Both |
-| List subscriptions | "List subscriptions" | Actions list: arrows to the action, Enter | Both |
-| Open selected podcast | "Open selected podcast" | Actions list: arrows to the action, Enter | Both |
-| Subscribe to selected podcast | "Subscribe to selected podcast" | Actions list: arrows to the action, Enter | Both |
-| Remove selected subscription | "Remove selected subscription" | Actions list: arrows to the action, Enter | Both |
-| Download selected episode | "Download selected episode" | Actions list: arrows to the action, Enter | Both |
-| List downloaded episodes | "List downloaded episodes" | Actions list: arrows to the action, Enter | Both |
-| Automatic downloads | "Automatic downloads" | Actions list: arrows to the action, Enter | Both |
-| Manual downloads | "Manual downloads" | Actions list: arrows to the action, Enter | Both |
-| Refresh subscriptions | "Refresh subscriptions" | Actions list: arrows to the action, Enter | Both |
-| Pause audio | "Pause audio" | Actions list: arrows to the action, Enter | Both |
-| Resume audio | "Resume audio" | Actions list: arrows to the action, Enter | Both |
-| Stop audio | "Stop audio" | Actions list: arrows to the action, Enter | Both |
-| Rewind audio | "Rewind audio" | Actions list: arrows to the action, Enter | Both |
-| Forward audio | "Forward audio" | Actions list: arrows to the action, Enter | Both |
-| Next chapter | "Next chapter" | Actions list: arrows to the action, Enter | Both |
-| Previous chapter | "Previous chapter" | Actions list: arrows to the action, Enter | Both |
-| Play next episode | "Play next episode" | Actions list: arrows to the action, Enter | Both |
-| Play previous episode | "Play previous episode" | Actions list: arrows to the action, Enter | Both |
-| Open next podcast | "Open next podcast" | Actions list: arrows to the action, Enter | Both |
-| Open previous podcast | "Open previous podcast" | Actions list: arrows to the action, Enter | Both |
+### Search podcasts
+
+- Voice: "Search podcasts"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Browse podcast category
+
+- Voice: "Browse podcast category"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List podcast shows
+
+- Voice: "List podcast shows"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List subscriptions
+
+- Voice: "List subscriptions"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Open selected podcast
+
+- Voice: "Open selected podcast"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Subscribe to selected podcast
+
+- Voice: "Subscribe to selected podcast"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Remove selected subscription
+
+- Voice: "Remove selected subscription"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Download selected episode
+
+- Voice: "Download selected episode"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### List downloaded episodes
+
+- Voice: "List downloaded episodes"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Automatic downloads
+
+- Voice: "Automatic downloads"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Manual downloads
+
+- Voice: "Manual downloads"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Refresh subscriptions
+
+- Voice: "Refresh subscriptions"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Pause audio
+
+- Voice: "Pause audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Resume audio
+
+- Voice: "Resume audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Stop audio
+
+- Voice: "Stop audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Rewind audio
+
+- Voice: "Rewind audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Forward audio
+
+- Voice: "Forward audio"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Next chapter
+
+- Voice: "Next chapter"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Previous chapter
+
+- Voice: "Previous chapter"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Play next episode
+
+- Voice: "Play next episode"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Play previous episode
+
+- Voice: "Play previous episode"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Open next podcast
+
+- Voice: "Open next podcast"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Open previous podcast
+
+- Voice: "Open previous podcast"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
 
 ## Alt menu, Email: Messages
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Check for new mail | "List messages" | F5 | Both |
-| Read message | "Open current message" | Enter | Both |
-| Reply | "Reply" | Ctrl+R | Both |
-| Reply all | "Reply all" | Ctrl+Shift+R | Both |
-| Forward | "Forward" | Ctrl+F | Both |
-| New email | "New email" | Ctrl+N | Both |
-| Delete | "Delete" | Delete | Both |
-| Move to folder | "Move" | Ctrl+Shift+V | Both |
-| Message details | "Message details" | Ctrl+I | Both |
+### Check for new mail
+
+- Voice: "List messages"
+- Keyboard: F5
+- Status: Both
+
+### Read message
+
+- Voice: "Open current message"
+- Keyboard: Enter
+- Status: Both
+
+### Reply
+
+- Voice: "Reply"
+- Keyboard: Ctrl+R
+- Status: Both
+
+### Reply all
+
+- Voice: "Reply all"
+- Keyboard: Ctrl+Shift+R
+- Status: Both
+
+### Forward
+
+- Voice: "Forward"
+- Keyboard: Ctrl+F
+- Status: Both
+
+### New email
+
+- Voice: "New email"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Delete
+
+- Voice: "Delete"
+- Keyboard: Delete
+- Status: Both
+
+### Move to folder
+
+- Voice: "Move"
+- Keyboard: Ctrl+Shift+V
+- Status: Both
+
+### Message details
+
+- Voice: "Message details"
+- Keyboard: Ctrl+I
+- Status: Both
 
 ## Alt menu, Email: Select
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Mark or unmark message | "Toggle message selection" | Space | Both |
-| Select all messages | "Select all messages" | Ctrl+A | Both |
-| Clear selection | "Clear selection" | Ctrl+Shift+A | Both |
-| What is selected | "What is selected" | Ctrl+Shift+S | Both |
-| Copy sender address | "Copy sender address" | Ctrl+Shift+C | Both |
-| Email the sender | "New email to sender" | Ctrl+Shift+N | Both |
+### Mark or unmark message
+
+- Voice: "Toggle message selection"
+- Keyboard: Space
+- Status: Both
+
+### Select all messages
+
+- Voice: "Select all messages"
+- Keyboard: Ctrl+A
+- Status: Both
+
+### Clear selection
+
+- Voice: "Clear selection"
+- Keyboard: Ctrl+Shift+A
+- Status: Both
+
+### What is selected
+
+- Voice: "What is selected"
+- Keyboard: Ctrl+Shift+S
+- Status: Both
+
+### Copy sender address
+
+- Voice: "Copy sender address"
+- Keyboard: Ctrl+Shift+C
+- Status: Both
+
+### Email the sender
+
+- Voice: "New email to sender"
+- Keyboard: Ctrl+Shift+N
+- Status: Both
 
 ## Alt menu, Email: Go to folder
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Inbox | "Go to inbox" | Alt, 3, 1 | Added: Alt menu path |
-| Sent | "Go to sent" | Alt, 3, 2 | Added: Alt menu path |
-| Drafts | "Go to drafts" | Alt, 3, 3 | Added: Alt menu path |
-| Trash | "Go to trash" | Alt, 3, 4 | Added: Alt menu path |
-| Spam | "Go to spam" | Alt, 3, 5 | Added: Alt menu path |
-| Choose a folder | "Go to folder" | Ctrl+Y | Both |
-| Which folder | "Which folder" | Ctrl+Shift+I | Both |
-| Next page of messages | "Next messages" | Page Down | Both |
-| Previous page of messages | "Previous messages" | Page Up | Both |
+### Inbox
+
+- Voice: "Go to inbox"
+- Keyboard: Alt, 3, 1
+- Status: Added: Alt menu path
+
+### Sent
+
+- Voice: "Go to sent"
+- Keyboard: Alt, 3, 2
+- Status: Added: Alt menu path
+
+### Drafts
+
+- Voice: "Go to drafts"
+- Keyboard: Alt, 3, 3
+- Status: Added: Alt menu path
+
+### Trash
+
+- Voice: "Go to trash"
+- Keyboard: Alt, 3, 4
+- Status: Added: Alt menu path
+
+### Spam
+
+- Voice: "Go to spam"
+- Keyboard: Alt, 3, 5
+- Status: Added: Alt menu path
+
+### Choose a folder
+
+- Voice: "Go to folder"
+- Keyboard: Ctrl+Y
+- Status: Both
+
+### Which folder
+
+- Voice: "Which folder"
+- Keyboard: Ctrl+Shift+I
+- Status: Both
+
+### Next page of messages
+
+- Voice: "Next messages"
+- Keyboard: Page Down
+- Status: Both
+
+### Previous page of messages
+
+- Voice: "Previous messages"
+- Keyboard: Page Up
+- Status: Both
 
 ## Alt menu, Email: Folder actions
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Create folder | "Create folder" | Ctrl+Shift+E | Both |
-| Rename folder | "Rename folder" | F2 | Both |
-| Move folder | "Move folder" | Ctrl+Shift+M | Both |
-| Delete empty folder | "Delete folder" | Ctrl+Shift+D | Both |
-| List folders | "List folders" | Alt, 4, 5 | Added: Alt menu path |
+### Create folder
+
+- Voice: "Create folder"
+- Keyboard: Ctrl+Shift+E
+- Status: Both
+
+### Rename folder
+
+- Voice: "Rename folder"
+- Keyboard: F2
+- Status: Both
+
+### Move folder
+
+- Voice: "Move folder"
+- Keyboard: Ctrl+Shift+M
+- Status: Both
+
+### Delete empty folder
+
+- Voice: "Delete folder"
+- Keyboard: Ctrl+Shift+D
+- Status: Both
+
+### List folders
+
+- Voice: "List folders"
+- Keyboard: Alt, 4, 5
+- Status: Added: Alt menu path
 
 ## Alt menu, Email: Drafts and contacts
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Email drafts | "Open email draft" | Ctrl+O | Both |
-| List contacts | "List contacts" | Ctrl+K | Both |
-| Add contact | "Add contact ..." | Ctrl+Shift+K | Both |
-| Connect Google Contacts | "Connect google contacts" | Alt, 5, 4 | Added: Alt menu path |
+### Email drafts
+
+- Voice: "Open email draft"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### List contacts
+
+- Voice: "List contacts"
+- Keyboard: Ctrl+K
+- Status: Both
+
+### Add contact
+
+- Voice: "Add contact ..."
+- Keyboard: Ctrl+Shift+K
+- Status: Both
+
+### Connect Google Contacts
+
+- Voice: "Connect google contacts"
+- Keyboard: Alt, 5, 4
+- Status: Added: Alt menu path
 
 ## Alt menu, Email: Accounts
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Add account | "Add account" | Alt, 6, 1 | Added: Alt menu path |
-| Switch account | "Switch account" | Alt, 6, 2 | Added: Alt menu path |
-| Which account | "Which email account" | Alt, 6, 3 | Added: Alt menu path |
-| Remove account | "Remove email account" | Alt, 6, 4 | Added: Alt menu path |
-| Add Thunderbird account | "Add thunderbird account" | Alt, 6, 5 | Added: Alt menu path |
+### Add account
+
+- Voice: "Add account"
+- Keyboard: Alt, 6, 1
+- Status: Added: Alt menu path
+
+### Switch account
+
+- Voice: "Switch account"
+- Keyboard: Alt, 6, 2
+- Status: Added: Alt menu path
+
+### Which account
+
+- Voice: "Which email account"
+- Keyboard: Alt, 6, 3
+- Status: Added: Alt menu path
+
+### Remove account
+
+- Voice: "Remove email account"
+- Keyboard: Alt, 6, 4
+- Status: Added: Alt menu path
+
+### Add Thunderbird account
+
+- Voice: "Add thunderbird account"
+- Keyboard: Alt, 6, 5
+- Status: Added: Alt menu path
 
 ## Alt menu, Email: Options and help
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Email options | "Options, then Email options" | Alt, 7, 1 | Added: Alt menu path |
-| Messages per page | "Email list size" | Alt, 7, 2 | Added: Alt menu path |
-| Email help | "Help with email" | F1 | Both |
-| Main menu | "Main menu" | Alt, 7, 4 | Added: Alt menu path |
+### Email options
+
+- Voice: "Options, then Email options"
+- Keyboard: Alt, 7, 1
+- Status: Added: Alt menu path
+
+### Messages per page
+
+- Voice: "Email list size"
+- Keyboard: Alt, 7, 2
+- Status: Added: Alt menu path
+
+### Email help
+
+- Voice: "Help with email"
+- Keyboard: F1
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 7, 4
+- Status: Added: Alt menu path
 
 ## Alt menu, Email draft: Message
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Send | "Send email" | Alt+S | Both |
-| Save draft | "Save draft" | Ctrl+S | Both |
-| Read draft | "Read email draft" | Ctrl+Shift+R | Both |
-| Save and close | "Leave email" | Alt, 1, 4 | Added: Alt menu path |
-| Discard draft | "Discard draft" | Alt, 1, 5 | Added: Alt menu path |
+### Send
+
+- Voice: "Send email"
+- Keyboard: Alt+S
+- Status: Both
+
+### Save draft
+
+- Voice: "Save draft"
+- Keyboard: Ctrl+S
+- Status: Both
+
+### Read draft
+
+- Voice: "Read email draft"
+- Keyboard: Ctrl+Shift+R
+- Status: Both
+
+### Save and close
+
+- Voice: "Leave email"
+- Keyboard: Alt, 1, 4
+- Status: Added: Alt menu path
+
+### Discard draft
+
+- Voice: "Discard draft"
+- Keyboard: Alt, 1, 5
+- Status: Added: Alt menu path
 
 ## Alt menu, Email draft: Fields
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| To | "Go to to" | Alt, 2, 1 | Added: Alt menu path |
-| Cc | "Go to cc" | Alt, 2, 2 | Added: Alt menu path |
-| Bcc | "Go to bcc" | Alt, 2, 3 | Added: Alt menu path |
-| Subject | "Go to subject" | Alt, 2, 4 | Added: Alt menu path |
-| Message body | "Go to body" | Alt, 2, 5 | Added: Alt menu path |
+### To
+
+- Voice: "Go to to"
+- Keyboard: Alt, 2, 1
+- Status: Added: Alt menu path
+
+### Cc
+
+- Voice: "Go to cc"
+- Keyboard: Alt, 2, 2
+- Status: Added: Alt menu path
+
+### Bcc
+
+- Voice: "Go to bcc"
+- Keyboard: Alt, 2, 3
+- Status: Added: Alt menu path
+
+### Subject
+
+- Voice: "Go to subject"
+- Keyboard: Alt, 2, 4
+- Status: Added: Alt menu path
+
+### Message body
+
+- Voice: "Go to body"
+- Keyboard: Alt, 2, 5
+- Status: Added: Alt menu path
 
 ## Alt menu, Email draft: Format
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Bold | "Toggle bold" | Ctrl+B | Both |
-| Italic | "Toggle italic" | Ctrl+I | Both |
-| Underline | "Toggle underline" | Ctrl+U | Both |
+### Bold
+
+- Voice: "Toggle bold"
+- Keyboard: Ctrl+B
+- Status: Both
+
+### Italic
+
+- Voice: "Toggle italic"
+- Keyboard: Ctrl+I
+- Status: Both
+
+### Underline
+
+- Voice: "Toggle underline"
+- Keyboard: Ctrl+U
+- Status: Both
 
 ## Alt menu, Email draft: Contacts and help
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| List contacts | "List contacts" | Ctrl+K | Both |
-| Add contact | "Add contact ..." | Alt, 4, 2 | Added: Alt menu path |
-| Email options | "Options, then Email options" | Alt, 4, 3 | Added: Alt menu path |
-| Writing email help | "Help with writing email" | F1 | Both |
+### List contacts
+
+- Voice: "List contacts"
+- Keyboard: Ctrl+K
+- Status: Both
+
+### Add contact
+
+- Voice: "Add contact ..."
+- Keyboard: Alt, 4, 2
+- Status: Added: Alt menu path
+
+### Email options
+
+- Voice: "Options, then Email options"
+- Keyboard: Alt, 4, 3
+- Status: Added: Alt menu path
+
+### Writing email help
+
+- Voice: "Help with writing email"
+- Keyboard: F1
+- Status: Both
 
 ## Alt menu, Notepad: Notepad
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Save and close note | "Save note" | Ctrl+S | Both |
-| Read note | "Read from top" | Ctrl+Shift+R | Both |
-| Saved notes | "List notes" | Ctrl+O | Both |
-| New line | "New line" | Alt, 4 | Added: Alt menu path |
-| Notepad options | "Options, then Notepad options" | Alt, 5 | Added: Alt menu path |
-| Notepad help | "Help with notepad" | F1 | Both |
-| Main menu | "Main menu" | Alt, 7 | Added: Alt menu path |
+### Save and close note
+
+- Voice: "Save note"
+- Keyboard: Ctrl+S
+- Status: Both
+
+### Read note
+
+- Voice: "Read from top"
+- Keyboard: Ctrl+Shift+R
+- Status: Both
+
+### Saved notes
+
+- Voice: "List notes"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### New line
+
+- Voice: "New line"
+- Keyboard: Alt, 4
+- Status: Added: Alt menu path
+
+### Notepad options
+
+- Voice: "Options, then Notepad options"
+- Keyboard: Alt, 5
+- Status: Added: Alt menu path
+
+### Notepad help
+
+- Voice: "Help with notepad"
+- Keyboard: F1
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 7
+- Status: Added: Alt menu path
 
 ## Alt menu, Web page: Page
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Back | "Back" | Alt+Left | Both |
-| Forward | "Forward" | Alt+Right | Both |
-| Refresh | "Refresh" | F5 | Both |
-| Search or enter address | "Search or enter address" | Ctrl+L | Both |
-| Find on page | "Find ..." | Ctrl+F | Both |
-| Top of page | "Top of page" | Alt, 1, 6 | Added: Alt menu path |
-| Bottom of page | "Bottom of page" | Alt, 1, 7 | Added: Alt menu path |
+### Back
+
+- Voice: "Back"
+- Keyboard: Alt+Left
+- Status: Both
+
+### Forward
+
+- Voice: "Forward"
+- Keyboard: Alt+Right
+- Status: Both
+
+### Refresh
+
+- Voice: "Refresh"
+- Keyboard: F5
+- Status: Both
+
+### Search or enter address
+
+- Voice: "Search or enter address"
+- Keyboard: Ctrl+L
+- Status: Both
+
+### Find on page
+
+- Voice: "Find ..."
+- Keyboard: Ctrl+F
+- Status: Both
+
+### Top of page
+
+- Voice: "Top of page"
+- Keyboard: Alt, 1, 6
+- Status: Added: Alt menu path
+
+### Bottom of page
+
+- Voice: "Bottom of page"
+- Keyboard: Alt, 1, 7
+- Status: Added: Alt menu path
 
 ## Alt menu, Web page: Lists
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Headings | "List headings" | F6 | Both |
-| Links | "List links" | F7 | Both |
-| Form fields | "List fields" | F8 | Both |
+### Headings
+
+- Voice: "List headings"
+- Keyboard: F6
+- Status: Both
+
+### Links
+
+- Voice: "List links"
+- Keyboard: F7
+- Status: Both
+
+### Form fields
+
+- Voice: "List fields"
+- Keyboard: F8
+- Status: Both
 
 ## Alt menu, Web page: Favorites
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Add favorite | "Add favorite" | Alt, 3, 1 | Added: Alt menu path |
-| Go to favorite | "Go to favorite" | Alt, 3, 2 | Added: Alt menu path |
-| Web history | "Web history" | Alt, 3, 3 | Added: Alt menu path |
-| Web browser menu | "Web browser menu" | Escape | Both |
+### Add favorite
+
+- Voice: "Add favorite"
+- Keyboard: Alt, 3, 1
+- Status: Added: Alt menu path
+
+### Go to favorite
+
+- Voice: "Go to favorite"
+- Keyboard: Alt, 3, 2
+- Status: Added: Alt menu path
+
+### Web history
+
+- Voice: "Web history"
+- Keyboard: Alt, 3, 3
+- Status: Added: Alt menu path
+
+### Web browser menu
+
+- Voice: "Web browser menu"
+- Keyboard: Escape
+- Status: Both
 
 ## Alt menu, Web page: Options and help
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Web browser options | "Options, then Web browser options" | Alt, 4, 1 | Added: Alt menu path |
-| Set up Chrome | "Set up chrome" | Alt, 4, 2 | Added: Alt menu path |
-| Web help | "Help with web" | F1 | Both |
+### Web browser options
+
+- Voice: "Options, then Web browser options"
+- Keyboard: Alt, 4, 1
+- Status: Added: Alt menu path
+
+### Set up Chrome
+
+- Voice: "Set up chrome"
+- Keyboard: Alt, 4, 2
+- Status: Added: Alt menu path
+
+### Web help
+
+- Voice: "Help with web"
+- Keyboard: F1
+- Status: Both
 
 ## Alt menu, Help: Help
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Help topics | "Help topics" | Alt, 1 | Added: Alt menu path |
-| Subsections | "List subsections" | Alt, 2 | Added: Alt menu path |
-| Release notes | "Release notes" | Alt, 3 | Added: Alt menu path |
-| Lessons | "Start tutorial" | Alt, 4 | Added: Alt menu path |
-| Open the guide folder | "Open user guides" | Alt, 5 | Added: Alt menu path |
-| Close help | "Close help" | Alt, 6 | Added: Alt menu path |
-| Main menu | "Main menu" | Alt, 7 | Added: Alt menu path |
+### Help topics
+
+- Voice: "Help topics"
+- Keyboard: Alt, 1
+- Status: Added: Alt menu path
+
+### Subsections
+
+- Voice: "List subsections"
+- Keyboard: Alt, 2
+- Status: Added: Alt menu path
+
+### Release notes
+
+- Voice: "Release notes"
+- Keyboard: Alt, 3
+- Status: Added: Alt menu path
+
+### Lessons
+
+- Voice: "Start tutorial"
+- Keyboard: Alt, 4
+- Status: Added: Alt menu path
+
+### Open the guide folder
+
+- Voice: "Open user guides"
+- Keyboard: Alt, 5
+- Status: Added: Alt menu path
+
+### Close help
+
+- Voice: "Close help"
+- Keyboard: Alt, 6
+- Status: Added: Alt menu path
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 7
+- Status: Added: Alt menu path
 
 ## Alt menu, Lessons: Lessons
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Lesson list | "Lesson list" | Ctrl+L | Both |
-| Repeat | "Repeat" | Ctrl+Shift+R | Both |
-| Continue reading | "Continue reading" | Ctrl+Down | Both |
-| Next lesson | "Next lesson" | Alt, 4 | Added: Alt menu path |
-| Previous lesson | "Previous lesson" | Alt, 5 | Added: Alt menu path |
-| Find lesson | "Find lesson ..." | Ctrl+F | Both |
-| Explain a command | "Explain command ..." | Ctrl+Shift+F | Both |
-| List commands | "List commands" | F1 | Both |
-| Main menu | "Main menu" | Alt, 9 | Added: Alt menu path |
+### Lesson list
+
+- Voice: "Lesson list"
+- Keyboard: Ctrl+L
+- Status: Both
+
+### Repeat
+
+- Voice: "Repeat"
+- Keyboard: Ctrl+Shift+R
+- Status: Both
+
+### Continue reading
+
+- Voice: "Continue reading"
+- Keyboard: Ctrl+Down
+- Status: Both
+
+### Next lesson
+
+- Voice: "Next lesson"
+- Keyboard: Alt, 4
+- Status: Added: Alt menu path
+
+### Previous lesson
+
+- Voice: "Previous lesson"
+- Keyboard: Alt, 5
+- Status: Added: Alt menu path
+
+### Find lesson
+
+- Voice: "Find lesson ..."
+- Keyboard: Ctrl+F
+- Status: Both
+
+### Explain a command
+
+- Voice: "Explain command ..."
+- Keyboard: Ctrl+Shift+F
+- Status: Both
+
+### List commands
+
+- Voice: "List commands"
+- Keyboard: F1
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 9
+- Status: Added: Alt menu path
 
 ## Alt menu, Document reader: Read
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Read document | "Read document" | Ctrl+Shift+R | Both |
-| Find text | "Find ..." | Ctrl+F | Both |
-| Beginning of document | "Go to beginning of document" | Alt, 1, 3 | Added: Alt menu path |
-| End of document | "Go to end of document" | Alt, 1, 4 | Added: Alt menu path |
-| Formatting | "What formatting" | Insert+F | Both |
-| Selected text | "What is selected" | Insert+Shift+Down | Both |
+### Read document
+
+- Voice: "Read document"
+- Keyboard: Ctrl+Shift+R
+- Status: Both
+
+### Find text
+
+- Voice: "Find ..."
+- Keyboard: Ctrl+F
+- Status: Both
+
+### Beginning of document
+
+- Voice: "Go to beginning of document"
+- Keyboard: Alt, 1, 3
+- Status: Added: Alt menu path
+
+### End of document
+
+- Voice: "Go to end of document"
+- Keyboard: Alt, 1, 4
+- Status: Added: Alt menu path
+
+### Formatting
+
+- Voice: "What formatting"
+- Keyboard: Insert+F
+- Status: Both
+
+### Selected text
+
+- Voice: "What is selected"
+- Keyboard: Insert+Shift+Down
+- Status: Both
 
 ## Alt menu, Document reader: Move by
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Next heading | "Next heading" | H | Both |
-| Previous heading | "Previous heading" | Shift+H | Both |
-| Next table | "Next table" | T | Both |
-| Next list | "Next list" | L | Both |
-| Next link | "Next link" | K | Both |
-| Follow link | "Follow link" | Enter | Both |
-| Next bookmark | "Next bookmark" | B | Both |
-| Next footnote | "Next footnote" | N | Both |
+### Next heading
+
+- Voice: "Next heading"
+- Keyboard: H
+- Status: Both
+
+### Previous heading
+
+- Voice: "Previous heading"
+- Keyboard: Shift+H
+- Status: Both
+
+### Next table
+
+- Voice: "Next table"
+- Keyboard: T
+- Status: Both
+
+### Next list
+
+- Voice: "Next list"
+- Keyboard: L
+- Status: Both
+
+### Next link
+
+- Voice: "Next link"
+- Keyboard: K
+- Status: Both
+
+### Follow link
+
+- Voice: "Follow link"
+- Keyboard: Enter
+- Status: Both
+
+### Next bookmark
+
+- Voice: "Next bookmark"
+- Keyboard: B
+- Status: Both
+
+### Next footnote
+
+- Voice: "Next footnote"
+- Keyboard: N
+- Status: Both
 
 ## Alt menu, Document reader: Leave and help
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Back to files | "Back to files" | Escape | Both |
-| Main menu | "Main menu" | Alt, 3, 2 | Added: Alt menu path |
-| Document reader help | "Help with document reader" | F1 | Both |
+### Back to files
+
+- Voice: "Back to files"
+- Keyboard: Escape
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 3, 2
+- Status: Added: Alt menu path
+
+### Document reader help
+
+- Voice: "Help with document reader"
+- Keyboard: F1
+- Status: Both
 
 ## Browser menu
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Search or enter address | "Search or enter address" | First letters, arrows, Enter | Both |
-| Go to favorite | "Go to favorite" | First letters, arrows, Enter | Both |
-| New favorite | "New favorite" | First letters, arrows, Enter | Both |
-| Delete favorite | "Delete favorite" | First letters, arrows, Enter | Both |
-| Rename favorite | "Rename favorite" | First letters, arrows, Enter | Both |
-| Go back | "Go back" | First letters, arrows, Enter | Both |
-| Go forward | "Go forward" | First letters, arrows, Enter | Both |
-| Web history | "Web history" | First letters, arrows, Enter | Both |
-| Set up Chrome | "Set up Chrome" | First letters, arrows, Enter | Both |
+### Search or enter address
+
+- Voice: "Search or enter address"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Go to favorite
+
+- Voice: "Go to favorite"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### New favorite
+
+- Voice: "New favorite"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Delete favorite
+
+- Voice: "Delete favorite"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Rename favorite
+
+- Voice: "Rename favorite"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Go back
+
+- Voice: "Go back"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Go forward
+
+- Voice: "Go forward"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Web history
+
+- Voice: "Web history"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Set up Chrome
+
+- Voice: "Set up Chrome"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
 
 ## Start, wake and commands
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Wake up the microphone | "Wake up" | Any arrow key or Enter while asleep; Ctrl+F12 | Added: Ctrl+F12 |
-| Put the microphone to sleep | "Go to sleep" | Ctrl+F12 on any main screen | Added: Ctrl+F12 |
-| Hear the time | "What time is it?", "What's the time?", "Time" | F12 or Insert+F12 on any screen, even while asleep | Added: F12, Insert+F12 and the spoken request |
-| Hear the day and date | "What's the date?", "Today's date", "What day is it?", "Date" | F12 or Insert+F12 twice quickly on any screen | Added: F12 twice and the spoken request |
-| Hear the version | "What version?" | Ctrl+Shift+V on the main menu | Added: Ctrl+Shift+V |
-| Type a command | N/A | Alt+T, type, Enter | N/A - this is the keyboard way to give any spoken command |
-| Normal mode, Commands only, Dictation only | "Normal mode", "Commands only", "Dictation only" | Alt+O, Input options, Command and dictation mode | Both |
-| Hear the input mode | "What mode?" | Ctrl+Shift+M on the main menu | Added: Ctrl+Shift+M |
-| Write words that sound like commands | "Type literally ..." | Type the words | Both |
-| Answer Yes | "Yes" | Alt+Y; Home; arrows to Yes, Enter | Both |
-| Answer No | "No" | Alt+N; End; arrows to No, Enter | Both |
-| Cancel a question | "Cancel" | Escape | Both |
-| Move in any list | "Next", "Previous" | Up Arrow, Down Arrow | Both |
-| First or last item in a list | "Start of list", "End of list" | Home, End | Both |
-| Choose the item you hear | "That one", "Okay", "Confirm" | Enter | Both |
-| Find a menu item by name | Say the item name | Type its first letter | Both |
-| Return to the main menu | "Main menu" | Escape until the main menu | Both |
-| Open the current screen's menu | "Email menu", "Notepad menu", "Help menu", ... | Alt (Alt again closes it) | Added: Alt on Email, drafts, Notepad, web pages, Help, lessons and Document reader |
-| Move between radio or podcast actions and results | "Radio menu", "Podcasts menu", "Results" | Alt; Tab | Added: Alt |
+### Wake up the microphone
+
+- Voice: "Wake up"
+- Keyboard: Any arrow key or Enter while asleep; Ctrl+F12
+- Status: Added: Ctrl+F12
+
+### Put the microphone to sleep
+
+- Voice: "Go to sleep"
+- Keyboard: Ctrl+F12 on any main screen
+- Status: Added: Ctrl+F12
+
+### Hear the time
+
+- Voice: "What time is it?", "What's the time?", "Time"
+- Keyboard: F12 or Insert+F12 on any screen, even while asleep
+- Status: Added: F12, Insert+F12 and the spoken request
+
+### Hear the day and date
+
+- Voice: "What's the date?", "Today's date", "What day is it?", "Date"
+- Keyboard: F12 or Insert+F12 twice quickly on any screen
+- Status: Added: F12 twice and the spoken request
+
+### Hear the version
+
+- Voice: "What version?"
+- Keyboard: Ctrl+Shift+V on the main menu
+- Status: Added: Ctrl+Shift+V
+
+### Type a command
+
+- Voice: N/A
+- Keyboard: Alt+T, type, Enter
+- Status: N/A - this is the keyboard way to give any spoken command
+
+### Normal mode, Commands only, Dictation only
+
+- Voice: "Normal mode", "Commands only", "Dictation only"
+- Keyboard: Alt+O, Input options, Command and dictation mode
+- Status: Both
+
+### Hear the input mode
+
+- Voice: "What mode?"
+- Keyboard: Ctrl+Shift+M on the main menu
+- Status: Added: Ctrl+Shift+M
+
+### Write words that sound like commands
+
+- Voice: "Type literally ..."
+- Keyboard: Type the words
+- Status: Both
+
+### Answer Yes
+
+- Voice: "Yes"
+- Keyboard: Alt+Y; Home; arrows to Yes, Enter
+- Status: Both
+
+### Answer No
+
+- Voice: "No"
+- Keyboard: Alt+N; End; arrows to No, Enter
+- Status: Both
+
+### Cancel a question
+
+- Voice: "Cancel"
+- Keyboard: Escape
+- Status: Both
+
+### Move in any list
+
+- Voice: "Next", "Previous"
+- Keyboard: Up Arrow, Down Arrow
+- Status: Both
+
+### First or last item in a list
+
+- Voice: "Start of list", "End of list"
+- Keyboard: Home, End
+- Status: Both
+
+### Choose the item you hear
+
+- Voice: "That one", "Okay", "Confirm"
+- Keyboard: Enter
+- Status: Both
+
+### Find a menu item by name
+
+- Voice: Say the item name
+- Keyboard: Type its first letter
+- Status: Both
+
+### Return to the main menu
+
+- Voice: "Main menu"
+- Keyboard: Escape until the main menu
+- Status: Both
+
+### Open the current screen's menu
+
+- Voice: "Email menu", "Notepad menu", "Help menu", ...
+- Keyboard: Alt (Alt again closes it)
+- Status: Added: Alt on Email, drafts, Notepad, web pages, Help, lessons and Document reader
+
+### Move between radio or podcast actions and results
+
+- Voice: "Radio menu", "Podcasts menu", "Results"
+- Keyboard: Alt; Tab
+- Status: Added: Alt
 
 ## Help and lessons
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open Help | "Help" | F1 on the main menu; main menu, Help, Enter | Added: F1 on the main menu |
-| Help for the current screen | "Help with documents", "Help with email", ... | F1 | Added: F1 on email, notes, web, media, reader and menu screens |
-| Choose a topic or part | "Next", "Previous", "That one" | Arrows, Home, End, Enter | Both |
-| Next or previous block | "Next paragraph", "Previous paragraph", "Continue reading" | Down Arrow, Up Arrow | Both |
-| First or last block | "First block", "Last block" | Home, End | Both |
-| Move by sentence | "Next sentence", "Previous sentence" | Ctrl+Down Arrow, Ctrl+Up Arrow in a topic | Added: Ctrl+Down, Ctrl+Up |
-| Move by word | "Next word", "Previous word" | Ctrl+Right Arrow, Ctrl+Left Arrow | Both |
-| Move by character | "Next character", "Previous character" | Right Arrow, Left Arrow | Both |
-| Back to parts or topics | "Back to subsections", "Back to topics" | Escape | Both |
-| Close Help | "Close help" | Escape from the topic list | Both |
-| Read the release notes | "What's new" | Help, End (last topic), Enter | Both |
-| Start the audio tutorial | "Start tutorial" | Ctrl+Shift+T on the main menu | Added: Ctrl+Shift+T |
-| Choose a course or lesson | Course name, "Next lesson", "Previous lesson" | Arrows, Enter | Both |
-| Repeat a lesson | "Repeat" | Ctrl+Shift+R | Added: Ctrl+Shift+R |
-| Lesson list | "Lesson list" | Ctrl+L | Added: Ctrl+L |
-| Command list for a course | "List commands" | F1 in the tutorial | Added: F1 |
-| Find a lesson | "Find lesson ..." | Ctrl+F, type, Enter | Added: Ctrl+F |
-| Explain a command | "Explain command ..." | Ctrl+Shift+F, type, Enter | Added: Ctrl+Shift+F |
-| Continue a long explanation | "Continue reading" | Ctrl+Down Arrow | Added: Ctrl+Down |
-| Back one level / course list | "Go back", "Courses" | Escape | Both |
-| Leave the tutorial | "Close tutorial", "Main menu" | Escape from the course list | Both |
+### Open Help
+
+- Voice: "Help"
+- Keyboard: F1 on the main menu; main menu, Help, Enter
+- Status: Added: F1 on the main menu
+
+### Help for the current screen
+
+- Voice: "Help with documents", "Help with email", ...
+- Keyboard: F1
+- Status: Added: F1 on email, notes, web, media, reader and menu screens
+
+### Choose a topic or part
+
+- Voice: "Next", "Previous", "That one"
+- Keyboard: Arrows, Home, End, Enter
+- Status: Both
+
+### Next or previous block
+
+- Voice: "Next paragraph", "Previous paragraph", "Continue reading"
+- Keyboard: Down Arrow, Up Arrow
+- Status: Both
+
+### First or last block
+
+- Voice: "First block", "Last block"
+- Keyboard: Home, End
+- Status: Both
+
+### Move by sentence
+
+- Voice: "Next sentence", "Previous sentence"
+- Keyboard: Ctrl+Down Arrow, Ctrl+Up Arrow in a topic
+- Status: Added: Ctrl+Down, Ctrl+Up
+
+### Move by word
+
+- Voice: "Next word", "Previous word"
+- Keyboard: Ctrl+Right Arrow, Ctrl+Left Arrow
+- Status: Both
+
+### Move by character
+
+- Voice: "Next character", "Previous character"
+- Keyboard: Right Arrow, Left Arrow
+- Status: Both
+
+### Back to parts or topics
+
+- Voice: "Back to subsections", "Back to topics"
+- Keyboard: Escape
+- Status: Both
+
+### Close Help
+
+- Voice: "Close help"
+- Keyboard: Escape from the topic list
+- Status: Both
+
+### Read the release notes
+
+- Voice: "What's new"
+- Keyboard: Help, End (last topic), Enter
+- Status: Both
+
+### Start the audio tutorial
+
+- Voice: "Start tutorial"
+- Keyboard: Ctrl+Shift+T on the main menu
+- Status: Added: Ctrl+Shift+T
+
+### Choose a course or lesson
+
+- Voice: Course name, "Next lesson", "Previous lesson"
+- Keyboard: Arrows, Enter
+- Status: Both
+
+### Repeat a lesson
+
+- Voice: "Repeat"
+- Keyboard: Ctrl+Shift+R
+- Status: Added: Ctrl+Shift+R
+
+### Lesson list
+
+- Voice: "Lesson list"
+- Keyboard: Ctrl+L
+- Status: Added: Ctrl+L
+
+### Command list for a course
+
+- Voice: "List commands"
+- Keyboard: F1 in the tutorial
+- Status: Added: F1
+
+### Find a lesson
+
+- Voice: "Find lesson ..."
+- Keyboard: Ctrl+F, type, Enter
+- Status: Added: Ctrl+F
+
+### Explain a command
+
+- Voice: "Explain command ..."
+- Keyboard: Ctrl+Shift+F, type, Enter
+- Status: Added: Ctrl+Shift+F
+
+### Continue a long explanation
+
+- Voice: "Continue reading"
+- Keyboard: Ctrl+Down Arrow
+- Status: Added: Ctrl+Down
+
+### Back one level / course list
+
+- Voice: "Go back", "Courses"
+- Keyboard: Escape
+- Status: Both
+
+### Leave the tutorial
+
+- Voice: "Close tutorial", "Main menu"
+- Keyboard: Escape from the course list
+- Status: Both
 
 ## Speech and voices
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Silence speech | "Be quiet", "Stop talking" | Control | Both |
-| Resume paused speech | "Resume" | N/A | N/A - Control stops speech rather than pausing it; reading keys such as Down Arrow read again |
-| Faster, slower, louder, quieter, pitch | "Faster", "Rate 4", "Volume 50", "Higher pitch" | Alt+O, Voice options, Tab, arrows, OK | Both |
-| Choose a synthesizer and voice | "Voice list", "Next voice", "Okay" | Alt+O, Synthesizer options | Both |
-| Use SAPI, eSpeak or an AI voice | "Use SAPI", "Use eSpeak", "Use AI voice" | Alt+O, Synthesizer options, Synthesizer | Both |
-| AI voice setup for a trainer | "AI voice setup" | Tab to the AI voice setup button, Enter | Both |
-| Pause or resume radio and podcasts anywhere | "Pause audio", "Resume audio" | Ctrl+P | Both |
+### Silence speech
+
+- Voice: "Be quiet", "Stop talking"
+- Keyboard: Control
+- Status: Both
+
+### Resume paused speech
+
+- Voice: "Resume"
+- Keyboard: N/A
+- Status: N/A - Control stops speech rather than pausing it; reading keys such as Down Arrow read again
+
+### Faster, slower, louder, quieter, pitch
+
+- Voice: "Faster", "Rate 4", "Volume 50", "Higher pitch"
+- Keyboard: Alt+O, Voice options, Tab, arrows, OK
+- Status: Both
+
+### Choose a synthesizer and voice
+
+- Voice: "Voice list", "Next voice", "Okay"
+- Keyboard: Alt+O, Synthesizer options
+- Status: Both
+
+### Use SAPI, eSpeak or an AI voice
+
+- Voice: "Use SAPI", "Use eSpeak", "Use AI voice"
+- Keyboard: Alt+O, Synthesizer options, Synthesizer
+- Status: Both
+
+### AI voice setup for a trainer
+
+- Voice: "AI voice setup"
+- Keyboard: Tab to the AI voice setup button, Enter
+- Status: Both
+
+### Pause or resume radio and podcasts anywhere
+
+- Voice: "Pause audio", "Resume audio"
+- Keyboard: Ctrl+P
+- Status: Both
 
 ## Reading and editing text
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Read from the top | "Read from top" | Ctrl+Shift+R in a document, draft, note or reader | Added: Ctrl+Shift+R in drafts, notes and the reader |
-| Continue reading | "Continue reading" | Down Arrow | Both |
-| Move by character, word, line, paragraph | "Next word", "Previous line", ... | Arrows, Ctrl+arrows | Both |
-| Move by sentence | "Next sentence", "Previous sentence" | Document menu: Alt, 5, then the item | Both |
-| Start or end of a line | "Go to start of line", "Go to end of line" | Home, End | Added: voice |
-| Start or end of the text | "Go to beginning of document", "Go to end of document" | Ctrl+Home, Ctrl+End | Both |
-| Select with movement | "Select next word", "Select paragraph", ... | Shift with a movement key | Both |
-| Select all | "Select all" | Ctrl+A | Both |
-| Hear the selection | "What is selected" | Insert+Shift+Down Arrow | Both |
-| Select named words | "Select red fox", "Select cat through dog" | Ctrl+Alt+S, type, Enter | Both |
-| Copy, cut, paste | "Copy selection", "Cut selection", "Paste" | Ctrl+C, Ctrl+X, Ctrl+V | Both |
-| Scratch the selection or last dictation | "Scratch that" | Ctrl+Shift+Z | Both |
-| Undo | "Undo" | Ctrl+Z | Both |
-| Replace words | "Replace cat with dog" | Ctrl+H, type, Enter | Both |
-| Insert before or after words | "Insert before ...", "Insert after ..." | Document menu: Alt, 2, then the item | Both |
-| Choose among matches | "Next", "Previous", "That one", "Match 3" | Arrows, Home, End, Enter; Escape cancels | Both |
-| Page Up and Page Down in a document | N/A | Page Up, Page Down | N/A - moves by a screen of text; say "Next paragraph" instead |
+### Read from the top
+
+- Voice: "Read from top"
+- Keyboard: Ctrl+Shift+R in a document, draft, note or reader
+- Status: Added: Ctrl+Shift+R in drafts, notes and the reader
+
+### Continue reading
+
+- Voice: "Continue reading"
+- Keyboard: Down Arrow
+- Status: Both
+
+### Move by character, word, line, paragraph
+
+- Voice: "Next word", "Previous line", ...
+- Keyboard: Arrows, Ctrl+arrows
+- Status: Both
+
+### Move by sentence
+
+- Voice: "Next sentence", "Previous sentence"
+- Keyboard: Document menu: Alt, 5, then the item
+- Status: Both
+
+### Start or end of a line
+
+- Voice: "Go to start of line", "Go to end of line"
+- Keyboard: Home, End
+- Status: Added: voice
+
+### Start or end of the text
+
+- Voice: "Go to beginning of document", "Go to end of document"
+- Keyboard: Ctrl+Home, Ctrl+End
+- Status: Both
+
+### Select with movement
+
+- Voice: "Select next word", "Select paragraph", ...
+- Keyboard: Shift with a movement key
+- Status: Both
+
+### Select all
+
+- Voice: "Select all"
+- Keyboard: Ctrl+A
+- Status: Both
+
+### Hear the selection
+
+- Voice: "What is selected"
+- Keyboard: Insert+Shift+Down Arrow
+- Status: Both
+
+### Select named words
+
+- Voice: "Select red fox", "Select cat through dog"
+- Keyboard: Ctrl+Alt+S, type, Enter
+- Status: Both
+
+### Copy, cut, paste
+
+- Voice: "Copy selection", "Cut selection", "Paste"
+- Keyboard: Ctrl+C, Ctrl+X, Ctrl+V
+- Status: Both
+
+### Scratch the selection or last dictation
+
+- Voice: "Scratch that"
+- Keyboard: Ctrl+Shift+Z
+- Status: Both
+
+### Undo
+
+- Voice: "Undo"
+- Keyboard: Ctrl+Z
+- Status: Both
+
+### Replace words
+
+- Voice: "Replace cat with dog"
+- Keyboard: Ctrl+H, type, Enter
+- Status: Both
+
+### Insert before or after words
+
+- Voice: "Insert before ...", "Insert after ..."
+- Keyboard: Document menu: Alt, 2, then the item
+- Status: Both
+
+### Choose among matches
+
+- Voice: "Next", "Previous", "That one", "Match 3"
+- Keyboard: Arrows, Home, End, Enter; Escape cancels
+- Status: Both
+
+### Page Up and Page Down in a document
+
+- Voice: N/A
+- Keyboard: Page Up, Page Down
+- Status: N/A - moves by a screen of text; say "Next paragraph" instead
 
 ## Notepad
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Start a note | "Write a note" | Main menu, Notepad, Enter | Both |
-| Add words | Speak the words | Type the words, Enter | Both |
-| Read the note | "Read from top" | Ctrl+Shift+R | Added: Ctrl+Shift+R |
-| Save the note | "Save note" | Ctrl+S | Added: Ctrl+S |
-| List saved notes | "List notes" | Ctrl+O | Both |
-| Open a saved note | "Open note 2" | Ctrl+O, arrows, Enter | Both |
-| Save and go back | "Go back" | Escape | Both |
-| Notepad help | "Help with notepad" | F1 | Added: F1 |
-| Start or end of the typing line | N/A | Home, End in the typing box | N/A - speech always adds to the end of the note |
+### Start a note
+
+- Voice: "Write a note"
+- Keyboard: Main menu, Notepad, Enter
+- Status: Both
+
+### Add words
+
+- Voice: Speak the words
+- Keyboard: Type the words, Enter
+- Status: Both
+
+### Read the note
+
+- Voice: "Read from top"
+- Keyboard: Ctrl+Shift+R
+- Status: Added: Ctrl+Shift+R
+
+### Save the note
+
+- Voice: "Save note"
+- Keyboard: Ctrl+S
+- Status: Added: Ctrl+S
+
+### List saved notes
+
+- Voice: "List notes"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### Open a saved note
+
+- Voice: "Open note 2"
+- Keyboard: Ctrl+O, arrows, Enter
+- Status: Both
+
+### Save and go back
+
+- Voice: "Go back"
+- Keyboard: Escape
+- Status: Both
+
+### Notepad help
+
+- Voice: "Help with notepad"
+- Keyboard: F1
+- Status: Added: F1
+
+### Start or end of the typing line
+
+- Voice: N/A
+- Keyboard: Home, End in the typing box
+- Status: N/A - speech always adds to the end of the note
 
 ## Email setup
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Add an account | "Add account" | Alt+O, Email options, Add an email account | Both |
-| Choose Gmail, Outlook, Yahoo or Thunderbird | Say the service name | G, O, Y or T, or arrows, Enter | Both |
-| Thunderbird setup | "Thunderbird" | T or arrows to Thunderbird, Enter | Both |
-| List, switch or check the account | "List email accounts", "Switch to Yahoo", "Which email account?" | Alt+O, Email options, Sending account | Both |
-| Switch account from a list | "Switch account", then the number, name or address | Email menu: Alt, 6, 2; arrows, Enter | Added: account list to choose from |
-| Remove an email account | "Remove email account", then "Yes" | Email menu: Alt, 6, 4; arrows, Enter, Y | Added: voice and Alt menu item |
-| List contacts / find a contact | "List contacts", "Find contact Bob" | Ctrl+K in email, arrows, Enter | Added: Ctrl+K |
-| Add a contact | "Add contact Bob as bob@example.com" | Ctrl+Shift+K in the inbox, type, Enter | Added: Ctrl+Shift+K |
-| Connect Google Contacts | "Connect Google Contacts" | Alt+O, Email options, Connect Google Contacts | Added: Options button |
+### Add an account
+
+- Voice: "Add account"
+- Keyboard: Alt+O, Email options, Add an email account
+- Status: Both
+
+### Choose Gmail, Outlook, Yahoo or Thunderbird
+
+- Voice: Say the service name
+- Keyboard: G, O, Y or T, or arrows, Enter
+- Status: Both
+
+### Thunderbird setup
+
+- Voice: "Thunderbird"
+- Keyboard: T or arrows to Thunderbird, Enter
+- Status: Both
+
+### List, switch or check the account
+
+- Voice: "List email accounts", "Switch to Yahoo", "Which email account?"
+- Keyboard: Alt+O, Email options, Sending account
+- Status: Both
+
+### Switch account from a list
+
+- Voice: "Switch account", then the number, name or address
+- Keyboard: Email menu: Alt, 6, 2; arrows, Enter
+- Status: Added: account list to choose from
+
+### Remove an email account
+
+- Voice: "Remove email account", then "Yes"
+- Keyboard: Email menu: Alt, 6, 4; arrows, Enter, Y
+- Status: Added: voice and Alt menu item
+
+### List contacts / find a contact
+
+- Voice: "List contacts", "Find contact Bob"
+- Keyboard: Ctrl+K in email, arrows, Enter
+- Status: Added: Ctrl+K
+
+### Add a contact
+
+- Voice: "Add contact Bob as bob@example.com"
+- Keyboard: Ctrl+Shift+K in the inbox, type, Enter
+- Status: Added: Ctrl+Shift+K
+
+### Connect Google Contacts
+
+- Voice: "Connect Google Contacts"
+- Keyboard: Alt+O, Email options, Connect Google Contacts
+- Status: Added: Options button
 
 ## Email: write
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| New message | "Write an email", "New message" | Ctrl+N in email | Both |
-| Move between To, CC, BCC, Subject, body | "Go to CC", "Go to Subject", ... | Tab, Shift+Tab | Both |
-| Enter an address or subject | "Email to ...", "Subject is ..." | Type in the box, Enter | Both |
-| Read a header back | "Read recipient", "Read subject" | Tab to the box (it is read) | Both |
-| Bold, italic, underline | "Make this bold", "Toggle italic", ... | Ctrl+B, Ctrl+I, Ctrl+U in the message | Added: Ctrl+B, Ctrl+I, Ctrl+U |
-| Read the draft | "Read email draft" | Ctrl+Shift+R | Added: Ctrl+Shift+R |
-| Save the draft | "Save draft" | Ctrl+S | Added: Ctrl+S |
-| Open a saved draft | "Open email draft", "Open email draft Lunch" | Ctrl+O in the inbox, arrows, Enter | Added: Ctrl+O and a draft list |
-| Contacts while writing | "List contacts" | Ctrl+K | Added: Ctrl+K |
-| Cancel the draft | "Cancel draft" | Escape | Both |
-| Send (review first) | "Send it" | Ctrl+Enter or Alt+S | Both |
-| Confirm or cancel sending | "Yes", "Cancel send" | Alt+Y, Alt+N, arrows and Enter | Both |
-| Help with writing email | "Help with writing email" | F1 | Added: F1 |
+### New message
+
+- Voice: "Write an email", "New message"
+- Keyboard: Ctrl+N in email
+- Status: Both
+
+### Move between To, CC, BCC, Subject, body
+
+- Voice: "Go to CC", "Go to Subject", ...
+- Keyboard: Tab, Shift+Tab
+- Status: Both
+
+### Enter an address or subject
+
+- Voice: "Email to ...", "Subject is ..."
+- Keyboard: Type in the box, Enter
+- Status: Both
+
+### Read a header back
+
+- Voice: "Read recipient", "Read subject"
+- Keyboard: Tab to the box (it is read)
+- Status: Both
+
+### Bold, italic, underline
+
+- Voice: "Make this bold", "Toggle italic", ...
+- Keyboard: Ctrl+B, Ctrl+I, Ctrl+U in the message
+- Status: Added: Ctrl+B, Ctrl+I, Ctrl+U
+
+### Read the draft
+
+- Voice: "Read email draft"
+- Keyboard: Ctrl+Shift+R
+- Status: Added: Ctrl+Shift+R
+
+### Save the draft
+
+- Voice: "Save draft"
+- Keyboard: Ctrl+S
+- Status: Added: Ctrl+S
+
+### Open a saved draft
+
+- Voice: "Open email draft", "Open email draft Lunch"
+- Keyboard: Ctrl+O in the inbox, arrows, Enter
+- Status: Added: Ctrl+O and a draft list
+
+### Contacts while writing
+
+- Voice: "List contacts"
+- Keyboard: Ctrl+K
+- Status: Added: Ctrl+K
+
+### Cancel the draft
+
+- Voice: "Cancel draft"
+- Keyboard: Escape
+- Status: Both
+
+### Send (review first)
+
+- Voice: "Send it"
+- Keyboard: Ctrl+Enter or Alt+S
+- Status: Both
+
+### Confirm or cancel sending
+
+- Voice: "Yes", "Cancel send"
+- Keyboard: Alt+Y, Alt+N, arrows and Enter
+- Status: Both
+
+### Help with writing email
+
+- Voice: "Help with writing email"
+- Keyboard: F1
+- Status: Added: F1
 
 ## Email: read and organize
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open the inbox | "Email", "Check email" | Main menu, Email, Enter | Both |
-| Next or previous message | "Next message", "Previous message" | Down Arrow, Up Arrow | Both |
-| First or last message | "First message", "Last message" | Home, End | Both |
-| Open a message | "That one", "Open message 1" | Enter | Both |
-| Message details | "Message details" | Ctrl+I | Added: Ctrl+I |
-| Read the open message | "Continue reading", "Read from beginning" | Arrows in the message | Both |
-| Back to the list | "Back to folder" | Escape | Both |
-| Next or previous page of mail | "Next messages", "Previous messages" | Page Down, Page Up | Added: Page Down, Page Up |
-| Refresh the list | "List messages" | F5 | Both |
-| Go to a folder | "Go to folder", "Go to Receipts" | Ctrl+Y, arrows, Enter | Both |
-| Folders of another account | "Go to folder", then the account | Ctrl+Y, arrows, Enter (Escape goes back to the accounts) | Added: account list first when several accounts are connected |
-| Which folder | "Which folder" | Ctrl+Shift+I | Added: Ctrl+Shift+I |
-| Back to Inbox | "Back to inbox" | Ctrl+Y, Inbox, Enter | Both |
-| Mark a message | "Mark", "Select message" | Space | Both |
-| Extend the marks | "Extend selection next", "Extend selection previous" | Shift+Down Arrow, Shift+Up Arrow | Both |
-| Mark all on the page | "Select all messages" | Ctrl+A | Both |
-| Hear the marks | "What is selected" | Ctrl+Shift+S | Added: Ctrl+Shift+S |
-| Clear the marks | "Clear selection" | Ctrl+Shift+A | Added: Ctrl+Shift+A |
-| Delete | "Delete" | Delete | Both |
-| Move to a folder | "Move", "Move to Saved" | Ctrl+Shift+V | Both |
-| Reply, reply all, forward | "Reply", "Reply all", "Forward" | Ctrl+R, Ctrl+Shift+R, Ctrl+F | Both |
-| Email the sender / copy the address | "New email to sender", "Copy sender address" | Ctrl+Shift+N, Ctrl+Shift+C | Both |
-| Create, rename, delete a folder | "Create folder ...", "Rename folder", "Delete folder" | Ctrl+Shift+E, F2, Ctrl+Shift+D | Both |
-| Move a folder | "Move folder" | Ctrl+Shift+M | Added: Ctrl+Shift+M |
-| Links and buttons in a message | "Next link", "Next button", "Activate current link" | K, B (Shift for back), Tab, Enter | Both |
-| List links or buttons | "List links", "List buttons" | F7, F8 | Added: F7, F8 |
-| Email help | "Help with email" | F1 | Added: F1 |
+### Open the inbox
+
+- Voice: "Email", "Check email"
+- Keyboard: Main menu, Email, Enter
+- Status: Both
+
+### Next or previous message
+
+- Voice: "Next message", "Previous message"
+- Keyboard: Down Arrow, Up Arrow
+- Status: Both
+
+### First or last message
+
+- Voice: "First message", "Last message"
+- Keyboard: Home, End
+- Status: Both
+
+### Open a message
+
+- Voice: "That one", "Open message 1"
+- Keyboard: Enter
+- Status: Both
+
+### Message details
+
+- Voice: "Message details"
+- Keyboard: Ctrl+I
+- Status: Added: Ctrl+I
+
+### Read the open message
+
+- Voice: "Continue reading", "Read from beginning"
+- Keyboard: Arrows in the message
+- Status: Both
+
+### Back to the list
+
+- Voice: "Back to folder"
+- Keyboard: Escape
+- Status: Both
+
+### Next or previous page of mail
+
+- Voice: "Next messages", "Previous messages"
+- Keyboard: Page Down, Page Up
+- Status: Added: Page Down, Page Up
+
+### Refresh the list
+
+- Voice: "List messages"
+- Keyboard: F5
+- Status: Both
+
+### Go to a folder
+
+- Voice: "Go to folder", "Go to Receipts"
+- Keyboard: Ctrl+Y, arrows, Enter
+- Status: Both
+
+### Folders of another account
+
+- Voice: "Go to folder", then the account
+- Keyboard: Ctrl+Y, arrows, Enter (Escape goes back to the accounts)
+- Status: Added: account list first when several accounts are connected
+
+### Which folder
+
+- Voice: "Which folder"
+- Keyboard: Ctrl+Shift+I
+- Status: Added: Ctrl+Shift+I
+
+### Back to Inbox
+
+- Voice: "Back to inbox"
+- Keyboard: Ctrl+Y, Inbox, Enter
+- Status: Both
+
+### Mark a message
+
+- Voice: "Mark", "Select message"
+- Keyboard: Space
+- Status: Both
+
+### Extend the marks
+
+- Voice: "Extend selection next", "Extend selection previous"
+- Keyboard: Shift+Down Arrow, Shift+Up Arrow
+- Status: Both
+
+### Mark all on the page
+
+- Voice: "Select all messages"
+- Keyboard: Ctrl+A
+- Status: Both
+
+### Hear the marks
+
+- Voice: "What is selected"
+- Keyboard: Ctrl+Shift+S
+- Status: Added: Ctrl+Shift+S
+
+### Clear the marks
+
+- Voice: "Clear selection"
+- Keyboard: Ctrl+Shift+A
+- Status: Added: Ctrl+Shift+A
+
+### Delete
+
+- Voice: "Delete"
+- Keyboard: Delete
+- Status: Both
+
+### Move to a folder
+
+- Voice: "Move", "Move to Saved"
+- Keyboard: Ctrl+Shift+V
+- Status: Both
+
+### Reply, reply all, forward
+
+- Voice: "Reply", "Reply all", "Forward"
+- Keyboard: Ctrl+R, Ctrl+Shift+R, Ctrl+F
+- Status: Both
+
+### Email the sender / copy the address
+
+- Voice: "New email to sender", "Copy sender address"
+- Keyboard: Ctrl+Shift+N, Ctrl+Shift+C
+- Status: Both
+
+### Create, rename, delete a folder
+
+- Voice: "Create folder ...", "Rename folder", "Delete folder"
+- Keyboard: Ctrl+Shift+E, F2, Ctrl+Shift+D
+- Status: Both
+
+### Move a folder
+
+- Voice: "Move folder"
+- Keyboard: Ctrl+Shift+M
+- Status: Added: Ctrl+Shift+M
+
+### Links and buttons in a message
+
+- Voice: "Next link", "Next button", "Activate current link"
+- Keyboard: K, B (Shift for back), Tab, Enter
+- Status: Both
+
+### List links or buttons
+
+- Voice: "List links", "List buttons"
+- Keyboard: F7, F8
+- Status: Added: F7, F8
+
+### Email help
+
+- Voice: "Help with email"
+- Keyboard: F1
+- Status: Added: F1
 
 ## Web: page reading
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Read the page | "Read page", "Continue reading" | Down Arrow | Both |
-| Move by line, word, character, paragraph | "Next line", "Next word", ... | Arrows, Ctrl+arrows | Both |
-| Move a long way | "Page down", "Page up" | Page Down, Page Up | Added: voice |
-| Start or end of a line | "Go to start of line", "Go to end of line" | Home, End | Added: voice |
-| Top or bottom of the page | "Top of page", "Bottom of page" | Ctrl+Home, Ctrl+End | Both |
-| Next heading, link, button, form control, ... | "Next heading", "Previous link", ... | H, K, B, F, X, C, E, T, R, A, L, I, D, G, M, P, S (Shift for back) | Both |
-| Heading by level | "Next heading level 2" | 1 to 6 | Both |
-| Find on the page | "Find login" | Ctrl+F, type, Enter | Added: Ctrl+F |
-| List links / headings | "List links", "List headings" | F7, F6 | Both |
-| List fields | "List fields" | F8 | Added: F8 |
-| Open the link or press the button | "Open current link", "Activate current element" | Enter, Space | Both |
-| Next or previous control | "Next control", "Previous control" | Tab, Shift+Tab | Both |
-| Back, forward, refresh | "Go back", "Go forward", "Refresh page" | Alt+Left, Alt+Right, F5 | Both |
-| Address or search box | "Search", "Open website ..." | Ctrl+L | Both |
-| Web browser menu | "Leave website" | Escape | Both |
-| Web help | "Help with web" | F1 | Added: F1 |
-| Close the browser window, even when kept open | "Close browser window" | Ctrl+Shift+W | Added: Ctrl+Shift+W |
-| Send keys to the website (app mode) or back to browse mode | "App mode", "Browse mode", "Focus mode" | Insert+Space, Ctrl+Shift+Space, Ctrl+Alt+Space | Both |
+### Read the page
+
+- Voice: "Read page", "Continue reading"
+- Keyboard: Down Arrow
+- Status: Both
+
+### Move by line, word, character, paragraph
+
+- Voice: "Next line", "Next word", ...
+- Keyboard: Arrows, Ctrl+arrows
+- Status: Both
+
+### Move a long way
+
+- Voice: "Page down", "Page up"
+- Keyboard: Page Down, Page Up
+- Status: Added: voice
+
+### Start or end of a line
+
+- Voice: "Go to start of line", "Go to end of line"
+- Keyboard: Home, End
+- Status: Added: voice
+
+### Top or bottom of the page
+
+- Voice: "Top of page", "Bottom of page"
+- Keyboard: Ctrl+Home, Ctrl+End
+- Status: Both
+
+### Next heading, link, button, form control, ...
+
+- Voice: "Next heading", "Previous link", ...
+- Keyboard: H, K, B, F, X, C, E, T, R, A, L, I, D, G, M, P, S (Shift for back)
+- Status: Both
+
+### Heading by level
+
+- Voice: "Next heading level 2"
+- Keyboard: 1 to 6
+- Status: Both
+
+### Find on the page
+
+- Voice: "Find login"
+- Keyboard: Ctrl+F, type, Enter
+- Status: Added: Ctrl+F
+
+### List links / headings
+
+- Voice: "List links", "List headings"
+- Keyboard: F7, F6
+- Status: Both
+
+### List fields
+
+- Voice: "List fields"
+- Keyboard: F8
+- Status: Added: F8
+
+### Open the link or press the button
+
+- Voice: "Open current link", "Activate current element"
+- Keyboard: Enter, Space
+- Status: Both
+
+### Next or previous control
+
+- Voice: "Next control", "Previous control"
+- Keyboard: Tab, Shift+Tab
+- Status: Both
+
+### Back, forward, refresh
+
+- Voice: "Go back", "Go forward", "Refresh page"
+- Keyboard: Alt+Left, Alt+Right, F5
+- Status: Both
+
+### Address or search box
+
+- Voice: "Search", "Open website ..."
+- Keyboard: Ctrl+L
+- Status: Both
+
+### Web browser menu
+
+- Voice: "Leave website"
+- Keyboard: Escape
+- Status: Both
+
+### Web help
+
+- Voice: "Help with web"
+- Keyboard: F1
+- Status: Added: F1
+
+### Close the browser window, even when kept open
+
+- Voice: "Close browser window"
+- Keyboard: Ctrl+Shift+W
+- Status: Added: Ctrl+Shift+W
+
+### Send keys to the website (app mode) or back to browse mode
+
+- Voice: "App mode", "Browse mode", "Focus mode"
+- Keyboard: Insert+Space, Ctrl+Shift+Space, Ctrl+Alt+Space
+- Status: Both
 
 ## Web: forms
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Find and change a slider | "Next slider" | Tab or Enter on the slider; arrows, Page Up, Page Down, Home, End; Escape | Both |
-| Enter a text box | "Edit current field" | E, Tab, or Enter on the box | Both |
-| Save or cancel a field | "Save field", "Cancel field editing" | Tab or Enter; Escape | Both |
-| Checkbox and radio button | "Toggle checkbox", "Select radio button" | Space | Both |
-| Choice box options | "Next option", "First option", "Select option ..." | Arrows, Home, End, first letter | Both |
-| Combo box suggestions | "Next suggestion", "Previous suggestion" | Down Arrow, Up Arrow | Both |
-| Fill out a form | "Fill out this form" | Tab through the fields and type each answer | Both |
-| Review the answers | "Review form" | F8 opens the field list; Tab through the fields to hear each answer | Added: F8 |
-| Submit | "Review and submit form" | Tab to the Submit button, Enter | Both |
-| Read a table | "Next row", "Previous column", "First row", "Last column" | Ctrl+Alt+arrows, Ctrl+Alt+Home/End/Page Up/Page Down | Both |
+### Find and change a slider
+
+- Voice: "Next slider"
+- Keyboard: Tab or Enter on the slider; arrows, Page Up, Page Down, Home, End; Escape
+- Status: Both
+
+### Enter a text box
+
+- Voice: "Edit current field"
+- Keyboard: E, Tab, or Enter on the box
+- Status: Both
+
+### Save or cancel a field
+
+- Voice: "Save field", "Cancel field editing"
+- Keyboard: Tab or Enter; Escape
+- Status: Both
+
+### Checkbox and radio button
+
+- Voice: "Toggle checkbox", "Select radio button"
+- Keyboard: Space
+- Status: Both
+
+### Choice box options
+
+- Voice: "Next option", "First option", "Select option ..."
+- Keyboard: Arrows, Home, End, first letter
+- Status: Both
+
+### Combo box suggestions
+
+- Voice: "Next suggestion", "Previous suggestion"
+- Keyboard: Down Arrow, Up Arrow
+- Status: Both
+
+### Fill out a form
+
+- Voice: "Fill out this form"
+- Keyboard: Tab through the fields and type each answer
+- Status: Both
+
+### Review the answers
+
+- Voice: "Review form"
+- Keyboard: F8 opens the field list; Tab through the fields to hear each answer
+- Status: Added: F8
+
+### Submit
+
+- Voice: "Review and submit form"
+- Keyboard: Tab to the Submit button, Enter
+- Status: Both
+
+### Read a table
+
+- Voice: "Next row", "Previous column", "First row", "Last column"
+- Keyboard: Ctrl+Alt+arrows, Ctrl+Alt+Home/End/Page Up/Page Down
+- Status: Both
 
 ## Web: lists
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Find a name in a links or headings list | Say the name or "Next" | Type letters; Backspace | Both |
-| Close a list | "Close list" | Escape | Both |
+### Find a name in a links or headings list
+
+- Voice: Say the name or "Next"
+- Keyboard: Type letters; Backspace
+- Status: Both
+
+### Close a list
+
+- Voice: "Close list"
+- Keyboard: Escape
+- Status: Both
 
 ## Web: favorites and history
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Save the page as a favorite | "New favorite", "Save favorite as ..." | Browser menu, New favorite | Both |
-| Open, rename or delete a favorite | "Open favorite ...", "Go to ..." | Browser menu, Go to / Rename / Delete favorite | Both |
-| Web history | "Web history" | Browser menu, Web history | Both |
-| Search engine for one search or as default | "Bing weather", "Search engine Brave Search" | Alt+O, Web browser options, Default search engine | Both |
+### Save the page as a favorite
+
+- Voice: "New favorite", "Save favorite as ..."
+- Keyboard: Browser menu, New favorite
+- Status: Both
+
+### Open, rename or delete a favorite
+
+- Voice: "Open favorite ...", "Go to ..."
+- Keyboard: Browser menu, Go to / Rename / Delete favorite
+- Status: Both
+
+### Web history
+
+- Voice: "Web history"
+- Keyboard: Browser menu, Web history
+- Status: Both
+
+### Search engine for one search or as default
+
+- Voice: "Bing weather", "Search engine Brave Search"
+- Keyboard: Alt+O, Web browser options, Default search engine
+- Status: Both
 
 ## Web: regular browser
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Use your own Chrome or Edge | Web browser, "Resume where you left off" | Browser menu, Resume where you left off | Both |
+### Use your own Chrome or Edge
+
+- Voice: Web browser, "Resume where you left off"
+- Keyboard: Browser menu, Resume where you left off
+- Status: Both
 
 ## Radio and podcasts
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open Radio or Podcasts | "Radio", "Podcasts" | Main menu, Media, arrows, Enter | Both |
-| Switch between actions and results | "Actions", "Results" | Tab, Shift+Tab | Both |
-| Search | "Search radio for jazz", "Search podcasts for history" | Ctrl+F | Both |
-| Saved stations or subscriptions | "List presets", "List subscriptions" | Ctrl+Shift+P | Both |
-| Save preset / download episode | "Save preset", "Download this episode" | Ctrl+D | Both |
-| Remove the selected item | "Delete preset", "Remove selected subscription" | Delete | Both |
-| Refresh lists | "Refresh stations", "Refresh subscriptions" | F5 | Both |
-| Play or pause, resume, stop | "Pause audio", "Resume audio", "Stop audio" | Space, Ctrl+R, Ctrl+S | Both |
-| Seek 15 seconds | "Back 15 seconds", "Forward 15 seconds" | Ctrl+Left, Ctrl+Right | Both |
-| Recording and schedule forms | "Next field", "Time 8 PM", "Okay" | Tab, arrows, Enter, Escape | Both |
-| Play by number | "Play station 1", "Play episode 2" | Arrows to the item, Enter | Both |
-| Back out of a list | "Back to podcasts", "Radio menu" | Escape | Both |
-| Radio or podcast help | "Help with radio", "Help with podcasts" | F1 | Added: F1 |
+### Open Radio or Podcasts
+
+- Voice: "Radio", "Podcasts"
+- Keyboard: Main menu, Media, arrows, Enter
+- Status: Both
+
+### Switch between actions and results
+
+- Voice: "Actions", "Results"
+- Keyboard: Tab, Shift+Tab
+- Status: Both
+
+### Search
+
+- Voice: "Search radio for jazz", "Search podcasts for history"
+- Keyboard: Ctrl+F
+- Status: Both
+
+### Saved stations or subscriptions
+
+- Voice: "List presets", "List subscriptions"
+- Keyboard: Ctrl+Shift+P
+- Status: Both
+
+### Save preset / download episode
+
+- Voice: "Save preset", "Download this episode"
+- Keyboard: Ctrl+D
+- Status: Both
+
+### Remove the selected item
+
+- Voice: "Delete preset", "Remove selected subscription"
+- Keyboard: Delete
+- Status: Both
+
+### Refresh lists
+
+- Voice: "Refresh stations", "Refresh subscriptions"
+- Keyboard: F5
+- Status: Both
+
+### Play or pause, resume, stop
+
+- Voice: "Pause audio", "Resume audio", "Stop audio"
+- Keyboard: Space, Ctrl+R, Ctrl+S
+- Status: Both
+
+### Seek 15 seconds
+
+- Voice: "Back 15 seconds", "Forward 15 seconds"
+- Keyboard: Ctrl+Left, Ctrl+Right
+- Status: Both
+
+### Recording and schedule forms
+
+- Voice: "Next field", "Time 8 PM", "Okay"
+- Keyboard: Tab, arrows, Enter, Escape
+- Status: Both
+
+### Play by number
+
+- Voice: "Play station 1", "Play episode 2"
+- Keyboard: Arrows to the item, Enter
+- Status: Both
+
+### Back out of a list
+
+- Voice: "Back to podcasts", "Radio menu"
+- Keyboard: Escape
+- Status: Both
+
+### Radio or podcast help
+
+- Voice: "Help with radio", "Help with podcasts"
+- Keyboard: F1
+- Status: Added: F1
 
 ## Media player
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open or close the player menu | "Player menu", "Close menu" | Escape or Alt | Both |
-| Seek any amount | "Forward 2 minutes" | Left and Right move 15 seconds | Both |
-| Media player help | "Help with media player" | F1 | Added: F1 |
+### Open or close the player menu
+
+- Voice: "Player menu", "Close menu"
+- Keyboard: Escape or Alt
+- Status: Both
+
+### Seek any amount
+
+- Voice: "Forward 2 minutes"
+- Keyboard: Left and Right move 15 seconds
+- Status: Both
+
+### Media player help
+
+- Voice: "Help with media player"
+- Keyboard: F1
+- Status: Added: F1
 
 ## Document reader
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Read the document | "Read document" | Ctrl+Shift+R | Added: Ctrl+Shift+R |
-| Move by line, word, character | "Next line", "Next word" | Arrows, Ctrl+Left/Right | Both |
-| Next heading, table, link, list, bookmark, footnote | "Next heading", "Next table", ... | H, T, K, L, B, N (Shift for back) | Both |
-| Follow a link | "Follow link" | Enter | Both |
-| Formatting and selection | "What formatting", "What is selected" | Insert+F, Insert+Shift+Down Arrow | Both |
-| Find text | "Find clinic" | Ctrl+F, type, Enter | Added: Ctrl+F |
-| Start or end of the document | "Go to beginning of document" | Ctrl+Home, Ctrl+End | Both |
-| Start or end of a line | N/A | Home, End | N/A - read-only view; say "Read line" to hear the line |
-| Back to files | "Back to files" | Escape | Both |
-| Help | "Help with document reader" | F1 | Added: F1 and voice Help |
+### Read the document
+
+- Voice: "Read document"
+- Keyboard: Ctrl+Shift+R
+- Status: Added: Ctrl+Shift+R
+
+### Move by line, word, character
+
+- Voice: "Next line", "Next word"
+- Keyboard: Arrows, Ctrl+Left/Right
+- Status: Both
+
+### Next heading, table, link, list, bookmark, footnote
+
+- Voice: "Next heading", "Next table", ...
+- Keyboard: H, T, K, L, B, N (Shift for back)
+- Status: Both
+
+### Follow a link
+
+- Voice: "Follow link"
+- Keyboard: Enter
+- Status: Both
+
+### Formatting and selection
+
+- Voice: "What formatting", "What is selected"
+- Keyboard: Insert+F, Insert+Shift+Down Arrow
+- Status: Both
+
+### Find text
+
+- Voice: "Find clinic"
+- Keyboard: Ctrl+F, type, Enter
+- Status: Added: Ctrl+F
+
+### Start or end of the document
+
+- Voice: "Go to beginning of document"
+- Keyboard: Ctrl+Home, Ctrl+End
+- Status: Both
+
+### Start or end of a line
+
+- Voice: N/A
+- Keyboard: Home, End
+- Status: N/A - read-only view; say "Read line" to hear the line
+
+### Back to files
+
+- Voice: "Back to files"
+- Keyboard: Escape
+- Status: Both
+
+### Help
+
+- Voice: "Help with document reader"
+- Keyboard: F1
+- Status: Added: F1 and voice Help
 
 ## Sleep, exit and power
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Close Companion | "Exit Companion" | Alt+F4; Escape at the main menu; main menu item | Both |
-| Restart or shut down the computer | "Restart computer", "Shut down computer" | Main menu items | Both |
+### Close Companion
+
+- Voice: "Exit Companion"
+- Keyboard: Alt+F4; Escape at the main menu; main menu item
+- Status: Both
+
+### Restart or shut down the computer
+
+- Voice: "Restart computer", "Shut down computer"
+- Keyboard: Main menu items
+- Status: Both
 
 ## Updates
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Check for updates | "Check for updates" | Main menu item; Alt+O, Auto-update options | Both |
-| Accept or refuse an update | "Yes", "No" | Alt+Y, Alt+N, arrows and Enter | Both |
-| Hear download progress | "Status", "Update status" | Alt+S or F5; Status button | Both |
-| Cancel the download | "Cancel update" | Alt+C or Escape | Both |
+### Check for updates
+
+- Voice: "Check for updates"
+- Keyboard: Main menu item; Alt+O, Auto-update options
+- Status: Both
+
+### Accept or refuse an update
+
+- Voice: "Yes", "No"
+- Keyboard: Alt+Y, Alt+N, arrows and Enter
+- Status: Both
+
+### Hear download progress
+
+- Voice: "Status", "Update status"
+- Keyboard: Alt+S or F5; Status button
+- Status: Both
+
+### Cancel the download
+
+- Voice: "Cancel update"
+- Keyboard: Alt+C or Escape
+- Status: Both
 
 ## Guide files
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| Open the guide folder | "Open user guides" | Ctrl+Shift+G on the main menu | Added: Ctrl+Shift+G |
+### Open the guide folder
+
+- Voice: "Open user guides"
+- Keyboard: Ctrl+Shift+G on the main menu
+- Status: Added: Ctrl+Shift+G
 
 ## Fix a problem
 
-| Action | Voice | Keyboard | Status |
-| --- | --- | --- | --- |
-| A command is not heard | N/A | Alt+T, type, Enter | N/A - this is the keyboard way to give a spoken command |
-| Free text | Speak the words | Type the words | N/A - text entry, not a command |
+### A command is not heard
+
+- Voice: N/A
+- Keyboard: Alt+T, type, Enter
+- Status: N/A - this is the keyboard way to give a spoken command
+
+### Free text
+
+- Voice: Speak the words
+- Keyboard: Type the words
+- Status: N/A - text entry, not a command

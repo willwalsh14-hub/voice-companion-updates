@@ -296,18 +296,20 @@ def render():
              "Menu, Options and media action rows come from the app's own tables; the other rows are listed",
              'in that script. A keyboard way is a key, a shortcut, or a menu item reached with arrows and Enter.',
              'The command box (Alt+T, type the command, Enter) also works everywhere but is not counted.', '',
-             '| Count | Number |', '| --- | --- |',
-             '| Actions inventoried | ' + str(len(data)) + ' |',
-             '| Already had both ways | ' + str(len(data) - added - na) + ' |',
-             '| Gaps found | ' + str(added + na) + ' |',
-             '| Gaps fixed (Added) | ' + str(added) + ' |',
-             '| Not applicable (N/A, with reason) | ' + str(na) + ' |', '']
+             '## Counts', '',
+             '- Actions inventoried: ' + str(len(data)),
+             '- Already had both ways: ' + str(len(data) - added - na),
+             '- Gaps found: ' + str(added + na),
+             '- Gaps fixed (Added): ' + str(added),
+             '- Not applicable (N/A, with reason): ' + str(na), '']
+    # No tables: Will reads this with a screen reader. Each action is a heading with bullets.
     for area in order:
-        lines += ['## ' + area, '', '| Action | Voice | Keyboard | Status |', '| --- | --- | --- | --- |']
+        lines += ['## ' + area, '']
         for row in data:
             if row[0] == area:
-                lines.append('| ' + ' | '.join(str(x).replace('|', '/') for x in row[1:]) + ' |')
-        lines.append('')
+                action, voice, keyboard, status = (str(x) for x in row[1:])
+                lines += ['### ' + action, '', '- Voice: ' + voice, '- Keyboard: ' + keyboard,
+                          '- Status: ' + status, '']
     return '\n'.join(lines)
 
 
