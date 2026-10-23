@@ -87,11 +87,48 @@ def identities(found):
             if identity.get('email')]
 
 
+def _account_number(account):
+    digits = ''.join(ch for ch in str(account.get('id', '')) if ch.isdigit())
+    return int(digits) if digits else 0
+
+
+def refresh_saved(store, found):
+    """A saved address whose Thunderbird identity is gone (the account was added again, so it
+    has new ids) is pointed at the current one. Return the addresses that changed.
+
+    Will, 0.2.163: Voice Companion kept the old ids, and sent through the old account's
+    outgoing server after Thunderbird's own one was fixed."""
+    current = {}
+    for account, identity in identities(found):
+        current.setdefault(identity['email'].casefold(), []).append((account, identity))
+    changed = []
+    for provider, address in store.accounts():
+        if provider != 'thunderbird' or address.casefold() not in current:
+            continue
+        path = store._account_path('thunderbird', address)
+        if not path.exists():
+            continue
+        try:
+            data = store._unseal(path)
+        except Exception:
+            continue
+        choices = current[address.casefold()]
+        if any(identity['id'] == data.get('identity_id') for _, identity in choices):
+            continue
+        account, identity = max(choices, key=lambda pair: _account_number(pair[0]))
+        data.update(account_id=account['id'], identity_id=identity['id'], name=account.get('name', ''))
+        store.save('thunderbird', data, select=False)
+        changed.append(address)
+    return changed
+
+
 def save_identities(store, found, prefer=None, select=True):
     """Save Thunderbird addresses Voice Companion does not have yet. Return the new addresses.
 
-    Already saved addresses are left alone, and so is the selection, unless
-    select is True: then the preferred address (or the first new one) is selected."""
+    Already saved addresses keep their place, and so does the selection, unless
+    select is True: then the preferred address (or the first new one) is selected.
+    A saved address whose identity Thunderbird no longer has is updated (refresh_saved)."""
+    refresh_saved(store, found)
     saved = {a.casefold() for p, a in store.accounts() if p == 'thunderbird'}
     added = []
     for account, identity in identities(found):

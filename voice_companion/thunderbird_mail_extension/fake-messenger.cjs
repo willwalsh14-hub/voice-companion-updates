@@ -116,12 +116,15 @@ function createFakeMessenger() {
       setComposeDetails: async (tabId, details) => { Object.assign(tabs.get(tabId).current, details); },
       saveMessage: async (tabId, options) => {
         if (state.failSave) throw new Error('Could not save');
-        state.drafts = (state.drafts || []).concat([{...tabs.get(tabId).current, options}]);
-        return {mode: options.mode, messages: []};
+        const id = 9000 + (state.drafts || []).length;
+        state.drafts = (state.drafts || []).concat([{...tabs.get(tabId).current, options, id}]);
+        return {mode: options.mode, messages: [{id}]};
       },
       sendMessage: async (tabId, options) => {
         if (state.failSend) throw new Error(state.failSend === true ? 'SMTP refused sam@example.com' : state.failSend);
         const tab = tabs.get(tabId);
+        const why = state.failSendFor && state.failSendFor[tab.details && tab.details.identityId];
+        if (why) throw new Error(why);
         state.sent.push({...tab, options});
         // Thunderbird closes the compose window after sending, unless something keeps it
         // open (state.composeStaysOpen, as Will saw with Office 365).

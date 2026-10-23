@@ -30,6 +30,15 @@
       "title": "What works better",
       "topics": [
         {
+          "title": "An account added twice in Thunderbird",
+          "details": [
+            "If you add an account to Thunderbird again, Voice Companion now uses the new one.",
+            "Before, it could keep sending through the old one, even after you fixed Thunderbird's settings.",
+            "If the server cannot be reached, Voice Companion tries the other copy of the account once.",
+            "When sending fails, you hear which server and method were used, like port 587 with STARTTLS."
+          ]
+        },
+        {
           "title": "Sending through Thunderbird",
           "details": [
             "If sending is slow, you hear Still sending every 15 seconds. Press Escape to stop waiting.",

@@ -398,3 +398,24 @@ class SignInWhileSendingTests(unittest.TestCase):
         bridge = self.Bridge(sign_in_after=99)
         self.assertEqual(self.submit(bridge), 'sent@x')
         self.assertEqual(bridge.calls[-1], ('captureSignIn', {'seconds': 0}))
+
+
+class RememberWorkingIdentityTests(unittest.TestCase):
+    def test_a_send_from_another_identity_is_remembered_with_the_address(self):
+        calls, remembered = [], []
+        class Bridge:
+            def request(self, method, params=None, timeout=60, progress=None, every=15):
+                calls.append((method, params))
+                if method == 'send':
+                    return {'headerMessageId': 'sent@x', 'identityId': 'id7', 'accountId': 'account7', 'tried': 2}
+                return {'url': ''} if method == 'takeSignIn' else {'capturing': True}
+        account = {'address': 'will@work.example', 'account_id': 'account5', 'identity_id': 'id5'}
+        draft = mock.Mock(recipient='boss@work.example', subject='testing', cc=[], bcc=[], response_context={})
+        with mock.patch.object(thunderbird_mailbox, 'relay', lambda: Bridge()), mock.patch.object(thunderbird_mailbox, 'PROGRESS', None), \
+             mock.patch.object(thunderbird_mailbox, 'REMEMBER_IDENTITY', lambda *args: remembered.append(args)), \
+             mock.patch('email_delivery.message_parts', lambda draft: ('boss@work.example', 'testing', 'Hi')), \
+             mock.patch('email_formatting.formatted_body', lambda draft: '<p>Hi</p>'):
+            self.assertEqual(thunderbird_mailbox.submit(draft, account), 'sent@x')
+        send = next(params for method, params in calls if method == 'send')
+        self.assertEqual((send['identityId'], send['email']), ('id5', 'will@work.example'))
+        self.assertEqual(remembered, [(account, 'id7', 'account7')])

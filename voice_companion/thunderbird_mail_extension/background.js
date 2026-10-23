@@ -337,9 +337,62 @@ class MailBridge {
     return match ? match[1] : (html || '');
   }
 
+  // The identities that send as this address, the saved one first. More than one means the
+  // account was added to Thunderbird twice; Voice Companion may have saved the older one
+  // (Will, 0.2.163: sending kept using an old outgoing server Thunderbird itself no longer used).
+  async sendingIdentities(identityId, email) {
+    const accounts = await this.api.accounts.list(false);
+    const all = [];
+    for (const account of accounts) for (const identity of account.identities || []) all.push({account, identity});
+    const saved = all.find(entry => entry.identity.id === identityId);
+    const address = String(email || (saved && saved.identity.email) || '').toLowerCase();
+    const same = all.filter(entry => address && String(entry.identity.email || '').toLowerCase() === address);
+    if (saved && !same.includes(saved)) same.unshift(saved);
+    if (!same.length && saved) same.push(saved);
+    // Saved first, then the newest account (the one most recently set up), then the rest.
+    const number = entry => parseInt(String(entry.account.id).replace(/\D+/g, ''), 10) || 0;
+    return same.sort((a, b) => (b === saved) - (a === saved) || number(b) - number(a));
+  }
+
   async send(params) {
-    const {identityId, to = [], cc = [], bcc = [], subject = '', html = '', plain = '', plainOnly = false, reply, forward} = params;
+    const {identityId, email = '', to = [], cc = [], bcc = [], subject = '', html = '', plain = '', plainOnly = false, reply, forward} = params;
     if (typeof identityId !== 'string' || !identityId) throw MailBridge.fail('identity', 'Choose a Thunderbird account first.');
+    const choices = await this.sendingIdentities(identityId, email);
+    if (!choices.length) {
+      throw MailBridge.fail('identity', 'This address is no longer in Thunderbird. Say add Thunderbird account to set it up again.');
+    }
+    let failure = null, spare = null;
+    for (let index = 0; index < choices.length; index++) {
+      const {account, identity} = choices[index];
+      const tab = await this.compose(identity.id, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward});
+      try {
+        const sent = await this.api.compose.sendMessage(tab.id, {mode: 'sendNow'});
+        // Sent. Thunderbird usually closes its compose window now, but a window can stay
+        // open (Will, Office 365: "Write: testing" was left behind). Close it if it is.
+        await this.closeCompose(tab);
+        // The safety copy kept from a failed try is not needed now.
+        if (spare) { try { await this.api.messages.delete(spare, false); } catch (error) { /* stays in Drafts */ } }
+        return {headerMessageId: sent && sent.headerMessageId || '', identityId: identity.id, accountId: account.id,
+          tried: index + 1};
+      } catch (error) {
+        failure = error;
+        const copy = await this.saveDraftAndClose(tab);
+        // Nothing was sent when the server could not be reached, so another identity for the
+        // same address may be tried once. A sign-in or other refusal is not retried.
+        const reach = /timed out|timeout|refused|could not connect|unable to connect|connection|network/i.test(String(error && error.message || ''));
+        if (!(reach && index + 1 < choices.length && copy)) {
+          throw MailBridge.fail('send', MailBridge.sendFailure(failure) + await this.serverWords(identity.id) + ' ' + (copy
+            ? 'Your message is saved in Drafts in Thunderbird.'
+            : 'Your message is still open in Thunderbird.'));
+        }
+        spare = copy;
+      }
+    }
+    throw MailBridge.fail('send', MailBridge.sendFailure(failure));
+  }
+
+  // A compose window for this identity, minimized and filled in.
+  async compose(identityId, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward}) {
     let tab;
     if (reply) {
       tab = await this.api.compose.beginReply(reply.messageId, reply.type === 'replyToAll' ? 'replyToAll' : 'replyToSender', {identityId});
@@ -364,21 +417,21 @@ class MailBridge {
         : html;
     }
     await this.api.compose.setComposeDetails(tab.id, details);
-    let sent;
+    return tab;
+  }
+
+  // " It used smtp.office365.com, port 587, with STARTTLS." when Thunderbird can say.
+  async serverWords(identityId) {
+    const setup = this.api.voiceCompanionSetup;
+    if (!setup || typeof setup.outgoingServer !== 'function') return '';
     try {
-      sent = await this.api.compose.sendMessage(tab.id, {mode: 'sendNow'});
+      const server = await setup.outgoingServer(identityId);
+      if (!server || !server.host) return '';
+      const security = {starttls: 'with STARTTLS', ssl: 'with SSL/TLS', none: 'with no encryption'}[server.security] || '';
+      return ' It used ' + server.host + (server.port ? ', port ' + server.port : '') + (security ? ', ' + security : '') + '.';
     } catch (error) {
-      // Say why in plain words; Thunderbird's own text can include addresses, so it is not passed on.
-      // Keep the message in Drafts and close its window, so nothing is left open and hidden.
-      const saved = await this.saveDraftAndClose(tab);
-      throw MailBridge.fail('send', MailBridge.sendFailure(error) + ' ' + (saved
-        ? 'Your message is saved in Drafts in Thunderbird.'
-        : 'Your message is still open in Thunderbird.'));
+      return '';
     }
-    // Sent. Thunderbird usually closes its compose window now, but a window can stay
-    // open (Will, Office 365: "Write: testing" was left behind). Close it if it is.
-    await this.closeCompose(tab);
-    return {headerMessageId: sent && sent.headerMessageId || ''};
   }
 
   // Voice Companion is closing and started Thunderbird: close Thunderbird too.
@@ -388,14 +441,17 @@ class MailBridge {
     return setup.quitThunderbird();
   }
 
+  // Save the message to Drafts and close its window. The saved message ids, or false.
   async saveDraftAndClose(tab) {
+    let saved;
     try {
-      await this.api.compose.saveMessage(tab.id, {mode: 'draft'});
+      saved = await this.api.compose.saveMessage(tab.id, {mode: 'draft'});
     } catch (error) {
       return false;
     }
     await this.closeCompose(tab);
-    return true;
+    const ids = ((saved && saved.messages) || []).map(message => message.id).filter(id => id !== undefined);
+    return ids.length ? ids : [];
   }
 
   // Why sending failed, in plain words, from Thunderbird's error text (never the text itself).

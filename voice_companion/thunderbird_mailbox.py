@@ -18,6 +18,8 @@ INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
 STARTER = None
 # Says a short line while a slow Thunderbird step runs (Voice Companion's status speech).
 PROGRESS = None
+# Saves a different working identity for an address: REMEMBER_IDENTITY(account, identity_id, account_id).
+REMEMBER_IDENTITY = None
 STILL_SENDING = 'Still sending through Thunderbird. Press Escape to stop waiting.'
 SIGN_IN_TO_SEND = ('Microsoft wants you to sign in before Thunderbird can send this message. '
                    'The sign-in page is opening in Voice Companion\'s browser. After you sign in, Thunderbird '
@@ -209,7 +211,7 @@ def submit(draft, account):
     from email_formatting import formatted_body
     recipient, subject, body = message_parts(draft)
     context = draft.response_context or {}
-    params = {'identityId': account.get('identity_id', ''), 'to': [recipient], 'cc': list(draft.cc),
+    params = {'identityId': account.get('identity_id', ''), 'email': account.get('address', ''), 'to': [recipient], 'cc': list(draft.cc),
               'bcc': list(getattr(draft, 'bcc', [])), 'subject': subject, 'plain': body,
               'html': formatted_body(draft), 'plainOnly': False}  # Thunderbird keeps an account set to plain text
     if context.get('action') in ('reply', 'reply_all') and context.get('source_id') is not None:
@@ -267,4 +269,11 @@ def submit(draft, account):
         if listening:
             try: bridge.request('captureSignIn', {'seconds': 0}, timeout=5)
             except Exception: pass
-    return (result or {}).get('headerMessageId') or 'accepted by Thunderbird'
+    result = result or {}
+    used = result.get('identityId')
+    if used and used != account.get('identity_id') and REMEMBER_IDENTITY is not None:
+        # Thunderbird sent from another identity for this address (an account added twice):
+        # remember the one that works, so the next message goes there at once.
+        try: REMEMBER_IDENTITY(account, used, result.get('accountId') or account.get('account_id', ''))
+        except Exception: pass
+    return result.get('headerMessageId') or 'accepted by Thunderbird'

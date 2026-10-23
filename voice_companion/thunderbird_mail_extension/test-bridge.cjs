@@ -201,6 +201,8 @@ function load(api) {
   await mailCheckChecks();
   await experimentChecks();
   await quitChecks();
+  await identityChecks();
+  await outgoingServerChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
 
@@ -282,6 +284,62 @@ async function quitChecks() {
   assert.deepEqual(plain((await bridge.handle({id: 3, method: 'quit', params: {}})).result), {quit: true});
   delete messenger.voiceCompanionSetup.quitThunderbird;
   assert.deepEqual(plain((await bridge.handle({id: 4, method: 'quit', params: {}})).result), {quit: false, reason: 'unavailable'});
+}
+
+// Will, 0.2.163: his work account was added to Thunderbird twice. Voice Companion kept the first
+// identity, whose outgoing server still timed out; Thunderbird itself used the fixed one.
+async function identityChecks() {
+  const {api, state} = createFakeMessenger();
+  state.accounts.push(
+    {id: 'account5', name: 'Work', type: 'imap', identities: [{id: 'id5', email: 'Will@Work.example', name: 'Will'}]},
+    {id: 'account7', name: 'Work', type: 'imap', identities: [{id: 'id7', email: 'will@work.example', name: 'Will'}]});
+  api.voiceCompanionSetup.outgoingServer = async id => (id === 'id5'
+    ? {host: 'smtp.office365.com', port: 587, security: 'starttls'} : {host: 'smtp.office365.com', port: 465, security: 'ssl'});
+  const bridge = load(api);
+  const send = params => bridge.handle({id: 21, method: 'send', params: {to: ['boss@work.example'], subject: 'testing', html: '<p>Hi</p>', plain: 'Hi', ...params}});
+  // The saved identity times out: nothing was sent, so the other identity for the address is tried.
+  state.failSendFor = {id5: 'The connection to Outgoing server (SMTP) smtp.office365.com timed out.'};
+  const answer = await send({identityId: 'id5', email: 'will@work.example'});
+  assert.equal(answer.error, undefined, answer.error && answer.error.message);
+  assert.equal(answer.result.identityId, 'id7'); assert.equal(answer.result.accountId, 'account7');
+  assert.equal(answer.result.tried, 2);
+  assert.equal(state.sent.at(-1).details.identityId, 'id7');
+  assert.deepEqual(state.deleted.at(-1), {ids: [state.drafts.at(-1).id], skipTrash: false}, 'the safety copy goes to Trash');
+  assert.deepEqual(state.openCompose, []);
+  // A saved identity that still works is used, even when another exists.
+  state.failSendFor = {};
+  assert.equal((await send({identityId: 'id5', email: 'will@work.example'})).result.identityId, 'id5');
+  // A saved identity Thunderbird no longer has: the address finds the current one.
+  assert.equal((await send({identityId: 'gone', email: 'will@work.example'})).result.identityId, 'id7');
+  // A refusal (sign-in) is not retried with another identity, and the failure names the server.
+  state.failSendFor = {id5: '535 5.7.3 Authentication unsuccessful', id7: 'never tried'};
+  const refused = await send({identityId: 'id5', email: 'will@work.example'});
+  assert.match(refused.error.message, /did not accept the sign-in for sending\. It used smtp\.office365\.com, port 587, with STARTTLS\. Your message is saved in Drafts/);
+  assert.notEqual(state.sent.at(-1).details && state.sent.at(-1).details.identityId, 'never');
+  // Every identity times out: one clear failure, the message kept in Drafts.
+  state.failSendFor = {id5: 'timed out', id7: 'timed out'};
+  const both = await send({identityId: 'id5', email: 'will@work.example'});
+  assert.match(both.error.message, /timed out\. It used smtp\.office365\.com, port 465, with SSL\/TLS\. Your message is saved in Drafts/);
+  // No identity for the address at all.
+  const none = await send({identityId: 'gone', email: 'nobody@work.example'});
+  assert.match(none.error.message, /no longer in Thunderbird/);
+}
+
+async function outgoingServerChecks() {
+  const mail = fakeMailServices();
+  const identities = {id5: {key: 'id5'}, id7: {key: 'id7'}};
+  const servers = {id5: {hostname: 'smtp.office365.com', port: 587, socketType: 2},
+    id7: {hostname: 'smtp.office365.com', port: 465, socketType: 3}};
+  mail.MailServices.accounts.getIdentity = key => identities[key] || null;
+  mail.MailServices.outgoingServer = {getServerByIdentity: identity => servers[identity.key] || null};
+  const api = loadExperiment(null, fakeOAuth(), mail);
+  assert.deepEqual(plain(await api.outgoingServer('id5')), {host: 'smtp.office365.com', port: 587, security: 'starttls'});
+  assert.deepEqual(plain(await api.outgoingServer('id7')), {host: 'smtp.office365.com', port: 465, security: 'ssl'});
+  assert.equal(await api.outgoingServer('missing'), null);
+  // Thunderbird 128 calls it MailServices.smtp.
+  delete mail.MailServices.outgoingServer;
+  mail.MailServices.smtp = {getServerByIdentity: identity => servers[identity.key] || null};
+  assert.equal(plain(await api.outgoingServer('id7')).security, 'ssl');
 }
 
 async function freshnessChecks() {
@@ -470,7 +528,7 @@ function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app
                     getEnumerator: type => ({hasMoreElements: () => type === 'msgcompose' && app.composing > 0})},
                io: mail.io, tm: {dispatchToMainThread: run => setTimeout(run, 0)},
                startup: {quit: how => app.quits.push(how)}},
-    Ci: {nsIAppStartup: {eAttemptQuit: 2}},
+    Ci: {nsIAppStartup: {eAttemptQuit: 2}, nsISmtpServer: {}},
     setTimeout, WeakRef, Symbol, Object, URL,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);

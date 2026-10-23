@@ -1904,6 +1904,13 @@ def thunderbird_starter(system=None):
 THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it closes it on exit
 
 
+def remember_thunderbird_identity(account, identity_id, account_id):
+    """Thunderbird sent from another identity for this address: keep that one for next time."""
+    saved = {key: value for key, value in account.items() if key in ('address', 'account_id', 'identity_id', 'name')}
+    saved.update(identity_id=identity_id, account_id=account_id)
+    ProtectedStore(APP).save('thunderbird', saved, select=False)
+
+
 def close_started_thunderbird(relay_source=None):
     """On exit: close Thunderbird if Voice Companion started it (never one the user opened).
     Thunderbird stays open while a message is being written."""
@@ -4881,6 +4888,7 @@ if __name__ == '__main__':
                     import thunderbird_mailbox
                     thunderbird_mailbox.STARTER=thunderbird_starter
                     thunderbird_mailbox.PROGRESS=speak_status
+                    thunderbird_mailbox.REMEMBER_IDENTITY=remember_thunderbird_identity
                     start_thunderbird_quietly()
                 except OSError:pass
         except Exception:
