@@ -702,3 +702,43 @@ class InstallTests(StarterCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class AccountAddedAgainTests(unittest.TestCase):
+    """Will, 0.2.163: the work account was added to Thunderbird again with new ids. Voice Companion
+    kept the old ones and sent through the old account's outgoing server."""
+    def setUp(self):
+        import tempfile, mail_accounts
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        for item in plain_store():
+            item.start(); self.addCleanup(item.stop)
+        self.store = mail_accounts.ProtectedStore(Path(temp.name))
+
+    def saved(self, address):
+        return self.store._unseal(self.store._account_path('thunderbird', address))
+
+    def test_a_saved_address_follows_its_current_identity(self):
+        old = [{'id': 'account5', 'name': 'Work', 'identities': [{'id': 'id5', 'email': 'will@work.example'}]}]
+        thunderbird_accounts.save_identities(self.store, old)
+        self.assertEqual(self.saved('will@work.example')['identity_id'], 'id5')
+        # Removed and added again: only the new identity exists now.
+        again = [{'id': 'account7', 'name': 'Work', 'identities': [{'id': 'id7', 'email': 'Will@Work.example'}]}]
+        self.assertEqual(thunderbird_accounts.save_identities(self.store, again), [])
+        saved = self.saved('will@work.example')
+        self.assertEqual((saved['account_id'], saved['identity_id']), ('account7', 'id7'))
+
+    def test_a_saved_identity_that_still_exists_is_kept(self):
+        both = [{'id': 'account5', 'name': 'Work', 'identities': [{'id': 'id5', 'email': 'will@work.example'}]},
+                {'id': 'account7', 'name': 'Work', 'identities': [{'id': 'id7', 'email': 'will@work.example'}]}]
+        thunderbird_accounts.save_identities(self.store, both[:1])
+        self.assertEqual(thunderbird_accounts.refresh_saved(self.store, both), [])
+        self.assertEqual(self.saved('will@work.example')['identity_id'], 'id5')
+
+    def test_companion_remembers_the_identity_that_sent(self):
+        import companion
+        thunderbird_accounts.save_identities(self.store, [{'id': 'account5', 'name': 'Work', 'identities': [{'id': 'id5', 'email': 'will@work.example'}]}])
+        account = self.saved('will@work.example')
+        with patch.object(companion, 'ProtectedStore', lambda folder: self.store):
+            companion.remember_thunderbird_identity(account, 'id7', 'account7')
+        saved = self.saved('will@work.example')
+        self.assertEqual((saved['account_id'], saved['identity_id'], saved['address']), ('account7', 'id7', 'will@work.example'))

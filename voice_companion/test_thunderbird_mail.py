@@ -18,6 +18,7 @@ from unittest import mock
 import mail_accounts
 import regular_browser
 import thunderbird_bridge
+import thunderbird_mailbox
 from browser_bridge_host import read_message
 from document_editor import Paragraph
 from email_delivery import DeliveryError, submit
@@ -278,3 +279,143 @@ class EndOfLongListTests(unittest.TestCase):
         self.assertIn('Page Down', spoken)
         self.assertLessEqual(EndlessMailbox.calls, MailSession.MAX_END_PAGES + 2)
         self.assertEqual(said, ['Going to the end of Inbox. Please wait.'])
+
+
+class SendAndCloseTests(unittest.TestCase):
+    """Will, 0.2.162: an Office 365 send through Thunderbird took over two minutes with no
+    word, and Thunderbird stayed open after Voice Companion closed."""
+    def relay(self, answer_after=None):
+        bridge = thunderbird_bridge.MailRelay.__new__(thunderbird_bridge.MailRelay)
+        bridge.connected = threading.Event(); bridge.connected.set()
+        bridge.pending = {}; bridge.ids = iter(range(1, 100)); bridge.send_lock = threading.Lock()
+        sent = []
+        class Pipe:
+            def send_bytes(self, data):
+                sent.append(data)
+                if answer_after is not None:
+                    def answer():
+                        for waiter in bridge.pending.values():
+                            waiter['answer'] = {'result': {'headerMessageId': 'm1@example.com'}}; waiter['event'].set()
+                    threading.Timer(answer_after, answer).start()
+        bridge.pipe = Pipe()
+        return bridge, sent
+
+    def draft(self):
+        return mock.Mock(recipient='boss@work.example', subject='testing', cc=[], bcc=[], response_context={})
+
+    def test_a_slow_send_says_it_is_still_sending_then_finishes(self):
+        import user_stop
+        user_stop.begin_command()
+        bridge, _ = self.relay(answer_after=0.5)
+        said = []
+        result = bridge.request('send', {}, timeout=5, progress=lambda: said.append(thunderbird_mailbox.STILL_SENDING), every=0.2)
+        self.assertEqual(result, {'headerMessageId': 'm1@example.com'})
+        self.assertGreaterEqual(said.count(thunderbird_mailbox.STILL_SENDING), 1)
+        # submit() passes Companion's status speech to the wait.
+        calls = []
+        with mock.patch.object(thunderbird_bridge, '_RELAY', bridge), \
+             mock.patch.object(thunderbird_mailbox, 'PROGRESS', said.append), \
+             mock.patch.object(bridge, 'request', lambda method, params=None, timeout=60, progress=None, every=15:
+                               calls.append((method, timeout, progress)) or {'headerMessageId': 'm2'}), \
+             mock.patch('email_delivery.message_parts', lambda draft: ('boss@work.example', 'testing', 'Hi')), \
+             mock.patch('email_formatting.formatted_body', lambda draft: '<p>Hi</p>'):
+            self.assertEqual(thunderbird_mailbox.submit(self.draft(), {'identity_id': 'id1'}), 'm2')
+        method, timeout, progress = next(call for call in calls if call[0] == 'send')
+        self.assertEqual((method, timeout), ('send', 120))
+        said.clear()
+        with mock.patch('time.monotonic', lambda: 10 ** 9): progress()   # 15 seconds have passed
+        self.assertEqual(said, ['Still sending through Thunderbird. Press Escape to stop waiting.'])
+
+    def test_escape_during_a_send_stops_waiting_and_warns_about_a_duplicate(self):
+        import user_stop
+        from email_delivery import DeliveryError
+        user_stop.begin_command(); self.addCleanup(user_stop.begin_command)
+        bridge, _ = self.relay(answer_after=None)
+        threading.Timer(0.2, user_stop.request).start()
+        with mock.patch.object(thunderbird_bridge, '_RELAY', bridge), \
+             mock.patch('email_delivery.message_parts', lambda draft: ('boss@work.example', 'testing', 'Hi')), \
+             mock.patch('email_formatting.formatted_body', lambda draft: '<p>Hi</p>'):
+            with self.assertRaises(DeliveryError) as raised:
+                thunderbird_mailbox.submit(self.draft(), {'identity_id': 'id1'})
+        self.assertIn('Thunderbird may still send this message', str(raised.exception))
+        self.assertIn('Check the Sent folder', str(raised.exception))
+        self.assertTrue(raised.exception.uncertain)
+
+    def test_thunderbird_started_by_companion_closes_with_it(self):
+        import companion
+        relay = mock.Mock(); relay.connected = threading.Event(); relay.connected.set()
+        relay.request.return_value = {'quit': True}
+        with mock.patch.object(companion, 'THUNDERBIRD_STARTED', False):
+            self.assertIsNone(companion.close_started_thunderbird(lambda: relay))
+            relay.request.assert_not_called()   # the user opened Thunderbird: it stays open
+        registered = []
+        with mock.patch.object(companion, 'THUNDERBIRD_STARTED', False), mock.patch('atexit.register', registered.append), \
+             mock.patch.object(companion, 'APP_WINDOW', None):
+            companion.quiet_thunderbird(relay); companion.quiet_thunderbird(relay)
+            self.assertEqual(registered, [companion.close_started_thunderbird])
+            self.assertEqual(companion.close_started_thunderbird(lambda: relay), {'quit': True})
+        relay.request.assert_called_with('quit', {}, timeout=5)
+
+
+class SignInWhileSendingTests(unittest.TestCase):
+    """Will, 0.2.162: Office 365 asked Thunderbird for a sign-in to send. Thunderbird's page was
+    out of reach, and the send timed out ("connection to smtp.office365.com timed out")."""
+    class Bridge:
+        def __init__(self, sign_in_after=1):
+            self.calls = []; self.polls = 0; self.sign_in_after = sign_in_after
+            self.connected = threading.Event(); self.connected.set()
+        def request(self, method, params=None, timeout=60, progress=None, every=15):
+            self.calls.append((method, params))
+            if method == 'takeSignIn':
+                self.polls += 1
+                return {'url': 'https://login.microsoftonline.com/x', 'where': 'browser'} if self.polls > self.sign_in_after else {'url': '', 'where': ''}
+            if method == 'send':
+                for _ in range(10): progress()
+                return {'headerMessageId': 'sent@x'}
+            return {'capturing': bool(params and params.get('seconds'))}
+
+    def submit(self, bridge):
+        draft = mock.Mock(recipient='boss@work.example', subject='testing', cc=[], bcc=[], response_context={})
+        with mock.patch.object(thunderbird_mailbox, 'relay', lambda: bridge), mock.patch.object(thunderbird_mailbox, 'PROGRESS', None), \
+             mock.patch('email_delivery.message_parts', lambda draft: ('boss@work.example', 'testing', 'Hi')), \
+             mock.patch('email_formatting.formatted_body', lambda draft: '<p>Hi</p>'):
+            return thunderbird_mailbox.submit(draft, {'identity_id': 'id1'})
+
+    def test_a_sign_in_page_during_a_send_is_handed_to_companion(self):
+        from email_delivery import DeliveryError
+        bridge = self.Bridge(sign_in_after=1)
+        with self.assertRaises(DeliveryError) as raised:
+            self.submit(bridge)
+        self.assertEqual(raised.exception.sign_in_url, 'https://login.microsoftonline.com/x')
+        self.assertIn('Microsoft wants you to sign in', str(raised.exception))
+        self.assertTrue(raised.exception.uncertain)   # Thunderbird may send once signed in
+        methods = [m for m, _ in bridge.calls]
+        self.assertEqual(bridge.calls[0], ('captureSignIn', {'seconds': thunderbird_mailbox.SIGN_IN_SECONDS}))
+        self.assertEqual(bridge.calls[-1], ('captureSignIn', {'seconds': 0}))
+        self.assertIn('send', methods)
+
+    def test_a_send_with_no_sign_in_finishes_and_stops_listening(self):
+        bridge = self.Bridge(sign_in_after=99)
+        self.assertEqual(self.submit(bridge), 'sent@x')
+        self.assertEqual(bridge.calls[-1], ('captureSignIn', {'seconds': 0}))
+
+
+class RememberWorkingIdentityTests(unittest.TestCase):
+    def test_a_send_from_another_identity_is_remembered_with_the_address(self):
+        calls, remembered = [], []
+        class Bridge:
+            def request(self, method, params=None, timeout=60, progress=None, every=15):
+                calls.append((method, params))
+                if method == 'send':
+                    return {'headerMessageId': 'sent@x', 'identityId': 'id7', 'accountId': 'account7', 'tried': 2}
+                return {'url': ''} if method == 'takeSignIn' else {'capturing': True}
+        account = {'address': 'will@work.example', 'account_id': 'account5', 'identity_id': 'id5'}
+        draft = mock.Mock(recipient='boss@work.example', subject='testing', cc=[], bcc=[], response_context={})
+        with mock.patch.object(thunderbird_mailbox, 'relay', lambda: Bridge()), mock.patch.object(thunderbird_mailbox, 'PROGRESS', None), \
+             mock.patch.object(thunderbird_mailbox, 'REMEMBER_IDENTITY', lambda *args: remembered.append(args)), \
+             mock.patch('email_delivery.message_parts', lambda draft: ('boss@work.example', 'testing', 'Hi')), \
+             mock.patch('email_formatting.formatted_body', lambda draft: '<p>Hi</p>'):
+            self.assertEqual(thunderbird_mailbox.submit(draft, account), 'sent@x')
+        send = next(params for method, params in calls if method == 'send')
+        self.assertEqual((send['identityId'], send['email']), ('id5', 'will@work.example'))
+        self.assertEqual(remembered, [(account, 'id7', 'account7')])

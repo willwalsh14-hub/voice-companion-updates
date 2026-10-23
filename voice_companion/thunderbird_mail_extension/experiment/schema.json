@@ -94,6 +94,25 @@
             "type": "boolean"
           }
         ]
+      },
+      {
+        "name": "quitThunderbird",
+        "type": "function",
+        "async": true,
+        "description": "Close Thunderbird the normal way, unless a message is being written. Resolves to {quit, reason}.",
+        "parameters": []
+      },
+      {
+        "name": "outgoingServer",
+        "type": "function",
+        "async": true,
+        "description": "The outgoing server one identity sends through: {host, port, security}, or null. Read only.",
+        "parameters": [
+          {
+            "name": "identityKey",
+            "type": "string"
+          }
+        ]
       }
     ]
   }

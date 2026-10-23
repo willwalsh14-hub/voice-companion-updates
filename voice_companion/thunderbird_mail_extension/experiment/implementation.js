@@ -302,6 +302,34 @@ function getNewMail(accountId, path, inbox) {
   });
 }
 
+// ---- The outgoing server an identity sends through ------------------------------
+
+// nsMsgSocketType: 0 plain, 1 STARTTLS if offered, 2 STARTTLS always, 3 SSL/TLS.
+function outgoingServer(identityKey) {
+  const services = mailServices();
+  const identity = services.accounts.getIdentity(String(identityKey || ''));
+  if (!identity) return null;
+  const outgoing = services.outgoingServer || services.smtp;
+  const server = outgoing && outgoing.getServerByIdentity(identity);
+  if (!server) return null;
+  let smtp = server;
+  try { smtp = server.QueryInterface(Ci.nsISmtpServer); } catch (error) { /* a newer, non-SMTP kind */ }
+  const type = Number(server.socketType);
+  const security = type === 3 ? 'ssl' : type === 1 || type === 2 ? 'starttls' : type === 0 ? 'none' : '';
+  return {host: String(smtp.hostname || ''), port: Number(smtp.port) || 0, security};
+}
+
+// ---- Closing Thunderbird with Voice Companion ------------------------------------
+
+// Voice Companion started Thunderbird for mail, and is closing: close Thunderbird the
+// normal way. Never while a message is being written; Thunderbird then stays open.
+function quitThunderbird() {
+  const composing = Services.wm.getEnumerator('msgcompose');
+  if (composing && composing.hasMoreElements()) return {quit: false, reason: 'composing'};
+  Services.tm.dispatchToMainThread(() => Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit));
+  return {quit: true};
+}
+
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     armedUntil = 0; captured = null; pending = null;
@@ -384,6 +412,14 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
           const found = captured;
           captured = null;
           return found || {url: '', where: ''};
+        },
+
+        async outgoingServer(identityKey) {
+          try { return outgoingServer(identityKey); } catch (error) { return null; }
+        },
+
+        async quitThunderbird() {
+          try { return quitThunderbird(); } catch (error) { return {quit: false, reason: 'error'}; }
         },
 
         async getNewMail(accountId, path, inbox) {

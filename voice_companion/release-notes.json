@@ -1,18 +1,27 @@
 {
-  "version": "0.2.162-test",
+  "version": "0.2.163-test",
   "status": "Testing build",
   "date": "October 23, 2026",
-  "baseline": "0.2.161-test",
-  "scope": "Thunderbird work and Microsoft accounts no longer freeze Voice Companion, and End goes to the last message at once.",
+  "baseline": "0.2.162-test",
+  "scope": "Sending through Thunderbird works with work accounts that need a sign-in, and Thunderbird closes with Voice Companion.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Stop waiting for Thunderbird",
+          "title": "Sign in to send",
           "details": [
-            "If Thunderbird is slow, press Escape to stop waiting. Voice Companion tells you it stopped.",
-            "Closing Voice Companion with Alt+F4 works even while it waits for Thunderbird."
+            "A work account may ask you to sign in again before you can send.",
+            "Voice Companion now opens that sign-in page in its own browser, so you can finish it.",
+            "After you sign in, Thunderbird sends the message. Check the Sent folder before you send it again."
+          ]
+        },
+        {
+          "title": "Thunderbird closes with Voice Companion",
+          "details": [
+            "Did Voice Companion open Thunderbird? Then it closes when you close Voice Companion.",
+            "If you opened Thunderbird yourself, it stays open.",
+            "If a message is still being written in Thunderbird, Thunderbird stays open."
           ]
         }
       ]
@@ -21,19 +30,21 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "End in a long mail folder",
+          "title": "An account added twice in Thunderbird",
           "details": [
-            "In Thunderbird mail, End now goes to the oldest message in one step.",
-            "Before, End loaded every page in turn. In a large work mailbox it never finished, and Voice Companion froze.",
-            "Page Up from the end goes back one page at a time, as before."
+            "If you add an account to Thunderbird again, Voice Companion now uses the new one.",
+            "Before, it could keep sending through the old one, even after you fixed Thunderbird's settings.",
+            "If the server cannot be reached, Voice Companion tries the other copy of the account once.",
+            "When sending fails, you hear which server and method were used, like port 587 with STARTTLS."
           ]
         },
         {
-          "title": "New Thunderbird accounts",
+          "title": "Sending through Thunderbird",
           "details": [
-            "A newly added work or Microsoft account can take a while to download its mail.",
-            "Until it is done, you hear that the newest messages may not be here yet. Press F5 or say refresh messages to check again.",
-            "Work accounts that use Exchange now check for new mail too."
+            "If sending is slow, you hear Still sending every 15 seconds. Press Escape to stop waiting.",
+            "If you stop waiting, Thunderbird may still send it. Check the Sent folder before you send it again.",
+            "If sending fails, you hear why, for example that the mail server did not answer.",
+            "A message that fails is saved in Drafts, and no Thunderbird window is left open."
           ]
         }
       ]

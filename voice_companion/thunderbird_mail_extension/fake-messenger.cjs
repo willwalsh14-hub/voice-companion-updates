@@ -18,7 +18,7 @@ function createFakeMessenger() {
       {id: 'account1://Trash', accountId: 'account1', path: '/Trash', name: 'Trash', specialUse: ['trash']},
     ],
     messages: [],
-    composed: [], sent: [], minimized: [], moved: [], deleted: [],
+    composed: [], sent: [], minimized: [], moved: [], deleted: [], openCompose: [], closedByAddon: [],
     failSend: false,
     // Thunderbird's own "add email account" page (the Experiment): what it was asked,
     // and, like a person finishing that page, the account it adds a moment later.
@@ -114,10 +114,21 @@ function createFakeMessenger() {
         body: '<html><body><div>Forwarded original</div></body></html>', plainTextBody: 'Forwarded original'}),
       getComposeDetails: async tabId => ({...tabs.get(tabId).current}),
       setComposeDetails: async (tabId, details) => { Object.assign(tabs.get(tabId).current, details); },
+      saveMessage: async (tabId, options) => {
+        if (state.failSave) throw new Error('Could not save');
+        const id = 9000 + (state.drafts || []).length;
+        state.drafts = (state.drafts || []).concat([{...tabs.get(tabId).current, options, id}]);
+        return {mode: options.mode, messages: [{id}]};
+      },
       sendMessage: async (tabId, options) => {
-        if (state.failSend) throw new Error('SMTP refused sam@example.com');
+        if (state.failSend) throw new Error(state.failSend === true ? 'SMTP refused sam@example.com' : state.failSend);
         const tab = tabs.get(tabId);
+        const why = state.failSendFor && state.failSendFor[tab.details && tab.details.identityId];
+        if (why) throw new Error(why);
         state.sent.push({...tab, options});
+        // Thunderbird closes the compose window after sending, unless something keeps it
+        // open (state.composeStaysOpen, as Will saw with Office 365).
+        if (!state.composeStaysOpen) state.openCompose = state.openCompose.filter(w => w !== tab.windowId);
         return {mode: 'sendNow', headerMessageId: 'sent' + tabId + '@thunderbird.test', messages: []};
       },
     },
@@ -126,6 +137,16 @@ function createFakeMessenger() {
         state.minimized.push({windowId, info});
         const win = state.windows.find(w => w.id === windowId);
         if (win && info.state) win.state = info.state;
+      },
+      get: async windowId => {
+        if (state.openCompose.includes(windowId)) return {id: windowId, type: 'messageCompose'};
+        const win = state.windows.find(w => w.id === windowId);
+        if (!win) throw new Error('Invalid window ID: ' + windowId);
+        return {...win};
+      },
+      remove: async windowId => {
+        if (!state.openCompose.includes(windowId)) throw new Error('Invalid window ID: ' + windowId);
+        state.openCompose = state.openCompose.filter(w => w !== windowId); state.closedByAddon.push(windowId);
       },
       getAll: async ({windowTypes} = {}) => state.windows.filter(w => !windowTypes || windowTypes.includes(w.type)).map(w => ({...w})),
     },
@@ -164,7 +185,7 @@ function createFakeMessenger() {
   function newTab(info) {
     const id = nextTab++;
     const tab = {id, windowId: 100 + id, ...info, current: {isPlainText: false, body: info.body || '', plainTextBody: info.plainTextBody || '', ...(info.details || {})}};
-    tabs.set(id, tab); state.composed.push(tab);
+    tabs.set(id, tab); state.composed.push(tab); state.openCompose.push(tab.windowId);
     return {id, windowId: tab.windowId};
   }
   return {api, state};

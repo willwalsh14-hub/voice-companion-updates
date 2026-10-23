@@ -16,6 +16,23 @@ INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
 # (companion.thunderbird_starter). It raises MailboxError with a plain reason
 # when Thunderbird cannot connect without the user's yes.
 STARTER = None
+# Says a short line while a slow Thunderbird step runs (Voice Companion's status speech).
+PROGRESS = None
+# Saves a different working identity for an address: REMEMBER_IDENTITY(account, identity_id, account_id).
+REMEMBER_IDENTITY = None
+STILL_SENDING = 'Still sending through Thunderbird. Press Escape to stop waiting.'
+SIGN_IN_TO_SEND = ('Microsoft wants you to sign in before Thunderbird can send this message. '
+                   'The sign-in page is opening in Voice Companion\'s browser. After you sign in, Thunderbird '
+                   'tries to send it. Check the Sent folder before you send it again.')
+SIGN_IN_SECONDS = 150   # how long a send listens for Thunderbird's sign-in page
+SIGN_IN_CHECK_SECONDS = 2
+
+
+class SignInNeeded(Exception):
+    """Thunderbird asked for a web sign-in (Microsoft or Google) while sending."""
+    def __init__(self, url):
+        super().__init__(url)
+        self.url = url
 NOT_CONNECTED = ('Thunderbird is not connected to Voice Companion. '
                  'Say add account and choose Thunderbird, and Voice Companion checks what is missing.')
 
@@ -194,7 +211,7 @@ def submit(draft, account):
     from email_formatting import formatted_body
     recipient, subject, body = message_parts(draft)
     context = draft.response_context or {}
-    params = {'identityId': account.get('identity_id', ''), 'to': [recipient], 'cc': list(draft.cc),
+    params = {'identityId': account.get('identity_id', ''), 'email': account.get('address', ''), 'to': [recipient], 'cc': list(draft.cc),
               'bcc': list(getattr(draft, 'bcc', [])), 'subject': subject, 'plain': body,
               'html': formatted_body(draft), 'plainOnly': False}  # Thunderbird keeps an account set to plain text
     if context.get('action') in ('reply', 'reply_all') and context.get('source_id') is not None:
@@ -202,8 +219,45 @@ def submit(draft, account):
                            'type': 'replyToAll' if context['action'] == 'reply_all' else 'replyToSender'}
     elif context.get('action') == 'forward' and context.get('source_id') is not None:
         params['forward'] = {'messageId': ThunderbirdMailbox._message(context['source_id'])}
+    from user_stop import Stopped
+    import time
+    say = PROGRESS
     try:
-        result = relay().request('send', params, timeout=120)
+        bridge = relay()
+    except MailboxError as exc:
+        raise DeliveryError(str(exc), uncertain=False) from exc
+    # Sending can need a sign-in Thunderbird did not need before (Microsoft asks again for
+    # sending). Thunderbird would open it where the user cannot reach it, then time out, so
+    # Voice Companion takes the page, as it does while an account is added.
+    try:
+        bridge.request('captureSignIn', {'seconds': SIGN_IN_SECONDS}, timeout=10)
+        listening = True
+    except Exception:
+        listening = False
+    last_said = [time.monotonic()]
+
+    def while_sending():
+        if say and time.monotonic() - last_said[0] >= 15:
+            last_said[0] = time.monotonic(); say(STILL_SENDING)
+        if listening:
+            try:
+                found = bridge.request('takeSignIn', {}, timeout=10)
+            except (ThunderbirdError, ThunderbirdUnavailable):
+                return
+            if isinstance(found, dict) and found.get('url'):
+                raise SignInNeeded(found['url'])
+    try:
+        result = bridge.request('send', params, timeout=120,
+                                progress=while_sending if (say or listening) else None,
+                                every=SIGN_IN_CHECK_SECONDS if listening else 15)
+    except SignInNeeded as exc:
+        error = DeliveryError(SIGN_IN_TO_SEND)   # uncertain: Thunderbird sends once signed in
+        error.sign_in_url = exc.url
+        raise error from None
+    except Stopped as exc:
+        # Thunderbird may still finish sending; do not invite a duplicate.
+        raise DeliveryError('Stopped waiting. Thunderbird may still send this message. '
+                            'Check the Sent folder before sending it again.') from exc
     except MailboxError as exc:
         raise DeliveryError(str(exc), uncertain=False) from exc
     except ThunderbirdUnavailable as exc:
@@ -211,4 +265,15 @@ def submit(draft, account):
         raise DeliveryError('Thunderbird stopped answering while sending. Check the Sent folder in Thunderbird before trying again.') from exc
     except ThunderbirdError as exc:
         raise DeliveryError(str(exc), uncertain=False) from exc
-    return (result or {}).get('headerMessageId') or 'accepted by Thunderbird'
+    finally:
+        if listening:
+            try: bridge.request('captureSignIn', {'seconds': 0}, timeout=5)
+            except Exception: pass
+    result = result or {}
+    used = result.get('identityId')
+    if used and used != account.get('identity_id') and REMEMBER_IDENTITY is not None:
+        # Thunderbird sent from another identity for this address (an account added twice):
+        # remember the one that works, so the next message goes there at once.
+        try: REMEMBER_IDENTITY(account, used, result.get('accountId') or account.get('account_id', ''))
+        except Exception: pass
+    return result.get('headerMessageId') or 'accepted by Thunderbird'
