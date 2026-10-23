@@ -73,6 +73,10 @@ MESSAGES = {
     'store_failed': ('The extension has not linked yet. Ask your helper to finish setup with section 23 of the guide. '
                      'Everything else in Voice Companion still works.'),
     'no_open': 'Chrome could not be opened. Open Chrome yourself. I will keep waiting.',
+    'offer_chrome': 'Chrome is not set up yet. Set it up now? Say yes or no, or press Y or N.',
+    'offer_extension': 'Your Chrome is not linked to Voice Companion yet. Set up the link now? Say yes or no, or press Y or N.',
+    'offer_declined': ('Okay. Guided websites use embedded Edge for now. To set up Chrome later, '
+                       'choose Set up Chrome in the Web browser menu.'),
     'canceled': 'Chrome setup stopped.',
     'canceled_install': 'Chrome setup stopped. If Chrome was already installing, it may still finish on its own.',
     'answer': 'Say yes or no.',
@@ -375,6 +379,12 @@ class ChromeSetup:
             return self._finish(None)
         return self._extension_step(MESSAGES['ask_extension'])
 
+    def offer(self, missing):
+        """Ask first, when the Web browser opens and Chrome is not ready.
+        missing is 'chrome' (not installed) or 'extension' (not linked)."""
+        self.missing = missing
+        return self._ask('offer', MESSAGES['offer_chrome' if missing == 'chrome' else 'offer_extension'])
+
     def respond(self, command):
         if self.finished:
             return None
@@ -389,6 +399,17 @@ class ChromeSetup:
         if not (yes or no):
             return MESSAGES['answer']
         question, self.question = self.question, None
+        if question == 'offer':
+            if no:
+                return self._finish(MESSAGES['offer_declined'])
+            # Yes was the answer to setting it up: go straight to the first step.
+            if self.system.find_chrome() is None:
+                self.question = 'install_chrome'
+                return self.respond('yes')
+            if self.system.extension_state() == 'enabled':
+                return self._wait('linking', MESSAGES['already_added'])
+            self.question = 'add_extension'
+            return self.respond('yes')
         if question == 'install_chrome':
             if no:
                 return self._finish(MESSAGES['no_chrome'])
@@ -553,6 +574,38 @@ def begin(app, mode, quiet=False):
     return 'chrome_setup'
 
 
+def missing_for_web(app, browser, regular=False):
+    """What stops Chrome from working as the Web browser opens: 'chrome', 'extension' or None.
+
+    Guided Chrome needs Chrome installed. Your own Chrome (the regular browser)
+    also needs the Voice Companion extension linked."""
+    try:
+        system = WindowsChrome()
+        if not system.supported():
+            return None
+        if regular:
+            if relay_connected(app):
+                return None
+            return 'chrome' if system.find_chrome() is None else 'extension'
+        if browser == 'chrome' and system.find_chrome() is None:
+            return 'chrome'
+    except Exception:
+        return None
+    return None
+
+
+def offer(app, mode, missing):
+    """Ask whether to set up Chrome now. Enter means no; Y and N answer."""
+    if app.CHROME_SETUP is not None and not app.CHROME_SETUP.finished:
+        app.speak(app.CHROME_SETUP.last_instruction)
+        return 'chrome_setup'
+    setup = ChromeSetup(WindowsChrome(), lambda: relay_connected(app), focus_reader=FocusReader(app.speak))
+    app.speak(setup.offer(missing))
+    app.CHROME_SETUP, app.CHROME_SETUP_RETURN = setup, mode
+    app.CONFIRM_CHOICE = 'no'
+    return 'chrome_setup'
+
+
 def handle(app, text, mode):
     """Spoken or typed input while setup is on screen."""
     command = app.normalized_command(text)
@@ -576,9 +629,18 @@ def handle(app, text, mode):
     message = setup.respond(command)
     if message:
         app.speak(message)
+    if asked == 'offer' and setup.finished and command in ('no', 'no thanks', 'not now', 'later'):
+        # Not asked again this session, unless Chrome is chosen again.
+        if getattr(app, 'web_session', None) is not None:
+            app.web_session.chrome_offer_declined = True
     if setup.question and setup.question != asked:
         app.CONFIRM_CHOICE = 'yes'
-    return finish(app, app.CHROME_SETUP_RETURN) if setup.finished else 'chrome_setup'
+    if setup.finished:
+        target = finish(app, app.CHROME_SETUP_RETURN)
+        if target == 'browser_menu' and getattr(app, 'web_session', None) is not None:
+            app.speak(app.web_session.menu.start())
+        return target
+    return 'chrome_setup'
 
 
 def finish(app, mode):

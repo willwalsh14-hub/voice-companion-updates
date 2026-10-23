@@ -26,21 +26,28 @@ Companion protects the saved connection for the Windows user who made it.
 
 4. Connect through Thunderbird
 Thunderbird can hold the email sign-in instead of Companion. This works for Gmail, Outlook, Yahoo and most other email. Thunderbird must be version 128 or newer.
-1. Install Thunderbird from thunderbird.net. Add the email account there. Check that Thunderbird can read and send mail.
-2. In Companion, say "Add account" and choose Thunderbird. Companion checks each part and says what is missing.
+1. In Companion, say "Add Thunderbird account". Companion checks each part and says what is missing.
+2. If Thunderbird is not installed, Companion offers to install it. Say yes. Companion uses Windows Package Manager. Without it, Companion downloads the installer from Mozilla and runs it only if Windows confirms Mozilla signed it. If Windows asks whether to allow changes, choose Yes.
 3. If Companion asks to install the Voice Companion connection, say yes. Companion adds a small add-on to Thunderbird. If Thunderbird is open, close it when Companion asks.
-4. If Companion asks to start Thunderbird, say yes. Companion waits up to one minute for Thunderbird to connect.
-5. Listen to the address Companion reads. Check that it is right. Companion adds each address set up in Thunderbird.
-6. Keep Thunderbird open. It can stay minimized.
-The add-on goes in the extensions folder of the Thunderbird profile. Companion also adds two lines to the profile's user.js file. They let Thunderbird turn on the add-on without a prompt.
+4. Type or say the email address to add. The first time, also give the name people see on email.
+5. Companion opens the Thunderbird page for adding an account and fills it in. Say "Continue in Thunderbird" to choose its main button. Companion reads each new page.
+6. Sign in. Gmail and Outlook open their sign-in page in the Companion web browser, with Thunderbird 153 or newer. For a password, Companion opens a private box and puts the password straight into Thunderbird. Yahoo and AOL sign in only in the Thunderbird window. Say "Show Thunderbird", and help there.
+7. Listen for the new account. Companion says when it is ready and selects it.
+8. To add another address, say "Add Thunderbird account" again.
+If the email account is already set up in Thunderbird, say "Add account" and choose Thunderbird. Companion connects every address set up in Thunderbird.
+Companion starts Thunderbird by itself, minimized, when a Thunderbird account is used. It also starts it when Companion opens, if a Thunderbird account is in use. Nobody needs to open Thunderbird first.
+Companion says Thunderbird accounts with Thunderbird first, such as "Thunderbird, sam@gmail.com". The same address can also be connected straight to Gmail. Then there are two accounts, and each says its kind.
+The add-on goes in the extensions folder of the Thunderbird profile. Companion also adds two lines to the profile's user.js file. They let Thunderbird turn on the add-on without a prompt. When Companion has a newer add-on, it replaces the old one while Thunderbird is closed.
+The add-on uses a small Thunderbird Experiment. It opens the Thunderbird page for adding an account, reads it, presses its main button, and fills in a password typed in Companion. While an account is being added, it hands the Gmail or Outlook sign-in page to Companion. It never reads or changes saved passwords or settings.
 To install the add-on by hand, open Add-ons and Themes in Thunderbird. Choose the gear button, then Install Add-on From File. Pick Voice Companion Mail Connection.xpi in the Voice Companion program folder. It is in AppData, Local, Programs, Voice Companion. Agree to the add-on's requests. It reads, moves and sends mail only when Companion asks.
 If Companion says the connection is turned off, open Add-ons and Themes in Thunderbird. Turn on Voice Companion Mail Connection.
 When Companion sends mail, Thunderbird sends it. A Thunderbird window may open briefly and close.
-If Companion says Thunderbird is not connected, open Thunderbird and wait one minute. Then try again.
+If Companion says Thunderbird did not connect within one minute, close Thunderbird. Then try again. If it still fails, check the add-on as above.
 
 5. Choose the right account
 Say "List email accounts" to hear saved accounts.
 Say "Switch to" followed by the full email address when you have more than one account of the same type.
+When one address is connected two ways, say the kind first. For example, say "Switch to Thunderbird, sam at gmail dot com".
 Say "Which email account?" to check the current choice. Check it before sending.
 Without a connected account, the app can save a draft but cannot send it.
 

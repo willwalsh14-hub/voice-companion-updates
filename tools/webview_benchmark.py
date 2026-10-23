@@ -178,6 +178,48 @@ def main():
         if spent is not None:
             print(f"Press Skip ad: {spent*1000:.0f} ms (click and wait {parts.get('activate', 0)*1000:.0f} ms), "
                   f"snapshots {counter.snapshots}, skips {page.evaluate('window.skips')}, said: {str(result)[:70]!r}")
+    # App mode on the busy page: switching modes, keys sent to the page, and the
+    # main loop's checks while keys go to the page.
+    release()
+    session.keyboard('PageTop'); session.keyboard('Quick:b')
+    to_app, to_browse = [], []
+    for _ in range(5):
+        release()
+        to_app.append(timed(lambda: session.keyboard('ToggleAppMode'))[0])
+        session.keyboard('Pass:Shift')  # the first key also moves focus
+        to_browse.append(timed(lambda: session.keyboard('ToggleAppMode'))[0])
+    print(f'Switch to app mode: median {statistics.median(to_app)*1000:.0f} ms; '
+          f'back to browse mode: median {statistics.median(to_browse)*1000:.0f} ms')
+    session.keyboard('ToggleAppMode')
+    def per_key(label, key, count=8):
+        times = []
+        for _ in range(count):
+            release(); times.append(timed(lambda: session.keyboard('Pass:' + key))[0])
+        print(f'App mode {label}: median {statistics.median(times)*1000:.0f} ms, worst {max(times)*1000:.0f} ms')
+    for key in ('k', 'j', 'l', 'ArrowDown', 'Tab'):
+        per_key('key ' + key, key)
+    # Arrows on the seek slider, and typing in the search box.
+    page.evaluate("document.querySelector('.progress').tabIndex=0;document.querySelector('.progress').focus()")
+    per_key('Right Arrow on the seek slider', 'ArrowRight')
+    page.evaluate("document.querySelector('#masthead input').focus()")
+    per_key('typing a letter in the search box', 'a')
+    # Twenty keys arriving together (a held arrow, fast typing).
+    waiting = []
+    session.more_keys = lambda: bool(waiting)
+    def burst():
+        waiting[:] = ['x'] * 19
+        for _ in range(20):
+            session.keyboard('Pass:b')
+            if waiting: waiting.pop()
+    spent, _ = timed(burst)
+    print(f'App mode 20 keys arriving together: {spent*1000:.0f} ms in all ({spent*50:.1f} ms a key)')
+    session.more_keys = None
+    counter.snapshots = 0; checks = []
+    for _ in range(10):
+        release(); checks.append(timed(session.refresh_changed)[0]); page.wait_for_timeout(300)
+    print(f'App mode check (main loop): median {statistics.median(checks)*1000:.0f} ms, worst {max(checks)*1000:.0f} ms, '
+          f'page reads {counter.snapshots} in 10 checks')
+    session.keyboard('ToggleAppMode')
     for _, request_route in pending:
         try: request_route.abort()
         except Exception: pass

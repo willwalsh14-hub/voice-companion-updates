@@ -149,53 +149,89 @@ def navigation_interrupted(error):
 
 
 DEFAULT_BROWSER = 'webview2'
+# Guided browsing offers two browsers: embedded Edge (WebView2, the default,
+# owned by Companion) and Chrome. Edge, Brave and Firefox were removed as
+# choices; a saved choice of one of them becomes embedded Edge, said once.
+GUIDED_BROWSERS = ('webview2', 'chrome')
+RETIRED_BROWSERS = ('edge', 'brave', 'firefox')
+BROWSER_NAMES = {'webview2': 'embedded Edge', 'chrome': 'Chrome', 'edge': 'Edge', 'brave': 'Brave', 'firefox': 'Firefox'}
 GOOGLE_SIGN_IN_NOTICE = ('Google does not allow signing in inside embedded Edge. To use a Google account on this site, '
-                         'say use Firefox, or use your regular browser with the Voice Companion extension')
+                         'say use Chrome, or use your regular browser with the Voice Companion extension')
+BROWSER_CHOICES = 'Guided websites can use embedded Edge or Chrome. Say use embedded Edge, or say use Chrome.'
 
 
-def find_brave(environ=None, app_path=None):
-    """Where brave.exe is: the usual install folders, then the path Windows records
-    for it (App Paths), which also covers installs in other folders."""
-    environ = os.environ if environ is None else environ
-    suffix = Path('BraveSoftware/Brave-Browser/Application/brave.exe')
-    for variable in ('PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA'):
-        root = environ.get(variable, '')
-        if root and (Path(root) / suffix).is_file():
-            return Path(root) / suffix
-    if app_path is None:
-        app_path = _registered_app_path
-    registered = (app_path('brave.exe') or '').strip().strip('"')
-    if registered and Path(registered).is_file():
-        return Path(registered)
-    return None
+def browser_name(browser):
+    """How a browser is named when spoken: 'webview2' is embedded Edge."""
+    return BROWSER_NAMES.get(str(browser), str(browser).capitalize())
 
 
-def _registered_app_path(name):
+def retired_browser_notice(name):
+    """What is said when someone asks for a browser that is no longer a guided choice."""
+    own = (' To use your own ' + browser_name(name) + ' browser, connect it with the Voice Companion extension.'
+           if name in ('edge', 'brave') else '')
+    return browser_name(name) + ' is no longer a guided browser. ' + BROWSER_CHOICES + own
+
+
+def browser_key(value):
+    """The stored name (webview2 or chrome) for a spoken or shown browser name."""
+    return {'embedded edge': 'webview2', 'webview2': 'webview2', 'chrome': 'chrome', 'google chrome': 'chrome'}.get(
+        _plain(value).lower(), DEFAULT_BROWSER)
+
+
+def browser_setting(folder):
+    """The Guided browser option as Options shows it. Nothing is rewritten here,
+    so the Web browser screen still says once that an old choice changed."""
     try:
-        import winreg
-    except ImportError:
-        return None
-    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        choice = (Path(folder) / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
+    except OSError:
+        choice = DEFAULT_BROWSER
+    return 'Chrome' if choice == 'chrome' else 'embedded Edge'
+
+
+def guided_backend(folder, browser):
+    """A guided browser owned by Companion (never the user's connected browser)."""
+    if browser == 'webview2':
+        from webview2_backend import WebView2Backend
+        return WebView2Backend(folder)
+    return BrowserBackend(folder, browser)
+
+
+def saved_browser_choice(folder):
+    """The saved guided browser, and a notice to say once when an old choice was replaced.
+
+    A saved choice of Edge, Brave or Firefox becomes embedded Edge. The file is
+    rewritten, so the notice is given only once."""
+    path = Path(folder) / 'browser-choice.txt'
+    try:
+        choice = path.read_text(encoding='utf-8').strip().lower()
+    except OSError:
+        return None, ''
+    if choice in GUIDED_BROWSERS:
+        return choice, ''
+    if choice in RETIRED_BROWSERS:
         try:
-            with winreg.OpenKey(hive, 'Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\' + name) as key:
-                value = winreg.QueryValue(key, None)
+            write_text_atomic(path, DEFAULT_BROWSER)
         except OSError:
-            continue
-        if value:
-            return value.strip().strip('"')
-    return None
+            pass
+        return DEFAULT_BROWSER, ('Your guided browser was ' + browser_name(choice) + '. Guided websites now use embedded Edge or Chrome, '
+                                 'so Companion now uses embedded Edge. To use Chrome instead, say use Chrome.')
+    return None, ''
 
 
 class BrowserBackend:
-    """Playwright uses a dedicated profile, never the user's normal one."""
-    BROWSERS = ('edge', 'chrome', 'brave', 'firefox','webview2')
+    """Playwright uses a dedicated profile, never the user's normal one.
 
-    def __init__(self, folder, browser='edge', headless=False):
+    Guided Chrome is the installed Google Chrome, started with its own profile.
+    The connected regular browser (connected_browser.py) reuses this class for
+    the user's own Chrome, Edge or Brave tab."""
+    BROWSERS = GUIDED_BROWSERS
+
+    def __init__(self, folder, browser='chrome', headless=False):
         self.folder = Path(folder)
         self.browser = browser.lower()
         self.headless = headless
-        if self.browser not in self.BROWSERS:
-            raise WebError('Choose Edge, Chrome, Brave, or Firefox.')
+        if self.browser not in self.BROWSERS and not getattr(self, 'regular', False):
+            raise WebError(BROWSER_CHOICES)
         self.playwright = self.context = self.page = None
 
     def start(self):
@@ -207,24 +243,13 @@ class BrowserBackend:
         if self.context or self.playwright:self.close()
         try:
             from playwright.sync_api import sync_playwright
-            bundled = Path(getattr(__import__('sys'), '_MEIPASS', Path(__file__).parent)) / 'browser-runtime'
-            if bundled.exists(): os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(bundled)
             self.folder.mkdir(parents=True, exist_ok=True)
             from browser_process import browser_process_environment
             with browser_process_environment(self.folder):
                 self.playwright = sync_playwright().start()
-            if self.browser == 'firefox':
-                engine, kwargs = self.playwright.firefox, {}
-            else:
-                engine = self.playwright.chromium
-                kwargs = {'channel': {'edge':'msedge', 'chrome':'chrome'}.get(self.browser)}
-                if self.browser == 'brave':
-                    executable = find_brave()
-                    if not executable: raise WebError('Brave is not installed in a standard Windows location.')
-                    kwargs = {'executable_path': str(executable)}
             with browser_process_environment(self.folder):
-                self.context = engine.launch_persistent_context(
-                    str(self.folder), headless=self.headless, accept_downloads=False, **kwargs)
+                self.context = self.playwright.chromium.launch_persistent_context(
+                    str(self.folder), headless=self.headless, accept_downloads=False, channel='chrome')
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.set_default_timeout(10000)
         except Exception as exc:
@@ -232,8 +257,8 @@ class BrowserBackend:
             import traceback
             try:(self.folder/'browser-error.txt').write_text(traceback.format_exc(),encoding='utf-8')
             except OSError:pass
-            raise WebError('The guided ' + self.browser.capitalize() +
-                           ' browser could not start. Ask your helper to check that browser and the installation.') from exc
+            raise WebError('The guided ' + browser_name(self.browser) +
+                           ' browser could not start. If Chrome is not installed, say set up Chrome.') from exc
 
     def close(self):
         if getattr(self,'_embedded',None):
@@ -261,7 +286,141 @@ class BrowserBackend:
         self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
     def back(self):
-        self.page.go_back(wait_until='commit' if getattr(self,'regular',False) else 'domcontentloaded', timeout=30000)
+        if not self.history_step(-1):raise WebError('There is no previous page.')
+
+    def _history_identity(self):
+        """The document showing now: its address and when it was created."""
+        try:
+            value=self.page.evaluate('()=>[location.href,String(performance.timeOrigin)]')
+            return (value[0],value[1])
+        except Exception:return None
+
+    HISTORY_WAIT=30
+
+    def history_step(self,delta):
+        """Go back (delta -1) or forward (delta 1) one page, as Alt+Left and Alt+Right do.
+
+        Returns True when another page shows, False when there is none that way.
+        Three things made this unreliable:
+        - The driver waits for the new page's load events. A page the browser
+          kept in its back/forward cache (embedded Edge and everyday browsers
+          keep one) shows again without them, so Back waited 30 seconds and
+          then reported a failure, although the browser had gone back.
+        - An ad frame that moves to another address adds a history entry for
+          that frame only. Back then changed the ad, not the page, and an ad
+          that keeps moving could stop Back from ever leaving the page.
+        - The first page opened sits on top of the browser's blank start page,
+          which Back would open."""
+        from playwright.sync_api import TimeoutError as BrowserTimeout
+        page=self.page
+        start=self._history_identity() or (page.url,None)
+        moves=[]
+        def request(item):
+            try:
+                if item.is_navigation_request():moves.append('main' if item.frame==page.main_frame else 'frame')
+            except Exception:pass
+        def navigated(frame):
+            try:
+                if frame!=page.main_frame:moves.append('frame')
+            except Exception:pass
+        page.on('request',request);page.on('framenavigated',navigated)
+        try:
+            # First choice: go straight to the page's own previous entry.
+            plan=self._history_jump(delta)
+            if plan=='none':return False
+            if plan=='started':return self._history_arrival(start,delta,moves,True,direct=True)=='page'
+            # Otherwise step through the browser's history one entry at a time.
+            for hop in range(6):
+                moves.clear()
+                try:
+                    (page.go_back if delta<0 else page.go_forward)(wait_until='commit',timeout=800)
+                    answered=True
+                except BrowserTimeout:answered=False
+                except Exception as exc:
+                    if not navigation_interrupted(exc):raise
+                    answered=False
+                outcome=self._history_arrival(start,delta,moves,answered)
+                if outcome!='frame':return outcome=='page'
+            return False
+        finally:
+            for name,handler in (('request',request),('framenavigated',navigated)):
+                try:page.remove_listener(name,handler)
+                except Exception:pass
+
+    CDP_HISTORY=True
+
+    def _history_jump(self,delta):
+        """Start going to the previous (or next) page itself, skipping entries made
+        only by frames. Returns 'started', 'none' when there is no such page, or
+        None when this browser cannot say (then history is stepped through)."""
+        try:listing=self._navigation_history()
+        except Exception:listing=None
+        if listing:
+            history,go,close=listing
+            try:
+                entries,index=history['entries'],history['currentIndex']
+                # Every entry carries the address of the page it belongs to;
+                # entries made by a frame repeat the page's own address.
+                here=entries[index]['url'];position=index+delta
+                while 0<=position<len(entries) and entries[position]['url']==here:position+=delta
+                if not 0<=position<len(entries) or not str(entries[position]['url']).startswith(('http://','https://')):return 'none'
+                go(entries[position]['id']);return 'started'
+            except Exception:pass
+            finally:close()
+        # The page's own navigation list holds only its own entries, never a
+        # frame's. It covers pages on the same site.
+        try:return self.page.evaluate(NAVIGATION_JUMP,delta) or None
+        except Exception:return None
+
+    def _navigation_history(self):
+        """The browser's history entries for this tab, and a way to go to one."""
+        if not self.CDP_HISTORY or self.context is None or not hasattr(self.context,'new_cdp_session'):return None
+        session=self.context.new_cdp_session(self.page)
+        def close():
+            try:session.detach()
+            except Exception:pass
+        try:history=session.send('Page.getNavigationHistory')
+        except Exception:
+            close();raise
+        return history,lambda entry:session.send('Page.navigateToHistoryEntry',{'entryId':entry}),close
+
+    def _history_arrival(self,start,delta,moves,answered,direct=False):
+        """Wait for the step to show a page. Returns 'page', 'none' or 'frame'.
+
+        After a direct jump a page is known to be coming, so only the page counts."""
+        import time
+        deadline=time.monotonic()+self.HISTORY_WAIT;checks=0;page=self.page
+        while True:
+            now=self._history_identity()
+            if now is not None and now!=start:
+                if not now[0].startswith(('http://','https://')) and start[0].startswith(('http://','https://')):
+                    # The blank start page: return to the page the user was on.
+                    self._return_to(start,-delta)
+                    return 'none'
+                if now[1]!=start[1] and 'main' not in moves:
+                    # Shown again from the back/forward cache. The driver saw
+                    # no load events and lost the page's frames, so later waits
+                    # would hang and frames could not be read. Loading it again
+                    # gives a complete, current page.
+                    page.reload(wait_until='domcontentloaded',timeout=30000)
+                return 'page'
+            checks+=1
+            if direct:pass
+            elif answered and 'main' not in moves and 'frame' not in moves and checks>=3:return 'none'
+            elif 'frame' in moves and 'main' not in moves and (answered or checks>=6):return 'frame'
+            if time.monotonic()>deadline:
+                raise WebError(('The previous' if delta<0 else 'The next')+' page did not finish opening. Press F5 to refresh the page.')
+            page.wait_for_timeout(50)
+
+    def _return_to(self,place,delta):
+        import time
+        try:(self.page.go_back if delta<0 else self.page.go_forward)(wait_until='commit',timeout=5000)
+        except Exception:pass
+        deadline=time.monotonic()+10
+        while time.monotonic()<deadline:
+            now=self._history_identity()
+            if now is not None and now[0]==place[0]:return
+            self.page.wait_for_timeout(50)
 
     def document_stamp(self):
         stamp=self.page.evaluate(DOCUMENT_STAMP)
@@ -800,31 +959,34 @@ class BrowserBackend:
 
     def page_key_state(self,drain=False):
         """The focused element and new page announcements, for app mode speech."""
-        state=self.page.evaluate(PAGE_KEY_STATE,{'drain':drain})
+        state=_key_state(self.page,{'drain':drain})
         focus=state.get('focus')
         if focus and focus.get('tag') in ('iframe','frame'):
             # Keys typed into a frame go to the element focused inside it.
             for frame in self.page.frames[1:]:
-                try:inner=frame.evaluate(PAGE_KEY_STATE,{'drain':False})
+                try:inner=_key_state(frame,{'drain':False})
                 except Exception:continue
                 if inner.get('focus') and inner.get('has_focus') and inner['focus'].get('tag') not in ('iframe','frame'):
                     state['focus']=inner['focus'];break
         return state
 
-    def press_page_key(self,key):
-        """App mode: one real key press for the page, and what it changed."""
+    def press_page_key(self,key,focus=None,before=None,read_after=True):
+        """App mode: one real key press for the page, and what it changed.
+
+        At most two quick page reads and the key itself; nothing waits. A site
+        that answers a moment later is heard at the next check
+        (WebSession.app_changes). focus is an element to give keyboard focus
+        first (the browse cursor's element, for the first key after switching
+        to app mode). before is the page state already known, which saves a
+        read; with read_after False only the key is sent (more keys follow)."""
         self._watch_dialogs()
-        before=self.page_key_state(drain=True)
+        if focus is not None:
+            try:self.focus_for_keys(focus)
+            except Exception:pass
+            before=None
+        if before is None:before=self.page_key_state(drain=True)
         self.page.keyboard.press(key)
-        snapshot=lambda s:json.dumps(s.get('focus'),sort_keys=True)
-        after=self.page_key_state()
-        # Sites answer some keys a moment later; wait briefly for a change.
-        for _ in range(6):
-            if after.get('live') or snapshot(after)!=snapshot(before):break
-            self.page.wait_for_timeout(25)
-            after=self.page_key_state()
-        after['live']=after.get('live',[])+self.page_key_state(drain=True).get('live',[])
-        return before,after
+        return before,(self.page_key_state(drain=True) if read_after else None)
 
     def focus_for_keys(self,item):
         """Give keyboard focus to an element without clicking it."""
@@ -906,6 +1068,11 @@ class BrowserBackend:
 EdgeBackend = BrowserBackend
 
 
+# "Use Chrome", "switch to embedded Edge", and the removed browsers, which are explained.
+BROWSER_REQUEST=(r'(?:use|switch to|choose) (?:the )?(?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|web view 2|web view two|webview two|'
+                 r'google chrome|chrome|microsoft edge|edge|brave browser|brave|mozilla firefox|fire fox|firefox)(?: browser)?')
+
+
 SKIP_AD=re.compile(r'skip (?:the |this )?(?:ads?|advert|advertisement)s?')
 
 
@@ -942,6 +1109,11 @@ class RefreshPacer:
     def done(self,started,finished):
         self.cost=max(0.0,finished-started)
         self.next_at=max(started+self.interval,finished+min(self.longest,self.factor*self.cost))
+
+
+# Elements that take keys at once when app mode starts on them.
+APP_FOCUS_KINDS=('link','button','edit','combobox','listbox','checkbox','radio','slider','spinbutton','switch','tab',
+                 'menuitem','menuitemcheckbox','menuitemradio','treeitem','option')
 
 
 class WebSession:
@@ -985,6 +1157,7 @@ class WebSession:
         self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
         # App mode is remembered per site until leaving the web screen.
         self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
+        self.app_focus_pending=None;self.app_state=None;self.refresh_now=False
 
     def address_allowed(self,url):
         try:
@@ -1070,8 +1243,11 @@ class WebSession:
         return True
 
     def auto_focus_position(self):
+        """Arrowing onto any edit field or editable combo box makes it ready to type.
+
+        Combo boxes you pick from and sliders are only read; Enter or Tab uses them."""
         item=self.browse.current() if self.browse else None
-        if not item or kind(item)!='edit' or item.get('disabled') or item.get('readonly'):return False
+        if not item or not text_field(item) or item.get('disabled') or item.get('readonly'):return False
         if not item.get('start',0)<=self.reading.position<item.get('end',0):return False
         return self.focus_current()
 
@@ -1241,36 +1417,78 @@ class WebSession:
             return BROWSE_MODE+(self._browse_at_focus() if was_app else '')
         self.app_mode_hosts.add(self._host());self.mode_announced=True
         # Keys go where the browse cursor is, as they would for a mouse user.
+        # Focus moves with the first key, so switching modes itself is instant.
         item=self.browse.current() if self.browse else None
-        if item and not item.get('disabled') and kind(item) in ('link','button','edit','combobox','listbox','checkbox','radio','slider','spinbutton','switch','tab','menuitem','menuitemcheckbox','menuitemradio','treeitem','option'):
-            try:self.backend.focus_for_keys(item)
-            except Exception:pass
-        try:self.backend.page_key_state(drain=True)  # Start listening for page announcements.
-        except Exception:pass
+        self.app_focus_pending=item if item and not item.get('disabled') and kind(item) in APP_FOCUS_KINDS else None
+        self.app_state=None
         return APP_MODE
 
     def _browse_at_focus(self):
-        """After app mode, put the browse cursor where keyboard focus ended."""
+        """After app mode, put the browse cursor where keyboard focus ended.
+
+        The element is found in the page view Companion already has, so this
+        is one quick question to the page. The view itself catches up at the
+        next check (refresh_now asks for that check at once)."""
+        self.app_focus_pending=None;self.app_state=None;self.refresh_now=True
         try:key=self.backend.focused_key()
         except Exception:key=None
-        try:self._refresh(read=False,preserve=True,wait=False)
-        except Exception:return ''
-        item=next((e for e in self.browse.elements if key and e.get('key')==key and 'frame_index' not in e),None)
-        if not item:return ''
+        if not key:return ''
+        find=lambda:next((e for e in self.browse.elements if e.get('key')==key and 'frame_index' not in e),None) if self.browse else None
+        item=find()
+        if not item:
+            # An element the page made while keys went to it: read the page now.
+            try:self._refresh(read=False,preserve=True,wait=False)
+            except Exception:return ''
+            item=find()
+            if not item:return ''
         self.browse.index=self.browse.elements.index(item);self.browse.position=item.get('start',0)
         self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
         return ' '+describe(item)
 
+    # How long a page state read after a key may stand in for the next key's
+    # "before" state. Changes the page makes by itself are read by app_changes.
+    APP_STATE_FRESH=1.0
+
     def pass_key(self,key):
-        """App mode: the key goes to the page; say what changed."""
+        """App mode: the key goes to the page; say what changed.
+
+        Keys typed or held faster than they are handled arrive together. They
+        go to the page one after another with nothing read between them, and
+        what changed is said once, after the last (more_keys tells whether
+        another page key is waiting)."""
+        import time
         if not self.app_mode:return ''  # A key typed just before leaving app mode.
-        try:before,after=self.backend.press_page_key(key)
-        except Exception:return 'The page did not take that key. Press F5 to refresh the page.'
+        focus=getattr(self,'app_focus_pending',None);self.app_focus_pending=None
+        more=bool(callable(getattr(self,'more_keys',None)) and self.more_keys())
+        run=getattr(self,'app_run_before',None)
+        known=getattr(self,'app_state',None)
+        if run is None and known is not None and time.monotonic()-getattr(self,'app_state_at',0)<self.APP_STATE_FRESH:run=known
+        try:
+            before,after=self.backend.press_page_key(key,focus,before=run,read_after=not more) if (focus or run is not None or more) else self.backend.press_page_key(key)
+        except Exception:
+            self.app_run_before=None
+            return 'The page did not take that key. Press F5 to refresh the page.'
+        if more:
+            self.app_run_before=before;return ''
+        self.app_run_before=None
+        self.app_state=after;self.app_state_at=time.monotonic()
         from web_modes import page_key_feedback
         notice=page_key_feedback(key,before,after)
         dialog=getattr(self.backend,'dialog_notice','')
         if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+'. '+notice).strip()
         return notice
+
+    def app_changes(self):
+        """App mode check between keys: what the page said or where its focus went.
+
+        The page view is not read again while keys go to the page; a busy page
+        (a video's clock, new comments) would hold up every key."""
+        if not hasattr(self.backend,'page_key_state'):return ''
+        try:state=self.backend.page_key_state(drain=True)
+        except Exception:return ''
+        before=getattr(self,'app_state',None);self.app_state=state;self.app_state_at=__import__('time').monotonic()
+        from web_modes import page_change_feedback
+        return page_change_feedback(before,state)
 
     def begin_slider(self,item):
         """Arrow keys now change this slider on the page, until Escape or Tab."""
@@ -1358,8 +1576,8 @@ class WebSession:
                     text=self.reading.move('line',-1 if key=='ShiftTab' else 1)
                     self.browse.set_position(self.reading.position)
                     return message+' '+text
-            elif key=='Back':return self.command('go back')
-            elif key=='Forward':return self.command('go forward')
+            elif key=='Back':return self.history(-1)
+            elif key=='Forward':return self.history(1)
             elif key=='Done':
                 field=self.keyboard_field
                 if field and editable_combo(field):return self.combo_done()
@@ -1523,7 +1741,8 @@ class WebSession:
     def adopt_connected_browser(self):
         # Only a saved choice of embedded Edge ignores a tab linked through the
         # extension. As the default, embedded Edge gives way to the user's own browser.
-        if self.injected_backend or (self.browser=='webview2' and self._saved_browser()=='webview2'):return False
+        saved=self.saved_choice if hasattr(self,'saved_choice') else self._saved_browser()
+        if self.injected_backend or (self.browser=='webview2' and saved=='webview2'):return False
         from browser_cdp_relay import current
         from connected_browser import ConnectedBrowserBackend
         relay=current()
@@ -1539,21 +1758,33 @@ class WebSession:
         return True
 
     def _saved_browser(self):
-        try:
-            choice = (self.folder / 'browser-choice.txt').read_text(encoding='utf-8').strip().lower()
-        except OSError:
-            return None
-        return choice if choice in BrowserBackend.BROWSERS else None
+        choice,notice=saved_browser_choice(self.folder)
+        if notice:self.browser_notice=notice
+        # Kept in memory: the extension check runs before every key and command.
+        self.saved_choice=choice
+        return choice
 
     def _browser_preference(self):
         # Embedded Edge (WebView2) is the default: it is owned by Companion and needs
         # no browser extension. A saved choice is always kept.
         return self._saved_browser() or DEFAULT_BROWSER
 
+    def take_browser_notice(self):
+        """Said once: a saved choice of a removed browser now uses embedded Edge."""
+        notice=getattr(self,'browser_notice','');self.browser_notice=''
+        return notice
+
+    BROWSER_ALIASES={'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview2':'webview2',
+                     'webview 2':'webview2','web view 2':'webview2','web view two':'webview2','webview two':'webview2',
+                     'chrome':'chrome','google chrome':'chrome','edge':'edge','microsoft edge':'edge',
+                     'brave':'brave','brave browser':'brave','firefox':'firefox','fire fox':'firefox','mozilla firefox':'firefox'}
+
     def choose_browser(self, name):
-        name = {'embedded edge':'webview2','edge webview2':'webview2','edge webview':'webview2','webview 2':'webview2'}.get(name.lower(),name.lower())
-        if name not in BrowserBackend.BROWSERS:
-            return 'Choose embedded Edge WebView2, Edge, Chrome, Brave, or Firefox.'
+        name=self.BROWSER_ALIASES.get(_plain(name).rstrip('.!?').lower(),_plain(name).rstrip('.!?').lower())
+        if name in RETIRED_BROWSERS:return retired_browser_notice(name)
+        if name not in GUIDED_BROWSERS:return BROWSER_CHOICES
+        # Choosing Chrome again may offer its setup again when the Web browser opens.
+        if name=='chrome':self.chrome_offer_declined=False
         if self.browser != name or getattr(self.backend,'browser',name)!=name:
             if not self.injected_backend:
                 try: self.backend.close()
@@ -1567,8 +1798,9 @@ class WebSession:
         if not self.injected_backend:
             self.folder.mkdir(parents=True, exist_ok=True)
             write_text_atomic(self.folder / 'browser-choice.txt', name)
-        if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+name.capitalize()+'.'
-        return 'Selected ' + name.capitalize() + '. Say open website followed by the address. This uses a separate browser profile.'
+            self.saved_choice=name
+        if getattr(self.backend,'regular',False):return 'Browser preference saved. Your connected tab stays in its current browser. To switch browsers, connect a tab in '+browser_name(name)+'.'
+        return 'Selected ' + browser_name(name) + '. Say open website followed by the address. This uses a separate browser profile.'
 
     def _stamp(self):
         state=self.backend.document_stamp() if hasattr(self.backend,'document_stamp') else None
@@ -1610,7 +1842,12 @@ class WebSession:
             # Each site keeps its own mode; say which one this page uses.
             self.mode_announced=self.app_mode
             result=(APP_MODE if self.app_mode else BROWSE_MODE)+' '+result
-        return result
+        notice=self.take_browser_notice()
+        if self.snapshot:
+            from web_modes import screen_reader_notice_once
+            reader=screen_reader_notice_once()
+            if reader:notice=(notice+' '+reader).strip()
+        return notice+' '+result if notice else result
 
     def _refresh_page(self,read=None,preserve=False,wait=True):
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
@@ -1620,7 +1857,12 @@ class WebSession:
                 except Exception as exc:
                     if not navigation_interrupted(exc) or attempt==2:raise
                     if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
-        self.snapshot,captured_state = self._capture()
+        leaving=self.snapshot
+        snapshot,captured_state = self._capture()
+        if leaving and leaving.get('url')!=snapshot.get('url'):
+            # Another page: keep the reading place here for Back and Forward.
+            self._remember_place()
+        self.snapshot=snapshot
         self.pending_scroll=None
         try:self.menu.record(self.snapshot)
         except OSError:pass
@@ -1685,6 +1927,7 @@ class WebSession:
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
+        self.refresh_now=False
         suggestions=self.suggestions_notice()
         return self._refresh_changed() or suggestions
 
@@ -1715,6 +1958,7 @@ class WebSession:
         previous=self.document_state or {}
         if stamp.get('url')!=previous.get('url'):return self._refresh(wait=False)
         if stamp.get('epoch')!=previous.get('epoch'):return self._refresh(read=False,wait=False)
+        if self.app_mode:return self.app_changes()
         if self.form_index is not None or self.pending or self.submit_pending:return ''
         if not self.keyboard_field and not getattr(self.backend,'page_ready',True) and stamp.get('ready')=='complete' and not stamp.get('busy'):return self._refresh(read=False,preserve=True,wait=False)
         if all(stamp.get(key)==previous.get(key) for key in ('url','epoch','revision','ready','busy','frames','frame_states')):return ''
@@ -1761,18 +2005,98 @@ class WebSession:
         self._refresh(read=False,preserve=True,wait=False)
         return 'Ad skipped.' if not skip_ad_button(self.snapshot) else 'The Skip ad button is still showing. Say skip ad again.'
 
+    def history(self,delta):
+        """Back (delta -1) or Forward (delta 1): Alt+Left, Alt+Right, the menus and voice.
+
+        The page that shows is read from the browser again, and the reading
+        place returns to where it was on that page (the link that was followed)."""
+        if not self.snapshot:return 'Open a website first.'
+        if self.keyboard_field and self.keyboard_field.get('type')=='password':self.keyboard_field=None
+        self.list_focus=None;self.pending=None;self.submit_pending=None;self.review_submission=None
+        self.form_index=None;self.keyboard_field=None;self.slider_field=None
+        self.progress('Going back.' if delta<0 else 'Going forward.')
+        self._remember_place()
+        try:
+            step=getattr(self.backend,'history_step',None)
+            if callable(step):moved=step(delta)
+            else:
+                (self.backend.back() if delta<0 else self.backend.forward());moved=True
+        except WebError as exc:return str(exc)
+        except Exception:
+            return ('The previous' if delta<0 else 'The next')+' page did not open. Press F5 to refresh the page.'
+        if not moved:
+            notice='There is no previous page.' if delta<0 else 'There is no next page.'
+            stamp=self._stamp();known=self.document_state or {}
+            if stamp and any(stamp.get(k)!=known.get(k) for k in ('url','epoch')):
+                # The browser showed its blank start page and came back: the
+                # page was loaded again, so read it again at the same place.
+                try:self._refresh(read=False);self._restore_place()
+                except Exception:pass
+            return notice
+        try:result=self._refresh(read=False)
+        except Exception:return 'The page could not be read. Press F5 to refresh the page.'
+        place=self._restore_place()
+        if place:return result+' '+place
+        if self.auto_read and not self.app_mode and result.endswith('.') and 'Site: ' in result and self.reading.text.strip():
+            result+=' '+self.reading.read(True)
+        return result
+
+    def _remember_place(self):
+        """Keep the reading place on this page, to return to it with Back or Forward."""
+        if not self.snapshot or not self.browse:return
+        url=self.snapshot.get('url')
+        item=self.browse.current()
+        if not url or not item or not item.get('start',0)<=self.reading.position<=item.get('end',0):
+            getattr(self,'places',{}).pop(url,None);return
+        same=[e for e in self.browse.elements if e.get('label')==item.get('label') and kind(e)==kind(item) and e.get('frame_url')==item.get('frame_url')]
+        places=self.__dict__.setdefault('places',{})
+        places.pop(url,None)
+        places[url]={'key':item.get('key'),'label':item.get('label'),'kind':kind(item),'frame_url':item.get('frame_url'),
+                     'occurrence':next((i for i,e in enumerate(same) if e is item),0),'offset':self.reading.position-item.get('start',0)}
+        while len(places)>50:places.pop(next(iter(places)))
+
+    def _restore_place(self):
+        """Put the reading place back where it was on this page. Returns what to say, or ''."""
+        place=getattr(self,'places',{}).get((self.snapshot or {}).get('url'))
+        if not place or not self.browse:return ''
+        same=lambda e:e.get('label')==place['label'] and kind(e)==place['kind'] and e.get('frame_url')==place['frame_url']
+        elements=self.browse.elements
+        target=next((e for e in elements if e.get('key')==place['key'] and same(e)),None)
+        if target is None:
+            # The page was loaded again, so its elements have new keys.
+            matches=[e for e in elements if same(e)]
+            target=matches[min(place['occurrence'],len(matches)-1)] if matches else None
+        if target is None:return ''
+        self.browse.index=elements.index(target)
+        self.browse.position=min(target.get('end',0),target.get('start',0)+max(0,place['offset']))
+        self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None
+        self.cursor_changed(True)
+        return describe(target)
+
     def _navigate(self,url):
         try:
             self.backend.goto(url)
             return ''
-        except WebError:
-            if self.injected_backend or getattr(self.backend,'regular',False) or self.backend.browser=='firefox':raise
-            embedded=self.backend.browser=='webview2'
-            self.backend.close()
-            self.backend=BrowserBackend(self.folder/'Browser Profile firefox','firefox')
-            self.backend.goto(url)
-            return ('Embedded Edge could not start. Using the included Firefox browser. Ask your helper to check the Microsoft WebView2 component. '
-                    if embedded else 'The chosen browser could not start. Using the included Firefox browser. ')
+        except WebError as failure:
+            if self.injected_backend or getattr(self.backend,'regular',False):raise
+            # The other guided browser: Chrome when embedded Edge cannot start,
+            # embedded Edge when Chrome cannot start (Chrome is not installed).
+            failed=self.backend.browser
+            other='chrome' if failed=='webview2' else 'webview2'
+            try:self.backend.close()
+            except Exception:pass
+            self.backend=guided_backend(self.folder/('Browser Profile '+other),other)
+            try:self.backend.goto(url)
+            except WebError:
+                try:self.backend.close()
+                except Exception:pass
+                if failed=='webview2':
+                    raise WebError('Embedded Edge could not start, and Chrome is not installed. Say set up Chrome to install Chrome. '
+                                   'Or ask your helper to check the Microsoft WebView2 component.') from failure
+                raise WebError('Chrome could not start, and embedded Edge could not start either. Ask your helper to check the Microsoft WebView2 component.') from failure
+            if failed=='webview2':
+                return 'Embedded Edge could not start. Using Chrome for now. Ask your helper to check the Microsoft WebView2 component. '
+            return 'Chrome could not start. Using embedded Edge for now. If Chrome is not installed, say set up Chrome. '
 
     def open(self, url):
         self.navigation_succeeded=False
@@ -2007,7 +2331,7 @@ class WebSession:
     def handoff(self):
         if not self.snapshot: return 'No website is open. Ask your helper to open the site with you.'
         url = urlsplit(self.snapshot['url'])
-        return ('Ask your helper to look at the ' + self.running_browser().capitalize() + ' window titled ' + _plain(self.snapshot['title']) +
+        return ('Ask your helper to look at the ' + browser_name(self.running_browser()) + ' window titled ' + _plain(self.snapshot['title']) +
                 '. The site is ' + (url.hostname or 'unknown') + '. ' +
                 ('The form has ' + str(len(self.form_answers)) + ' answers entered by voice. ' if self.form_answers else '') +
                 'Review the site address, all form fields, and the final action together. I have not sent your answers to anyone.')
@@ -2094,7 +2418,7 @@ class WebSession:
         manual = [_label(item) for item in self.form_fields if item['type']=='file']
         return ('That is the end of the text fields. ' +
                 ('These need private or manual entry: ' + ', '.join(manual) + '. ' if manual else '') +
-                'Say review form to hear the answers entered by voice. Review every answer and other controls in Edge with your helper before submitting.')
+                'Say review form to hear the answers entered by voice. Review every answer and other controls in the browser with your helper before submitting.')
 
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
@@ -2155,7 +2479,7 @@ class WebSession:
     def review_form(self):
         if not self.snapshot: return 'Open a website first.'
         try: current = self.backend.snapshot()
-        except Exception: return 'I could not read the current form. Ask your helper to inspect Edge.'
+        except Exception: return 'I could not read the current form. Ask your helper to look at the browser window.'
         if current['url'] != self.snapshot['url']:
             return 'The page changed. Say read page, then review form again.'
         self.review_submission = None
@@ -2242,9 +2566,9 @@ class WebSession:
             return 'The form moved to a different page. Say read page before trying again.'
         controls = current.get('controls', [])
         if current.get('controls_truncated') or current.get('visible_frames'):
-            return 'I cannot inspect the whole form on this page. Ask your helper to review it in Edge.'
+            return 'I cannot inspect the whole form on this page. Ask your helper to review it in the browser.'
         if any(c.get('value_truncated') for c in self._form_controls(current)):
-            return 'A form answer is too long for safe spoken review. Ask your helper to check it in Edge.'
+            return 'A form answer is too long for safe spoken review. Ask your helper to check it in the browser.'
         missing = [c for c in self._form_controls(current) if c.get('required') and not c.get('disabled') and not c.get('readonly') and
                    ((not c.get('filled')) if c.get('type') == 'password' else
                     (not any(other.get('type')=='radio' and other.get('radio_group')==c.get('radio_group') and other.get('frame_index')==c.get('frame_index') and other.get('checked') for other in self._form_controls(current))) if c.get('type')=='radio' and c.get('radio_group') else
@@ -2256,7 +2580,7 @@ class WebSession:
         private = [c for c in controls if c['type']=='file' and c.get('required')]
         if private and not self.private_fields_confirmed:
             return ('This form has required private fields: ' + ', '.join(_label(c) for c in private) +
-                    '. Complete them privately in Edge. Then say private fields complete before reviewing submission.')
+                    '. Complete them privately in the browser window. Then say private fields complete before reviewing submission.')
         buttons = [c for c in controls if c['role'] == 'button' and
                    (c.get('in_form') or re.search(r'\b(submit|apply|continue|next|send)\b', _label(c), re.I))]
         if len(buttons) != 1:
@@ -2264,7 +2588,7 @@ class WebSession:
         button = buttons[0]
         if re.search(r'\b(pay|purchase|transfer|withdraw|deposit|wire|send money)\b',
                      _label(button) + ' ' + current.get('title',''), re.I):
-            return 'This may move money. Ask your helper to review the accounts, amount, and final action in Edge.'
+            return 'This may move money. Ask your helper to review the accounts, amount, and final action in the browser.'
         self.review_parts = self._form_parts(current)
         if not self.review_parts: return 'I found no readable form fields. Ask your helper to inspect this page.'
         self.review_cursor = 0
@@ -2300,7 +2624,7 @@ class WebSession:
             item = self._choice(number)
             if item['role'] != 'field' and not editable_combo(item): raise WebError('That number is not a field. Say list fields.')
             if item['type'] in ('file','checkbox','radio','submit'):
-                raise WebError('This field needs direct interaction in Edge with your helper.')
+                raise WebError('This field needs direct interaction in the browser with your helper.')
             value=_voice_value(item,value)
             self.backend.fill(item, value)
             return 'Password entered.' if item['type']=='password' else 'Filled ' + _label(item) + ' with ' + value + '. Review the form before submitting it.'
@@ -2428,14 +2752,14 @@ class WebSession:
             if self.browse:self.browse.set_position(self.reading.position)
             self.auto_focus_position();self.cursor_changed()
             return result
-        match = re.fullmatch(r'(?:use|switch to|choose) (?:browser )?(embedded edge|edge webview2|edge webview|webview2|webview 2|edge|chrome|brave|firefox)(?: browser)?', command)
+        match = re.fullmatch(BROWSER_REQUEST, command)
         if match: return self.choose_browser(match[1])
         if command in ('which browser','what browser am i using'):
             running = self.running_browser()
             # The preference is kept after a fallback; say which browser is really showing the page.
-            return ('Guided websites use ' + self.browser.capitalize() + '.' +
-                    (' This page is open in ' + running.capitalize() + ' because ' + self.browser.capitalize() + ' could not start.' if running != self.browser else '') +
-                    ' Say use Chrome, use Brave, use Firefox, or use Edge to change it.')
+            return ('Guided websites use ' + browser_name(self.browser) + '.' +
+                    (' This page is open in ' + browser_name(running) + ' because ' + browser_name(self.browser) + ' could not start.' if running != self.browser else '') +
+                    ' Say use Chrome or use embedded Edge to change it.')
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None
@@ -2510,7 +2834,7 @@ class WebSession:
                 return self.choose(str(self.choices.index(matches[0]) + 1))
         if command in ('read page','read this page','what is on this page','refresh page'):
             try: return self._refresh(read=True)
-            except Exception: return 'The page could not be read. Ask your helper to inspect Edge.'
+            except Exception: return 'The page could not be read. Ask your helper to look at the browser window.'
         if command in ('list links','show links','what links are here','read links'): return self.list_links()
         if command in ('next links','more links','next link','following link','move down','next'): return self.move_link(1)
         if command in ('previous links','prior links','previous link','prior link','move up','previous'): return self.move_link(-1)
@@ -2519,15 +2843,8 @@ class WebSession:
             number = {'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10}.get(match[1],match[1])
             return self.open_link(number)
         if command in ('continue reading','read more'): return self.read()
-        if command in ('back','go back','previous page'):
-            try: self.backend.back(); return self._refresh()
-            except Exception: return 'There is no previous page to read.'
-        if command in ('forward','go forward','next page'):
-            try:
-                previous_url=self.backend.page.url
-                result = self.backend.page.go_forward(wait_until='commit' if getattr(self.backend,'regular',False) else 'domcontentloaded',timeout=30000)
-                return self._refresh() if result is not None or self.backend.page.url!=previous_url else 'There is no next page to read.'
-            except Exception: return 'There is no next page to read.'
+        if command in ('back','go back','previous page','go to previous page','go back a page'):return self.history(-1)
+        if command in ('forward','go forward','next page','go to next page','go forward a page'):return self.history(1)
         if command in ('save favorite','add favorite','favorite this site'):
             if not self.snapshot: return 'Open a website first.'
             name = _plain(self.snapshot['title'])[:60]
@@ -2592,6 +2909,19 @@ class WebSession:
             except Exception: pass
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
+def _key_state(frame,arg):
+    """Read focus and announcements with the page's own copy of PAGE_KEY_STATE.
+
+    The script is about 40 KB. Sending it with every key cost a parse in the
+    page, and in embedded Edge two more passes through its host, so it is
+    placed in the page once and later called by name."""
+    state=frame.evaluate(KEY_STATE_CALL,arg)
+    if state is None:
+        frame.evaluate(KEY_STATE_INSTALL)
+        state=frame.evaluate(KEY_STATE_CALL,arg)
+    return state if isinstance(state,dict) else frame.evaluate(PAGE_KEY_STATE,arg)
+
+
 def _frame_shown(frame,readable=False):
     """Whether a frame's element is shown; with readable, its key unless hidden from readers.
 
@@ -2608,6 +2938,14 @@ def _frame_shown(frame,readable=False):
     finally:
         try:element.dispose()
         except Exception:pass
+
+
+# Embedded Edge has no list of history entries for Companion, but the page's
+# own navigation list (main page entries only, same site) can go straight to
+# the previous page without stopping at entries that only changed a frame.
+NAVIGATION_JUMP='''(delta)=>{const n=window.navigation;if(!n||!n.currentEntry||!(delta<0?n.canGoBack:n.canGoForward))return null;
+const entries=n.entries(),index=n.currentEntry.index+delta;if(index<0||index>=entries.length)return null;
+const result=n.traverseTo(entries[index].key);result.committed.catch(()=>{});result.finished.catch(()=>{});return 'started';}'''
 
 
 SNAPSHOT_AS_TEXT="()=>JSON.stringify((/*SNAPSHOT*/)(),(key,value)=>value===undefined?null:value)"
@@ -2698,3 +3036,7 @@ PAGE_KEY_STATE=r'''(arg)=>{
     checked:accessibleLabel.checked(e),expanded:e.getAttribute('aria-expanded'),selected:tag==='select'?(e.selectedOptions[0]?.text||''):'',
     editable,password:type==='password',value:type==='password'?'':text.slice(0,2000),caret:type!=='password'&&typeof e.selectionStart==='number'?e.selectionStart:null}};
 }'''
+
+
+KEY_STATE_INSTALL='()=>{window.__voiceCompanionKeyState='+PAGE_KEY_STATE+';}'
+KEY_STATE_CALL="(arg)=>typeof window.__voiceCompanionKeyState==='function'?window.__voiceCompanionKeyState(arg):null"

@@ -44,6 +44,14 @@ class ModeKeyTests(unittest.TestCase):
         self.assertFalse(toggle_chord('space', 4 | 1 | ALT))
         self.assertFalse(toggle_chord('k', 4 | ALT))
 
+    def test_control_shift_space_switches_modes_too(self):
+        # JAWS, NVDA and Narrator all keep Insert+Space for themselves.
+        self.assertTrue(toggle_chord('space', 4 | 1))
+        self.assertFalse(toggle_chord('space', 1))
+        self.assertTrue(toggle_chord('space', 4 | ALT))  # Control+Alt+Space still works.
+        # In app mode it is Companion's key, not the page's.
+        self.assertIsNone(window_request('space', ' ', 4 | 1, {'web_app_mode': True}))
+
     def test_keys_are_named_the_way_the_browser_expects(self):
         for keysym, char, state, expected in [('k', 'k', 0, 'k'), ('K', 'K', 1, 'K'), ('j', 'j', 0, 'j'),
                                               ('Left', '', 0, 'ArrowLeft'), ('Left', '', 1, 'Shift+ArrowLeft'),
@@ -134,6 +142,101 @@ class EditorRaceTests(unittest.TestCase):
         self.assertTrue(show_context_text(old, dict(older, source='web:1:page'), seq=3))
         self.assertTrue(show_context_text({'mode': 'web', 'source': 's'}, {'mode': 'web', 'source': 's', 'readonly': True, 'focus': True, 'ack': 0}, seq=3))
         self.assertTrue(show_context_text({'mode': 'document', 'source': 'd'}, {'mode': 'document', 'source': 'd', 'focus': True, 'ack': 0}, seq=3))
+
+
+class AppModeWindowTests(unittest.TestCase):
+    """Each page key in app mode returns at once: the window is not refocused
+    or given the whole page again when nothing on it changed."""
+    def setUp(self):
+        import queue
+        self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.backend = FakeBackend();self.backend.page = object()
+        self.backend.press_page_key = lambda key, focus=None, **kw: ({'focus': None}, {'focus': None})
+        self.session = WebSession(self.temp.name, self.backend);self.session._refresh()
+        self.window = Mock();self.window.commands = queue.Queue()
+        for name in ('APP_WINDOW', 'UI_CONTEXT_CACHE', 'speak', 'KEYBOARD_SPEECH'):
+            value = {'APP_WINDOW': self.window, 'UI_CONTEXT_CACHE': None, 'speak': Mock(), 'KEYBOARD_SPEECH': None}[name]
+            patcher = patch.object(app, name, value);patcher.start();self.addCleanup(patcher.stop)
+        patcher = patch.object(app, 'web_session', self.session);patcher.start();self.addCleanup(patcher.stop)
+
+    def run_keys(self, *keys):
+        self.window.set_context.reset_mock();self.window.wait_for_context.reset_mock()
+        for key in keys:self.window.commands.put(('keyboard', key))
+        return app.process_keyboard_batch('web')
+
+    def test_page_keys_do_not_refocus_the_window(self):
+        self.run_keys('Web:ToggleAppMode')
+        self.assertTrue(self.session.app_mode)
+        self.window.set_context.assert_called()  # The window learns about app mode.
+        self.run_keys('Web:Pass:k', 'Web:Pass:j')
+        self.window.set_context.assert_not_called()
+        self.window.wait_for_context.assert_not_called()
+
+    def test_queued_page_keys_are_sent_together_and_read_once(self):
+        self.run_keys('Web:ToggleAppMode')
+        calls = []
+        def press(key, focus=None, before=None, read_after=True):
+            calls.append((key, read_after)); return {'focus': None}, ({'focus': None} if read_after else None)
+        self.backend.press_page_key = press
+        self.run_keys('Web:Pass:ArrowRight', 'Web:Pass:ArrowRight', 'Web:Pass:ArrowRight', 'Web:Pass:k')
+        self.assertEqual(calls, [('ArrowRight', False), ('ArrowRight', False), ('ArrowRight', False), ('k', True)])
+
+    def test_other_keys_and_a_new_page_still_refocus(self):
+        self.run_keys('Web:ToggleAppMode')
+        self.run_keys('Web:ToggleAppMode')
+        self.assertFalse(self.session.app_mode)
+        self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
+        self.run_keys('Web:ToggleAppMode')
+        # A key that opened another page or tab: the window takes focus back.
+        self.backend.press_page_key = lambda key, focus=None, **kw: (setattr(self.backend, 'page', object()), ({'focus': None}, {'focus': None}))[1]
+        self.run_keys('Web:Pass:Enter')
+        self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
+        self.window.wait_for_context.assert_called_once()
+
+
+class ScreenReaderNoticeTests(unittest.TestCase):
+    """With a screen reader running, the first web page says once which key switches modes."""
+    def setUp(self):
+        import web_modes
+        self.web_modes = web_modes
+        patcher = patch.object(web_modes, 'NOTICE_STATE', {'given': False, 'checked_at': -1e9, 'readers': ()})
+        patcher.start();self.addCleanup(patcher.stop)
+        self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+
+    def test_screen_readers_are_found_by_their_programs(self):
+        found = self.web_modes.screen_readers
+        self.assertEqual(found({'explorer.exe', 'jfw.exe'}), ['JAWS'])
+        self.assertEqual(found({'NVDA.exe', 'nvda_slave.exe'}), ['NVDA'])
+        self.assertEqual(found({'Narrator.exe'}), ['Narrator'])
+        self.assertEqual(found({'jfw.exe', 'narrator.exe'}), ['JAWS', 'Narrator'])
+        self.assertEqual(found({'chrome.exe'}), [])
+
+    def test_the_notice_names_the_screen_reader_and_the_key(self):
+        notice = self.web_modes.screen_reader_notice
+        self.assertEqual(notice(['JAWS']), 'JAWS is running, and it uses Insert+Space for itself. '
+                         'To switch between browse mode and app mode, press Control+Shift+Space.')
+        self.assertTrue(notice(['NVDA', 'Narrator']).startswith('NVDA and Narrator are running, and they use Insert+Space for themselves.'))
+        self.assertEqual(notice([]), '')
+
+    def test_said_once_with_the_first_page_while_one_runs(self):
+        with patch.object(self.web_modes, 'running_programs', return_value={'jfw.exe'}) as programs:
+            session = WebSession(self.temp.name, FakeBackend())
+            first = session._refresh(read=False)
+            self.assertTrue(first.startswith('JAWS is running'), first)
+            self.assertIn('Page loaded', first)
+            self.assertNotIn('JAWS', session._refresh(read=False))
+            self.assertNotIn('JAWS', WebSession(self.temp.name, FakeBackend())._refresh(read=False))
+        self.assertEqual(programs.call_count, 1)
+
+    def test_nothing_is_said_without_a_screen_reader_and_the_check_is_not_repeated_at_once(self):
+        with patch.object(self.web_modes, 'running_programs', return_value={'explorer.exe'}) as programs:
+            session = WebSession(self.temp.name, FakeBackend())
+            self.assertTrue(session._refresh(read=False).startswith('Page loaded'))
+            session._refresh(read=False)
+        self.assertEqual(programs.call_count, 1)
+
+    def test_program_list_never_fails(self):
+        self.assertIsInstance(self.web_modes.running_programs(), set)
 
 
 class ComboBackend(FakeBackend):

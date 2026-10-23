@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import copy
 import re
+from audio_ducking import LEVEL_CHOICES as DUCK_LEVELS, spoken_level
 
 @dataclass(frozen=True)
 class Field:
@@ -11,7 +12,7 @@ class Field:
     choices: tuple = ()
 
 CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Word processor', 'Notepad', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
-DEFAULTS = {'dictation_echo':'phrase by phrase','dictation_type':'old school','cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+DEFAULTS = {'dictation_echo':'phrase by phrase','dictation_type':'old school','cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'duck_level':'strong, 75 percent quieter','duck_other_apps':False,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 # Fonts that come with Windows 11 or Microsoft Office, in alphabetical order so
 # a first letter moves through them. A saved font outside this list is added.
@@ -41,13 +42,13 @@ def fields(category, context):
     category={'Word processor':'Documents','Auto-update':'Updates','Notes':'Notepad'}.get(category,category)
     definitions = {
         'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('dictation_echo','Echo dictated text','choice',('phrase by phrase','at the end of a sentence','do not echo dictated text')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2')),Field('capital_letters','When encountering capital letters','choice',('raise pitch','lower pitch','play a sound','do nothing'))],
-        'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Lower media volume while Companion speaks','check')],
+        'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Audio ducking','check'),Field('duck_level','Ducking level','choice',DUCK_LEVELS),Field('duck_other_apps','Also lower other apps while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('SAPI',)))),Field('windows_voice','SAPI voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation')),Field('dictation_type','Dictation type','choice',('old school','ai-based')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition; Old school only','check')],
         'Email':[Field('email_format','Email format','choice',('plain text','html')),Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('add_account','Add an email account','action'),Field('google_contacts','Connect Google Contacts','action')],
         'Notepad':[Field('open_notepad','Open Notepad','action')],
         'Documents':[Field('document_font','Font for new documents','choice',font_choices(context)),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify'))],
-        'Web browser':[Field('web_search_engine','Default search engine','choice',('google','bing','brave','duckduckgo')),Field('web_keep_open','Keep browser window open','check'),Field('web_auto_read','Automatic page reading','check'),Field('browser','Guided browser','choice',('webview2','edge','chrome','brave','firefox')),Field('chrome_setup','Set up Chrome and the Voice Companion extension','action')],
+        'Web browser':[Field('web_search_engine','Default search engine','choice',('google','bing','brave','duckduckgo')),Field('web_keep_open','Keep browser window open','check'),Field('web_auto_read','Automatic page reading','check'),Field('browser','Guided browser','choice',('embedded Edge','Chrome')),Field('chrome_setup','Set up Chrome and the Voice Companion extension','action')],
         'Radio':[Field('keep_audio_playing','Keep audio playing in the background','check'),Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],
         'Podcasts':[Field('keep_audio_playing','Keep audio playing in the background','check'),Field('podcast_feed','Podcast subscription','choice',tuple(context.get('podcasts',()))),Field('podcast_limit','Automatic downloads for this subscription','combo',('manual','all','1','2','3','5','10','20','50','100','1000')),Field('podcast_subscriptions','List subscriptions','action')],
         'Startup and exit options':[Field('start_with_windows','Start with Windows','check'),Field('ask_before_exit','Ask before exiting Voice Companion','check'),Field('ask_before_shutdown','Ask before shutting down the computer','check'),Field('ask_before_restart','Ask before restarting the computer','check')],
@@ -79,7 +80,14 @@ class SettingsSession:
             available=next(f.choices for f in fields('Synthesizer',self.context) if f.key=='engine')
             if str(value).lower() in ('sapi','sapi voice','windows','windows speech','microsoft'):value='SAPI' if 'SAPI' in available else 'windows'
         if key=='capital_letters':value={'sound':'play a sound','with a sound':'play a sound','higher pitch':'raise pitch','with a higher pitch':'raise pitch','with a lower pitch':'lower pitch','nothing':'do nothing','off':'do nothing'}.get(str(value).lower(),str(value).lower())
+        if key=='browser':
+            # Stored as webview2 or chrome; older choices of Edge, Brave or Firefox are embedded Edge now.
+            value={'webview2':'embedded Edge','embedded edge':'embedded Edge','edge webview2':'embedded Edge','edge':'embedded Edge','brave':'embedded Edge',
+                   'firefox':'embedded Edge','chrome':'Chrome','google chrome':'Chrome'}.get(str(value).strip().lower(),value)
         if key=='web_search_engine':value={'brave search':'brave','duck duck go':'duckduckgo','google search':'google','bing search':'bing'}.get(str(value).lower(),str(value).lower())
+        if key=='duck_level':value=spoken_level(value) or value
+        if key in ('duck_audio','duck_other_apps') and isinstance(value,str):
+            value={'enabled':'on','disabled':'off','enable':'on','disable':'off'}.get(re.sub(r'[^a-z]+','',value.lower()),re.sub(r'[^a-z]+','',value.lower()))
         if key=='phonetic_delay':
             value=str(value).lower().replace(' seconds','').replace(' second','').strip()
             value={'half':'0.5','half a':'0.5','point five':'0.5','one':'1','two':'2','.5':'0.5'}.get(value,value)
@@ -112,7 +120,7 @@ class SettingsSession:
         return field.label + (' hidden' if field.kind=='password' else ' '+('on' if value is True else 'off' if value is False else value))
     def voice_setting(self,command):
         command=command.strip().rstrip('.!?')
-        aliases={'windows startup':'start with windows','start automatically with windows':'start with windows','phonetic pronunciation':'phonetic enabled','phonetics':'phonetic enabled','audio ducking':'duck audio','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
+        aliases={'windows startup':'start with windows','start automatically with windows':'start with windows','phonetic pronunciation':'phonetic enabled','phonetics':'phonetic enabled','audio ducking level':'duck level','ducking level':'duck level','audio ducking':'duck audio','lower other apps':'duck other apps','duck other apps too':'duck other apps','automatic updates':'check updates','default font size':'document size','default font':'document font','default line spacing':'document spacing','default alignment':'document alignment'}
         for alias,name in aliases.items():command=re.sub(r'^(?:set )?'+re.escape(alias)+r'\b',name,command,flags=re.I)
         # "Font Arial", "Font, Arial." or "set font to Verdana" chooses the font for new documents.
         command=re.sub(r'^(?:(?:set|use|choose|select) )?(?:the )?font size\b[\s,:;-]*','document size ',command,flags=re.I)

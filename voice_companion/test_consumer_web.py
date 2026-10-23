@@ -349,20 +349,11 @@ class ChromeConsumerWebTests(ConsumerWebTests):
         from playwright.sync_api import sync_playwright
         cls.driver=sync_playwright().start()
         try:
-            if cls.browser_name=='brave':
-                program=__import__('web_assistant').find_brave()
-                if program is None:raise unittest.SkipTest('Brave is not installed.') if not os.environ.get('VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS') else RuntimeError('Brave is not installed where Voice Companion looks for it.')
-                cls.browser=cls.driver.chromium.launch(executable_path=str(program),headless=True)
-            else:cls.browser=cls.driver.chromium.launch(channel=cls.browser_name if cls.browser_name!='edge' else 'msedge',headless=True)
+            cls.browser=cls.driver.chromium.launch(channel='chrome',headless=True)
         except Exception:
             cls.driver.stop()
             if os.getenv('VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS'):raise
             raise unittest.SkipTest('Requested browser is not installed.')
 
-@unittest.skipUnless(sys.platform=='win32','Windows Edge consumer workflows')
-class EdgeConsumerWebTests(ChromeConsumerWebTests):browser_name='edge'
-
-@unittest.skipUnless(sys.platform=='win32','Windows Brave consumer workflows')
-class BraveConsumerWebTests(ChromeConsumerWebTests):browser_name='brave'
 
 if __name__=='__main__':unittest.main()

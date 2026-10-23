@@ -54,7 +54,11 @@ class CompanionWebView : Form {
     private async void Start(object sender, EventArgs args) {
         try {
             var handle = view.Handle;
-            environment = await CoreWebView2Environment.CreateAsync(null, profile);
+            // No back/forward cache, as in the guided Chrome browser: a page shown
+            // again from that cache sends no load events and hides its frames
+            // from the automation driver, so Back could not read it.
+            var options = new CoreWebView2EnvironmentOptions("--disable-back-forward-cache");
+            environment = await CoreWebView2Environment.CreateAsync(null, profile, options);
             await view.EnsureCoreWebView2Async(environment);
             Register(view, "main-view");
             var loaded = new TaskCompletionSource<bool>();

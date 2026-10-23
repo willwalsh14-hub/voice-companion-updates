@@ -30,7 +30,7 @@ def snapshot(m):
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
     context={'engines':('SAPI',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
     from windows_actions import startup_enabled
-    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':read_text(m.APP/'browser-choice.txt',__import__('web_assistant').DEFAULT_BROWSER),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
+    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':__import__('web_assistant').browser_setting(m.APP),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
 
 def open_settings(m,mode):
@@ -38,7 +38,7 @@ def open_settings(m,mode):
         m.speak('The settings panel requires the app window. Voice settings commands are still available.');return mode
     if m.SETTINGS_PANEL and not m.SETTINGS_PANEL.closed.is_set():return 'settings'
     values,context=snapshot(m);session=SettingsSession(values,context)
-    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.APP_WINDOW.commands.put(('keyboard','Control')),preview=lambda values,text:m.APP_WINDOW.settings_results.put(('preview',(values,text)))).start()
+    m.SETTINGS_PANEL=NativeSettings(session,m.APP_WINDOW.feedback,lambda values:m.APP_WINDOW.settings_results.put(('general',values)),lambda key:m.APP_WINDOW.settings_results.put(('action',key)),interrupt=lambda:m.APP_WINDOW.commands.put(('keyboard','Control')),keyboard=lambda key:m.APP_WINDOW.commands.put(('keyboard',key)),preview=lambda values,text:m.APP_WINDOW.settings_results.put(('preview',(values,text)))).start()
     return 'settings'
 
 def stop_preview(m):
@@ -141,7 +141,7 @@ def apply_settings(m,values):
         m.web_session.choose_browser(values['browser']);m.web_session.input_mode=m.INPUT_MODE
     else:
         from storage import write_text_atomic
-        write_text_atomic(m.APP/'browser-choice.txt',values['browser'])
+        write_text_atomic(m.APP/'browser-choice.txt',__import__('web_assistant').browser_key(values['browser']))
     m.media().choose_source(values['radio_source'])
     limits=values.get('podcast_limits',{})
     feed=session.context['podcast_feeds'].get(values.get('podcast_feed'))

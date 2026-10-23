@@ -105,7 +105,8 @@ class NoRawAltBitTests(unittest.TestCase):
     def test_tests_send_the_platform_alt_state_not_the_x11_bit(self):
         # A test that sends 8 (or 12 for Control+Alt) means Alt only on Linux.
         # On Windows Tk, 8 is Num Lock, so such a test checks the wrong key there.
-        # Tests send key_state.ALT_STATE instead.
+        # Tests send key_state.ALT_STATE instead. A line that really means
+        # Num Lock on Windows says "Num Lock" in a comment.
         literal = r'(0x[0-9a-fA-F]+|\d+)'
         patterns = (
             re.compile(r'\bstate\s*=\s*' + literal + r'\b'),            # event_generate(..., state=12)
@@ -118,6 +119,8 @@ class NoRawAltBitTests(unittest.TestCase):
                 continue
             with open(os.path.join(HERE, name), encoding='utf-8') as source:
                 for number, line in enumerate(source, 1):
+                    if 'Num Lock' in line:
+                        continue  # A test that means Num Lock says so on the line.
                     for pattern in patterns:
                         for match in pattern.finditer(line):
                             values = [int(value, 0) for value in match.groups() if value]

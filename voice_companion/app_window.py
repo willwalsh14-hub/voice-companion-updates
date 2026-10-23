@@ -161,6 +161,10 @@ class CompanionWindow:
             self.email_selection_edit = (request['field_name'],request['edited_text'])
         return request['result']
 
+    def reclaim_focus(self):
+        """Take the keyboard back after another program (Thunderbird started for mail) took it."""
+        if not self.closed.is_set(): self.ui_actions.put(('reclaim_focus', None))
+
     def clear_email_field(self):
         self.last_email_request = None
         if not self.closed.is_set(): self.ui_actions.put(('clear_email', None))
@@ -279,6 +283,10 @@ class CompanionWindow:
                                 ctypes.windll.user32.keybd_event(0x14,0,2,0)
                         caps_modifier['used']=False
             root.bind_all('<KeyRelease>',release_document_modifier,add='+')
+            # A key let go in another window never reaches this one. A held
+            # Insert must not stay remembered and turn the next Space into a
+            # mode switch.
+            root.bind('<FocusOut>',lambda event:document_modifiers.discard('Insert') if event.widget==root else None,add='+')
             previous = ['', 0]
             field_selection = FieldSelection()
             # Alt pressed and let go with no other key opens the screen's Alt menu
@@ -306,12 +314,20 @@ class CompanionWindow:
                     self.commands.put(typed.get().strip());typed.delete(0,'end')
                 self.commands.put(('keyboard','Alt'));return 'break'
             root.bind_all('<KeyRelease>',alt_release,add='+')
+            from time_date import PressCounter,clock_key,key_request
+            clock_presses=PressCounter()
             def shortcut(event):
                 if event.keysym.lower()=='p' and event.state&4 and not event.state&1 and not alt_held(event.state):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
                     return 'break'
                 if event.widget.winfo_toplevel()!=root:return
                 mode=self.context.get('mode');key=event.keysym
+                if clock_key(key,event.state):
+                    # F12 or Insert+F12 says the time; twice quickly, the date. It works on every
+                    # screen, in menus, lists and questions, and never reaches a web page.
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard',key_request(clock_presses.press())));return 'break'
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 watch_alt(event)
@@ -364,7 +380,7 @@ class CompanionWindow:
                         self.commands.put(('keyboard',file_key));return 'break'
                 if mode=='web' and not self.command_entry_active and not self.context.get('web_private'):
                     from web_modes import toggle_chord
-                    # Insert+Space, or Control+Alt+Space when a screen reader owns Insert.
+                    # Insert+Space; Control+Shift+Space or Control+Alt+Space when a screen reader owns Insert.
                     if key=='Insert':document_modifiers.add(key);return 'break'
                     if toggle_chord(key,event.state,'Insert' in document_modifiers):
                         if self.keyboard_output:self.keyboard_output.interrupt()
@@ -509,7 +525,9 @@ class CompanionWindow:
                     request='Letter:'+event.char.lower()
                 if mode=='web' and not request and (self.context.get('web_browse') or local.get('web_escape_pending')) and not self.command_entry_active and event.char and event.char.isprintable() and not control and not alt_held(event.state):return 'break'
                 if request:
-                    if request in ('Web:Activate','Web:Space','Web:Done'):
+                    # A held key repeats. Activating, or going back or forward,
+                    # happens once per press.
+                    if request in ('Web:Activate','Web:Space','Web:Done','Web:Back','Web:Forward'):
                         if key in activation_keys:return 'break'
                         activation_keys.add(key)
                     if self.keyboard_output:self.keyboard_output.interrupt()
@@ -817,7 +835,7 @@ class CompanionWindow:
                         if field.get('account_entry')!=old.get('account_entry'):
                             typed.delete(0,'end')
                             if field.get('account_entry'):
-                                entry_label.configure(text='Yahoo app password (private); paste or type, then press Enter. Escape cancels:' if field.get('account_private') else 'Yahoo email address; type, then press Enter. Escape cancels:')
+                                entry_label.configure(text=field.get('account_label') or ('Yahoo app password (private); paste or type, then press Enter. Escape cancels:' if field.get('account_private') else 'Yahoo email address; type, then press Enter. Escape cancels:'))
                                 typed.focus_force()
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
@@ -922,6 +940,10 @@ class CompanionWindow:
                         root.deiconify()
                         root.lift()
                         typed.focus_force()
+                    if action == 'reclaim_focus':
+                        root.deiconify()
+                        root.lift()
+                        root.focus_force()
                     if action == 'clear_email':
                         self.email_field = None
                         typed.delete(0, 'end')
