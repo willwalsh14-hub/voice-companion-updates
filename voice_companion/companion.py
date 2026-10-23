@@ -1,4 +1,5 @@
 """Voice Companion: local, self-voicing Windows prototype."""
+import user_stop
 import json
 import os
 import queue
@@ -50,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.161-test'
+APP_VERSION = '0.2.162-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -438,6 +439,8 @@ def process_keyboard_batch(mode):
         for _ in range(100):
             try:command=APP_WINDOW.commands.get_nowait()
             except queue.Empty:break
+            # The Escape that stopped a wait (user_stop) is not also used to go back.
+            if user_stop.begin_command() and command in (('keyboard','Escape'),'Escape'):continue
             if not (isinstance(command,tuple) and command[0]=='keyboard' and str(command[1]).startswith('Web:Pass:')):page_keys_only=False
             if isinstance(command,tuple) and command[0]=='text_edit':
                 # UI-thread caret speech is already current; acknowledge without canceling it.
@@ -1880,6 +1883,9 @@ def thunderbird_starter(system=None):
     try:
         launched = thunderbird_setup.start_in_background(system or thunderbird_setup.WindowsSystem(), addon_package(),
                                                          relay, speak_status)
+    except user_stop.Stopped as exc:
+        from thunderbird_mailbox import STOPPED
+        raise MailboxError(STOPPED) from exc
     except thunderbird_setup.NotReady:
         flow = new_thunderbird_setup()
         step = flow.start()
@@ -4179,6 +4185,7 @@ _HANDLE_DEPTH = 0
 
 def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
+    if _HANDLE_DEPTH==0 and not typed:user_stop.begin_command()
     if not typed and _HANDLE_DEPTH==0 and APP_WINDOW is not None and not APP_WINDOW.commands.empty():
         mode=process_keyboard_batch(mode)
         if mode=='exit':return mode

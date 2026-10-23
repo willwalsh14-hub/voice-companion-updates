@@ -27,8 +27,8 @@ MAIL_CHECK_NOTICES = {
                'Check your internet connection, then press F5 or say refresh messages to try again.'),
     'offline': ('Thunderbird is set to work offline, so it did not check for new mail. '
                 'In Thunderbird, open the File menu and turn off Work Offline.'),
-    'slow': ('Thunderbird is still checking for new mail. '
-             'In a moment, press F5 or say refresh messages to hear the newest.'),
+    'slow': ('Thunderbird is still getting your mail, so the newest messages may not be here yet. '
+             'A new account can take several minutes. Press F5 or say refresh messages to check again.'),
 }
 
 
@@ -47,15 +47,23 @@ def relay():
     return bridge
 
 
+STOPPED = 'Stopped waiting for Thunderbird.'
+
+
 def call(method, **params):
+    from user_stop import Stopped
     try:
         return relay().request(method, params)
+    except Stopped as exc:
+        raise MailboxError(STOPPED) from exc
     except ThunderbirdUnavailable as exc:
         # Thunderbird closed after it was connected: start it again once, then repeat the request.
         if STARTER is None or connected():
             raise MailboxError(NOT_CONNECTED) from exc
         try:
             return relay().request(method, params)
+        except Stopped as again:
+            raise MailboxError(STOPPED) from again
         except ThunderbirdUnavailable as again:
             raise MailboxError(NOT_CONNECTED) from again
         except ThunderbirdError as again:
@@ -97,6 +105,21 @@ class ThunderbirdMailbox:
         if offset == 0:
             # Only the first page checks the server; later pages keep what it found.
             self.notice = MAIL_CHECK_NOTICES.get(page.get('mailCheck'), '')
+        return self._rows(page)
+
+    def last_page(self, folder_id, limit=10):
+        """The page with the oldest messages, in one request: (rows, next cursor, offset)."""
+        if limit not in (10, 20, 30, 40, 50, 100):
+            raise MailboxError('Choose 10, 20, 30, 40, 50, or 100 messages.')
+        page = call('list', folderId=self._folder(folder_id), offset=0, limit=limit, last=True)
+        offset = page.get('offset')
+        if not isinstance(offset, int) or offset < 0:
+            raise MailboxError('Thunderbird could not find the end of this folder. Update Voice Companion, then try again.')
+        rows, following = self._rows(page)
+        return rows, following, offset
+
+    @staticmethod
+    def _rows(page):
         rows = []
         for item in page.get('rows', []):
             (name, sender), = getaddresses([item.get('from', '')]) or [('', '')]

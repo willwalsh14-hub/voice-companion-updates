@@ -140,6 +140,26 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         self.assertIn('Message 26', spoken)
         self.assertNotIn('Thunderbird could not check', spoken)
 
+    def test_end_goes_to_the_oldest_page_in_one_request(self):
+        # Will, 0.2.161: End read every page in turn; a large work mailbox never finished.
+        mail_accounts.connect('thunderbird', self.folder)
+        session = MailSession('thunderbird', self.folder)
+        said = []; session.progress = said.append
+        session.list_messages()
+        requests = []
+        original = self.relay.request
+        def counted(method, params=None, timeout=60):
+            requests.append(method); return original(method, params, timeout)
+        with mock.patch.object(self.relay, 'request', counted):
+            spoken = session.list_boundary(True)
+        self.assertEqual(requests.count('list'), 1)
+        self.assertIn('Message 1.', spoken); self.assertIn('5 of 5', spoken)
+        self.assertEqual(session.page_cursor, '20')
+        self.assertEqual(said[-1], 'Going to the end of Inbox. Please wait.')
+        # Page Up from the end goes back one page at a time, then to the newest.
+        self.assertIn('Message 15', session.process('previous messages'))
+        self.assertIn('Message 25', session.process('previous messages'))
+
     @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1, FAKE_THUNDERBIRD_MAIL_CHECK='fail')
     def test_failed_mail_check_is_said_not_silent(self):
         mail_accounts.connect('thunderbird', self.folder)
@@ -158,7 +178,7 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         mail_accounts.connect('thunderbird', self.folder)
         spoken = MailSession('thunderbird', self.folder).list_messages()
         self.assertIn('Message 25', spoken)
-        self.assertIn('press F5 or say refresh messages to hear the newest', spoken)
+        self.assertIn('Thunderbird is still getting your mail, so the newest messages may not be here yet.', spoken)
 
     def test_send_new_and_reply(self):
         mail_accounts.connect('thunderbird', self.folder)
@@ -234,3 +254,27 @@ class ThunderbirdOfflineTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class EndOfLongListTests(unittest.TestCase):
+    """Services without a one-step End go page by page, but never without end."""
+    def test_page_by_page_end_stops_and_says_what_to_do(self):
+        class EndlessMailbox:
+            calls = 0
+            def list_messages(self, folder_id, cursor=None, limit=10):
+                EndlessMailbox.calls += 1
+                start = int(cursor or 0)
+                rows = [{'id': str(start + n), 'from': 'a@example.com', 'sender_name': 'A', 'subject': 'S' + str(start + n),
+                         'date': 'October 1, 2026', 'size': 1, 'unread': False} for n in range(limit)]
+                return rows, str(start + limit)
+        with tempfile.TemporaryDirectory() as folder:
+            session = MailSession('gmail', Path(folder))
+            said = []; session.progress = said.append
+            with mock.patch.object(MailSession, 'client', lambda self: EndlessMailbox()):
+                session.list_messages()
+                said.clear()
+                spoken = session.list_boundary(True)
+        self.assertIn('too long to go to the end here', spoken)
+        self.assertIn('Page Down', spoken)
+        self.assertLessEqual(EndlessMailbox.calls, MailSession.MAX_END_PAGES + 2)
+        self.assertEqual(said, ['Going to the end of Inbox. Please wait.'])

@@ -3,6 +3,7 @@
 The window lives on its own UI thread. Other threads only post text to a queue.
 Closing the window requests a clean shutdown of the microphone loop.
 """
+import user_stop
 import queue
 import threading
 import time
@@ -228,7 +229,7 @@ class CompanionWindow:
             root.geometry('660x560')
             root.option_add('*Font',('Segoe UI',12))
             root.minsize(470, 300)
-            root.protocol('WM_DELETE_WINDOW', lambda: (flush_pending_edit(), self.commands.put(('keyboard','Alt+F4'))))
+            root.protocol('WM_DELETE_WINDOW', lambda: (user_stop.request(), flush_pending_edit(), self.commands.put(('keyboard','Alt+F4'))))
             heading = tk.Label(root, text='Voice Companion', font=('Segoe UI', 20, 'bold'))
             heading.pack(anchor='w', padx=18, pady=(16, 4))
             startup_label=tk.Label(root, text='Say “Wake up” to begin. Say “What version?” to check this build.',
@@ -302,6 +303,9 @@ class CompanionWindow:
             # (screen_menus.py). Alt+O, Alt+T, Alt+F4 and other Alt keys never do.
             alt_tap={'alone':False,'when':0.0}
             def watch_alt(event):
+                # Escape stops a wait on another program at once (user_stop); the key is
+                # then handled as usual.
+                if event.keysym=='Escape':user_stop.request()
                 if event.keysym in ('Alt_L','Alt_R'):
                     if not alt_tap['alone']:alt_tap.update(alone=True,when=time.monotonic())
                 else:alt_tap['alone']=False
@@ -436,7 +440,7 @@ class CompanionWindow:
                 if self.context.get('confirmation') is not None and key.lower() in ('y','n') and event.state&(8|0x20000):
                     self.commands.put(('keyboard','Alt+'+key.upper()));return 'break'
                 if key=='F4' and event.state&(8|0x20000):
-                    flush_pending_edit();self.commands.put(('keyboard','Alt+F4'));return 'break'
+                    user_stop.request();flush_pending_edit();self.commands.put(('keyboard','Alt+F4'));return 'break'
                 if key in ('Control_L','Control_R'):
                     cancel_phonetic()
                     if local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None

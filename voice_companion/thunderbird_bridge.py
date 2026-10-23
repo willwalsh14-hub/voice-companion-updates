@@ -102,7 +102,8 @@ class MailRelay:
                 pipe = self.pipe
                 if pipe is None: raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
                 pipe.send_bytes(encode({'id': ident, 'method': method, 'params': params or {}}))
-            if not waiter['event'].wait(timeout) or waiter['answer'] is None:
+            import user_stop
+            if not user_stop.wait(waiter['event'], timeout) or waiter['answer'] is None:
                 raise ThunderbirdUnavailable('Thunderbird did not answer.')
         finally:
             self.pending.pop(ident, None)

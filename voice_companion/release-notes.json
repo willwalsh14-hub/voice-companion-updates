@@ -1,18 +1,18 @@
 {
-  "version": "0.2.161-test",
+  "version": "0.2.162-test",
   "status": "Testing build",
   "date": "October 23, 2026",
-  "baseline": "0.2.160-test",
-  "scope": "Alt opens the screen's menu again, and Thunderbird shows your newest mail.",
+  "baseline": "0.2.161-test",
+  "scope": "Thunderbird work and Microsoft accounts no longer freeze Voice Companion, and End goes to the last message at once.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Alt tells you why",
+          "title": "Stop waiting for Thunderbird",
           "details": [
-            "If a screen has no Alt menu, Alt tells you so.",
-            "If a question is waiting, Alt asks you to answer it first. Press Y for yes or N for no."
+            "If Thunderbird is slow, press Escape to stop waiting. Voice Companion tells you it stopped.",
+            "Closing Voice Companion with Alt+F4 works even while it waits for Thunderbird."
           ]
         }
       ]
@@ -21,20 +21,19 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Alt menus",
+          "title": "End in a long mail folder",
           "details": [
-            "Press Alt to open the menu for the screen you are on, like the Email menu.",
-            "Before, Alt opened the Windows window menu instead. That is fixed on every screen.",
-            "Alt+Space still opens the Windows window menu, to move or close the window."
+            "In Thunderbird mail, End now goes to the oldest message in one step.",
+            "Before, End loaded every page in turn. In a large work mailbox it never finished, and Voice Companion froze.",
+            "Page Up from the end goes back one page at a time, as before."
           ]
         },
         {
-          "title": "Newest Thunderbird mail",
+          "title": "New Thunderbird accounts",
           "details": [
-            "Thunderbird mail now shows your newest messages. Gmail in Voice Companion already did.",
-            "Before each list, Thunderbird checks your mail server for new mail. This takes a few seconds at most.",
-            "If it cannot check, you hear why and what to do. Press F5 or say refresh messages to try again.",
-            "The Voice Companion add-on in Thunderbird updates by itself. You do not need to do anything."
+            "A newly added work or Microsoft account can take a while to download its mail.",
+            "Until it is done, you hear that the newest messages may not be here yet. Press F5 or say refresh messages to check again.",
+            "Work accounts that use Exchange now check for new mail too."
           ]
         }
       ]
