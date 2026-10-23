@@ -10,6 +10,20 @@ function Write-BuildAnnotation([string]$Title, [string]$Message) {
   if ($clean.Length -gt 3500) { $clean = $clean.Substring($clean.Length - 3500) }
   Write-Output ('::error title=' + $Title + '::' + $clean)
 }
+# Run a unittest step and, on GitHub, put the failed test names and the end of
+# their output into the run annotations (the full log cannot be read remotely).
+function Invoke-UnitTests([string]$Title, [string[]]$Arguments) {
+  $log = Join-Path $PSScriptRoot ('VoiceCompanion-Tests-' + ($Title -replace '[^A-Za-z0-9]','') + '.txt')
+  $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $python -m unittest @Arguments 2>&1 | ForEach-Object { $line = "$_"; if ($line -eq 'System.Management.Automation.RemoteException') { '' } else { $line } } | Tee-Object -FilePath $log | Out-Host
+  $code = $LASTEXITCODE; $ErrorActionPreference = $previous
+  if ($code -ne 0 -and (Test-Path $log)) {
+    $failed = @(Select-String -LiteralPath $log -Pattern '^(FAIL|ERROR): ' | ForEach-Object { $_.Line })
+    $tail = (Get-Content -LiteralPath $log -Tail 60) -join "`n"
+    Write-BuildAnnotation ($Title + ' failed') ((($failed | Select-Object -First 15) -join "`n") + "`n---`n" + $tail) | Out-Host
+  }
+  return $code
+}
 trap {
   Write-BuildAnnotation 'Build stopped' $_.Exception.Message
   break
@@ -91,8 +105,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
 & $python build_webview2.py
 if ($LASTEXITCODE -ne 0) { throw 'The embedded Edge host could not be built.' }
 $env:VOICE_COMPANION_REQUIRE_WEBVIEW2 = '1'
-& $python -m unittest -q -f test_webview2.EmbeddedLiveTests test_webview2.EmbeddedConsumerTests test_webview2.EmbeddedSemanticTests test_webview2.EmbeddedPerformanceTests
-if ($LASTEXITCODE -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }
+$embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests')
+if ($embeddedResult -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEBVIEW2
 $extensionTestRuntime = Join-Path $buildEnv 'extension-test-browser'
 $env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
@@ -141,17 +155,17 @@ if ($LASTEXITCODE -ne 0) {
   if (-not $findings) { $findings = @('No findings were recorded. The audit service may have been unreachable.') }
   throw ('Dependency security audit failed. ' + ($findings -join ' | '))
 }
-& $python -m unittest test_security_privacy -v
-if ($LASTEXITCODE -ne 0) { throw 'Privacy or security checks failed.' }
-& $python -m unittest test_update_recovery -v
-if ($LASTEXITCODE -ne 0) { throw 'Updater recovery and bookmark opening checks failed.' }
+$securityResult = Invoke-UnitTests 'Privacy and security checks' @('test_security_privacy','-v')
+if ($securityResult -ne 0) { throw 'Privacy or security checks failed.' }
+$recoveryResult = Invoke-UnitTests 'Updater recovery checks' @('test_update_recovery','-v')
+if ($recoveryResult -ne 0) { throw 'Updater recovery and bookmark opening checks failed.' }
 $browserRuntime = Join-Path $PSScriptRoot 'browser-runtime'
 $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
 if ($LASTEXITCODE -ne 0) { throw 'The guided Firefox runtime could not be installed.' }
 $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-& $python -m unittest -q test_web_live test_consumer_web test_consumer_audio test_web_semantics test_web_modes_live
-if ($LASTEXITCODE -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
+$liveResult = Invoke-UnitTests 'Real browser checks' @('-q','test_web_live','test_consumer_web','test_consumer_audio','test_web_semantics','test_web_modes_live')
+if ($liveResult -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEB_TESTS
 $modelZip = Join-Path $PSScriptRoot 'vosk-model.zip'
 $modelFolder = Join-Path $PSScriptRoot 'model'
