@@ -372,6 +372,25 @@ class ScreenMenuTests(unittest.TestCase):
             self.assertIn(sentence, text)
 
 
+class TkOwnershipTests(unittest.TestCase):
+    def test_every_tk_variable_names_its_window(self):
+        # A Tk variable without its window joins the first Tk window ever made. If that
+        # window lives on another thread, the new window waits for it forever and never
+        # speaks or answers keys. This froze every new window on Windows in a test run.
+        import ast
+        here = Path(__file__).parent
+        problems = []
+        for path in sorted(here.glob('*.py')):
+            if path.name.startswith('test_'): continue
+            tree = ast.parse(path.read_text(encoding='utf-8'))
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                        and node.func.attr in ('StringVar', 'BooleanVar', 'IntVar', 'DoubleVar')
+                        and not node.args and not any(k.arg == 'master' for k in node.keywords)):
+                    problems.append(f'{path.name}:{node.lineno}')
+        self.assertEqual(problems, [])
+
+
 @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows Tk keyboard integration')
 class WindowAltKeyTests(unittest.TestCase):
     def setUp(self):

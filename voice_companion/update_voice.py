@@ -144,7 +144,7 @@ def run(folder,headless=False,no_microphone=False,speech_file=None):
     if not headless:
         import tkinter as tk
         window=tk.Tk();window.title('Voice Companion update')
-        label=tk.StringVar(value='0 percent.')
+        label=tk.StringVar(window,value='0 percent.')
         tk.Label(window,textvariable=label,font=('Arial',14)).pack(padx=24,pady=16)
         button=tk.Button(window,text='Status',command=lambda:requested.put(True),takefocus=True);button.pack(pady=12)
         button.bind('<FocusIn>',lambda event:speech.announce('Status button. Alt S, F5 or Enter reads update progress.'))
