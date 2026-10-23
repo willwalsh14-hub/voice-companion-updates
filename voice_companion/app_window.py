@@ -311,8 +311,10 @@ class CompanionWindow:
                 if event.keysym not in ('Alt_L','Alt_R'):return
                 alone=alt_tap['alone'] and time.monotonic()-alt_tap['when']<2;alt_tap['alone']=False
                 if not alone or event.widget.winfo_toplevel()!=root:return
-                from screen_menus import alt_menu_key
-                if not alt_menu_key(self.context,self.command_entry_active,typed.get()):return
+                from screen_menus import alt_menu_key,alt_unavailable
+                if not alt_menu_key(self.context,self.command_entry_active,typed.get()):
+                    # Never hand a lone Alt to Windows: its system menu is not Companion's.
+                    self.feedback(alt_unavailable(self.context,self.command_entry_active,typed.get()));return 'break'
                 if self.keyboard_output:self.keyboard_output.interrupt()
                 flush_pending_edit();cancel_phonetic()
                 mode=self.context.get('mode');opening=not self.context.get('screen_menu')
@@ -616,6 +618,7 @@ class CompanionWindow:
                 self.commands.put(('keyboard','settings')); return 'break'
             root.bind_all('<Alt-o>',settings_shortcut)
             root.bind_all('<Alt-O>',settings_shortcut)
+            route_alt_keys(root)
             tk.Button(root,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
@@ -1002,3 +1005,21 @@ class CompanionWindow:
             self.closed.set()
 
 
+def route_alt_keys(root):
+    """Give Alt keys to Companion, not to the Windows system menu.
+
+    On Windows, Tk binds Alt on the "all" tag (<KeyRelease-Alt_L>,
+    <Alt-KeyPress> and others) and hands those keys to Windows. Those patterns
+    are more specific than Companion's own <KeyPress> and <KeyRelease>, so a
+    lone Alt opened the system menu instead of the screen's Alt menu, and Alt
+    with a letter never reached Companion. Here the Alt patterns run
+    Companion's handlers instead. Alt+Space still opens the system menu.
+    Call this after every <KeyPress> and <KeyRelease> binding on "all" is made."""
+    call=root.tk.call
+    press=call('bind','all','<KeyPress>');release=call('bind','all','<KeyRelease>')
+    system_menu='if {[info commands ::tk::WinMenuKey] ne ""} {::tk::WinMenuKey %W %N}'
+    for sequence in ('<KeyRelease-Alt_L>','<KeyRelease-Alt_R>','<Alt-KeyRelease>'):
+        call('bind','all',sequence,release)
+    call('bind','all','<Alt-KeyPress>',press)
+    call('bind','all','<Alt-KeyPress-space>',press+'\n'+system_menu)
+    call('bind','all','<Alt-KeyRelease-space>',release+'\n'+system_menu)

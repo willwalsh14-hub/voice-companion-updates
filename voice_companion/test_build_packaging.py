@@ -115,7 +115,7 @@ class RealWindowTestRunTests(unittest.TestCase):
                 os.environ.pop(real_window_tests.APART, None)
                 self.assertFalse(getattr(real_window_tests.real_window(type('B', (Sample,), {})), '__unittest_skip__', False))
         script = (Path(__file__).parent / 'build-windows.ps1').read_text(encoding='utf-8')
-        for name in ('test_keyboard_text.WindowKeyboardTests', 'test_input_parity.WindowScreenKeyTests', 'test_time_date_windows.WindowClockKeyTests'):
+        for name in ('test_keyboard_text.WindowKeyboardTests', 'test_input_parity.WindowScreenKeyTests', 'test_time_date_windows.WindowClockKeyTests', 'test_alt_keys_window.AltKeyWindowTests'):
             self.assertIn("'" + name + "'", script)
         self.assertLess(script.index("VOICE_COMPANION_WINDOW_TESTS_APART = '1'"), script.index('$releaseTests = Start-Process'))
 
