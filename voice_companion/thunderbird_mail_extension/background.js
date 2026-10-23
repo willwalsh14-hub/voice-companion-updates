@@ -207,14 +207,15 @@ class MailBridge {
   }
 
   async setupPage() {
-    const closed = {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: []};
+    const closed = {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: [],
+      addressFilled: false};
     const setup = this.setup();
     if (!setup) return closed;
     try {
       const page = await setup.setupPage();
       return {open: Boolean(page.open), title: String(page.title || ''), notes: (page.notes || []).map(String).slice(0, 5),
         button: String(page.button || ''), canContinue: Boolean(page.canContinue), needsPassword: Boolean(page.needsPassword),
-        fields: (page.fields || []).map(String).slice(0, 12)};
+        fields: (page.fields || []).map(String).slice(0, 12), addressFilled: Boolean(page.addressFilled)};
     } catch (error) {
       return closed;
     }
