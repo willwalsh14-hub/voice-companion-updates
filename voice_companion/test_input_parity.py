@@ -554,13 +554,13 @@ class WindowScreenKeyTests(unittest.TestCase):
             try:self.window.root.update_idletasks();function()
             except Exception as exc:errors.append(exc)
             finally:done.set()
-        self.window.ui_actions.put(('ui_call',run));self.assertTrue(done.wait(5))
+        self.window.ui_actions.put(('ui_call',run));self.assertTrue(done.wait(5),self.window.debug_state())
         if errors:raise errors[0]
     def wait(self,condition):
         import time
         end=time.monotonic()+5
         while not condition() and time.monotonic()<end:time.sleep(.015)
-        self.assertTrue(condition())
+        self.assertTrue(condition(),self.window.debug_state())
     def test_note_keys_add_typed_words_first(self):
         self.window.set_context(dict(mode='note',source=None,text='',caret=0,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('mode')=='note')

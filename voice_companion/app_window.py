@@ -108,6 +108,15 @@ class CompanionWindow:
         if not self.closed.is_set():
             self.messages.put(str(message))
 
+    def debug_state(self):
+        """Why the window is not answering, for test failure messages. Reads no Tk state."""
+        import sys,traceback
+        frame=sys._current_frames().get(getattr(self.thread,'ident',None))
+        return {'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
+                'waiting updates':self.ui_actions.qsize(),'window errors':self.ui_errors,
+                'window thread is at':''.join(traceback.format_stack(frame)[-12:]) if frame else None,
+                'other threads':[t.name for t in __import__('threading').enumerate()]}
+
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
 
