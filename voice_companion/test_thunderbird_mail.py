@@ -36,6 +36,14 @@ def plain_store():
             mock.patch.object(mail_accounts.ProtectedStore, '_unseal', staticmethod(lambda path: json.loads(path.read_bytes())))]
 
 
+def simulated(**env):
+    """How the simulated Thunderbird starts for one test (fake-thunderbird.cjs reads these)."""
+    def mark(test):
+        test.thunderbird_env = {name: str(value) for name, value in env.items()}
+        return test
+    return mark
+
+
 @unittest.skipUnless(shutil.which('node'), 'Node.js runs the simulated Thunderbird')
 class ThunderbirdEndToEndTests(unittest.TestCase):
     def setUp(self):
@@ -50,8 +58,9 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         for patcher in [mock.patch.object(thunderbird_bridge, '_RELAY', self.relay),
                         mock.patch.object(regular_browser, 'data_folder', lambda: self.folder)] + plain_store():
             patcher.start(); self.addCleanup(patcher.stop)
+        env = dict(os.environ, **getattr(getattr(self, self._testMethodName), 'thunderbird_env', {}))
         self.thunderbird = subprocess.Popen(['node', str(HERE / 'thunderbird_mail_extension' / 'fake-thunderbird.cjs')],
-                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         first = read_message(self.thunderbird.stdout)
         self.assertEqual((first['protocol'], first['command']), (3, 'mail'))
         self.host = threading.Thread(target=thunderbird_bridge.native_stream,
@@ -111,6 +120,45 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         spoken = session.list_messages()
         self.assertIn('Message 25', spoken)
         self.assertIn('Sender 25', spoken)
+
+    @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1)
+    def test_list_shows_mail_that_just_reached_the_server(self):
+        # Will, October 23, 2026: Thunderbird with Gmail did not show the latest messages, while
+        # Voice Companion's own Gmail did. Thunderbird had not downloaded them yet: Voice Companion
+        # starts it in the background and lists at once, before Thunderbird checks the server.
+        mail_accounts.connect('thunderbird', self.folder)
+        address, account = mail_accounts.account_token('thunderbird', self.folder)
+        mailbox = ThunderbirdMailbox(address, account)
+        rows, cursor = mailbox.list_messages('inbox')
+        self.assertEqual([row['subject'] for row in rows[:2]], ['Message 26', 'Message 25'])
+        self.assertEqual(rows[0]['date'], 'October 26, 2026')
+        self.assertEqual(mailbox.notice, '')
+        more, _ = mailbox.list_messages('inbox', cursor)
+        self.assertEqual(more[0]['subject'], 'Message 16')   # later pages follow on, without a gap
+        session = MailSession('thunderbird', self.folder)
+        spoken = session.list_messages()
+        self.assertIn('Message 26', spoken)
+        self.assertNotIn('Thunderbird could not check', spoken)
+
+    @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1, FAKE_THUNDERBIRD_MAIL_CHECK='fail')
+    def test_failed_mail_check_is_said_not_silent(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        spoken = MailSession('thunderbird', self.folder).list_messages()
+        self.assertIn('Message 25', spoken)      # the mail Thunderbird has is still listed
+        self.assertIn('Thunderbird could not reach your mail server, so the newest messages may be missing.', spoken)
+
+    @simulated(FAKE_THUNDERBIRD_MAIL_CHECK='offline')
+    def test_offline_thunderbird_is_said(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        spoken = MailSession('thunderbird', self.folder).list_messages()
+        self.assertIn('Thunderbird is set to work offline', spoken)
+
+    @simulated(FAKE_THUNDERBIRD_MAIL_CHECK='hang', FAKE_THUNDERBIRD_CHECK_MS=100)
+    def test_slow_mail_check_still_lists(self):
+        mail_accounts.connect('thunderbird', self.folder)
+        spoken = MailSession('thunderbird', self.folder).list_messages()
+        self.assertIn('Message 25', spoken)
+        self.assertIn('press F5 or say refresh messages to hear the newest', spoken)
 
     def test_send_new_and_reply(self):
         mail_accounts.connect('thunderbird', self.folder)

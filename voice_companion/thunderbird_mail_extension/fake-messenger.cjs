@@ -26,6 +26,9 @@ function createFakeMessenger() {
     setupPage: {open: true, title: 'Set up your existing email address', notes: [], button: 'Continue', canContinue: true, needsPassword: false},
     continued: 0, passwordLengths: [], shown: 0, capture: [], signIn: null,
     windows: [{id: 1, type: 'normal', state: 'normal'}, {id: 2, type: 'popup', state: 'normal'}],
+    // Mail that has reached the server but not Thunderbird yet. Thunderbird only shows it after
+    // it checks the server (getNewMail in the Experiment). mailCheck: 'ok', 'fail', 'offline' or 'hang'.
+    server: [], mailCheck: 'ok', mailChecks: [],
   };
   let nextAccount = 3;
   state.addAccount = email => {
@@ -74,8 +77,14 @@ function createFakeMessenger() {
       delete: async f => { state.folders = state.folders.filter(x => x !== f); },
     },
     messages: {
-      // Thunderbird returns folder order (oldest first here); the add-on sorts.
-      query: async ({folderId, messagesPerPage}) => page(state.messages.filter(m => m.folderId === folderId).map(header), messagesPerPage),
+      // Like Thunderbird: database order (the order mail arrived, oldest first), 100 per page unless
+      // messagesPerPage says otherwise; fromDate keeps only messages dated after it.
+      query: async ({folderId, messagesPerPage = 100, fromDate}) => {
+        state.queries = (state.queries || 0) + 1;
+        const from = fromDate === undefined ? null : new Date(fromDate).getTime();
+        return page(state.messages.filter(m => m.folderId === folderId && (from === null || m.date.getTime() > from)).map(header),
+          messagesPerPage);
+      },
       continueList: async id => { const list = lists.get(id); lists.delete(id); return page(list.rest, list.size); },
       get: async id => header(state.messages.find(m => m.id === id)),
       getFull: async id => {
@@ -138,6 +147,17 @@ function createFakeMessenger() {
       showSetup: async () => { state.shown++; return {shown: true}; },
       captureSignIn: async seconds => { state.capture.push(seconds); return {capturing: seconds > 0}; },
       takeSignIn: async () => { const found = state.signIn || {url: '', where: ''}; state.signIn = null; return found; },
+      // Ask the server for new mail in one folder, as Thunderbird does when a folder is opened.
+      getNewMail: async (accountId, path, inbox) => {
+        state.mailChecks.push({accountId, path, inbox});
+        if (state.mailCheck === 'hang') return new Promise(() => {});
+        if (state.mailCheck === 'offline') return {checked: false, offline: true};
+        if (state.mailCheck === 'fail') return {checked: false, offline: false};
+        const target = state.folders.find(f => f.accountId === accountId && f.path === path);
+        for (const m of state.server.filter(m => target && m.folderId === target.id)) state.messages.push(m);
+        state.server = state.server.filter(m => !target || m.folderId !== target.id);
+        return {checked: true, offline: false};
+      },
     },
     runtime: {getManifest: () => ({version: require('./manifest.json').version})},
   };

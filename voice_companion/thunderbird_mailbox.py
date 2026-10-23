@@ -20,6 +20,18 @@ NOT_CONNECTED = ('Thunderbird is not connected to Voice Companion. '
                  'Say add account and choose Thunderbird, and Voice Companion checks what is missing.')
 
 
+# Said after a Thunderbird list when Thunderbird could not check the server for new mail
+# first, so the user knows the newest messages may be missing and what to do.
+MAIL_CHECK_NOTICES = {
+    'failed': ('Thunderbird could not reach your mail server, so the newest messages may be missing. '
+               'Check your internet connection, then press F5 or say refresh messages to try again.'),
+    'offline': ('Thunderbird is set to work offline, so it did not check for new mail. '
+                'In Thunderbird, open the File menu and turn off Work Offline.'),
+    'slow': ('Thunderbird is still checking for new mail. '
+             'In a moment, press F5 or say refresh messages to hear the newest.'),
+}
+
+
 def connected():
     bridge = current()
     return bridge is not None and bridge.connected.is_set()
@@ -62,6 +74,7 @@ class ThunderbirdMailbox:
         self.address = address
         self.account_id = account.get('account_id', '')
         self.identity_id = account.get('identity_id', '')
+        self.notice = ''    # why the last list may be missing new mail, or empty
 
     def _folder(self, folder_id):
         if not folder_id or folder_id in (INBOX, 'INBOX'):
@@ -81,6 +94,9 @@ class ThunderbirdMailbox:
         if offset < 0:
             raise MailboxError('Invalid message page.')
         page = call('list', folderId=self._folder(folder_id), offset=offset, limit=limit)
+        if offset == 0:
+            # Only the first page checks the server; later pages keep what it found.
+            self.notice = MAIL_CHECK_NOTICES.get(page.get('mailCheck'), '')
         rows = []
         for item in page.get('rows', []):
             (name, sender), = getaddresses([item.get('from', '')]) or [('', '')]
