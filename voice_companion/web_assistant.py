@@ -959,31 +959,34 @@ class BrowserBackend:
 
     def page_key_state(self,drain=False):
         """The focused element and new page announcements, for app mode speech."""
-        state=self.page.evaluate(PAGE_KEY_STATE,{'drain':drain})
+        state=_key_state(self.page,{'drain':drain})
         focus=state.get('focus')
         if focus and focus.get('tag') in ('iframe','frame'):
             # Keys typed into a frame go to the element focused inside it.
             for frame in self.page.frames[1:]:
-                try:inner=frame.evaluate(PAGE_KEY_STATE,{'drain':False})
+                try:inner=_key_state(frame,{'drain':False})
                 except Exception:continue
                 if inner.get('focus') and inner.get('has_focus') and inner['focus'].get('tag') not in ('iframe','frame'):
                     state['focus']=inner['focus'];break
         return state
 
-    def press_page_key(self,key,focus=None):
+    def press_page_key(self,key,focus=None,before=None,read_after=True):
         """App mode: one real key press for the page, and what it changed.
 
-        Two quick page reads and the key itself; nothing waits. A site that
-        answers a moment later is heard at the next check (WebSession.app_changes).
-        focus is an element to give keyboard focus first (the browse cursor's
-        element, for the first key after switching to app mode)."""
+        At most two quick page reads and the key itself; nothing waits. A site
+        that answers a moment later is heard at the next check
+        (WebSession.app_changes). focus is an element to give keyboard focus
+        first (the browse cursor's element, for the first key after switching
+        to app mode). before is the page state already known, which saves a
+        read; with read_after False only the key is sent (more keys follow)."""
         self._watch_dialogs()
         if focus is not None:
             try:self.focus_for_keys(focus)
             except Exception:pass
-        before=self.page_key_state(drain=True)
+            before=None
+        if before is None:before=self.page_key_state(drain=True)
         self.page.keyboard.press(key)
-        return before,self.page_key_state(drain=True)
+        return before,(self.page_key_state(drain=True) if read_after else None)
 
     def focus_for_keys(self,item):
         """Give keyboard focus to an element without clicking it."""
@@ -1442,13 +1445,33 @@ class WebSession:
         self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
         return ' '+describe(item)
 
+    # How long a page state read after a key may stand in for the next key's
+    # "before" state. Changes the page makes by itself are read by app_changes.
+    APP_STATE_FRESH=1.0
+
     def pass_key(self,key):
-        """App mode: the key goes to the page; say what changed."""
+        """App mode: the key goes to the page; say what changed.
+
+        Keys typed or held faster than they are handled arrive together. They
+        go to the page one after another with nothing read between them, and
+        what changed is said once, after the last (more_keys tells whether
+        another page key is waiting)."""
+        import time
         if not self.app_mode:return ''  # A key typed just before leaving app mode.
         focus=getattr(self,'app_focus_pending',None);self.app_focus_pending=None
-        try:before,after=self.backend.press_page_key(key,focus) if focus else self.backend.press_page_key(key)
-        except Exception:return 'The page did not take that key. Press F5 to refresh the page.'
-        self.app_state=after
+        more=bool(callable(getattr(self,'more_keys',None)) and self.more_keys())
+        run=getattr(self,'app_run_before',None)
+        known=getattr(self,'app_state',None)
+        if run is None and known is not None and time.monotonic()-getattr(self,'app_state_at',0)<self.APP_STATE_FRESH:run=known
+        try:
+            before,after=self.backend.press_page_key(key,focus,before=run,read_after=not more) if (focus or run is not None or more) else self.backend.press_page_key(key)
+        except Exception:
+            self.app_run_before=None
+            return 'The page did not take that key. Press F5 to refresh the page.'
+        if more:
+            self.app_run_before=before;return ''
+        self.app_run_before=None
+        self.app_state=after;self.app_state_at=time.monotonic()
         from web_modes import page_key_feedback
         notice=page_key_feedback(key,before,after)
         dialog=getattr(self.backend,'dialog_notice','')
@@ -1463,7 +1486,7 @@ class WebSession:
         if not hasattr(self.backend,'page_key_state'):return ''
         try:state=self.backend.page_key_state(drain=True)
         except Exception:return ''
-        before=getattr(self,'app_state',None);self.app_state=state
+        before=getattr(self,'app_state',None);self.app_state=state;self.app_state_at=__import__('time').monotonic()
         from web_modes import page_change_feedback
         return page_change_feedback(before,state)
 
@@ -2880,6 +2903,19 @@ class WebSession:
             except Exception: pass
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
+def _key_state(frame,arg):
+    """Read focus and announcements with the page's own copy of PAGE_KEY_STATE.
+
+    The script is about 40 KB. Sending it with every key cost a parse in the
+    page, and in embedded Edge two more passes through its host, so it is
+    placed in the page once and later called by name."""
+    state=frame.evaluate(KEY_STATE_CALL,arg)
+    if state is None:
+        frame.evaluate(KEY_STATE_INSTALL)
+        state=frame.evaluate(KEY_STATE_CALL,arg)
+    return state if isinstance(state,dict) else frame.evaluate(PAGE_KEY_STATE,arg)
+
+
 def _frame_shown(frame,readable=False):
     """Whether a frame's element is shown; with readable, its key unless hidden from readers.
 
@@ -2994,3 +3030,7 @@ PAGE_KEY_STATE=r'''(arg)=>{
     checked:accessibleLabel.checked(e),expanded:e.getAttribute('aria-expanded'),selected:tag==='select'?(e.selectedOptions[0]?.text||''):'',
     editable,password:type==='password',value:type==='password'?'':text.slice(0,2000),caret:type!=='password'&&typeof e.selectionStart==='number'?e.selectionStart:null}};
 }'''
+
+
+KEY_STATE_INSTALL='()=>{window.__voiceCompanionKeyState='+PAGE_KEY_STATE+';}'
+KEY_STATE_CALL="(arg)=>typeof window.__voiceCompanionKeyState==='function'?window.__voiceCompanionKeyState(arg):null"

@@ -205,15 +205,19 @@ class Counted:
         self.counts = {'snapshot': 0, 'evaluate': 0, 'press': 0, 'wait': 0}
         self.originals = (backend.snapshot, self.page.evaluate, self.page.keyboard.press, self.page.wait_for_timeout)
         snapshot, evaluate, press, wait = self.originals
+        self.script_sizes = []
         def count(name, action):
             def counted(*args, **kwargs):
-                self.counts[name] += 1; return action(*args, **kwargs)
+                self.counts[name] += 1
+                if name == 'evaluate' and args:self.script_sizes.append(len(str(args[0])))
+                return action(*args, **kwargs)
             return counted
         backend.snapshot = count('snapshot', snapshot); self.page.evaluate = count('evaluate', evaluate)
         self.page.keyboard.press = count('press', press); self.page.wait_for_timeout = count('wait', wait)
 
     def reset(self):
         for name in self.counts: self.counts[name] = 0
+        self.script_sizes = []
 
     def restore(self):
         del self.backend.snapshot; del self.page.evaluate; del self.page.keyboard.press; del self.page.wait_for_timeout
@@ -282,6 +286,42 @@ class AppModeSpeedTests(unittest.TestCase):
                 self.assertEqual(self.counted.counts['wait'], 0)
                 self.assertEqual(self.counted.counts['press'], 1)
                 self.assertLessEqual(self.counted.counts['evaluate'], 2)
+
+    def test_a_key_right_after_another_reads_the_page_once(self):
+        self.load(BUSY_PLAYER)
+        self.session.keyboard('ToggleAppMode'); self.session.keyboard('Pass:Tab')
+        self.counted.reset()
+        self.assertEqual(self.session.keyboard('Pass:ArrowRight'), '1:28 of 4:05.')
+        self.assertEqual(self.counted.counts['press'], 1)
+        self.assertEqual(self.counted.counts['evaluate'], 1)
+        # A short call by name, not the 40 KB script, travels with each key.
+        self.assertLess(max(self.counted.script_sizes), 200)
+
+    def test_held_or_fast_keys_reach_the_page_without_reads_between_them(self):
+        self.load(BUSY_PLAYER)
+        self.session.keyboard('ToggleAppMode'); self.session.keyboard('Pass:Tab')
+        waiting = ['ArrowRight'] * 9
+        self.session.more_keys = lambda: bool(waiting)
+        self.counted.reset()
+        said = []
+        for _ in range(10):
+            said.append(self.session.keyboard('Pass:ArrowRight'))
+            if waiting: waiting.pop()
+        self.assertEqual(self.counted.counts['press'], 10)
+        self.assertLessEqual(self.counted.counts['evaluate'], 1, said)
+        self.assertEqual(said[:-1], [''] * 9)
+        self.assertEqual(said[-1], '2:13 of 4:05.')
+        self.assertEqual(self.page.locator('.ytp-progress-bar').get_attribute('aria-valuenow'), '133')
+        # Typing fast into a box: every letter arrives, in order.
+        for _ in range(6):
+            if self.page.evaluate('document.activeElement.id') == 'comment': break
+            self.session.keyboard('Pass:Tab')
+        self.assertEqual(self.page.evaluate('document.activeElement.id'), 'comment')
+        waiting = list('ello')
+        for letter in 'hello':
+            self.session.keyboard('Pass:' + letter)
+            if waiting: waiting.pop()
+        self.assertEqual(self.page.locator('#comment').input_value(), 'hello')
 
     def test_a_late_page_answer_is_said_by_the_next_check(self):
         self.load(BUSY_PLAYER)

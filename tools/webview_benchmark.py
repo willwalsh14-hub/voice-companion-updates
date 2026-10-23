@@ -191,11 +191,29 @@ def main():
     print(f'Switch to app mode: median {statistics.median(to_app)*1000:.0f} ms; '
           f'back to browse mode: median {statistics.median(to_browse)*1000:.0f} ms')
     session.keyboard('ToggleAppMode')
-    for key in ('k', 'ArrowDown', 'Tab'):
+    def per_key(label, key, count=8):
         times = []
-        for _ in range(8):
+        for _ in range(count):
             release(); times.append(timed(lambda: session.keyboard('Pass:' + key))[0])
-        print(f'App mode key {key}: median {statistics.median(times)*1000:.0f} ms, worst {max(times)*1000:.0f} ms')
+        print(f'App mode {label}: median {statistics.median(times)*1000:.0f} ms, worst {max(times)*1000:.0f} ms')
+    for key in ('k', 'j', 'l', 'ArrowDown', 'Tab'):
+        per_key('key ' + key, key)
+    # Arrows on the seek slider, and typing in the search box.
+    page.evaluate("document.querySelector('.progress').tabIndex=0;document.querySelector('.progress').focus()")
+    per_key('Right Arrow on the seek slider', 'ArrowRight')
+    page.evaluate("document.querySelector('#masthead input').focus()")
+    per_key('typing a letter in the search box', 'a')
+    # Twenty keys arriving together (a held arrow, fast typing).
+    waiting = []
+    session.more_keys = lambda: bool(waiting)
+    def burst():
+        waiting[:] = ['x'] * 19
+        for _ in range(20):
+            session.keyboard('Pass:b')
+            if waiting: waiting.pop()
+    spent, _ = timed(burst)
+    print(f'App mode 20 keys arriving together: {spent*1000:.0f} ms in all ({spent*50:.1f} ms a key)')
+    session.more_keys = None
     counter.snapshots = 0; checks = []
     for _ in range(10):
         release(); checks.append(timed(session.refresh_changed)[0]); page.wait_for_timeout(300)

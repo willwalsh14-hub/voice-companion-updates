@@ -147,17 +147,35 @@ and after this branch.
   text). Page keys do not move keyboard focus, so this now happens only after
   other keys or when a page key opened another page or tab.
 
+- **Keys typed or held faster than they were handled each waited for page
+  reads.** Keys that arrive together now go to the page one after another,
+  and the page is read once, after the last. A key right after another uses
+  the state read after that key, so it needs one page read, not two.
+- **Every page read sent the whole 40 KB focus script** (in embedded Edge it
+  also went through the host twice). The script is placed in the page once
+  and then called by name.
+
 ### Results (busy page, milliseconds, median unless noted)
 
-- Switch to app mode: 51 before, 0 after.
-- Switch back to browse mode: 444 before, 3 after.
-- K key in app mode: 206 before, 15 after.
-- Down Arrow in app mode: 208 before, 13 after.
-- Tab in app mode (focus moves): 24 before, 24 after.
-- Main loop check in app mode: 448 before (worst 1,101), 13 after (worst 31);
+Before is this branch before the app mode work; after is the final branch.
+
+- Switch to app mode: 57 before, 0 after.
+- Switch back to browse mode: 424 before, 3 after.
+- K key (play or pause): 212 before, 6 after.
+- J key: 208 before, 8 after.
+- L key: 221 before, 7 after.
+- Down Arrow: 220 before, 9 after.
+- Tab (focus moves): 19 before, 11 after.
+- Right Arrow on the seek slider: 208 before, 7 after.
+- Typing a letter in the search box: 20 before, 11 after.
+- Twenty keys arriving together: 433 in all before (21.7 a key), 118 after
+  (5.9 a key).
+- Main loop check in app mode: 499 before (worst 1,056), 13 after (worst 28);
   page reads in 10 checks: 12 before, 0 after.
 
 Tests that keep these bounds: `test_web_modes_live.AppModeSpeedTests` (no page
-read or wait on a switch, at most two page reads and one key press per key,
-late answers said by the next check) and `test_web_modes.AppModeWindowTests`
-(no window refocus after page keys).
+read or wait on a switch, one key press and at most two page reads per key,
+one read for a key right after another, a short call instead of the script,
+no reads between keys that arrive together, late answers said by the next
+check) and `test_web_modes.AppModeWindowTests`
+(no window refocus after page keys; queued page keys are sent together).

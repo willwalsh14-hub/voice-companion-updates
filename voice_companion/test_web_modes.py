@@ -141,7 +141,7 @@ class AppModeWindowTests(unittest.TestCase):
         import queue
         self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.backend = FakeBackend();self.backend.page = object()
-        self.backend.press_page_key = lambda key, focus=None: ({'focus': None}, {'focus': None})
+        self.backend.press_page_key = lambda key, focus=None, **kw: ({'focus': None}, {'focus': None})
         self.session = WebSession(self.temp.name, self.backend);self.session._refresh()
         self.window = Mock();self.window.commands = queue.Queue()
         for name in ('APP_WINDOW', 'UI_CONTEXT_CACHE', 'speak', 'KEYBOARD_SPEECH'):
@@ -162,6 +162,15 @@ class AppModeWindowTests(unittest.TestCase):
         self.window.set_context.assert_not_called()
         self.window.wait_for_context.assert_not_called()
 
+    def test_queued_page_keys_are_sent_together_and_read_once(self):
+        self.run_keys('Web:ToggleAppMode')
+        calls = []
+        def press(key, focus=None, before=None, read_after=True):
+            calls.append((key, read_after)); return {'focus': None}, ({'focus': None} if read_after else None)
+        self.backend.press_page_key = press
+        self.run_keys('Web:Pass:ArrowRight', 'Web:Pass:ArrowRight', 'Web:Pass:ArrowRight', 'Web:Pass:k')
+        self.assertEqual(calls, [('ArrowRight', False), ('ArrowRight', False), ('ArrowRight', False), ('k', True)])
+
     def test_other_keys_and_a_new_page_still_refocus(self):
         self.run_keys('Web:ToggleAppMode')
         self.run_keys('Web:ToggleAppMode')
@@ -169,7 +178,7 @@ class AppModeWindowTests(unittest.TestCase):
         self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
         self.run_keys('Web:ToggleAppMode')
         # A key that opened another page or tab: the window takes focus back.
-        self.backend.press_page_key = lambda key, focus=None: (setattr(self.backend, 'page', object()), ({'focus': None}, {'focus': None}))[1]
+        self.backend.press_page_key = lambda key, focus=None, **kw: (setattr(self.backend, 'page', object()), ({'focus': None}, {'focus': None}))[1]
         self.run_keys('Web:Pass:Enter')
         self.assertTrue(self.window.set_context.call_args.args[0]['focus'])
         self.window.wait_for_context.assert_called_once()

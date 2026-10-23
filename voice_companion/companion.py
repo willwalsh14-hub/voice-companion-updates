@@ -418,6 +418,14 @@ def process_keyboard_batch(mode):
     # do not move the window's keyboard focus. Unless another page opened, the
     # window is not refocused or given the page again after them.
     page_keys_only=True;page_before=getattr(getattr(web_session,'backend',None),'page',None)
+    if web_session is not None:
+        # Held or fast keys in app mode: the page gets each one at once, and
+        # Companion reads the page only after the last of them.
+        def more_page_keys():
+            try:waiting=APP_WINDOW.commands.queue[0]
+            except (IndexError,AttributeError):return False
+            return isinstance(waiting,tuple) and waiting[0]=='keyboard' and str(waiting[1]).startswith('Web:Pass:')
+        web_session.more_keys=more_page_keys
     try:
         # Bound each batch so microphone controls continue to be serviced.
         for _ in range(100):
