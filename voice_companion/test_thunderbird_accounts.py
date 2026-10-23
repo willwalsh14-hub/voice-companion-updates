@@ -434,6 +434,37 @@ class AddCommandRoutingTests(CompanionTestCase):
             self.assertEqual(len(started), 4)
             self.assertIn('Add my email to Thunderbird', companion.document_text(document))
 
+    def test_sign_in_words_mean_nothing_special_when_nothing_waits(self):
+        with patch.object(companion, 'THUNDERBIRD_WATCH', None), patch.object(companion, 'THUNDERBIRD_SIGN_IN', None):
+            self.assertIsNone(companion.thunderbird_setup_command('open sign-in page', 'awake'))
+            self.assertIsNone(companion.thunderbird_setup_command('check email', 'awake'))
+            self.assertEqual(companion.thunderbird_setup_command('continue in thunderbird', 'awake'), 'awake')
+            self.assertEqual(self.said[-1], thunderbird_accounts.NOT_ADDING)
+
+    def test_sign_in_page_never_interrupts_writing(self):
+        watch = thunderbird_accounts.Watch(lambda *a, **k: None, 'will@gmail.com', [])
+        watch.events.put(('sign_in', {'url': 'https://accounts.google.com/o/oauth2/auth', 'where': 'browser'}))
+        opened = []
+        self.open_document()
+        with patch.object(companion, 'THUNDERBIRD_WATCH', {'watch': watch, 'address': 'will@gmail.com'}), \
+             patch.object(companion, 'THUNDERBIRD_SIGN_IN', None), patch.object(companion, 'ACCOUNT_ENTRY', None), \
+             patch.object(companion, 'open_thunderbird_sign_in', lambda mode, browser=None: opened.append(mode) or 'web'):
+            self.assertEqual(companion.poll_thunderbird_watch('document'), 'document')
+            self.assertEqual(self.said[-1], thunderbird_accounts.SIGN_IN_READY)
+            self.assertEqual(opened, [])
+            self.assertEqual(companion.handle('open sign-in page', 'document'), 'web')
+            self.assertEqual(opened, ['document'])
+
+    def test_show_thunderbird_any_time(self):
+        class Relay:
+            connected = threading.Event()
+            def request(self, method, params=None, timeout=60):
+                return {'shown': method == 'showSetup'}
+        relay = Relay(); relay.connected.set()
+        with patch.object(thunderbird_bridge, '_RELAY', relay), patch.object(companion, 'THUNDERBIRD_WATCH', None):
+            companion.handle('Show Thunderbird.', 'awake')
+        self.assertEqual(self.said[-1], 'Thunderbird is in front now. Press Alt plus Tab to come back to Voice Companion.')
+
     def test_menu_item(self):
         from screen_menus import MENUS
         accounts = dict(MENUS['mailbox'][1])['Accounts']

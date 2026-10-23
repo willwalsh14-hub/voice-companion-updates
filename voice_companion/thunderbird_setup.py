@@ -447,6 +447,9 @@ def refresh_addon(profile, package):
 
 # ---- Starting Thunderbird when a Thunderbird account is used ----------------
 
+_START_LOCK = __import__('threading').Lock()
+
+
 class NotReady(Exception):
     """Thunderbird needs a step the user must agree to; Setup.start() explains it and asks."""
 
@@ -467,18 +470,22 @@ def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
     profile, _ = choose_profile(system)
     if profile is None:
         raise NotReady('profile')
-    state = addon_state(profile)
-    running = system.running()
-    if state in ('missing', 'off', 'blocked') or (state == 'waiting' and running):
-        raise NotReady('add-on')
-    launched = False
-    if not running:
-        refresh_addon(profile, package)
-        try:
-            system.launch_background(program)
-        except OSError as exc:
-            raise NotReady('start') from exc
-        launched = True
+    with _START_LOCK:
+        # Startup and a mail command can both start Thunderbird; only one may launch it.
+        if relay.connected.is_set():
+            return False
+        state = addon_state(profile)
+        running = system.running()
+        if state in ('missing', 'off', 'blocked') or (state == 'waiting' and running):
+            raise NotReady('add-on')
+        launched = False
+        if not running:
+            refresh_addon(profile, package)
+            try:
+                system.launch_background(program)
+            except OSError as exc:
+                raise NotReady('start') from exc
+            launched = True
     if relay.connected.wait(NOTICE_SECONDS):
         return launched
     progress(STARTING_QUIETLY if launched else WAITING_QUIETLY)

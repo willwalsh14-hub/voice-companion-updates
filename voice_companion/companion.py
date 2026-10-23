@@ -1976,6 +1976,8 @@ def thunderbird_setup_command(command, mode):
     waiting = THUNDERBIRD_WATCH
     sign_in = re.fullmatch(r'open (?:the )?(?:thunderbird )?sign[ -]?in(?: page)?(?: again)?'
                            r'(?: in (chrome|embedded edge|edge webview2|webview2|webview 2))?', command)
+    if sign_in and not (THUNDERBIRD_SIGN_IN or waiting):
+        return None    # nothing from Thunderbird: the words mean something else here
     if not (command in words.CONTINUE_COMMANDS + words.READ_COMMANDS + words.SHOW_COMMANDS + words.PASSWORD_COMMANDS or sign_in):
         return None
     if sign_in:
@@ -1983,15 +1985,21 @@ def thunderbird_setup_command(command, mode):
             speak(words.NO_SIGN_IN)
             return mode
         return open_thunderbird_sign_in(mode, sign_in[1])
+    from thunderbird_bridge import current
+    if command in words.SHOW_COMMANDS:
+        try:
+            from thunderbird_mailbox import relay
+            shown = (relay().request('showSetup', {}, timeout=15) or {}).get('shown')
+        except Exception as exc:
+            speak(str(exc) if isinstance(exc, MailboxError) else 'Thunderbird did not answer. Try again in a moment.')
+            return mode
+        speak('Thunderbird is in front now. Press Alt plus Tab to come back to Voice Companion.' if shown else
+              'Thunderbird could not come to the front. Press Alt plus Tab to find it.')
+        return mode
     if waiting is None:
         speak(words.NOT_ADDING)
         return mode
-    from thunderbird_bridge import current
     try:
-        if command in words.SHOW_COMMANDS:
-            current().request('showSetup', {}, timeout=15)
-            speak('Thunderbird is in front now. Press Alt plus Tab to come back to Voice Companion.')
-            return mode
         if command in words.PASSWORD_COMMANDS:
             return ask_thunderbird_entry('password', words.PASSWORD_PROMPT, mode)
         before = current().request('setupPage', {}, timeout=15) or {}
@@ -2110,6 +2118,10 @@ def poll_thunderbird_watch(mode):
             speak_status(words.sign_in_in_thunderbird(address))
             return mode
         THUNDERBIRD_SIGN_IN = found['url']
+        if ACCOUNT_ENTRY is not None or writing_dictation(mode):
+            # Never pull someone out of writing or a private box: say it, and let them open it.
+            speak_status(words.SIGN_IN_READY)
+            return mode
         return open_thunderbird_sign_in(mode)
     stop_thunderbird_watch()
     THUNDERBIRD_SIGN_IN = None

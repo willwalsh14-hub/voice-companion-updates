@@ -59,6 +59,7 @@ PASSWORD_COMMANDS = ('enter thunderbird password', 'type thunderbird password', 
                      'enter the thunderbird password', 'enter password for thunderbird')
 NOT_ADDING = 'Voice Companion is not adding a Thunderbird account right now. Say add Thunderbird account to start.'
 NO_SIGN_IN = 'No sign-in page from Thunderbird is waiting.'
+SIGN_IN_READY = 'The sign-in page for your new Thunderbird account is ready. Say open sign-in page when you want it.'
 ADDRESS_PROMPT = 'Type or say the email address to add to Thunderbird, then press Enter. Say cancel to stop.'
 ADDRESS_LABEL = 'Email address to add to Thunderbird; type, then press Enter. Escape cancels:'
 ADDRESS_AGAIN = 'That is not a complete email address. Type or say it again, such as sam at gmail dot com. Say cancel to stop.'
