@@ -753,7 +753,9 @@ Control+Alt+Up Arrow and Control+Alt+Down Arrow move through rows. Control+Alt+L
 Control+Alt+Home and Control+Alt+End reach the first and last columns. Control+Alt+Page Up and Control+Alt+Page Down reach the first and last rows.
 Voice choices include "Next row", "Previous column", "First row", "Last row", "First column", and "Last column".
 Companion reads the cell text. It also reads the heading and the row and column numbers when available.
-Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same.
+Alt+Left Arrow goes back to the previous page. Alt+Right Arrow goes forward. "Go back" and "Go forward" do the same. You can also say "Back" or "Forward".
+Companion says "Going back" at once. Then it says the page title and puts you where you were on that page, such as on the link you followed.
+If there is no page to go back to, Companion says "There is no previous page." Ads that change by themselves do not stop you from going back.
 To reload the page, say "Refresh page", or press F5. For web help, say "Help with web", or press F1.
 Escape from ordinary page reading opens the web browser menu. If a text box, page dialog, or item list is open, Escape closes that first.
 Saying "Leave website" also opens the web browser menu. "Main menu" leaves the browser activity.
@@ -774,17 +776,26 @@ Readable frame content appears where the frame occurs on the page. Companion mar
 Some websites have their own keys. For example, on YouTube, K plays or pauses a video. J and L skip back and ahead. M turns the sound off, and F fills the screen.
 In browse mode, Companion uses letter keys to move through the page. To send your keys to the website instead, use app mode.
 To use app mode, say "App mode", or press Insert+Space. To go back, say "Browse mode", or press Insert+Space again. You can also say "Focus mode" for app mode.
-NVDA and JAWS keep Insert+Space for themselves. If one of them is running, press Control+Alt+Space instead. It works the same way.
+JAWS, NVDA, and Narrator keep Insert+Space for themselves. If one of them is running, press Control+Shift+Space instead. It works the same way. Control+Alt+Space also still works.
+When one of these screen readers is running, the first web page you open says which key to use. You hear this once each time Companion starts.
+Companion switches modes at once. In app mode, each key goes to the website right away, even when you type fast or hold an arrow key.
 In app mode, every key goes to the website, even Escape and the arrows. Companion tells you where the website moves you and what changes. It also reads short messages from the website, such as Paused.
 F5, F6, F7, Control+L, Alt+Left Arrow, and Alt+Right Arrow keep their usual jobs in app mode.
-To leave the page from app mode, press Insert+Space first. Then press Escape for the web browser menu.
+To leave the page from app mode, press Insert+Space or Control+Shift+Space first. Then press Escape for the web browser menu.
 When you go back to browse mode, your reading place moves to where you were in app mode.
 Each website keeps its own mode while you use the web browser. When you go to a different website, Companion says which mode it uses. Leaving the page always goes back to browse mode.
 A slider sets a level, such as the place in a video or the sound volume. Companion reads its name and value. For example, it says "Seek slider, 1:23 of 4:05".
 To find a slider, say "Next slider", or press Tab until you reach it. When Tab reaches a slider, you can use it at once. If you reached it another way, press Enter to start using it.
 Then use Left Arrow and Right Arrow, or Up Arrow and Down Arrow, to change it. Page Up and Page Down make bigger changes. Home and End go to the start and the end. Companion says the new value each time.
 Press Escape to stop using the slider and go back to browse mode. Tab also moves on to the next control.
-Choice boxes and text boxes work the same way. When Tab reaches one, you can use it at once. Press Enter on one you reached another way.
+Text boxes work like this:
+- Up Arrow, Down Arrow, or Tab onto a text box makes it ready. Just start typing.
+- This is true for every kind of text box. That includes search, email, password, number, and multi-line boxes.
+- It is also true for a search box that shows suggestions, such as the search box on YouTube.
+- Arrow keys leave the box at its first or last line. Tab moves on to the next control.
+Choice boxes and sliders work like this:
+- When you arrow past a choice box or a slider, Companion only reads it. Its value never changes by accident.
+- Press Enter to start using it. Tab onto it also starts using it.
 
 12. FAVORITES AND WEB HISTORY
 
@@ -806,7 +817,7 @@ For example, type n, then p, to find a name that starts with np. Pause before st
 You can also say enough of the name to identify it. If two names match, say more or use the arrows.
 To open a favorite by name, say "Open favorite", followed by the saved name. For example, say "Open favorite News". Say "List favorites" to open the favorite list.
 Home and End reach the first and last items. An empty list says it is empty. Escape returns to the web browser menu.
-If your chosen browser cannot start, Companion tries the included Firefox browser. Your browser choice stays saved. Your favorites stay saved too.
+If your chosen browser cannot start, Companion tries the other guided browser. Your browser choice stays saved. Your favorites stay saved too.
 If a page cannot open, you stay in the web browser menu. Check internet access, then try the favorite again.
 
 12.3 Rename or delete a favorite
@@ -1050,9 +1061,12 @@ Keep browser window open controls whether a page stays open when you leave page 
 Automatic page reading controls whether new pages start reading aloud. It is on by default.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
 HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
-The Guided browser setting lets you choose webview2, Edge, Chrome, Brave, or Firefox. Companion uses a separate browser profile for its pages.
-Embedded Edge, shown as webview2, is the usual choice. You can also say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
-Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, Companion uses its own Firefox and tells you. Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Firefox", or use your regular browser with the extension.
+The Guided browser setting lets you choose embedded Edge or Chrome. Companion uses a separate browser profile for its pages.
+- Embedded Edge is the usual choice. Say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
+- Chrome uses Google Chrome on your PC. Say "Use Chrome". If Chrome is not installed, say "Set up Chrome".
+- Edge, Brave, and Firefox are no longer guided browsers. If you chose one of them before, Companion now uses embedded Edge and tells you once.
+Embedded Edge needs the Microsoft WebView2 component on the PC. If it cannot start, Companion uses Chrome and tells you. If Chrome is not installed either, Companion tells you to say "Set up Chrome".
+Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Chrome", or use your regular browser with the extension.
 That means a site may ask you to sign in even if you already signed in in your usual browser.
 Choose List website favorites to open the saved website list. New favorite actions are also in the web browser menu.
 
@@ -1182,14 +1196,15 @@ The app skips history entries with private sign-in data. It also removes sign-in
 
 23.1 Set up Chrome and the extension
 You need this only to use your own Chrome, with the sites you are already signed in to. Embedded Edge works without it.
-1. Say "Set up Chrome". Or open Options, choose Web browser options, and choose Set up Chrome and the Voice Companion extension. Companion asks before each change. Say yes or no, or press Y or N.
+1. Say "Set up Chrome". Or choose Set up Chrome in the Web browser menu, or in the web page's Alt menu. Or open Options, choose Web browser options, and choose Set up Chrome and the Voice Companion extension. Companion asks before each change. Say yes or no, or press Y or N.
 2. If Chrome is missing, Companion offers to install it. This takes a few minutes. Companion tells you how it is going. If Windows asks for permission, press Alt+Y.
 3. Companion then adds the extension and opens Chrome. Chrome asks you to turn it on. Press Tab until you hear "Enable extension", then press Enter. Companion reads the Chrome buttons to you while you do this.
 4. If Chrome does not ask, press Alt+F to open the Chrome menu. Press Down Arrow until you hear "Voice Companion Browser Connection", then press Enter. Then choose Enable extension. If you are not in Chrome, press Alt+Tab.
 5. When the extension links, you hear "Chrome is linked to Voice Companion." If it does not link in two minutes, Companion offers the Chrome Web Store page. There, press Tab until you hear "Add to Chrome", then press Enter. Chrome asks again. Press Tab until you hear "Add extension", then press Enter.
 6. Say "Status" to hear the current step again. Say "Cancel" to stop setup.
-7. The installer has a box named Set up Chrome and the Voice Companion extension when Voice Companion opens. It is off unless you tick it. When it is on, setup starts the next time Companion opens.
-8. If setup does not finish, ask your helper. A helper can open Voice Companion Browser Connection in the Chrome Web Store and choose Add to Chrome. For Edge or a test copy, a helper can follow Browser Connection Setup in the Voice Companion Start menu folder.
+7. When you open Web browser and Chrome is not ready, Companion asks: "Chrome is not set up yet. Set it up now?" This happens when Chrome is your guided browser but is not installed. It also happens when you open your regular browser and your Chrome is not linked. Press Y for yes or N for no, or say yes or no. Enter and Escape mean no. If you say no, Companion uses embedded Edge and does not ask again until you choose Chrome again.
+8. The installer has a box named Set up Chrome and the Voice Companion extension when Voice Companion opens. It is off unless you tick it. When it is on, setup starts the next time Companion opens.
+9. If setup does not finish, ask your helper. A helper can open Voice Companion Browser Connection in the Chrome Web Store and choose Add to Chrome. For Edge or a test copy, a helper can follow Browser Connection Setup in the Voice Companion Start menu folder.
 
 23.2 Read and use your browser
 1. Open Web browser from Companion's main menu. Choose Resume where you left off to read the active browser tab. Search, favorites, web history, Go back and Go forward remain in this menu.
@@ -1199,7 +1214,7 @@ You need this only to use your own Chrome, with the sites you are already signed
 
 23.3 Understand this testing connection
 1. This uses your ordinary Chrome or Edge tab. The browser shows its normal notice while connected. Sites may still block access. PayPal sign-in has not been tested.
-2. Companion links normal website tabs in this browser. New tabs and sites link on their own. When you switch tabs, Companion uses the active tab. Browser settings pages stay outside the link. It does not import your cookies. Firefox uses the existing guided browser.
+2. Companion links normal website tabs in this browser. New tabs and sites link on their own. When you switch tabs, Companion uses the active tab. Browser settings pages stay outside the link. It does not import your cookies.
 3. If the link stops, keep Companion open. The extension tries again on its own. Companion does not open a separate guided browser in its place. Closing the connection leaves your regular browser tabs open.
 
 Booking calendars
