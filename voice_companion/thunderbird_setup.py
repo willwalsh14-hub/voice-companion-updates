@@ -486,12 +486,13 @@ def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
             except OSError as exc:
                 raise NotReady('start') from exc
             launched = True
-    if relay.connected.wait(NOTICE_SECONDS):
+    import user_stop   # Escape or closing Companion stops this wait (user_stop.Stopped)
+    if user_stop.wait(relay.connected, NOTICE_SECONDS):
         return launched
     progress(STARTING_QUIETLY if launched else WAITING_QUIETLY)
     waited = NOTICE_SECONDS
     while waited < limit:
-        if relay.connected.wait(PROGRESS_SECONDS):
+        if user_stop.wait(relay.connected, PROGRESS_SECONDS):
             return launched
         waited += PROGRESS_SECONDS
         if waited < limit:

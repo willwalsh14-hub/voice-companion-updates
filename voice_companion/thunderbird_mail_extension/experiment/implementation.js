@@ -271,6 +271,9 @@ function findFolder(accountId, path, inbox) {
 // Thunderbird reports success as 0 (NS_OK); failures have the top bit set.
 const succeeded = status => (Number(status) >>> 0) < 0x80000000;
 
+// Account types whose mail is kept only on this computer.
+const LOCAL_TYPES = ['none', 'rss'];
+
 function getNewMail(accountId, path, inbox) {
   if (Services.io.offline) return Promise.resolve({checked: false, offline: true});
   const found = findFolder(accountId, path, inbox);
@@ -283,13 +286,15 @@ function getNewMail(accountId, path, inbox) {
       OnStopRunningUrl(url, status) { resolve({checked: succeeded(status), offline: false}); },
     };
     try {
-      if (server.type === 'imap') {
-        // What Thunderbird does when a folder is opened: fetch the server's new messages for it.
-        folder.updateFolderWithListener(null, listener);
-      } else if (server.type === 'pop3' && inbox) {
+      if (LOCAL_TYPES.includes(server.type) || (server.type === 'pop3' && !inbox)) {
+        resolve({checked: true, offline: false});   // kept on this computer: nothing on a server to fetch
+      } else if (server.type === 'pop3') {
         server.getNewMessages(folder, null, listener);
       } else {
-        resolve({checked: true, offline: false});   // local folders: nothing on a server to fetch
+        // IMAP, and Microsoft Exchange accounts (ews and newer types): what Thunderbird does
+        // when a folder is opened, fetch the server's messages for it. A new account still
+        // downloading its mail takes longer than Voice Companion waits, and the list says so.
+        folder.updateFolderWithListener(null, listener);
       }
     } catch (error) {
       resolve({checked: false, offline: false});

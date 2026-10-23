@@ -14,8 +14,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const RECENT_DAYS = [7, 31, 366];
 
 class MailBridge {
-  constructor(api) {
+  constructor(api, clock = () => Date.now()) {
     this.api = api;
+    this.clock = clock;
+    // The newest-first list of the folder last paged through, so each later page
+    // (and End) does not read the whole folder again: {folderId, at, headers}.
+    this.listCache = null;
   }
 
   async handle(message) {
@@ -23,6 +27,8 @@ class MailBridge {
     if (!Number.isInteger(id) || typeof message.method !== 'string' || !MailBridge.METHODS.includes(message.method)) {
       return {id: Number.isInteger(id) ? id : -1, error: {code: 'invalid', message: 'Unsupported mail request.'}};
     }
+    // Anything that changes mail or folders makes the kept list out of date.
+    if (!MailBridge.READ_ONLY.includes(message.method)) this.listCache = null;
     try {
       const result = await this[message.method](message.params || {});
       return {id, result: result === undefined ? null : result};
@@ -121,27 +127,41 @@ class MailBridge {
     return found.slice(0, MAX_MESSAGES);
   }
 
-  async list({folderId, offset = 0, limit = 10}) {
+  // The whole folder, newest first, kept for a short time for paging.
+  async allHeaders(folderId) {
+    const kept = this.listCache;
+    if (kept && kept.folderId === folderId && this.clock() - kept.at < MailBridge.LIST_KEEP_MS) return kept.headers;
+    const headers = await this.headers(folderId, null);
+    this.listCache = {folderId, at: this.clock(), headers};
+    return headers;
+  }
+
+  // One page of a folder, newest first. With last: true, the page holding the oldest
+  // message, found in one step (End), never by reading every page in turn.
+  async list({folderId, offset = 0, limit = 10, last = false}) {
     if (!PAGE_SIZES.includes(limit) || !Number.isInteger(offset) || offset < 0) throw MailBridge.fail('page', 'Invalid message page.');
     const folder = await this.folder(folderId);
-    // Only the first page checks the server, so later pages of the same list do not shift.
-    const mailCheck = offset === 0 ? await this.checkMail(folder) : undefined;
-    // One more than the page shows tells whether more messages follow.
-    const needed = offset + limit + 1;
-    let headers = null;
-    const now = Date.now();
-    for (const days of RECENT_DAYS) {
-      const recent = await this.headers(folderId, new Date(now - days * DAY_MS));
-      // Everything newer than the cut-off is here, so the newest messages are complete.
-      if (recent.length >= needed) { headers = recent; break; }
+    let headers = null, mailCheck;
+    if (offset === 0 && !last) {
+      // A fresh list: check the server first, and read only recent mail when that fills the page.
+      this.listCache = null;
+      mailCheck = await this.checkMail(folder);
+      const needed = limit + 1;   // one more than the page tells whether more messages follow
+      const now = this.clock();
+      for (const days of RECENT_DAYS) {
+        const recent = await this.headers(folderId, new Date(now - days * DAY_MS));
+        // Everything newer than the cut-off is here, so the newest messages are complete.
+        if (recent.length >= needed) { headers = recent; break; }
+      }
     }
-    if (!headers) headers = await this.headers(folderId, null);
-    // Newest first, like Gmail and Outlook in Voice Companion.
+    if (!headers) headers = await this.allHeaders(folderId);
+    if (last) offset = headers.length ? Math.floor((headers.length - 1) / limit) * limit : 0;
     const rows = headers.slice(offset, offset + limit).map(({header}) => ({
       id: header.id, from: header.author || '', subject: header.subject || '',
       date: header.date ? new Date(header.date).toISOString() : '', size: header.size, unread: header.read === false
     }));
-    const answer = {rows, next: headers.length > offset + limit ? offset + limit : null};
+    const answer = {rows, offset, next: headers.length > offset + limit ? offset + limit : null};
+    if (headers === (this.listCache && this.listCache.headers)) answer.total = headers.length;
     if (mailCheck) answer.mailCheck = mailCheck;
     return answer;
   }
@@ -355,6 +375,8 @@ class MailBridge {
 }
 
 MailBridge.MAIL_CHECK_MS = 15000;   // longest wait for Thunderbird's check for new mail
+MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for its later pages
+MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
   'captureSignIn', 'takeSignIn', 'minimize'];

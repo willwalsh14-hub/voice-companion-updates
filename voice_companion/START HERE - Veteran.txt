@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.161-test.
+Guide version: 0.2.162-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -682,7 +682,7 @@ Press Enter to open a safe link. A button with no usable link is read but cannot
 Voice choices include "Next link", "Previous link", "Next button", and "Previous button". To hear every link, say "List links", or press F7. To hear every button, say "List buttons", or press F8.
 Say "Activate current link" or "Activate current button" to use the selected item. To choose by number, say "Open link" or "Open button", followed by its number. For example, say "Open link 1" or "Open button 1".
 For another page of mail, say "Next messages" or "Previous messages", or press Page Down or Page Up in the message list. To refresh the folder, say "List messages", or press F5.
-To reach the first or last message in the folder, say "First message" or "Last message", or press Home or End. Messages from another page may need to load first. For email help, say "Help with email", or press F1.
+To reach the first or last message in the folder, say "First message" or "Last message", or press Home or End. Messages from another page may need to load first. If Thunderbird takes a long time, press Escape to stop waiting. For email help, say "Help with email", or press F1.
 The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
 
 11. BROWSE THE WEB

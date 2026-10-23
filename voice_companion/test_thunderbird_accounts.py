@@ -475,6 +475,11 @@ class AddCommandRoutingTests(CompanionTestCase):
 
 class StarterCase(CompanionTestCase):
     def setUp(self):
+        # The startup cadence (2 seconds, then every 15) is checked here; user_stop.wait's
+        # quarter-second slices for Escape are covered by test_user_stop.
+        import user_stop
+        stop_patch = patch.object(user_stop, 'wait', lambda event, timeout: event.wait(timeout))
+        stop_patch.start(); self.addCleanup(stop_patch.stop)
         super().setUp()
         self.home = self.folder / 'home'
         self.package = self.folder / 'mail.xpi'

@@ -166,6 +166,7 @@ function load(api) {
   assert.deepEqual(await call('minimize'), {minimized: 0});
 
   await freshnessChecks();
+  await pagingChecks();
   await mailCheckChecks();
   await experimentChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
@@ -178,6 +179,55 @@ const DAY = 24 * 60 * 60 * 1000;
 function fakeMessage(id, date, extra = {}) {
   return {id, folderId: 'account1://INBOX', date, author: `Sender ${id} <s${id}@example.com>`, subject: `Message ${id}`, read: true,
     size: 100, recipients: ['me@gmail.com'], ccList: [], headerMessageId: `m${id}@example.com`, html: '', plain: '', replyTo: '', ...extra};
+}
+
+// Will, 0.2.161: in a large work mailbox, End read every page in turn, and each page read
+// the whole folder again from Thunderbird, so it never finished and Companion froze.
+async function pagingChecks() {
+  const {api, state} = createFakeMessenger();
+  let now = Date.UTC(2026, 9, 23, 12);
+  const bridge = load(api);
+  bridge.clock = () => now;
+  const call = async (method, params) => {
+    const answer = await bridge.handle({id: 9, method, params});
+    if (answer.error) throw new Error(answer.error.message);
+    return JSON.parse(JSON.stringify(answer.result));
+  };
+  const inbox = 'account1://INBOX';
+  state.messages = state.messages.filter(m => m.folderId !== inbox);
+  // 5,000 messages over ten years, stored oldest first like Thunderbird's database.
+  for (let i = 1; i <= 5000; i++) state.messages.push(fakeMessage(i, new Date(now - (5001 - i) * 18 * 60 * 60 * 1000)));
+  const first = await call('list', {folderId: inbox, offset: 0, limit: 10});
+  assert.equal(first.rows[0].id, 5000, 'newest first');
+  // Later pages read the folder once, then reuse it.
+  state.queries = 0;
+  for (let offset = 10; offset <= 200; offset += 10) {
+    const page = await call('list', {folderId: inbox, offset, limit: 10});
+    assert.equal(page.rows[0].id, 5000 - offset);
+  }
+  const readsForTwentyPages = state.queries;
+  assert.ok(readsForTwentyPages <= 5, 'pages after the first reuse one read of the folder, not one each: ' + readsForTwentyPages);
+  // End: the oldest page in one request.
+  state.queries = 0;
+  const end = await call('list', {folderId: inbox, offset: 0, limit: 10, last: true});
+  assert.equal(end.offset, 4990);
+  assert.equal(end.total, 5000);
+  assert.deepEqual(end.rows.map(r => r.id), [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+  assert.equal(end.next, null);
+  assert.equal(state.queries, 0, 'End reuses the list that is already read');
+  // A move changes the folder, so the kept list is read again.
+  await call('move', {messageIds: [1], folderId: 'account1://Receipts'});
+  const afterMove = await call('list', {folderId: inbox, offset: 0, limit: 10, last: true});
+  assert.equal(afterMove.total, 4999);
+  assert.ok(!afterMove.rows.some(r => r.id === 1));
+  // A kept list is used only for a short time.
+  state.queries = 0; now += 10 * 60 * 1000;
+  await call('list', {folderId: inbox, offset: 10, limit: 10});
+  assert.ok(state.queries > 0, 'an old kept list is read again');
+  // An empty folder: End is the empty first page.
+  state.messages = state.messages.filter(m => m.folderId !== inbox); now += 10 * 60 * 1000;
+  const empty = await call('list', {folderId: inbox, offset: 0, limit: 10, last: true});
+  assert.deepEqual(empty.rows, []); assert.equal(empty.offset, 0); assert.equal(empty.next, null);
 }
 
 async function freshnessChecks() {
@@ -393,7 +443,12 @@ function fakeMailServices() {
   pop.getNewMessages = (target, win, listener) => { calls.push({how: 'pop', uri: target.URI, win}); finish(listener); };
   const localInbox = folder(local, 'mailbox://nobody@Local%20Folders/Inbox', 0x1000);
   local.rootFolder = {URI: 'mailbox://nobody@Local%20Folders', descendants: [localInbox], getFolderWithFlags: () => localInbox};
-  const servers = {account1: imap, account2: pop, account3: local};
+  // Microsoft Exchange (Office 365) added in Thunderbird as an Exchange account, not IMAP.
+  const ews = {type: 'ews'};
+  const ewsRoot = 'ews://will%40work.example@outlook.office365.com';
+  const ewsInbox = folder(ews, ewsRoot + '/Inbox', 0x1000);
+  ews.rootFolder = {URI: ewsRoot, descendants: [ewsInbox], getFolderWithFlags: () => ewsInbox};
+  const servers = {account1: imap, account2: pop, account3: local, account4: ews};
   mail.MailServices = {accounts: {getAccount: id => (servers[id] ? {incomingServer: servers[id]} : null)}};
   return mail;
 }
@@ -427,10 +482,15 @@ async function mailCheckChecks() {
   const count = mail.calls.length;
   assert.deepEqual(plain(await api.getNewMail('account3', '/Inbox', true)), {checked: true, offline: false});
   assert.equal(mail.calls.length, count);
+  // Exchange (Will's work account, 0.2.161): its inbox is fetched from the server too, never
+  // skipped as if it were kept on this computer.
+  assert.deepEqual(plain(await api.getNewMail('account4', '/Inbox', true)), {checked: true, offline: false});
+  assert.deepEqual(mail.calls.at(-1), {how: 'update', uri: 'ews://will%40work.example@outlook.office365.com/Inbox', win: null});
   // Thunderbird set to work offline: nothing is asked of the server, and it says so.
   mail.io.offline = true;
+  const offlineCount = mail.calls.length;
   assert.deepEqual(plain(await api.getNewMail('account1', '/INBOX', true)), {checked: false, offline: true});
-  assert.equal(mail.calls.length, count);
+  assert.equal(mail.calls.length, offlineCount);
 }
 
 async function experimentChecks() {
