@@ -55,6 +55,63 @@ class FakeSystem:
     def open_site(self, url):
         self.opened.append(url)
 
+    # Installing and quiet starts, as Windows would do them. Time is simulated.
+    winget = True
+    install_works = True
+    signature = ('Valid', 'CN=Mozilla Corporation, O=Mozilla Corporation, L=San Francisco, S=California, C=US')
+    now = 0.0
+    install_polls = 3          # the installer finishes after this many checks
+    profile_after_launch = None    # a function that makes Thunderbird's profile on its first start
+
+    def has_winget(self):
+        return self.winget
+
+    def start_process(self, command):
+        self.__dict__.setdefault('commands', []).append(list(command))
+        return FakeProcess(self)
+
+    def finish_install(self):
+        if self.install_works:
+            self.values.update(registered()); self.files.add(INSTALLED)
+
+    def clock(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+    def download(self, url, path):
+        self.__dict__.setdefault('downloads', []).append(url)
+        Path(path).write_bytes(b'MZ installer')
+
+    def signer(self, path):
+        self.__dict__.setdefault('checked', []).append(Path(path).name)
+        return self.signature
+
+    def launch_background(self, path):
+        self.__dict__.setdefault('background', []).append(str(path)); self.is_running = True
+        if self.profile_after_launch:
+            make, self.profile_after_launch = self.profile_after_launch, None
+            make()
+
+    def close_program(self):
+        self.__dict__['closes'] = self.__dict__.get('closes', 0) + 1; self.is_running = False
+
+
+class FakeProcess:
+    def __init__(self, system):
+        self.system, self.polls, self.returncode, self.killed = system, 0, None, False
+
+    def poll(self):
+        self.polls += 1
+        if self.polls > self.system.install_polls:
+            self.returncode = 0 if self.system.install_works else 1
+            self.system.finish_install()
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
+
 
 class FakeConnected(threading.Event):
     """MailRelay.connected: an Event. Waiting returns at once instead of sleeping."""
@@ -121,22 +178,22 @@ class SetupCase(unittest.TestCase):
 
 
 class FindingThunderbirdTests(SetupCase):
-    def test_not_installed_offers_the_free_download_and_opens_only_on_yes(self):
+    def test_not_installed_offers_to_install_it_and_installs_only_on_yes(self):
+        # Before 0.2.160 this opened thunderbird dot net and left the install to a helper.
         system = FakeSystem(self.home)
         flow = self.setup(system)
         step = flow.start()
-        self.assertEqual(step.question, 'download')
+        self.assertEqual(step.question, 'install_program')
         self.assertIn('Thunderbird is not on this computer', step.message)
         self.assertIn('free email program', step.message)
-        self.assertIn('thunderbird dot net', step.message)
+        self.assertIn('install it for you', step.message)
         self.assertIn('Say yes or no', step.message)
         self.assertNotIn('did not finish', step.message)
-        self.assertEqual(system.opened, [])     # nothing opens by itself
-        step = flow.answer('download', True)
-        self.assertEqual(system.opened, ['https://www.thunderbird.net/'])
+        self.assertEqual(system.__dict__.get('commands'), None)     # nothing runs by itself
+        step = flow.answer('install_program', False)
+        self.assertIn('Nothing was installed', step.message)
         self.assertIsNone(step.question)
-        self.assertIn('add account', step.message)
-        self.assertEqual(self.connects, [])
+        self.assertEqual(system.__dict__.get('commands'), None)
 
     def test_no_to_download_opens_nothing(self):
         system = FakeSystem(self.home)
@@ -176,23 +233,21 @@ class FindingThunderbirdTests(SetupCase):
 
 
 class AccountAndProfileTests(SetupCase):
-    def test_installed_never_opened_offers_to_start_it_for_a_helper(self):
+    def test_installed_never_opened_offers_to_add_an_account(self):
+        # Before 0.2.160 a helper had to add the account in Thunderbird; now Voice Companion offers to.
         system = FakeSystem(self.home, registered(), {INSTALLED})
-        flow = self.setup(system)
-        step = flow.start()
-        self.assertEqual(step.question, 'start_for_account')
+        step = self.setup(system).start()
+        self.assertEqual(step.question, 'add_first')
         self.assertIn('no email account is set up in it yet', step.message)
-        step = flow.answer('start_for_account', True)
-        self.assertEqual(system.launched, [INSTALLED])
-        self.assertTrue(step.message.startswith('Starting Thunderbird.'))
-        self.assertIsNone(step.question)
+        self.assertIn('Add an email account to Thunderbird? Say yes or no.', step.message)
+        self.assertEqual(system.launched, [])
 
     def test_local_folders_alone_is_not_an_email_account(self):
         self.profile(LOCAL_ONLY_PREFS)
         system = FakeSystem(self.home, registered(), {INSTALLED}, running=True)
         step = self.setup(system).start()
-        self.assertIsNone(step.question)   # it is open; the helper adds the account there
-        self.assertIn('Thunderbird is open, but no email account is set up', step.message)
+        self.assertEqual(step.question, 'add_first')   # Voice Companion offers to add one
+        self.assertIn('no email account is set up in it yet', step.message)
 
     def test_profile_with_an_account_is_preferred_and_absolute_paths_work(self):
         empty = self.profile(LOCAL_ONLY_PREFS, 'empty.default')
@@ -210,7 +265,7 @@ class AccountAndProfileTests(SetupCase):
         root = self.home / 'Roaming' / 'Thunderbird'; root.mkdir(parents=True)
         (root / 'profiles.ini').write_bytes(b'\xff\xfe[[[not an ini')
         system = FakeSystem(self.home, registered(), {INSTALLED})
-        self.assertEqual(self.setup(system).start().question, 'start_for_account')
+        self.assertEqual(self.setup(system).start().question, 'add_first')
         folder = self.profile('user_pref("mail.accountmanager.accounts", ')
         self.assertFalse(thunderbird_setup.has_email_account(folder))
 
@@ -315,7 +370,7 @@ class StartingAndConnectingTests(SetupCase):
         self.assertEqual(system.launched, [])
         step = flow.answer('start', False)
         self.assertEqual(system.launched, [])
-        self.assertIn('Open Thunderbird when you are ready', step.message)
+        self.assertIn('Thunderbird was not started', step.message)
 
     def test_waits_a_minute_with_progress_every_15_seconds(self):
         system = self.ready()
@@ -379,7 +434,7 @@ class CompanionTests(unittest.TestCase):
     def run_commands(self, flow, *commands):
         import companion
         spoken = []
-        with mock.patch.object(companion, 'new_thunderbird_setup', lambda: flow), \
+        with mock.patch.object(companion, 'new_thunderbird_setup', lambda adding=False: flow), \
              mock.patch.object(companion, 'speak', spoken.append), mock.patch.object(companion, 'speak_status', spoken.append), \
              mock.patch.object(companion, 'TEXT_MODE', True), mock.patch.object(companion, 'APP_WINDOW', None), \
              mock.patch.object(companion, 'APP', Path(tempfile.mkdtemp())), \
@@ -401,15 +456,15 @@ class CompanionTests(unittest.TestCase):
         self.assertNotIn('did not finish', joined)
         self.assertNotIn('sign-in', joined)
         self.assertIn('Thunderbird is not on this computer', joined)
-        self.assertEqual(system.opened, ['https://www.thunderbird.net/'])
+        self.assertEqual(system.commands[0][:3], ['winget', 'install', '--id'])   # one yes installs it
         self.assertIsNone(pending)
 
     def test_any_other_answer_is_no_and_returns_to_normal(self):
         with tempfile.TemporaryDirectory() as temp:
             system, flow = self.flow(Path(temp))
             spoken, pending = self.run_commands(flow, 'connect thunderbird', 'check email')
-        self.assertEqual(system.opened, [])
-        self.assertIn('Nothing was opened', ' '.join(spoken))
+        self.assertEqual(system.__dict__.get('commands'), None)
+        self.assertIn('Nothing was installed', ' '.join(spoken))
         self.assertIsNone(pending)
 
     def test_repeat_keeps_the_question(self):
@@ -417,7 +472,7 @@ class CompanionTests(unittest.TestCase):
             system, flow = self.flow(Path(temp))
             spoken, pending = self.run_commands(flow, 'connect thunderbird', 'repeat')
         self.assertEqual(sum('Say yes or no' in line for line in spoken), 2)
-        self.assertEqual(pending['question'], 'download')
+        self.assertEqual(pending['question'], 'install_program')
 
     def test_keyboard_answers_the_question(self):
         import companion

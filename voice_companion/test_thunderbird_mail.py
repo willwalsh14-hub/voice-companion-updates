@@ -58,7 +58,8 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
                                      args=(first, self.thunderbird.stdout, self.thunderbird.stdin, endpoint, family), daemon=True)
         self.host.start()
         self.assertTrue(self.relay.connected.wait(10), 'Thunderbird did not connect')
-        self.assertEqual(self.relay.version, '1.0.0')
+        manifest = json.loads((HERE / 'thunderbird_mail_extension' / 'manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(self.relay.version, manifest['version'])
 
     def finish(self):
         """Close Thunderbird's input; it reports what it sent and moved."""
@@ -137,7 +138,8 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
 class ThunderbirdOfflineTests(unittest.TestCase):
     def test_thunderbird_closed_gives_a_plain_message(self):
         with mock.patch.object(thunderbird_bridge, '_RELAY', None):
-            with self.assertRaisesRegex(MailboxError, 'Open Thunderbird'):
+            # Never "open Thunderbird yourself": the app starts it (STARTER); without that, say how to check.
+            with self.assertRaisesRegex(MailboxError, 'Say add account and choose Thunderbird'):
                 ThunderbirdMailbox('me@gmail.com', ACCOUNT).folders()
             draft = VoiceEmail(Path(tempfile.mkdtemp()), recipient='sam@example.com', subject='Hi')
             draft.paragraphs = [Paragraph('Hello')]
@@ -158,7 +160,8 @@ class ThunderbirdOfflineTests(unittest.TestCase):
         from build_thunderbird_addon import build
         with tempfile.TemporaryDirectory() as folder:
             with zipfile.ZipFile(build(Path(folder) / 'mail.xpi')) as archive:
-                self.assertEqual(sorted(archive.namelist()), ['background.js', 'manifest.json'])
+                self.assertEqual(sorted(archive.namelist()), ['background.js', 'experiment/implementation.js',
+                                                              'experiment/schema.json', 'manifest.json'])
 
     def test_send_review_accepts_a_thunderbird_draft(self):
         # The send step listed only Gmail, Outlook and Yahoo, so a Thunderbird

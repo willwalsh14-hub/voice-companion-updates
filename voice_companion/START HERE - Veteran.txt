@@ -52,6 +52,7 @@ Contents
   8.1 Connect an email account
   8.2 Choose or remove an account
   8.3 Add and find contacts
+  8.4 Add a Thunderbird account
 9 Write An Email
   9.1 Start a new message
   9.2 Change To, CC, BCC, or Subject
@@ -511,7 +512,10 @@ Yahoo uses an app password, not your normal password. To make one, sign in to Ya
 When you choose Yahoo, Companion asks for your email address. Type it or say it, then press Enter.
 Next, type or paste the app password, then press Enter. Press Control+V to paste. For privacy, do not say it aloud. You hear "Hidden character" for each letter.
 Companion checks the password with Yahoo. It tells you if it worked. If not, it tells you what to do. If Yahoo stops accepting a saved app password, make a new one. Then say "Add account" and choose Yahoo again. The new password replaces the old one. Say "Change address" to fix the address. Press Escape or say "Cancel" to stop.
-Thunderbird is a free email program. Companion uses the email accounts already set up in it. When you choose Thunderbird, Companion checks what is missing and tells you the next step. It may offer to open the Thunderbird website, install its connection in Thunderbird, or start Thunderbird. Say yes or no, or press Y or N. Your helper adds your email account in Thunderbird once. Keep Thunderbird open while you use email in Companion. It can stay minimized.
+Thunderbird is a free email program. It keeps your email sign-in, so Companion does not need its own. When you choose Thunderbird, Companion checks what is missing and fixes it when you say yes. Say yes or no, or press Y or N.
+If Thunderbird is not on the computer, Companion offers to install it. It takes a few minutes. If Windows asks whether to allow changes, press Alt+Y. Companion then adds its connection to Thunderbird and starts it.
+If Thunderbird has no email account yet, Companion helps you add one. See 8.4.
+You never need to open Thunderbird yourself. When you use a Thunderbird account, Companion starts Thunderbird in the background. Thunderbird stays minimized, and your keys stay in Companion. If it takes more than a moment, you hear "Starting Thunderbird". Then your command goes on by itself.
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
 
@@ -523,6 +527,8 @@ Use Up Arrow and Down Arrow, then press Enter. Or say "Next" and "That one". You
 Companion switches to that account and opens its inbox. Press Escape or say "Cancel" to keep the account you have.
 You can also say "Switch to", followed by the email service name. For example, say "Switch to Yahoo" if only one Yahoo account is connected.
 With two accounts of the same type, say "Switch to" followed by the full address.
+Thunderbird accounts always say Thunderbird first, such as "Thunderbird, sam@gmail.com". You hear this in the account list, in "List email accounts", when you switch, and when you review a message before sending.
+The same address can be connected two ways: straight to Gmail, and through Thunderbird. Then you hear two accounts, "Gmail, sam@gmail.com" and "Thunderbird, sam@gmail.com". To choose one by voice, say the kind and then the address. For example, say "Thunderbird, sam at gmail dot com". Or say "Switch to Thunderbird, sam at gmail dot com".
 To hear the account in use, say "Which email account?". Check it before sending mail.
 With the keyboard, press Alt+O and choose Email options. Sending account names the account in use. Choose another account there to switch.
 "Check Gmail", "Check Outlook", and "Check Yahoo" open that account when exactly one of its type is connected.
@@ -537,7 +543,7 @@ For Gmail or Microsoft, you can also stop its access in your Google or Microsoft
 For Yahoo, delete the app password in Yahoo Account security if you no longer need it.
 For Thunderbird, removing only stops Companion from using that account. Thunderbird does not change.
 To connect the account again later, say "Add account".
-Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, Which account, or Remove account.
+Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, Which account, Remove account, or Add Thunderbird account.
 
 8.3 Add and find contacts
 A contact is a saved name and email address.
@@ -548,6 +554,28 @@ Each email account has its own contact list. Local contacts can be used without 
 When Gmail is selected, say "Connect Google Contacts" to request access to Google Contacts. Or press Alt+O, choose Email options, then choose Connect Google Contacts.
 Approve that access only if you want to link those contacts. A helper can assist with the permission page.
 Google Calendar and Google Drive are not connected in this version.
+
+8.4 Add a Thunderbird account
+You can add a first, second, or third email account to Thunderbird without leaving Companion. Each address becomes its own account in Companion. You can add one right after another.
+1. Say "Add Thunderbird account". Or press Alt, 6, then 5 in email.
+2. Type or say the email address, then press Enter.
+3. The first time, Companion asks for the name people see on your email. Type or say it, then press Enter.
+4. Companion opens the Thunderbird page for adding an account. It stays in the background. Companion fills in your name and address, and reads the page to you.
+5. Say "Continue in Thunderbird" to choose the main button on that page. Companion reads the page again when it changes.
+6. Sign in when asked. The ways to sign in are below.
+7. Wait for Companion. It tells you when the account is ready. The new account is connected and selected.
+How you sign in depends on the email service:
+- Gmail and Outlook: the sign-in page opens in the Companion web browser. Sign in there as on any web page. Thunderbird gets the answer by itself. This needs Thunderbird 153 or newer. With an older Thunderbird, Gmail and Outlook sign in like Yahoo, below.
+- To use the other browser, say "Open sign-in page in Chrome" or "Open sign-in page in embedded Edge".
+- Most other email: Thunderbird asks for a password. Companion opens a private box. Type or paste the password, then press Enter. It goes straight to Thunderbird. Companion does not say it or save it.
+- Yahoo and AOL: Thunderbird shows their sign-in page in its own window. Companion cannot read that window. Say "Show Thunderbird" to bring it to the front. Then use a screen reader, or ask a helper. Press Alt+Tab to come back.
+While Companion waits, you can say:
+- "What does Thunderbird say?" to hear the page again.
+- "Enter Thunderbird password" to open the private password box.
+- "Show Thunderbird" to bring Thunderbird to the front.
+- "Stop waiting for Thunderbird" to stop. Nothing is removed.
+If Thunderbird already has the address, Companion connects it at once.
+Companion waits up to 15 minutes. If you finish in Thunderbird later, say "Add account" and choose Thunderbird. Companion connects every new address it finds.
 
 9. WRITE AN EMAIL
 

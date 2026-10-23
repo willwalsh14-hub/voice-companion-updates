@@ -113,5 +113,339 @@ function load(api) {
   assert.equal((await bridge.handle({method: 'accounts'})).error.code, 'invalid');
   assert.equal((await bridge.handle({id: 4, method: 'send', params: {to: ['a@b.c']}})).error.message, 'Choose a Thunderbird account first.');
 
+  // Adding an account: Thunderbird's own page opens with the address; bad input is refused.
+  assert.deepEqual(await call('openAccountSetup', {email: 'new@example.org', name: 'Will Walsh'}), {opened: true, prefilled: true});
+  assert.deepEqual(state.setupCalls.at(-1), {email: 'new@example.org', name: 'Will Walsh', show: false});
+  await assert.rejects(call('openAccountSetup', {email: 'not an address'}), /not a complete email address/);
+  await assert.rejects(call('openAccountSetup', {email: 'x'.repeat(250) + '@a.bc'}), /not a complete email address/);
+  await assert.rejects(call('openAccountSetup', {email: 'a@b.c', name: 'x\ny'}), /shorter name/);
+  state.setupResult = {opened: true, prefilled: false};
+  assert.deepEqual(await call('openAccountSetup', {email: 'b@example.com', show: true}), {opened: true, prefilled: false});
+  assert.equal(state.setupCalls.at(-1).show, true);
+
+  // The page is read and driven; a password goes in once and is never answered back.
+  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: [], addressFilled: false});
+  assert.deepEqual(await call('setupContinue'), {pressed: true});
+  state.setupPage.needsPassword = true;
+  const filled = await bridge.handle({id: 7, method: 'fillPassword', params: {password: 'pw-123456'}});
+  assert.deepEqual(JSON.parse(JSON.stringify(filled.result)), {filled: true});
+  assert.doesNotMatch(JSON.stringify(filled), /pw-123456/);
+  assert.deepEqual(state.passwordLengths, [9]);
+  await assert.rejects(call('fillPassword', {password: ''}), /password box was empty/);
+  assert.deepEqual(await call('showSetup'), {shown: true});
+
+  // Web browser sign-in is handed over once, and only https addresses pass.
+  assert.deepEqual(await call('captureSignIn', {seconds: 900}), {capturing: true});
+  await assert.rejects(call('captureSignIn', {seconds: -1}), /Invalid time/);
+  await call('openAccountSetup', {email: 'will@gmail.com'});
+  const handed = await call('takeSignIn');
+  assert.equal(handed.where, 'browser');
+  assert.match(handed.url, /^https:\/\/accounts\.google\.com\//);
+  assert.deepEqual(await call('takeSignIn'), {url: '', where: ''});
+  state.signIn = {url: 'javascript:alert(1)', where: 'browser'};
+  assert.deepEqual(await call('takeSignIn'), {url: '', where: 'browser'});
+
+  // Experiments can be turned off in Thunderbird: every answer is "not done", never an error.
+  const experiment = api.voiceCompanionSetup;
+  delete api.voiceCompanionSetup;
+  assert.deepEqual(await call('openAccountSetup', {email: 'c@example.com'}), {opened: false, prefilled: false});
+  assert.equal((await call('setupPage')).open, false);
+  assert.deepEqual(await call('setupContinue'), {pressed: false});
+  assert.deepEqual(await call('captureSignIn', {seconds: 5}), {capturing: false});
+  assert.deepEqual(await call('takeSignIn'), {url: '', where: ''});
+  api.voiceCompanionSetup = {openAccountSetup: async () => { throw new Error('Window gone'); },
+    setupPage: async () => { throw new Error('gone'); }};
+  assert.deepEqual(await call('openAccountSetup', {email: 'c@example.com'}), {opened: false, prefilled: false});
+  assert.equal((await call('setupPage')).open, false);
+  api.voiceCompanionSetup = experiment;
+
+  // Started in the background: only normal (main) windows are minimized, once.
+  assert.deepEqual(await call('minimize'), {minimized: 1});
+  assert.equal(state.windows[0].state, 'minimized');
+  assert.equal(state.windows[1].state, 'normal');
+  assert.deepEqual(await call('minimize'), {minimized: 0});
+
+  await experimentChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+
+// ---- The Experiment (experiment/implementation.js) against a simulated Thunderbird window ----
+
+class FakeElement {
+  constructor(localName, attributes = {}, children = []) {
+    Object.assign(this, {localName, attributes, children, value: attributes.value || '', disabled: Boolean(attributes.disabled),
+      shadowRoot: null, hidden: false, visible: attributes.visible !== false, events: [], id: attributes.id || '',
+      className: attributes.class || '', textContent: attributes.text || '', clicks: 0});
+  }
+  getAttribute(name) { return this.attributes[name] === undefined ? null : String(this.attributes[name]); }
+  getClientRects() { return this.visible ? [{}] : []; }
+  dispatchEvent(event) { this.events.push(event.type); return true; }
+  click() { this.clicks++; }
+  get ownerGlobal() { return {Event: class { constructor(type) { this.type = type; } }}; }
+  *all() { for (const child of this.children) { yield child; yield* child.all(); } }
+  querySelectorAll(selector) {
+    if (selector !== '*') throw new Error('Unexpected selector ' + selector);
+    return [...this.all()];
+  }
+}
+
+function setupForm({email = new FakeElement('input', {type: 'email'}), password = false} = {}) {
+  const parts = [new FakeElement('h1', {text: '  Set up your   existing email address '}),
+    new FakeElement('input', {type: 'text', id: 'realName'}), email,
+    new FakeElement('span', {class: 'error-message', text: 'Thunderbird failed to find the settings'}),
+    new FakeElement('span', {class: 'error-message', text: 'hidden note', visible: false}),
+    new FakeElement('button', {id: 'back', text: 'Back'}), new FakeElement('button', {id: 'forward', text: 'Continue'})];
+  if (password) parts.splice(3, 0, new FakeElement('input', {type: 'password', id: 'password'}));
+  return parts;
+}
+
+function fakeWindow({opener = 'openAccountSetup', form = () => setupForm(), hub = false, typing = false} = {}) {
+  const document = new FakeElement('document');
+  const tabmail = new FakeElement('tabmail');
+  tabmail.opened = []; tabmail.tabInfo = [];
+  tabmail.openTab = (kind, info) => { tabmail.opened.push({kind, info}); open(); };
+  document.children.push(tabmail);
+  document.getElementById = id => (id === 'tabmail' ? tabmail : null);
+  const win = {document, calls: [], windowState: 2, STATE_MINIMIZED: 2, restored: 0, focused: 0,
+    restore() { this.restored++; this.windowState = 1; }, focus() { this.focused++; },
+    setTimeout: (fn) => setTimeout(fn, 1)};
+  function open() {
+    const parts = form();
+    if (!parts) return;
+    win.parts = parts;
+    if (hub) {
+      // As in Thunderbird 158: <account-hub-container> in the body, its dialog in its own
+      // shadow root, the email view inside, each step and the footer with shadow roots too.
+      const step = new FakeElement('email-auto-form');
+      step.shadowRoot = new FakeElement('shadow', {}, parts.filter(p => p.localName !== 'button'));
+      const footer = new FakeElement('account-hub-footer');
+      footer.shadowRoot = new FakeElement('shadow', {}, parts.filter(p => p.localName === 'button'));
+      if (typing) {
+        win.typed = []; win.checks = [];
+        step.checkValidEmailForm = options => win.checks.push(options);
+        step.shadowRoot.host = step;
+        for (const part of step.shadowRoot.children) {
+          part.parentNode = step.shadowRoot;
+          if (part.localName === 'input') part.setUserInput = function (value) { win.typed.push(this.id || 'email'); this.value = value; };
+        }
+      }
+      const view = new FakeElement('account-hub-email', {}, [step, footer]);
+      const container = new FakeElement('account-hub-container');
+      container.shadowRoot = new FakeElement('shadow', {}, [new FakeElement('dialog', {}, [view])]);
+      document.children.push(container);
+    } else {
+      const page = new FakeElement('page', {}, parts);
+      page.documentURI = 'about:accountsetup';
+      tabmail.tabInfo.push({browser: {contentDocument: page}});
+    }
+  }
+  if (opener) win[opener] = async () => { win.calls.push(opener); setTimeout(open, 5); };
+  return win;
+}
+
+// Thunderbird's OAuth2 module, as far as the hand-over relies on it.
+function fakeOAuth() {
+  const OAuth2 = function (email) { this.email = email; };
+  OAuth2.prototype = {request: null, scope: null};
+  class ExternalRequest {
+    constructor() { this.redirectURI = 'http://127.0.0.1'; this.launched = []; }
+    startLoopbackRedirectListener() { return true; }
+    start(url) { this.launched.push(url.href); return true; }   // Windows' default browser
+    close() {}
+  }
+  class InternalRequest {
+    constructor() { this.redirectURI = 'https://127.0.0.1'; this.windows = 0; }
+    start() { this.windows++; return true; }
+    cancelled() {}
+    close() {}
+  }
+  // Like OAuth2.requestAuthorization and finishAuthorizationRequest.
+  const signIn = (oauth, Request) => {
+    oauth.request = new Request(oauth);
+    const request = oauth.request;
+    const ok = request.start(new URL('https://accounts.google.com/o/oauth2/auth?login_hint=' + oauth.email));
+    return {request, ok};
+  };
+  return {OAuth2, ExternalRequest, InternalRequest, signIn};
+}
+
+function loadExperiment(win, oauth = fakeOAuth()) {
+  const context = vm.createContext({
+    ChromeUtils: {importESModule: url => (url.includes('OAuth2') ? {OAuth2: oauth.OAuth2} : {ExtensionCommon: {ExtensionAPI: class {}}})},
+    Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null)}},
+    setTimeout, WeakRef, Symbol, Object, URL,
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);
+  const Api = vm.runInContext('voiceCompanionSetup', context);
+  const instance = new Api();
+  const api = instance.getAPI({}).voiceCompanionSetup;
+  api.shutdown = () => instance.onShutdown();
+  return api;
+}
+
+const plain = value => JSON.parse(JSON.stringify(value));
+
+async function experimentChecks() {
+  // Thunderbird 128 to 149: openAccountSetup() opens a tab; address and name are filled in.
+  let win = fakeWindow();
+  let api = loadExperiment(win);
+  assert.deepEqual(plain(await api.openAccountSetup('will@gmail.com', 'Will Walsh', false)), {opened: true, prefilled: true});
+  assert.deepEqual(win.calls, ['openAccountSetup']);
+  const [, name, email] = win.parts;
+  assert.equal(email.value, 'will@gmail.com');
+  assert.deepEqual(email.events, ['input', 'change']);
+  assert.equal(name.value, 'Will Walsh');
+  assert.equal(win.focused, 0, 'Voice Companion keeps the keyboard unless asked');
+  assert.equal(win.restored, 0);
+
+  // The page is read: title, visible messages only, and the main button.
+  assert.deepEqual(plain(await api.setupPage()), {open: true, title: 'Set up your existing email address',
+    notes: ['Thunderbird failed to find the settings'], button: 'Continue', canContinue: true, needsPassword: false,
+    fields: ['text#realName', 'email'], addressFilled: true});
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
+  assert.equal(win.parts.at(-1).clicks, 1);
+  assert.equal(win.parts.at(-2).clicks, 0, 'never Back');
+  assert.deepEqual(plain(await api.fillPassword('secret')), {filled: false}, 'no password box: nothing filled');
+  assert.deepEqual(plain(await api.showSetup()), {shown: true});
+  assert.equal(win.restored, 1); assert.equal(win.focused, 1);
+
+  // Account Hub: the form is inside custom elements' shadow roots; a password box is found and filled.
+  win = fakeWindow({hub: true, form: () => setupForm({password: true})});
+  api = loadExperiment(win);
+  assert.deepEqual(plain(await api.openAccountSetup('a@b.com', '', true)), {opened: true, prefilled: true});
+  assert.equal(win.focused, 1, 'shown when asked');
+  const hubPage = plain(await api.setupPage());
+  assert.equal(hubPage.title, 'Set up your existing email address');
+  assert.equal(hubPage.button, 'Continue');
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
+  assert.equal(win.parts.at(-1).clicks, 1);
+  assert.equal(hubPage.needsPassword, true);
+  assert.deepEqual(plain(await api.fillPassword('app pass')), {filled: true});
+  const password = win.parts.find(p => p.id === 'password');
+  assert.equal(password.value, 'app pass');
+  assert.equal((await api.setupPage()).needsPassword, false);
+  assert.doesNotMatch(JSON.stringify(plain(await api.setupPage())), /app pass/, 'a password is never read back');
+
+  // Account Hub loading slowly (as on a busy computer): filled in when the page is read later.
+  win = fakeWindow({hub: true});
+  const slowOpen = win.openAccountSetup;
+  let release;
+  win.openAccountSetup = async () => { win.calls.push('openAccountSetup'); await new Promise(r => { release = r; }); };
+  api = loadExperiment(win);
+  const opening = api.openAccountSetup('late@example.org', 'Late Name', false);
+  await new Promise(r => setTimeout(r, 5));
+  release();
+  assert.equal((await opening).prefilled, false, 'nothing there yet');
+  await slowOpen();                      // the hub arrives afterwards
+  await new Promise(r => setTimeout(r, 20));
+  const late = plain(await api.setupPage());
+  assert.equal(win.parts[2].value, 'late@example.org');
+  assert.equal(win.parts[1].value, 'Late Name');
+  assert.equal(late.canContinue, true);
+  assert.equal((await api.setupPage()).title, 'Set up your existing email address');
+
+  // As in Thunderbird 158: the hub resets its form just after it appears, clearing the boxes.
+  // They are filled in again, so the address is there when Voice Companion reads the page.
+  win = fakeWindow({hub: true});
+  api = loadExperiment(win);
+  const resetSoon = new Promise(resolve => setTimeout(() => {
+    for (const part of win.parts) if (part.localName === 'input') part.value = '';
+    resolve();
+  }, 40));
+  assert.deepEqual(plain(await api.openAccountSetup('reset@example.org', 'Reset Name', false)), {opened: true, prefilled: true});
+  await resetSoon;
+  const afterReset = plain(await api.setupPage());
+  assert.equal(win.parts[2].value, 'reset@example.org');
+  assert.equal(win.parts[1].value, 'Reset Name');
+  assert.equal(afterReset.addressFilled, true);
+  assert.doesNotMatch(JSON.stringify(afterReset), /reset@example\.org/, 'the page report never carries what is typed');
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
+  win.parts[2].value = '';                     // the next step: nothing is filled in any more
+  await api.setupPage();
+  assert.equal(win.parts[2].value, '');
+
+  // Thunderbird 158 turns Continue on only when the page sees typing: setUserInput is used
+  // when present, and the email step is asked to check itself.
+  win = fakeWindow({hub: true, typing: true});
+  api = loadExperiment(win);
+  await api.openAccountSetup('typed@example.org', 'Typed Name', false);
+  assert.deepEqual(win.typed.sort(), ['email', 'realName']);
+  assert.equal(win.parts[2].value, 'typed@example.org');
+  assert.ok(win.checks.length >= 1 && win.checks.every(c => c.showErrors === false), 'the email step re-checked itself');
+
+  // Something already typed is never replaced; a disabled button is not pressed.
+  win = fakeWindow({form: () => { const parts = setupForm({email: new FakeElement('input', {type: 'email', value: 'typed@example.com'})});
+    parts.at(-1).disabled = true; return parts; }});
+  api = loadExperiment(win);
+  assert.deepEqual(plain(await api.openAccountSetup('a@b.com', '', false)), {opened: true, prefilled: false});
+  assert.equal(win.parts[2].value, 'typed@example.com');
+  assert.equal((await api.setupPage()).canContinue, false);
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: false});
+
+  // Older and newer names of the opener, then the page itself as a tab.
+  for (const opener of ['openAccountSetupTab', 'AddMailAccount', 'openAccountHub']) {
+    win = fakeWindow({opener});
+    assert.equal((await loadExperiment(win).openAccountSetup('a@b.com', '', false)).opened, true);
+    assert.deepEqual(win.calls, [opener]);
+  }
+  win = fakeWindow({opener: null});
+  assert.deepEqual(plain(await loadExperiment(win).openAccountSetup('a@b.com', '', false)), {opened: true, prefilled: true});
+  assert.equal(win.document.getElementById('tabmail').opened[0].info.url, 'about:accountsetup');
+
+  // A hidden box does not count: opened, not filled. No page: closed.
+  win = fakeWindow({form: () => setupForm({email: new FakeElement('input', {type: 'email', visible: false})})});
+  assert.deepEqual(plain(await loadExperiment(win).openAccountSetup('a@b.com', '', false)), {opened: true, prefilled: false});
+  assert.equal((await loadExperiment(fakeWindow()).setupPage()).open, false);
+
+  // No Thunderbird main window: nothing opened or pressed.
+  const none = loadExperiment(null);
+  assert.deepEqual(plain(await none.openAccountSetup('a@b.com', '', false)), {opened: false, prefilled: false});
+  assert.deepEqual(plain(await none.setupContinue()), {pressed: false});
+
+  // Sign-in hand-over. Not armed: Thunderbird opens the web browser as usual.
+  const oauth = fakeOAuth();
+  api = loadExperiment(fakeWindow(), oauth);
+  let first = oauth.signIn(new oauth.OAuth2('a@gmail.com'), oauth.ExternalRequest);
+  assert.equal(first.request.launched.length, 1);
+  assert.deepEqual(plain(await api.takeSignIn()), {url: '', where: ''});
+  // Armed: the address goes to Voice Companion instead, once.
+  assert.deepEqual(plain(await api.captureSignIn(900)), {capturing: true});
+  const account = new oauth.OAuth2('will@gmail.com');
+  const second = oauth.signIn(account, oauth.ExternalRequest);
+  assert.equal(second.ok, true);
+  assert.equal(second.request.launched.length, 0, 'Windows default browser not opened');
+  assert.equal(account.request, second.request, 'Thunderbird still finds its own request');
+  assert.deepEqual(plain(await api.takeSignIn()), {url: 'https://accounts.google.com/o/oauth2/auth?login_hint=will@gmail.com', where: 'browser'});
+  assert.deepEqual(plain(await api.takeSignIn()), {url: '', where: ''});
+  // Yahoo and AOL sign in only in Thunderbird's own window: reported, not changed.
+  const yahoo = oauth.signIn(new oauth.OAuth2('sam@yahoo.com'), oauth.InternalRequest);
+  assert.equal(yahoo.request.windows, 1);
+  assert.deepEqual(plain(await api.takeSignIn()), {url: '', where: 'thunderbird'});
+  // Finishing clears the request as Thunderbird expects; an older OAuth2 object is unaffected.
+  account.request = null;
+  assert.equal(account.request, null);
+  assert.equal(new oauth.OAuth2('x').request, null, 'a new sign-in starts with no request');
+  // Disarmed, then the add-on stops: Thunderbird's OAuth2 is exactly as before.
+  await api.captureSignIn(0);
+  const third = oauth.signIn(new oauth.OAuth2('c@gmail.com'), oauth.ExternalRequest);
+  assert.equal(third.request.launched.length, 1);
+  const running = new oauth.OAuth2('d@gmail.com');
+  running.request = {start() {}, close() {}};
+  api.shutdown();
+  const descriptor = Object.getOwnPropertyDescriptor(oauth.OAuth2.prototype, 'request');
+  assert.equal(descriptor.value, null);
+  assert.ok(running.request && typeof running.request.close === 'function', 'a running sign-in keeps its request');
+
+  // The manifest declares the Experiment, and its schema matches the implementation.
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8'));
+  const declared = manifest.experiment_apis.voiceCompanionSetup;
+  assert.deepEqual(declared.parent.paths, [['voiceCompanionSetup']]);
+  const schema = JSON.parse(fs.readFileSync(path.join(__dirname, declared.schema), 'utf8'));
+  assert.equal(schema[0].namespace, 'voiceCompanionSetup');
+  const implemented = Object.keys(loadExperiment(null)).filter(name => name !== 'shutdown').sort();
+  assert.deepEqual(schema[0].functions.map(f => f.name).sort(), implemented);
+  assert.ok(schema[0].functions.every(f => f.async === true && f.type === 'function'));
+  assert.ok(fs.existsSync(path.join(__dirname, declared.parent.script)));
+  const [major, minor] = manifest.version.split('.').map(Number);
+  assert.ok(major > 1 || minor >= 1, 'the add-on version was raised so installed copies are replaced');
+}

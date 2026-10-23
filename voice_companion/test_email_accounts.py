@@ -156,7 +156,7 @@ class FolderAccountTests(AccountScreenTestCase):
         self.key('Down')
         self.key('Enter')
         self.assertEqual(self.store.selected(), SAM)
-        self.assertTrue(self.last().startswith('Switched to sam@gmail.com. Found 2 folders. Folder 1: Inbox'), self.last())
+        self.assertTrue(self.last().startswith('Switched to Gmail, sam@gmail.com. Found 2 folders. Folder 1: Inbox'), self.last())
         self.assertIsNone(companion.ACCOUNT_PICKER)
         self.key('Down')
         self.assertIn('Sam receipts', self.last())
@@ -185,7 +185,7 @@ class FolderAccountTests(AccountScreenTestCase):
         self.assertTrue(self.last().startswith('Choose an account. Yahoo, sam@yahoo.com, current, 1 of 4.'), self.last())
         self.assertIsNone(companion.mail_session.folder_picker)
         self.key('Escape')
-        self.assertEqual(self.last(), 'Folder list canceled. Back to will@gmail.com, Inbox.')
+        self.assertEqual(self.last(), 'Folder list canceled. Back to Gmail, will@gmail.com, Inbox.')
         self.assertIsNone(companion.ACCOUNT_PICKER)
         self.assertEqual(self.store.selected(), WILL)
         self.assertIs(companion.mail_session, session)
@@ -277,7 +277,7 @@ class SwitchAccountTests(AccountScreenTestCase):
         self.assertEqual(self.key('Down', 'awake'), 'awake')
         self.assertEqual(self.key('Enter', 'awake'), 'mailbox')
         self.assertEqual(self.store.selected(), YAHOO)
-        self.assertIn('Switched to sam@yahoo.com', self.said[-1])
+        self.assertIn('Switched to Yahoo, sam@yahoo.com', self.said[-1])
         self.assertIn('For sam@yahoo.com in inbox', ' '.join(self.said))
 
     def test_email_menu_switch_and_remove_items(self):
@@ -285,7 +285,8 @@ class SwitchAccountTests(AccountScreenTestCase):
         accounts = dict(MENUS['mailbox'][1])['Accounts']
         self.assertEqual([(label, command) for label, _, command in accounts],
                          [('Add account', 'add account'), ('Switch account', 'switch account'),
-                          ('Which account', 'which email account'), ('Remove account', 'remove email account')])
+                          ('Which account', 'which email account'), ('Remove account', 'remove email account'),
+                          ('Add Thunderbird account', 'add thunderbird account')])
         self.open_inbox()
         companion.handle('email menu', 'mailbox')
         companion.handle('6', 'mailbox')

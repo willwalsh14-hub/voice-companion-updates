@@ -20,6 +20,19 @@ function createFakeMessenger() {
     messages: [],
     composed: [], sent: [], minimized: [], moved: [], deleted: [],
     failSend: false,
+    // Thunderbird's own "add email account" page (the Experiment): what it was asked,
+    // and, like a person finishing that page, the account it adds a moment later.
+    setupOpened: [], setupCalls: [], setupResult: {opened: true, prefilled: true}, addAfterSetupMs: null,
+    setupPage: {open: true, title: 'Set up your existing email address', notes: [], button: 'Continue', canContinue: true, needsPassword: false},
+    continued: 0, passwordLengths: [], shown: 0, capture: [], signIn: null,
+    windows: [{id: 1, type: 'normal', state: 'normal'}, {id: 2, type: 'popup', state: 'normal'}],
+  };
+  let nextAccount = 3;
+  state.addAccount = email => {
+    const id = 'account' + nextAccount++;
+    state.accounts.push({id, name: email, type: 'imap', rootFolder: {id: id + '://', isRoot: true, path: '/'},
+      identities: [{id: 'id' + id, email, name: ''}]});
+    state.folders.push({id: id + '://INBOX', accountId: id, path: '/INBOX', name: 'Inbox', specialUse: ['inbox']});
   };
   for (let i = 1; i <= 25; i++) {
     state.messages.push({
@@ -99,8 +112,34 @@ function createFakeMessenger() {
         return {mode: 'sendNow', headerMessageId: 'sent' + tabId + '@thunderbird.test', messages: []};
       },
     },
-    windows: {update: async (windowId, info) => { state.minimized.push({windowId, info}); }},
-    runtime: {getManifest: () => ({version: '1.0.0'})},
+    windows: {
+      update: async (windowId, info) => {
+        state.minimized.push({windowId, info});
+        const win = state.windows.find(w => w.id === windowId);
+        if (win && info.state) win.state = info.state;
+      },
+      getAll: async ({windowTypes} = {}) => state.windows.filter(w => !windowTypes || windowTypes.includes(w.type)).map(w => ({...w})),
+    },
+    voiceCompanionSetup: {
+      openAccountSetup: async (email, name, show) => {
+        state.setupOpened.push(email); state.setupCalls.push({email, name, show});
+        // Google and Microsoft sign in through the web browser (Thunderbird 151 and newer).
+        if (/@(gmail|outlook|hotmail)\.com$/.test(email)) {
+          state.signIn = {url: 'https://accounts.google.com/o/oauth2/auth?login_hint=' + encodeURIComponent(email) +
+            '&redirect_uri=http%3A%2F%2F127.0.0.1%3A49152', where: 'browser'};
+        }
+        if (state.addAfterSetupMs !== null && email) setTimeout(() => state.addAccount(email), state.addAfterSetupMs);
+        return {...state.setupResult};
+      },
+      setupPage: async () => ({...state.setupPage}),
+      setupContinue: async () => { state.continued++; return {pressed: state.setupPage.canContinue}; },
+      // Records only that a password arrived and how long it was: tests must never print it.
+      fillPassword: async secret => { state.passwordLengths.push(secret.length); return {filled: state.setupPage.needsPassword}; },
+      showSetup: async () => { state.shown++; return {shown: true}; },
+      captureSignIn: async seconds => { state.capture.push(seconds); return {capturing: seconds > 0}; },
+      takeSignIn: async () => { const found = state.signIn || {url: '', where: ''}; state.signIn = null; return found; },
+    },
+    runtime: {getManifest: () => ({version: require('./manifest.json').version})},
   };
   function newTab(info) {
     const id = nextTab++;

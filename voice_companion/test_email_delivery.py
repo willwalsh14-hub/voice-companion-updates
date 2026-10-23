@@ -139,7 +139,7 @@ class DeliveryTests(unittest.TestCase):
                 companion.handle('confirm send email', 'email_draft')
                 send.assert_not_called()
                 companion.handle('send email', 'email_draft')
-                self.assertIn('From me@example.com', speech.call_args.args[0])
+                self.assertIn('From Gmail, me@example.com', speech.call_args.args[0])
                 self.assertIn('First line', speech.call_args.args[0])
                 companion.handle('cancel send', 'email_draft')
                 companion.handle('confirm send email', 'email_draft')
