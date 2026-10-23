@@ -76,9 +76,25 @@ function inputs(win, type) {
 }
 
 function setValue(box, value) {
+  // setUserInput (Thunderbird's own code only) acts like typing, so the page checks the form
+  // and turns on Continue, as it does for a person. The plain events are the fallback.
+  if (typeof box.setUserInput === 'function') {
+    box.setUserInput(value);
+    if (box.value === value) return;
+  }
   box.value = value;
   box.dispatchEvent(new box.ownerGlobal.Event('input', {bubbles: true}));
   box.dispatchEvent(new box.ownerGlobal.Event('change', {bubbles: true}));
+}
+
+// Account Hub's email step re-checks itself with checkValidEmailForm; ask it to after filling.
+function recheck(box) {
+  for (let node = box; node; node = node.parentNode || node.host) {
+    if (typeof node.checkValidEmailForm === 'function') {
+      try { node.checkValidEmailForm({showErrors: false}); } catch (error) { /* only a courtesy */ }
+      return;
+    }
+  }
 }
 
 // Fill in the address (and the name, when one is given and the box is empty).
@@ -87,7 +103,8 @@ function fill(win, email, name) {
   const [box] = inputs(win, 'email');
   if (!box) return null;
   if (box.value && box.value !== email) return false;
-  if (box.value !== email) setValue(box, email);
+  const changed = box.value !== email;
+  if (changed) setValue(box, email);
   if (name) {
     for (const root of setupRoots(win)) {
       const names = descendants(root, [], 0).filter(e => ['realName', 'realname', 'name'].includes(e.id) &&
@@ -95,6 +112,7 @@ function fill(win, email, name) {
       if (names.length) { if (!names[0].value) setValue(names[0], name); break; }
     }
   }
+  if (changed) recheck(box);
   return true;
 }
 
