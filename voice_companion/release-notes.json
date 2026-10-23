@@ -3,11 +3,19 @@
   "status": "Testing build",
   "date": "October 23, 2026",
   "baseline": "0.2.162-test",
-  "scope": "Sending through Thunderbird tells you what is happening, and Thunderbird closes with Voice Companion.",
+  "scope": "Sending through Thunderbird works with work accounts that need a sign-in, and Thunderbird closes with Voice Companion.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
+        {
+          "title": "Sign in to send",
+          "details": [
+            "Work and Microsoft accounts sometimes ask you to sign in again before you can send.",
+            "Voice Companion now opens that sign-in page in its own browser, so you can finish it.",
+            "After you sign in, Thunderbird sends the message. Check the Sent folder before you send it again."
+          ]
+        },
         {
           "title": "Thunderbird closes with Voice Companion",
           "details": [

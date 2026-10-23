@@ -109,6 +109,24 @@ class SendReviewTests(CompanionTestCase):
         self.assertTrue(self.submit.called)
         self.assertEqual(companion.document_text(draft), 'See you soon.')
 
+    def test_a_sign_in_needed_to_send_opens_the_page_and_keeps_the_draft(self):
+        # Will, 0.2.162: Office 365 needed a sign-in to send through Thunderbird.
+        from email_delivery import DeliveryError
+        draft = self.draft()
+        error = DeliveryError('Microsoft wants you to sign in before Thunderbird can send this message.')
+        error.sign_in_url = 'https://login.microsoftonline.com/x'
+        self.submit.side_effect = error
+        opened = []
+        with patch.object(companion, 'open_thunderbird_sign_in', lambda mode, announce=True: opened.append((companion.THUNDERBIRD_SIGN_IN, announce)) or 'web'), \
+             patch.object(companion, 'THUNDERBIRD_SIGN_IN', None), patch.object(companion, 'speak_status', self.said.append):
+            companion.handle('send email', 'email_draft', typed=True)
+            mode = companion.handle('yes', 'email_draft', typed=True)
+            self.assertEqual(mode, 'web')
+            self.assertEqual(opened, [('https://login.microsoftonline.com/x', False)])
+        self.assertIn('Microsoft wants you to sign in', ' '.join(self.said))
+        self.assertIn('The draft is saved locally.', ' '.join(self.said))
+        self.assertEqual(companion.document_text(draft), 'See you soon.')
+
     def test_failed_local_save_before_sending_allows_a_retry(self):
         self.draft()
         companion.handle('send email', 'email_draft', typed=True)

@@ -2189,7 +2189,7 @@ def send_thunderbird_password(value, mode):
     return mode
 
 
-def open_thunderbird_sign_in(mode, browser=None):
+def open_thunderbird_sign_in(mode, browser=None, announce=True):
     """Open the sign-in page Thunderbird handed over in Voice Companion's browser (embedded Edge or Chrome)."""
     global web_session
     import thunderbird_accounts as words
@@ -2200,7 +2200,7 @@ def open_thunderbird_sign_in(mode, browser=None):
         web_session.search_engine = PREFERENCES.get('web_search_engine', 'google')
         if browser:
             web_session.choose_browser('webview2' if 'edge' in browser or 'webview' in browser else 'chrome')
-        speak_status(words.sign_in_opening(address))
+        if announce:speak_status(words.sign_in_opening(address))
         revision = getattr(web_session, 'page_revision', 0)
         result = web_session.open(THUNDERBIRD_SIGN_IN)
         speak_web_result(result, revision)
@@ -2749,7 +2749,7 @@ def thunderbird_setup_answer(command, mode):
 
 
 def _handle(text, mode, typed=False):
-    global DOCUMENT_NAMING_ACTION
+    global DOCUMENT_NAMING_ACTION, THUNDERBIRD_SIGN_IN
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
@@ -3875,6 +3875,11 @@ def _handle(text, mode, typed=False):
                 if not uncertain:
                     email_draft.last_attempt_hash='';email_draft.save()
                 reason=str(exc) if isinstance(exc,(AccountError,DeliveryError,ValueError)) else 'The email connection could not complete the request.'
+                if getattr(exc,'sign_in_url',None):
+                    # Thunderbird needs a web sign-in to send: open it where the user can use it.
+                    THUNDERBIRD_SIGN_IN=exc.sign_in_url
+                    speak_status(reason+' The draft is saved locally.')
+                    return open_thunderbird_sign_in(mode,announce=False)
                 speak(reason+' The draft is saved locally.'+(' Check Sent Mail before trying again; do not send a duplicate.' if uncertain else ' It has not been sent. Correct the problem and review the draft again.'))
                 return mode
             speak_status('Email sent successfully.' + delivery_note(accepted))
