@@ -392,6 +392,25 @@ class TkOwnershipTests(unittest.TestCase):
 
 
 @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows Tk keyboard integration')
+class WindowAltKeyProcessTests(unittest.TestCase):
+    """Run the real-window tests in their own Python process.
+
+    Tk windows live on their own threads. If any Tk object is cleaned up later by
+    another thread, Tcl stops the whole process ("Tcl_AsyncDelete"), which ended a
+    full Windows test run. In a separate process that cannot happen, and the
+    output shows exactly what went wrong.
+    """
+    def test_real_window_alt_keys(self):
+        import subprocess, sys
+        result = subprocess.run([sys.executable, '-m', 'unittest', '-v', 'test_screen_menus.WindowAltKeyTests'],
+                                cwd=str(Path(__file__).parent), capture_output=True, text=True, timeout=240,
+                                env={**__import__('os').environ, 'VOICE_COMPANION_WINDOW_TESTS': '1'})
+        self.assertEqual(result.returncode, 0, (result.stdout + result.stderr)[-6000:])
+        self.assertIn('OK', result.stderr)
+
+
+@unittest.skipUnless(__import__('sys').platform == 'win32' and __import__('os').environ.get('VOICE_COMPANION_WINDOW_TESTS'),
+                     'Windows Tk keyboard integration; runs in its own process')
 class WindowAltKeyTests(unittest.TestCase):
     def setUp(self):
         from app_window import CompanionWindow
@@ -399,6 +418,7 @@ class WindowAltKeyTests(unittest.TestCase):
     def tearDown(self):
         if self.window.thread.is_alive(): self.call(lambda: self.window.root.destroy())
         self.window.thread.join(5)
+        self.assertFalse(self.window.thread.is_alive(), self.state())
     def call(self, function):
         import threading
         done = threading.Event(); errors = []
