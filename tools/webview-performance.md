@@ -25,26 +25,65 @@ top (see "WebView2 host" below).
 
 ## Results (Linux container, headless Chromium)
 
-| Measurement | main (0.2.157-test) | this branch |
-|---|---|---|
-| First page capture (`_refresh`) | **failed after 55 s**: "The page is still changing" | 0.7 s |
-| One page snapshot | 7.2 s | 0.36 s |
-| One change check (`document_stamp`) | 3.8 ms | 2.4 ms |
-| `wait_ready` on the playing page | 4.0 s (always hit its timeout) | 0.2 s |
-| 12 s of main-loop polling | one check that blocked the main loop for **59 s** and failed | 7 checks, 25% of the time busy, worst 0.5 s |
-| Skip ad button found | no (page never captured) | yes |
-| Press Skip ad | not reachable; on a smaller page a self-removing button took 10 s+ | 1.1 s total, says "Ad skipped." |
+Each measurement has a heading, with the result on `main` (0.2.157-test) and on this branch.
+
+### First page capture (`_refresh`)
+
+- main: **failed after 55 s**: "The page is still changing"
+- This branch: 0.7 s
+
+### One page snapshot
+
+- main: 7.2 s
+- This branch: 0.36 s
+
+### One change check (`document_stamp`)
+
+- main: 3.8 ms
+- This branch: 2.4 ms
+
+### `wait_ready` on the playing page
+
+- main: 4.0 s (always hit its timeout)
+- This branch: 0.2 s
+
+### 12 s of main-loop polling
+
+- main: one check that blocked the main loop for **59 s** and failed
+- This branch: 7 checks, 25% of the time busy, worst 0.5 s
+
+### Skip ad button found
+
+- main: no (page never captured)
+- This branch: yes
+
+### Press Skip ad
+
+- main: not reachable; on a smaller page a self-removing button took 10 s+
+- This branch: 1.1 s total, says "Ad skipped."
 
 A blocked main loop means keys, voice commands and speech all wait. A
 minute-long freeze is very likely the "about to crash" moment.
 
 ### Where the 7.2 s snapshot went (CPU profile, one snapshot)
 
-| Cause | Cost | Fix |
-|---|---|---|
-| `newline()` ran `output.replace(/ +$/,'')` on the whole growing page text for every line (quadratic) | 2.7 s + 0.4 s | trailing spaces are held in a counter; no regular expression over the text |
-| `element.labels`: Blink searches the whole document once per button or field (3,200 buttons) | 0.97 s | labels resolved from one pass per snapshot (`withCachedLabels`, page definitions restored afterwards) |
-| Playwright converting a 2.4 MB object value by value | about 1.3 s | the page returns one JSON string (`JSON.stringify`), parsed in Python |
+#### Cause 1: Trimming spaces from the whole page text on every line
+
+- What: `newline()` ran `output.replace(/ +$/,'')` on the whole growing page text for every line (quadratic)
+- Cost: 2.7 s + 0.4 s
+- Fix: trailing spaces are held in a counter; no regular expression over the text
+
+#### Cause 2: Looking up field labels one at a time
+
+- What: `element.labels`: Blink searches the whole document once per button or field (3,200 buttons)
+- Cost: 0.97 s
+- Fix: labels resolved from one pass per snapshot (`withCachedLabels`, page definitions restored afterwards)
+
+#### Cause 3: Passing the snapshot to Python value by value
+
+- What: Playwright converting a 2.4 MB object value by value
+- Cost: about 1.3 s
+- Fix: the page returns one JSON string (`JSON.stringify`), parsed in Python
 
 After the first two fixes a snapshot took 2.1 s; after the third, 0.36 to 0.6 s
 (about 0.26 s of it is page-side work).

@@ -13,54 +13,318 @@ replies. Tests ran on Python 3.13 and 3.12 (the Windows build uses 3.12).
 backend and on Yahoo, and compares every spoken answer. Only folder-name case
 may differ (Gmail says INBOX, SPAM; Yahoo says Inbox, Spam).
 
-## Matrix
+## Every command, one by one
 
-| Command or behaviour | Gmail | Yahoo before | Yahoo now | Test |
-|---|---|---|---|---|
-| Open inbox / Check Yahoo / Email | Lists 10 newest | Worked; fetched each message separately | One FETCH per page, newest first | `test_list_is_newest_first...` |
-| List size 10-100, 1000, all | Pages of 100 | Worked; `UID SEARCH ALL` every page | Sequence-range FETCH; no full UID list | same |
-| Huge mailbox | Page tokens | Failed past ~125,000 messages (imaplib refuses a reply line over 1 MB); slow before that | Works at any size | same |
-| Next / previous page | Stable page tokens | Offsets shifted when new mail arrived (repeats) | Cursor allows for new mail | same |
-| Next / previous / first / last message | Works | Worked | Same answers as Gmail | parity script |
-| Empty folder | "Empty list..." | Worked | Same | `test_empty_folder_and_unread_flags` |
-| Read message N / That one / Continue reading | Gmail body rendering | Worked; unknown charset gave a wrong "check the connection" error | Same rendering as Gmail; unknown charset read as UTF-8 (Gmail too) | `test_message_bodies_are_read_exactly_like_gmail` |
-| HTML-only mail | `email_reader` | Worked | Same output as Gmail | same |
-| Reading marks as read? | No (format=raw) | No (BODY.PEEK) | No | same |
-| Huge message (> 5 MB) | "too large to read aloud" | Downloaded it all first | Size checked first | `test_missing_and_huge_messages` |
-| Message gone | "no longer available" | Worked | Same | same |
-| Message details | Summary | Worked | Same | parity script |
-| Non-ASCII sender / subject (RFC 2047, raw UTF-8, folded, broken charset) | Decoded by Google | Mostly worked; possible surrogates | Decoded once, unfolded, no surrogates | `test_international_and_damaged_headers...` |
-| Mark / select / select N through M / select all / clear / what is selected | Works | Worked | Same | parity script |
-| Delete / Delete selected, then Yes | Moves to Trash | **Failed on Windows**: Python 3.12 keeps pre-login capabilities, MOVE looked missing; and failed if any folder name came as a literal | Works; asks capabilities again after sign-in; UIDPLUS fallback removes only chosen UIDs | `test_move_and_delete_work_when_move_is_announced_only_after_sign_in`, `test_without_move_only_the_chosen_messages_are_removed` |
-| Delete inside Trash | Stays in Trash | Tried to move Trash into Trash (an error) | Stays in Trash | `test_delete_moves_to_trash_and_never_erases` |
-| Permanent erase | Never | Never | Never (no EXPUNGE of other messages) | same |
-| Move / Move to folder / Move selected to | Works | **Failed on Windows** (same MOVE bug) | Works | as above, parity script |
-| "Yes, please." (recognizer comma) to confirm | **Failed** (all providers) | Failed | Works everywhere | parity script, `test_spoken_yes_with_punctuation...` |
-| List folders / Go to folder | Labels | **Failed** if any name came as a literal (TypeError) | Literals, escapes, `\Noselect`, special-use flags handled | `test_folders_use_yahoo_mail_names...` |
-| Go to spam / junk | Works (SPAM) | "Could not find that folder" (Yahoo calls it Bulk) | Spam; "junk" and "bulk" also work, all providers | parity script |
-| Go to drafts / sent / trash / archive | Works | Worked (Draft spoken as "Draft") | Drafts, Sent, Trash, Archive | parity script |
-| Which folder | Works | Worked | Same | parity script |
-| Create / rename / move / delete folder | Works | Worked | Same; accents and spaces (modified UTF-7) | `test_folder_changes_with_spaces_and_accents` |
-| Protect standard folders | Inbox, Sent, Trash, Spam... | **Bulk and Draft could be renamed or deleted** | Refused like the others | parity script |
-| Reply / Reply all / Forward | Context from raw message | Worked; forward body not rendered like Gmail | Same fields as Gmail, checked key by key | `test_reply_and_forward_context_match_gmail` |
-| Send new / reply / forward | Gmail API | Worked over SMTP | Adds Date and Message-ID; threads with In-Reply-To | `test_reply_threads_and_forward_quotes_the_original` |
-| Sent copy | Gmail keeps one | **None** (Yahoo SMTP does not reliably save one) | IMAP APPEND to Sent, marked read; skipped if Yahoo already has that Message-ID; a failure is spoken but the send still counts | `test_sent_mail_appears_in_sent_like_gmail`, `test_no_second_sent_copy...`, `test_send_says_when_the_sent_copy_is_missing` |
-| Bcc | Hidden from recipients, kept in Sent | Hidden | Hidden; kept in the Sent copy | `test_sent_mail_appears_in_sent_like_gmail` |
-| Wrong or revoked app password | Gmail: sign-in message | "Could not complete... check the connection" (reading) or "result is uncertain" (sending, wrongly invites a duplicate check) | "Yahoo did not accept the saved app password... make a new Yahoo app password, then say add account." Sending: certain, not sent | `test_wrong_app_password...`, `test_refusals_are_certain...`, `test_expired_app_password_is_explained...` |
-| Recipient refused | 400: certain | "Uncertain" | Certain, names the address | `test_refusals_are_certain...` |
-| Some recipients refused | Bounce later | Reported as uncertain failure though sent | "Email sent... Yahoo did not accept X, so they did not get it." | `test_some_recipients_refused...` |
-| Server unreachable when sending | Uncertain | Uncertain | Certain, not sent (nothing reached Yahoo) | `test_unreachable_server_is_certain...` |
-| Lost reply after message data | Uncertain | Uncertain | Uncertain (unchanged) | same |
-| QUIT refused after acceptance | n/a | Reported as uncertain | Counted as sent | `test_a_failed_goodbye...` |
-| Timeouts | 30 s per request | 30 s socket timeout, but LOGOUT after a failure could wait again | 30 s; failed connections are closed at once | `test_silent_server_never_freezes_the_app` |
-| Dropped connection | Error | Error | Retried once when nothing changed; never after a move was sent | `test_dropped_connection_*` |
-| Error when a move is refused before anything changed | "Some messages may have moved" | Same | Says why and "Nothing was changed" | `test_expired_app_password_is_explained...` |
-| Reply when the account cannot be reached | "Open and read a message first" (a guess) | Same | Speaks the real reason (all providers) | same |
-| App password typed with spaces | n/a | Sign-in failed | Spaces ignored | `test_app_password_written_in_groups...` |
-| Contacts | Local list plus Google Contacts sync | Local list only | Local list only | not changed (see below) |
-| Search mail | Not offered | Not offered | Not offered | - |
-| Attachments | Not read; not forwarded | Same | Same | - |
-| Mark read / unread command | Not offered | Not offered | Not offered | - |
+Each command has a heading. The bullets give what Gmail does, what Yahoo did
+before this work, what Yahoo does now, and the test that checks it.
+
+### Open inbox / Check Yahoo / Email
+
+- Gmail: Lists 10 newest
+- Yahoo before: Worked; fetched each message separately
+- Yahoo now: One FETCH per page, newest first
+- Test: `test_list_is_newest_first...`
+
+### List size 10-100, 1000, all
+
+- Gmail: Pages of 100
+- Yahoo before: Worked; `UID SEARCH ALL` every page
+- Yahoo now: Sequence-range FETCH; no full UID list
+- Test: same as the command above
+
+### Huge mailbox
+
+- Gmail: Page tokens
+- Yahoo before: Failed past ~125,000 messages (imaplib refuses a reply line over 1 MB); slow before that
+- Yahoo now: Works at any size
+- Test: same as the command above
+
+### Next / previous page
+
+- Gmail: Stable page tokens
+- Yahoo before: Offsets shifted when new mail arrived (repeats)
+- Yahoo now: Cursor allows for new mail
+- Test: same as the command above
+
+### Next / previous / first / last message
+
+- Gmail: Works
+- Yahoo before: Worked
+- Yahoo now: Same answers as Gmail
+- Test: parity script
+
+### Empty folder
+
+- Gmail: "Empty list..."
+- Yahoo before: Worked
+- Yahoo now: Same
+- Test: `test_empty_folder_and_unread_flags`
+
+### Read message N / That one / Continue reading
+
+- Gmail: Gmail body rendering
+- Yahoo before: Worked; unknown charset gave a wrong "check the connection" error
+- Yahoo now: Same rendering as Gmail; unknown charset read as UTF-8 (Gmail too)
+- Test: `test_message_bodies_are_read_exactly_like_gmail`
+
+### HTML-only mail
+
+- Gmail: `email_reader`
+- Yahoo before: Worked
+- Yahoo now: Same output as Gmail
+- Test: same as the command above
+
+### Reading marks as read?
+
+- Gmail: No (format=raw)
+- Yahoo before: No (BODY.PEEK)
+- Yahoo now: No
+- Test: same as the command above
+
+### Huge message (> 5 MB)
+
+- Gmail: "too large to read aloud"
+- Yahoo before: Downloaded it all first
+- Yahoo now: Size checked first
+- Test: `test_missing_and_huge_messages`
+
+### Message gone
+
+- Gmail: "no longer available"
+- Yahoo before: Worked
+- Yahoo now: Same
+- Test: same as the command above
+
+### Message details
+
+- Gmail: Summary
+- Yahoo before: Worked
+- Yahoo now: Same
+- Test: parity script
+
+### Non-ASCII sender / subject (RFC 2047, raw UTF-8, folded, broken charset)
+
+- Gmail: Decoded by Google
+- Yahoo before: Mostly worked; possible surrogates
+- Yahoo now: Decoded once, unfolded, no surrogates
+- Test: `test_international_and_damaged_headers...`
+
+### Mark / select / select N through M / select all / clear / what is selected
+
+- Gmail: Works
+- Yahoo before: Worked
+- Yahoo now: Same
+- Test: parity script
+
+### Delete / Delete selected, then Yes
+
+- Gmail: Moves to Trash
+- Yahoo before: **Failed on Windows**: Python 3.12 keeps pre-login capabilities, MOVE looked missing; and failed if any folder name came as a literal
+- Yahoo now: Works; asks capabilities again after sign-in; UIDPLUS fallback removes only chosen UIDs
+- Test: `test_move_and_delete_work_when_move_is_announced_only_after_sign_in`, `test_without_move_only_the_chosen_messages_are_removed`
+
+### Delete inside Trash
+
+- Gmail: Stays in Trash
+- Yahoo before: Tried to move Trash into Trash (an error)
+- Yahoo now: Stays in Trash
+- Test: `test_delete_moves_to_trash_and_never_erases`
+
+### Permanent erase
+
+- Gmail: Never
+- Yahoo before: Never
+- Yahoo now: Never (no EXPUNGE of other messages)
+- Test: same as the command above
+
+### Move / Move to folder / Move selected to
+
+- Gmail: Works
+- Yahoo before: **Failed on Windows** (same MOVE bug)
+- Yahoo now: Works
+- Test: as above, parity script
+
+### "Yes, please." (recognizer comma) to confirm
+
+- Gmail: **Failed** (all providers)
+- Yahoo before: Failed
+- Yahoo now: Works everywhere
+- Test: parity script, `test_spoken_yes_with_punctuation...`
+
+### List folders / Go to folder
+
+- Gmail: Labels
+- Yahoo before: **Failed** if any name came as a literal (TypeError)
+- Yahoo now: Literals, escapes, `\Noselect`, special-use flags handled
+- Test: `test_folders_use_yahoo_mail_names...`
+
+### Go to spam / junk
+
+- Gmail: Works (SPAM)
+- Yahoo before: "Could not find that folder" (Yahoo calls it Bulk)
+- Yahoo now: Spam; "junk" and "bulk" also work, all providers
+- Test: parity script
+
+### Go to drafts / sent / trash / archive
+
+- Gmail: Works
+- Yahoo before: Worked (Draft spoken as "Draft")
+- Yahoo now: Drafts, Sent, Trash, Archive
+- Test: parity script
+
+### Which folder
+
+- Gmail: Works
+- Yahoo before: Worked
+- Yahoo now: Same
+- Test: parity script
+
+### Create / rename / move / delete folder
+
+- Gmail: Works
+- Yahoo before: Worked
+- Yahoo now: Same; accents and spaces (modified UTF-7)
+- Test: `test_folder_changes_with_spaces_and_accents`
+
+### Protect standard folders
+
+- Gmail: Inbox, Sent, Trash, Spam...
+- Yahoo before: **Bulk and Draft could be renamed or deleted**
+- Yahoo now: Refused like the others
+- Test: parity script
+
+### Reply / Reply all / Forward
+
+- Gmail: Context from raw message
+- Yahoo before: Worked; forward body not rendered like Gmail
+- Yahoo now: Same fields as Gmail, checked key by key
+- Test: `test_reply_and_forward_context_match_gmail`
+
+### Send new / reply / forward
+
+- Gmail: Gmail API
+- Yahoo before: Worked over SMTP
+- Yahoo now: Adds Date and Message-ID; threads with In-Reply-To
+- Test: `test_reply_threads_and_forward_quotes_the_original`
+
+### Sent copy
+
+- Gmail: Gmail keeps one
+- Yahoo before: **None** (Yahoo SMTP does not reliably save one)
+- Yahoo now: IMAP APPEND to Sent, marked read; skipped if Yahoo already has that Message-ID; a failure is spoken but the send still counts
+- Test: `test_sent_mail_appears_in_sent_like_gmail`, `test_no_second_sent_copy...`, `test_send_says_when_the_sent_copy_is_missing`
+
+### Bcc
+
+- Gmail: Hidden from recipients, kept in Sent
+- Yahoo before: Hidden
+- Yahoo now: Hidden; kept in the Sent copy
+- Test: `test_sent_mail_appears_in_sent_like_gmail`
+
+### Wrong or revoked app password
+
+- Gmail: Gmail: sign-in message
+- Yahoo before: "Could not complete... check the connection" (reading) or "result is uncertain" (sending, wrongly invites a duplicate check)
+- Yahoo now: "Yahoo did not accept the saved app password... make a new Yahoo app password, then say add account." Sending: certain, not sent
+- Test: `test_wrong_app_password...`, `test_refusals_are_certain...`, `test_expired_app_password_is_explained...`
+
+### Recipient refused
+
+- Gmail: 400: certain
+- Yahoo before: "Uncertain"
+- Yahoo now: Certain, names the address
+- Test: `test_refusals_are_certain...`
+
+### Some recipients refused
+
+- Gmail: Bounce later
+- Yahoo before: Reported as uncertain failure though sent
+- Yahoo now: "Email sent... Yahoo did not accept X, so they did not get it."
+- Test: `test_some_recipients_refused...`
+
+### Server unreachable when sending
+
+- Gmail: Uncertain
+- Yahoo before: Uncertain
+- Yahoo now: Certain, not sent (nothing reached Yahoo)
+- Test: `test_unreachable_server_is_certain...`
+
+### Lost reply after message data
+
+- Gmail: Uncertain
+- Yahoo before: Uncertain
+- Yahoo now: Uncertain (unchanged)
+- Test: same as the command above
+
+### QUIT refused after acceptance
+
+- Gmail: n/a
+- Yahoo before: Reported as uncertain
+- Yahoo now: Counted as sent
+- Test: `test_a_failed_goodbye...`
+
+### Timeouts
+
+- Gmail: 30 s per request
+- Yahoo before: 30 s socket timeout, but LOGOUT after a failure could wait again
+- Yahoo now: 30 s; failed connections are closed at once
+- Test: `test_silent_server_never_freezes_the_app`
+
+### Dropped connection
+
+- Gmail: Error
+- Yahoo before: Error
+- Yahoo now: Retried once when nothing changed; never after a move was sent
+- Test: `test_dropped_connection_*`
+
+### Error when a move is refused before anything changed
+
+- Gmail: "Some messages may have moved"
+- Yahoo before: Same
+- Yahoo now: Says why and "Nothing was changed"
+- Test: `test_expired_app_password_is_explained...`
+
+### Reply when the account cannot be reached
+
+- Gmail: "Open and read a message first" (a guess)
+- Yahoo before: Same
+- Yahoo now: Speaks the real reason (all providers)
+- Test: same as the command above
+
+### App password typed with spaces
+
+- Gmail: n/a
+- Yahoo before: Sign-in failed
+- Yahoo now: Spaces ignored
+- Test: `test_app_password_written_in_groups...`
+
+### Contacts
+
+- Gmail: Local list plus Google Contacts sync
+- Yahoo before: Local list only
+- Yahoo now: Local list only
+- Test: not changed (see below)
+
+### Search mail
+
+- Gmail: Not offered
+- Yahoo before: Not offered
+- Yahoo now: Not offered
+- Test: none
+
+### Attachments
+
+- Gmail: Not read; not forwarded
+- Yahoo before: Same
+- Yahoo now: Same
+- Test: none
+
+### Mark read / unread command
+
+- Gmail: Not offered
+- Yahoo before: Not offered
+- Yahoo now: Not offered
+- Test: none
 
 ## Left as is
 

@@ -8,6 +8,8 @@ Usage (from the repository root):
 
 Every run also checks command routing against tools/routing-snapshot.json
 (see tools/routing_snapshot.py): any phrase that now behaves differently fails.
+It also runs the repository checks in tools/test_*.py, for example
+tools/test_no_tables.py, which keeps tables out of every document.
 
 Windows-only tests skip themselves on Linux, and a few fail here for environment
 reasons (Windows fonts, eSpeak binaries, missing packages). --compare separates
@@ -102,6 +104,14 @@ def main():
         print(routing.stdout[-4000:] + routing.stderr[-2000:])
         print('Command routing changed. If that is intended, run tools/routing_snapshot.py --update '
               'and explain the changed records in the pull request.')
+        sys.exit(1)
+    # Repository checks (tools/test_*.py), such as no tables in any document.
+    tools = subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tools', '-p', 'test_*.py'],
+                           cwd=ROOT, env=environment(False), capture_output=True, text=True, timeout=600)
+    tools_output = (tools.stdout + tools.stderr).strip()
+    print('Repository checks: ' + ('passed.' if not tools.returncode else 'FAILED.'))
+    if tools.returncode:
+        print(tools_output[-6000:])
         sys.exit(1)
     if not args.compare:
         for name in sorted(failures): print('  ' + name)
