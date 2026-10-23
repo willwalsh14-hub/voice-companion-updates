@@ -25,14 +25,16 @@ Use the app password here. Keep your usual Yahoo password private.
 Companion protects the saved connection for the Windows user who made it.
 
 4. Connect through Thunderbird
-Thunderbird can hold the email sign-in instead of Companion. This works for Gmail, Outlook, Yahoo and most other email.
-1. Install Thunderbird and add the email account there. Check that Thunderbird can read and send mail.
-2. In Thunderbird, open the Add-ons and Themes page. Choose the gear button, then Install Add-on From File.
-3. Pick Voice Companion Mail Connection.xpi in the Voice Companion program folder. It is in AppData, Local, Programs, Voice Companion.
-4. Agree to the add-on's requests. It reads, moves and sends mail only when Companion asks.
-5. Keep Thunderbird open. It can stay minimized.
-6. In Companion, say "Add account" and choose Thunderbird. Companion adds each address set up in Thunderbird.
-7. Listen to the address Companion reads. Check that it is right.
+Thunderbird can hold the email sign-in instead of Companion. This works for Gmail, Outlook, Yahoo and most other email. Thunderbird must be version 128 or newer.
+1. Install Thunderbird from thunderbird.net. Add the email account there. Check that Thunderbird can read and send mail.
+2. In Companion, say "Add account" and choose Thunderbird. Companion checks each part and says what is missing.
+3. If Companion asks to install the Voice Companion connection, say yes. Companion adds a small add-on to Thunderbird. If Thunderbird is open, close it when Companion asks.
+4. If Companion asks to start Thunderbird, say yes. Companion waits up to one minute for Thunderbird to connect.
+5. Listen to the address Companion reads. Check that it is right. Companion adds each address set up in Thunderbird.
+6. Keep Thunderbird open. It can stay minimized.
+The add-on goes in the extensions folder of the Thunderbird profile. Companion also adds two lines to the profile's user.js file. They let Thunderbird turn on the add-on without a prompt.
+To install the add-on by hand, open Add-ons and Themes in Thunderbird. Choose the gear button, then Install Add-on From File. Pick Voice Companion Mail Connection.xpi in the Voice Companion program folder. It is in AppData, Local, Programs, Voice Companion. Agree to the add-on's requests. It reads, moves and sends mail only when Companion asks.
+If Companion says the connection is turned off, open Add-ons and Themes in Thunderbird. Turn on Voice Companion Mail Connection.
 When Companion sends mail, Thunderbird sends it. A Thunderbird window may open briefly and close.
 If Companion says Thunderbird is not connected, open Thunderbird and wait one minute. Then try again.
 

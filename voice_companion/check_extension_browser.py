@@ -20,6 +20,7 @@ from connected_browser import ConnectedBrowserBackend
 import test_web_live
 import test_consumer_web
 import test_web_semantics
+import test_web_modes_live
 
 
 class Fixture(BaseHTTPRequestHandler):
@@ -112,8 +113,9 @@ def check(installed, runtime):
                     self.assertIn('Second site',self.session.command('go forward'))
                     self.assertNotIn('First heading',self.session.reading.text)
             class ExtensionSemantics(ExtensionSetup,test_web_semantics.SemanticWebTests):pass
+            class ExtensionModes(ExtensionSetup,test_web_modes_live.WebModeLiveTests):pass
             suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls)
-                                     for cls in (ExtensionNavigation,ExtensionConsumer,ExtensionSemantics))
+                                     for cls in (ExtensionNavigation,ExtensionConsumer,ExtensionSemantics,ExtensionModes))
             result=unittest.TextTestRunner(verbosity=2,failfast=True).run(suite)
             if not result.wasSuccessful():raise RuntimeError('Standard browser features failed through the real extension.')
             regular_session.leave(False)

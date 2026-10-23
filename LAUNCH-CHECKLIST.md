@@ -50,6 +50,13 @@ pull requests. Update this file as items are finished.
       (OpenAI narration when the AI voice is on, Google and Microsoft mail APIs,
       station and podcast directories, GitHub for updates).
 
+- [ ] **Will or a tester (0.2.158):** try on a real PC:
+      Thunderbird setup with Thunderbird closed (say yes to install and start);
+      "Set up Chrome" with an existing Chrome and with a fresh install (does the
+      Enable extension prompt get focus and get read?); YouTube in embedded Edge
+      (speed, Skip ad, app mode with K/J/L, seek and volume sliders); Alt in
+      the email inbox and in a draft.
+
 ### Reliability work (Claude)
 - [ ] Split command handling in `companion.py` into smaller parts with an
       explicit priority order, without changing behaviour. Safety net in place:

@@ -46,6 +46,20 @@ def entry_feedback(before, after, old_caret, caret, key, character=""):
     return None
 
 
+def show_context_text(old, field, seq, web_cursor_changed=False):
+    """Whether the editor takes the app's text and caret from a new context.
+
+    In a web text box, keys typed since the app's last acknowledgment are
+    still on their way to it. Replacing the box then would undo those letters
+    and make the next key look like a conflicting edit."""
+    if old.get('source') != field.get('source'):
+        return True
+    if (field.get('mode') == 'web' and field.get('web_field') and not field.get('readonly')
+            and field.get('ack', 0) < seq):
+        return False
+    return bool(web_cursor_changed or field.get('focus', False) or field.get('ack', 0) >= seq)
+
+
 class CompanionWindow:
     def __init__(self, version, data_folder=None):
         self.version = version
@@ -58,6 +72,7 @@ class CompanionWindow:
         self.key_feedback = queue.Queue()
         self.closed = threading.Event()
         self.ready = threading.Event()
+        self.ui_errors = []
         self.last_email_request = None
         self.email_selection_edit = None
         self.problem = None
@@ -250,6 +265,31 @@ class CompanionWindow:
             root.bind_all('<KeyRelease>',release_document_modifier,add='+')
             previous = ['', 0]
             field_selection = FieldSelection()
+            # Alt pressed and let go with no other key opens the screen's Alt menu
+            # (screen_menus.py). Alt+O, Alt+T, Alt+F4 and other Alt keys never do.
+            alt_tap={'alone':False,'when':0.0}
+            def watch_alt(event):
+                if event.keysym in ('Alt_L','Alt_R'):
+                    if not alt_tap['alone']:alt_tap.update(alone=True,when=time.monotonic())
+                else:alt_tap['alone']=False
+            root.bind('<KeyPress>',watch_alt,add='+')
+            root.bind('<FocusOut>',lambda event:alt_tap.update(alone=False),add='+')
+            def alt_release(event):
+                if event.keysym not in ('Alt_L','Alt_R'):return
+                alone=alt_tap['alone'] and time.monotonic()-alt_tap['when']<2;alt_tap['alone']=False
+                if not alone or event.widget.winfo_toplevel()!=root:return
+                from screen_menus import alt_menu_key
+                if not alt_menu_key(self.context,self.command_entry_active,typed.get()):return
+                if self.keyboard_output:self.keyboard_output.interrupt()
+                flush_pending_edit();cancel_phonetic()
+                mode=self.context.get('mode');opening=not self.context.get('screen_menu')
+                if opening and mode=='email_draft' and self.email_field:
+                    # Keep what was typed in the address or subject box first.
+                    self.commands.put(('email_field_tab',{'field':self.email_field,'value':typed.get(),'backward':False,'key':'Alt'}));return 'break'
+                if opening and mode=='note' and typed.get().strip():
+                    self.commands.put(typed.get().strip());typed.delete(0,'end')
+                self.commands.put(('keyboard','Alt'));return 'break'
+            root.bind_all('<KeyRelease>',alt_release,add='+')
             def shortcut(event):
                 if event.keysym.lower()=='p' and event.state&4 and not event.state&(1|8|0x20000):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
@@ -258,6 +298,16 @@ class CompanionWindow:
                 mode=self.context.get('mode');key=event.keysym
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
+                watch_alt(event)
+                if self.context.get('screen_menu') and not self.command_entry_active:
+                    # An Alt menu is open: arrows, Enter, Escape, letters and numbers belong to it.
+                    from screen_menus import overlay_key
+                    menu_key=overlay_key(key,event.char,event.state)
+                    if menu_key is not None:
+                        if menu_key:
+                            if self.keyboard_output:self.keyboard_output.interrupt()
+                            flush_pending_edit();cancel_phonetic();self.commands.put(('keyboard',menu_key))
+                        return 'break'
                 if mode=='files' and control and key.lower()=='e':
                     self.command_entry_active=False
                     typed.delete(0,'end')
@@ -296,6 +346,14 @@ class CompanionWindow:
                         self.commands.put(('keyboard','Letter:'+event.char));return 'break'
                     if file_key in ('Up','Down','Left','Right','Home','End','Enter','Space','Escape','Alt','F1','F2','Delete','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+A','Ctrl+Shift+A','F5','Ctrl+D','Ctrl+F','Ctrl+Shift+F','Ctrl+Shift+X','Alt+S','Alt+N','Alt+C','Alt+M','Alt+D','Alt+A','Alt+Z','Alt+Home','Ctrl+Shift+1','Ctrl+Shift+2','Ctrl+Shift+3','Ctrl+Shift+4','Ctrl+Shift+Up','Ctrl+Shift+Down','BackSpace'):
                         self.commands.put(('keyboard',file_key));return 'break'
+                if mode=='web' and not self.command_entry_active and not self.context.get('web_private'):
+                    from web_modes import toggle_chord
+                    # Insert+Space, or Control+Alt+Space when a screen reader owns Insert.
+                    if key=='Insert':document_modifiers.add(key);return 'break'
+                    if toggle_chord(key,event.state,'Insert' in document_modifiers):
+                        if self.keyboard_output:self.keyboard_output.interrupt()
+                        flush_pending_edit();cancel_phonetic()
+                        self.commands.put(('keyboard','Web:ToggleAppMode'));return 'break'
                 if not self.command_entry_active and mode!='task_input':
                     from input_parity import screen_key
                     direct=screen_key(mode,key,event.state,self.context,self.email_field,typed.get())
@@ -359,7 +417,13 @@ class CompanionWindow:
                     elif control and shift and key.lower()=='p':request='Ctrl+Shift+P'
                     elif control and key.lower() in ('f','p','r','s','d'):request='Ctrl+'+key.upper()
                     elif control and key in ('Left','Right') and not self.context.get('media_input'):request='Ctrl+'+key
-                if mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
+                if mode=='web' and (self.context.get('web_app_mode') or self.context.get('web_slider')) and not self.command_entry_active and not self.context.get('web_private'):
+                    # App mode sends keys to the page; a slider takes its arrow keys.
+                    from web_modes import window_request
+                    request=window_request(key,event.char,event.state,self.context)
+                    if request=='':return 'break'
+                if request:pass
+                elif mode=='regular_browser' and not control and not typed.get() and key in ('Up','Down','Home','End','Return','space','Escape'):
                     request='Enter' if key=='Return' else 'Space' if key=='space' else key
                 elif mode=='browser_menu' and not self.command_entry_active and not self.context.get('browser_name_input') and not control and not event.state&(8|0x20000) and event.char and event.char.isalnum():request='Letter:'+event.char
                 elif mode=='note' and control and not shift and not event.state&(8|0x20000) and key.lower()=='o':request='Ctrl+O'
@@ -512,7 +576,7 @@ class CompanionWindow:
             tk.Button(root,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
-            self.current = tk.StringVar(value='Starting speech and microphone...')
+            self.current = tk.StringVar(root, value='Starting speech and microphone...')
             status_label=tk.Label(root, textvariable=self.current, font=('Segoe UI', 12),
                      wraplength=600, justify='left')
             status_label.pack(anchor='w', padx=18, pady=14)
@@ -675,7 +739,7 @@ class CompanionWindow:
                 choice = ttk.Combobox(dialog, values=VOICES, state='readonly')
                 choice.set('coral')
                 choice.pack(padx=16, fill='x')
-                consent = tk.BooleanVar(value=False)
+                consent = tk.BooleanVar(dialog, value=False)
                 tk.Checkbutton(dialog, text='I authorize sending narration text to OpenAI.',
                                variable=consent).pack(anchor='w', padx=16, pady=10)
                 try:
@@ -709,7 +773,7 @@ class CompanionWindow:
                 tk.Button(dialog, text='Cancel', command=close).pack(anchor='w', padx=16, pady=12)
                 key_entry.focus_set()
 
-            def poll():
+            def poll_once():
                 while True:
                     if self.closed.is_set():return
                     try: action, field = self.ui_actions.get_nowait()
@@ -764,7 +828,7 @@ class CompanionWindow:
                             web_cursor_changed=mode=='web' and (old.get('web_cursor_revision')!=field.get('web_cursor_revision') or old.get('web_revision')!=field.get('web_revision'))
                             if web_cursor_changed or transition:local['web_navigation_pending']=False
                             if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
-                            if old.get('source')!=source or web_cursor_changed or field.get('focus',False) or field.get('ack',0)>=local['seq']:
+                            if show_context_text(old,field,local['seq'],web_cursor_changed):
                                 local['applying']=True
                                 if editor.get('1.0','end-1c')!=field.get('text',''):
                                     editor.delete('1.0','end');editor.insert('1.0',field.get('text',''));editor.edit_reset()
@@ -871,7 +935,16 @@ class CompanionWindow:
                         history.delete('1.0', '30.0')
                     history.see('end')
                     history.configure(state='disabled')
-                if not self.closed.is_set(): root.after(15, poll)
+            def poll():
+                # One failed update must never stop the window: without the
+                # next check it would stop speaking and answering keys for good.
+                try:poll_once()
+                except Exception as exc:
+                    import sys,traceback
+                    self.ui_errors.append(''.join(traceback.format_exception(type(exc),exc,exc.__traceback__))[-3000:])
+                    print('Voice Companion window error:\n'+self.ui_errors[-1],file=sys.stderr,flush=True)
+                finally:
+                    if not self.closed.is_set(): root.after(15, poll)
 
             self.ready.set()
             root.after(15, poll)

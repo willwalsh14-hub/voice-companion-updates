@@ -87,7 +87,14 @@ class YahooConnectTests(unittest.TestCase):
             self.connect(password='  ')
 
     def test_old_window_is_never_opened(self):
-        with patch.dict(sys.modules, {'tkinter': None}):
+        # Refuse any tkinter import during setup, without touching sys.modules
+        # (clearing sys.modules can disturb other threads and later tests).
+        import builtins
+        real_import = builtins.__import__
+        def guarded(name, *args, **kwargs):
+            if name == 'tkinter' or name.startswith('tkinter.'): raise AssertionError('Yahoo setup opened a separate window')
+            return real_import(name, *args, **kwargs)
+        with patch('builtins.__import__', guarded):
             with self.assertRaises(AccountError):
                 mail_accounts.connect('yahoo', tempfile.mkdtemp(), graphical=True)
 

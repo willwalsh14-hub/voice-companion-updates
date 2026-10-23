@@ -1,0 +1,434 @@
+"""Thunderbird account setup: find what is missing, say the next step, fix what can be fixed.
+
+Checks, in order:
+  a. Is Thunderbird installed?            (registry, then the usual program folders)
+  b. Does it have an email account?       (profiles.ini, then the profile's prefs.js)
+  c. Is the Voice Companion add-on there? (the profile's extensions folder and extensions.json)
+  d. Is Thunderbird running?              (offer to start it, then wait up to a minute)
+  e. Does the connected add-on report email accounts?
+
+The add-on is installed by placing its .xpi in the profile's extensions folder
+and, in the profile's user.js, letting Thunderbird enable add-ons placed there
+without a prompt (extensions.autoDisableScopes without the profile scope) and
+look for them at each start (extensions.startupScanScopes with the profile
+scope). Thunderbird does not require Mozilla-signed add-ons. No administrator
+rights are needed and nothing outside the user's own Thunderbird profile changes.
+
+Everything that touches Windows goes through WindowsSystem, so tests use a fake.
+"""
+import configparser
+import json
+import os
+import re
+import subprocess
+from collections import namedtuple
+from pathlib import Path, PureWindowsPath
+
+from thunderbird_bridge import ADDON_ID
+
+SITE_URL = 'https://www.thunderbird.net/'
+MIN_VERSION = 128
+WAIT_SECONDS = 60
+PROGRESS_SECONDS = 15
+SCOPE_PROFILE = 1               # AddonManager.SCOPE_PROFILE
+DEFAULT_AUTO_DISABLE = 15       # Thunderbird's default: add-ons placed by other programs start turned off
+AGAIN = 'Then say add account and choose Thunderbird.'
+
+NOT_INSTALLED = ('Thunderbird is not on this computer. Thunderbird is a free email program. '
+                 'It must be installed before Voice Companion can use it. Its website is thunderbird dot net. '
+                 'Open the website now? Say yes or no.')
+OPENING_SITE = ('Opening thunderbird dot net in your web browser. Ask a helper to install Thunderbird '
+                'and add your email account there. ' + AGAIN)
+NOT_OPENING_SITE = 'Okay. Nothing was opened. When Thunderbird is installed, say add account and choose Thunderbird.'
+SITE_FAILED = 'The website did not open. Ask a helper to go to thunderbird dot net and install Thunderbird. ' + AGAIN
+TOO_OLD = ('Thunderbird on this computer is too old for Voice Companion. Ask a helper to update it to version 128 or newer. '
+           'In Thunderbird, open Help, then About Thunderbird. ' + AGAIN)
+NO_ACCOUNT = ('Thunderbird is installed, but no email account is set up in it yet. A helper needs to add your email account '
+              'in Thunderbird. Start Thunderbird now so they can do that? Say yes or no.')
+NO_ACCOUNT_OPEN = ('Thunderbird is open, but no email account is set up in it yet. Ask a helper to add your email account '
+                   'in Thunderbird. ' + AGAIN)
+STARTING_FOR_ACCOUNT = 'Starting Thunderbird. When your helper has added your email account, say add account and choose Thunderbird.'
+NOT_STARTING_FOR_ACCOUNT = 'Okay. When an email account is set up in Thunderbird, say add account and choose Thunderbird.'
+ADDON_MISSING = ('Thunderbird needs the Voice Companion connection. It is a small add-on that lets Voice Companion '
+                 'use your Thunderbird email. Install the Voice Companion connection in Thunderbird now? Say yes or no.')
+ADDON_INSTALLED = 'The Voice Companion connection is installed. '
+ADDON_RESTART = ('Thunderbird must restart to use the Voice Companion connection. '
+                 'Close Thunderbird, then say add account and choose Thunderbird.')
+ADDON_NOT_INSTALLED = ('Okay. Nothing was installed. A helper can install the connection by hand. '
+                       'The steps are in Email Setup Helper, section 4.')
+ADDON_FAILED = ('The Voice Companion connection could not be installed. Your Thunderbird email was not changed. '
+                'Ask a helper to install it by hand. The steps are in Email Setup Helper, section 4.')
+ADDON_OFF = ('The Voice Companion connection is turned off in Thunderbird. Ask a helper to open Add-ons and Themes '
+             'in Thunderbird and turn on Voice Companion Mail Connection. ' + AGAIN)
+ADDON_BLOCKED = ('Thunderbird cannot use the Voice Companion connection. Ask a helper to update Thunderbird '
+                 'to version 128 or newer. ' + AGAIN)
+NOT_RUNNING = 'Thunderbird is not open. Start Thunderbird now? Say yes or no.'
+NOT_STARTING = 'Okay. Open Thunderbird when you are ready. ' + AGAIN
+STARTING = 'Starting Thunderbird.'
+START_FAILED = 'Thunderbird could not start. Try opening it from the Start menu. ' + AGAIN
+WAITING = 'Thunderbird is open. Waiting for it to connect.'
+STILL_WAITING = 'Still waiting for Thunderbird to connect.'
+NO_CONNECTION = ('Thunderbird did not connect after one minute. Close Thunderbird, then say add account and choose '
+                 'Thunderbird to try again. If it still does not connect, ask a helper to check Email Setup Helper, section 4.')
+NO_RELAY = 'Voice Companion could not get ready for Thunderbird. Close Voice Companion and open it again. ' + AGAIN
+
+Step = namedtuple('Step', 'message question')
+
+
+class WindowsSystem:
+    """The only part that reads the registry or starts programs."""
+
+    def __init__(self):
+        self.environ = os.environ
+
+    def registry(self, hive, key, name=''):
+        try:
+            import winreg
+        except ImportError:
+            return None
+        root = {'HKCU': winreg.HKEY_CURRENT_USER, 'HKLM': winreg.HKEY_LOCAL_MACHINE}[hive]
+        for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+            try:
+                with winreg.OpenKey(root, key, 0, winreg.KEY_READ | view) as handle:
+                    value, _ = winreg.QueryValueEx(handle, name)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+            except OSError:
+                continue
+        return None
+
+    def exists(self, path):
+        # lexists: the Microsoft Store's thunderbird.exe is a zero-size app link.
+        return os.path.lexists(path) and not os.path.isdir(path)
+
+    def running(self):
+        try:
+            found = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq thunderbird.exe', '/NH', '/FO', 'CSV'],
+                                   capture_output=True, text=True, timeout=15,
+                                   creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout
+        except (OSError, subprocess.SubprocessError):
+            return False
+        return '"thunderbird.exe"' in found.lower()
+
+    def launch(self, path):
+        os.startfile(str(path))
+
+    def open_site(self, url):
+        import webbrowser
+        if not webbrowser.open(url):
+            raise OSError('No web browser opened.')
+
+
+# ---- a. Finding the program -------------------------------------------------
+
+def _command_path(command):
+    """'"C:\\...\\thunderbird.exe" -mail' -> the program path."""
+    command = (command or '').strip()
+    if command.startswith('"'):
+        return command[1:].split('"', 1)[0]
+    match = re.match(r'(.+?\.exe)\b', command, re.I)
+    return match[1] if match else command
+
+
+def find_program(system):
+    """(path to thunderbird.exe, version text) or (None, '')."""
+    candidates = []
+    for hive in ('HKCU', 'HKLM'):
+        key = r'Software\Mozilla\Mozilla Thunderbird'
+        version = system.registry(hive, key, 'CurrentVersion')
+        if version:
+            path = system.registry(hive, key + '\\' + version + r'\Main', 'PathToExe')
+            if path: candidates.append((path, version))
+    for hive in ('HKCU', 'HKLM'):
+        path = system.registry(hive, r'Software\Microsoft\Windows\CurrentVersion\App Paths\thunderbird.exe')
+        if path: candidates.append((path, ''))
+        command = system.registry(hive, r'Software\Clients\Mail\Mozilla Thunderbird\shell\open\command')
+        if command: candidates.append((_command_path(command), ''))
+    env = system.environ
+    for name, parts in (('ProgramFiles', ('Mozilla Thunderbird',)), ('ProgramW6432', ('Mozilla Thunderbird',)),
+                        ('ProgramFiles(x86)', ('Mozilla Thunderbird',)), ('LOCALAPPDATA', ('Mozilla Thunderbird',)),
+                        ('LOCALAPPDATA', ('Programs', 'Mozilla Thunderbird')),
+                        ('LOCALAPPDATA', ('Microsoft', 'WindowsApps'))):
+        if env.get(name):
+            candidates.append((str(Path(env[name], *parts, 'thunderbird.exe')), ''))
+    for path, version in candidates:
+        if system.exists(path):
+            return path, version
+    return None, ''
+
+
+def major_version(version):
+    match = re.match(r'\s*(\d+)', version or '')
+    return int(match[1]) if match else None
+
+
+# ---- b. Profile and email account -------------------------------------------
+
+def _profile_roots(system):
+    env = system.environ
+    roots = []
+    if env.get('APPDATA'):
+        roots.append(Path(env['APPDATA']) / 'Thunderbird')
+    if env.get('LOCALAPPDATA'):
+        # The Microsoft Store version keeps its profiles in its own package folder.
+        roots.extend(sorted(Path(env['LOCALAPPDATA'], 'Packages').glob('Mozilla.Thunderbird*/LocalCache/Roaming/Thunderbird')))
+    return roots
+
+
+def _resolve(root, value, relative=True):
+    if not value: return None
+    if PureWindowsPath(value).is_absolute() or Path(value).is_absolute() or not relative:
+        return Path(value)
+    return root / Path(*value.replace('\\', '/').split('/'))
+
+
+def profile_candidates(system):
+    """Profile folders, the one Thunderbird opens by default first."""
+    preferred, defaults, others = [], [], []
+    for root in _profile_roots(system):
+        parser = configparser.ConfigParser(interpolation=None, strict=False)
+        try:
+            parser.read_string((root / 'profiles.ini').read_text(encoding='utf-8-sig'))
+        except (OSError, UnicodeError, configparser.Error):
+            continue
+        for section in parser.sections():
+            items = parser[section]
+            if section.lower().startswith('install'):
+                preferred.append(_resolve(root, items.get('Default')))
+            elif section.lower().startswith('profile'):
+                path = _resolve(root, items.get('Path'), items.get('IsRelative', '1').strip() != '0')
+                (defaults if items.get('Default', '0').strip() == '1' else others).append(path)
+    found = []
+    for path in preferred + defaults + others:
+        if path is not None and path not in found and path.is_dir():
+            found.append(path)
+    return found
+
+
+PREF = re.compile(r'user_pref\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*("(?:[^"\\]|\\.)*"|[^)]*?)\s*\)\s*;')
+
+
+def read_prefs(path):
+    """name -> value from a prefs.js or user.js. Damaged lines are skipped."""
+    try:
+        text = Path(path).read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        return {}
+    prefs = {}
+    for name, raw in PREF.findall(text):
+        if raw.startswith('"'):
+            value = raw[1:-1].replace('\\"', '"').replace('\\\\', '\\')
+        elif raw in ('true', 'false'):
+            value = raw == 'true'
+        else:
+            try: value = int(raw)
+            except ValueError: continue
+        prefs[name] = value
+    return prefs
+
+
+def has_email_account(profile):
+    """True when an account has a sending address. "Local Folders" alone has none."""
+    prefs = read_prefs(Path(profile) / 'prefs.js')
+    accounts = str(prefs.get('mail.accountmanager.accounts', '')).split(',')
+    return any(str(prefs.get('mail.account.' + account.strip() + '.identities', '')).strip()
+               for account in accounts if account.strip())
+
+
+def choose_profile(system):
+    """(profile folder or None, whether it has an email account)."""
+    candidates = profile_candidates(system)
+    for profile in candidates:
+        if has_email_account(profile):
+            return profile, True
+    return (candidates[0] if candidates else None), False
+
+
+# ---- c. The add-on ----------------------------------------------------------
+
+def addon_file(profile):
+    return Path(profile) / 'extensions' / (ADDON_ID + '.xpi')
+
+
+def addon_state(profile):
+    """'missing', 'waiting' (placed, Thunderbird has not loaded it yet), 'active', 'off' or 'blocked'."""
+    if not addon_file(profile).is_file():
+        return 'missing'
+    try:
+        data = json.loads((Path(profile) / 'extensions.json').read_text(encoding='utf-8'))
+        entries = [a for a in data.get('addons') or [] if isinstance(a, dict) and a.get('id') == ADDON_ID]
+    except (OSError, ValueError, AttributeError):
+        entries = []
+    if not entries:
+        return 'waiting'
+    entry = entries[0]
+    if entry.get('active'): return 'active'
+    if entry.get('userDisabled'): return 'off'
+    if entry.get('appDisabled'): return 'blocked'
+    return 'waiting'
+
+
+def write_atomic(path, data, temporary_folder=None):
+    """Write a temporary file, then replace: a failure never leaves half a file."""
+    path = Path(path)
+    temporary = Path(temporary_folder or path.parent) / ('voice-companion-' + path.name.replace('@', '-') + '.tmp')
+    try:
+        with open(temporary, 'wb') as handle:
+            handle.write(data); handle.flush(); os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except BaseException:
+        try: temporary.unlink()
+        except OSError: pass
+        raise
+
+
+def _set_pref(text, name, value):
+    line = 'user_pref("' + name + '", ' + str(value) + ');'
+    pattern = re.compile(r'user_pref\(\s*"' + re.escape(name) + r'"\s*,[^)]*\)\s*;')
+    if pattern.search(text):
+        return pattern.sub(lambda m: line, text)
+    if text and not text.endswith('\n'): text += '\n'
+    return text + line + '\n'
+
+
+def install_addon(profile, package):
+    """Place the add-on in the profile and let Thunderbird turn it on at its next start."""
+    profile = Path(profile)
+    data = Path(package).read_bytes()
+    user_js = profile / 'user.js'
+    try:
+        text = user_js.read_bytes().decode('utf-8', 'surrogateescape')
+    except FileNotFoundError:
+        text = ''
+    current = read_prefs(profile / 'prefs.js'); current.update(read_prefs(user_js))
+    auto = current.get('extensions.autoDisableScopes')
+    auto = auto if isinstance(auto, int) else DEFAULT_AUTO_DISABLE
+    scan = current.get('extensions.startupScanScopes')
+    scan = scan if isinstance(scan, int) else 0
+    if not text.strip():
+        text = '// Settings for this Thunderbird profile.\n'
+    if 'Voice Companion' not in text:
+        text += '// Added by Voice Companion so its mail connection add-on turns on.\n'
+    text = _set_pref(text, 'extensions.autoDisableScopes', auto & ~SCOPE_PROFILE)
+    text = _set_pref(text, 'extensions.startupScanScopes', scan | SCOPE_PROFILE)
+    (profile / 'extensions').mkdir(exist_ok=True)
+    write_atomic(addon_file(profile), data, profile)  # temporary file outside extensions: Thunderbird never sees it
+    try:
+        write_atomic(user_js, text.encode('utf-8', 'surrogateescape'))
+    except BaseException:
+        try: addon_file(profile).unlink()
+        except OSError: pass
+        raise
+
+
+def refresh_addon(profile, package):
+    """Replace an older copy of the add-on. Only while Thunderbird is closed: it locks the file."""
+    try:
+        if addon_file(profile).read_bytes() != Path(package).read_bytes():
+            write_atomic(addon_file(profile), Path(package).read_bytes(), profile)
+    except OSError:
+        pass
+
+
+# ---- The spoken flow --------------------------------------------------------
+
+class Setup:
+    """start() and answer() each return a Step: what to say, and the yes or no question now waiting."""
+
+    def __init__(self, system, package, connect, relay, progress):
+        self.system, self.package = system, Path(package)
+        self.connect, self.relay, self.progress = connect, relay, progress
+        self.program = self.profile = None
+
+    def _relay(self):
+        try:
+            return self.relay()
+        except OSError:
+            return None
+
+    def _connected(self):
+        relay = self._relay()
+        return relay is not None and relay.connected.is_set()
+
+    def _finish(self):
+        from mail_accounts import AccountError
+        try:
+            address = self.connect()
+        except (AccountError, OSError, ValueError) as exc:
+            return Step(str(exc), None)
+        return Step('Thunderbird account ' + address + ' is connected and selected. Say check email to open it.', None)
+
+    def _wait(self, first):
+        relay = self._relay()
+        if relay is None:
+            return Step(NO_RELAY, None)
+        self.progress(first)
+        waited = 0
+        while waited < WAIT_SECONDS:
+            if waited:
+                self.progress(STILL_WAITING)
+            if relay.connected.wait(PROGRESS_SECONDS):
+                return self._finish()
+            waited += PROGRESS_SECONDS
+        return Step(NO_CONNECTION, None)
+
+    def start(self):
+        if self._connected():
+            return self._finish()
+        self.program, version = find_program(self.system)
+        if not self.program:
+            return Step(NOT_INSTALLED, 'download')
+        major = major_version(version)
+        if major is not None and major < MIN_VERSION:
+            return Step(TOO_OLD, None)
+        running = self.system.running()
+        self.profile, has_account = choose_profile(self.system)
+        if not has_account:
+            return Step(NO_ACCOUNT_OPEN, None) if running else Step(NO_ACCOUNT, 'start_for_account')
+        state = addon_state(self.profile)
+        if state == 'missing':
+            return Step(ADDON_MISSING, 'install')
+        if state == 'off':
+            return Step(ADDON_OFF, None)
+        if state == 'blocked':
+            return Step(ADDON_BLOCKED, None)
+        if state == 'waiting' and running:
+            return Step(ADDON_RESTART, None)
+        if not running:
+            refresh_addon(self.profile, self.package)
+            return Step(NOT_RUNNING, 'start')
+        return self._wait(WAITING)
+
+    def _launch(self):
+        try:
+            self.system.launch(self.program)
+            return True
+        except OSError:
+            return False
+
+    def answer(self, question, yes):
+        if question == 'download':
+            if not yes: return Step(NOT_OPENING_SITE, None)
+            try:
+                self.system.open_site(SITE_URL)
+            except OSError:
+                return Step(SITE_FAILED, None)
+            return Step(OPENING_SITE, None)
+        if question == 'start_for_account':
+            if not yes: return Step(NOT_STARTING_FOR_ACCOUNT, None)
+            return Step(STARTING_FOR_ACCOUNT if self._launch() else START_FAILED, None)
+        if question == 'install':
+            if not yes: return Step(ADDON_NOT_INSTALLED, None)
+            try:
+                install_addon(self.profile, self.package)
+            except OSError:
+                return Step(ADDON_FAILED, None)
+            if self.system.running():
+                return Step(ADDON_INSTALLED + ADDON_RESTART, None)
+            return Step(ADDON_INSTALLED + NOT_RUNNING, 'start')
+        if question == 'start':
+            if not yes: return Step(NOT_STARTING, None)
+            if not self._launch():
+                return Step(START_FAILED, None)
+            return self._wait(STARTING)
+        return Step('', None)

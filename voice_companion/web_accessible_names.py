@@ -22,5 +22,23 @@ label.description=VoiceCompanionAccessibility.computeAccessibleDescription;
 // HTML checked state wins over a stale, conflicting ARIA attribute.
 // Custom ARIA widgets expose their state through aria-checked instead.
 label.checked=e=>e.matches('input[type="checkbox"],input[type="radio"]')?e.checked:e.getAttribute('aria-checked')==='true';
+// The browser answers element.labels by searching the whole document, once for
+// every button and field. On a page with thousands of buttons (YouTube
+// comments) that alone took about a second per snapshot. While one snapshot
+// runs, answer it from one pass over the page's labels. The page's own
+// definitions are restored before the snapshot returns.
+label.withCachedLabels=run=>{
+  const kinds=['HTMLButtonElement','HTMLInputElement','HTMLMeterElement','HTMLOutputElement','HTMLProgressElement','HTMLSelectElement','HTMLTextAreaElement'];
+  let found=null;const owners=()=>{if(found)return found;found=new Map();const roots=[document];
+    for(let i=0;i<roots.length;i++){for(const node of roots[i].querySelectorAll('*')){if(node.shadowRoot)roots.push(node.shadowRoot);
+      if(node.tagName==='LABEL'){const control=node.control;if(control){if(!found.has(control))found.set(control,[]);found.get(control).push(node);}}}}
+    return found;};
+  const saved=[];
+  for(const name of kinds){const proto=window[name]?.prototype,original=proto&&Object.getOwnPropertyDescriptor(proto,'labels');
+    if(!original||!original.configurable)continue;
+    try{Object.defineProperty(proto,'labels',{configurable:true,enumerable:original.enumerable,get(){return this instanceof HTMLInputElement&&this.type==='hidden'?null:(owners().get(this)||[]);}});saved.push([proto,original]);}catch(_){}}
+  try{return run();}
+  finally{for(const [proto,original] of saved){try{Object.defineProperty(proto,'labels',original);}catch(_){}}}
+};
 return label;
 })()'''

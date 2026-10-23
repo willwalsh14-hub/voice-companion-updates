@@ -16,6 +16,7 @@ from privacy_controls import saved_address
 
 from browser_navigation import prepare_address
 from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,choice_field,describe,editable_combo,kind,text_field,voice_browse_key
+from web_modes import APP_MODE,BROWSE_MODE
 from reading_navigation import ReadingCursor, reading_request
 from storage import write_text_atomic
 from dictation_text import clean_dictation
@@ -238,7 +239,7 @@ class BrowserBackend:
         stamp['frame_states']=[];stamp['frame_identity']=[]
         for frame in self.page.frames[1:]:
             try:
-                if not frame.frame_element().is_visible():continue
+                if _frame_shown(frame) is None:continue
                 state=frame.evaluate(DOCUMENT_STAMP)
                 stamp['frame_states'].append({key:state.get(key) for key in ('url','epoch','revision','ready','busy')})
                 stamp['frame_identity'].append((state.get('url'),state.get('epoch')))
@@ -276,9 +277,8 @@ class BrowserBackend:
     def snapshot(self):
         self.start()
         self._watch_dialogs()
-        script = '''() => {
+        script = '''() => {const accessibleLabel=/*ACCESSIBLE_LABEL*/;return accessibleLabel.withCachedLabels(()=>{
           const visibility=new WeakMap();const layoutVisible=e=>{if(visibility.has(e))return visibility.get(e);const parent=e.assignedSlot||e.parentElement||e.getRootNode()?.host;const result=getComputedStyle(e).display!=='none'&&!e.hidden&&!e.inert&&e.getAttribute('aria-hidden')!=='true'&&(!parent||layoutVisible(parent));visibility.set(e,result);return result;};const visible=(e,descend=false)=>layoutVisible(e)&&(descend||!['hidden','collapse'].includes(getComputedStyle(e).visibility));
-          const accessibleLabel=/*ACCESSIBLE_LABEL*/;
           const text = e => (e?.innerText || e?.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 180);
           // Include open shadow roots used by modern sites and search widgets.
           const selector='a,button,input,textarea,select,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="textbox"],[role="combobox"],[role="listbox"],[contenteditable="true"]';
@@ -293,7 +293,9 @@ class BrowserBackend:
             return [...e.querySelectorAll('input,textarea,[contenteditable="true"],[role="textbox"]'),...owned].find(n=>typable(n)&&visible(n))||null;
           };
           const allCache=new WeakMap();
-          const all = root => {if(allCache.has(root))return allCache.get(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
+          // Changes inside open shadow roots are watched too (a video player's Skip ad button).
+          const watchRoot=window.__voiceCompanionDocument?.watch||(()=>{});
+          const all = root => {if(allCache.has(root))return allCache.get(root);if(root.host)watchRoot(root);const nodes=[...root.querySelectorAll('*')].flatMap(e =>
             [e, ...(e.shadowRoot ? all(e.shadowRoot) : []), ...(e.tagName==='SLOT'?e.assignedElements({flatten:true}).flatMap(n=>[n,...all(n)]):[])]);allCache.set(root,nodes);return nodes;};
           const modal=[...document.querySelectorAll('[role="dialog"][aria-modal="true"],dialog[open]')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).at(-1);
           const readingRoot=modal||document.body||document.documentElement;
@@ -348,10 +350,13 @@ class BrowserBackend:
                   text:bodyText, modal_key:modal?controlKey(modal):'', anchors, document_epoch:String(performance.timeOrigin)+':'+window.__voiceCompanionDocument.epoch, elements:elements.filter(e=>e.start<200000), elements_truncated:elements.length>=5000, text_truncated:(readingRoot?.innerText || '').length>200000, controls, challenge,
                   controls_truncated:nodes.length>500,
                   visible_frames:[...document.querySelectorAll('iframe')].filter(e=>visible(e)&&!e.closest('[aria-hidden="true"],[inert]')).length};
-        }'''
+        });}'''
         script=script.replace('/*SEMANTICS*/',SEMANTICS).replace('/*ACCESSIBLE_LABEL*/',ACCESSIBLE_LABEL)
+        # Return one JSON string. Letting the driver convert the large object
+        # value by value took over a second on a page with 5,000 elements.
+        script=SNAPSHOT_AS_TEXT.replace('/*SNAPSHOT*/',script)
         self.page.evaluate(DOCUMENT_STAMP)
-        result = self.page.evaluate(script)
+        result = snapshot_value(self.page.evaluate(script))
         # Playwright can inspect cross-origin frames without asking page JS to
         # cross the browser's origin boundary.
         active_frames={self.page.main_frame}
@@ -359,15 +364,14 @@ class BrowserBackend:
             if frame == self.page.main_frame: continue
             if frame.parent_frame not in active_frames:continue
             try:
-                frame_element=frame.frame_element()
-                if not frame_element.is_visible() or frame_element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):continue
-                frame_key=frame_element.get_attribute('data-voice-companion-key')
+                frame_key=_frame_shown(frame,readable=True)
+                if frame_key is None:continue
                 parent_index=self.page.frames.index(frame.parent_frame) if frame.parent_frame!=self.page.main_frame else None
                 container=next((e for e in result.get('elements',[]) if e.get('role')=='frame' and e.get('key')==frame_key and e.get('frame_index')==parent_index),None)
                 if container is None:continue
                 container['child_frame_index']=index
                 frame.evaluate(DOCUMENT_STAMP)
-                part = frame.evaluate(script)
+                part = snapshot_value(frame.evaluate(script))
                 active_frames.add(frame)
             except Exception:
                 continue
@@ -597,7 +601,10 @@ class BrowserBackend:
             else:element.click(timeout=10000)
             if kind(item)=='button' or key:
                 try:
-                    invalid=element.evaluate('''e=>{if(!e.matches('button[type=submit],button:not([type]),input[type=submit],input[type=image]') && !('''+str(key=='Enter').lower()+''' && e.matches('input:not([type=button]):not([type=reset]),select')))return null;const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('''+ACCESSIBLE_LABEL+''')(bad),message:bad.validationMessage}:null;}''')
+                    # A button that removes itself when pressed (Skip ad, Close,
+                    # Accept cookies) has no form to check. Asking the driver
+                    # about it anyway waited the full ten-second timeout.
+                    invalid=None if element.count()!=1 else element.evaluate('''e=>{if(!e.matches('button[type=submit],button:not([type]),input[type=submit],input[type=image]') && !('''+str(key=='Enter').lower()+''' && e.matches('input:not([type=button]):not([type=reset]),select')))return null;const bad=[...(e.form?.elements||[])].find(n=>n.willValidate&&!n.validity.valid);return bad?{label:('''+ACCESSIBLE_LABEL+''')(bad),message:bad.validationMessage}:null;}''',timeout=5000)
                     if invalid:return {'validation':invalid['label']+'. '+invalid['message']}
                 except Exception:pass
             clicked_at=time.monotonic()
@@ -761,6 +768,56 @@ class BrowserBackend:
         self._combo_focus(element,element.evaluate(COMBO_STATE,{}))
         return self.activate(item,key='Enter',focused=True)
 
+    def page_key_state(self,drain=False):
+        """The focused element and new page announcements, for app mode speech."""
+        state=self.page.evaluate(PAGE_KEY_STATE,{'drain':drain})
+        focus=state.get('focus')
+        if focus and focus.get('tag') in ('iframe','frame'):
+            # Keys typed into a frame go to the element focused inside it.
+            for frame in self.page.frames[1:]:
+                try:inner=frame.evaluate(PAGE_KEY_STATE,{'drain':False})
+                except Exception:continue
+                if inner.get('focus') and inner.get('has_focus') and inner['focus'].get('tag') not in ('iframe','frame'):
+                    state['focus']=inner['focus'];break
+        return state
+
+    def press_page_key(self,key):
+        """App mode: one real key press for the page, and what it changed."""
+        self._watch_dialogs()
+        before=self.page_key_state(drain=True)
+        self.page.keyboard.press(key)
+        snapshot=lambda s:json.dumps(s.get('focus'),sort_keys=True)
+        after=self.page_key_state()
+        # Sites answer some keys a moment later; wait briefly for a change.
+        for _ in range(6):
+            if after.get('live') or snapshot(after)!=snapshot(before):break
+            self.page.wait_for_timeout(25)
+            after=self.page_key_state()
+        after['live']=after.get('live',[])+self.page_key_state(drain=True).get('live',[])
+        return before,after
+
+    def focus_for_keys(self,item):
+        """Give keyboard focus to an element without clicking it."""
+        element=self._text_element(item) if editable_combo(item) else self._element(item)
+        element.focus()
+
+    def focused_key(self):
+        """The Companion key of the element that has keyboard focus, if any."""
+        return self.page.evaluate("()=>{let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;return e&&e!==document.body?e.getAttribute('data-voice-companion-key'):null;}")
+
+    def slider_key(self,item,key):
+        """Press an arrow, Page or Home/End key on a slider and read its new value."""
+        element=self._element(item)
+        read="e=>({value_text:e.getAttribute('aria-valuetext')||'',value_now:e.getAttribute('aria-valuenow')??(['range','number'].includes((e.type||'').toLowerCase())?e.value:null)})"
+        before=element.evaluate(read)
+        element.press(key,timeout=5000)
+        after=element.evaluate(read)
+        for _ in range(8):
+            if after!=before:break
+            self.page.wait_for_timeout(25)
+            after=element.evaluate(read)
+        return after
+
     def activate_choice(self,item):
         """One user action sends one native activation, with no state retries."""
         element=self._element(item)
@@ -819,6 +876,44 @@ class BrowserBackend:
 EdgeBackend = BrowserBackend
 
 
+SKIP_AD=re.compile(r'skip (?:the |this )?(?:ads?|advert|advertisement)s?')
+
+
+def skip_ad_button(snapshot):
+    """The video ad's Skip button, when the page shows one."""
+    host=(urlsplit(str((snapshot or {}).get('url',''))).hostname or '').lower()
+    video_site=host=='youtube.com' or host.endswith('.youtube.com')
+    for item in (snapshot or {}).get('elements',[]):
+        if kind(item)!='button' or item.get('disabled'):continue
+        label=re.sub(r'\s+',' ',str(item.get('label',''))).strip().rstrip('.!').lower()
+        if SKIP_AD.fullmatch(label) or video_site and label=='skip':return item
+    return None
+
+
+SKIP_AD_READY='Skip ad button ready. Say skip ad to press it.'
+
+
+class RefreshPacer:
+    """When the main loop next looks for page changes.
+
+    A quick check repeats every 0.3 seconds. Reading a busy page again (a
+    video page with a moving clock) can take a large part of a second, and keys
+    and speech wait while it runs. So after a slow read, wait three times as
+    long before the next one (at most two seconds), and leave room after a
+    key press.
+    """
+    def __init__(self,interval=.3,factor=3,after_key=.12,longest=2.0):
+        self.interval,self.factor,self.after_key,self.longest=interval,factor,after_key,longest
+        self.next_at=0.0;self.cost=0.0
+
+    def due(self,now,last_navigation=0.0):
+        return now>=self.next_at and now-last_navigation>max(self.after_key,min(self.longest,2*self.cost))
+
+    def done(self,started,finished):
+        self.cost=max(0.0,finished-started)
+        self.next_at=max(started+self.interval,finished+min(self.longest,self.factor*self.cost))
+
+
 class WebSession:
     def __init__(self, folder, backend=None, progress=None):
         self.progress=progress or (lambda text:None)
@@ -858,6 +953,8 @@ class WebSession:
         self.input_mode = 'mixed'
         self.reading = ReadingCursor()
         self.browse=None;self.keyboard_field=None;self.auto_read=True;self.document_state=None;self.cursor_revision=0;self.search_engine="google"
+        # App mode is remembered per site until leaving the web screen.
+        self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
 
     def address_allowed(self,url):
         try:
@@ -922,6 +1019,10 @@ class WebSession:
 
     def focus_current(self):
         item=self.browse.current() if self.browse else None
+        if item and not item.get('disabled') and kind(item)=='slider':
+            # Tab onto a slider: its arrow keys work at once, as for a text box.
+            self.slider_field=None;self.begin_slider(item)
+            return self.slider_field is not None
         if not item or item.get('disabled') or kind(item) not in ('edit','combobox','listbox'):return False
         self.backend.focus(item)
         if choice_field(item) and item.get('tag')!='select':
@@ -935,7 +1036,7 @@ class WebSession:
                 value=item.get('value','')
             field['value']=value;field['_original_value']=value
         else:field['value']=item.get('selected_label','')
-        self.keyboard_field=field;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None
+        self.keyboard_field=field;self.web_edit_caret=0;self.selection=None;self._web_field_selection=None;self.combo_seen=()
         return True
 
     def auto_focus_position(self):
@@ -998,7 +1099,8 @@ class WebSession:
         item=self.keyboard_field
         if not editable_combo(item) or item.get('readonly') or not hasattr(self.backend,'type_combo'):return ''
         try:
-            if self.backend.type_combo(item,item.get('value','')):self.combo_choice=None
+            if self.backend.type_combo(item,item.get('value','')):
+                self.combo_choice=None;self.combo_typed_at=__import__('time').monotonic()
         except WebError as exc:return str(exc)
         except Exception:return 'The website did not get that text. Press F5 to refresh the page.'
         return ''
@@ -1009,8 +1111,9 @@ class WebSession:
             item['value']=value;self.web_edit_caret=len(value);self.selection=None;self._web_field_selection=None
 
     def _combo_entered(self):
-        try:count=len(self.backend.combo_state(self.keyboard_field,wait=True).get('options') or [])
-        except Exception:count=0
+        try:options=tuple(self.backend.combo_state(self.keyboard_field,wait=True).get('options') or ())
+        except Exception:options=()
+        self.combo_seen=options;count=len(options)
         if not count:return 'Text entered. Press Enter to submit, or Tab to move on.'
         return 'Text entered. '+str(count)+(' suggestion' if count==1 else ' suggestions')+'. Press Down arrow or say next suggestion to hear them. Press Enter to submit.'
 
@@ -1022,7 +1125,7 @@ class WebSession:
         if item.get('datalist'):return self._datalist_key(key)
         state=self.backend.combo_move(item,'ArrowDown' if key=='Down' else 'ArrowUp',item.get('value',''))
         self._combo_value(state.get('value'))
-        options=state.get('options') or [];active=state.get('active')
+        options=state.get('options') or [];active=state.get('active');self.combo_seen=tuple(options)
         if isinstance(active,int) and 0<=active<len(options):return options[active]+', '+str(active+1)+' of '+str(len(options))+'.'
         if not options:return 'No suggestions. Keep typing, or press Tab to move on.'
         return 'No suggestion selected. Field text: '+(item.get('value') or 'blank')+'.'
@@ -1082,6 +1185,81 @@ class WebSession:
         self.keyboard_field=None
         return self._refresh(wait=False)
 
+    def _host(self):
+        try:return (urlsplit((self.snapshot or {}).get('url','')).hostname or '').lower()
+        except ValueError:return ''
+
+    @property
+    def app_mode(self):
+        """App mode sends keys to the page. Each site keeps its own choice."""
+        return bool(self.snapshot) and self._host() in getattr(self,'app_mode_hosts',())
+
+    def set_app_mode(self,request):
+        """Switch to 'app' or 'browse' mode, or 'toggle' between them."""
+        if not self.snapshot:return 'Open a website first.'
+        if self.form_index is not None:return 'Finish the form questions first, or say cancel form.'
+        self.list_focus=None;self.pending=None
+        interacting=bool(self.keyboard_field or getattr(self,'slider_field',None))
+        if request=='toggle':request='browse' if self.app_mode or interacting else 'app'
+        if self.keyboard_field:
+            try:self.commit_keyboard_field()
+            except WebError as exc:return str(exc)
+        self.slider_field=None
+        if request=='browse':
+            was_app=self.app_mode
+            self.app_mode_hosts.discard(self._host());self.mode_announced=False
+            return BROWSE_MODE+(self._browse_at_focus() if was_app else '')
+        self.app_mode_hosts.add(self._host());self.mode_announced=True
+        # Keys go where the browse cursor is, as they would for a mouse user.
+        item=self.browse.current() if self.browse else None
+        if item and not item.get('disabled') and kind(item) in ('link','button','edit','combobox','listbox','checkbox','radio','slider','spinbutton','switch','tab','menuitem','menuitemcheckbox','menuitemradio','treeitem','option'):
+            try:self.backend.focus_for_keys(item)
+            except Exception:pass
+        try:self.backend.page_key_state(drain=True)  # Start listening for page announcements.
+        except Exception:pass
+        return APP_MODE
+
+    def _browse_at_focus(self):
+        """After app mode, put the browse cursor where keyboard focus ended."""
+        try:key=self.backend.focused_key()
+        except Exception:key=None
+        try:self._refresh(read=False,preserve=True,wait=False)
+        except Exception:return ''
+        item=next((e for e in self.browse.elements if key and e.get('key')==key and 'frame_index' not in e),None)
+        if not item:return ''
+        self.browse.index=self.browse.elements.index(item);self.browse.position=item.get('start',0)
+        self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
+        return ' '+describe(item)
+
+    def pass_key(self,key):
+        """App mode: the key goes to the page; say what changed."""
+        if not self.app_mode:return ''  # A key typed just before leaving app mode.
+        try:before,after=self.backend.press_page_key(key)
+        except Exception:return 'The page did not take that key. Press F5 to refresh the page.'
+        from web_modes import page_key_feedback
+        notice=page_key_feedback(key,before,after)
+        dialog=getattr(self.backend,'dialog_notice','')
+        if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+'. '+notice).strip()
+        return notice
+
+    def begin_slider(self,item):
+        """Arrow keys now change this slider on the page, until Escape or Tab."""
+        try:self.backend.focus_for_keys(item)
+        except WebError as exc:return str(exc)
+        except Exception:return 'The slider could not be used. Press F5 to refresh the page.'
+        self.slider_field=dict(item)
+        return describe(item)
+
+    def slider_key(self,key):
+        from web_modes import SLIDER_KEYS,slider_value
+        item=self.slider_field
+        try:item.update(self.backend.slider_key(item,SLIDER_KEYS[key]))
+        except WebError as exc:self.slider_field=None;return str(exc)
+        except Exception:self.slider_field=None;return 'The slider changed. Press F5 to refresh the page.'
+        current=self.browse.current() if self.browse else None
+        if current and current.get('key')==item.get('key'):current.update(value_text=item.get('value_text'),value_now=item.get('value_now'))
+        return slider_value(item)+'.'
+
     def running_browser(self):
         """The browser actually showing pages, which differs from the preference after a fallback."""
         running = getattr(self.backend, 'browser', None)
@@ -1120,6 +1298,14 @@ class WebSession:
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
         try:
+            if key in ('ToggleAppMode','AppMode','BrowseMode'):return self.set_app_mode({'ToggleAppMode':'toggle','AppMode':'app','BrowseMode':'browse'}[key])
+            if key.startswith('Pass:'):return self.pass_key(key[5:])
+            if getattr(self,'slider_field',None):
+                if key.startswith('Slider:'):return self.slider_key(key[7:])
+                if key=='Escape':self.slider_field=None;return BROWSE_MODE
+                if key in ('Activate','Space','Done'):return describe(self.slider_field)
+                self.slider_field=None
+            elif key.startswith('Slider:'):key='Read:'+key[7:]  # Typed just after leaving the slider.
             if key.startswith('ListText:'):return self.list_name_input(key[9:])
             if key=='ListBackspace':return self.list_name_input('',backspace=True)
             if key.startswith('Read:'):return self.read_key(key[5:])
@@ -1173,6 +1359,7 @@ class WebSession:
                     if linked:item=linked;role='link'
                     links=[e for e in self.browse.elements if kind(e)=='link' and e.get('start',0)<=item.get('start',0)<e.get('end',0)]
                     if role=='heading' and links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
+                if role=='slider' and not item.get('disabled'):return self.begin_slider(item)
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
                 if role in ('checkbox','radio'):
@@ -1182,6 +1369,7 @@ class WebSession:
                     else:self.backend.choose_form_option(item,'no' if role=='checkbox' and item.get('checked') else 'yes')
                     return self._refresh_at(item)
                 if role=='combobox':return describe(item)+' Use Up or Down to change the selection.'
+                if role=='button' and skip_ad_button({'url':self.snapshot.get('url',''),'elements':[item]}):return self.skip_ad()
                 if role in ('button','menuitem','menuitemradio','menuitemcheckbox'):
                     self.progress('Loading page.')
                     action=self.backend.activate(item)
@@ -1290,6 +1478,8 @@ class WebSession:
 
     def leave(self,keep_open=False):
         self.keyboard_field=None;self.pending=None;self.submit_pending=None;self.list_focus=None;self.form_index=None
+        # Leaving the web screen always returns to browse mode.
+        self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
         if not keep_open:
             self.backend.close()
             self.snapshot=None;self.browse=None;self.document_state=None
@@ -1355,24 +1545,44 @@ class WebSession:
         return state if isinstance(state,dict) else None
 
     def _capture(self):
-        for _ in range(5):
+        for attempt in range(5):
             try:before=self._stamp();snapshot=self.backend.snapshot();after=self._stamp()
             except Exception as exc:
                 if not navigation_interrupted(exc):raise
                 if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
                 continue
             if before and after:
-                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch','frame_identity'))
+                changed=any(before.get(k)!=after.get(k) for k in ('url','epoch'))
                 changed=changed or bool(after.get('url') and snapshot.get('url')!=after['url'])
                 if changed:
                     if hasattr(self.backend,'wait_ready'):self.backend.wait_ready()
                     continue
+                if before.get('frame_identity')!=after.get('frame_identity'):
+                    # Only an embedded frame came, went or reloaded, as ads do
+                    # every few seconds on video sites. The page itself is
+                    # unchanged, so do not wait for it to settle. If frames
+                    # keep changing, keep this view; the stored state is the
+                    # earlier one, so the next check reads the frames again.
+                    if attempt<2:
+                        if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
+                        continue
             # Store the pre-capture revision, so a mutation immediately after
             # extraction will trigger another refresh instead of being swallowed.
             return snapshot,before
         raise WebError('The page is still changing. Its virtual view will update when it settles.')
 
     def _refresh(self,read=None,preserve=False,wait=True):
+        # In app mode the page is in use, not being read: say only its title.
+        if read is None and self.app_mode:read=False
+        self.slider_field=None
+        result=self._refresh_page(read,preserve,wait)
+        if self.app_mode!=self.mode_announced and self.snapshot:
+            # Each site keeps its own mode; say which one this page uses.
+            self.mode_announced=self.app_mode
+            result=(APP_MODE if self.app_mode else BROWSE_MODE)+' '+result
+        return result
+
+    def _refresh_page(self,read=None,preserve=False,wait=True):
         old_position=self.reading.position;old_continuation=self.reading.continuation;old_anchor=self.browse.current() if self.browse else None
         if wait and hasattr(self.backend,'wait_ready'):
             for attempt in range(3):
@@ -1445,6 +1655,27 @@ class WebSession:
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
+        suggestions=self.suggestions_notice()
+        return self._refresh_changed() or suggestions
+
+    def suggestions_notice(self,now=None):
+        """'New suggestions available.' once when a site's suggestion list changes.
+
+        It waits until typing pauses, so it is not said for every letter. An
+        empty list is not announced; Down Arrow says there are no suggestions."""
+        import time
+        item=self.keyboard_field
+        if not editable_combo(item) or item.get('datalist') or not hasattr(self.backend,'combo_state'):
+            self.combo_seen=();return ''
+        now=time.monotonic() if now is None else now
+        if now-getattr(self,'combo_typed_at',0)<.6:return ''
+        try:options=tuple(self.backend.combo_state(item).get('options') or ())
+        except Exception:return ''
+        seen=getattr(self,'combo_seen',())
+        self.combo_seen=options
+        return 'New suggestions available.' if options and options!=seen else ''
+
+    def _refresh_changed(self):
         if not self.snapshot or not hasattr(self.backend,'document_stamp'):return ''
         notice=getattr(self.backend,'dialog_notice','')
         if not isinstance(notice,str):notice=''
@@ -1467,6 +1698,8 @@ class WebSession:
         position=self.reading.position;continuation=self.reading.continuation
         anchor=self.browse.current() if self.browse else None
         changed=snapshot.get('text','')!=self.reading.text
+        # Say once when a video ad's Skip button appears. It lasts only seconds.
+        skip_ready=skip_ad_button(snapshot) is not None and skip_ad_button(self.snapshot) is None
         self.snapshot=snapshot;self.reading.set_text(snapshot.get('text',''))
         if changed:
             self.page_revision+=1
@@ -1480,7 +1713,23 @@ class WebSession:
                 continuation+=self.browse.position-position
         if changed and not self.keyboard_field:self.cursor_changed()
         self.reading.position=self.browse.position;self.reading.continuation=min(continuation,len(self.reading.text))
-        return ''
+        return SKIP_AD_READY if skip_ready else ''
+
+    def skip_ad(self):
+        """Press the video ad's Skip button without moving the reading place."""
+        if not self.snapshot:return 'Open a website first.'
+        try:self.refresh_changed()
+        except Exception:pass
+        item=skip_ad_button(self.snapshot)
+        if not item:return 'No Skip ad button is showing now.'
+        try:action=self.backend.activate(item)
+        except WebError:
+            try:self._refresh(read=False,preserve=True,wait=False)
+            except Exception:pass
+            return 'The ad ended before it could be skipped.' if not skip_ad_button(self.snapshot) else 'The Skip ad button could not be pressed. Try again.'
+        if isinstance(action,dict) and action.get('validation'):return action['validation']
+        self._refresh(read=False,preserve=True,wait=False)
+        return 'Ad skipped.' if not skip_ad_button(self.snapshot) else 'The Skip ad button is still showing. Say skip ad again.'
 
     def _navigate(self,url):
         try:
@@ -2068,6 +2317,9 @@ class WebSession:
             choice=re.fullmatch(r'(?:(?:try|use|choose|select|search with) )?(google|bing|brave(?: search)?|duck ?duck ?go)(?: for this search)?',command)
             if choice:return self.retry_search_engine('brave' if choice[1].startswith('brave') else 'duckduckgo' if choice[1].startswith('duck') else choice[1])
             return 'Choose an engine with arrows and Enter, or say its name.'
+        from web_modes import mode_request
+        mode=mode_request(command)
+        if mode and self.snapshot:return self.set_app_mode(mode)
         boundary=command.replace('of the page','of page')
         boundary=re.sub(r'^(?:go|move|jump) (?:to )?(?:the )?','',boundary)
         if boundary in ('top of page','beginning of page','start of page'):return self.page_boundary()
@@ -2090,6 +2342,7 @@ class WebSession:
             if self.list_focus=='headings' and command in ('next','previous','next heading','previous heading'):
                 return self.move_heading(-1 if command.startswith('previous') else 1)
         if command=='refresh page' and self.snapshot:return self.keyboard('Refresh')
+        if not self.keyboard_field and SKIP_AD.fullmatch(command):return self.skip_ad()
         browse_key=voice_browse_key(command)
         if browse_key and browse_key.startswith('Read:') and self.keyboard_field:browse_key=None  # Reading keys move through the page, not a text box.
         if browse_key and self.form_index is None and not self.list_focus and (not reading_request(command) or browse_key.split(':')[-1]=='p' and self.browse and any(kind(e)=='paragraph' for e in self.browse.elements)):return self.keyboard(browse_key)
@@ -2309,9 +2562,45 @@ class WebSession:
             except Exception: pass
         return self.find(spoken) if _tokens(spoken) else 'Tell me what you are looking for on this page, or say read page, list fields, or list favorites.'
 
-# The same accessible name is used for snapshot and stale-target validation.
-DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement){old?.observer?.disconnect();const state={revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+1};const observer=new MutationObserver(records=>{if(records.some(r=>r.type!=='attributes'||!r.attributeName.startsWith('data-voice-companion-'))){state.revision++;state.changed=Date.now();}});observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true});state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
+def _frame_shown(frame,readable=False):
+    """Whether a frame's element is shown; with readable, its key unless hidden from readers.
 
+    Each frame_element() call holds the element in the page until released.
+    Checked every 0.3 seconds on pages with ad frames, unreleased handles grew
+    without limit, in the page and in the driver.
+    """
+    element=frame.frame_element()
+    try:
+        if not element.is_visible():return None
+        if not readable:return ''
+        if element.evaluate("e=>!!e.closest('[aria-hidden=\"true\"],[inert]')"):return None
+        return element.get_attribute('data-voice-companion-key')
+    finally:
+        try:element.dispose()
+        except Exception:pass
+
+
+SNAPSHOT_AS_TEXT="()=>JSON.stringify((/*SNAPSHOT*/)(),(key,value)=>value===undefined?null:value)"
+
+
+def snapshot_value(value):
+    """A page snapshot arrives as JSON text; test doubles may return the object."""
+    return json.loads(value) if isinstance(value,str) else value
+
+
+# The page's change counter. Players and animations rewrite position, size and
+# opacity styles many times a second (a video's progress bar); nothing a
+# reader hears changes, so that is not a page change. Display and visibility
+# changes still are. Slider and progress values count as a change, but do not
+# keep the page from looking settled.
+DOCUMENT_STAMP=r'''()=>{const old=window.__voiceCompanionDocument;if(!old||old.root!==document.documentElement||old.version!==2){old?.observer?.disconnect();const same=!!old&&old.root===document.documentElement;const state={version:2,revision:(old?.revision||0)+1,changed:Date.now(),root:document.documentElement,epoch:(old?.epoch||0)+(same?0:1)};
+const motion=/^(?:transform|translate|scale|rotate|width|height|min-width|min-height|max-width|max-height|left|top|right|bottom|inset|opacity|background-position|background-size|clip-path|stroke-dasharray|stroke-dashoffset|will-change|transition(?:-.*)?|animation(?:-.*)?|--.*)$/;
+const styles=text=>{const found=new Map();for(const part of String(text||'').split(';')){const at=part.indexOf(':');if(at>0)found.set(part.slice(0,at).trim().toLowerCase(),part.slice(at+1).trim());}return found;};
+const ignored=r=>{if(r.type!=='attributes')return false;const name=r.attributeName||'';if(name.startsWith('data-voice-companion-'))return true;if(name!=='style')return false;const before=styles(r.oldValue),after=styles(r.target.getAttribute('style'));for(const key of new Set([...before.keys(),...after.keys()]))if(before.get(key)!==after.get(key)&&!motion.test(key))return false;return true;};
+const steady=r=>r.type==='attributes'&&(r.attributeName==='aria-valuenow'||r.attributeName==='aria-valuetext');
+const observer=new MutationObserver(records=>{const real=records.filter(r=>!ignored(r));if(real.length){state.revision++;if(!real.every(steady))state.changed=Date.now();}});const options={childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true};observer.observe(document.documentElement,options);const watched=new WeakSet();state.watch=root=>{if(!watched.has(root)){watched.add(root);observer.observe(root,options);}};state.observer=observer;window.__voiceCompanionDocument=state;}const state=window.__voiceCompanionDocument;return {url:location.href,epoch:String(performance.timeOrigin)+':'+state.epoch,revision:state.revision,ready:document.readyState,busy:!!document.querySelector('[aria-busy="true"]'),age:Date.now()-state.changed};}'''
+
+# The same accessible name is used for snapshot and stale-target validation.
 from web_accessible_names import ACCESSIBLE_LABEL
 
 LIVE_IDENTITY='e=>{const label=('+ACCESSIBLE_LABEL+')(e);return {label,tag:e.tagName.toLowerCase(),type:(e.type||\'\').toLowerCase(),href:e.tagName===\'A\'?e.href:\'\',disabled:!!e.disabled||e.getAttribute(\'aria-disabled\')===\'true\'};}'
@@ -2348,4 +2637,34 @@ COMBO_STATE=r'''(e,arg)=>{
   if(active<0&&typed!==null&&value!==typed)active=labels.findIndex(l=>l.trim().toLowerCase()===value.trim().toLowerCase());
   const expanded=combo.getAttribute('aria-expanded')==='true'||e.getAttribute('aria-expanded')==='true'||options.length>0;
   return {options:labels,active:active<0?null:active,value,expanded,datalist:false,focus_in_box:focusInBox,focus_in_list:!focusInBox&&popups.some(inside)};
+}'''
+
+# App mode: the element with keyboard focus, and text that the page announces
+# through live regions (role status, alert or log, or aria-live). The live
+# region watcher is a JavaScript property, so it never changes the page's DOM.
+PAGE_KEY_STATE=r'''(arg)=>{
+  const accessibleLabel='''+ACCESSIBLE_LABEL+r''';
+  if(!window.__voiceCompanionLive){
+    const live={texts:[]};
+    const region=n=>{for(let x=n&&(n.nodeType===1?n:n.parentElement);x;x=x.parentElement||x.getRootNode()?.host){
+      if(!x.getAttribute)continue;const level=x.getAttribute('aria-live'),role=x.getAttribute('role');
+      if(level==='off')return null;if(level==='polite'||level==='assertive'||['status','alert','log'].includes(role))return x;}return null;};
+    live.observer=new MutationObserver(records=>{const seen=new Set();for(const record of records){const target=region(record.target);if(!target||seen.has(target))continue;seen.add(target);
+      if(target.closest('[aria-hidden="true"]'))continue;const text=String(target.innerText||target.textContent||'').replace(/\s+/g,' ').trim();
+      if(text&&text!==target.__voiceCompanionSaid){target.__voiceCompanionSaid=text;live.texts.push(text.slice(0,300));}}});
+    live.observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+    window.__voiceCompanionLive=live;
+  }
+  const texts=arg&&arg.drain?window.__voiceCompanionLive.texts.splice(0):window.__voiceCompanionLive.texts.slice();
+  let e=document.activeElement;while(e?.shadowRoot?.activeElement)e=e.shadowRoot.activeElement;
+  if(!e||e===document.body||e===document.documentElement)return {focus:null,live:texts,has_focus:document.hasFocus()};
+  window.__voiceCompanionFocusSerial=window.__voiceCompanionFocusSerial||0;
+  if(!e.__voiceCompanionFocusId)e.__voiceCompanionFocusId=++window.__voiceCompanionFocusSerial;
+  const tag=e.tagName.toLowerCase(),type=(e.type||'').toLowerCase();
+  const editable=e.isContentEditable||tag==='textarea'||tag==='input'&&!['checkbox','radio','button','submit','reset','range','color','file','image','hidden'].includes(type);
+  const text=editable?(e.isContentEditable?e.innerText:String(e.value||'')):'';
+  return {has_focus:document.hasFocus(),live:texts,focus:{id:e.__voiceCompanionFocusId,label:accessibleLabel(e),role:accessibleLabel.role(e)||'',tag,type,
+    value_text:e.getAttribute('aria-valuetext')||'',value_now:e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null),
+    checked:accessibleLabel.checked(e),expanded:e.getAttribute('aria-expanded'),selected:tag==='select'?(e.selectedOptions[0]?.text||''):'',
+    editable,password:type==='password',value:type==='password'?'':text.slice(0,2000),caret:type!=='password'&&typeof e.selectionStart==='number'?e.selectionStart:null}};
 }'''

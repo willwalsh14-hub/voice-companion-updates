@@ -202,6 +202,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | address": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -610,6 +616,12 @@
 ],
 "screen_after": "media"
 },
+"awake | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | close": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -756,6 +768,12 @@
 "awake | confirm website": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -942,6 +960,12 @@
 "awake | discard this email": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | do it": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -1219,6 +1243,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | flow": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | follow link": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1237,6 +1267,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | frozen": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | get more emails": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
@@ -1250,6 +1286,12 @@
 "screen_after": "awake"
 },
 "awake | gmail": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | go ahead": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -1405,9 +1447,39 @@
 ],
 "screen_after": "awake"
 },
+"awake | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
+"awake | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
+"awake | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | install it": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
+"awake | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -2513,6 +2585,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | question": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | quieter": {
 "said": [
 "Volume 90 percent."
@@ -2670,6 +2748,12 @@
 "screen_after": "awake"
 },
 "awake | repeat": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | repeat that": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -3001,9 +3085,21 @@
 ],
 "screen_after": "awake"
 },
+"awake | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "awake"
+},
 "awake | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "awake"
+},
+"awake | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -3022,6 +3118,12 @@
 "awake | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "awake"
+},
+"awake | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "awake"
 },
@@ -3208,6 +3310,12 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"awake | sure": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
 },
 "awake | switch to": {
 "said": [
@@ -3467,7 +3575,7 @@
 },
 "awake | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -3503,6 +3611,12 @@
 "<mock>"
 ],
 "screen_after": "web"
+},
+"awake | what": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
 },
 "awake | what browser am i using": {
 "calls": [
@@ -3735,6 +3849,18 @@
 "awake | yahoo mail": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | yeah": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | yep": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -4075,6 +4201,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. add preset as"
+]
+},
+"document | add the chrome extension": {
+"said": [
+"add the chrome extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. add the chrome extension"
 ]
 },
 "document | address": {
@@ -4689,6 +4824,15 @@
 "Hello world. Second sentence. choose station database"
 ]
 },
+"document | chrome setup": {
+"said": [
+"chrome setup"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. chrome setup"
+]
+},
 "document | close": {
 "said": [
 "Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing."
@@ -4903,6 +5047,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. confirm website"
+]
+},
+"document | connect chrome": {
+"said": [
+"connect chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. connect chrome"
 ]
 },
 "document | connect email account": {
@@ -5179,6 +5332,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. discard this email"
+]
+},
+"document | do it": {
+"said": [
+"do it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. do it"
 ]
 },
 "document | do not send": {
@@ -5577,6 +5739,15 @@
 "Hello world. Second sentence. fix the address"
 ]
 },
+"document | flow": {
+"said": [
+"flow"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. flow"
+]
+},
 "document | follow link": {
 "said": [
 "follow link"
@@ -5604,6 +5775,15 @@
 "Hello world. Second sentence. forward message"
 ]
 },
+"document | frozen": {
+"said": [
+"frozen"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. frozen"
+]
+},
 "document | get more emails": {
 "said": [
 "get more emails"
@@ -5629,6 +5809,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. gmail"
+]
+},
+"document | go ahead": {
+"said": [
+"go ahead"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go ahead"
 ]
 },
 "document | go back": {
@@ -5856,6 +6045,33 @@
 "Hello world. Second sentence. index"
 ]
 },
+"document | install browser extension": {
+"said": [
+"install browser extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install browser extension"
+]
+},
+"document | install chrome": {
+"said": [
+"install chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install chrome"
+]
+},
+"document | install google chrome": {
+"said": [
+"install google chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install google chrome"
+]
+},
 "document | install it": {
 "said": [
 "install it"
@@ -5863,6 +6079,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. install it"
+]
+},
+"document | install the browser extension": {
+"said": [
+"install the browser extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install the browser extension"
+]
+},
+"document | install the chrome extension": {
+"said": [
+"install the chrome extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. install the chrome extension"
 ]
 },
 "document | install update": {
@@ -7482,6 +7716,15 @@
 "Hello world. Second sentence. provider"
 ]
 },
+"document | question": {
+"said": [
+"question"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. question"
+]
+},
 "document | quieter": {
 "said": [
 "Volume 90 percent."
@@ -7720,6 +7963,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. repeat"
+]
+},
+"document | repeat that": {
+"said": [
+"repeat that"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. repeat that"
 ]
 },
 "document | replace paragraph with New text": {
@@ -8197,6 +8449,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | set up chrome": {
+"said": [
+"set up chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. set up chrome"
+]
+},
 "document | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
@@ -8204,6 +8465,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | set up the browser extension": {
+"said": [
+"set up the browser extension"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. set up the browser extension"
 ]
 },
 "document | set voice to": {
@@ -8231,6 +8501,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | setup chrome": {
+"said": [
+"setup chrome"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. setup chrome"
 ]
 },
 "document | show": {
@@ -8508,6 +8787,15 @@
 "screen_after": "media",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | sure": {
+"said": [
+"sure"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. sure"
 ]
 },
 "document | switch to": {
@@ -8873,7 +9161,7 @@
 },
 "document | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -8905,6 +9193,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. web search"
+]
+},
+"document | what": {
+"said": [
+"what"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. what"
 ]
 },
 "document | what browser am i using": {
@@ -9247,6 +9544,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. yahoo mail"
+]
+},
+"document | yeah": {
+"said": [
+"yeah"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. yeah"
+]
+},
+"document | yep": {
+"said": [
+"yep"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. yep"
 ]
 },
 "document | yes": {
@@ -9607,6 +9922,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. add preset as"
+]
+},
+"email_draft | add the chrome extension": {
+"said": [
+"add the chrome extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. add the chrome extension"
 ]
 },
 "email_draft | address": {
@@ -10307,6 +10631,15 @@
 "Hello world. choose station database"
 ]
 },
+"email_draft | chrome setup": {
+"said": [
+"chrome setup"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. chrome setup"
+]
+},
 "email_draft | close": {
 "said": [
 "close"
@@ -10522,6 +10855,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. confirm website"
+]
+},
+"email_draft | connect chrome": {
+"said": [
+"connect chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. connect chrome"
 ]
 },
 "email_draft | connect email account": {
@@ -10828,6 +11170,15 @@
 "screen_after": "mailbox",
 "text": [
 "Hello world."
+]
+},
+"email_draft | do it": {
+"said": [
+"do it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. do it"
 ]
 },
 "email_draft | do not send": {
@@ -11228,6 +11579,15 @@
 "Hello world. fix the address"
 ]
 },
+"email_draft | flow": {
+"said": [
+"flow"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. flow"
+]
+},
 "email_draft | follow link": {
 "said": [
 "follow link"
@@ -11255,6 +11615,15 @@
 "Hello world. forward message"
 ]
 },
+"email_draft | frozen": {
+"said": [
+"frozen"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. frozen"
+]
+},
 "email_draft | get more emails": {
 "said": [
 "get more emails"
@@ -11280,6 +11649,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. gmail"
+]
+},
+"email_draft | go ahead": {
+"said": [
+"go ahead"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go ahead"
 ]
 },
 "email_draft | go back": {
@@ -11522,6 +11900,33 @@
 "Hello world. index"
 ]
 },
+"email_draft | install browser extension": {
+"said": [
+"install browser extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install browser extension"
+]
+},
+"email_draft | install chrome": {
+"said": [
+"install chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install chrome"
+]
+},
+"email_draft | install google chrome": {
+"said": [
+"install google chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install google chrome"
+]
+},
 "email_draft | install it": {
 "said": [
 "install it"
@@ -11529,6 +11934,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. install it"
+]
+},
+"email_draft | install the browser extension": {
+"said": [
+"install the browser extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install the browser extension"
+]
+},
+"email_draft | install the chrome extension": {
+"said": [
+"install the chrome extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. install the chrome extension"
 ]
 },
 "email_draft | install update": {
@@ -13160,6 +13583,15 @@
 "Hello world. provider"
 ]
 },
+"email_draft | question": {
+"said": [
+"question"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. question"
+]
+},
 "email_draft | quieter": {
 "said": [
 "Volume 90 percent."
@@ -13398,6 +13830,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. repeat"
+]
+},
+"email_draft | repeat that": {
+"said": [
+"repeat that"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. repeat that"
 ]
 },
 "email_draft | replace paragraph with New text": {
@@ -13880,6 +14321,15 @@
 "Hello world."
 ]
 },
+"email_draft | set up chrome": {
+"said": [
+"set up chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. set up chrome"
+]
+},
 "email_draft | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
@@ -13887,6 +14337,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | set up the browser extension": {
+"said": [
+"set up the browser extension"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. set up the browser extension"
 ]
 },
 "email_draft | set voice to": {
@@ -13914,6 +14373,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | setup chrome": {
+"said": [
+"setup chrome"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. setup chrome"
 ]
 },
 "email_draft | show": {
@@ -14191,6 +14659,15 @@
 "screen_after": "media",
 "text": [
 "Hello world."
+]
+},
+"email_draft | sure": {
+"said": [
+"sure"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. sure"
 ]
 },
 "email_draft | switch to": {
@@ -14556,7 +15033,7 @@
 },
 "email_draft | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -14588,6 +15065,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. web search"
+]
+},
+"email_draft | what": {
+"said": [
+"what"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. what"
 ]
 },
 "email_draft | what browser am i using": {
@@ -14932,6 +15418,24 @@
 "Hello world. yahoo mail"
 ]
 },
+"email_draft | yeah": {
+"said": [
+"yeah"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. yeah"
+]
+},
+"email_draft | yep": {
+"said": [
+"yep"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. yep"
+]
+},
 "email_draft | yes": {
 "said": [
 "There is no current send review. Say send email to review this draft first."
@@ -15139,6 +15643,12 @@
 },
 "help | add preset as": {
 "said": [],
+"screen_after": "help"
+},
+"help | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | address": {
@@ -15432,6 +15942,12 @@
 "said": [],
 "screen_after": "help"
 },
+"help | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | close": {
 "said": [],
 "screen_after": "help"
@@ -15530,6 +16046,12 @@
 },
 "help | confirm website": {
 "said": [],
+"screen_after": "help"
+},
+"help | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | connect email account": {
@@ -15656,6 +16178,10 @@
 "screen_after": "help"
 },
 "help | discard this email": {
+"said": [],
+"screen_after": "help"
+},
+"help | do it": {
 "said": [],
 "screen_after": "help"
 },
@@ -15843,6 +16369,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | flow": {
+"said": [],
+"screen_after": "help"
+},
 "help | follow link": {
 "said": [],
 "screen_after": "help"
@@ -15855,6 +16385,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | frozen": {
+"said": [],
+"screen_after": "help"
+},
 "help | get more emails": {
 "said": [],
 "screen_after": "help"
@@ -15864,6 +16398,10 @@
 "screen_after": "help"
 },
 "help | gmail": {
+"said": [],
+"screen_after": "help"
+},
+"help | go ahead": {
 "said": [],
 "screen_after": "help"
 },
@@ -15974,8 +16512,38 @@
 "said": [],
 "screen_after": "help"
 },
+"help | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
+"help | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
+"help | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | install it": {
 "said": [],
+"screen_after": "help"
+},
+"help | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
+"help | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | install update": {
@@ -16755,6 +17323,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | question": {
+"said": [],
+"screen_after": "help"
+},
 "help | quieter": {
 "said": [
 "Volume 90 percent."
@@ -16871,6 +17443,10 @@
 "screen_after": "help"
 },
 "help | repeat": {
+"said": [],
+"screen_after": "help"
+},
+"help | repeat that": {
 "said": [],
 "screen_after": "help"
 },
@@ -17092,8 +17668,20 @@
 ],
 "screen_after": "help"
 },
+"help | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "help"
+},
 "help | set up email": {
 "said": [],
+"screen_after": "help"
+},
+"help | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
 "screen_after": "help"
 },
 "help | set voice to": {
@@ -17109,6 +17697,12 @@
 "help | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "help"
+},
+"help | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "help"
 },
@@ -17251,6 +17845,10 @@
 "screen_after": "help"
 },
 "help | subscriptions list": {
+"said": [],
+"screen_after": "help"
+},
+"help | sure": {
 "said": [],
 "screen_after": "help"
 },
@@ -17450,6 +18048,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | what": {
+"said": [],
+"screen_after": "help"
+},
 "help | what browser am i using": {
 "said": [],
 "screen_after": "help"
@@ -17613,6 +18215,14 @@
 "screen_after": "help"
 },
 "help | yahoo mail": {
+"said": [],
+"screen_after": "help"
+},
+"help | yeah": {
+"said": [],
+"screen_after": "help"
+},
+"help | yep": {
 "said": [],
 "screen_after": "help"
 },
@@ -17887,6 +18497,12 @@
 ],
 "said": [
 "session handled: add preset as"
+],
+"screen_after": "mailbox"
+},
+"mailbox | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -18478,6 +19094,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | close": {
 "calls": [
 "call.process('close')"
@@ -18666,6 +19288,12 @@
 ],
 "said": [
 "session handled: confirm website"
+],
+"screen_after": "mailbox"
+},
+"mailbox | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -18918,6 +19546,15 @@
 ],
 "said": [
 "session handled: discard this email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | do it": {
+"calls": [
+"call.process('do it')"
+],
+"said": [
+"session handled: do it"
 ],
 "screen_after": "mailbox"
 },
@@ -19294,6 +19931,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | flow": {
+"calls": [
+"call.process('flow')"
+],
+"said": [
+"session handled: flow"
+],
+"screen_after": "mailbox"
+},
 "mailbox | follow link": {
 "calls": [
 "call.process('follow link')"
@@ -19325,6 +19971,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | frozen": {
+"calls": [
+"call.process('frozen')"
+],
+"said": [
+"session handled: frozen"
+],
+"screen_after": "mailbox"
+},
 "mailbox | get more emails": {
 "calls": [
 "call.process('get more emails')"
@@ -19349,6 +20004,15 @@
 ],
 "said": [
 "session handled: gmail"
+],
+"screen_after": "mailbox"
+},
+"mailbox | go ahead": {
+"calls": [
+"call.process('go ahead')"
+],
+"said": [
+"session handled: go ahead"
 ],
 "screen_after": "mailbox"
 },
@@ -19560,12 +20224,42 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
+"mailbox | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
+"mailbox | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | install it": {
 "calls": [
 "call.process('install it')"
 ],
 "said": [
 "session handled: install it"
+],
+"screen_after": "mailbox"
+},
+"mailbox | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
+"mailbox | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -21013,6 +21707,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | question": {
+"calls": [
+"call.process('question')"
+],
+"said": [
+"session handled: question"
+],
+"screen_after": "mailbox"
+},
 "mailbox | quieter": {
 "said": [
 "Volume 90 percent."
@@ -21220,6 +21923,15 @@
 ],
 "said": [
 "session handled: repeat"
+],
+"screen_after": "mailbox"
+},
+"mailbox | repeat that": {
+"calls": [
+"call.process('repeat that')"
+],
+"said": [
+"session handled: repeat that"
 ],
 "screen_after": "mailbox"
 },
@@ -21685,9 +22397,21 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "mailbox"
+},
 "mailbox | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "mailbox"
+},
+"mailbox | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -21709,6 +22433,12 @@
 "mailbox | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "mailbox"
+},
+"mailbox | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "mailbox"
 },
@@ -21952,6 +22682,15 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"mailbox | sure": {
+"calls": [
+"call.process('sure')"
+],
+"said": [
+"session handled: sure"
+],
+"screen_after": "mailbox"
 },
 "mailbox | switch to": {
 "calls": [
@@ -22262,7 +23001,7 @@
 },
 "mailbox | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -22290,6 +23029,15 @@
 ],
 "said": [
 "session handled: web search"
+],
+"screen_after": "mailbox"
+},
+"mailbox | what": {
+"calls": [
+"call.process('what')"
+],
+"said": [
+"session handled: what"
 ],
 "screen_after": "mailbox"
 },
@@ -22571,6 +23319,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | yeah": {
+"calls": [
+"call.process('yeah')"
+],
+"said": [
+"session handled: yeah"
+],
+"screen_after": "mailbox"
+},
+"mailbox | yep": {
+"calls": [
+"call.process('yep')"
+],
+"said": [
+"session handled: yep"
+],
+"screen_after": "mailbox"
+},
 "mailbox | yes": {
 "calls": [
 "call.process('yes')"
@@ -22829,6 +23595,12 @@
 "note | add preset as": {
 "said": [
 "add preset as"
+],
+"screen_after": "note"
+},
+"note | add the chrome extension": {
+"said": [
+"add the chrome extension"
 ],
 "screen_after": "note"
 },
@@ -23242,6 +24014,12 @@
 ],
 "screen_after": "note"
 },
+"note | chrome setup": {
+"said": [
+"chrome setup"
+],
+"screen_after": "note"
+},
 "note | close": {
 "said": [
 "close"
@@ -23383,6 +24161,12 @@
 "note | confirm website": {
 "said": [
 "confirm website"
+],
+"screen_after": "note"
+},
+"note | connect chrome": {
+"said": [
+"connect chrome"
 ],
 "screen_after": "note"
 },
@@ -23569,6 +24353,12 @@
 "note | discard this email": {
 "said": [
 "discard this email"
+],
+"screen_after": "note"
+},
+"note | do it": {
+"said": [
+"do it"
 ],
 "screen_after": "note"
 },
@@ -23840,6 +24630,12 @@
 ],
 "screen_after": "note"
 },
+"note | flow": {
+"said": [
+"flow"
+],
+"screen_after": "note"
+},
 "note | follow link": {
 "said": [
 "follow link"
@@ -23858,6 +24654,12 @@
 ],
 "screen_after": "note"
 },
+"note | frozen": {
+"said": [
+"frozen"
+],
+"screen_after": "note"
+},
 "note | get more emails": {
 "said": [
 "get more emails"
@@ -23873,6 +24675,12 @@
 "note | gmail": {
 "said": [
 "gmail"
+],
+"screen_after": "note"
+},
+"note | go ahead": {
+"said": [
+"go ahead"
 ],
 "screen_after": "note"
 },
@@ -24027,9 +24835,39 @@
 ],
 "screen_after": "note"
 },
+"note | install browser extension": {
+"said": [
+"install browser extension"
+],
+"screen_after": "note"
+},
+"note | install chrome": {
+"said": [
+"install chrome"
+],
+"screen_after": "note"
+},
+"note | install google chrome": {
+"said": [
+"install google chrome"
+],
+"screen_after": "note"
+},
 "note | install it": {
 "said": [
 "install it"
+],
+"screen_after": "note"
+},
+"note | install the browser extension": {
+"said": [
+"install the browser extension"
+],
+"screen_after": "note"
+},
+"note | install the chrome extension": {
+"said": [
+"install the chrome extension"
 ],
 "screen_after": "note"
 },
@@ -25113,6 +25951,12 @@
 ],
 "screen_after": "note"
 },
+"note | question": {
+"said": [
+"question"
+],
+"screen_after": "note"
+},
 "note | quieter": {
 "said": [
 "Volume 90 percent."
@@ -25272,6 +26116,12 @@
 "note | repeat": {
 "said": [
 "repeat"
+],
+"screen_after": "note"
+},
+"note | repeat that": {
+"said": [
+"repeat that"
 ],
 "screen_after": "note"
 },
@@ -25592,9 +26442,21 @@
 ],
 "screen_after": "note"
 },
+"note | set up chrome": {
+"said": [
+"set up chrome"
+],
+"screen_after": "note"
+},
 "note | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "note"
+},
+"note | set up the browser extension": {
+"said": [
+"set up the browser extension"
 ],
 "screen_after": "note"
 },
@@ -25613,6 +26475,12 @@
 "note | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "note"
+},
+"note | setup chrome": {
+"said": [
+"setup chrome"
 ],
 "screen_after": "note"
 },
@@ -25799,6 +26667,12 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"note | sure": {
+"said": [
+"sure"
+],
+"screen_after": "note"
 },
 "note | switch to": {
 "said": [
@@ -26043,7 +26917,7 @@
 },
 "note | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -26062,6 +26936,12 @@
 "note | web search": {
 "said": [
 "web search"
+],
+"screen_after": "note"
+},
+"note | what": {
+"said": [
+"what"
 ],
 "screen_after": "note"
 },
@@ -26290,6 +27170,18 @@
 "note | yahoo mail": {
 "said": [
 "yahoo mail"
+],
+"screen_after": "note"
+},
+"note | yeah": {
+"said": [
+"yeah"
+],
+"screen_after": "note"
+},
+"note | yep": {
+"said": [
+"yep"
 ],
 "screen_after": "note"
 },
@@ -26602,6 +27494,12 @@
 ],
 "said": [
 "session handled: add preset as"
+],
+"screen_after": "web"
+},
+"web | add the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -27262,6 +28160,12 @@
 ],
 "screen_after": "web"
 },
+"web | chrome setup": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | close": {
 "calls": [
 "call.command('close')",
@@ -27277,6 +28181,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -27337,6 +28242,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -27467,6 +28373,12 @@
 ],
 "said": [
 "session handled: confirm website"
+],
+"screen_after": "web"
+},
+"web | connect chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -27740,6 +28652,16 @@
 ],
 "screen_after": "web"
 },
+"web | do it": {
+"calls": [
+"call.command('do it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: do it"
+],
+"screen_after": "web"
+},
 "web | do not send": {
 "calls": [
 "call.command('do not send')",
@@ -27943,6 +28865,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -27999,6 +28922,7 @@
 "call.leave(False)"
 ],
 "said": [
+"Browser window closed.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
@@ -28156,6 +29080,16 @@
 ],
 "screen_after": "web"
 },
+"web | flow": {
+"calls": [
+"call.command('flow')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: flow"
+],
+"screen_after": "web"
+},
 "web | follow link": {
 "calls": [
 "call.command('follow link')",
@@ -28186,6 +29120,16 @@
 ],
 "screen_after": "web"
 },
+"web | frozen": {
+"calls": [
+"call.command('frozen')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: frozen"
+],
+"screen_after": "web"
+},
 "web | get more emails": {
 "calls": [
 "call.command('get more emails')",
@@ -28213,6 +29157,16 @@
 ],
 "said": [
 "session handled: gmail"
+],
+"screen_after": "web"
+},
+"web | go ahead": {
+"calls": [
+"call.command('go ahead')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go ahead"
 ],
 "screen_after": "web"
 },
@@ -28454,6 +29408,24 @@
 ],
 "screen_after": "web"
 },
+"web | install browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
+"web | install chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
+"web | install google chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | install it": {
 "calls": [
 "call.command('install it')",
@@ -28461,6 +29433,18 @@
 ],
 "said": [
 "session handled: install it"
+],
+"screen_after": "web"
+},
+"web | install the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
+"web | install the chrome extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -30072,6 +31056,16 @@
 ],
 "screen_after": "web"
 },
+"web | question": {
+"calls": [
+"call.command('question')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: question"
+],
+"screen_after": "web"
+},
 "web | quieter": {
 "said": [
 "Volume 90 percent."
@@ -30303,6 +31297,16 @@
 ],
 "said": [
 "session handled: repeat"
+],
+"screen_after": "web"
+},
+"web | repeat that": {
+"calls": [
+"call.command('repeat that')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: repeat that"
 ],
 "screen_after": "web"
 },
@@ -30802,9 +31806,21 @@
 ],
 "screen_after": "web"
 },
+"web | set up chrome": {
+"said": [
+"Chrome setup works only on Windows."
+],
+"screen_after": "web"
+},
 "web | set up email": {
 "said": [
 "Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+],
+"screen_after": "web"
+},
+"web | set up the browser extension": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -30827,6 +31843,12 @@
 "web | setup ai voice": {
 "said": [
 "AI voice setup requires the app window."
+],
+"screen_after": "web"
+},
+"web | setup chrome": {
+"said": [
+"Chrome setup works only on Windows."
 ],
 "screen_after": "web"
 },
@@ -31089,6 +32111,16 @@
 "No podcast subscriptions yet."
 ],
 "screen_after": "media"
+},
+"web | sure": {
+"calls": [
+"call.command('sure')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: sure"
+],
+"screen_after": "web"
 },
 "web | switch to": {
 "calls": [
@@ -31418,7 +32450,7 @@
 },
 "web | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -31447,6 +32479,16 @@
 "Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
 ],
 "screen_after": "search"
+},
+"web | what": {
+"calls": [
+"call.command('what')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: what"
+],
+"screen_after": "web"
 },
 "web | what browser am i using": {
 "calls": [
@@ -31737,6 +32779,26 @@
 ],
 "said": [
 "session handled: yahoo mail"
+],
+"screen_after": "web"
+},
+"web | yeah": {
+"calls": [
+"call.command('yeah')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: yeah"
+],
+"screen_after": "web"
+},
+"web | yep": {
+"calls": [
+"call.command('yep')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: yep"
 ],
 "screen_after": "web"
 },

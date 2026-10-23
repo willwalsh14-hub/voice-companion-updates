@@ -1,29 +1,44 @@
 {
-  "version": "0.2.157-test",
+  "version": "0.2.158-test",
   "status": "Testing build",
   "date": "October 22, 2026",
-  "baseline": "0.2.156-test",
-  "scope": "Yahoo mail works again, from adding the account to reading, organizing and sending.",
+  "baseline": "0.2.157-test",
+  "scope": "Web pages are much faster, websites like YouTube are easier to control, every screen has an Alt menu, and Chrome and Thunderbird are easier to set up.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Add a Yahoo account",
+          "title": "App mode for websites",
           "details": [
-            "Say Add account and choose Yahoo. Companion asks for your Yahoo address. Type it or say it.",
-            "Then type or paste your Yahoo app password and press Enter. Press Control+V to paste. Each letter is spoken as hidden.",
-            "Companion checks the password with Yahoo and tells you if it worked. If not, it says what to do.",
-            "Before, Yahoo setup froze with no speech, and you could not type or paste."
+            "Press Insert+Space to switch between app mode and browse mode. You can also say App mode or Browse mode.",
+            "In app mode, keys go straight to the website. For example, on YouTube, K pauses, J and L skip, and M mutes.",
+            "If NVDA or JAWS is running, press Control+Alt+Space instead. Screen readers keep Insert+Space for themselves.",
+            "Each website remembers its mode."
           ]
         },
         {
-          "title": "Yahoo works like Gmail",
+          "title": "Sliders",
           "details": [
-            "Every email command now works the same way for Yahoo as for Gmail.",
-            "Delete and move now work for Yahoo. Deleted mail goes to Trash.",
-            "Say Go to Spam or Go to Junk to open spam. Yahoo calls this folder Bulk.",
-            "Mail you send from Yahoo is now kept in your Sent folder."
+            "Sliders like the YouTube seek bar and volume are read with their value, such as Seek slider, 1:23 of 4:05.",
+            "Press Enter on a slider, or Tab to it. Then use the arrow keys to move it. You hear the new value.",
+            "Press Escape to go back to browse mode."
+          ]
+        },
+        {
+          "title": "Alt menu on every screen",
+          "details": [
+            "Press Alt on any screen to open its menu. Press Alt again to close it.",
+            "The email menu has what you need for mail. It has folders, drafts and contacts. It also has Add account.",
+            "The word processor menu has not changed."
+          ]
+        },
+        {
+          "title": "Set up Chrome",
+          "details": [
+            "Say Set up Chrome. Companion installs Chrome if it is missing. Then it adds the Voice Companion extension from the Chrome Web Store.",
+            "Chrome asks you to turn the extension on. Companion reads the Chrome buttons for you. Press Tab until you hear Enable extension, then press Enter.",
+            "Companion tells you when Chrome is linked."
           ]
         }
       ]
@@ -32,18 +47,26 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Clear messages",
+          "title": "Faster web pages",
           "details": [
-            "If Yahoo stops accepting your app password, Companion says so. Make a new app password, then add the account again.",
-            "If sending fails, Companion says whether the message was sent.",
-            "Saying Yes, please, with a comma, now confirms a delete or move for any account."
+            "Busy pages like YouTube are much faster. Reading a page used to take seconds. Now it takes less than one second.",
+            "The app no longer freezes on pages that keep changing.",
+            "When a YouTube ad can be skipped, you hear Skip ad button ready. Say Skip ad to press it."
           ]
         },
         {
-          "title": "Thunderbird and other mail",
+          "title": "Web pages",
           "details": [
-            "Mail from a Thunderbird account can now be sent. Before, the send step refused it.",
-            "Names and subjects in other languages are now read the right way."
+            "In a search box that suggests words, you now hear New suggestions available when the list changes.",
+            "Say Close browser window, or press Control+Shift+W, to close the browser. This works even when Keep browser window open is on."
+          ]
+        },
+        {
+          "title": "Thunderbird",
+          "details": [
+            "When you choose Thunderbird, Companion checks what is missing and tells you the next step.",
+            "It can install its connection in Thunderbird for you, and it can start Thunderbird. Say yes or no.",
+            "Thunderbird must be installed first. Its website is thunderbird dot net."
           ]
         },
         {

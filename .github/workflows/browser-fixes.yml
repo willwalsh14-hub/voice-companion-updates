@@ -35,7 +35,7 @@ jobs:
         shell: pwsh
         run: |
           $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-          python -m unittest test_web_live.LiveWebTests test_web_semantics.SemanticWebTests -v 2>&1 | Tee-Object -FilePath browser-test-results.txt
+          python -m unittest test_web_live.LiveWebTests test_web_semantics.SemanticWebTests test_web_modes_live.WebModeLiveTests -v 2>&1 | Tee-Object -FilePath browser-test-results.txt
           if ($LASTEXITCODE) { throw 'Live browser checks failed.' }
       - name: Test public websites through Companion
         working-directory: voice_companion

@@ -17,8 +17,8 @@ SCREEN_KEYS = {
                 'Ctrl+Shift+A': 'clear selection', 'Ctrl+Shift+S': 'what is selected',
                 'Ctrl+Shift+M': 'move folder', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+Shift+R': 'read document', 'F1': 'help with document reader'},
-    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields'},
-    'browser_menu': {'F1': 'help with web'},
+    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window'},
+    'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
@@ -108,6 +108,11 @@ def catalog():
     from media_navigation import RADIO,RADIO_STATION,PODCASTS
     for area,actions in (('Radio',RADIO),('Radio station actions',RADIO_STATION),('Podcasts',PODCASTS)):
         for action in actions:add(area,action.label,action.label,'Actions list: arrows to the action, Enter')
+    from screen_menus import MENUS,items as menu_items
+    for mode,(title,_) in MENUS.items():
+        for group,name,key,voice in menu_items(mode):
+            spoken='Options, then '+voice.split(':',1)[1]+' options' if voice.startswith('@options:') else name if voice.startswith('web key ') else voice
+            add('Alt menu, '+title[:-len(' menu')]+': '+group,name,spoken,key)
     from browser_menu import BrowserMenu
     from types import SimpleNamespace
     # Bypass history loading: choices depends only on the session's page state.

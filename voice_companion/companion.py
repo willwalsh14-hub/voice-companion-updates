@@ -31,7 +31,7 @@ from cloud_recognition import CloudRecognition
 from privacy_controls import narration_allowed,cloud_recognition_allowed
 from parakeet_recognition import ParakeetRecognition
 from browser_navigation import prepare_address
-from web_assistant import WebSession
+from web_assistant import RefreshPacer, WebSession
 from audio_resample import PCM16Resampler, stereo_to_mono
 from app_window import CompanionWindow
 from reading_navigation import ReadingCursor, reading_request
@@ -49,7 +49,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.157-test'
+APP_VERSION = '0.2.158-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -140,6 +140,8 @@ account_setup = False
 # Yahoo setup asks for the address, then the app password, in the app's own
 # text box: {'provider': 'yahoo', 'step': 'address' | 'password', 'address': ...}.
 ACCOUNT_ENTRY = None
+# Thunderbird setup waiting for a yes or no: {'flow': thunderbird_setup.Setup, 'question': ...}.
+THUNDERBIRD_SETUP = None
 YAHOO_SETUP_PROMPT = ('Yahoo uses an app password, not your normal password. To make one, sign in to Yahoo, '
                       'open Account security, and choose Generate app password. '
                       'Now type or say your Yahoo email address, then press Enter. Say cancel to stop.')
@@ -199,6 +201,9 @@ DOCUMENT_NAMING_ACTION = "name document"
 DOCUMENT_CLOSE_TARGET = "awake"
 DOCUMENT_BASELINE = None
 CONFIRM_CHOICE = "yes"
+# Chrome and extension setup (chrome_setup.py); None when not running.
+CHROME_SETUP = None
+CHROME_SETUP_RETURN = 'awake'
 POWER_ACTION = None
 POWER_RETURN_MODE = "awake"
 EXIT_RETURN_MODE = "awake"
@@ -225,12 +230,14 @@ def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
     context={'mode':logical,'source':None,'text':'','caret':0,'selection':None,'echo':PREFERENCES.get('typing_echo','characters'),'phonetic':PREFERENCES.get('phonetic_enabled',True),'delay':float(PREFERENCES.get('phonetic_delay','0.5')),'ack':0}
     if logical=='task_input':context['task_input']=True
+    if THUNDERBIRD_SETUP is not None:context['confirmation']=CONFIRM_CHOICE
     if ACCOUNT_ENTRY is not None:
         context['account_entry']=ACCOUNT_ENTRY['step']
         context['account_private']=ACCOUNT_ENTRY['step']=='password'
         context['menu_letters']=False
         return context
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
+    if SCREEN_MENU is not None and SCREEN_MENU.is_open(logical):context['screen_menu']=True
     if logical=='files' and FILE_MANAGER:
         context['file_name_input']=bool(FILE_MANAGER.pending and FILE_MANAGER.pending[0] in ('rename','search','search all'))
         if context['file_name_input']:
@@ -259,7 +266,7 @@ def app_context(mode):
                 context['media_input']=not field['choices']
             else:context['media_button']='OK' if nav.field_index==len(nav.form['fields']) else 'Cancel'
         else:context['media_form']=None
-    if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None:context['confirmation']=CONFIRM_CHOICE
+    if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None or chrome_confirming(logical):context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and (web_session.pending or web_session.submit_pending):context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
@@ -282,6 +289,8 @@ def app_context(mode):
         context['web_choice']=__import__('web_browse').choice_field(field)
         context['web_combo_edit']=__import__('web_browse').editable_combo(field)
         context['web_combo']=bool(web_session.browse and web_session.browse.current() and __import__('web_browse').kind(web_session.browse.current())=='combobox')
+        context['web_app_mode']=getattr(web_session,'app_mode',False) is True
+        context['web_slider']=bool(isinstance(getattr(web_session,'slider_field',None),dict))
         document_identity=(web_session.document_state or {}).get('epoch',getattr(web_session,'page_revision',0))
         if field:context['web_field_source']='web:'+str(id(web_session))+':document:'+str(document_identity)+':'+str(field.get('frame_index','main'))+':'+field['key']
         if field and field.get('type')=='password':context['web_private']=True;context['web_field']=dict(field)
@@ -519,7 +528,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
         return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
@@ -610,6 +619,8 @@ def _navigation_key(key,mode):
     interrupt_speech()
     if key=='Ctrl+P':return 'toggle audio'
     if key=='Control':return None
+    menu_key=screen_menu().keyboard(key,mode)
+    if menu_key is not None:return menu_key
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
     from input_parity import screen_command
@@ -638,7 +649,9 @@ def _navigation_key(key,mode):
         web_session.list_prefix='';web_session.list_prefix_time=0
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
     if key=='Alt+F4':return 'exit companion'
-    confirming=pending_website is not None or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    if mode=='chrome_setup' and not chrome_confirming(mode):
+        return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
+    confirming=THUNDERBIRD_SETUP is not None or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -662,8 +675,8 @@ def _navigation_key(key,mode):
             return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Home':'home','End':'end','Enter':'enter','Escape':'escape'}[key]
         if key.startswith('Letter:'):return key
     if mode=='web' and key in ('Escape','Web:Escape') and web_session and isinstance(web_session.snapshot,dict) and web_session.snapshot.get('modal_key') and not web_session.list_focus:return 'web key Escape'
-    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field):return 'web browser menu'
-    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus:return 'web browser menu'
+    if mode=='web' and key=='Escape' and web_session and not (web_session.list_focus or web_session.keyboard_field or isinstance(getattr(web_session,'slider_field',None),dict)):return 'web browser menu'
+    if mode=='web' and key=='Web:Escape' and web_session and web_session.keyboard_field is None and not web_session.list_focus and not isinstance(getattr(web_session,'slider_field',None),dict):return 'web browser menu'
     if mode=='web' and key in ('F6','F7'):return 'list headings' if key=='F6' else 'list links'
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key=='Enter':return 'open current heading' if web_session.list_focus=='headings' else 'open current link'
     if mode=='web' and key.startswith('Web:'):return 'web key '+key[4:]
@@ -736,6 +749,17 @@ def apply_settings(values):
 FILE_MANAGER=None
 FILE_READER=None
 TASK_NAV=None
+SCREEN_MENU=None
+
+def screen_menu():
+    """The Alt menu of the current screen (screen_menus.py)."""
+    global SCREEN_MENU
+    from screen_menus import ScreenMenu
+    if SCREEN_MENU is None or SCREEN_MENU.app is not sys.modules[__name__]:SCREEN_MENU=ScreenMenu(sys.modules[__name__])
+    return SCREEN_MENU
+
+def chrome_confirming(mode):
+    return mode=='chrome_setup' and CHROME_SETUP is not None and CHROME_SETUP.question is not None
 
 def task_navigation():
     global TASK_NAV
@@ -893,7 +917,7 @@ def fast_command_request(command, mode):
     if command in ('word processor','open word processor','notepad','open notepad'):return True
     if re.fullmatch(r'(?:(?:set|choose|use) )?(?:default )?search engine(?: to)? (google|bing|brave(?: search)?|duck duck go|duckduckgo)',command):return True
     if command in POWER_COMMANDS:return True
-    if mode in ('settings','power_confirm','exit_confirm','media','help','browser_menu'): return True
+    if mode in ('settings','power_confirm','exit_confirm','media','help','browser_menu','chrome_setup'): return True
     if command in ('check for updates',"what's new",'what is new','whats new','release notes','restart computer','shut down computer'):return True
     if command in ('options','open options','show options','settings','open settings','show settings','preferences','open preferences'):return True
     if re.fullmatch(r'(?:set )?verbosity (high|medium|low)',command): return True
@@ -1404,6 +1428,19 @@ def web_dictation_feedback(result):
     if text is None:speak(result)
     elif text:dictation_feedback('Added: '+text)
 
+CLOSE_BROWSER_COMMANDS=('close browser','close the browser','close browser window','close the browser window','close web browser',
+                        'close web browser window','close the web browser','exit browser','exit web browser','quit browser')
+
+def close_browser_window():
+    """Close the browser even when Keep browser window open is on, then go to the main menu."""
+    regular=getattr(getattr(web_session,'backend',None),'regular',False) is True
+    try:web_session.leave(False)
+    except Exception:
+        speak('The browser window could not close. Try closing it again.');return 'web' if web_session.snapshot else 'browser_menu'
+    speak('Companion let go of your browser. Its tabs stay open.' if regular else 'Browser window closed.')
+    announce_main_menu()
+    return 'awake'
+
 def open_browser_menu():
     global web_session
     if os.name=='nt':
@@ -1742,6 +1779,54 @@ def finish_account_secret(value, mode):
     return mode
 
 
+def new_thunderbird_setup():
+    """Thunderbird setup on this computer, with the add-on package this copy of the app ships."""
+    import thunderbird_setup
+    from thunderbird_bridge import current, prepare
+    from mail_accounts import thunderbird_connect
+    package = Path(sys.executable).parent / 'Voice Companion Mail Connection.xpi'
+    if not getattr(sys, 'frozen', False) or not package.is_file():
+        from build_thunderbird_addon import build
+        package = build(APP / 'thunderbird-addon' / 'Voice Companion Mail Connection.xpi')
+    def relay():
+        return current() or (prepare(APP) if os.name == 'nt' else None)
+    return thunderbird_setup.Setup(thunderbird_setup.WindowsSystem(), package,
+                                   lambda: thunderbird_connect(ProtectedStore(APP)), relay, speak_status)
+
+
+THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok', 'do it', 'go ahead')
+THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
+
+
+def thunderbird_setup_step(step, mode):
+    """Speak one setup result; keep its yes or no question waiting."""
+    global THUNDERBIRD_SETUP, CONFIRM_CHOICE
+    flow = THUNDERBIRD_SETUP['flow'] if THUNDERBIRD_SETUP else None
+    THUNDERBIRD_SETUP = None
+    if step.question:
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
+        CONFIRM_CHOICE = 'yes'
+    speak(step.message)
+    sync_app_context(mode, True)
+    return mode
+
+
+def thunderbird_setup_answer(command, mode):
+    """Yes starts the offered step. Anything else, except repeat, is no."""
+    global THUNDERBIRD_SETUP
+    if command in THUNDERBIRD_REPEAT:
+        speak(THUNDERBIRD_SETUP['message'])
+        return mode
+    flow, question = THUNDERBIRD_SETUP['flow'], THUNDERBIRD_SETUP['question']
+    try:
+        step = flow.answer(question, command in THUNDERBIRD_YES)
+    except Exception:
+        THUNDERBIRD_SETUP = None
+        speak('Thunderbird setup stopped because of a problem. Nothing else was changed. Say add account to try again.')
+        return mode
+    return thunderbird_setup_step(step, mode)
+
+
 def _handle(text, mode, typed=False):
     global DOCUMENT_NAMING_ACTION
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
@@ -1749,7 +1834,7 @@ def _handle(text, mode, typed=False):
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
-    global OPEN_NOTE, ACCOUNT_ENTRY
+    global OPEN_NOTE, ACCOUNT_ENTRY, THUNDERBIRD_SETUP
     global SEARCH_RETURN_MODE,NAMED_LIST
     # Phrases that list saved notes. On the Notepad screen only the clear commands
     # count; a sentence such as "My notes are on the desk" is text.
@@ -1760,6 +1845,8 @@ def _handle(text, mode, typed=False):
     command=normalized_command(text)
     if ACCOUNT_ENTRY is not None:
         return account_entry_step(text, command, mode)
+    if THUNDERBIRD_SETUP is not None:
+        return thunderbird_setup_answer(command, mode)
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
@@ -1768,11 +1855,20 @@ def _handle(text, mode, typed=False):
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
+    if mode=='chrome_setup':
+        import chrome_setup
+        return chrome_setup.handle(sys.modules[__name__],text,mode)
     try:
+        menu_result=screen_menu().handle(text,mode)
+        if menu_result is not None:return menu_result
         task_result=task_navigation().handle(text,mode)
         if task_result is not None:return task_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
+    # A whole command only; in a document, email or note these words are text.
+    if command in ('set up chrome','setup chrome','chrome setup','connect chrome','install chrome','install google chrome','set up the browser extension','install the browser extension','install browser extension','add the chrome extension','install the chrome extension') and mode!='search' and not writing_dictation(mode,typed):
+        import chrome_setup
+        return chrome_setup.begin(sys.modules[__name__],mode)
     if command in ('regular browser','open regular browser','connect regular browser'):
         return open_browser_menu()
     if mode=='browser_menu' and web_session.menu.level=='name':return handle_browser_menu(text)
@@ -1784,6 +1880,8 @@ def _handle(text, mode, typed=False):
     if mode=='web' and command in ('web browser menu','browser menu','leave website'):
         web_session.leave(PREFERENCES.get('web_keep_open',False))
         return open_browser_menu()
+    if command in CLOSE_BROWSER_COMMANDS and web_session and (mode in ('web','browser_menu') or mode=='awake' and web_session.snapshot):
+        return close_browser_window()
     if mode == 'tutorial':
         if change_speech_setting(text) or use_synthesizer(text) or voice_menu(command):return mode
         control=speech_control(text)
@@ -2225,7 +2323,8 @@ def _handle(text, mode, typed=False):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
         if command in ('main menu','back to main menu'):
-            announce_main_menu();return 'awake'
+            # handle() announces the main menu once when the screen changes.
+            return 'awake'
         request=reading_request(command)
         structure_request=re.fullmatch(r'(next|previous) (heading|table|row|cell|list|list item|link|footnote|bookmark)',command)
         if structure_request:
@@ -2527,6 +2626,16 @@ def _handle(text, mode, typed=False):
             speak(YAHOO_SETUP_PROMPT)
             sync_app_context(mode, True)
             return mode
+        if provider == 'thunderbird':
+            # No sign-in here: find what Thunderbird still needs and say the next step.
+            try:
+                flow = new_thunderbird_setup()
+                THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
+                return thunderbird_setup_step(flow.start(), mode)
+            except Exception:
+                THUNDERBIRD_SETUP = None
+                speak('Thunderbird setup stopped because of a problem. Ask your helper to check Email Setup Helper, section 4.')
+                return mode
         speak('Opening ' + provider.capitalize() + ' account setup. A trusted person may complete the private sign-in. Please wait for the result.')
         try:
             address = connect(provider, APP, graphical=True)
@@ -2721,7 +2830,7 @@ def _handle(text, mode, typed=False):
             result=web_session.keyboard(text[8:],direct_submit=True) if KEYBOARD_NAVIGATION and text[8:] in ('Activate','Space') else web_session.keyboard(text[8:])
             speak_web_result(result,revision);return mode
         web_session.input_mode = INPUT_MODE
-        if command in ('leave website', 'close website','close browser','exit browser','leave web browser','close web browser','exit web browser', 'main menu', 'back to main menu'):
+        if command in ('leave website', 'close website','leave web browser', 'main menu', 'back to main menu'):
             try:web_session.leave(PREFERENCES.get('web_keep_open',False))
             except Exception:speak('The browser window could not close. Try closing it again.')
             announce_main_menu()
@@ -3400,6 +3509,7 @@ def main():
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
+        mode = __import__('chrome_setup').startup_request(sys.modules[__name__],mode)
         sync_app_context(mode,True)
         if input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
         # Listen and process keys while the asynchronous startup speech plays.
@@ -3413,7 +3523,7 @@ def main():
             except OSError: pass
         settings_quiet_until=0
         settings_audio_blocked=False
-        last_web_refresh=0.0;startup_speaking=True;startup_quiet_until=time.monotonic()+.3
+        web_refresh=RefreshPacer();startup_speaking=True;startup_quiet_until=time.monotonic()+.3
         microphone_retry_at=0
         while True:
             poll_dictation_echo()
@@ -3432,11 +3542,12 @@ def main():
                 if mode=='exit':return 0
                 continue
             logical_mode=SLEEP_RETURN_MODE if mode=='sleep' else mode
-            if logical_mode=='web' and web_session and time.monotonic()-last_web_refresh>=.3 and (APP_WINDOW is None or time.monotonic()-getattr(APP_WINDOW,'last_navigation',0)>.12):
-                last_web_refresh=time.monotonic()
+            if logical_mode=='web' and web_session and web_refresh.due(time.monotonic(),0 if APP_WINDOW is None else getattr(APP_WINDOW,'last_navigation',0)):
+                started=time.monotonic()
                 try:
                     refresh_browser_view(mode)
                 except Exception:pass
+                web_refresh.done(started,time.monotonic())
             if KEYBOARD_SPEECH and KEYBOARD_SPEECH.narration_interrupt.is_set():
                 KEYBOARD_SPEECH.narration_interrupt.clear()
                 voice.Speak('',3)
@@ -3446,6 +3557,8 @@ def main():
             mode = poll_file_manager(mode)
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
+            if CHROME_SETUP is not None:
+                mode = __import__('chrome_setup').poll(sys.modules[__name__],mode)
             update_audio_ducking()
             if APP_WINDOW is not None and APP_WINDOW.closed.is_set():
                 flush_keyboard_edits(True)

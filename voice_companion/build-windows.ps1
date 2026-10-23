@@ -10,6 +10,20 @@ function Write-BuildAnnotation([string]$Title, [string]$Message) {
   if ($clean.Length -gt 3500) { $clean = $clean.Substring($clean.Length - 3500) }
   Write-Output ('::error title=' + $Title + '::' + $clean)
 }
+# Run a unittest step and, on GitHub, put the failed test names and the end of
+# their output into the run annotations (the full log cannot be read remotely).
+function Invoke-UnitTests([string]$Title, [string[]]$Arguments) {
+  $log = Join-Path $PSScriptRoot ('VoiceCompanion-Tests-' + ($Title -replace '[^A-Za-z0-9]','') + '.txt')
+  $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $python -m unittest @Arguments 2>&1 | ForEach-Object { $line = "$_"; if ($line -eq 'System.Management.Automation.RemoteException') { '' } else { $line } } | Tee-Object -FilePath $log | Out-Host
+  $code = $LASTEXITCODE; $ErrorActionPreference = $previous
+  if ($code -ne 0 -and (Test-Path $log)) {
+    $failed = @(Select-String -LiteralPath $log -Pattern '^(FAIL|ERROR): ' | ForEach-Object { $_.Line })
+    $tail = (Get-Content -LiteralPath $log -Tail 60) -join "`n"
+    Write-BuildAnnotation ($Title + ' failed') ((($failed | Select-Object -First 15) -join "`n") + "`n---`n" + $tail) | Out-Host
+  }
+  return $code
+}
 trap {
   Write-BuildAnnotation 'Build stopped' $_.Exception.Message
   break
@@ -91,8 +105,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
 & $python build_webview2.py
 if ($LASTEXITCODE -ne 0) { throw 'The embedded Edge host could not be built.' }
 $env:VOICE_COMPANION_REQUIRE_WEBVIEW2 = '1'
-& $python -m unittest -q -f test_webview2.EmbeddedLiveTests test_webview2.EmbeddedConsumerTests test_webview2.EmbeddedSemanticTests
-if ($LASTEXITCODE -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }
+$embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests')
+if ($embeddedResult -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEBVIEW2
 $extensionTestRuntime = Join-Path $buildEnv 'extension-test-browser'
 $env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
@@ -106,9 +120,9 @@ if ($LASTEXITCODE -ne 0) { throw 'The bundled offline OCR models could not load.
 $releaseOutput = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Tests.txt'
 $releaseErrors = Join-Path $PSScriptRoot 'VoiceCompanion-Release-Errors.txt'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
-  -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox',
-    'test_media_update_fixes','test_web_fixes','test_document_fixes','test_core_email_fixes','test_storage','test_embedded_edge_default','test_thunderbird_mail',
-    'test_web_assistant','test_browser_recovery','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_ai_dictation','test_dictation_echo','test_file_manager','test_file_explorer','test_input_parity','test_task_navigation','test_media_player_menu','test_document_reader','test_rich_documents','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge','test_regular_browser','test_browser_cdp_relay','test_launch_review_fixes','test_notepad_and_document_options','test_gmail_sign_in','test_yahoo_setup','test_yahoo_mail') `
+  -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox','test_chrome_setup',
+    'test_media_update_fixes','test_web_fixes','test_document_fixes','test_core_email_fixes','test_storage','test_embedded_edge_default','test_thunderbird_mail','test_thunderbird_setup','test_web_performance',
+    'test_web_assistant','test_browser_recovery','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_ai_dictation','test_dictation_echo','test_file_manager','test_file_explorer','test_input_parity','test_task_navigation','test_media_player_menu','test_document_reader','test_rich_documents','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge','test_regular_browser','test_browser_cdp_relay','test_launch_review_fixes','test_notepad_and_document_options','test_gmail_sign_in','test_yahoo_setup','test_yahoo_mail','test_screen_menus','test_web_modes') `
   -RedirectStandardOutput $releaseOutput -RedirectStandardError $releaseErrors
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
 if ($releaseTests.ExitCode -ne 0) {
@@ -141,17 +155,17 @@ if ($LASTEXITCODE -ne 0) {
   if (-not $findings) { $findings = @('No findings were recorded. The audit service may have been unreachable.') }
   throw ('Dependency security audit failed. ' + ($findings -join ' | '))
 }
-& $python -m unittest test_security_privacy -v
-if ($LASTEXITCODE -ne 0) { throw 'Privacy or security checks failed.' }
-& $python -m unittest test_update_recovery -v
-if ($LASTEXITCODE -ne 0) { throw 'Updater recovery and bookmark opening checks failed.' }
+$securityResult = Invoke-UnitTests 'Privacy and security checks' @('test_security_privacy','-v')
+if ($securityResult -ne 0) { throw 'Privacy or security checks failed.' }
+$recoveryResult = Invoke-UnitTests 'Updater recovery checks' @('test_update_recovery','-v')
+if ($recoveryResult -ne 0) { throw 'Updater recovery and bookmark opening checks failed.' }
 $browserRuntime = Join-Path $PSScriptRoot 'browser-runtime'
 $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
 if ($LASTEXITCODE -ne 0) { throw 'The guided Firefox runtime could not be installed.' }
 $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-& $python -m unittest -q test_web_live test_consumer_web test_consumer_audio test_web_semantics
-if ($LASTEXITCODE -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
+$liveResult = Invoke-UnitTests 'Real browser checks' @('-q','test_web_live','test_consumer_web','test_consumer_audio','test_web_semantics','test_web_modes_live')
+if ($liveResult -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEB_TESTS
 $modelZip = Join-Path $PSScriptRoot 'vosk-model.zip'
 $modelFolder = Join-Path $PSScriptRoot 'model'
@@ -180,8 +194,8 @@ $arguments = @('--clean', '--noconfirm', '--onedir', '--contents-directory', '.'
   '--add-data', 'Voice Companion Release Notes - DAISY 3.zip:.',
   '--add-data', 'Voice Companion Release Notes.brf:.',
   '--add-data', 'START HERE - Veteran - DAISY 3.zip:.', '--hidden-import', 'sounddevice',
-  '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter',
-  '--hidden-import', 'thunderbird_bridge', '--hidden-import', 'thunderbird_mailbox',
+  '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter', '--hidden-import', 'chrome_setup',
+  '--hidden-import', 'thunderbird_bridge', '--hidden-import', 'thunderbird_mailbox', '--hidden-import', 'thunderbird_setup',
   '--collect-all', 'win32com', '--collect-all', 'vosk',
   '--collect-all', 'google_auth_oauthlib', '--collect-all', 'msal',
   '--collect-all', 'playwright', '--collect-all', 'rapidocr', '--collect-all', 'onnxruntime',
@@ -224,6 +238,7 @@ function Invoke-PyInstaller([string]$name, [string[]]$options, [string]$entry = 
     if (Test-Path $errorLog) { Get-Content -LiteralPath $errorLog -Tail 100 | Out-Host }
     Write-Output 'Recent standard output:'
     if (Test-Path $outputLog) { Get-Content -LiteralPath $outputLog -Tail 40 | Out-Host }
+    if (Test-Path $errorLog) { Write-BuildAnnotation ('Packaging ' + $name + ' failed') ((Get-Content -LiteralPath $errorLog -Tail 40) -join "`n") }
     throw "Could not package $name. Send both PyInstaller log files along with VoiceCompanion-Build-Log.txt."
   }
   Write-Output "$name packaged successfully."
@@ -390,14 +405,14 @@ if ($LASTEXITCODE -ne 0) { throw 'The installed native browser connection failed
 & $python (Join-Path $PSScriptRoot 'check_extension_browser.py') $installedFolder $extensionTestRuntime
 if ($LASTEXITCODE -ne 0) { throw 'The installed extension did not preserve the standard browser navigation and forms.' }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.157-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.158-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --refresh-guides
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.157-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.158-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -424,7 +439,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.157-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.158-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing
