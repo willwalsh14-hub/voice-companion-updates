@@ -184,19 +184,71 @@ class MailBridge {
     return true;
   }
 
-  // Thunderbird's own "add email account" page, with the address filled in where possible.
-  // Thunderbird then asks for the sign-in itself; this add-on never sees a password.
-  async openAccountSetup({email = ''}) {
+  // Thunderbird's own "add email account" page, driven by Voice Companion (experiment/).
+  // Thunderbird asks for the sign-in itself; passwords pass through once and are never kept.
+  setup() {
+    const setup = this.api.voiceCompanionSetup;
+    return setup && typeof setup.openAccountSetup === 'function' ? setup : null;
+  }
+
+  async openAccountSetup({email = '', name = '', show = false}) {
     if (typeof email !== 'string' || email.length > 254 || (email && !/^[^\s@]+@[^\s@]+$/.test(email))) {
       throw MailBridge.fail('address', 'That is not a complete email address.');
     }
-    const setup = this.api.voiceCompanionSetup;
-    if (!setup || typeof setup.openAccountSetup !== 'function') return {opened: false, prefilled: false};
+    if (typeof name !== 'string' || name.length > 100 || /[\r\n]/.test(name)) throw MailBridge.fail('name', 'Use a shorter name.');
+    const setup = this.setup();
+    if (!setup) return {opened: false, prefilled: false};
     try {
-      const result = await setup.openAccountSetup(email);
+      const result = await setup.openAccountSetup(email, name, Boolean(show));
       return {opened: Boolean(result && result.opened), prefilled: Boolean(result && result.prefilled)};
     } catch (error) {
       return {opened: false, prefilled: false};
+    }
+  }
+
+  async setupPage() {
+    const closed = {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false};
+    const setup = this.setup();
+    if (!setup) return closed;
+    try {
+      const page = await setup.setupPage();
+      return {open: Boolean(page.open), title: String(page.title || ''), notes: (page.notes || []).map(String).slice(0, 5),
+        button: String(page.button || ''), canContinue: Boolean(page.canContinue), needsPassword: Boolean(page.needsPassword)};
+    } catch (error) {
+      return closed;
+    }
+  }
+
+  async setupContinue() {
+    const setup = this.setup();
+    try { return {pressed: Boolean(setup && (await setup.setupContinue()).pressed)}; } catch (error) { return {pressed: false}; }
+  }
+
+  async fillPassword({password}) {
+    if (typeof password !== 'string' || !password || password.length > 1000) throw MailBridge.fail('password', 'The password box was empty.');
+    const setup = this.setup();
+    try { return {filled: Boolean(setup && (await setup.fillPassword(password)).filled)}; } catch (error) { return {filled: false}; }
+  }
+
+  async showSetup() {
+    const setup = this.setup();
+    try { return {shown: Boolean(setup && (await setup.showSetup()).shown)}; } catch (error) { return {shown: false}; }
+  }
+
+  async captureSignIn({seconds = 0}) {
+    if (!Number.isInteger(seconds) || seconds < 0) throw MailBridge.fail('time', 'Invalid time.');
+    const setup = this.setup();
+    try { return {capturing: Boolean(setup && (await setup.captureSignIn(seconds)).capturing)}; } catch (error) { return {capturing: false}; }
+  }
+
+  async takeSignIn() {
+    const setup = this.setup();
+    try {
+      const found = setup ? await setup.takeSignIn() : null;
+      const url = found && typeof found.url === 'string' && /^https:\/\//i.test(found.url) ? found.url : '';
+      return {url, where: found && ['browser', 'thunderbird'].includes(found.where) ? found.where : ''};
+    } catch (error) {
+      return {url: '', where: ''};
     }
   }
 
@@ -254,7 +306,8 @@ class MailBridge {
 }
 
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
-  'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'minimize'];
+  'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
+  'captureSignIn', 'takeSignIn', 'minimize'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api) {

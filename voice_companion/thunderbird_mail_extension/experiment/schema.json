@@ -1,16 +1,79 @@
 [
   {
     "namespace": "voiceCompanionSetup",
-    "description": "Opens Thunderbird's own page for adding an email account. It never reads or changes accounts, passwords or settings.",
+    "description": "Thunderbird's own add email account page, driven by Voice Companion. Never reads or changes accounts, passwords or settings.",
     "functions": [
       {
         "name": "openAccountSetup",
         "type": "function",
         "async": true,
-        "description": "Open Thunderbird's add email account page and, where possible, fill in the address. Resolves to {opened, prefilled}.",
+        "description": "Open Thunderbird's add email account page and fill in the address and name. Resolves to {opened, prefilled}.",
         "parameters": [
-          {"name": "email", "type": "string", "description": "The address to fill in, or an empty string."}
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "show",
+            "type": "boolean"
+          }
         ]
+      },
+      {
+        "name": "setupPage",
+        "type": "function",
+        "async": true,
+        "description": "The add account page's title, messages and main button. Resolves to {open, title, notes, button, canContinue, needsPassword}.",
+        "parameters": []
+      },
+      {
+        "name": "setupContinue",
+        "type": "function",
+        "async": true,
+        "description": "Press the add account page's main button. Resolves to {pressed}.",
+        "parameters": []
+      },
+      {
+        "name": "fillPassword",
+        "type": "function",
+        "async": true,
+        "description": "Put a password into the add account page's password box. Resolves to {filled}.",
+        "parameters": [
+          {
+            "name": "secret",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "showSetup",
+        "type": "function",
+        "async": true,
+        "description": "Bring Thunderbird to the front. Resolves to {shown}.",
+        "parameters": []
+      },
+      {
+        "name": "captureSignIn",
+        "type": "function",
+        "async": true,
+        "description": "For this many seconds (0 stops), hand Thunderbird's web browser sign-in address to Voice Companion. Resolves to {capturing}.",
+        "parameters": [
+          {
+            "name": "seconds",
+            "type": "integer"
+          }
+        ]
+      },
+      {
+        "name": "takeSignIn",
+        "type": "function",
+        "async": true,
+        "description": "The sign-in address handed over, once. Resolves to {url, where}.",
+        "parameters": []
       }
     ]
   }
