@@ -99,5 +99,19 @@ class GoogleSignInTests(unittest.TestCase):
         self.assertTrue(self.summary('firefox', 'https://accounts.google.com/signin').startswith('Page loaded'))
 
 
+
+class FindBraveTests(unittest.TestCase):
+    def test_usual_folders_then_the_path_windows_records(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            local = root / 'Local' / 'BraveSoftware/Brave-Browser/Application/brave.exe'
+            other = root / 'Other' / 'brave.exe'
+            env = {'PROGRAMFILES': str(root / 'PF'), 'LOCALAPPDATA': str(root / 'Local')}
+            self.assertIsNone(web_assistant.find_brave(env, lambda name: None))
+            other.parent.mkdir(parents=True); other.write_text('x')
+            self.assertEqual(web_assistant.find_brave(env, lambda name: '"' + str(other) + '"'), other)
+            local.parent.mkdir(parents=True); local.write_text('x')
+            self.assertEqual(web_assistant.find_brave(env, lambda name: str(other)), local)
+
 if __name__ == '__main__':
     unittest.main()

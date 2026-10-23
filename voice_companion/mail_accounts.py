@@ -248,6 +248,40 @@ class ProtectedStore:
         if not path.exists(): path = self._path(provider)
         return self._unseal(path)
 
+    def remove(self, provider, address):
+        """Delete one account's saved sign-in, found by type and address.
+
+        Other accounts, even of the same type, are not touched. If this was the
+        selected account, the next account in the list (or the one before it)
+        is selected. Returns the selected account afterwards, or None."""
+        accounts = self.accounts()
+        matches = [(p, a) for p, a in accounts if p == provider.casefold() and a.casefold() == address.strip().casefold()]
+        if len(matches) != 1:
+            raise AccountError('That account is not connected.')
+        provider, address = matches[0]
+        selected = self.selected()
+        position = accounts.index(matches[0])
+        paths = [self._account_path(provider, address)]
+        legacy = self._path(provider)
+        if legacy.is_file():
+            try:
+                legacy_address = self._unseal(legacy).get('address', '')
+            except (AccountError, AttributeError):
+                legacy_address = ''
+            if legacy_address.casefold() == address.casefold():
+                paths.append(legacy)
+        for path in paths:
+            path.unlink(missing_ok=True)
+        if selected != (provider, address):
+            return self.selected()
+        (self.folder / 'mail-selection.account').unlink(missing_ok=True)
+        remaining = [account for account in accounts if account != (provider, address)]
+        if not remaining:
+            return None
+        # The account that followed it in the list, or the one before it.
+        choice = remaining[min(position, len(remaining) - 1)]
+        return self.select(*choice)
+
     def disconnect(self, provider):
         choice = self.selected()
         if choice and choice[0] == provider:

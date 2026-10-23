@@ -59,8 +59,9 @@ MENUS = {
             ('Connect Google Contacts', '', 'connect google contacts')]),
         ('Accounts', [
             ('Add account', '', 'add account'),
-            ('Switch account', '', 'list email accounts'),
-            ('Which account', '', 'which email account')]),
+            ('Switch account', '', 'switch account'),
+            ('Which account', '', 'which email account'),
+            ('Remove account', '', 'remove email account')]),
         ('Options and help', [
             ('Email options', '', '@options:Email'),
             ('Messages per page', '', 'email list size'),
@@ -299,7 +300,7 @@ class ScreenMenu:
         """None when the menu can open, or what to say when a step must finish first."""
         m = self.app
         busy = 'Finish or cancel this step first. Then press Alt for the menu.'
-        if m.NAMED_LIST:
+        if m.NAMED_LIST or getattr(m, 'ACCOUNT_PICKER', None):
             return 'Close this list first. Then press Alt for the menu.'
         if mode == 'mailbox':
             mail = m.mail_session

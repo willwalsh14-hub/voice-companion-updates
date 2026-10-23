@@ -49,7 +49,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.158-test'
+APP_VERSION = '0.2.159-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -142,6 +142,14 @@ account_setup = False
 ACCOUNT_ENTRY = None
 # Thunderbird setup waiting for a yes or no: {'flow': thunderbird_setup.Setup, 'question': ...}.
 THUNDERBIRD_SETUP = None
+# The list of connected email accounts while it is open (account_picker.py):
+# {'purpose': 'folders' | 'inbox' | 'remove', 'accounts': [(provider, address)], 'index': 0,
+#  'current': selected account, 'mode': screen, 'confirm': account waiting for yes or no,
+#  'origin': {'account', 'session'} to return to when the folder list is canceled}.
+ACCOUNT_PICKER = None
+# The 'origin' above after an account was chosen for its folders: Escape in that
+# folder list goes back to the account list.
+FOLDER_ACCOUNT_RETURN = None
 YAHOO_SETUP_PROMPT = ('Yahoo uses an app password, not your normal password. To make one, sign in to Yahoo, '
                       'open Account security, and choose Generate app password. '
                       'Now type or say your Yahoo email address, then press Enter. Say cancel to stop.')
@@ -236,6 +244,12 @@ def app_context(mode):
         context['account_private']=ACCOUNT_ENTRY['step']=='password'
         context['menu_letters']=False
         return context
+    if ACCOUNT_PICKER is not None:
+        # The account list owns the keys like any other list; its yes or no question like any question.
+        if ACCOUNT_PICKER.get('confirm'):context['confirmation']=CONFIRM_CHOICE
+        else:
+            context.update(named_list=True,mode='list',menu_letters=True)
+            return context
     context['menu_letters']=logical!='document_name' and menu_state(logical) is not None
     if SCREEN_MENU is not None and SCREEN_MENU.is_open(logical):context['screen_menu']=True
     if logical=='files' and FILE_MANAGER:
@@ -532,6 +546,10 @@ def menu_state(mode):
         return None
     if NAMED_LIST:
         return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
+    if ACCOUNT_PICKER is not None and not ACCOUNT_PICKER.get('confirm'):
+        from account_picker import label
+        picker=ACCOUNT_PICKER
+        return ([label(a,picker['current']) for a in picker['accounts']],picker['index'],lambda index:picker.update(index=index))
     if SYNTH_PICK_INDEX is not None:
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
     if VOICE_PICK_INDEX is not None:
@@ -621,6 +639,9 @@ def _navigation_key(key,mode):
     if key=='Control':return None
     menu_key=screen_menu().keyboard(key,mode)
     if menu_key is not None:return menu_key
+    if ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('mode')==mode and not ACCOUNT_PICKER.get('confirm'):
+        request=account_picker_key(key)
+        if request!='':return request
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
     from input_parity import screen_command
@@ -651,7 +672,7 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -719,6 +740,8 @@ def _navigation_key(key,mode):
     if mode=='document' and key=='F2':return 'name document'
     if mode=='note' and key=='Ctrl+O':return 'list notes'
     if mode=='mailbox':
+        # Escape leaves a folder list (with several accounts, back to the account list).
+        if key=='Escape' and mail_session and (getattr(mail_session,'folder_picker',None) or getattr(mail_session,'folder_choice',None)):return 'cancel'
         if key=='Delete' and mail_session and mail_session.folder_picker:
             picker=mail_session.folder_picker
             return 'delete folder '+picker['folders'][picker['index']][0]
@@ -1655,14 +1678,26 @@ def finish_exit(mode):
 
 def handle_mailbox_screen(text, command, mode, typed):
     """The email inbox screen: folders, reading, reply and forward, leaving."""
-    global email_draft, mail_session
+    global email_draft, mail_session, FOLDER_ACCOUNT_RETURN
     if mail_session is None:
         # The mailbox closed underneath this command (for example, the sending
         # account changed). Return to the main menu rather than failing.
         return 'awake'
     if getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None):
+        if FOLDER_ACCOUNT_RETURN is not None and getattr(mail_session, 'folder_picker', None) and command in ('cancel', 'go back', 'back', 'escape'):
+            # This folder list came from the account list: go back one level.
+            back, FOLDER_ACCOUNT_RETURN = FOLDER_ACCOUNT_RETURN, None
+            mail_session.folder_picker = None
+            mail_session.folder_choice = None
+            return open_account_picker('folders', mode, origin=back)
         speak(mail_session.process(text))
+        if not getattr(mail_session, 'folder_picker', None):
+            FOLDER_ACCOUNT_RETURN = None
         return 'mailbox'
+    FOLDER_ACCOUNT_RETURN = None
+    if command in FOLDER_LIST_COMMANDS and len(connected_accounts(ProtectedStore(APP))) > 1:
+        # Several accounts: choose the account first, then its folder.
+        return open_account_picker('folders', mode)
     response_actions = {'reply': 'reply', 'reply to message': 'reply',
                         'reply all': 'reply_all', 'reply to all': 'reply_all',
                         'forward': 'forward', 'forward message': 'forward'}
@@ -1779,6 +1814,269 @@ def finish_account_secret(value, mode):
     return mode
 
 
+FOLDER_LIST_COMMANDS = ('go to folder', 'open folder')
+ACCOUNT_SWITCH_COMMANDS = ('switch account', 'switch accounts', 'switch email account', 'switch email accounts',
+                           'change account', 'change email account', 'choose account', 'choose an account',
+                           'choose email account', 'choose an email account')
+ACCOUNT_REMOVE_COMMANDS = ('remove account', 'remove an account', 'remove email account', 'remove an email account',
+                           'remove mail account', 'delete account', 'delete an account', 'delete email account',
+                           'delete an email account', 'delete mail account', 'disconnect account',
+                           'disconnect an account', 'disconnect email account', 'disconnect an email account')
+
+
+def connected_accounts(store):
+    """The connected (provider, address) pairs; none when the saved accounts cannot be read."""
+    try:
+        return list(store.accounts())
+    except (TypeError, AccountError, OSError):
+        return []
+
+
+def open_account_picker(purpose, mode, origin=None):
+    """List the connected accounts: before their folders, to switch, or to remove one."""
+    global ACCOUNT_PICKER, NAMED_LIST, FOLDER_ACCOUNT_RETURN
+    import account_picker as words
+    store = ProtectedStore(APP)
+    accounts = connected_accounts(store)
+    if not accounts:
+        ACCOUNT_PICKER = None
+        speak_prompt('No email account is connected. Say add account.')
+        return mode
+    try:
+        current = store.selected()
+    except (AccountError, OSError):
+        current = None
+    current = current if current in accounts else None
+    if purpose == 'inbox' and len(accounts) == 1:
+        ACCOUNT_PICKER = None
+        speak('Only one email account is connected: ' + words.label(accounts[0]) + '. Say add account to connect another.')
+        return mode
+    if purpose == 'folders' and origin is None:
+        origin = {'account': current, 'session': mail_session}
+    NAMED_LIST = None
+    FOLDER_ACCOUNT_RETURN = None
+    ACCOUNT_PICKER = {'purpose': purpose, 'accounts': words.ordered(accounts, current), 'index': 0,
+                      'current': current, 'mode': mode, 'confirm': None, 'origin': origin}
+    if purpose == 'remove' and len(accounts) == 1:
+        return ask_account_removal(accounts[0], mode)
+    speak(words.opening(ACCOUNT_PICKER))
+    return mode
+
+
+def ask_account_removal(account, mode):
+    """Nothing is removed without a yes. Enter alone answers No until Yes is chosen."""
+    global CONFIRM_CHOICE
+    import account_picker as words
+    ACCOUNT_PICKER['confirm'] = account
+    CONFIRM_CHOICE = 'no'
+    speak(words.removal_question(account))
+    return mode
+
+
+def account_picker_key(key):
+    """The command for a key while the account list is open; '' leaves the key to the screen."""
+    import account_picker as words
+    picker = ACCOUNT_PICKER
+    request = {'Up': 'previous', 'Left': 'previous', 'ShiftTab': 'previous', 'Down': 'next', 'Right': 'next',
+               'Tab': 'next', 'Home': 'first item', 'End': 'last item', 'Enter': 'that one', 'Space': 'that one',
+               'Escape': 'cancel'}.get(key)
+    if request:
+        return request
+    if key.startswith('Letter:'):
+        letter = key[7:]
+        index = next_match([words.name(p) for p, _ in picker['accounts']], picker['index'], letter)
+        if index is None:
+            speak('No account starts with ' + letter.upper() + '.')
+        else:
+            picker['index'] = index
+            speak(words.item(picker))
+        return None
+    return ''
+
+
+def account_picker_step(text, command, mode):
+    """One answer while the account list or its yes or no question is open. None: not for the list."""
+    global ACCOUNT_PICKER
+    import account_picker as words
+    picker = ACCOUNT_PICKER
+    if picker.get('mode') != mode or command in ('main menu', 'back to main menu', 'exit companion') or spoken_control(text):
+        ACCOUNT_PICKER = None
+        return None
+    control = speech_control(text)
+    if control:
+        control_speech(control)
+        return mode
+    if picker['confirm']:
+        if command in words.YES:
+            return remove_mail_account(picker['confirm'], mode)
+        if command in words.NO:
+            ACCOUNT_PICKER = None
+            speak('Nothing was removed.')
+            return mode
+        speak(words.removal_question(picker['confirm']))
+        return mode
+    accounts = picker['accounts']
+    if command in words.CANCEL:
+        return close_account_picker(mode)
+    if command in words.NEXT + words.PREVIOUS + words.FIRST + words.LAST:
+        old = picker['index']
+        new = (old + 1 if command in words.NEXT else old - 1 if command in words.PREVIOUS else
+               0 if command in words.FIRST else len(accounts) - 1)
+        new = max(0, min(len(accounts) - 1, new))
+        picker['index'] = new
+        edge = ('' if new != old else 'Start of list. ' if command in words.PREVIOUS + words.FIRST else 'End of list. ')
+        speak(edge + words.item(picker))
+        return mode
+    if command in words.REPEAT:
+        speak(words.item(picker))
+        return mode
+    if command in words.CHOOSE:
+        return choose_mail_account(picker['index'], mode)
+    found = words.choice(text, accounts)
+    if isinstance(found, int):
+        return choose_mail_account(found, mode)
+    speak(words.several(found[1], accounts) if found else words.LIST_HINT)
+    return mode
+
+
+def close_account_picker(mode):
+    """Escape or cancel in the account list."""
+    global ACCOUNT_PICKER, mail_session
+    picker, ACCOUNT_PICKER = ACCOUNT_PICKER, None
+    if picker['purpose'] == 'remove':
+        speak('Nothing was removed.')
+        return mode
+    if picker['purpose'] == 'inbox':
+        speak('Account list closed. Nothing was changed.')
+        return mode
+    origin = picker.get('origin') or {}
+    account, session = origin.get('account'), origin.get('session')
+    if account and session is not None and session is not mail_session:
+        # An account was chosen, then both lists were canceled: go back to where you were.
+        try:
+            ProtectedStore(APP).select(*account)
+        except (AccountError, OSError):
+            speak('Folder list canceled.')
+            return mode
+        mail_session = session
+        speak('Folder list canceled. Back to ' + account[1] + ', ' + session.folder_name + '.')
+        return mode
+    speak('Folder list canceled.')
+    return mode
+
+
+def choose_mail_account(index, mode):
+    """Act on the account chosen in the list."""
+    global ACCOUNT_PICKER, FOLDER_ACCOUNT_RETURN, mail_session, pending_send
+    picker = ACCOUNT_PICKER
+    account = picker['accounts'][index]
+    picker['index'] = index
+    store = ProtectedStore(APP)
+    if account not in connected_accounts(store):
+        ACCOUNT_PICKER = None
+        speak('That account is no longer connected. Nothing was changed. Say list email accounts to hear them.')
+        return mode
+    if picker['purpose'] == 'remove':
+        return ask_account_removal(account, mode)
+    ACCOUNT_PICKER = None
+    if picker['purpose'] == 'inbox':
+        if mode in ('mailbox', 'email_draft'):
+            return switch_mail_account(*account, mode)
+        try:
+            provider, address = store.select(*account)
+        except (AccountError, OSError) as exc:
+            speak(str(exc) if isinstance(exc, AccountError) else 'The account could not be chosen. Try again.')
+            return mode
+        pending_send = None
+        mail_session = MailSession(provider, APP, progress=mail_progress)
+        speak('Switched to ' + address + '. ' + mail_session.process('open inbox'))
+        return 'mailbox'
+    # Folders: this account's folder list. Escape there comes back to the accounts.
+    FOLDER_ACCOUNT_RETURN = picker['origin']
+    if account == picker['current'] and mail_session is not None and mail_session.provider == account[0]:
+        speak(mail_session.process('go to folder'))
+    else:
+        try:
+            provider, address = store.select(*account)
+        except (AccountError, OSError) as exc:
+            FOLDER_ACCOUNT_RETURN = None
+            speak(str(exc) if isinstance(exc, AccountError) else 'The account could not be chosen. Try again.')
+            return mode
+        pending_send = None
+        mail_session = MailSession(provider, APP, progress=mail_progress)
+        speak('Switched to ' + address + '. ' + mail_session.process('go to folder'))
+    if not getattr(mail_session, 'folder_picker', None):
+        FOLDER_ACCOUNT_RETURN = None
+    return mode
+
+
+def switch_mail_account(provider, address, mode):
+    """Use another connected account: the inbox, the email draft, or the next email."""
+    global pending_send, mail_session
+    if mode == 'email_draft' and email_draft and email_draft.response_context:
+        speak('This reply or forward belongs to its original mailbox. Save it and start a new email to use another account.')
+        return mode
+    provider, address = ProtectedStore(APP).select(provider, address)
+    pending_send = None
+    if mode == 'email_draft' and email_draft:
+        email_draft.provider = provider
+        email_draft.save()
+    if mode == 'mailbox':
+        mail_session = MailSession(provider, APP, progress=mail_progress)
+        speak('Switched to ' + address + '. ' + mail_session.process('open inbox'))
+    else:
+        speak('Switched to ' + provider.capitalize() + ' account ' + address + '.')
+    return mode
+
+
+def remove_mail_account(account, mode):
+    """After a yes: forget one account's saved sign-in and say what happens next."""
+    global ACCOUNT_PICKER, mail_session, pending_send
+    import account_picker as words
+    ACCOUNT_PICKER = None
+    provider, address = account
+    store = ProtectedStore(APP)
+    try:
+        before = store.selected()
+    except (AccountError, OSError):
+        before = None
+    try:
+        now = store.remove(provider, address)
+    except AccountError:
+        speak('That account is no longer connected. Nothing was removed.')
+        return mode
+    except OSError:
+        speak('The account could not be removed. Another program may be using its file. '
+              'Close other programs, then say remove email account again.')
+        return mode
+    remaining = connected_accounts(store)
+    message = ('The ' + words.name(provider) + ' account ' + address + ' is removed from Voice Companion. ' +
+               words.removal_note(provider))
+    if not remaining:
+        message += ' No email account is connected now. Say add account to connect one.'
+    elif now is None:
+        message += ' Say switch account to choose the account to use.'
+    elif before == account:
+        message += ' Now using the ' + words.name(now[0]) + ' account ' + now[1] + '.'
+    else:
+        message += ' You are still using the ' + words.name(now[0]) + ' account ' + now[1] + '.'
+    if pending_send is not None and tuple(pending_send[1:3]) == account:
+        pending_send = None
+    affected = mail_session is not None and mail_session.provider == provider and (before == account or before is None)
+    if not affected:
+        speak(message)
+        return mode
+    if mode == 'mailbox' and now is not None:
+        mail_session = MailSession(now[0], APP, progress=mail_progress)
+        speak(message + ' ' + mail_session.process('open inbox'))
+        return mode
+    mail_session = None
+    if now is not None:
+        message += ' Say email to open it.'
+    speak(message)
+    return 'awake' if mode == 'mailbox' else mode
+
+
 def new_thunderbird_setup():
     """Thunderbird setup on this computer, with the add-on package this copy of the app ships."""
     import thunderbird_setup
@@ -1850,6 +2148,10 @@ def _handle(text, mode, typed=False):
     if command=='toggle audio':
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
+    if ACCOUNT_PICKER is not None and not text.startswith('@sm:'):
+        picked = account_picker_step(text, command, mode)
+        if picked is not None:
+            return picked
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
         try:speak(manager.command(text))
@@ -2451,6 +2753,10 @@ def _handle(text, mode, typed=False):
         dictation_feedback(email_draft.process(text))
         focus_email_entry()
         return mode
+    if (mode == 'mailbox' and mail_session is not None and command in FOLDER_LIST_COMMANDS and
+            not (getattr(mail_session, 'folder_picker', None) or getattr(mail_session, 'folder_choice', None) or getattr(mail_session, 'pending', None))):
+        # With several accounts the folder list starts with the account list.
+        return handle_mailbox_screen(text, command, mode, typed)
     if mode == 'mailbox' and mail_session is not None and not re.match(MAILBOX_GLOBAL_GO_TO, command) and (
             command in ('that one','okay','ok','confirm','confirm that','next message','previous message','next','previous',
                         'back to inbox','return to inbox','go to inbox','open inbox', 'email list size',
@@ -2650,6 +2956,9 @@ def _handle(text, mode, typed=False):
         else:
             speak(open_named_list('Email accounts',[(p.capitalize()+' '+a+(' selected' if selected==(p,a) else ''),'switch to '+a) for p,a in accounts]))
         return mode
+    # Whole commands only; while writing, these words are text.
+    if command in ACCOUNT_SWITCH_COMMANDS + ACCOUNT_REMOVE_COMMANDS and not writing_dictation(mode, typed):
+        return open_account_picker('remove' if command in ACCOUNT_REMOVE_COMMANDS else 'inbox', mode)
     contact_account = store.selected()
     contacts = AddressBook(APP, contact_account[1] if contact_account else '')
     contact = re.fullmatch(r'(?:add|save|create|update) contact (.+?) (?:as|at|email is) (.+)', text, re.I)
@@ -2714,20 +3023,7 @@ def _handle(text, mode, typed=False):
             speak('I cannot identify one connected account. Say list email accounts, then switch to its full email address.' if matches else
                   'That account is not connected. Say add account or list email accounts.')
             return mode
-        if mode == 'email_draft' and email_draft and email_draft.response_context:
-            speak('This reply or forward belongs to its original mailbox. Save it and start a new email to use another account.')
-            return mode
-        provider, address = store.select(*matches[0])
-        pending_send = None
-        if mode == 'email_draft' and email_draft:
-            email_draft.provider = provider
-            email_draft.save()
-        if mode == 'mailbox':
-            mail_session = MailSession(provider, APP, progress=mail_progress)
-            speak('Switched to ' + address + '. ' + mail_session.process('open inbox'))
-        else:
-            speak('Switched to ' + provider.capitalize() + ' account ' + address + '.')
-        return mode
+        return switch_mail_account(*matches[0], mode)
     if command in ('email', 'my email', 'open email'):
         selected = store.selected()
         if not selected:

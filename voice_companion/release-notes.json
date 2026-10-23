@@ -1,44 +1,28 @@
 {
-  "version": "0.2.158-test",
+  "version": "0.2.159-test",
   "status": "Testing build",
   "date": "October 22, 2026",
-  "baseline": "0.2.157-test",
-  "scope": "Web pages are much faster, websites like YouTube are easier to control, every screen has an Alt menu, and Chrome and Thunderbird are easier to set up.",
+  "baseline": "0.2.158-test",
+  "scope": "Switch between email accounts from the folder list or the email menu, and remove an account you no longer want.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "App mode for websites",
+          "title": "Choose an account, then a folder",
           "details": [
-            "Press Insert+Space to switch between app mode and browse mode. You can also say App mode or Browse mode.",
-            "In app mode, keys go straight to the website. For example, on YouTube, K pauses, J and L skip, and M mutes.",
-            "If NVDA or JAWS is running, press Control+Alt+Space instead. Screen readers keep Insert+Space for themselves.",
-            "Each website remembers its mode."
+            "With more than one email account, press Control+Y or say Go to folder. Companion lists your accounts first.",
+            "Choose one with the arrow keys and Enter, or say its number or name. Then you hear that account's folders.",
+            "Press Escape to go back one step.",
+            "With one account, nothing changes."
           ]
         },
         {
-          "title": "Sliders",
+          "title": "Remove an email account",
           "details": [
-            "Sliders like the YouTube seek bar and volume are read with their value, such as Seek slider, 1:23 of 4:05.",
-            "Press Enter on a slider, or Tab to it. Then use the arrow keys to move it. You hear the new value.",
-            "Press Escape to go back to browse mode."
-          ]
-        },
-        {
-          "title": "Alt menu on every screen",
-          "details": [
-            "Press Alt on any screen to open its menu. Press Alt again to close it.",
-            "The email menu has what you need for mail. It has folders, drafts and contacts. It also has Add account.",
-            "The word processor menu has not changed."
-          ]
-        },
-        {
-          "title": "Set up Chrome",
-          "details": [
-            "Say Set up Chrome. Companion installs Chrome if it is missing. Then it adds the Voice Companion extension from the Chrome Web Store.",
-            "Chrome asks you to turn the extension on. Companion reads the Chrome buttons for you. Press Tab until you hear Enable extension, then press Enter.",
-            "Companion tells you when Chrome is linked."
+            "Say Remove email account, or press Alt, 6, 4 in email. Choose the account, then say yes.",
+            "Your email stays with your email service. Companion just stops using that account.",
+            "Nothing is removed unless you say yes. Pressing Enter alone means no."
           ]
         }
       ]
@@ -47,26 +31,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Faster web pages",
+          "title": "Email menu",
           "details": [
-            "Busy pages like YouTube are much faster. Reading a page used to take seconds. Now it takes less than one second.",
-            "The app no longer freezes on pages that keep changing.",
-            "When a YouTube ad can be skipped, you hear Skip ad button ready. Say Skip ad to press it."
+            "Switch account in the email menu now lists your accounts. Choose one to open its inbox.",
+            "The email menu has a new Remove account item."
           ]
         },
         {
-          "title": "Web pages",
+          "title": "Folder list",
           "details": [
-            "In a search box that suggests words, you now hear New suggestions available when the list changes.",
-            "Say Close browser window, or press Control+Shift+W, to close the browser. This works even when Keep browser window open is on."
-          ]
-        },
-        {
-          "title": "Thunderbird",
-          "details": [
-            "When you choose Thunderbird, Companion checks what is missing and tells you the next step.",
-            "It can install its connection in Thunderbird for you, and it can start Thunderbird. Say yes or no.",
-            "Thunderbird must be installed first. Its website is thunderbird dot net."
+            "Escape now closes the folder list and says nothing was changed. Before, it read the whole email help."
           ]
         },
         {
