@@ -12,6 +12,7 @@ import companion as app
 from field_selection import FieldSelection
 from reading_navigation import ReadingCursor
 from screen_menus import MENUS, ALT_SCREENS, alt_menu_key, overlay_key, items, menu_path
+from window_test_support import RealWindowMixin
 
 GUIDE = Path(__file__).with_name('START HERE - Veteran.txt')
 GUIDE_HTML = Path(__file__).with_name('START HERE - Veteran.html')
@@ -394,7 +395,7 @@ class TkOwnershipTests(unittest.TestCase):
 @unittest.skipUnless(__import__('sys').platform == 'win32' and __import__('os').environ.get('VOICE_COMPANION_WINDOW_TESTS'),
                      'Manual Windows check of real Alt key presses. Run on a PC with the window focused: '
                      'set VOICE_COMPANION_WINDOW_TESTS=1, then python -m unittest test_screen_menus.WindowAltKeyTests')
-class WindowAltKeyTests(unittest.TestCase):
+class WindowAltKeyTests(RealWindowMixin, unittest.TestCase):
     # Not part of the automatic release run: on the build machine these synthetic
     # key presses depend on which window has keyboard focus, and a failed run left
     # Tk objects to be freed on the wrong thread, which ended the whole test process.
@@ -403,26 +404,7 @@ class WindowAltKeyTests(unittest.TestCase):
         from app_window import CompanionWindow
         self.window = CompanionWindow('alt menu test'); self.window.start()
     def tearDown(self):
-        if self.window.thread.is_alive(): self.call(lambda: self.window.root.destroy())
-        self.window.thread.join(5)
-        if self.window.thread.is_alive(): self.fail(self.state())
-    def call(self, function):
-        import threading
-        done = threading.Event(); errors = []
-        def run():
-            try: self.window.root.update_idletasks(); function()
-            except Exception as exc: errors.append(exc)
-            finally: done.set()
-        self.window.ui_actions.put(('ui_call', run))
-        if not done.wait(5): self.fail(self.state())
-        if errors: raise errors[0]
-    def state(self):
-        return self.window.debug_state()
-    def wait(self, condition):
-        import time
-        end = time.monotonic() + 5
-        while not condition() and time.monotonic() < end: time.sleep(.015)
-        if not condition(): self.fail(self.state())
+        self.close_window()
     def test_one_failed_update_does_not_stop_the_window(self):
         def broken(): raise ValueError('test failure inside the window')
         self.window.ui_actions.put(('ui_call', broken))

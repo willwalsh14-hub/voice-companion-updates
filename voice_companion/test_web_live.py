@@ -361,18 +361,9 @@ class LiveWebTests(unittest.TestCase):
         import companion as app
         from app_window import CompanionWindow
         window=CompanionWindow('live browser test');window.start()
-        def ui(function):
-            done=threading.Event();errors=[]
-            def run():
-                try:function()
-                except Exception as exc:errors.append(exc)
-                finally:done.set()
-            window.ui_actions.put(('ui_call',run));self.assertTrue(done.wait(5))
-            if errors:raise errors[0]
-        def wait(condition):
-            deadline=time.monotonic()+5
-            while not condition() and time.monotonic()<deadline:time.sleep(.02)
-            self.assertTrue(condition())
+        from window_test_support import RealWindowMixin
+        helper=RealWindowMixin();helper.window=window;helper.fail=self.fail
+        ui=helper.call;wait=helper.wait
         output=Mock(problem=None);window.keyboard_output=output
         try:
             with patch.object(app,'APP_WINDOW',window),patch.object(app,'web_session',self.session),patch.object(app,'KEYBOARD_SPEECH',output),patch.object(app,'voice',Mock(),create=True),patch.object(app,'TEXT_MODE',False),patch.object(app,'KEYBOARD_BATCH',False),patch.object(app,'UI_CONTEXT_CACHE',None),patch.object(app,'interrupt_speech'),patch.object(app,'update_audio_ducking'),patch.object(app,'pending_website',None):

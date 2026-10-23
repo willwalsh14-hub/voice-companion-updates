@@ -5,46 +5,22 @@ request. Control+F12 is microphone sleep. On Windows, Tk reports Num Lock with
 state bit 8, so F12 must work with that bit set.
 """
 import sys
-import threading
 import time
 import unittest
 from datetime import datetime
 
+from window_test_support import RealWindowMixin
+
 
 @unittest.skipUnless(sys.platform == 'win32', 'Windows Tk keyboard integration')
-class WindowClockKeyTests(unittest.TestCase):
+class WindowClockKeyTests(RealWindowMixin, unittest.TestCase):
     def setUp(self):
         from app_window import CompanionWindow
         self.window = CompanionWindow('clock key test')
         self.window.start()
 
     def tearDown(self):
-        if self.window.thread.is_alive():
-            self.call(lambda: self.window.root.destroy())
-        self.window.thread.join(5)
-
-    def call(self, function):
-        done = threading.Event()
-        errors = []
-
-        def run():
-            try:
-                self.window.root.update_idletasks()
-                function()
-            except Exception as exc:
-                errors.append(exc)
-            finally:
-                done.set()
-        self.window.ui_actions.put(('ui_call', run))
-        self.assertTrue(done.wait(5))
-        if errors:
-            raise errors[0]
-
-    def wait(self, condition):
-        end = time.monotonic() + 5
-        while not condition() and time.monotonic() < end:
-            time.sleep(.015)
-        self.assertTrue(condition())
+        self.close_window()
 
     def screen(self, **context):
         while not self.window.commands.empty():

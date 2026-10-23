@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import Mock,patch
 import companion
 from app_window import CompanionWindow
+from window_test_support import RealWindowMixin
 from document_editor import VoiceDocument,Paragraph,TextRun
 from keyboard_speech import KeyboardSpeech
 from keyboard_text import document_text,replace_keyboard_text,caret_feedback,typing_feedback,phonetic,character
@@ -220,8 +221,32 @@ class KeyboardTextTests(unittest.TestCase):
                 self.assertEqual(document_text(doc),'Body stays separate.')
                 self.assertFalse((Path(folder)/'Untitled.docx').exists())
 
+class WindowWakeTests(unittest.TestCase):
+    """Adding work for the window wakes its thread at once, from any thread."""
+    def test_adding_work_or_a_message_wakes_the_window(self):
+        import socket
+        window=CompanionWindow('wake test')
+        reader,writer=socket.socketpair()
+        try:
+            writer.setblocking(False);window._wake_socket=writer
+            window.ui_actions.put(('cancel_phonetic',None));window.set_context({'mode':'awake'});window.show('Hello')
+            reader.settimeout(2);self.assertEqual(reader.recv(16),b'\0\0\0')
+            window._stop_wake()
+            self.assertIsNone(window._wake_socket);self.assertEqual(window.wake_status,'stopped')
+            window.ui_actions.put(('cancel_phonetic',None))  # After closing: no error, nothing sent.
+            self.assertEqual(window.ui_actions.qsize(),3)
+        finally:
+            reader.close();writer.close()
+    def test_debug_state_names_a_stalled_window_without_tk(self):
+        window=CompanionWindow('state test')
+        state=window.debug_state()
+        for key in ('closed','checks done','seconds since last check','wall clock drift since last check','late timer checks','wake'):
+            self.assertIn(key,state)
+        self.assertFalse(state['thread alive']);self.assertIsNone(state['seconds since last check'])
+
+
 @unittest.skipUnless(sys.platform=='win32','Windows Tk keyboard integration')
-class WindowKeyboardTests(unittest.TestCase):
+class WindowKeyboardTests(RealWindowMixin,unittest.TestCase):
     def test_document_command_shortcuts_are_routed_before_text_editing(self):
         self.window.set_context(dict(mode='document',source='shortcut-document',text='Keep this text',caret=0,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('source')=='shortcut-document')
@@ -315,8 +340,7 @@ class WindowKeyboardTests(unittest.TestCase):
         for command in (('keyboard','Letter:a'),('keyboard','Letter:l'),'search files',('keyboard','Ctrl+Shift+3')):
             self.assertIn(command,self.window.commands.queue)
     def tearDown(self):
-        if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
-        self.window.thread.join(5);self.assertFalse(self.window.thread.is_alive())
+        self.close_window()
     def test_file_list_routes_selection_clipboard_menu_and_rename_keys(self):
         context=dict(mode='files',source=None,text='',file_items=['C drive, drive','Documents, folder','notes.txt, file'],file_index=1,file_selected_indices=[0,2],echo='none',phonetic=False,ack=0,focus=True)
         self.window.set_context(context);self.wait(lambda:self.window.context.get('mode')=='files')
@@ -391,6 +415,21 @@ class WindowKeyboardTests(unittest.TestCase):
         self.wait(lambda:not self.window.commands.empty())
         self.assertEqual(self.window.commands.get_nowait(),'name document help')
 
+    def test_new_work_is_handled_when_the_window_timer_stalls(self):
+        # Tcl 8.6 times "after" by the wall clock, and on Windows it waits for
+        # messages with no time limit. When the window's timer stalled, new screens
+        # and key requests waited until some unrelated message arrived: the window
+        # looked frozen. Work added from another thread must wake it directly.
+        def stall_timers():
+            import tkinter
+            root=self.window.root
+            # Every window timer now fires ten minutes late, as with a stalled Tcl timer.
+            root.after=lambda ms,func=None,*args:tkinter.Misc.after(root,ms if ms=='idle' else 600000,func,*args)
+        self.call(stall_timers)
+        self.context()
+        self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Right'))
+        self.wait(lambda:not self.window.commands.empty())
+        self.assertEqual(self.window.commands.get()[0],'text_edit')
     def test_shutdown_discards_delayed_view_updates_and_readback(self):
         def close_with_pending_readback():
             self.window.messages.put('Delayed readback')
@@ -399,22 +438,6 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(close_with_pending_readback)
         self.window.thread.join(5)
         self.assertTrue(self.window.closed.is_set());self.assertFalse(self.window.thread.is_alive());self.assertIsNone(self.window.problem)
-    def call(self,function):
-        done=threading.Event();errors=[]
-        def run():
-            try:
-                # Geometry is settled before a real key can reach a newly
-                # shown widget; synthetic events need the same barrier.
-                self.window.root.update_idletasks()
-                function()
-            except Exception as exc:errors.append(exc)
-            finally:done.set()
-        self.window.ui_actions.put(('ui_call',run));(done.wait(5) or self.fail(self.window.debug_state()))
-        if errors:raise errors[0]
-    def wait(self,condition):
-        end=time.monotonic()+5
-        while not condition() and time.monotonic()<end:time.sleep(.015)
-        if not condition():self.fail(self.window.debug_state())
     def context(self,mode='document',readonly=False):
         self.window.set_context(dict(mode=mode,source='test',text='abc def',caret=0,selection=None,echo='characters',phonetic=True,delay=.5,ack=0,readonly=readonly))
         self.wait(lambda:self.window.context.get('source')=='test')
@@ -756,6 +779,8 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(second,('keyboard','F2'))
     def test_mail_shortcut_works_in_received_message_without_mutating_body(self):
         self.window.set_context(dict(mode='mailbox',source='mail:test',text='Received body.',readonly=True,caret=0,selection=None,echo='characters',phonetic=False,delay=.5,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('source')=='mail:test')
+        self.call(lambda:self.window.editor.focus_force())  # Synthetic keys go to the focused widget.
         self.call(lambda:self.window.editor.event_generate('<Control-KeyPress-r>'))
         self.wait(lambda:not self.window.commands.empty())
         self.assertEqual(self.window.commands.get(),('keyboard','Ctrl+R'))
@@ -770,6 +795,8 @@ class WindowKeyboardTests(unittest.TestCase):
         self.assertEqual(self.window.commands.get(),'no')
     def test_save_confirmation_arrows_enter_and_escape_dispatch_from_field(self):
         self.window.set_context(dict(mode='document_save',source=None,text='',confirmation='yes',echo='characters',phonetic=False,delay=.5,ack=0,focus=True))
+        self.wait(lambda:self.window.context.get('mode')=='document_save')
+        self.call(lambda:self.window.typed.focus_force())  # Synthetic keys go to the focused widget.
         for key,result in (('Down','Down'),('Return','Enter'),('Escape','Escape')):
             self.call(lambda k=key:self.window.typed.event_generate('<KeyPress>',keysym=k))
             self.wait(lambda:not self.window.commands.empty())

@@ -110,6 +110,15 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
       into the previous Options dialog before the next one was drawn. Fixed;
       most likely the same cause. If a main build fails again, read the
       annotations.
+- [ ] The window tests froze now and then on Windows (test_keyboard_text,
+      test_time_date_windows, test_screen_menus): the window thread sat idle in
+      Tk's main loop and never handled new work. Cause: the window only found
+      new work through a Tcl timer. Tcl 8.6 times it by the wall clock, and on
+      Windows it waits for messages with no time limit, so the timer could
+      stall until some unrelated message came. Fix (claude/window-freeze): other
+      threads now wake the window through a local socket that Tcl watches.
+      Failure reports now say if the timer was late and if the window still
+      answers Windows messages. Tick this when Windows builds stay green.
 - [ ] Known and kept by design: in Dictation only mode, a sentence starting
       with "find" still runs the editor's find command.
 - [ ] A volunteer tester group beyond the private beta, with a short weekly

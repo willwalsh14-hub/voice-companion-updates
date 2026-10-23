@@ -7,6 +7,7 @@ from input_parity import catalog,SCREEN_KEYS,BODY_ONLY,chord,screen_key,screen_c
 from file_manager import MENU,FileManager
 from test_file_manager import FakeFiles,settle
 from field_selection import FieldSelection
+from window_test_support import RealWindowMixin
 from reading_navigation import ReadingCursor
 
 GUIDE=Path(__file__).with_name('START HERE - Veteran.txt')
@@ -541,27 +542,12 @@ class InventoryTests(unittest.TestCase):
 
 
 @unittest.skipUnless(__import__('sys').platform=='win32','Windows Tk keyboard integration')
-class WindowScreenKeyTests(unittest.TestCase):
+class WindowScreenKeyTests(RealWindowMixin,unittest.TestCase):
     def setUp(self):
         from app_window import CompanionWindow
         self.window=CompanionWindow('parity test');self.window.start()
     def tearDown(self):
-        if self.window.thread.is_alive():self.call(lambda:self.window.root.destroy())
-        self.window.thread.join(5)
-    def call(self,function):
-        import threading
-        done=threading.Event();errors=[]
-        def run():
-            try:self.window.root.update_idletasks();function()
-            except Exception as exc:errors.append(exc)
-            finally:done.set()
-        self.window.ui_actions.put(('ui_call',run));(done.wait(5) or self.fail(self.window.debug_state()))
-        if errors:raise errors[0]
-    def wait(self,condition):
-        import time
-        end=time.monotonic()+5
-        while not condition() and time.monotonic()<end:time.sleep(.015)
-        if not condition():self.fail(self.window.debug_state())
+        self.close_window()
     def test_note_keys_add_typed_words_first(self):
         self.window.set_context(dict(mode='note',source=None,text='',caret=0,ack=0,focus=True))
         self.wait(lambda:self.window.context.get('mode')=='note')

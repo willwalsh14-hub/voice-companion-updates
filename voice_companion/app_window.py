@@ -60,15 +60,41 @@ def show_context_text(old, field, seq, web_cursor_changed=False):
     return bool(web_cursor_changed or field.get('focus', False) or field.get('ack', 0) >= seq)
 
 
+class WakingQueue(queue.Queue):
+    """A queue that tells the window thread at once when something is added.
+
+    The window used to find new work only through a Tcl ``after`` timer. On
+    Windows that timer can stop firing while Tk waits for messages: Tcl 8.6
+    times ``after`` by the wall clock, and its message wait (GetMessage) has no
+    time limit. The window then looked frozen until some other message arrived.
+    """
+    def __init__(self, wake):
+        super().__init__()
+        self._wake = wake
+
+    def put(self, item, block=True, timeout=None):
+        super().put(item, block, timeout)
+        self._wake()
+
+
 class CompanionWindow:
     def __init__(self, version, data_folder=None):
         self.version = version
         self.data_folder = data_folder
         self.settings_results = queue.Queue()
         self.settings_notices = queue.Queue()
-        self.messages = queue.Queue()
+        # Set up before the queues: putting into them wakes the window thread.
+        self._wake_socket = None
+        self.wake_status = 'not started'
+        self.poll_interval_ms = 15
+        self.polls = 0
+        self.wakeups = 0
+        self.last_poll = None
+        self.late_polls = []
+        self.native_window = None
+        self.messages = WakingQueue(self._wake)
         self.commands = queue.Queue()
-        self.ui_actions = queue.Queue()
+        self.ui_actions = WakingQueue(self._wake)
         self.key_feedback = queue.Queue()
         self.closed = threading.Event()
         self.ready = threading.Event()
@@ -84,15 +110,64 @@ class CompanionWindow:
         self.media_shortcut=None
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
+    def _wake(self):
+        """Ask the window thread to check its queues now. Safe from any thread; never blocks."""
+        sock = self._wake_socket
+        if sock is None: return
+        try: sock.send(b'\0')
+        except OSError: pass  # Buffer full (a wake is already waiting) or the window closed.
+
+    def _start_wake(self, root):
+        """Let other threads wake the window through a local socket that Tcl watches.
+
+        A Tcl socket event wakes the Windows message wait (Tcl_ThreadAlert) and does
+        not depend on the clock, so new work is handled even if the timer stalls.
+        Runs on the window thread. If it cannot start, the timer alone is used."""
+        import socket
+        name = root.register(lambda: self._wake_poll())
+        root.tk.eval('namespace eval ::vcwake {variable chan {}; variable expected {}}\n'
+                     'proc ::vcwake::accept {c addr port} {\n'
+                     '  variable chan; variable expected\n'
+                     '  # Only this window\'s own connection is kept.\n'
+                     '  if {$chan ne {} || $addr ne {127.0.0.1} || $port ne $expected} {close $c; return}\n'
+                     '  set chan $c\n'
+                     '  fconfigure $c -blocking 0 -translation binary -buffering none\n'
+                     '  fileevent $c readable [list ::vcwake::readable $c]\n'
+                     '}\n'
+                     'proc ::vcwake::readable {c} {\n'
+                     '  read $c\n'
+                     '  if {[eof $c]} {close $c; return}\n'
+                     '  ' + name + '\n'
+                     '}\n')
+        server = root.tk.call('socket', '-server', '::vcwake::accept', '-myaddr', '127.0.0.1', 0)
+        port = int(root.tk.splitlist(root.tk.call('fconfigure', server, '-sockname'))[2])
+        client = socket.create_connection(('127.0.0.1', port), timeout=2)
+        client.setblocking(False)
+        root.tk.call('set', '::vcwake::expected', client.getsockname()[1])
+        self._wake_socket = client
+        self.wake_status = 'ready'
+
+    def _stop_wake(self):
+        sock, self._wake_socket = self._wake_socket, None
+        if sock is not None:
+            self.wake_status = 'stopped'
+            try: sock.close()
+            except OSError: pass
+
+    def _wake_poll(self):
+        """Replaced on the window thread once the window exists."""
+
     def _thread_main(self):
         try:self._run()
         finally:
+            self._stop_wake()
             if self.media_shortcut:self.media_shortcut.close()
             # Tcl interpreters and widget cycles must be released on their owner thread.
             self.closed.set()
             while True:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
+            self.__dict__.pop('_wake_poll',None)  # Its closure holds widgets: free them here.
             self.root=self.typed=self.editor=self.current=self.file_list=None
             self.file_toolbar=None;self.file_buttons=[];self.update_buttons=[]
             import gc
@@ -119,9 +194,40 @@ class CompanionWindow:
             frames=sys._current_frames();frame=frames.get(self.thread.ident)
             if frame is not None:stack=''.join(traceback.format_stack(frame)[-12:])
             del frames,frame
-        return {'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
-                'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
-                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()]}
+        last=self.last_poll
+        state={'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'closed':self.closed.is_set(),
+               'problem':repr(self.problem),'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
+               'checks done':self.polls,'checks started by a wake':self.wakeups,'wake':self.wake_status,
+               'seconds since last check':None if last is None else round(time.monotonic()-last[0],3),
+               # Tcl 8.6 times "after" by the wall clock. A wall clock that moved
+               # differently from the steady clock delays every window timer.
+               'wall clock drift since last check':None if last is None else round((time.time()-last[1])-(time.monotonic()-last[0]),3),
+               'late timer checks':list(self.late_polls)}
+        state.update(self._native_state())
+        state['window thread is at']=stack
+        state['other threads']=[t.name for t in threading.enumerate()]
+        return state
+
+    def _native_state(self):
+        """On Windows: does the window thread still answer window messages?"""
+        import sys
+        hwnd=self.native_window
+        if sys.platform!='win32' or not hwnd or not self.thread.is_alive():return {}
+        try:
+            import ctypes
+            from ctypes import wintypes
+            user=ctypes.WinDLL('user32',use_last_error=True)
+            user.IsHungAppWindow.argtypes=[wintypes.HWND];user.IsHungAppWindow.restype=wintypes.BOOL
+            user.SendMessageTimeoutW.argtypes=[wintypes.HWND,wintypes.UINT,wintypes.WPARAM,wintypes.LPARAM,wintypes.UINT,wintypes.UINT,ctypes.POINTER(ctypes.c_size_t)]
+            user.SendMessageTimeoutW.restype=ctypes.c_ssize_t
+            hung=bool(user.IsHungAppWindow(hwnd))
+            before=self.polls;result=ctypes.c_size_t()
+            # WM_NULL with SMTO_ABORTIFHUNG: answered only if the thread is waiting for messages.
+            answered=bool(user.SendMessageTimeoutW(hwnd,0,0,0,0x0002,1000,ctypes.byref(result)))
+            time.sleep(.1)
+            return {'Windows says hung':hung,'answers window messages':answered,'checks after a window message':self.polls-before}
+        except Exception as exc:
+            return {'Windows state':repr(exc)}
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
@@ -972,19 +1078,55 @@ class CompanionWindow:
                         history.delete('1.0', '30.0')
                     history.see('end')
                     history.configure(state='disabled')
-            def poll():
+            schedule={'after':None,'due':None,'polling':False}
+            def poll(woken=False):
                 # One failed update must never stop the window: without the
                 # next check it would stop speaking and answering keys for good.
+                if schedule['polling']:return
+                now=time.monotonic()
+                if not woken and schedule['due'] is not None and now-schedule['due']>1 and len(self.late_polls)<20:
+                    # Record a stalled timer so a failure can name it.
+                    self.late_polls.append({'seconds late':round(now-schedule['due'],3),'wall clock drift':round((time.time()-self.last_poll[1])-(now-self.last_poll[0]),3) if self.last_poll else None})
+                schedule.update(after=None,due=None,polling=True)
+                self.polls+=1;self.wakeups+=bool(woken);self.last_poll=(now,time.time())
                 try:poll_once()
                 except Exception as exc:
                     import sys,traceback
                     self.ui_errors.append(''.join(traceback.format_exception(type(exc),exc,exc.__traceback__))[-3000:])
                     print('Voice Companion window error:\n'+self.ui_errors[-1],file=sys.stderr,flush=True)
                 finally:
-                    if not self.closed.is_set(): root.after(15, poll)
-
+                    schedule['polling']=False
+                    if not self.closed.is_set():
+                        try:
+                            schedule['after']=root.after(self.poll_interval_ms,poll)
+                            schedule['due']=time.monotonic()+self.poll_interval_ms/1000
+                        except tk.TclError:pass
+            def wake_poll():
+                # Another thread added work. Check now instead of waiting for the timer.
+                if schedule['polling'] or self.closed.is_set():return
+                if schedule['after'] is not None:
+                    try:root.after_cancel(schedule['after'])
+                    except tk.TclError:pass
+                    schedule['after']=None
+                poll(woken=True)
+            self._wake_poll=wake_poll
+            def find_native_window():
+                # For failure reports only: the top-level Windows handle, once Tk has made it.
+                import sys
+                if sys.platform!='win32':return
+                try:
+                    import ctypes
+                    from ctypes import wintypes
+                    user=ctypes.WinDLL('user32')
+                    user.GetAncestor.argtypes=[wintypes.HWND,wintypes.UINT];user.GetAncestor.restype=wintypes.HWND
+                    self.native_window=user.GetAncestor(root.winfo_id(),2)
+                except Exception:self.native_window=None
+            root.after_idle(find_native_window)
+            try:self._start_wake(root)
+            except Exception as exc:
+                self._stop_wake();self.wake_status='unavailable: '+repr(exc)
             self.ready.set()
-            root.after(15, poll)
+            schedule['after']=root.after(self.poll_interval_ms,poll);schedule['due']=time.monotonic()+self.poll_interval_ms/1000
             root.mainloop()
         except Exception as exc:
             self.problem = exc.with_traceback(None)
