@@ -5,7 +5,6 @@ Windows Tk sets event.state bit 0x8 while Num Lock is on, and 0x20000 for Alt.
 import sys
 import threading
 import time
-import tkinter as tk
 import unittest
 
 from app_window import CompanionWindow
@@ -18,6 +17,7 @@ NUM_LOCK = 0x8
 class TkWindowsStateBitsTests(unittest.TestCase):
     def test_tk_names_alt_and_mod1_with_these_bits(self):
         # Tk itself says which bit is Alt: <Alt-...> and <Mod1-...> events.
+        import tkinter as tk
         seen = []
         root = tk.Tk()
         try:
