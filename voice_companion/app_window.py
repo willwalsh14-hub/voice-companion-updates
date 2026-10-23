@@ -72,6 +72,7 @@ class CompanionWindow:
         self.key_feedback = queue.Queue()
         self.closed = threading.Event()
         self.ready = threading.Event()
+        self.ui_errors = []
         self.last_email_request = None
         self.email_selection_edit = None
         self.problem = None
@@ -772,7 +773,7 @@ class CompanionWindow:
                 tk.Button(dialog, text='Cancel', command=close).pack(anchor='w', padx=16, pady=12)
                 key_entry.focus_set()
 
-            def poll():
+            def poll_once():
                 while True:
                     if self.closed.is_set():return
                     try: action, field = self.ui_actions.get_nowait()
@@ -934,7 +935,16 @@ class CompanionWindow:
                         history.delete('1.0', '30.0')
                     history.see('end')
                     history.configure(state='disabled')
-                if not self.closed.is_set(): root.after(15, poll)
+            def poll():
+                # One failed update must never stop the window: without the
+                # next check it would stop speaking and answering keys for good.
+                try:poll_once()
+                except Exception as exc:
+                    import sys,traceback
+                    self.ui_errors.append(''.join(traceback.format_exception(type(exc),exc,exc.__traceback__))[-3000:])
+                    print('Voice Companion window error:\n'+self.ui_errors[-1],file=sys.stderr,flush=True)
+                finally:
+                    if not self.closed.is_set(): root.after(15, poll)
 
             self.ready.set()
             root.after(15, poll)

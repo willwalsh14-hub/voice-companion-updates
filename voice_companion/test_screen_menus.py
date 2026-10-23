@@ -387,13 +387,23 @@ class WindowAltKeyTests(unittest.TestCase):
             try: self.window.root.update_idletasks(); function()
             except Exception as exc: errors.append(exc)
             finally: done.set()
-        self.window.ui_actions.put(('ui_call', run)); self.assertTrue(done.wait(5))
+        self.window.ui_actions.put(('ui_call', run)); self.assertTrue(done.wait(5), self.state())
         if errors: raise errors[0]
+    def state(self):
+        # Shown when the window stops answering, so the build log says why.
+        return {'thread alive': self.window.thread.is_alive(), 'problem': repr(self.window.problem),
+                'waiting updates': self.window.ui_actions.qsize(), 'window errors': self.window.ui_errors}
     def wait(self, condition):
         import time
         end = time.monotonic() + 5
         while not condition() and time.monotonic() < end: time.sleep(.015)
-        self.assertTrue(condition())
+        self.assertTrue(condition(), self.state())
+    def test_one_failed_update_does_not_stop_the_window(self):
+        def broken(): raise ValueError('test failure inside the window')
+        self.window.ui_actions.put(('ui_call', broken))
+        self.window.set_context(dict(mode='mailbox', source=None, text='', caret=0, ack=0, focus=True))
+        self.wait(lambda: self.window.context.get('mode') == 'mailbox')
+        self.assertTrue(any('test failure inside the window' in error for error in self.window.ui_errors))
     def test_alt_alone_opens_and_alt_with_a_key_does_not(self):
         self.window.set_context(dict(mode='mailbox', source=None, text='', caret=0, ack=0, focus=True))
         self.wait(lambda: self.window.context.get('mode') == 'mailbox')
