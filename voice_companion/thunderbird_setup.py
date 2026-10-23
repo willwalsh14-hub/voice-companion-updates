@@ -651,6 +651,13 @@ class Setup:
             return self._step(ADDON_RESTART, None)
         if not running:
             refresh_addon(self.profile, self.package)
+            if self.adding:
+                # The user asked to add an account: start Thunderbird quietly, no extra question.
+                try:
+                    self.system.launch_background(self.program)
+                except OSError:
+                    return self._step(START_FAILED, None)
+                return self._wait(STARTING)
             return self._step(NOT_RUNNING, 'start')
         return self._wait(WAITING)
 

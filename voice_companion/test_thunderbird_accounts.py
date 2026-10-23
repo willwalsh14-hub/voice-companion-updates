@@ -679,6 +679,14 @@ class InstallTests(StarterCase):
         self.assertLessEqual(system.now, 2 * thunderbird_setup.INSTALL_SECONDS + 4)
         self.assertEqual(len(system.commands), 2)
 
+    def test_closed_thunderbird_starts_without_a_question_when_adding(self):
+        system, profile = self.ready_system()
+        relay = RelayWithRequests(connect_after=0)
+        step = self.setup_flow(system, relay).start()
+        self.assertEqual(step.message, 'Ready to add an account.')
+        self.assertEqual(system.background, [INSTALLED])
+        self.assertEqual(thunderbird_setup.addon_file(profile).read_bytes(), b'PK add-on')   # newer copy in place first
+
     def test_installed_but_never_opened_is_started_once_when_adding(self):
         system = FakeSystem(self.home, registered(), {INSTALLED})
         self.first_start_makes_a_profile(system)

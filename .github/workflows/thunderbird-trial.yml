@@ -1,0 +1,51 @@
+name: Try Thunderbird accounts in real Thunderbird
+on:
+  push:
+    branches: ['claude/try-thunderbird-accounts']
+  pull_request:
+    branches: [main]
+    paths: ['voice_companion/thunderbird_*', 'voice_companion/thunderbird_mail_extension/**', 'voice_companion/check_thunderbird_live.py',
+            '.github/workflows/thunderbird-trial.yml']
+permissions:
+  contents: read
+concurrency:
+  group: thunderbird-trial-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  thunderbird:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: voice_companion
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Check the add-on and Experiment against simulated Thunderbird
+        run: node thunderbird_mail_extension/test-bridge.cjs
+      - name: Install test dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Test dependency installation failed.' }
+      - name: Thunderbird account tests on Windows pipes
+        run: python -m unittest test_thunderbird_accounts test_thunderbird_setup test_thunderbird_mail test_email_accounts -v
+      - name: Install real Thunderbird
+        shell: pwsh
+        run: |
+          choco install thunderbird -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Thunderbird could not be installed on the runner.' }
+          $exe = @("$env:ProgramFiles\Mozilla Thunderbird\thunderbird.exe", "${env:ProgramFiles(x86)}\Mozilla Thunderbird\thunderbird.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $exe) { throw 'thunderbird.exe was not found after installing.' }
+          "THUNDERBIRD_EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Real add-on and Experiment in real Thunderbird
+        timeout-minutes: 12
+        shell: pwsh
+        run: |
+          python -u check_thunderbird_live.py $env:THUNDERBIRD_EXE (Join-Path $env:RUNNER_TEMP 'thunderbird-trial')
+          if ($LASTEXITCODE -ne 0) { throw 'The real Thunderbird checks failed. The JSON report above says which.' }
