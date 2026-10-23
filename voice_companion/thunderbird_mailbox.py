@@ -12,11 +12,26 @@ from thunderbird_bridge import ThunderbirdError, ThunderbirdUnavailable, current
 INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
 
 
+# Set by the app: starts Thunderbird in the background and waits for its add-on
+# (companion.thunderbird_starter). It raises MailboxError with a plain reason
+# when Thunderbird cannot connect without the user's yes.
+STARTER = None
+NOT_CONNECTED = ('Thunderbird is not connected to Voice Companion. '
+                 'Say add account and choose Thunderbird, and Voice Companion checks what is missing.')
+
+
+def connected():
+    bridge = current()
+    return bridge is not None and bridge.connected.is_set()
+
+
 def relay():
+    """The connection to Thunderbird. Starts Thunderbird first when it is not running."""
+    if not connected() and STARTER is not None:
+        STARTER()
     bridge = current()
     if bridge is None or not bridge.connected.is_set():
-        raise MailboxError('Thunderbird is not connected. Open Thunderbird and wait a moment, then try again. '
-                           'If it still does not connect, ask your helper to check the Voice Companion Mail Connection add-on.')
+        raise MailboxError(NOT_CONNECTED)
     return bridge
 
 
@@ -24,7 +39,15 @@ def call(method, **params):
     try:
         return relay().request(method, params)
     except ThunderbirdUnavailable as exc:
-        raise MailboxError(str(exc)) from exc
+        # Thunderbird closed after it was connected: start it again once, then repeat the request.
+        if STARTER is None or connected():
+            raise MailboxError(NOT_CONNECTED) from exc
+        try:
+            return relay().request(method, params)
+        except ThunderbirdUnavailable as again:
+            raise MailboxError(NOT_CONNECTED) from again
+        except ThunderbirdError as again:
+            raise MailboxError(str(again)) from again
     except ThunderbirdError as exc:
         raise MailboxError(str(exc)) from exc
 
