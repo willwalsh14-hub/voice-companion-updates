@@ -372,6 +372,25 @@ class ScreenMenuTests(unittest.TestCase):
             self.assertIn(sentence, text)
 
 
+class TkOwnershipTests(unittest.TestCase):
+    def test_every_tk_variable_names_its_window(self):
+        # A Tk variable without its window joins the first Tk window ever made. If that
+        # window lives on another thread, the new window waits for it forever and never
+        # speaks or answers keys. This froze every new window on Windows in a test run.
+        import ast
+        here = Path(__file__).parent
+        problems = []
+        for path in sorted(here.glob('*.py')):
+            if path.name.startswith('test_'): continue
+            tree = ast.parse(path.read_text(encoding='utf-8'))
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                        and node.func.attr in ('StringVar', 'BooleanVar', 'IntVar', 'DoubleVar')
+                        and not node.args and not any(k.arg == 'master' for k in node.keywords)):
+                    problems.append(f'{path.name}:{node.lineno}')
+        self.assertEqual(problems, [])
+
+
 @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows Tk keyboard integration')
 class WindowAltKeyTests(unittest.TestCase):
     def setUp(self):
@@ -391,8 +410,13 @@ class WindowAltKeyTests(unittest.TestCase):
         if errors: raise errors[0]
     def state(self):
         # Shown when the window stops answering, so the build log says why.
-        return {'thread alive': self.window.thread.is_alive(), 'problem': repr(self.window.problem),
-                'waiting updates': self.window.ui_actions.qsize(), 'window errors': self.window.ui_errors}
+        import sys, threading, traceback
+        frame = sys._current_frames().get(self.window.thread.ident)
+        others = [t.name for t in threading.enumerate() if t is not self.window.thread and t is not threading.current_thread()]
+        return {'thread alive': self.window.thread.is_alive(), 'ready': self.window.ready.is_set(), 'problem': repr(self.window.problem),
+                'waiting updates': self.window.ui_actions.qsize(), 'window errors': self.window.ui_errors,
+                'window thread is at': ''.join(traceback.format_stack(frame)[-12:]) if frame else None,
+                'other threads': others}
     def wait(self, condition):
         import time
         end = time.monotonic() + 5

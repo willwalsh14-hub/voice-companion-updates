@@ -576,7 +576,7 @@ class CompanionWindow:
             tk.Button(root,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
             tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
             tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
-            self.current = tk.StringVar(value='Starting speech and microphone...')
+            self.current = tk.StringVar(root, value='Starting speech and microphone...')
             status_label=tk.Label(root, textvariable=self.current, font=('Segoe UI', 12),
                      wraplength=600, justify='left')
             status_label.pack(anchor='w', padx=18, pady=14)
@@ -739,7 +739,7 @@ class CompanionWindow:
                 choice = ttk.Combobox(dialog, values=VOICES, state='readonly')
                 choice.set('coral')
                 choice.pack(padx=16, fill='x')
-                consent = tk.BooleanVar(value=False)
+                consent = tk.BooleanVar(dialog, value=False)
                 tk.Checkbutton(dialog, text='I authorize sending narration text to OpenAI.',
                                variable=consent).pack(anchor='w', padx=16, pady=10)
                 try:
