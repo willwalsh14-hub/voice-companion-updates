@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 | Count | Number |
 | --- | --- |
-| Actions inventoried | 573 |
+| Actions inventoried | 574 |
 | Already had both ways | 458 |
-| Gaps found | 115 |
-| Gaps fixed (Added) | 107 |
+| Gaps found | 116 |
+| Gaps fixed (Added) | 108 |
 | Not applicable (N/A, with reason) | 8 |
 
 ## Main menu
@@ -480,6 +480,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 | Switch account | "Switch account" | Alt, 6, 2 | Added: Alt menu path |
 | Which account | "Which email account" | Alt, 6, 3 | Added: Alt menu path |
 | Remove account | "Remove email account" | Alt, 6, 4 | Added: Alt menu path |
+| Add Thunderbird account | "Add thunderbird account" | Alt, 6, 5 | Added: Alt menu path |
 
 ## Alt menu, Email: Options and help
 

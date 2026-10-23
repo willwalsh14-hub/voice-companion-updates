@@ -976,7 +976,7 @@ class CompanionYahooTests(YahooTestCase):
         self.assertEqual(self.companion.email_draft.recipient, 'sam@example.com')
         self.companion.handle('Noon works for me.', 'email_draft')
         self.companion.handle('send email', 'email_draft', typed=True)
-        self.assertIn('Review before sending. From ' + ADDRESS, self.said[-1])
+        self.assertIn('Review before sending. From Yahoo, ' + ADDRESS, self.said[-1])
         self.assertEqual(self.companion.handle('Yes, please.', 'email_draft'), 'mailbox')
         self.assertTrue(any(text == 'Email sent successfully.' for text in self.said), self.said[-3:])
         self.assertEqual(len(self.smtp.received), 1)
