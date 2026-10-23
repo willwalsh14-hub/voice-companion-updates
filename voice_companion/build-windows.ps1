@@ -191,7 +191,7 @@ $audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audi
 if ($audioResult -ne 0) { throw 'The audio player checks failed.' }
 # Page checks run in Playwright's Chromium (prepared above for the extension checks).
 $env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
-$liveResult = Invoke-UnitTests 'Real browser checks' @('-q','test_web_live','test_consumer_web','test_web_semantics','test_web_modes_live','test_web_history','test_web_fields')
+$liveResult = Invoke-UnitTests 'Real browser checks' @('-v','test_web_live','test_consumer_web','test_web_semantics','test_web_modes_live','test_web_history','test_web_fields')
 if ($liveResult -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
 $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEB_TESTS

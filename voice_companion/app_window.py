@@ -210,6 +210,16 @@ class CompanionWindow:
             from tkinter import scrolledtext
             root = tk.Tk()
             self.root=root
+            def callback_error(kind,error,trace):
+                # Tk's own handler keeps the error in sys.last_traceback. Its
+                # frames hold this window's widgets, so the Tk interpreter
+                # would outlive the window thread and be freed on another
+                # thread ("Tcl_AsyncDelete"). Keep the text only.
+                import sys,traceback
+                text=''.join(traceback.format_exception(kind,error,trace))[-3000:]
+                self.ui_errors.append(text)
+                print('Voice Companion window error:\n'+text,file=sys.stderr,flush=True)
+            root.report_callback_exception=callback_error
             from media_shortcut import MediaShortcut
             self.media_shortcut=MediaShortcut(lambda:self.commands.put(('keyboard','Ctrl+P')))
             self.media_shortcut.register()

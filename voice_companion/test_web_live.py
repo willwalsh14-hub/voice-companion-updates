@@ -468,6 +468,7 @@ class LiveWebTests(unittest.TestCase):
                 self.assertNotIn('FixtureOnly',self.session.reading.text)
         finally:
             ui(window.root.destroy);window.thread.join(5)
+        self.assertEqual(window.ui_errors,[],'a key handler in the window raised an error')
 
     def test_nested_search_headings_and_caret_ack_move_without_url_repetition(self):
         page='<h1>Search results</h1><h2><a href="https://fixture.test/next"><span>https://first.test/path</span><br><span class="result-title">First result title</span></a></h2><h2><a href="https://fixture.test/next"><span>second.test › article</span><br><span class="result-title">Second result title</span></a></h2>'

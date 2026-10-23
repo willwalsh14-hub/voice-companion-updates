@@ -118,3 +118,16 @@ class RealWindowTestRunTests(unittest.TestCase):
         for name in ('test_keyboard_text.WindowKeyboardTests', 'test_input_parity.WindowScreenKeyTests', 'test_time_date_windows.WindowClockKeyTests'):
             self.assertIn("'" + name + "'", script)
         self.assertLess(script.index("VOICE_COMPANION_WINDOW_TESTS_APART = '1'"), script.index('$releaseTests = Start-Process'))
+
+
+class WindowCallbackErrorTests(unittest.TestCase):
+    """A key handler error must not keep the window's Tk objects alive in
+    sys.last_traceback, where another thread would free them (Tcl_AsyncDelete)."""
+    def test_key_handler_errors_are_kept_as_text(self):
+        import ast
+        source = (Path(__file__).parent / 'app_window.py').read_text(encoding='utf-8')
+        self.assertIn('root.report_callback_exception=callback_error', source)
+        tree = ast.parse(source)
+        handler = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == 'callback_error')
+        names = {node.attr for node in ast.walk(handler) if isinstance(node, ast.Attribute)}
+        self.assertFalse(names & {'last_traceback', 'last_value', 'last_type', 'last_exc'})
