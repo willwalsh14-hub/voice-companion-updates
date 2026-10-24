@@ -678,6 +678,9 @@ def navigation_key(key,mode):
     if key=='F9':
         # F9 turns the microphone fully off or on, on every screen.
         return '@microphone'
+    if key=='Print':
+        # Print Screen goes back to the main menu from every screen.
+        return '@main_menu'
     if ACCOUNT_ENTRY is not None and key!='Control':
         # Setup owns the keyboard: keys must not reach the menu behind the text box.
         if key=='Escape':return 'cancel account setup'
@@ -2802,6 +2805,11 @@ def _handle(text, mode, typed=False):
     command=normalized_command(text)
     if text=='@microphone':
         return set_microphone(MICROPHONE_OFF, mode)
+    if text=='@main_menu':
+        # Print Screen: the same as saying Main menu, so each screen saves or asks first.
+        if mode=='awake' and ACCOUNT_ENTRY is None and THUNDERBIRD_SETUP is None:
+            announce_main_menu();return 'awake'
+        return handle('main menu', mode, typed=True)
     if command in MICROPHONE_OFF_PHRASES+MICROPHONE_ON_PHRASES and not writing_dictation(mode, typed):
         return set_microphone(command in MICROPHONE_ON_PHRASES, mode)
     if ACCOUNT_ENTRY is not None:
@@ -3290,7 +3298,8 @@ def _handle(text, mode, typed=False):
         return 'files'
     if mode=='files':
         if command in ('main menu','back to main menu','close file manager','leave file manager'):
-            announce_main_menu();return 'awake'
+            # handle() says Main menu once when the screen changes.
+            return 'awake'
         if command.startswith('file letter '):
             state=menu_state(mode)
             if state:speak(FILE_MANAGER.command('file letters '+text[len('file letter '):]));sync_app_context(mode,True)
@@ -3300,8 +3309,9 @@ def _handle(text, mode, typed=False):
         if result=='__main__':
             picker=task_navigation().picker
             task_navigation().picker=None
-            if picker:return task_navigation().enter('local_media' if picker=='media' else 'word_processor','Media player' if picker=='media' else 'Word processor menu')
-            announce_main_menu();return 'awake'
+            # Escape from the drive list: Open a media file returns to the Media menu.
+            if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
+            return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
         speak(result)
         sync_app_context(mode,True)

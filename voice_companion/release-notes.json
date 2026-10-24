@@ -26,6 +26,14 @@
             "D opens email drafts. P lists contacts. S says what is selected. U clears the marks.",
             "The Email menu shows each key. The older keys still work."
           ]
+        },
+        {
+          "title": "Print Screen goes to the main menu",
+          "details": [
+            "Press Print Screen on any screen to go back to the main menu.",
+            "If a document has changes, you are asked to save it first.",
+            "If Print Screen opens the Windows screen capture tool, turn that off. Open Windows Settings, then Accessibility, then Keyboard."
+          ]
         }
       ]
     },
@@ -45,7 +53,8 @@
           "title": "Media player",
           "details": [
             "While a file plays, only Alt opens the player menu.",
-            "Escape now leaves the player in one press.",
+            "Escape now leaves the player and goes back to the folder the file came from.",
+            "Each Escape after that goes up one folder. From the drive list, Escape goes to the Media menu, then the main menu.",
             "Enter plays or pauses, like Space. Home goes back to the start of the file."
           ]
         },

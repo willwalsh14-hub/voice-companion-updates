@@ -88,6 +88,7 @@ class TaskNavigation:
         self.player_menu = True
         # The File manager a file was opened from; leaving the player returns there.
         self.player_files = None
+        self.player_picker = None
         self.reader_return = 'files'
 
     def remember(self, path):
@@ -206,7 +207,9 @@ class TaskNavigation:
                 # A browser or player failure must be spoken, not stop the app.
                 raise OSError('This media file could not play. Choose another file.') from error
             self.media_title = path.name
-            self.player_files = self.app.FILE_MANAGER if kind is None else None
+            # Escape goes back to this folder, whether the file came from File manager or Open a media file.
+            self.player_files = self.app.FILE_MANAGER
+            self.player_picker = kind
             self.picker=None
             self.indices['local_media'] = 0
             self.player_menu = False
@@ -339,7 +342,7 @@ class TaskNavigation:
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
             return self.enter('media_menu', 'Media menu')
         if command in ('media player','open media player'):
-            self.player_files = None
+            self.player_files = None; self.player_picker = None
             return self.enter('local_media', 'Media player')
         if command in ('document menu','document commands','menu') and mode == 'document':
             self.group = None
@@ -393,12 +396,17 @@ class TaskNavigation:
             if mode == 'local_media':
                 if not m.PREFERENCES.get('keep_audio_playing',False) and m.MEDIA_HUB and m.MEDIA_HUB.player.kind=='local':m.MEDIA_HUB.player.control('stop')
                 files, self.player_files = self.player_files, None
+                picker, self.player_picker = getattr(self, 'player_picker', None), None
                 if files is not None and files is m.FILE_MANAGER and files.location is not None:
-                    # Opened from File manager: go back to the same folder and file.
-                    files.menu = False
-                    m.speak('File manager. '+files.say_current()); return 'files'
+                    # Go back to the same folder and file. Escape there moves up one folder at a time,
+                    # then out of the drive list to the Media menu.
+                    files.menu = False; files.pending = None
+                    self.picker = picker
+                    from file_manager import location_name
+                    m.speak(('Back to '+location_name(files.location)+'. ' if picker else 'File manager. ')+files.say_current()); return 'files'
                 return self.enter('media_menu', 'Media menu')
-            m.announce_main_menu(); return 'awake'
+            # handle() says Main menu once when the screen changes.
+            return 'awake'
         if command in ('next','previous','home','end'):
             if mode == 'local_media' and not self.player_menu:
                 m.speak('Press Alt for the player menu.'); return mode

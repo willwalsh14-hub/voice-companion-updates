@@ -270,15 +270,37 @@ class MediaPlayerMenuTests(unittest.TestCase):
         self.assertNotIn(('stop',15,None),self.player.calls)
         self.assertFalse(self.player.paused)
 
-    def test_file_picked_inside_media_player_still_returns_to_media(self):
+    def test_escape_climbs_from_the_song_folder_to_the_media_menu(self):
+        # Will, October 2026: Escape returns to the folder the song came from. Each press
+        # goes up one level, out of the drive list to the Media menu, then the main menu.
         from file_manager import FileManager
-        from test_file_manager import FakeFiles
+        from test_file_manager import FakeFiles,settle
+        music=self.root/'Music';music.mkdir();(music/'Anthem.mp3').write_bytes(b'audio');(music/'Taps.mp3').write_bytes(b'audio')
         mode=app.handle('media player','media_menu')
         with patch('file_manager.FileManager',side_effect=lambda:FileManager(FakeFiles(self.root))):
-            self.assertEqual(app.handle(app.navigation_key('Ctrl+O',mode),mode),'files')
-        mode=app.task_navigation().selected_file(self.song)
-        mode=self.key('Escape',mode)
-        self.assertEqual(mode,'media_menu')
+            mode=app.handle(app.navigation_key('Ctrl+O',mode),mode)
+        self.assertEqual(mode,'files')
+        manager=app.FILE_MANAGER
+        def step(key):
+            nonlocal mode
+            mode=self.key(key,mode);settle(manager);mode=app.poll_file_manager(mode)
+        settle(manager);step('Enter')
+        self.assertEqual(manager.location,str(self.root))
+        manager.command('Music');settle(manager)
+        manager.command('Taps.mp3');step('Enter')
+        self.assertEqual(mode,'local_media')
+        step('Escape')
+        self.assertEqual((mode,manager.location),('files',str(music)))
+        self.assertTrue(self.said[-1].startswith('Back to Music. Taps.mp3'),self.said[-1])
+        # Another song from the same folder still plays.
+        step('Up');step('Enter')
+        self.assertEqual((mode,self.said[-1]),('local_media','Playing Anthem.mp3. Press Alt for the player menu.'))
+        step('Escape');self.assertEqual((mode,manager.location),('files',str(music)))
+        step('Escape');self.assertEqual((mode,manager.location),('files',str(self.root)))
+        step('Escape');self.assertEqual((mode,manager.location),('files',None))
+        step('Escape');self.assertEqual(mode,'media_menu')
+        self.said.clear();step('Escape');self.assertEqual(mode,'awake')
+        self.assertEqual(self.said.count(app.MAIN_MENU_PROMPT),1,self.said)
 
     def test_player_after_media_menu_forgets_file_manager_origin(self):
         manager,mode=self.browse_to_song()

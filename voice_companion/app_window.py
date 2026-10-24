@@ -337,6 +337,7 @@ class CompanionWindow:
             root.bind_all('<KeyRelease>',alt_release,add='+')
             from time_date import PressCounter,clock_key,key_request
             clock_presses=PressCounter()
+            print_screen=[0.0]
             def shortcut(event):
                 if event.keysym.lower()=='p' and event.state&4 and not event.state&1 and not alt_held(event.state):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
@@ -355,6 +356,13 @@ class CompanionWindow:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     cancel_phonetic()
                     self.commands.put(('keyboard','F9'));return 'break'
+                if key=='Print':
+                    # Print Screen goes to the main menu from every screen. Windows often sends
+                    # only the key release, so the release below covers that case.
+                    print_screen[0]=time.monotonic()
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard','Print'));return 'break'
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 watch_alt(event)
@@ -582,6 +590,12 @@ class CompanionWindow:
             root.bind_all('<KeyPress>',shortcut,add='+')
             def release_activation_key(event):
                 self.key_trace.append(f'release {event.keysym} state={event.state:#x} held={sorted(activation_keys)}')
+                if event.keysym=='Print' and event.widget.winfo_toplevel()==root and time.monotonic()-print_screen[0]>1:
+                    # Windows sent no key press for Print Screen: act on the release instead.
+                    print_screen[0]=time.monotonic()
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard','Print'))
                 activation_keys.discard(event.keysym)
             root.bind_all('<KeyRelease>',release_activation_key,add='+')
             root.bind('<FocusOut>',lambda event:activation_keys.clear() if event.widget==root else None,add='+')
