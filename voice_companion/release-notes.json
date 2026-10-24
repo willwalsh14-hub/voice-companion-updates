@@ -1,19 +1,30 @@
 {
-  "version": "0.2.164-test",
+  "version": "0.2.165-test",
   "status": "Testing build",
-  "date": "October 23, 2026",
-  "baseline": "0.2.163-test",
-  "scope": "Keys work right with Num Lock on, and fewer virus warnings by mistake.",
+  "date": "October 24, 2026",
+  "baseline": "0.2.164-test",
+  "scope": "Email has simple one-key commands and pages with a clear start and end. F9 turns the microphone off. The media player menu opens only with Alt.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Fewer false virus warnings",
+          "title": "Turn the microphone off",
           "details": [
-            "Voice Companion is now built with its own copy of a part that virus scanners often flag by mistake.",
-            "This should mean fewer warnings when you download or install Voice Companion.",
-            "Some warnings can still appear until Voice Companion is signed."
+            "Press F9 to turn the microphone fully off. Voice Companion then hears nothing, not even Wake up.",
+            "Press F9 again to turn it back on. F9 works on every screen.",
+            "You can also say Turn off the microphone."
+          ]
+        },
+        {
+          "title": "One key for each email action",
+          "details": [
+            "In the message list and in an open message, press one letter. No other keys are needed.",
+            "N is new email. R is reply. A is reply all. F is forward.",
+            "M moves a message. G goes to a folder. W says which folder you are in.",
+            "I reads message details. C copies the sender address. E writes to the sender.",
+            "D opens email drafts. P lists contacts. S says what is selected. U clears the marks.",
+            "The Email menu shows each key. The older keys still work."
           ]
         }
       ]
@@ -22,10 +33,28 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Num Lock",
+          "title": "Pages of email",
           "details": [
-            "With Num Lock on, keys now work as they should.",
-            "Before, Num Lock could make a plain key act like Alt plus that key."
+            "Up Arrow and Down Arrow now stop at the first and last message on the page. You hear Start of list or End of list.",
+            "Page Down and Page Up go to the next or previous page of messages.",
+            "Home and End go to the first and last message on this page.",
+            "Control+Home and Control+End go to the newest and oldest message in the folder."
+          ]
+        },
+        {
+          "title": "Media player",
+          "details": [
+            "While a file plays, only Alt opens the player menu.",
+            "Escape now leaves the player in one press.",
+            "Enter plays or pauses, like Space. Home goes back to the start of the file."
+          ]
+        },
+        {
+          "title": "Reading keys",
+          "details": [
+            "Control+R reads a whole draft, note, or file in the Document reader. In a lesson, Control+R repeats it.",
+            "Control+E explains a command in a lesson.",
+            "In a document, Control+Shift+R still reads it, because Control+R places text on the right."
           ]
         }
       ]

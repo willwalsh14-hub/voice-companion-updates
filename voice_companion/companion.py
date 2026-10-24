@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.164-test'
+APP_VERSION = '0.2.165-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -675,6 +675,9 @@ def navigation_key(key,mode):
         try:interrupt_speech();speak_clock(time_date.KEY_REQUESTS[key])
         finally:KEYBOARD_NAVIGATION=previous
         return None
+    if key=='F9':
+        # F9 turns the microphone fully off or on, on every screen.
+        return '@microphone'
     if ACCOUNT_ENTRY is not None and key!='Control':
         # Setup owns the keyboard: keys must not reach the menu behind the text box.
         if key=='Escape':return 'cancel account setup'
@@ -765,7 +768,10 @@ def _navigation_key(key,mode):
             if VOICE_PICK_INDEX is not None:preview_voice(index);return None
             speak(('Link ' if mode=='web' and web_session and web_session.list_focus=='links' else '')+announce_item(names[index],index,len(names),hotkey=not (mode=='web' and web_session and web_session.list_focus in ('links','headings','fields'))));return None
         if mode=='mailbox' and mail_session and mail_session.view=='folder' and not mail_session.pending:
-            speak(mail_session.list_boundary(key=='End'));return None
+            speak(mail_session.page_edge(key=='End'));return None
+    if key in ('Ctrl+Home','Ctrl+End') and mode=='mailbox' and mail_session and mail_session.view=='folder' and not mail_session.pending:
+        # The newest or oldest message in the whole folder.
+        return 'oldest message' if key=='Ctrl+End' else 'newest message'
     if mode=='help' and key=='Escape':return 'go back'
     if mode=='help' and help_session and help_session.level=='article' and (key.startswith('Help:') or key in ('Up','Down','Left','Right','Home','End')):
         return {'Up':'previous paragraph','Down':'next paragraph','Home':'first block','End':'last block',
@@ -1903,6 +1909,29 @@ def thunderbird_starter(system=None):
 
 THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it closes it on exit
 
+# F9 (or "turn off the microphone") turns the microphone fully off: the stream is closed and
+# nothing listens, not even for "wake up". F9 turns it back on. (Control+F12 only puts
+# listening to sleep.) Not kept between starts, so Companion always starts able to hear.
+MICROPHONE_OFF = False
+MICROPHONE_ANNOUNCED = False   # set_microphone already said it is on
+MICROPHONE_OFF_PHRASES = ('turn off the microphone', 'turn off microphone', 'turn the microphone off', 'turn microphone off',
+                          'microphone off', 'mic off', 'turn off the mic', 'turn the mic off', 'mute microphone', 'mute the microphone')
+MICROPHONE_ON_PHRASES = ('turn on the microphone', 'turn on microphone', 'turn the microphone on', 'turn microphone on',
+                         'microphone on', 'mic on', 'turn on the mic', 'turn the mic on', 'unmute microphone', 'unmute the microphone')
+
+
+def set_microphone(on, mode):
+    """Turn the microphone fully on or off, and say what happened and how to undo it."""
+    global MICROPHONE_OFF, MICROPHONE_ANNOUNCED
+    MICROPHONE_OFF = not on
+    MICROPHONE_ANNOUNCED = on
+    if on:
+        speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
+                                   else 'Voice commands are on.'))
+    else:
+        speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.')
+    return mode
+
 
 def remember_thunderbird_identity(account, identity_id, account_id):
     """Thunderbird sent from another identity for this address: keep that one for next time."""
@@ -2771,6 +2800,10 @@ def _handle(text, mode, typed=False):
                           'show notes', 'show my notes', 'show saved notes')
     NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have')
     command=normalized_command(text)
+    if text=='@microphone':
+        return set_microphone(MICROPHONE_OFF, mode)
+    if command in MICROPHONE_OFF_PHRASES+MICROPHONE_ON_PHRASES and not writing_dictation(mode, typed):
+        return set_microphone(command in MICROPHONE_ON_PHRASES, mode)
     if ACCOUNT_ENTRY is not None:
         return account_entry_step(text, command, mode)
     if THUNDERBIRD_SETUP is not None:
@@ -4312,7 +4345,7 @@ def poll_app_updates(mode):
 
 
 def main():
-    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE
+    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED
     if '--check-browser-bookmarks' in sys.argv:
         from packaged_browser_check import check
         return check(sys.modules[__name__])
@@ -4503,16 +4536,18 @@ def main():
         while True:
             poll_dictation_echo()
             mode=poll_thunderbird_watch(mode)
-            if input_stream is not None and not microphone_active(input_stream):
+            if input_stream is not None and (MICROPHONE_OFF or not microphone_active(input_stream)):
                 close_microphone(input_stream)
-                input_stream=None
-            if input_stream is None and time.monotonic()>=microphone_retry_at:
+                input_stream=None;recognizer.Reset();utterance.clear()
+            if input_stream is None and not MICROPHONE_OFF and time.monotonic()>=microphone_retry_at:
                 microphone_retry_at=time.monotonic()+2
                 input_stream=open_microphone(sd,attempts=1)
                 if input_stream:
                     input_lifetime.callback(close_microphone,input_stream)
                     recognizer.Reset();utterance.clear()
-                    if mode!='sleep':speak('The microphone is on.')
+                    # F9 already said Microphone on; say it here only when the microphone came back by itself.
+                    if mode!='sleep' and not MICROPHONE_ANNOUNCED:speak('The microphone is on.')
+                    MICROPHONE_ANNOUNCED=False
             if APP_WINDOW is not None and not APP_WINDOW.commands.empty():
                 mode=process_keyboard_batch(mode)
                 if mode=='exit':return 0

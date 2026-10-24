@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 580
-- Already had both ways: 461
-- Gaps found: 119
-- Gaps fixed (Added): 111
+- Actions inventoried: 583
+- Already had both ways: 460
+- Gaps found: 123
+- Gaps fixed (Added): 115
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -975,6 +975,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Down
 - Status: Both
 
+### Start of file
+
+- Voice: "Start of file"
+- Keyboard: Home
+- Status: Both
+
 ### Playback speed
 
 - Voice: "Playback speed"
@@ -1664,25 +1670,25 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Reply
 
 - Voice: "Reply"
-- Keyboard: Ctrl+R
+- Keyboard: R
 - Status: Both
 
 ### Reply all
 
 - Voice: "Reply all"
-- Keyboard: Ctrl+Shift+R
+- Keyboard: A
 - Status: Both
 
 ### Forward
 
 - Voice: "Forward"
-- Keyboard: Ctrl+F
+- Keyboard: F
 - Status: Both
 
 ### New email
 
 - Voice: "New email"
-- Keyboard: Ctrl+N
+- Keyboard: N
 - Status: Both
 
 ### Delete
@@ -1694,13 +1700,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Move to folder
 
 - Voice: "Move"
-- Keyboard: Ctrl+Shift+V
+- Keyboard: M
 - Status: Both
 
 ### Message details
 
 - Voice: "Message details"
-- Keyboard: Ctrl+I
+- Keyboard: I
 - Status: Both
 
 ## Alt menu, Email: Select
@@ -1720,25 +1726,25 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Clear selection
 
 - Voice: "Clear selection"
-- Keyboard: Ctrl+Shift+A
+- Keyboard: U
 - Status: Both
 
 ### What is selected
 
 - Voice: "What is selected"
-- Keyboard: Ctrl+Shift+S
+- Keyboard: S
 - Status: Both
 
 ### Copy sender address
 
 - Voice: "Copy sender address"
-- Keyboard: Ctrl+Shift+C
+- Keyboard: C
 - Status: Both
 
 ### Email the sender
 
 - Voice: "New email to sender"
-- Keyboard: Ctrl+Shift+N
+- Keyboard: E
 - Status: Both
 
 ## Alt menu, Email: Go to folder
@@ -1776,25 +1782,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Choose a folder
 
 - Voice: "Go to folder"
-- Keyboard: Ctrl+Y
+- Keyboard: G
 - Status: Both
 
 ### Which folder
 
 - Voice: "Which folder"
-- Keyboard: Ctrl+Shift+I
-- Status: Both
-
-### Next page of messages
-
-- Voice: "Next messages"
-- Keyboard: Page Down
-- Status: Both
-
-### Previous page of messages
-
-- Voice: "Previous messages"
-- Keyboard: Page Up
+- Keyboard: W
 - Status: Both
 
 ## Alt menu, Email: Folder actions
@@ -1802,8 +1796,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Create folder
 
 - Voice: "Create folder"
-- Keyboard: Ctrl+Shift+E
-- Status: Both
+- Keyboard: Alt, 4, 1
+- Status: Added: Alt menu path
 
 ### Rename folder
 
@@ -1814,14 +1808,14 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Move folder
 
 - Voice: "Move folder"
-- Keyboard: Ctrl+Shift+M
-- Status: Both
+- Keyboard: Alt, 4, 3
+- Status: Added: Alt menu path
 
 ### Delete empty folder
 
 - Voice: "Delete folder"
-- Keyboard: Ctrl+Shift+D
-- Status: Both
+- Keyboard: Alt, 4, 4
+- Status: Added: Alt menu path
 
 ### List folders
 
@@ -1834,20 +1828,20 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Email drafts
 
 - Voice: "Open email draft"
-- Keyboard: Ctrl+O
+- Keyboard: D
 - Status: Both
 
 ### List contacts
 
 - Voice: "List contacts"
-- Keyboard: Ctrl+K
+- Keyboard: P
 - Status: Both
 
 ### Add contact
 
 - Voice: "Add contact ..."
-- Keyboard: Ctrl+Shift+K
-- Status: Both
+- Keyboard: Alt, 5, 3
+- Status: Added: Alt menu path
 
 ### Connect Google Contacts
 
@@ -1887,18 +1881,44 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 6, 5
 - Status: Added: Alt menu path
 
+## Alt menu, Email: Pages
+
+### Next page of messages
+
+- Voice: "Next messages"
+- Keyboard: Page Down
+- Status: Both
+
+### Previous page of messages
+
+- Voice: "Previous messages"
+- Keyboard: Page Up
+- Status: Both
+
+### Newest message in folder
+
+- Voice: "Newest message"
+- Keyboard: Ctrl+Home
+- Status: Both
+
+### Oldest message in folder
+
+- Voice: "Oldest message"
+- Keyboard: Ctrl+End
+- Status: Both
+
 ## Alt menu, Email: Options and help
 
 ### Email options
 
 - Voice: "Options, then Email options"
-- Keyboard: Alt, 7, 1
+- Keyboard: Alt, 8, 1
 - Status: Added: Alt menu path
 
 ### Messages per page
 
 - Voice: "Email list size"
-- Keyboard: Alt, 7, 2
+- Keyboard: Alt, 8, 2
 - Status: Added: Alt menu path
 
 ### Email help
@@ -1910,7 +1930,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Main menu
 
 - Voice: "Main menu"
-- Keyboard: Alt, 7, 4
+- Keyboard: Alt, 8, 4
 - Status: Added: Alt menu path
 
 ## Alt menu, Email draft: Message
@@ -1930,7 +1950,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Read draft
 
 - Voice: "Read email draft"
-- Keyboard: Ctrl+Shift+R
+- Keyboard: Ctrl+R
 - Status: Both
 
 ### Save and close
@@ -2034,7 +2054,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Read note
 
 - Voice: "Read from top"
-- Keyboard: Ctrl+Shift+R
+- Keyboard: Ctrl+R
 - Status: Both
 
 ### Saved notes
@@ -2232,7 +2252,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Repeat
 
 - Voice: "Repeat"
-- Keyboard: Ctrl+Shift+R
+- Keyboard: Ctrl+R
 - Status: Both
 
 ### Continue reading
@@ -2262,7 +2282,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Explain a command
 
 - Voice: "Explain command ..."
-- Keyboard: Ctrl+Shift+F
+- Keyboard: Ctrl+E
 - Status: Both
 
 ### List commands
@@ -2282,7 +2302,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Read document
 
 - Voice: "Read document"
-- Keyboard: Ctrl+Shift+R
+- Keyboard: Ctrl+R
 - Status: Both
 
 ### Find text

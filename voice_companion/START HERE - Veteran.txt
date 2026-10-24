@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.164-test.
+Guide version: 0.2.165-test.
 Use this guide to learn Voice Companion, change its settings, and find help. Voice Companion speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use its tools.
 This is a test version. Some websites, email services, and audio streams may not work as expected. Read each message before you send, delete, or change anything important.
 
@@ -282,11 +282,11 @@ The tutorial explains how to use the app. It waits for you between lessons. The 
 Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, and Help and updates.
 
 3.4 Find, repeat, and leave a lesson
-To hear the same lesson, say "Repeat", or press Control+Shift+R. To go back, say "Previous lesson", or press Up Arrow.
+To hear the same lesson, say "Repeat", or press Control+R. To go back, say "Previous lesson", or press Up Arrow.
 For the lesson names, say "Lesson list", or press Control+L. Use arrows and Enter to choose one.
 To find a lesson, say "Find lesson" followed by a topic, such as "Find lesson favorites". Or press Control+F, type the topic, and press Enter.
 For the course's command list, say "List commands", or press F1.
-To learn about a command, say "Explain command", followed by the command. For example, say "Explain command send it". Or press Control+Shift+F, type the command, and press Enter.
+To learn about a command, say "Explain command", followed by the command. For example, say "Explain command send it". Or press Control+E, type the command, and press Enter.
 If a long explanation pauses, say "Continue reading", or press Control+Down Arrow.
 To go back one level, say "Go back", or press Escape. Say "Courses" to return to the course list.
 To leave the tutorial, say "Main menu" or "Close tutorial", or press Escape from the course list.
@@ -331,7 +331,7 @@ The app uses a local voice for typing and menu movement so you can hear each key
 
 5.1 Read from your current place
 These commands work in documents, email, web pages, and notes where text reading is available.
-To start at the beginning, say "Read from top" or "Start reading". In a document, draft, note, or the Document reader, you can also press Control+Shift+R.
+To start at the beginning, say "Read from top" or "Start reading". In a draft, note, or the Document reader, you can also press Control+R. In the Document reader, say "Read document", or press Control+R. In a document, press Control+Shift+R, because Control+R places text on the right there.
 For the next part, say "Continue reading", or press Down Arrow.
 To move by letter or symbol, say "Next character" or "Previous character", or press Right Arrow or Left Arrow.
 To move by word, say "Next word" or "Previous word", or press Control+Right Arrow or Control+Left Arrow.
@@ -476,7 +476,7 @@ Control+S saves. Control+Shift+S saves as. F2 names the document. Control+O open
 Notepad is for a short plain text note. Use the Word processor when you need headings, fonts, or tables.
 1. Say "Write a note", or choose Notepad on the main menu.
 2. Speak or type your note. Press Enter after typed words.
-3. To listen to it, say "Read from top", or press Control+Shift+R.
+3. To listen to it, say "Read from top", or press Control+R.
 4. To save it, say "Save note", or press Control+S.
 To save the note and return to the main menu, say "Go back", or press Escape. Going to sleep also saves the text you have entered. For Notepad help, say "Help with notepad", or press F1.
 Press Alt to open the notepad menu. It has Save and close note, Read note, Saved notes, New line, Notepad options, Notepad help, and Main menu. Words you typed are added to the note first.
@@ -547,8 +547,8 @@ Accounts are also in the email menu. In email, press Alt, then 6. Choose Add acc
 
 8.3 Add and find contacts
 A contact is a saved name and email address.
-To save a contact, say "Add contact", followed by the person's name, "as", and their email address. For example, say "Add contact Bob as bob@example.com". Or press Control+Shift+K in the inbox. Type the name, the word as, and the address, then press Enter.
-To hear saved names, say "List contacts", or press Control+K in email. Use arrows to hear each name. Press Enter to hear the address.
+To save a contact, say "Add contact", followed by the person's name, "as", and their email address. For example, say "Add contact Bob as bob@example.com". Or press Alt, 5, then 3 in the inbox. Type the name, the word as, and the address, then press Enter.
+To hear saved names, say "List contacts", or press P in the inbox. While writing an email, press Control+K. Use arrows to hear each name. Press Enter to hear the address.
 To find a contact, say "Find contact", followed by the saved name. For example, say "Find contact Bob". Use the saved contact's name when Companion asks who to email.
 Each email account has its own contact list. Local contacts can be used without internet access.
 When Gmail is selected, say "Connect Google Contacts" to request access to Google Contacts. Or press Alt+O, choose Email options, then choose Connect Google Contacts.
@@ -602,11 +602,11 @@ Ordinary speech adds text to the message. "New paragraph" starts a paragraph. "R
 The text selection and formatting commands in chapters 5 and 6 work in the message body too. In the body, say "Toggle bold", "Toggle italic", or "Toggle underline", or press Control+B, Control+I, or Control+U.
 You can change a font, text size, line spacing, heading, list, or table. Address and subject boxes use plain text.
 The person reading your mail may see different fonts or spacing in their email app.
-Use "Type literally" to write words that might be heard as commands. Use "Undo" to reverse an edit in the body. To hear the whole draft, say "Read email draft", or press Control+Shift+R. For help, say "Help with writing email", or press F1.
+Use "Type literally" to write words that might be heard as commands. Use "Undo" to reverse an edit in the body. To hear the whole draft, say "Read email draft", or press Control+R. For help, say "Help with writing email", or press F1.
 
 9.4 Save or cancel a draft
 To keep a message for later, say "Save draft", or press Control+S. Say "List email drafts" to hear the saved drafts.
-To reopen a saved draft, say "Open email draft". Or press Control+O in the inbox. Use arrows to choose a draft, then press Enter.
+To reopen a saved draft, say "Open email draft". Or press D in the inbox. Use arrows to choose a draft, then press Enter.
 To open a draft by name, say "Open email draft", followed by its name, such as "Open email draft Untitled".
 To leave an unsent draft and discard its changes, say "Cancel", "Cancel draft", or "Back to inbox", or press Escape.
 These cancel commands work in a new message, reply, reply-all message, or forward. They work from each draft field.
@@ -631,17 +631,17 @@ With Yahoo, Companion also puts a copy in your Sent folder. If it cannot, it tel
 3. To hear another summary, say "Next message" or "Previous message", or press Down Arrow or Up Arrow.
 4. To read its body, say "That one" or "Open current message", or press Enter.
 To choose a message by number, say "Read message" or "Open message", followed by its number. For example, say "Read message 1" or "Open message 1".
-To repeat the sender, subject, and date, say "Message details", or press Control+I. For more of a long message, say "Continue reading", or press Down Arrow.
+To repeat the sender, subject, and date, say "Message details", or press I. For more of a long message, say "Continue reading", or press Down Arrow.
 Say "Read from beginning" to read it again. To return to the message list, say "Back to folder" or "Go back", or press Escape.
 Press Alt to open the email menu. Its groups are Messages, Select, Go to folder, Folder actions, Drafts and contacts, Accounts, and Options and help. For example, press Alt, 3, then 2 to go to Sent. Press Alt, 7, then 1 for Email options.
 
 10.2 Go to folders
-To hear a folder list, say "Go to folder", or press Control+Y. Use "Next", "Previous", and "That one", or arrows and Enter, to choose.
+To hear a folder list, say "Go to folder", or press G. Use "Next", "Previous", and "That one", or arrows and Enter, to choose.
 With more than one email account, Companion first lists your accounts. The account in use is first. Choose an account with arrows and Enter. Or say its number, service name, or address. Then you hear that account's folders.
 Escape in the folder list goes back to the account list. Escape in the account list closes it, and you stay where you were.
 "Go to folder", followed by a folder name, always uses the account you are in.
 To open a folder by name, say "Go to folder", "Open folder", or "Go to", followed by the folder name. For example, say "Go to folder Receipts", "Open folder Receipts", or "Go to Receipts".
-Say "Back to inbox" to return to Inbox, or choose Inbox in the Control+Y list. To hear where you are, say "Which folder", or press Control+Shift+I.
+Say "Back to inbox" to return to Inbox, or press G and choose Inbox. To hear where you are, say "Which folder", or press W.
 To open a folder within another folder, give its full location. For example, say "Go to Projects slash 2026" or "2026 inside of Projects".
 If two folders have the same name, listen to each full location. Choose the right one with "Next" and "That one".
 In any account, say "Go to Spam", "Go to Junk", "Go to Trash", "Go to Sent", or "Go to Drafts". In Yahoo, Spam is the folder Yahoo calls Bulk.
@@ -649,9 +649,9 @@ Escape cancels the folder list.
 
 10.3 Select, move, or delete messages
 To mark the message you hear, say "Mark", "Select", or "Mark message", or press Space. Space again removes the mark.
-Move to another summary and mark it too. To hear the total, say "What is selected", or press Control+Shift+S. To remove the marks, say "Clear selection", or press Control+Shift+A.
+Move to another summary and mark it too. To hear the total, say "What is selected", or press S. To remove the marks, say "Clear selection", or press U.
 To move marked messages to Trash, say "Delete", or press Delete. With no marks, it acts on the current message.
-To choose a destination folder from a list, say "Move", or press Control+Shift+V. To name the folder directly, say "Move to", followed by its name, such as "Move to Saved".
+To choose a destination folder from a list, say "Move", or press M. To name the folder directly, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message even if other messages are marked.
 Listen to the action and names, then answer Yes or No. Check the folder before repeating an action with an uncertain result.
 To extend the marks, say "Extend selection next" or "Extend selection previous", or press Shift+Down Arrow or Shift+Up Arrow.
@@ -659,18 +659,18 @@ To mark every message on the loaded page, say "Select all messages", or press Co
 Inside an open message, Control+A selects text to copy; it does not mark other messages.
 
 10.4 Reply or forward
-Open the message first. Say "Reply", "Reply all", or "Forward". Or press Control+R, Control+Shift+R, or Control+F.
+Open the message first. Say "Reply", "Reply all", or "Forward". Or press R, A, or F.
 Reply all includes the sender and the other recipients listed on the message. Check the addresses before sending.
 For a forward, enter the new address when asked. Speak your added text, then use the review and send steps in chapter 9.
 Gmail and Yahoo forwarding do not include the original attachments in this version.
 Say "Cancel" or "Back to inbox" to discard the response draft. Say "Save draft" first if you want to keep it.
 
 10.5 Create and manage folders
-To create a folder, say "Create folder", followed by the new name, such as "Create folder Receipts". Or press Control+Shift+E.
+To create a folder, say "Create folder", followed by the new name, such as "Create folder Receipts". Or press Alt, 4, then 1.
 To create a folder within another folder, say "Create folder", the new name, "inside", and the parent folder name. For example, say "Create folder 2026 inside Receipts". Omit the parent name to choose it from a list, as in "Create folder 2026 inside".
 To rename a folder, say "Rename folder", or press F2, and choose it. Then say "Rename to", followed by the new name, such as "Rename to Bills". To give both names at once, say "Rename folder", the old name, "to", and the new name. For example, say "Rename folder Receipts to Bills".
-To choose a folder and its new location, say "Move folder", or press Control+Shift+M. To give both names at once, say "Move folder", the folder name, "into", and the new parent folder name. For example, say "Move folder Bills into Archive".
-To choose a folder to delete from a list, say "Delete folder", or press Control+Shift+D. To name the folder directly, say "Delete folder", followed by its name. For example, say "Delete folder Bills".
+To choose a folder and its new location, say "Move folder", or press Alt, 4, then 3. To give both names at once, say "Move folder", the folder name, "into", and the new parent folder name. For example, say "Move folder Bills into Archive".
+To choose a folder to delete from a list, say "Delete folder", or press Alt, 4, then 4. To name the folder directly, say "Delete folder", followed by its name. For example, say "Delete folder Bills".
 Listen to the full folder location and the action. Say "Yes" to go ahead or "No" to cancel.
 You can delete only folders you created that contain no messages or other folders. Built-in folders such as Inbox are protected.
 Some email services restrict folder changes. For example, Gmail labels with child labels have limits on renaming, moving, or deleting.
@@ -681,8 +681,21 @@ K moves to the next link. B moves to the next button. Hold Shift to move backwar
 Press Enter to open a safe link. A button with no usable link is read but cannot run a script from the email.
 Voice choices include "Next link", "Previous link", "Next button", and "Previous button". To hear every link, say "List links", or press F7. To hear every button, say "List buttons", or press F8.
 Say "Activate current link" or "Activate current button" to use the selected item. To choose by number, say "Open link" or "Open button", followed by its number. For example, say "Open link 1" or "Open button 1".
+A page of messages is a list with a start and an end. Up Arrow and Down Arrow stop at the first and last message on the page. You hear "Start of list" or "End of list", and how to reach the next page.
 For another page of mail, say "Next messages" or "Previous messages", or press Page Down or Page Up in the message list. To refresh the folder, say "List messages", or press F5.
-To reach the first or last message in the folder, say "First message" or "Last message", or press Home or End. Messages from another page may need to load first. If Thunderbird takes a long time, press Escape to stop waiting. For email help, say "Help with email", or press F1.
+To reach the first or last message on this page, say "First message" or "Last message", or press Home or End.
+To reach the newest or oldest message in the whole folder, say "Newest message" or "Oldest message", or press Control+Home or Control+End. If Thunderbird takes a long time, press Escape to stop waiting.
+Email keys in the message list and in an open message:
+- N: New email. Say "New email".
+- R: Reply. A: Reply all. F: Forward.
+- M: Move to a folder. G: Go to folder. W: Which folder.
+- I: Message details.
+- C: Copy sender address. Say "Copy sender address".
+- E: Email the sender. Say "New email to sender".
+- D: Email drafts. P: List contacts.
+- S: What is selected. U: Clear selection. Space marks a message.
+- Delete: Delete. F2: Rename folder. F5: Check for new mail.
+For email help, say "Help with email", or press F1.
 The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
 
 11. BROWSE THE WEB
@@ -1156,6 +1169,7 @@ Each setting controls its own Yes or No prompt. Document save questions still ap
 
 19.1 Put the microphone to sleep
 To pause ordinary voice requests, say "Go to sleep", or press Control+F12. To continue, say "Wake up", or press Control+F12 again.
+To turn the microphone fully off, press F9. Companion then hears nothing, not even "Wake up". Press F9 again to turn it back on. You can also say "Turn off the microphone". F9 works on every screen.
 Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
 If an email is waiting for your approval to send, that approval is canceled. Review the message again before sending it.
 The keyboard still works while voice commands are asleep. Sleep is different from closing the app or putting Windows to sleep.
@@ -1349,9 +1363,9 @@ HTML and book text are read without scripts or remote content. PDF pages have pa
 Choose Media from the main menu, then Media player. Radio and Podcasts are also in Media. Control+O opens the drive list. Use arrows and Enter to open a drive, folder, then a sound or video file. Escape goes up one folder. Escape at drives returns to the player. You can also press Enter on a sound or video file in File manager. Companion says the file name and starts to play it.
 
 26.2 Control playback
-Space plays or pauses. Control+S stops. Left and Right move back or forward 15 seconds. You hear how far you moved and where you are now, such as 1 minute 23 seconds of 4 minutes 5 seconds. At the start or end of the file, you hear that instead. Up and Down change volume. Control+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. To move a different amount, say Back or Forward, followed by the time. For example, say Forward 2 minutes. To change speed, say "Playback speed", or choose it in the player menu. Then enter a number from 0.5 to 3 and press Enter.
+Space or Enter plays or pauses. Home goes back to the start of the file. Control+S stops. Left and Right move back or forward 15 seconds. You hear how far you moved and where you are now, such as 1 minute 23 seconds of 4 minutes 5 seconds. At the start or end of the file, you hear that instead. Up and Down change volume. Control+I reads the file and playback state. Say Play, Pause, Stop media, Back 15 seconds, Forward 15 seconds, Volume up, or Volume down for the same actions. To move a different amount, say Back or Forward, followed by the time. For example, say Forward 2 minutes. To change speed, say "Playback speed", or choose it in the player menu. Then enter a number from 0.5 to 3 and press Enter.
 
 26.3 Use the player menu
-While a file plays, press Escape or Alt to open the player menu. You can also say Player menu. Use Up Arrow and Down Arrow to choose an item, then press Enter. Left and Right Arrow also move through the menu. Space, Control+S, and Control+I still work. Alt closes the menu and goes back to the player. Escape in the menu leaves the player. If you opened the file in File manager, you go back to the same folder and file. If not, you go back to Media. Audio stops unless Keep audio playing in the background is on. When you choose Media player from the Media menu, the menu is already open. For player help, say "Help with media player", or press F1.
+While a file plays, only Alt opens the player menu. You can also say Player menu. Use Up Arrow and Down Arrow to choose an item, then press Enter. Left and Right Arrow also move through the menu. Space, Control+S, and Control+I still work. Alt closes the menu and goes back to the player. Escape leaves the player, from the menu or while a file plays. If you opened the file in File manager, you go back to the same folder and file. If not, you go back to Media. Audio stops unless Keep audio playing in the background is on. When you choose Media player from the Media menu, the menu is already open. For player help, say "Help with media player", or press F1.
 
 

@@ -75,7 +75,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
 
     def test_opening_a_file_says_what_plays_and_how_to_reach_the_menu(self):
         self.open_from_file_manager()
-        self.assertEqual(self.said[-1],'Playing Taps.mp3. Press Escape or Alt for the player menu.')
+        self.assertEqual(self.said[-1],'Playing Taps.mp3. Press Alt for the player menu.')
         self.assertNotIn('Open a media file',self.said[-1])
         self.assertEqual(self.player.kind,'local')
 
@@ -86,47 +86,67 @@ class MediaPlayerMenuTests(unittest.TestCase):
         self.assertEqual(self.said[-1],'Moved forward 15 seconds. 15 seconds of 4 minutes 5 seconds.')
         self.assertEqual(mode,'local_media')
 
-    def test_escape_once_or_alt_opens_the_menu_without_stopping_playback(self):
-        for opener in ('Escape','Alt'):
+    def test_only_alt_opens_the_menu_while_playing(self):
+        # Will, October 2026: the menu appeared at random while a file played. Only Alt opens it;
+        # Enter plays or pauses, Home goes to the start, and other keys never show the menu.
+        mode=self.open_from_file_manager()
+        for key in ('Enter','Tab','Home','End','Letter:p','Down','Up'):
+            mode=self.key(key,mode)
+            self.assertEqual(mode,'local_media')
+            self.assertFalse(any(text.startswith('Player menu.') for text in self.said),(key,self.said[-1]))
+        self.assertFalse(app.task_navigation().player_menu)
+        self.assertIsNone(app.menu_state('local_media'))
+        self.assertTrue(self.player.paused)              # Enter paused it
+        self.player.position=60
+        self.key('Home',mode);self.assertEqual(self.player.position,0);self.assertEqual(self.said[-1],'Start of file.')
+        self.assertEqual(app.handle('next',mode),mode);self.assertEqual(self.said[-1],'Press Alt for the player menu.')
+
+    def test_escape_while_playing_leaves_the_player_in_one_press(self):
+        mode=self.key('Escape',self.open_from_file_manager())
+        self.assertEqual(mode,'media_menu')
+        self.assertIn(('stop',15,None),self.player.calls)
+
+    def test_alt_opens_the_menu_without_stopping_playback(self):
+        for opener in ('Alt',):
             with self.subTest(opener=opener):
                 mode=self.open_from_file_manager()
                 mode=self.key(opener,mode)
                 self.assertEqual(mode,'local_media')
-                self.assertEqual(self.said[-1],'Player menu. Open a media file (O), 1 of 9. Ctrl+O.')
+                self.assertEqual(self.said[-1],'Player menu. Open a media file (O), 1 of 10. Ctrl+O.')
                 self.assertFalse(self.player.paused)
                 self.assertNotIn(('stop',15,None),self.player.calls)
                 # Arrows now move through the menu instead of changing the volume.
                 mode=self.key('Down',mode)
-                self.assertTrue(self.said[-1].startswith('Play or pause (P), 2 of 9'),self.said[-1])
+                self.assertTrue(self.said[-1].startswith('Play or pause (P), 2 of 10'),self.said[-1])
                 mode=self.key('Up',mode)
-                self.assertTrue(self.said[-1].startswith('Open a media file (O), 1 of 9'),self.said[-1])
+                self.assertTrue(self.said[-1].startswith('Open a media file (O), 1 of 10'),self.said[-1])
                 self.assertEqual(self.player.position,0)
 
     def test_alt_closes_the_menu_and_escape_in_the_menu_returns_to_media(self):
         mode=self.key('Alt',self.open_from_file_manager())
         mode=self.key('Alt',mode)
         self.assertEqual(mode,'local_media')
-        self.assertEqual(self.said[-1],'Menu closed. Taps.mp3 is playing. Escape or Alt opens the menu.')
+        self.assertEqual(self.said[-1],'Menu closed. Taps.mp3 is playing. Press Alt for the menu.')
         self.key('Right',mode);self.assertEqual(self.player.position,15)
-        mode=self.key('Escape',mode);self.assertEqual(mode,'local_media')
+        mode=self.key('Alt',mode);self.assertEqual(mode,'local_media')
         mode=self.key('Escape',mode)
         self.assertEqual(mode,'media_menu')
         self.assertTrue(self.said[-1].startswith('Media menu.'))
         self.assertIn(('stop',15,None),self.player.calls)
 
     def test_enter_on_menu_item_runs_it_and_keeps_menu(self):
-        mode=self.key('Escape',self.open_from_file_manager())
+        mode=self.key('Alt',self.open_from_file_manager())
         mode=self.key('Down',mode);mode=self.key('Enter',mode)
         self.assertEqual(mode,'local_media');self.assertTrue(self.player.paused)
         self.assertEqual(self.said[-1],'Paused.')
-        mode=self.key('Down',mode);self.assertTrue(self.said[-1].startswith('Stop (S), 3 of 9'),self.said[-1])
+        mode=self.key('Down',mode);self.assertTrue(self.said[-1].startswith('Stop (S), 3 of 10'),self.said[-1])
 
     def test_media_player_from_media_menu_opens_with_menu_and_working_arrows(self):
         mode=app.handle('media player','media_menu')
         self.assertEqual(mode,'local_media')
-        self.assertEqual(self.said[-1],'Media player. Open a media file (O), 1 of 9. Ctrl+O.')
+        self.assertEqual(self.said[-1],'Media player. Open a media file (O), 1 of 10. Ctrl+O.')
         self.key('Down',mode)
-        self.assertTrue(self.said[-1].startswith('Play or pause (P), 2 of 9'),self.said[-1])
+        self.assertTrue(self.said[-1].startswith('Play or pause (P), 2 of 10'),self.said[-1])
         self.assertEqual(self.key('Escape',mode),'media_menu')
 
     def test_voice_can_open_and_close_the_player_menu(self):
@@ -226,13 +246,11 @@ class MediaPlayerMenuTests(unittest.TestCase):
         mode=self.key('Enter',mode);settle(manager)
         mode=app.poll_file_manager(mode)
         self.assertEqual(mode,'local_media')
-        self.assertEqual(self.said[-1],'Playing Taps.mp3. Press Escape or Alt for the player menu.')
+        self.assertEqual(self.said[-1],'Playing Taps.mp3. Press Alt for the player menu.')
         return manager,mode
 
     def test_escape_in_menu_returns_to_file_manager_on_the_same_file(self):
         manager,mode=self.browse_to_song()
-        mode=self.key('Escape',mode)
-        self.assertTrue(self.said[-1].startswith('Player menu.'))
         mode=self.key('Escape',mode)
         self.assertEqual(mode,'files')
         self.assertIs(app.FILE_MANAGER,manager)
@@ -247,7 +265,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
     def test_keep_audio_playing_returns_to_file_manager_without_stopping(self):
         app.PREFERENCES['keep_audio_playing']=True
         manager,mode=self.browse_to_song()
-        mode=self.key('Escape',self.key('Escape',mode))
+        mode=self.key('Escape',mode)
         self.assertEqual(mode,'files')
         self.assertNotIn(('stop',15,None),self.player.calls)
         self.assertFalse(self.player.paused)
@@ -259,12 +277,12 @@ class MediaPlayerMenuTests(unittest.TestCase):
         with patch('file_manager.FileManager',side_effect=lambda:FileManager(FakeFiles(self.root))):
             self.assertEqual(app.handle(app.navigation_key('Ctrl+O',mode),mode),'files')
         mode=app.task_navigation().selected_file(self.song)
-        mode=self.key('Escape',self.key('Escape',mode))
+        mode=self.key('Escape',mode)
         self.assertEqual(mode,'media_menu')
 
     def test_player_after_media_menu_forgets_file_manager_origin(self):
         manager,mode=self.browse_to_song()
-        mode=self.key('Escape',self.key('Escape',mode))
+        mode=self.key('Escape',mode)
         self.assertEqual(mode,'files')
         mode=app.handle('media menu',mode);mode=app.handle('media player',mode)
         self.assertEqual(self.key('Escape',mode),'media_menu')

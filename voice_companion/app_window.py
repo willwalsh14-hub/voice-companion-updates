@@ -350,6 +350,11 @@ class CompanionWindow:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     cancel_phonetic()
                     self.commands.put(('keyboard',key_request(clock_presses.press())));return 'break'
+                if key=='F9' and not event.state&(1|4) and not alt_held(event.state):
+                    # F9 turns the microphone fully off or on, on every screen.
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard','F9'));return 'break'
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 watch_alt(event)
@@ -527,6 +532,10 @@ class CompanionWindow:
                     elif shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
                     elif key=='F2':request='F2'
                     elif key=='F5':request='F5'
+                    # Page Down and Page Up: the next and previous page of messages. Control+Home
+                    # and Control+End: the newest and oldest message in the folder.
+                    elif key in ('Next','Prior') and not control and not shift and not self.context.get('source') and not self.typed.get():request=key
+                    elif control and not shift and key in ('Home','End') and not self.context.get('source') and not self.typed.get():request='Ctrl+'+key
                     elif key=='Delete' and not self.context.get('source') and not self.typed.get():request='Delete'
                     elif key=='space' and not self.context.get('source') and not self.typed.get():request='Space'
                     elif control:

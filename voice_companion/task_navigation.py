@@ -84,7 +84,7 @@ class TaskNavigation:
         self.recent = []
         self.media_title = None
         # In the media player, arrows control playback while the menu is closed.
-        # Escape or Alt opens the menu; then arrows move through its items.
+        # Alt opens the menu; then arrows move through its items.
         self.player_menu = True
         # The File manager a file was opened from; leaving the player returns there.
         self.player_files = None
@@ -117,11 +117,15 @@ class TaskNavigation:
             return [('Open a media file', 'Ctrl+O', '@media_open'), ('Play or pause', 'Space', 'play or pause'),
                     ('Stop', 'Ctrl+S', 'stop media'), ('Back 15 seconds', 'Left', 'back 15 seconds'),
                     ('Forward 15 seconds', 'Right', 'forward 15 seconds'), ('Volume up', 'Up', 'volume up'),
-                    ('Volume down', 'Down', 'volume down'), ('Playback speed', '', '@speed'),
+                    ('Volume down', 'Down', 'volume down'), ('Start of file', 'Home', 'start of file'), ('Playback speed', '', '@speed'),
                     ('Status', 'Ctrl+I', 'media status')]
         return None
 
     def state(self, mode):
+        # While a file plays and the player menu is closed, the keys control playback;
+        # there is no list for Home, End or letters to move through.
+        if mode == 'local_media' and not self.player_menu:
+            return None
         items = self.items(mode)
         if items is None or not items:
             return None
@@ -207,7 +211,7 @@ class TaskNavigation:
             self.indices['local_media'] = 0
             self.player_menu = False
             # The player menu is not focused yet, so do not read its items here.
-            self.app.speak('Playing '+path.name+'. Press Escape or Alt for the player menu.')
+            self.app.speak('Playing '+path.name+'. Press Alt for the player menu.')
             return 'local_media'
         self.reader_return='files'
         result=self.open_document(path)
@@ -247,7 +251,7 @@ class TaskNavigation:
                 state = (self.media_title or 'Media file')+(' is paused. ' if paused else ' is playing. ')
             else:
                 state = 'No media file open. '
-            m.speak('Menu closed. '+state+'Escape or Alt opens the menu.')
+            m.speak('Menu closed. '+state+'Press Alt for the menu.')
             return mode
         if command == '@speed':
             self.prompt = ('speed {value}', 'local_media')
@@ -281,8 +285,10 @@ class TaskNavigation:
                 # The menu is open: arrows choose items, Alt closes it, Escape leaves the player.
                 return common.get(key, {'Up':'previous','Left':'previous','Down':'next','Right':'next','Home':'home','End':'end',
                                         'Enter':'enter','Tab':'next','ShiftTab':'previous','Escape':'escape','Alt':'@player_close'}.get(key))
+            # Playing: only Alt opens the menu (Will, October 2026). Enter plays or pauses like
+            # Space, Home goes back to the start, and Escape leaves the player.
             return common.get(key, {'Left':'back 15 seconds','Right':'forward 15 seconds','Up':'volume up','Down':'volume down',
-                                    'Escape':'@player_menu','Alt':'@player_menu','Enter':'@player_menu','Tab':'@player_menu','ShiftTab':'@player_menu'}.get(key))
+                                    'Enter':'play or pause','Home':'start of file','Escape':'escape','Alt':'@player_menu'}.get(key))
         if self.items(mode) is not None:
             if mode == 'word_processor' and key in ('Ctrl+N','Ctrl+O','Ctrl+R','Alt+O'):
                 return {'Ctrl+N':'create a document','Ctrl+O':'@open','Ctrl+R':'@recent','Alt+O':'@options'}[key]
@@ -354,6 +360,10 @@ class TaskNavigation:
             action = {'play or pause':'toggle','play':'play','resume':'play','pause':'pause','stop media':'stop','stop':'stop',
                       'back 15 seconds':'seek','rewind':'seek','forward 15 seconds':'seek'}.get(command)
             player = m.media().player
+            if command in ('start of file','go to start','go to the start','start over','restart'):
+                if player.kind!='local': m.speak('Open a media file first.'); return mode
+                position = player.control('seek', position=0)
+                m.speak('Start of file.' if position is not None else 'This file cannot seek.'); return mode
             if action:
                 if player.kind!='local': m.speak('Open a media file first.'); return mode
                 if action == 'seek':
@@ -390,7 +400,8 @@ class TaskNavigation:
                 return self.enter('media_menu', 'Media menu')
             m.announce_main_menu(); return 'awake'
         if command in ('next','previous','home','end'):
-            if mode == 'local_media': self.player_menu = True
+            if mode == 'local_media' and not self.player_menu:
+                m.speak('Press Alt for the player menu.'); return mode
             if not items: m.speak('No recent documents.'); return mode
             old = self.indices.get(mode, 0)
             index = 0 if command=='home' else len(items)-1 if command=='end' else max(0,min(len(items)-1,old+(1 if command=='next' else -1)))
