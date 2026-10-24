@@ -1,5 +1,5 @@
-importScripts('cdp.js');
-let connection=null, model=null, busy=false, enabled=true;
+importScripts('cdp.js','downloads.js');
+let connection=null, model=null, busy=false, enabled=true, downloads=null;
 // Tabs where the user pressed Cancel on the browser's debugging bar. Kept across reconnects;
 // cleared when the user chooses Connect in the popup or the tab closes.
 const declined=new Set();
@@ -7,6 +7,7 @@ const eligible=tab=>Number.isInteger(tab?.id)&&/^https?:\/\//i.test(tab.url||'')
 async function disconnect() {
   const old=connection;connection=null;
   if(old)old.disconnect();
+  downloads?.stop();downloads=null;
   const previous=model;model=null;if(previous)await previous.detachAll();
 }
 async function ensureConnection() {
@@ -16,12 +17,20 @@ async function ensureConnection() {
     const port=chrome.runtime.connectNative('com.voicecompanion.browser');connection=port;
     const current=new CompanionCDP(chrome,message=>{if(connection===port)port.postMessage(message);});
     current.allTabs=true;current.declined=declined;model=current;
-    port.onMessage.addListener(message=>{if(connection===port)void current.command(message);});
-    port.onDisconnect.addListener(()=>{void chrome.runtime.lastError;if(connection!==port)return;connection=null;model=null;void current.detachAll();});
+    const mirror=chrome.downloads?new CompanionDownloads(chrome,message=>{if(connection===port)port.postMessage(message);}):null;
+    downloads?.stop();downloads=mirror;
+    port.onMessage.addListener(message=>{
+      if(connection!==port)return;
+      // Download controls come from Companion, never from a page.
+      if(message?.method==='VoiceCompanion.downloadControl'){void mirror?.control(message.params);return;}
+      void current.command(message);
+    });
+    port.onDisconnect.addListener(()=>{void chrome.runtime.lastError;if(connection!==port)return;connection=null;model=null;mirror?.stop();if(downloads===mirror)downloads=null;void current.detachAll();});
     // Register every normal tab before exposing the connection to the driver.
     const tabs=await chrome.tabs.query({});
     for(const tab of tabs.filter(eligible))if(!declined.has(tab.id))current.remember(tab);
     port.postMessage({protocol:2,command:'cdp',browser:/Edg\//.test(navigator.userAgent)?'edge':navigator.brave?'brave':'chrome'});
+    void mirror?.sync().catch(()=>{});
   } finally {busy=false;}
 }
 async function run(command) {
@@ -40,6 +49,11 @@ chrome.runtime.onStartup.addListener(()=>{void startup();});
 chrome.runtime.onInstalled.addListener(()=>{void startup();});
 chrome.debugger.onEvent.addListener((source,method,params)=>model?.event(source,method,params));
 chrome.debugger.onDetach.addListener((source,reason)=>{if(reason==='canceled_by_user')declined.add(source.tabId);model?.removed(source.tabId);});
+// Downloads report to Companion while it is linked; on linking, sync() catches up.
+if(chrome.downloads){
+  chrome.downloads.onCreated.addListener(item=>downloads?.created(item));
+  chrome.downloads.onChanged.addListener(delta=>{void downloads?.changed(delta).catch(()=>{});});
+}
 chrome.tabs.onCreated.addListener(tab=>{if(model)void model.created(tab).catch(()=>{});});
 chrome.tabs.onUpdated.addListener((id,change,tab)=>{if(eligible(tab)&&model&&!model.tabs.has(id))void model.created(tab).catch(()=>{});else if(model&&change.url&&/^(chrome|edge|devtools|chrome-extension):/i.test(change.url))model.removed(id);});
 chrome.tabs.onRemoved.addListener(id=>{declined.delete(id);model?.removed(id);});

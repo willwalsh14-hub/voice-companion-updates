@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 583
-- Already had both ways: 460
-- Gaps found: 123
-- Gaps fixed (Added): 115
+- Actions inventoried: 597
+- Already had both ways: 470
+- Gaps found: 127
+- Gaps fixed (Added): 119
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1243,6 +1243,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Download folder
+
+- Voice: "Set download folder to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Set up Chrome and the Voice Companion extension
 
 - Voice: "Set up chrome"
@@ -2151,6 +2157,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: F8
 - Status: Both
 
+### Downloads
+
+- Voice: "Download manager"
+- Keyboard: Ctrl+D
+- Status: Both
+
 ## Alt menu, Web page: Favorites
 
 ### Add favorite
@@ -2195,6 +2207,78 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Help with web"
 - Keyboard: F1
+- Status: Both
+
+## Alt menu, Downloads: Download
+
+### Open
+
+- Voice: "Open download"
+- Keyboard: Enter
+- Status: Both
+
+### Pause or resume
+
+- Voice: "Pause or resume download"
+- Keyboard: Space
+- Status: Both
+
+### Cancel or remove from list
+
+- Voice: "Delete download"
+- Keyboard: Delete
+- Status: Both
+
+### Details
+
+- Voice: "Download details"
+- Keyboard: Alt, 1, 4
+- Status: Added: Alt menu path
+
+### Open downloads folder
+
+- Voice: "Open downloads folder"
+- Keyboard: Alt, 1, 5
+- Status: Added: Alt menu path
+
+## Alt menu, Downloads: Queue
+
+### Move to next
+
+- Voice: "Move to next"
+- Keyboard: Alt, 2, 1
+- Status: Added: Alt menu path
+
+### Move earlier
+
+- Voice: "Move download earlier"
+- Keyboard: Ctrl+Up
+- Status: Both
+
+### Move later
+
+- Voice: "Move download later"
+- Keyboard: Ctrl+Down
+- Status: Both
+
+## Alt menu, Downloads: Options and help
+
+### Download folder
+
+- Voice: "Options, then Web browser options"
+- Keyboard: Alt, 3, 1
+- Status: Added: Alt menu path
+
+### Downloads help
+
+- Voice: "Help with downloads"
+- Keyboard: F1
+- Status: Both
+
+### Close downloads
+
+- Voice: "Close downloads"
+- Keyboard: Escape
 - Status: Both
 
 ## Alt menu, Help: Help
@@ -2452,6 +2536,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Web history
 
 - Voice: "Web history"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
+### Downloads
+
+- Voice: "Downloads"
 - Keyboard: First letters, arrows, Enter
 - Status: Both
 

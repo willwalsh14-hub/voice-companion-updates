@@ -157,6 +157,13 @@ Contents
   26.1 Open and play a file
   26.2 Control playback
   26.3 Use the player menu
+27 Download Files
+  27.1 Download a file
+  27.2 Open your downloads
+  27.3 Pause, resume, or cancel
+  27.4 Choose what downloads next
+  27.5 Open a finished file
+  27.6 Choose the download folder
 
 1. GETTING STARTED
 
@@ -1142,6 +1149,7 @@ Automatic page reading controls whether new pages start reading aloud. It is on 
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To request HTTP directly, type the full address, such as http://example.com.
 HTTP does not encrypt the connection. Guided voice review still requires HTTPS before it sends a form.
 The Guided browser setting lets you choose embedded Edge or Chrome. Companion uses a separate browser profile for its pages.
+The Download folder setting is where new downloads are saved. Leave it empty to use your Downloads folder. See Download Files.
 - Embedded Edge is the usual choice. Say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
 - Chrome uses Google Chrome on your PC. Say "Use Chrome". If Chrome is not installed, say "Set up Chrome".
 - Edge, Brave, and Firefox are no longer guided browsers. If you chose one of them before, Companion now uses embedded Edge and tells you once.
@@ -1370,4 +1378,46 @@ Space or Enter plays or pauses. Home goes back to the start of the file. Control
 26.3 Use the player menu
 While a file plays, only Alt opens the player menu. You can also say Player menu. Use Up Arrow and Down Arrow to choose an item, then press Enter. Left and Right Arrow also move through the menu. Space, Control+S, and Control+I still work. Alt closes the menu and goes back to the player. Escape leaves the player, from the menu or while a file plays. You go back to the folder the file came from, on the same file. Each press of Escape then goes up one folder. From the drive list, Escape goes to the Media menu. One more Escape goes to the main menu. If you did not open the file from a folder, Escape goes back to Media. Audio stops unless Keep audio playing in the background is on. When you choose Media player from the Media menu, the menu is already open. For player help, say "Help with media player", or press F1.
 
+27. DOWNLOAD FILES
 
+27.1 Download a file
+Choose a download link on a web page, as you would choose any link. Companion says "Downloading", then the file name. When the file is ready, you hear its name and "finished downloading". If a download stops, Companion tells you why and what to do next. This works the same in embedded Edge and in your own Chrome. Files go to your Downloads folder unless you choose another folder. Up to three files download at once. Others wait in line and start on their own.
+If you type the address of a file, Companion says the address is a file and downloads it. The page you were on stays open.
+If you leave the page while embedded Edge is still downloading, its window stays open until the downloads end.
+
+27.2 Open your downloads
+On a web page or in the Web browser menu, press Control+D or say "Download manager". This opens the download manager. You can also choose Downloads in the Web browser menu.
+The newest download is first. Use Up Arrow and Down Arrow to hear each one. Home and End reach the first and last. At either end you hear Start of list or End of list.
+A running download reads its name, how far it is, and "downloading". For example: report.pdf, 45 percent, downloading. Others read queued, paused, finished, failed, or cancelled.
+Type a first letter to jump to a download, or say the start of its name.
+Say "Download details" to hear its size, folder, and website.
+Press Escape or say "Close downloads" to go back. You return to the same place on the web page.
+Press Alt to open the downloads menu. It lists every action with its key.
+For help on this screen, press F1 or say "Help with downloads".
+
+27.3 Pause, resume, or cancel
+Press Space or say "Pause or resume download" to pause the download you are on. Press Space again to resume it. You can also say "Pause download" or "Resume download".
+If a download failed and can go on, Space tries it again.
+To cancel, press Delete or say "Delete download". You can also say "Cancel download". Companion asks first, because the part already saved is deleted. No is the first choice. Press Up Arrow, then Enter, for Yes. You can also press Y or N.
+On a download that has ended, Delete takes it off the list. The file stays in its folder.
+
+27.4 Choose what downloads next
+When more than three files download at once, the rest wait in line. A waiting download reads queued and its place, such as number 2 in line.
+Press Control+Up Arrow or say "Move download earlier" to move it up one place.
+Press Control+Down Arrow or say "Move download later" to move it down one place.
+Say "Move to next" to make it the next one to start.
+
+27.5 Open a finished file
+Press Enter on a finished download, or say "Open download".
+Sound and video files play in the Voice Companion media player. Escape there returns to your downloads.
+Word, text, PDF, web page, and book files open in Voice Companion. Escape in the document reader returns to your downloads.
+Other files open in the app Windows uses for them. Press Alt+Tab to come back.
+Programs, such as setup files, ask first. Only run programs from websites you trust.
+Say "Open downloads folder" to see the folder in File manager, on that file.
+
+27.6 Choose the download folder
+Downloads go to your own Downloads folder at first.
+To choose another folder, press Alt+O. Choose Web browser options. Tab to Download folder.
+Type the full path of the folder, such as C:\Users\Will\Music. You can also type Desktop or Documents. Leave the box empty to go back to your Downloads folder.
+Press Enter to save. Companion checks that the folder exists and can hold files. If it cannot, you hear what to fix.
+In Chrome, a file is saved first in Chrome's own folder. When it is finished, Companion moves it to the folder you chose.

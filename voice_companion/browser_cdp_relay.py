@@ -75,7 +75,13 @@ class BrowserRelay:
                 if message.get('method') == 'VoiceCompanion.ready':
                     if message.get('browser') in ('chrome','edge','brave'):self.browser=message['browser']
                     self.generation += 1
-                    self.connected.set(); continue
+                    self.connected.set()
+                    self._link_downloads()
+                    continue
+                if message.get('method') == 'VoiceCompanion.download':
+                    # Chrome's download news goes to the shared download list, not the driver.
+                    self._download(message.get('params'))
+                    continue
                 websocket = self.websocket
                 if websocket is not None:
                     try:websocket.send(json.dumps(message,ensure_ascii=False))
@@ -86,7 +92,7 @@ class BrowserRelay:
         finally:
             with self.state_lock:
                 closing = self.websocket if self.pipe is pipe else None
-                if self.pipe is pipe: self.pipe = None; self.connected.clear()
+                if self.pipe is pipe: self.pipe = None; self.connected.clear(); self._unlink_downloads()
             try:pipe.close()
             except OSError:pass
             if closing is not None:
@@ -111,6 +117,31 @@ class BrowserRelay:
         finally:
             with self.state_lock:
                 if self.websocket is websocket:self.websocket = None;self.client_closed.set()
+
+    def _link_downloads(self):
+        import downloads
+        self.downloads = getattr(self, 'downloads', None) or downloads.ChromeDownloads(self)
+        downloads.manager().attach('chrome', self.downloads)
+
+    def _unlink_downloads(self):
+        # Chrome keeps downloading while the link is down; it reports again on relinking.
+        controller = getattr(self, 'downloads', None)
+        if controller is not None:
+            import downloads
+            downloads.manager().detach('chrome', controller, stopped=False)
+
+    def _download(self, params):
+        if not isinstance(params, dict) or not isinstance(params.get('id'), (int, str)): return
+        try:
+            import downloads
+            downloads.manager().report('chrome', params['id'], **downloads.chrome_report(params))
+        except Exception:
+            # A bad report must never stop the browser link.
+            pass
+
+    def send_extension(self, message):
+        """Companion's own message to the extension, such as a download control."""
+        self._send(message)
 
     def _send(self, message):
         data = encode(message)

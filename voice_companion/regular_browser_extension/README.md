@@ -18,6 +18,12 @@ Protocol contents and tokens are not logged. Private field handling uses the
 existing standard browser protections. The app does not import a browser
 profile, change browser identity or bypass site security.
 
+Downloads (downloads.js) use the "downloads" permission. The extension tells
+Companion the file name, address, progress and end of each Chrome download, so
+Companion keeps one download list for every browser. Companion can ask Chrome to
+pause, resume or cancel a download. No file contents and no data: addresses are
+sent, and pages cannot send these requests.
+
 The installer packages the native host and extension with a fixed origin.
 The user enables the extension once. Existing
 unpacked installations need Reload after this update. Disconnecting leaves
