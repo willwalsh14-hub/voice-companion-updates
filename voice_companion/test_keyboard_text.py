@@ -677,9 +677,11 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.focus_force())
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
         self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'Visit'))
+        # Enter hands the link to Companion, which opens it in the guided browser.
         with patch('webbrowser.open') as browser:
             self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Return'))
-            browser.assert_called_once_with('https://example.com')
+            self.wait(lambda:('open_link','https://example.com') in self.window.commands.queue)
+            browser.assert_not_called()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
         self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'More'))
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))
