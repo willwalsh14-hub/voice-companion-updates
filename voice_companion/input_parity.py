@@ -20,8 +20,12 @@ SCREEN_KEYS = {
                 'Next': 'next messages', 'Prior': 'previous messages',
                 'F1': 'help with email', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+R': 'read document', 'F1': 'help with document reader'},
-    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window'},
-    'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window'},
+    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window',
+            'Ctrl+D': 'download manager'},
+    'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window', 'Ctrl+D': 'download manager'},
+    # The Downloads screen (download_screen.py). Up, Down, Home, End, Enter and Escape work as in every list.
+    'downloads': {'F1': 'help with downloads', 'Space': 'pause or resume download', 'Delete': 'delete download',
+                  'Ctrl+Up': 'move download earlier', 'Ctrl+Down': 'move download later'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
@@ -51,7 +55,7 @@ OLD_KEYS = {
 # Control+F12 puts the microphone to sleep from any main screen; while asleep it wakes it.
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
-              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'help', 'tutorial', 'document', 'files', 'document_menu'):
+              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
@@ -65,7 +69,7 @@ def chord(keysym, state):
     control, shift, alt = modifiers(state)  # Num Lock is not Alt on Windows.
     if alt or keysym in ('Control_L', 'Control_R', 'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R'):
         return None
-    name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior'}.get(keysym, keysym)
+    name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior', 'space': 'Space'}.get(keysym, keysym)
     if control:
         return 'Ctrl+' + ('Shift+' if shift else '') + name
     return None if shift else name
@@ -88,6 +92,8 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
         return None
     if mode == 'awake' and typed_text and key.startswith('Ctrl+'):
         return None  # Control+V pastes into a typed command; the main menu keys wait.
+    if mode == 'downloads' and key == 'Space' and typed_text:
+        return None  # a space inside a typed command
     if mode == 'mailbox' and key in ('Next', 'Prior') and (context.get('source') or typed_text):
         return None  # Page keys scroll an open message; they change pages only in the list.
     if mode == 'email_draft' and key in BODY_ONLY and email_field:

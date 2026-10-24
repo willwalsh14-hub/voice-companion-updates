@@ -290,7 +290,14 @@ class BrowserBackend:
 
     def goto(self, url):
         self.start()
-        self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
+        try:
+            self.page.goto(url, wait_until='domcontentloaded', timeout=30000)
+        except Exception as exc:
+            # The address is a file, not a page: the browser downloads it instead
+            # (downloads.py announces it). The current page stays as it was.
+            if 'download is starting' in str(exc).casefold():
+                raise WebError('This address is a file, so it is downloading. Press Control+D to see your downloads.') from exc
+            raise
 
     def back(self):
         if not self.history_step(-1):raise WebError('There is no previous page.')
@@ -1763,7 +1770,14 @@ class WebSession:
         # Leaving the web screen always returns to browse mode.
         self.app_mode_hosts=set();self.slider_field=None;self.mode_announced=False
         if not keep_open:
-            self.backend.close()
+            import downloads
+            if getattr(self.backend,'browser',None)=='webview2' and downloads.busy('edge'):
+                # Closing embedded Edge would stop its downloads. It closes when
+                # they end (download_screen.poll).
+                self.close_after_downloads=True
+            else:
+                self.close_after_downloads=False
+                self.backend.close()
             self.snapshot=None;self.browse=None;self.document_state=None
             self.reading.set_text('',reset=True)
 

@@ -89,6 +89,8 @@ class TaskNavigation:
         # The File manager a file was opened from; leaving the player returns there.
         self.player_files = None
         self.player_picker = None
+        # 'downloads' when the file playing was opened from the Downloads list.
+        self.player_return = None
         self.reader_return = 'files'
 
     def remember(self, path):
@@ -214,6 +216,7 @@ class TaskNavigation:
             # Escape goes back to this folder, whether the file came from File manager or Open a media file.
             self.player_files = self.app.FILE_MANAGER
             self.player_picker = kind
+            self.player_return = None
             self.picker=None
             self.indices['local_media'] = 0
             self.player_menu = False
@@ -358,7 +361,7 @@ class TaskNavigation:
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
             return self.enter('media_menu', 'Media menu')
         if command in ('media player','open media player'):
-            self.player_files = None; self.player_picker = None
+            self.player_files = None; self.player_picker = None; self.player_return = None
             return self.enter('local_media', 'Media player')
         if command in ('document menu','document commands','menu') and mode == 'document':
             self.group = None
@@ -413,6 +416,9 @@ class TaskNavigation:
                 if not m.PREFERENCES.get('keep_audio_playing',False) and m.MEDIA_HUB and m.MEDIA_HUB.player.kind=='local':m.MEDIA_HUB.player.control('stop')
                 files, self.player_files = self.player_files, None
                 picker, self.player_picker = getattr(self, 'player_picker', None), None
+                if getattr(self, 'player_return', None) == 'downloads':
+                    self.player_return = None
+                    return __import__('download_screen').back_to_list(m)
                 if files is not None and files is m.FILE_MANAGER and files.location is not None:
                     # Go back to the same folder and file. Escape there moves up one folder at a time,
                     # then out of the drive list to the Media menu.

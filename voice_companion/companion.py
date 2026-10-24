@@ -272,6 +272,7 @@ def app_context(mode):
         context['file_items']=FILE_MANAGER.labels()
         if not FILE_MANAGER.menu and not FILE_MANAGER.pending and not FILE_MANAGER.busy:context['file_selected_indices']=[i for i,item in enumerate(FILE_MANAGER.items) if item.path in FILE_MANAGER.selected]
         context['file_index']=(0 if CONFIRM_CHOICE=='yes' else 1) if context.get('confirmation') is not None else FILE_MANAGER.menu_index if FILE_MANAGER.menu else FILE_MANAGER.index
+    if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
         context['menu_letters']=not context['browser_name_input']
@@ -585,6 +586,7 @@ def menu_state(mode):
         names=FILE_MANAGER.labels()
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
+    if mode=='downloads':return __import__('download_screen').menu_state(sys.modules[__name__])
     task_state=task_navigation().state(mode)
     if task_state is not None:return task_state
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
@@ -707,6 +709,7 @@ def _navigation_key(key,mode):
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if direct:return direct
+    if mode=='downloads':return __import__('download_screen').navigation_key(sys.modules[__name__],key)
     if mode=='update_download':
         return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
@@ -1610,6 +1613,7 @@ def handle_browser_menu(text):
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
     if notice:speak(notice)
     if action=='main':return 'awake'
+    if action=='downloads':return __import__('download_screen').open_manager(sys.modules[__name__],'browser_menu')
     if action=='chrome':
         import chrome_setup
         return chrome_setup.begin(sys.modules[__name__],'browser_menu')
@@ -2870,6 +2874,9 @@ def _handle(text, mode, typed=False):
         if menu_result is not None:return menu_result
         task_result=task_navigation().handle(text,mode)
         if task_result is not None:return task_result
+        # The Downloads screen, and "download manager" from the web (download_screen.py).
+        download_result=__import__('download_screen').handle(sys.modules[__name__],text,mode,typed)
+        if download_result is not None:return download_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
     # A whole command only; in a document, email or note these words are text.
@@ -3345,6 +3352,9 @@ def _handle(text, mode, typed=False):
     if mode=='file_reader' and not (command in ('help','user guide','open user guide','manual','open manual') or command.startswith(('help with ','help for '))):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
+            if task_navigation().reader_return=='downloads':
+                back=__import__('download_screen').reader_back(sys.modules[__name__])
+                if back:return back
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
         if command in ('main menu','back to main menu'):
             # handle() announces the main menu once when the screen changes.
@@ -4616,6 +4626,7 @@ def main():
             mode = poll_file_manager(mode)
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
+            mode = __import__('download_screen').poll(sys.modules[__name__], mode)
             if CHROME_SETUP is not None:
                 mode = __import__('chrome_setup').poll(sys.modules[__name__],mode)
             update_audio_ducking()

@@ -117,7 +117,8 @@ MENUS = {
         ('Lists', [
             ('Headings', 'F6', 'list headings'),
             ('Links', 'F7', 'list links'),
-            ('Form fields', 'F8', 'list fields')]),
+            ('Form fields', 'F8', 'list fields'),
+            ('Downloads', 'Ctrl+D', 'download manager')]),
         ('Favorites', [
             ('Add favorite', '', 'add favorite'),
             ('Go to favorite', '', 'go to favorite'),
@@ -127,6 +128,22 @@ MENUS = {
             ('Web browser options', '', '@options:Web browser'),
             ('Set up Chrome', '', 'set up chrome'),
             ('Web help', 'F1', 'help with web')]),
+    ]),
+    'downloads': ('Downloads menu', [
+        ('Download', [
+            ('Open', 'Enter', 'open download'),
+            ('Pause or resume', 'Space', 'pause or resume download'),
+            ('Cancel or remove from list', 'Delete', 'delete download'),
+            ('Details', '', 'download details'),
+            ('Open downloads folder', '', 'open downloads folder')]),
+        ('Queue', [
+            ('Move to next', '', 'move to next'),
+            ('Move earlier', 'Ctrl+Up', 'move download earlier'),
+            ('Move later', 'Ctrl+Down', 'move download later')]),
+        ('Options and help', [
+            ('Download folder', '', '@options:Web browser'),
+            ('Downloads help', 'F1', 'help with downloads'),
+            ('Close downloads', 'Escape', 'close downloads')]),
     ]),
     'help': ('Help menu', [
         ('Help', [
@@ -180,7 +197,7 @@ ALT_SCREENS = frozenset(MENUS) | {'awake', 'browser_menu', 'media', 'podcast'}
 # Spoken ways to open a menu, besides its name ("email menu").
 OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('menu', 'open menu', 'reader menu'),
                 'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('note menu',),
-                'tutorial': ('tutorial menu', 'lesson menu')}
+                'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu')}
 NUMBER_WORDS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
 # Context flags that mean a text box, list or question owns the keyboard.
 BUSY_CONTEXT = ('named_list', 'task_input', 'account_entry', 'browser_name_input', 'file_name_input', 'media_input',
