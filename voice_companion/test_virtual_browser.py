@@ -59,6 +59,6 @@ class VirtualBrowserTests(unittest.TestCase):
             with patch.object(app,'web_session',self.session),patch.object(app,'PREFERENCES',{}),patch.object(app,'save_preferences'),patch.object(app,'speak'):
                 self.assertEqual(app.handle(phrase,'awake'),'awake');self.assertEqual(app.PREFERENCES['web_search_engine'],engine)
     def test_menu_labels_and_voice_aliases_keep_existing_workflows(self):
-        self.assertIn(('Word processor','word processor'),app.MAIN_MENU_CHOICES);self.assertIn(('Notepad','write a note'),app.MAIN_MENU_CHOICES)
+        self.assertIn(('Word processor','word processor'),app.MAIN_MENU_CHOICES);self.assertIn(('Notepad','notepad'),app.MAIN_MENU_CHOICES)
         with patch.object(app,'documents_folder',return_value=Path(self.temp.name)),patch.object(app,'speak'),patch.object(app,'APP_WINDOW',None),patch.object(app,'document',None),patch.object(app,'TEXT_MODE',True):
-            self.assertEqual(app.handle('word processor','awake'),'word_processor');self.assertEqual(app.handle('notepad','awake'),'note')
+            self.assertEqual(app.handle('word processor','awake'),'word_processor');self.assertEqual(app.handle('notepad','awake'),'notepad_menu')

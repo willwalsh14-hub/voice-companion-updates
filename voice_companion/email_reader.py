@@ -29,12 +29,17 @@ def message_controls(body,role=None):
     return result
 
 def spoken_range(body,start,end):
-    """Report roles while reading without inserting them into selectable text."""
+    """Report roles while reading without inserting them into selectable text. As in the
+    web browser: "link" before a link's words, "button" after a button's."""
     text=str(body)[start:end]
     for a,b,role,url in reversed(message_controls(body)):
         if a<end and b>start:
-            at=min(b,end)-start
-            text=text[:at]+', '+role+(' ' if text[at:at+1] and not text[at:at+1].isspace() else '')+text[at:]
+            if role=='link':
+                at=max(a,start)-start
+                text=text[:at]+('' if not at or text[at-1:at].isspace() else ' ')+'link '+text[at:]
+            else:
+                at=min(b,end)-start
+                text=text[:at]+', button'+(' ' if text[at:at+1] and not text[at:at+1].isspace() else '')+text[at:]
     return text.strip() or 'Blank.'
 
 class Renderer(HTMLParser):

@@ -73,8 +73,18 @@ const Model=vm.runInContext('CompanionCDP',context);
  chrome.debugger={...api.debugger,onEvent:listenerStub(),onDetach:{addListener:handler=>{detached=handler;}}};
  let updated;
  chrome.tabs={...api.tabs,onCreated:listenerStub(),onUpdated:{addListener:handler=>{updated=handler;}},onRemoved:listenerStub()};
- const workerContext=vm.createContext({chrome,navigator:{userAgent:'Chrome/140.0.0.0'}});
- workerContext.importScripts=()=>vm.runInContext(fs.readFileSync(path.join(__dirname,'cdp.js'),'utf8'),workerContext);
+ // Downloads as chrome.downloads reports them: ids are integers, sizes are bytes, totalBytes is 0 when unknown.
+ const downloadItems=new Map(),downloadCalls=[],downloadListeners={};
+ const listener=name=>({addListener:handler=>{downloadListeners[name]=handler;}});
+ chrome.downloads={onCreated:listener('created'),onChanged:listener('changed'),
+  search:async query=>query.id!==undefined?[downloadItems.get(query.id)].filter(Boolean):[...downloadItems.values()],
+  pause:async id=>{downloadCalls.push(['pause',id]);if(!downloadItems.has(id))throw new Error('Invalid download id');downloadItems.get(id).paused=true;},
+  resume:async id=>{downloadCalls.push(['resume',id]);const item=downloadItems.get(id);if(!item?.canResume)throw new Error('Download must be resumable');item.paused=false;},
+  cancel:async id=>{downloadCalls.push(['cancel',id]);Object.assign(downloadItems.get(id),{state:'interrupted',error:'USER_CANCELED'});}};
+ const sent=[];
+ runtime.connectNative=()=>{ports++;return {postMessage:message=>sent.push(message),disconnect:()=>{},onMessage:{addListener:handler=>{runtime.toPort=handler;}},onDisconnect:listenerStub()};};
+ const workerContext=vm.createContext({chrome,navigator:{userAgent:'Chrome/140.0.0.0'},setInterval,clearInterval});
+ workerContext.importScripts=(...names)=>{for(const name of names)vm.runInContext(fs.readFileSync(path.join(__dirname,name),'utf8'),workerContext);};
  vm.runInContext(fs.readFileSync(path.join(__dirname,'worker.js'),'utf8'),workerContext);
  await vm.runInContext('startup()',workerContext);
  await new Promise(resolve=>setImmediate(resolve));
@@ -93,5 +103,34 @@ const Model=vm.runInContext('CompanionCDP',context);
  await vm.runInContext('startup()',workerContext);assert.equal(ports,1);
  await vm.runInContext('run("connect")',workerContext);assert.equal(saved.enabled,true);assert.equal(ports,2);
  await vm.runInContext('disconnect();ensureConnection()',workerContext);assert.equal(ports,3);
- process.stdout.write('Browser startup, persistent pause, retry, tabs, CDP routing and frame checks passed.\n');
+ // Downloads: each new file, its progress and its end reach Companion; Companion's controls reach Chrome.
+ await new Promise(resolve=>setImmediate(resolve));
+ const report=()=>sent.filter(m=>m.method==='VoiceCompanion.download').at(-1)?.params;
+ const item={id:41,filename:'C:\\Users\\Will\\Downloads\\report.pdf',url:'https://files.test/report.pdf?token=1',finalUrl:'https://files.test/report.pdf',
+  state:'in_progress',paused:false,canResume:true,bytesReceived:0,totalBytes:1000,danger:'safe',mime:'application/pdf'};
+ downloadItems.set(41,item);downloadListeners.created({...item});
+ assert.equal(report().new,true);assert.equal(report().filename,item.filename);assert.equal(report().total,1000);
+ item.bytesReceived=450;await vm.runInContext('downloads.poll()',workerContext);assert.equal(report().received,450);assert.ok(!report().new);
+ runtime.toPort({method:'VoiceCompanion.downloadControl',params:{id:41,action:'pause'}});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.deepEqual(downloadCalls.at(-1),['pause',41]);assert.equal(report().paused,true);
+ // A page can never send a control: only Companion's port carries them, and bad actions are ignored.
+ runtime.toPort({method:'VoiceCompanion.downloadControl',params:{id:41,action:'erase'}});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.deepEqual(downloadCalls.at(-1),['pause',41]);
+ item.canResume=false;runtime.toPort({method:'VoiceCompanion.downloadControl',params:{id:41,action:'resume'}});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.equal(report().refused,true);assert.equal(report().paused,true);
+ Object.assign(item,{state:'complete',paused:false,bytesReceived:1000});downloadListeners.changed({id:41,state:{current:'complete'}});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.equal(report().state,'complete');assert.equal(vm.runInContext('downloads.watching.size',workerContext),0);
+ assert.equal(vm.runInContext('downloads.timer',workerContext),null);
+ // data: addresses are never sent, and long addresses are cut short.
+ const data={...item,id:42,url:'data:text/plain,'+'x'.repeat(5000),finalUrl:'',state:'in_progress'};downloadItems.set(42,data);downloadListeners.created({...data});
+ assert.equal(report().url,'');
+ runtime.toPort({method:'VoiceCompanion.downloadControl',params:{id:42,action:'cancel'}});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.equal(report().state,'interrupted');assert.equal(report().error,'USER_CANCELED');
+ // On linking, Companion hears what Chrome is still doing.
+ sent.length=0;await vm.runInContext('downloads.sync()',workerContext);
+ assert.deepEqual(sent.filter(m=>m.method==='VoiceCompanion.download').map(m=>m.params.id).sort(),[41,42]);
+ await vm.runInContext('disconnect()',workerContext);assert.equal(vm.runInContext('downloads',workerContext),null);
+ downloadListeners.created({...item,id:43});assert.ok(!sent.some(m=>m.params?.id===43));
+ const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'manifest.json'),'utf8'));assert.ok(manifest.permissions.includes('downloads'));
+ process.stdout.write('Browser startup, persistent pause, retry, tabs, CDP routing, frame and download checks passed.\n');
 })().catch(error=>{process.stderr.write(error.stack+'\n');process.exitCode=1;});

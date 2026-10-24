@@ -12,7 +12,7 @@ class Field:
     choices: tuple = ()
 
 CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Word processor', 'Notepad', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
-DEFAULTS = {'dictation_echo':'phrase by phrase','dictation_type':'old school','cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'duck_level':'strong, 75 percent quieter','duck_other_apps':False,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
+DEFAULTS = {'dictation_echo':'phrase by phrase','dictation_type':'old school','cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'download_folder':'','email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'duck_level':'strong, 75 percent quieter','duck_other_apps':False,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left'}
 
 # Fonts that come with Windows 11 or Microsoft Office, in alphabetical order so
 # a first letter moves through them. A saved font outside this list is added.
@@ -48,7 +48,7 @@ def fields(category, context):
         'Email':[Field('email_format','Email format','choice',('plain text','html')),Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('add_account','Add an email account','action'),Field('google_contacts','Connect Google Contacts','action')],
         'Notepad':[Field('open_notepad','Open Notepad','action')],
         'Documents':[Field('document_font','Font for new documents','choice',font_choices(context)),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify'))],
-        'Web browser':[Field('web_search_engine','Default search engine','choice',('google','bing','brave','duckduckgo')),Field('web_keep_open','Keep browser window open','check'),Field('web_auto_read','Automatic page reading','check'),Field('browser','Guided browser','choice',('embedded Edge','Chrome')),Field('chrome_setup','Set up Chrome and the Voice Companion extension','action')],
+        'Web browser':[Field('web_search_engine','Default search engine','choice',('google','bing','brave','duckduckgo')),Field('web_keep_open','Keep browser window open','check'),Field('web_auto_read','Automatic page reading','check'),Field('browser','Guided browser','choice',('embedded Edge','Chrome')),Field('download_folder','Download folder; leave empty for your Downloads folder','text'),Field('chrome_setup','Set up Chrome and the Voice Companion extension','action')],
         'Radio':[Field('keep_audio_playing','Keep audio playing in the background','check'),Field('radio_source','Station database','choice',('all','radio browser','iprd','radio sure')),Field('radio_presets','List radio presets','action'),Field('radio_recordings','List scheduled recordings','action')],
         'Podcasts':[Field('keep_audio_playing','Keep audio playing in the background','check'),Field('podcast_feed','Podcast subscription','choice',tuple(context.get('podcasts',()))),Field('podcast_limit','Automatic downloads for this subscription','combo',('manual','all','1','2','3','5','10','20','50','100','1000')),Field('podcast_subscriptions','List subscriptions','action')],
         'Startup and exit options':[Field('start_with_windows','Start with Windows','check'),Field('ask_before_exit','Ask before exiting Voice Companion','check'),Field('ask_before_shutdown','Ask before shutting down the computer','check'),Field('ask_before_restart','Ask before restarting the computer','check')],
@@ -114,6 +114,10 @@ class SettingsSession:
                 if not headers or len(headers)!=len(set(headers)) or any(x not in ('from','subject','date','size') for x in headers):raise ValueError('Enter unique headers separated by commas: from, subject, date, size. Include at least one.')
                 value=', '.join(headers)
             if key=='document_font' and (not value or len(value)>100): raise ValueError('Enter a font name.')
+            if key=='download_folder' and value!=self.original.get('download_folder',''):
+                # Checked when it changes: the folder must exist and accept new files.
+                from downloads import folder_setting
+                value=folder_setting(value)
         self.values[key]=value
         if key=='podcast_feed': self.values['podcast_limit']=str(self.values.get('podcast_limits',{}).get(value,'manual'))
         if key=='podcast_limit' and self.values.get('podcast_feed'):self.values['podcast_limits'][self.values['podcast_feed']]=value
@@ -168,6 +172,7 @@ def keyboard_request(key,mode):
         if mode=='update_download':return 'cancel update'
         if mode=='email_draft':return 'cancel'
         if mode=='document':return 'leave document'
+        if mode=='note':return 'exit note'
         if mode=='web':return 'go back'
         if mode=='help':return 'back to topics'
         if mode=='tutorial':return 'main menu'

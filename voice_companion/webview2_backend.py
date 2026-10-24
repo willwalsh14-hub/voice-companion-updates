@@ -25,6 +25,8 @@ class WebViewPipe:
         self.pending={};self.pending_lock=threading.Lock()
         # Companion's own requests use negative ids; their answers are not sent on to the driver.
         self.own_serial=-1000;self.own_replies={}
+        # Download news (Host.download) goes here, not to the automation driver.
+        self.on_download=None;self.on_closed=None
         root=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))
         host=Path(executable) if executable else root/'webview2'/'VoiceCompanion-WebView2.exe'
         if not host.is_file():raise WebError('The embedded Edge host is missing. Reinstall the complete Voice Companion build.')
@@ -80,6 +82,12 @@ class WebViewPipe:
                 if os.getenv('VOICE_COMPANION_TRACE_WEBVIEW2'):print('CDP IN',value.get('id'),value.get('method'),value.get('sessionId'),'error' if 'error' in value else '',file=sys.stderr,flush=True)
                 method=value.get('method');params=value.get('params',{})
                 if method=='Host.activeTab':self.active_session=params.get('sessionId');continue
+                if method=='Host.download':
+                    handler=self.on_download
+                    if handler is not None:
+                        try:handler(params if isinstance(params,dict) else {})
+                        except Exception:pass
+                    continue
                 if method=='Target.attachedToTarget':
                     session=params.get('sessionId','')
                     if (session=='main-view' or session.startswith('view-')) and session not in self.page_order:self.page_order.append(session)
@@ -105,6 +113,9 @@ class WebViewPipe:
         except (OSError,ValueError):pass
         finally:
             self.closed.set()
+            if self.on_closed is not None:
+                try:self.on_closed()
+                except Exception:pass
             try:self.process.stdout.close()
             except OSError:pass
             if self.connection:
@@ -123,6 +134,15 @@ class WebViewPipe:
         finally:self.connection=None;self.client_lock.release()
 
     def focus(self):self._send({'id':-1,'method':'Host.focus'})
+
+    def post(self,method,params=None):
+        """Send Companion's own request without waiting for the answer.
+
+        Used by download controls, which can be sent from this pipe's reading
+        thread; waiting there for an answer it must read itself would stall."""
+        with self.pending_lock:
+            self.own_serial-=1;ident=self.own_serial
+        self._send({'id':ident,'method':method,'params':params or {}})
 
     def call(self,method,params=None,session=None,timeout=5):
         """Ask the embedded browser one protocol question for Companion itself."""
@@ -176,11 +196,22 @@ class WebView2Backend(BrowserBackend):
     def _start_once(self):
         from playwright.sync_api import sync_playwright
         self.host=WebViewPipe(self.folder,self.headless,self.executable)
+        self._link_downloads(self.host)
         self.playwright=self.external_driver or sync_playwright().start()
         self.remote_browser=self.playwright.chromium.connect_over_cdp(self.host.endpoint,timeout=20000,no_defaults=True)
         self.context=self.remote_browser.contexts[0]
         self.page=self.context.pages[0]
         self.page.set_default_timeout(10000)
+
+    def _link_downloads(self,host):
+        """Embedded Edge's downloads report into the shared download list."""
+        import downloads
+        model=downloads.manager()
+        controller=downloads.EdgeDownloads(host)
+        host.on_download=lambda params:model.report('edge',params.get('id',''),**downloads.edge_report(params))
+        host.on_closed=lambda:model.detach('edge',controller)
+        self.download_controller=controller
+        model.attach('edge',controller)
 
     # Embedded Edge cannot open a second protocol session for Companion; its
     # history list is asked for through the host instead (_navigation_history).
@@ -210,6 +241,12 @@ class WebView2Backend(BrowserBackend):
     def close(self):
         driver,host,remote=self.playwright,self.host,self.remote_browser
         self.page=self.context=self.playwright=self.remote_browser=self.host=None
+        controller=getattr(self,'download_controller',None)
+        if controller is not None:
+            # Downloads in embedded Edge end with its window.
+            self.download_controller=None
+            import downloads
+            downloads.manager().detach('edge',controller)
         # WebView2 owns its process. Browser.close can hang a CDP-attached view;
         # stopping the transport and closing our host releases only this profile.
         if host:host.close()

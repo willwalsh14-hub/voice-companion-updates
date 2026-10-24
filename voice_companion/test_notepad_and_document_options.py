@@ -201,7 +201,7 @@ class SavedNotesTests(unittest.TestCase):
                 mode = app.handle(phrase, 'awake')
                 self.assertEqual(mode, 'note')
                 self.assertEqual(' '.join(app.note_buffer), 'First reminder.')
-                self.assertEqual(app.handle('go back', mode), 'awake')
+                self.assertEqual(app.handle('go back', mode), 'notepad_menu')
         app.handle('open note 1', 'awake');app.handle('Done today.', 'note');app.handle('go back', 'note')
         text = self.notes_file.read_text(encoding='utf-8')
         self.assertIn('Second reminder. Done today.', text);self.assertEqual(text.count('First reminder.'), 1)

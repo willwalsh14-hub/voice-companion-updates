@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 583
-- Already had both ways: 460
-- Gaps found: 123
-- Gaps fixed (Added): 115
+- Actions inventoried: 601
+- Already had both ways: 474
+- Gaps found: 127
+- Gaps fixed (Added): 119
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -29,7 +29,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ### Notepad
 
-- Voice: "Write a note"
+- Voice: "Notepad"
 - Keyboard: First letter, arrows, Enter
 - Status: Both
 
@@ -911,6 +911,32 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O
 - Status: Both
 
+## Notepad Menu
+
+### Create a note
+
+- Voice: "Write a note"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Open a note
+
+- Voice: "List notes"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### Options
+
+- Voice: "Options"
+- Keyboard: Alt+O
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Ctrl+F1
+- Status: Both
+
 ## Media Menu
 
 ### Radio
@@ -1240,6 +1266,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Guided browser
 
 - Voice: "Set Guided browser to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Download folder
+
+- Voice: "Set download folder to ..."
 - Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -2151,6 +2183,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: F8
 - Status: Both
 
+### Downloads
+
+- Voice: "Download manager"
+- Keyboard: Ctrl+D
+- Status: Both
+
 ## Alt menu, Web page: Favorites
 
 ### Add favorite
@@ -2195,6 +2233,78 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Help with web"
 - Keyboard: F1
+- Status: Both
+
+## Alt menu, Downloads: Download
+
+### Open
+
+- Voice: "Open download"
+- Keyboard: Enter
+- Status: Both
+
+### Pause or resume
+
+- Voice: "Pause or resume download"
+- Keyboard: Space
+- Status: Both
+
+### Cancel or remove from list
+
+- Voice: "Delete download"
+- Keyboard: Delete
+- Status: Both
+
+### Details
+
+- Voice: "Download details"
+- Keyboard: Alt, 1, 4
+- Status: Added: Alt menu path
+
+### Open downloads folder
+
+- Voice: "Open downloads folder"
+- Keyboard: Alt, 1, 5
+- Status: Added: Alt menu path
+
+## Alt menu, Downloads: Queue
+
+### Move to next
+
+- Voice: "Move to next"
+- Keyboard: Alt, 2, 1
+- Status: Added: Alt menu path
+
+### Move earlier
+
+- Voice: "Move download earlier"
+- Keyboard: Ctrl+Up
+- Status: Both
+
+### Move later
+
+- Voice: "Move download later"
+- Keyboard: Ctrl+Down
+- Status: Both
+
+## Alt menu, Downloads: Options and help
+
+### Download folder
+
+- Voice: "Options, then Web browser options"
+- Keyboard: Alt, 3, 1
+- Status: Added: Alt menu path
+
+### Downloads help
+
+- Voice: "Help with downloads"
+- Keyboard: F1
+- Status: Both
+
+### Close downloads
+
+- Voice: "Close downloads"
+- Keyboard: Escape
 - Status: Both
 
 ## Alt menu, Help: Help
@@ -2455,6 +2565,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: First letters, arrows, Enter
 - Status: Both
 
+### Downloads
+
+- Voice: "Downloads"
+- Keyboard: First letters, arrows, Enter
+- Status: Both
+
 ### Set up Chrome
 
 - Voice: "Set up Chrome"
@@ -2490,8 +2606,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Hear the version
 
 - Voice: "What version?"
-- Keyboard: Ctrl+Shift+V on the main menu
-- Status: Added: Ctrl+Shift+V
+- Keyboard: Ctrl+V on the main menu
+- Status: Added: Ctrl+V
 
 ### Type a command
 
@@ -2508,8 +2624,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Hear the input mode
 
 - Voice: "What mode?"
-- Keyboard: Ctrl+Shift+M on the main menu
-- Status: Added: Ctrl+Shift+M
+- Keyboard: Ctrl+M on the main menu
+- Status: Added: Ctrl+M
 
 ### Write words that sound like commands
 
@@ -2648,8 +2764,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Start the audio tutorial
 
 - Voice: "Start tutorial"
-- Keyboard: Ctrl+Shift+T on the main menu
-- Status: Added: Ctrl+Shift+T
+- Keyboard: Ctrl+T on the main menu
+- Status: Added: Ctrl+T
 
 ### Choose a course or lesson
 
@@ -3636,8 +3752,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Open the guide folder
 
 - Voice: "Open user guides"
-- Keyboard: Ctrl+Shift+G on the main menu
-- Status: Added: Ctrl+Shift+G
+- Keyboard: Ctrl+G on the main menu
+- Status: Added: Ctrl+G
 
 ## Fix a problem
 

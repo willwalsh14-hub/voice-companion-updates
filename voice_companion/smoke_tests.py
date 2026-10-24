@@ -467,7 +467,8 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
     def test_go_back_works_in_note_search_and_podcast(self):
         mode = companion.handle('write a note', 'awake')
         companion.handle('Remember this.', mode)
-        self.assertEqual(companion.handle('go back', mode), 'awake')
+        # Go back saves the note and returns to the Notepad menu (Will, October 2026).
+        self.assertEqual(companion.handle('go back', mode), 'notepad_menu')
         self.assertIn('Remember this.', (self.root / 'notes.txt').read_text())
         for mode in (companion.handle('search the web','awake'), 'podcast'):
             self.assertEqual(companion.handle('go back', mode), 'awake')

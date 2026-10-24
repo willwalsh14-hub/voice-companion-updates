@@ -23,6 +23,10 @@ class CompanionWebView : Form {
     private readonly HashSet<string> attached = new HashSet<string>();
     private bool autoAttach;
     private int serial;
+    // Downloads: Companion keeps the list and queue (downloads.py); this window does the transfer.
+    private string downloadFolder;
+    private readonly Dictionary<string, CoreWebView2DownloadOperation> downloads = new Dictionary<string, CoreWebView2DownloadOperation>();
+    private int downloadSerial;
     private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
     private readonly string profile;
     private readonly bool hidden;
@@ -79,7 +83,7 @@ class CompanionWebView : Form {
                 if (noCache.Contains(control)) { request.Request.Headers.SetHeader("Cache-Control", "no-cache"); request.Request.Headers.SetHeader("Pragma", "no-cache"); }
             };
             core.PermissionRequested += (s, request) => { request.State = CoreWebView2PermissionState.Deny; };
-            core.DownloadStarting += (s, request) => { request.Cancel = true; };
+            core.DownloadStarting += (s, request) => StartDownload(request);
             core.DocumentTitleChanged += (s, e) => { var page = control.Parent as TabPage; if (page != null) page.Text = core.DocumentTitle.Length > 60 ? core.DocumentTitle.Substring(0,60) : core.DocumentTitle; };
             core.NewWindowRequested += async (s, request) => {
                 var pending = request.GetDeferral(); request.Handled = true;
@@ -122,6 +126,48 @@ class CompanionWebView : Form {
                     };
                 } catch (ArgumentException) { }
             }
+    }
+    private void StartDownload(CoreWebView2DownloadStartingEventArgs request) {
+        var operation = request.DownloadOperation;
+        string id = "edge-" + (++downloadSerial);
+        try {
+            string name = Path.GetFileName(request.ResultFilePath);
+            if (!String.IsNullOrEmpty(downloadFolder) && !String.IsNullOrEmpty(name) && Directory.Exists(downloadFolder))
+                request.ResultFilePath = FreePath(downloadFolder, name);
+        } catch (Exception) { }
+        // Companion says "Downloading" and keeps the list; the browser's own download box stays hidden.
+        request.Handled = true;
+        downloads[id] = operation;
+        DateTime last = DateTime.MinValue;
+        operation.BytesReceivedChanged += (s, e) => {
+            // Twice a second is enough for "45 percent"; every block would flood the pipe.
+            if ((DateTime.UtcNow - last).TotalMilliseconds < 500) return;
+            last = DateTime.UtcNow; ReportDownload(id, operation, false, null, false);
+        };
+        operation.StateChanged += (s, e) => {
+            ReportDownload(id, operation, false, null, false);
+            if (operation.State == CoreWebView2DownloadState.Completed || (operation.State == CoreWebView2DownloadState.Interrupted && !operation.CanResume))
+                downloads.Remove(id);
+        };
+        ReportDownload(id, operation, true, request.ResultFilePath, false);
+    }
+    private void ReportDownload(string id, CoreWebView2DownloadOperation operation, bool started, string path, bool refused) {
+        try {
+            // WebView2 reports the size as ulong? (null when the server does not say).
+            ulong? total = operation.TotalBytesToReceive;
+            string url = operation.Uri ?? "";
+            if (url.Length > 2048) url = url.Substring(0, 2048);
+            Send(new { method = "Host.download", @params = new {
+                id = id, @new = started, refused = refused, path = path ?? operation.ResultFilePath, url = url,
+                state = operation.State.ToString(), reason = operation.InterruptReason.ToString(),
+                received = operation.BytesReceived, total = total.HasValue ? (long)total.Value : -1L, canResume = operation.CanResume } });
+        } catch (Exception) { }
+    }
+    private static string FreePath(string folder, string name) {
+        string target = Path.Combine(folder, name);
+        string stem = Path.GetFileNameWithoutExtension(name), extension = Path.GetExtension(name);
+        for (int number = 1; File.Exists(target); number++) target = Path.Combine(folder, stem + " (" + number + ")" + extension);
+        return target;
     }
     private async Task<object> TargetInfo(WebView2 control) {
         string info = await control.CoreWebView2.CallDevToolsProtocolMethodAsync("Target.getTargetInfo", "{}");
@@ -173,6 +219,26 @@ class CompanionWebView : Form {
             if (method == "Host.focus") { WindowState = FormWindowState.Normal; Activate(); Send(new { id = id, result = new { } }); return; }
             var parameters = message.ContainsKey("params") ? (Dictionary<string, object>)message["params"] : new Dictionary<string, object>();
             string sessionId = message.ContainsKey("sessionId") ? (string)message["sessionId"] : null;
+            if (method == "Host.downloadFolder") {
+                downloadFolder = parameters.ContainsKey("path") ? parameters["path"] as string : null;
+                Reply(message, new { }); return;
+            }
+            if (method == "Host.downloadControl") {
+                string target = parameters.ContainsKey("id") ? parameters["id"] as string : null;
+                string action = parameters.ContainsKey("action") ? parameters["action"] as string : null;
+                CoreWebView2DownloadOperation operation;
+                if (target == null || !downloads.TryGetValue(target, out operation)) throw new ArgumentException("This download is no longer available.");
+                try {
+                    if (action == "pause") operation.Pause();
+                    else if (action == "resume") operation.Resume();
+                    else if (action == "cancel") operation.Cancel();
+                    else throw new ArgumentException("Unknown download action.");
+                } catch (Exception) {
+                    // Tell Companion at once what really happened, so its list is not left guessing.
+                    ReportDownload(target, operation, false, null, true); throw;
+                }
+                Reply(message, new { }); return;
+            }
             if (method == "Target.createTarget") {
                 var created = await AddView(parameters.ContainsKey("url") ? (string)parameters["url"] : "about:blank");
                 var info = (Dictionary<string, object>)await TargetInfo(created);

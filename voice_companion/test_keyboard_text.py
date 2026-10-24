@@ -582,13 +582,16 @@ class WindowKeyboardTests(unittest.TestCase):
         self.wait(lambda:self.window.context.get('source')=='mail:test')
         self.call(lambda:self.window.editor.focus_force())
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Down'))
-        self.wait(lambda:not self.window.key_feedback.empty());self.assertIn('Click to donate, link',self.window.key_feedback.get())
+        # Read as the web browser reads them (Will, October 2026).
+        self.wait(lambda:not self.window.key_feedback.empty());self.assertIn('link Click to donate',self.window.key_feedback.get())
         self.call(lambda:self.window.editor.mark_set('insert','1.0'))
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
-        self.wait(lambda:not self.window.key_feedback.empty());self.assertIn('Click to donate, link',self.window.key_feedback.get())
+        self.wait(lambda:not self.window.key_feedback.empty());self.assertEqual(self.window.key_feedback.get(),'Link Click to donate.')
+        # Enter hands the link to Companion, which opens it in the guided browser.
         with patch('webbrowser.open') as opener:
             self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Return'))
-            opener.assert_called_once_with('https://example.com/donate')
+            self.wait(lambda:('open_link','https://example.com/donate') in self.window.commands.queue)
+            opener.assert_not_called()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='b'))
         self.wait(lambda:('keyboard','Email:next button') in self.window.commands.queue)
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='k',state=1))
@@ -674,9 +677,11 @@ class WindowKeyboardTests(unittest.TestCase):
         self.call(lambda:self.window.editor.focus_force())
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
         self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'Visit'))
+        # Enter hands the link to Companion, which opens it in the guided browser.
         with patch('webbrowser.open') as browser:
             self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Return'))
-            browser.assert_called_once_with('https://example.com')
+            self.wait(lambda:('open_link','https://example.com') in self.window.commands.queue)
+            browser.assert_not_called()
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab'))
         self.call(lambda:self.assertEqual(self.window.editor.get('sel.first','sel.last'),'More'))
         self.call(lambda:self.window.editor.event_generate('<KeyPress>',keysym='Tab',state=1))

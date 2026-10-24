@@ -5,8 +5,8 @@ from pathlib import Path
 # Each key runs the same spoken command, so voice and keyboard give the same result.
 # The window sends these keys only on the named screen; see screen_key().
 SCREEN_KEYS = {
-    'awake': {'F1': 'help', 'Ctrl+Shift+V': 'what version', 'Ctrl+Shift+M': 'what mode',
-              'Ctrl+Shift+G': 'open user guides', 'Ctrl+Shift+T': 'start tutorial'},
+    'awake': {'F1': 'help', 'Ctrl+V': 'what version', 'Ctrl+M': 'what mode',
+              'Ctrl+G': 'open user guides', 'Ctrl+T': 'start tutorial'},
     'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
@@ -20,12 +20,17 @@ SCREEN_KEYS = {
                 'Next': 'next messages', 'Prior': 'previous messages',
                 'F1': 'help with email', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+R': 'read document', 'F1': 'help with document reader'},
-    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window'},
-    'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window'},
+    'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window',
+            'Ctrl+D': 'download manager'},
+    'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window', 'Ctrl+D': 'download manager'},
+    # The Downloads screen (download_screen.py). Up, Down, Home, End, Enter and Escape work as in every list.
+    'downloads': {'F1': 'help with downloads', 'Space': 'pause or resume download', 'Delete': 'delete download',
+                  'Ctrl+Up': 'move download earlier', 'Ctrl+Down': 'move download later'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
     'media_menu': {'F1': 'help with media player'},
+    'notepad_menu': {'F1': 'help with notepad'},
     'local_media': {'F1': 'help with media player'},
     # Sentences in an open help topic (Up and Down move by paragraph).
     'help': {'Ctrl+Down': 'next sentence', 'Ctrl+Up': 'previous sentence'},
@@ -37,6 +42,8 @@ SCREEN_KEYS = {
 # Earlier keys that still work, so nobody's habits break. The guide and menus name the
 # simpler keys above; these are not listed there (Will, October 2026).
 OLD_KEYS = {
+    'awake': {'Ctrl+Shift+V': 'what version', 'Ctrl+Shift+M': 'what mode',
+              'Ctrl+Shift+G': 'open user guides', 'Ctrl+Shift+T': 'start tutorial'},
     'note': {'Ctrl+Shift+R': 'read from top'},
     'email_draft': {'Ctrl+Shift+R': 'read email draft'},
     'file_reader': {'Ctrl+Shift+R': 'read document'},
@@ -48,7 +55,7 @@ OLD_KEYS = {
 # Control+F12 puts the microphone to sleep from any main screen; while asleep it wakes it.
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
-              'recent_documents', 'media_menu', 'local_media', 'help', 'tutorial', 'document', 'files', 'document_menu'):
+              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
@@ -62,7 +69,7 @@ def chord(keysym, state):
     control, shift, alt = modifiers(state)  # Num Lock is not Alt on Windows.
     if alt or keysym in ('Control_L', 'Control_R', 'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R'):
         return None
-    name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior'}.get(keysym, keysym)
+    name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior', 'space': 'Space'}.get(keysym, keysym)
     if control:
         return 'Ctrl+' + ('Shift+' if shift else '') + name
     return None if shift else name
@@ -83,6 +90,10 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
     # takes letters to jump through its names.
     if mode == 'mailbox' and len(key) == 1 and (typed_text or context.get('menu_letters')):
         return None
+    if mode == 'awake' and typed_text and key.startswith('Ctrl+'):
+        return None  # Control+V pastes into a typed command; the main menu keys wait.
+    if mode == 'downloads' and key == 'Space' and typed_text:
+        return None  # a space inside a typed command
     if mode == 'mailbox' and key in ('Next', 'Prior') and (context.get('source') or typed_text):
         return None  # Page keys scroll an open message; they change pages only in the list.
     if mode == 'email_draft' and key in BODY_ONLY and email_field:
@@ -118,7 +129,7 @@ def catalog():
     for group,items in DOCUMENT_ACTIONS.items():
         for name,key,voice in items:add('Document: '+group,name,voice,key or 'Alt, group number, item key')
     nav=app.task_navigation()
-    for mode in ('word_processor','media_menu','local_media'):
+    for mode in ('word_processor','notepad_menu','media_menu','local_media'):
         for name,key,voice in nav.items(mode):add(mode.replace('_',' ').title(),name,name if voice.startswith('@') else voice,key or 'First letter, arrows, Enter')
     from app_settings import ACTIONS
     for category in CATEGORIES:

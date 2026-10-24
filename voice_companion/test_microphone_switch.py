@@ -14,6 +14,8 @@ class MicrophoneSwitchTests(CompanionTestCase):
         super().setUp()
         patcher = mock.patch.object(companion, 'MICROPHONE_OFF', False); patcher.start(); self.addCleanup(patcher.stop)
         patcher = mock.patch.object(companion, 'MICROPHONE_ANNOUNCED', False); patcher.start(); self.addCleanup(patcher.stop)
+        # F9 saves its choice in the preferences; keep that inside this test.
+        patcher = mock.patch.dict(companion.PREFERENCES); patcher.start(); self.addCleanup(patcher.stop)
 
     def test_f9_turns_the_microphone_off_and_on_on_any_screen(self):
         for mode in ('awake', 'document', 'mailbox', 'web', 'local_media'):
@@ -25,6 +27,16 @@ class MicrophoneSwitchTests(CompanionTestCase):
         companion.handle('@microphone', 'awake', typed=True)
         self.assertFalse(companion.MICROPHONE_OFF)
         self.assertEqual(self.said[-1], 'Microphone on. Voice commands are on.')
+
+    def test_microphone_off_is_remembered_after_a_restart(self):
+        import json
+        companion.handle('@microphone', 'awake', typed=True)
+        saved = json.loads((self.folder / 'preferences.json').read_text(encoding='utf-8'))
+        self.assertTrue(saved['microphone_off'])
+        companion.handle('@microphone', 'awake', typed=True)
+        saved = json.loads((self.folder / 'preferences.json').read_text(encoding='utf-8'))
+        self.assertFalse(saved['microphone_off'])
+        self.assertIn('Press F9 to turn it on', companion.MICROPHONE_STILL_OFF)
 
     def test_f9_works_while_asleep_and_says_how_to_wake(self):
         companion.MICROPHONE_OFF = True

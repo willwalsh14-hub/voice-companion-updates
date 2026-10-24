@@ -449,14 +449,16 @@ class MailSession:
             item=next((span for span in message_controls(self.body_text) if span[0]<=self.reading.position<span[1]),None)
             if not item:return 'Move to a link or button first.'
             if not safe_link(item[3]):return 'This email button has no safe link to open.'
-            import webbrowser
-            webbrowser.open(item[3]);return 'Opening '+self.body_text[item[0]:item[1]]+', '+item[2]+'.'
+            # Companion opens it in the guided browser chosen in Web browser options.
+            self.link_request=item[3];return 'Opening '+' '.join(self.body_text[item[0]:item[1]].split())+'.'
         current=getattr(self,'message_control',None)
         candidates=[span for span in controls if span[0]<self.reading.position] if direction<0 else [span for span in controls if span[0]>self.reading.position or span[0]==self.reading.position==0 and current!=span]
         if not candidates:return 'No '+('previous ' if direction<0 else 'next ')+role+'.'
         item=candidates[-1] if direction<0 else candidates[0];self.message_control=item
         self.reading.position=self.reading.continuation=item[0]
-        return self.body_text[item[0]:item[1]]+', '+item[2]+'. Enter to open.'
+        # Said as the web browser says it: "Link Name." or "Name, button." (Will, October 2026).
+        name=' '.join(self.body_text[item[0]:item[1]].split()) or 'Unlabeled'
+        return ('Link '+name+'.') if item[2]=='link' else name+', button.'
 
     def response_context(self, action):
         if self.current is None or self.view != 'message':
@@ -635,8 +637,7 @@ class MailSession:
                 number=int(command.split()[-1])
                 if not 1<=number<=len(links):return 'That link number is not in this message.'
                 if not safe_link(links[number-1][3]):return 'This email button has no safe link to open.'
-                import webbrowser
-                webbrowser.open(links[number-1][3]);return 'Opening link '+str(number)+'.'
+                self.link_request=links[number-1][3];return 'Opening '+role+' '+str(number)+'.'
             if command in ('continue reading', 'read more', 'continue message'):
                 return self._next_body() if self.view == 'message' else 'Open a message first.'
             if command in ('read from beginning', 'start message over'):
