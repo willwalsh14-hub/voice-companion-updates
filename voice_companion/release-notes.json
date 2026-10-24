@@ -1,27 +1,19 @@
 {
-  "version": "0.2.163-test",
+  "version": "0.2.164-test",
   "status": "Testing build",
   "date": "October 23, 2026",
-  "baseline": "0.2.162-test",
-  "scope": "Sending through Thunderbird works with work accounts that need a sign-in, and Thunderbird closes with Voice Companion.",
+  "baseline": "0.2.163-test",
+  "scope": "Keys work right with Num Lock on, and fewer virus warnings by mistake.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Sign in to send",
+          "title": "Fewer false virus warnings",
           "details": [
-            "A work account may ask you to sign in again before you can send.",
-            "Voice Companion now opens that sign-in page in its own browser, so you can finish it.",
-            "After you sign in, Thunderbird sends the message. Check the Sent folder before you send it again."
-          ]
-        },
-        {
-          "title": "Thunderbird closes with Voice Companion",
-          "details": [
-            "Did Voice Companion open Thunderbird? Then it closes when you close Voice Companion.",
-            "If you opened Thunderbird yourself, it stays open.",
-            "If a message is still being written in Thunderbird, Thunderbird stays open."
+            "Voice Companion is now built with its own copy of a part that virus scanners often flag by mistake.",
+            "This should mean fewer warnings when you download or install Voice Companion.",
+            "Some warnings can still appear until Voice Companion is signed."
           ]
         }
       ]
@@ -30,27 +22,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "An account added twice in Thunderbird",
+          "title": "Num Lock",
           "details": [
-            "If you add an account to Thunderbird again, Voice Companion now uses the new one.",
-            "Before, it could keep sending through the old one, even after you fixed Thunderbird's settings.",
-            "If the server cannot be reached, Voice Companion tries the other copy of the account once.",
-            "When sending fails, you hear which server and method were used, like port 587 with STARTTLS."
-          ]
-        },
-        {
-          "title": "Sending through Thunderbird",
-          "details": [
-            "If sending is slow, you hear Still sending every 15 seconds. Press Escape to stop waiting.",
-            "If you stop waiting, Thunderbird may still send it. Check the Sent folder before you send it again.",
-            "If sending fails, you hear why, for example that the mail server did not answer.",
-            "A message that fails is saved in Drafts, and no Thunderbird window is left open."
-          ]
-        },
-        {
-          "title": "Safer PDF reading",
-          "details": [
-            "The part of Voice Companion that reads PDF files has the newest security fixes."
+            "With Num Lock on, keys now work as they should.",
+            "Before, Num Lock could make a plain key act like Alt plus that key."
           ]
         }
       ]

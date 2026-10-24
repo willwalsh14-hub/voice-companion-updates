@@ -13,6 +13,8 @@ import threading
 import time
 import unittest
 
+from key_state import ALT_STATE   # Alt held: 0x20000 on Windows, 0x8 elsewhere
+
 WINDOWS_TK_ALT_BINDINGS = """
 if {[info commands ::tk::WinMenuKey] eq ""} {
     proc ::tk::WinMenuKey {w k} {lappend ::given_to_windows $k}
@@ -92,7 +94,7 @@ class AltKeyWindowTests(unittest.TestCase):
 
     def test_alt_alone_opens_the_email_menu_and_never_the_system_menu(self):
         self.screen(mode='mailbox')
-        self.keys(('KeyPress', 'Alt_L', 0), ('KeyRelease', 'Alt_L', 8))
+        self.keys(('KeyPress', 'Alt_L', 0), ('KeyRelease', 'Alt_L', ALT_STATE))
         self.assertIn(('keyboard', 'Alt'), list(self.window.commands.queue))
         self.assertEqual(self.given_to_windows(), [])
 
@@ -107,19 +109,19 @@ class AltKeyWindowTests(unittest.TestCase):
 
     def test_alt_with_a_key_does_not_open_the_menu(self):
         self.screen(mode='mailbox')
-        self.keys(('KeyPress', 'Alt_L', 0), ('KeyPress', 'Down', 8), ('KeyRelease', 'Down', 8), ('KeyRelease', 'Alt_L', 8))
+        self.keys(('KeyPress', 'Alt_L', 0), ('KeyPress', 'Down', ALT_STATE), ('KeyRelease', 'Down', ALT_STATE), ('KeyRelease', 'Alt_L', ALT_STATE))
         self.assertNotIn(('keyboard', 'Alt'), list(self.window.commands.queue))
 
     def test_alt_where_there_is_no_menu_says_why_and_stays_in_companion(self):
         self.screen(mode='mailbox', confirmation='no')
-        self.keys(('KeyPress', 'Alt_L', 0), ('KeyRelease', 'Alt_L', 8))
+        self.keys(('KeyPress', 'Alt_L', 0), ('KeyRelease', 'Alt_L', ALT_STATE))
         self.assertNotIn(('keyboard', 'Alt'), list(self.window.commands.queue))
         self.assertEqual(self.given_to_windows(), [])
 
     def test_alt_letter_shortcuts_reach_companion(self):
         # Alt+C in the file manager is handled by Companion's own key handler.
         self.screen(mode='files')
-        self.keys(('KeyPress', 'Alt_L', 0), ('KeyPress', 'c', 8), ('KeyRelease', 'c', 8), ('KeyRelease', 'Alt_L', 8))
+        self.keys(('KeyPress', 'Alt_L', 0), ('KeyPress', 'c', ALT_STATE), ('KeyRelease', 'c', ALT_STATE), ('KeyRelease', 'Alt_L', ALT_STATE))
         self.assertEqual(self.given_to_windows(), [])
 
 

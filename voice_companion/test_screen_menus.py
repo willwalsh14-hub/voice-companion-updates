@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import companion as app
 from field_selection import FieldSelection
+from key_state import ALT_STATE  # 0x20000 on Windows; 0x8 there is Num Lock.
 from reading_navigation import ReadingCursor
 from screen_menus import MENUS, ALT_SCREENS, alt_menu_key, overlay_key, items, menu_path
 
@@ -355,7 +356,7 @@ class ScreenMenuTests(unittest.TestCase):
         self.assertEqual(overlay_key('r', 'r', 0), 'Letter:r')
         self.assertEqual(overlay_key('3', '3', 0), 'Letter:3')
         self.assertEqual(overlay_key('space', ' ', 0), '')
-        self.assertIsNone(overlay_key('o', 'o', 8))   # Alt+O still opens Options
+        self.assertIsNone(overlay_key('o', 'o', ALT_STATE))   # Alt+O still opens Options
         self.assertIsNone(overlay_key('r', '\x12', 4))   # Control+R still replies
         self.assertIsNone(overlay_key('F1', '', 0))
         self.assertIsNone(overlay_key('Alt_L', '', 0))
@@ -445,12 +446,12 @@ class WindowAltKeyTests(unittest.TestCase):
         # failed test's traceback would be freed on the wrong thread.
         self.call(lambda: self.window.typed.focus_force())
         self.call(lambda: (self.window.typed.event_generate('<KeyPress>', keysym='Alt_L'),
-                           self.window.typed.event_generate('<KeyRelease>', keysym='Alt_L', state=8)))
+                           self.window.typed.event_generate('<KeyRelease>', keysym='Alt_L', state=ALT_STATE)))
         self.wait(lambda: ('keyboard', 'Alt') in self.window.commands.queue)
         self.window.commands.queue.clear()
         self.call(lambda: (self.window.typed.event_generate('<KeyPress>', keysym='Alt_L'),
-                           self.window.typed.event_generate('<KeyPress>', keysym='t', state=8),
-                           self.window.typed.event_generate('<KeyRelease>', keysym='Alt_L', state=8)))
+                           self.window.typed.event_generate('<KeyPress>', keysym='t', state=ALT_STATE),
+                           self.window.typed.event_generate('<KeyRelease>', keysym='Alt_L', state=ALT_STATE)))
         import time; time.sleep(.2)
         self.assertNotIn(('keyboard', 'Alt'), self.window.commands.queue)
     def test_open_menu_takes_arrow_keys_from_the_message(self):
