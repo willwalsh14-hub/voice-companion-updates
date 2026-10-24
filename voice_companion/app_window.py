@@ -683,10 +683,9 @@ class CompanionWindow:
                 editor.mark_set('insert','1.0 + '+str(position)+' chars');send_text_position()
                 self.commands.put(('keyboard','Enter'));return 'break'
             def open_link(url):
+                # Companion opens it in the guided browser from Web browser options.
                 from email_reader import safe_link
-                if safe_link(url):
-                    import webbrowser
-                    webbrowser.open(url)
+                if safe_link(url):self.commands.put(('open_link',url))
             def link_at_caret():
                 caret=offset()
                 return next((span for span in self.context.get('rich_spans',[]) if span[2] in ('link','button') and span[0]<=caret<span[1]),None)
@@ -745,7 +744,7 @@ class CompanionWindow:
                 nav=event.keysym in ('Left','Right','Up','Down','Home','End','Prior','Next')
                 if self.context.get('readonly') and event.keysym=='Return' and link_at_caret():
                     span=link_at_caret()
-                    if span[3]:open_link(span[3]);self.feedback('Opening '+span[2]+'.')
+                    if span[3]:open_link(span[3]);self.feedback('Opening '+' '.join(editor.get('1.0 + '+str(span[0])+' chars','1.0 + '+str(span[1])+' chars').split())+'.')
                     else:self.feedback('This email button has no safe link to open.')
                     return 'break'
                 if self.context.get('readonly') and event.keysym in ('Tab','ISO_Left_Tab'):
@@ -756,7 +755,9 @@ class CompanionWindow:
                     if candidates:
                         span=candidates[-1] if backward else candidates[0];local['link']=span[0]
                         editor.mark_set('insert','1.0 + '+str(span[0])+' chars');editor.tag_remove('sel','1.0','end');editor.tag_add('sel','1.0 + '+str(span[0])+' chars','1.0 + '+str(span[1])+' chars');editor.see('insert')
-                        self.feedback(editor.get('sel.first','sel.last')+', '+span[2]+'. Enter to open.');send_text_position();return 'break'
+                        # Said as the web browser says it (Will, October 2026).
+                        name=' '.join(editor.get('sel.first','sel.last').split()) or 'Unlabeled'
+                        self.feedback(('Link '+name+'.') if span[2]=='link' else name+', button.');send_text_position();return 'break'
                     target=editor.tk_focusPrev() if backward else editor.tk_focusNext()
                     if target:target.focus_set()
                     return 'break'

@@ -468,6 +468,9 @@ def process_keyboard_batch(mode):
                     except Exception:command=None;speak('The private field could not be saved. Try again without saying its contents.')
                 elif command[0]=='account_secret':
                     mode=finish_account_secret(command[1],mode);continue
+                elif command[0]=='open_link':
+                    # Enter on a link in an email or document: the guided browser opens it.
+                    mode=open_email_link(command[1]);sync_app_context(mode,True);continue
                 elif command[0]=='media_field':
                     speak(media_navigation().field_value(command[1]['value'],command[1]['next']));sync_app_context(mode,True);continue
                 elif command[0]=='email_field_tab':
