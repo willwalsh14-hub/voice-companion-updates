@@ -19,9 +19,11 @@ EVENING=datetime(2026,10,22,21,55,30)   # Thursday, October 22, 2026, 9:55 PM
 
 class SpokenWordsTests(unittest.TestCase):
     def test_time_is_spoken_in_twelve_hour_words(self):
-        for when,expected in ((EVENING,'9:55 PM'),(datetime(2026,10,22,0,0),'12:00 AM'),
-                              (datetime(2026,10,22,12,5),'12:05 PM'),(datetime(2026,10,22,9,5),'9:05 AM'),
-                              (datetime(2026,10,22,23,59,59),'11:59 PM')):
+        for when,expected in ((EVENING,'nine fifty-five PM'),(datetime(2026,10,22,0,0),'twelve AM'),
+                              (datetime(2026,10,22,12,5),'twelve oh five PM'),(datetime(2026,10,22,9,5),'nine oh five AM'),
+                              (datetime(2026,10,22,14,46),'two forty-six PM'),(datetime(2026,10,22,3,7),'three oh seven AM'),
+                              (datetime(2026,10,22,10,10),'ten ten AM'),(datetime(2026,10,22,15,0),'three PM'),
+                              (datetime(2026,10,22,23,59,59),'eleven fifty-nine PM')):
             with self.subTest(when=when):self.assertEqual(time_date.spoken_time(when),expected)
 
     def test_date_says_the_day_month_day_number_and_year(self):
@@ -146,7 +148,7 @@ class ClockScreenTests(unittest.TestCase):
     def test_f12_says_the_time_and_twice_says_the_date_on_every_screen(self):
         for mode in ('awake','document','email_draft','note','mailbox','web','files','file_reader','media','help',
                      'tutorial','word_processor','browser_menu','settings','search','document_name','exit_confirm'):
-            for key,expected in (('F12','9:55 PM.'),('Double:F12','Thursday, October 22, 2026.')):
+            for key,expected in (('F12','nine fifty-five PM.'),('Double:F12','Thursday, October 22, 2026.')):
                 with self.subTest(mode=mode,key=key):
                     self.speech.reset_mock()
                     self.assertIsNone(app.navigation_key(key,mode))
@@ -159,7 +161,7 @@ class ClockScreenTests(unittest.TestCase):
             with self.subTest(state=name),patch.object(app,name,value):
                 self.speech.reset_mock()
                 self.assertIsNone(app.navigation_key('F12','awake'))
-                self.assertEqual(self.said(),['9:55 PM.'])
+                self.assertEqual(self.said(),['nine fifty-five PM.'])
                 self.assertEqual(getattr(app,name),value)
         with patch.object(app.screen_menu(),'keyboard',return_value='Escape'):
             self.speech.reset_mock()
@@ -173,7 +175,7 @@ class ClockScreenTests(unittest.TestCase):
             app.SLEEP_RETURN_MODE='document';self.open_document()
             window.commands.put(('keyboard','F12'))
             self.assertEqual(app.process_keyboard_batch('sleep'),'sleep')
-            self.assertEqual(self.said()[-1],'9:55 PM.')
+            self.assertEqual(self.said()[-1],'nine fifty-five PM.')
             window.commands.put(('keyboard','F12'));window.commands.put(('keyboard','Double:F12'))
             self.assertEqual(app.process_keyboard_batch('sleep'),'sleep')
             self.assertEqual(self.said()[-1],'Thursday, October 22, 2026.')
@@ -196,9 +198,9 @@ class ClockScreenTests(unittest.TestCase):
     def test_spoken_questions_on_every_screen_leave_the_screen_alone(self):
         app.MEDIA_HUB=Mock()
         for mode in ('awake','document','email_draft','note','mailbox','web','help','files','media'):
-            for phrase,expected in (('What time is it?','9:55 PM.'),("What's the date?",'Thursday, October 22, 2026.'),
+            for phrase,expected in (('What time is it?','nine fifty-five PM.'),("What's the date?",'Thursday, October 22, 2026.'),
                                     ('What day is it?','Thursday, October 22, 2026.'),
-                                    ('date and time','9:55 PM. Thursday, October 22, 2026.')):
+                                    ('date and time','nine fifty-five PM. Thursday, October 22, 2026.')):
                 with self.subTest(mode=mode,phrase=phrase):
                     if mode=='document':self.open_document()
                     if mode=='email_draft':self.open_draft()
@@ -223,7 +225,7 @@ class ClockScreenTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 document=self.open_document();self.speech.reset_mock()
                 self.assertEqual(app.handle(phrase,'document'),'document')
-                self.assertNotIn('9:55 PM.',self.said())
+                self.assertNotIn('nine fifty-five PM.',self.said())
                 self.assertNotEqual([p.text for p in document.paragraphs],['Hello world.'])
                 self.assertIn(phrase.rstrip('.').split()[-1].rstrip('.').lower(),' '.join(p.text for p in document.paragraphs).lower())
                 draft=self.open_draft()
@@ -241,7 +243,7 @@ class ClockScreenTests(unittest.TestCase):
         for mode in ('awake','mailbox','media'):
             if mode=='mailbox':app.mail_session=Mock(folder_picker=None,folder_choice=None,pending=None,view='folder')
             if mode=='media':app.MEDIA_HUB=Mock()
-            for phrase,expected in (('Time.','9:55 PM.'),('date','Thursday, October 22, 2026.')):
+            for phrase,expected in (('Time.','nine fifty-five PM.'),('date','Thursday, October 22, 2026.')):
                 with self.subTest(mode=mode,phrase=phrase):
                     self.speech.reset_mock()
                     self.assertEqual(app.handle(phrase,mode),mode)
@@ -250,7 +252,7 @@ class ClockScreenTests(unittest.TestCase):
         with patch.object(app,'INPUT_MODE','commands'):
             self.speech.reset_mock()
             self.assertEqual(app.handle('Time.','document'),'document')
-            self.assertEqual(self.said(),['9:55 PM.'])
+            self.assertEqual(self.said(),['nine fifty-five PM.'])
         # Alt+T in a document is a typed command.
         self.speech.reset_mock()
         self.assertEqual(app.handle('date','document',typed=True),'document')
@@ -265,7 +267,7 @@ class ClockScreenTests(unittest.TestCase):
         self.assertNotIn('Thursday, October 22, 2026.',self.said())
         self.speech.reset_mock()
         self.assertEqual(app.handle('What time is it?','search'),'search')
-        self.assertEqual(self.said(),['9:55 PM.'])
+        self.assertEqual(self.said(),['nine fifty-five PM.'])
 
 
 if __name__=='__main__':

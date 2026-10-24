@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 583
-- Already had both ways: 460
+- Actions inventoried: 587
+- Already had both ways: 464
 - Gaps found: 123
 - Gaps fixed (Added): 115
 - Not applicable (N/A, with reason): 8
@@ -29,7 +29,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ### Notepad
 
-- Voice: "Write a note"
+- Voice: "Notepad"
 - Keyboard: First letter, arrows, Enter
 - Status: Both
 
@@ -909,6 +909,32 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Options"
 - Keyboard: Alt+O
+- Status: Both
+
+## Notepad Menu
+
+### Create a note
+
+- Voice: "Write a note"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Open a note
+
+- Voice: "List notes"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### Options
+
+- Voice: "Options"
+- Keyboard: Alt+O
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Ctrl+F1
 - Status: Both
 
 ## Media Menu
@@ -2490,8 +2516,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Hear the version
 
 - Voice: "What version?"
-- Keyboard: Ctrl+Shift+V on the main menu
-- Status: Added: Ctrl+Shift+V
+- Keyboard: Ctrl+V on the main menu
+- Status: Added: Ctrl+V
 
 ### Type a command
 
@@ -2508,8 +2534,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Hear the input mode
 
 - Voice: "What mode?"
-- Keyboard: Ctrl+Shift+M on the main menu
-- Status: Added: Ctrl+Shift+M
+- Keyboard: Ctrl+M on the main menu
+- Status: Added: Ctrl+M
 
 ### Write words that sound like commands
 
@@ -2648,8 +2674,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Start the audio tutorial
 
 - Voice: "Start tutorial"
-- Keyboard: Ctrl+Shift+T on the main menu
-- Status: Added: Ctrl+Shift+T
+- Keyboard: Ctrl+T on the main menu
+- Status: Added: Ctrl+T
 
 ### Choose a course or lesson
 
@@ -3636,8 +3662,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Open the guide folder
 
 - Voice: "Open user guides"
-- Keyboard: Ctrl+Shift+G on the main menu
-- Status: Added: Ctrl+Shift+G
+- Keyboard: Ctrl+G on the main menu
+- Status: Added: Ctrl+G
 
 ## Fix a problem
 

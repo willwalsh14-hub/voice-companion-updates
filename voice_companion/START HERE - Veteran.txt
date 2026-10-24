@@ -176,7 +176,7 @@ You can open the app later from its desktop icon or the Windows Start menu. Use 
 5. Wait for the main menu. Say the name of the tool you want.
 For example, say "Word processor", "Notepad", "Email", "Web browser", "Radio", or "Podcasts".
 The keyboard works while voice commands are asleep. Press Down Arrow to hear a menu item. Press Enter to open it.
-To hear the version you are using, say "What version?", or press Control+Shift+V on the main menu.
+To hear the version you are using, say "What version?", or press Control+V on the main menu.
 
 1.3 Use the main menu
 The main menu has these choices:
@@ -219,7 +219,7 @@ In Normal mode, you can give commands and dictate text. In a document, draft, no
 Say "Commands only" when you want to move around without adding text by mistake.
 Say "Dictation only" when you want your speech to become text. In this mode, some words that are usually commands become text.
 Say "Normal mode" to return to voice commands and text entry. To choose a mode with the keyboard, press Alt+O, then choose Input options.
-To hear the current mode, say "What mode?", or press Control+Shift+M on the main menu.
+To hear the current mode, say "What mode?", or press Control+M on the main menu.
 You can still leave a document, cancel a draft, or put Companion to sleep in dictation-only mode. Some editing commands also remain available.
 If you are unsure which mode is active, switch to Normal mode before giving an editing or reading command.
 
@@ -275,7 +275,7 @@ For the full topic list, say "Back to topics", or press Escape again. To return 
 3.3 Start the audio tutorial
 The tutorial explains how to use the app. It waits for you between lessons. The tutorial explains the commands you give. It does not use them to send mail or change your files.
 1. Return to the main menu.
-2. Say "Start tutorial", or press Control+Shift+T on the main menu.
+2. Say "Start tutorial", or press Control+T on the main menu.
 3. Say a course name, such as "Email" or "Web browser". You can also use arrows and Enter.
 4. Listen to the first lesson.
 5. When you are ready, say "Next lesson", or press Down Arrow.
@@ -474,11 +474,12 @@ Control+S saves. Control+Shift+S saves as. F2 names the document. Control+O open
 
 7.1 Start and save a note
 Notepad is for a short plain text note. Use the Word processor when you need headings, fonts, or tables.
-1. Say "Write a note", or choose Notepad on the main menu.
-2. Speak or type your note. Press Enter after typed words.
-3. To listen to it, say "Read from top", or press Control+R.
-4. To save it, say "Save note", or press Control+S.
-To save the note and return to the main menu, say "Go back", or press Escape. Going to sleep also saves the text you have entered. For Notepad help, say "Help with notepad", or press F1.
+1. Choose Notepad on the main menu, or say "Notepad". The Notepad menu opens. It has Create a note (Control+N), Open a note (Control+O), Options (Alt+O), and Main menu (Control+F1). Use the arrows and Enter, or press the key.
+2. Choose Create a note. You can also say "Write a note" from the main menu to start one at once.
+3. Speak or type your note. Press Enter after typed words.
+4. To listen to it, say "Read from top", or press Control+R.
+5. To save it, say "Save note", or press Control+S.
+To save the note and return to the Notepad menu, say "Go back", or press Escape. Escape on the Notepad menu goes to the main menu. To save the note and go straight to the main menu, say "Main menu", or press Control+F1. Going to sleep also saves the text you have entered. For Notepad help, say "Help with notepad", or press F1.
 Press Alt to open the notepad menu. It has Save and close note, Read note, Saved notes, New line, Notepad options, Notepad help, and Main menu. Words you typed are added to the note first.
 
 7.2 Review or change a note
@@ -491,7 +492,7 @@ To enter words that sound like commands, say "Type literally", followed by those
 The same selection and editing rules apply to the current note. Keep a saved copy of any note you need.
 
 7.3 Open a saved note
-Say "List notes" to hear your saved notes. You can also say "Open a note" or "My notes". The newest note comes first.
+Say "List notes" to hear your saved notes. You can also say "Open a note" or "My notes". On the Notepad menu, choose Open a note, or press Control+O. The newest note comes first.
 On the Notepad screen, you can also press Control+O to list your notes. The note you are writing is saved first.
 Use the Up and Down Arrow keys, or say "Next" and "Previous", to move through the list. You hear the first words and the date of each note.
 Press Enter or say "OK" to open a note. Companion reads it to you. Then speak to add to it.
@@ -676,9 +677,9 @@ You can delete only folders you created that contain no messages or other folder
 Some email services restrict folder changes. For example, Gmail labels with child labels have limits on renaming, moving, or deleting.
 
 10.6 Read links and load more mail
-In email that keeps web-style formatting, Companion reads links and buttons as part of the message.
+In email that keeps web-style formatting, Companion reads links and buttons as part of the message. They sound the same as in the web browser. You hear "link" before a link's words, and "button" after a button's words.
 K moves to the next link. B moves to the next button. Hold Shift to move backward. Tab moves through both.
-Press Enter to open a safe link. A button with no usable link is read but cannot run a script from the email.
+Press Enter to open a safe link. It opens in the browser you chose under Guided browser in Web browser options. An email address link starts a new email to that address. A button with no usable link is read but cannot run a script from the email.
 Voice choices include "Next link", "Previous link", "Next button", and "Previous button". To hear every link, say "List links", or press F7. To hear every button, say "List buttons", or press F8.
 Say "Activate current link" or "Activate current button" to use the selected item. To choose by number, say "Open link" or "Open button", followed by its number. For example, say "Open link 1" or "Open button 1".
 A page of messages is a list with a start and an end. Up Arrow and Down Arrow stop at the first and last message on the page. You hear "Start of list" or "End of list", and how to reach the next page.
@@ -744,7 +745,7 @@ A newly loaded page may start reading on its own. Turn off Automatic page readin
 Press Alt to open the web page menu. It has Page, Lists, Favorites, and Options and help. The menu does not close the page. While you type in a page field, Alt does not open the menu.
 
 11.4 Move to headings, links, or controls
-H moves to the next heading. Shift+H moves to the previous heading. K moves to the next link.
+H moves to the next heading. Shift+H moves to the previous heading. K moves to the next link. A heading that is also a link, such as a search result, says so after its level. For example: "JAWS downloads, heading level 3, link".
 Use B for a button, X for a checkbox, C for a choice box, E for a text box, and F for any form control.
 Use T for a table, R or A for a radio button, L for a list, and I for a list item.
 Use D for a landmark or region, G for a picture, M for a frame, P for a paragraph, and S for a list box.
@@ -1169,9 +1170,9 @@ Each setting controls its own Yes or No prompt. Document save questions still ap
 
 19.1 Put the microphone to sleep
 To pause ordinary voice requests, say "Go to sleep", or press Control+F12. To continue, say "Wake up", or press Control+F12 again.
-To turn the microphone fully off, press F9. Companion then hears nothing, not even "Wake up". Press F9 again to turn it back on. You can also say "Turn off the microphone". F9 works on every screen.
+To turn the microphone fully off, press F9. Companion then hears nothing, not even "Wake up". Press F9 again to turn it back on. You can also say "Turn off the microphone". F9 works on every screen. Companion remembers your choice. If you close it with the microphone off, it starts with the microphone off and tells you to press F9.
 
-To go back to the main menu from any screen, press Print Screen. It works like saying "Main menu". If a document has changes, Companion asks to save it first. On some computers, Print Screen opens the Windows screen capture tool instead. To fix that, open Windows Settings, then Accessibility, then Keyboard. Turn off "Use the Print screen key to open screen capture".
+To go back to the main menu from any screen, press Control+F1. It works like saying "Main menu". If a document has changes, Companion asks to save it first. Print Screen still takes a screenshot, as usual in Windows.
 Your place in a document, email, or menu is kept. A note or draft is saved before sleep where needed.
 If an email is waiting for your approval to send, that approval is canceled. Review the message again before sending it.
 The keyboard still works while voice commands are asleep. Sleep is different from closing the app or putting Windows to sleep.
@@ -1224,7 +1225,7 @@ To return to your task, say "Close help", or press Escape until Help closes. The
 21. FIND YOUR GUIDE FILES
 
 21.1 Open the guide folder
-Say "Open user guides" or "Open guides folder", or press Control+Shift+G on the main menu.
+Say "Open user guides" or "Open guides folder", or press Control+G on the main menu.
 You can also use the Voice Companion User Guides shortcut on the desktop or in the Start menu.
 Open Documents, then the Voice Companion folder, then User Guides. Opening the guide folder does not leave your current task in Companion.
 After an update, close and reopen a guide that was already open so you see its new text.
@@ -1260,7 +1261,7 @@ A site may ask for human verification or use a control Companion cannot read. As
 Some email folder changes and forwarded attachments are limited by the service or this version. Review the related chapters before trying again.
 
 22.4 A guide or update will not open
-Close any open guide files, then say "Open user guides", or press Control+Shift+G, again. This asks Companion to refresh its guide copies.
+Close any open guide files, then say "Open user guides", or press Control+G, again. This asks Companion to refresh its guide copies.
 If your Documents folder is not available, ask your helper to restore access to it.
 For a failed update, keep using the current app if it opens. Try Check for updates again later.
 Use the installed desktop icon. If it opens an older version, ask your helper to check the installation.

@@ -15,7 +15,7 @@ from urllib.parse import urlsplit, quote, unquote
 from privacy_controls import saved_address
 
 from browser_navigation import prepare_address
-from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,choice_field,describe,editable_combo,kind,text_field,voice_browse_key
+from web_browse import BrowseCursor,QUICK_KEYS,SEMANTICS,choice_field,describe,heading_link,editable_combo,kind,text_field,voice_browse_key
 from web_modes import APP_MODE,BROWSE_MODE
 from reading_navigation import ReadingCursor, reading_request
 from storage import write_text_atomic
@@ -1250,7 +1250,7 @@ class WebSession:
             if item and item.get('start',0)<=self.reading.position<item.get('end',0):
                 role=kind(item)
                 if role=='link':message='Link '+message
-                elif role=='heading':message+=' heading level '+str(item.get('level',1))+'.'
+                elif role=='heading':message+=' heading level '+str(item.get('level',1))+(', link' if heading_link(item,self.browse.elements) else '')+'.'
             self.auto_focus_position()
         return message
 
@@ -2688,7 +2688,7 @@ class WebSession:
         if self.list_focus=='headings':
             item=self.heading_items()[self.heading_index];self.list_focus=None
             self.browse.set_position(item['start']);self.reading.position=item['start'];self.reading.continuation=item['start'];self.cursor_changed()
-            return describe(item)
+            return describe(item,self.browse.elements)
         return 'Move to a link or heading first.'
 
     def command(self, spoken):

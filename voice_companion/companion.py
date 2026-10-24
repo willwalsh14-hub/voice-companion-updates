@@ -502,7 +502,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'write a note'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'notepad'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -678,8 +678,8 @@ def navigation_key(key,mode):
     if key=='F9':
         # F9 turns the microphone fully off or on, on every screen.
         return '@microphone'
-    if key=='Print':
-        # Print Screen goes back to the main menu from every screen.
+    if key=='Ctrl+F1':
+        # Control+F1 goes back to the main menu from every screen.
         return '@main_menu'
     if ACCOUNT_ENTRY is not None and key!='Control':
         # Setup owns the keyboard: keys must not reach the menu behind the text box.
@@ -854,7 +854,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -1914,9 +1914,11 @@ THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it close
 
 # F9 (or "turn off the microphone") turns the microphone fully off: the stream is closed and
 # nothing listens, not even for "wake up". F9 turns it back on. (Control+F12 only puts
-# listening to sleep.) Not kept between starts, so Companion always starts able to hear.
+# listening to sleep.) Kept between starts (preferences "microphone_off"): Companion says at
+# start that the microphone is off and how to turn it on.
 MICROPHONE_OFF = False
 MICROPHONE_ANNOUNCED = False   # set_microphone already said it is on
+MICROPHONE_STILL_OFF = 'The microphone is off, as you left it. Press F9 to turn it on.'
 MICROPHONE_OFF_PHRASES = ('turn off the microphone', 'turn off microphone', 'turn the microphone off', 'turn microphone off',
                           'microphone off', 'mic off', 'turn off the mic', 'turn the mic off', 'mute microphone', 'mute the microphone')
 MICROPHONE_ON_PHRASES = ('turn on the microphone', 'turn on microphone', 'turn the microphone on', 'turn microphone on',
@@ -1928,6 +1930,9 @@ def set_microphone(on, mode):
     global MICROPHONE_OFF, MICROPHONE_ANNOUNCED
     MICROPHONE_OFF = not on
     MICROPHONE_ANNOUNCED = on
+    PREFERENCES['microphone_off'] = not on
+    try:save_preferences()
+    except OSError:pass   # The switch still works now; it is only not remembered.
     if on:
         speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
                                    else 'Voice commands are on.'))
@@ -2396,6 +2401,26 @@ def handle_mailbox_screen(text, command, mode, typed):
     return 'mailbox'
 
 
+EMAIL_LINK_RECIPIENT = None
+
+
+def open_email_link(url):
+    """A link or button chosen in an email opens in the guided browser from Web browser
+    options (Chrome or the built-in browser), never another program. An email address
+    link starts a new email to it."""
+    global web_session, EMAIL_LINK_RECIPIENT
+    from urllib.parse import unquote, urlsplit
+    if urlsplit(url).scheme.lower() == 'mailto':
+        EMAIL_LINK_RECIPIENT = unquote(urlsplit(url).path).split('?')[0].strip()
+        return handle('new email', 'mailbox', typed=True)
+    web_session = web_session or WebSession(APP, progress=speak_status)
+    web_session.auto_read = PREFERENCES.get('web_auto_read', True)
+    web_session.search_engine = PREFERENCES.get('web_search_engine', 'google')
+    revision = getattr(web_session, 'page_revision', 0)
+    speak_web_result(web_session.open(url), revision)
+    return 'web' if web_session.snapshot else 'mailbox'
+
+
 def account_entry_step(text, command, mode):
     """One spoken or typed answer during Yahoo setup. The password is never taken by voice."""
     global ACCOUNT_ENTRY
@@ -2795,7 +2820,7 @@ def _handle(text, mode, typed=False):
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global OPEN_NOTE, ACCOUNT_ENTRY, THUNDERBIRD_SETUP
-    global SEARCH_RETURN_MODE,NAMED_LIST
+    global SEARCH_RETURN_MODE,NAMED_LIST,EMAIL_LINK_RECIPIENT
     # Phrases that list saved notes. On the Notepad screen only the clear commands
     # count; a sentence such as "My notes are on the desk" is text.
     NOTE_LIST_COMMANDS = ('list notes', 'list my notes', 'list saved notes', 'list the notes', 'open notes', 'open my notes',
@@ -2806,7 +2831,7 @@ def _handle(text, mode, typed=False):
     if text=='@microphone':
         return set_microphone(MICROPHONE_OFF, mode)
     if text=='@main_menu':
-        # Print Screen: the same as saying Main menu, so each screen saves or asks first.
+        # Control+F1: the same as saying Main menu, so each screen saves or asks first.
         if mode=='awake' and ACCOUNT_ENTRY is None and THUNDERBIRD_SETUP is None:
             announce_main_menu();return 'awake'
         return handle('main menu', mode, typed=True)
@@ -3748,6 +3773,8 @@ def _handle(text, mode, typed=False):
         speak(mail_session.process('open inbox'))
         return 'mailbox'
     sender_recipient=None
+    if command=='new email' and EMAIL_LINK_RECIPIENT:
+        sender_recipient,EMAIL_LINK_RECIPIENT=EMAIL_LINK_RECIPIENT,None
     if mode=='mailbox' and command in ('copy sender address','copy sender email address','copy the sender address','email sender','email the sender','new email to sender','write an email to sender','compose email to sender'):
         from mail_voice import sender_address
         address=sender_address(mail_session.rows[mail_session.current-1]) if mail_session and mail_session.rows and mail_session.current else ''
@@ -4002,8 +4029,10 @@ def _handle(text, mode, typed=False):
         if command in ('go back', 'back', 'exit', 'exit note', 'main menu', 'back to main menu'):
             if not flush_note(mode):return mode
             OPEN_NOTE = None
-            speak('Note saved.')
-            return 'awake'
+            if command in ('main menu', 'back to main menu'):
+                speak('Note saved.');return 'awake'
+            # Escape and Go back return to the Notepad menu, as a document returns to Word processor.
+            return task_navigation().enter('notepad_menu', 'Note saved. Notepad')
         if command in ('save note', 'finish note', 'done dictating'):
             if note_buffer:
                 if save_note(' '.join(note_buffer)) is False:return mode
@@ -4289,6 +4318,11 @@ def handle(text, mode, typed=False):
     finally:
         _HANDLE_DEPTH -= 1
         KEYBOARD_NAVIGATION=previous_navigation
+    url=getattr(mail_session,'link_request',None) if _HANDLE_DEPTH==0 else None
+    if isinstance(url,str) and url:
+        # A link or button chosen in an email (any key or voice path) opens here.
+        mail_session.link_request=None
+        result=open_email_link(url)
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
         announce_main_menu()
@@ -4355,7 +4389,7 @@ def poll_app_updates(mode):
 
 
 def main():
-    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED
+    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF
     if '--check-browser-bookmarks' in sys.argv:
         from packaged_browser_check import check
         return check(sys.modules[__name__])
@@ -4504,7 +4538,9 @@ def main():
     global resampler, input_channels
     import contextlib
     input_stream=None
-    input_stream=open_microphone(sd)
+    # F9 or "turn off the microphone" is remembered after Companion closes.
+    MICROPHONE_OFF=bool(PREFERENCES.get('microphone_off',False))
+    if not MICROPHONE_OFF:input_stream=open_microphone(sd)
     recognizer = KaldiRecognizer(model, sample_rate)
     mode = 'sleep'
     media()  # Restore scheduled radio recordings after an app restart.
@@ -4529,7 +4565,8 @@ def main():
         mode = startup_update_mode()
         mode = __import__('chrome_setup').startup_request(sys.modules[__name__],mode)
         sync_app_context(mode,True)
-        if input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
+        if MICROPHONE_OFF:speak(MICROPHONE_STILL_OFF)
+        elif input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
         # Listen and process keys while the asynchronous startup speech plays.
         result_file = APP / 'update-result.json'
         if result_file.exists():

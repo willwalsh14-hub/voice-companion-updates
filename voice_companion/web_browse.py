@@ -69,13 +69,27 @@ def text_field(item):
     """Any control whose value is typed: edit fields and editable combo boxes."""
     return bool(item) and (kind(item)=='edit' or editable_combo(item))
 
-def describe(item):
+def heading_link(item,elements):
+    """True when a heading is also a link (a link inside it, or the heading inside a link),
+    as in search results."""
+    if not item or kind(item)!='heading' or not elements:return False
+    start,end=item.get('start',0),item.get('end',0)
+    for other in elements:
+        if other is item or kind(other)!='link' or other.get('frame_index')!=item.get('frame_index'):continue
+        a,b=other.get('start',0),other.get('end',0)
+        if (start<=a and b<=end and b>a) or (a<=start and end<=b):return True
+    return False
+
+def describe(item,elements=None):
+    """How an element is spoken. A heading that is a link says so after its level, like
+    a screen reader: "JAWS downloads, heading level 3, link." (Will, October 2026)."""
     name=item.get('label') or 'Unlabeled';role=kind(item)
     if role=='landmark':return (name+', ' if name not in ('Unnamed','Unlabeled') else '')+{'contentinfo':'content information'}.get(item.get('landmark','region'),item.get('landmark','region'))+' region.'
     if role=='list':return (name+', ' if name not in ('List','Unlabeled') else '')+('Ordered list' if item.get('ordered') else 'List')+', '+str(item.get('item_count',0))+' items.'
     if role=='listitem':return name+', list item'+(' '+str(item['position'])+' of '+str(item['set_size']) if item.get('position') and item.get('set_size',0)>0 else '')+'.'
+    linked=role=='heading' and heading_link(item,elements)
     if role=='heading':role+=' level '+str(item.get('level',1))
-    state='';spoken_role=role
+    state=', link' if linked else '';spoken_role=role
     if role in ('checkbox','radio'):state=', '+('checked' if item.get('checked') else 'not checked')
     if role in ('switch','menuitemcheckbox','menuitemradio'):state=', '+('on' if item.get('checked') else 'off')
     if role in ('slider','spinbutton','progressbar','meter','scrollbar'):
@@ -153,7 +167,7 @@ class BrowseCursor:
         self.index=index;item=self.current();self.position=item.get('start',0)
         if kind(item)=='table':self.table=item['key'];self.row=self.column=0
         elif kind(item)=='cell':self.table=item.get('table');self.row=item.get('row',0);self.column=item.get('column',0)
-        return describe(item)
+        return describe(item,self.elements)
     def cells(self):return [e for e in self.elements if kind(e)=='cell' and e.get('table')==self.table]
     def cell_at(self,row,column):
         return next((e for e in self.cells() if e['row']<=row<e['row']+e.get('rowspan',1) and e['column']<=column<e['column']+e.get('colspan',1)),None)

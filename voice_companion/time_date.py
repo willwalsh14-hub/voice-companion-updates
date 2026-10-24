@@ -50,10 +50,24 @@ def clock_request(text, writing=False):
     return None
 
 
+ONES = ('zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+        'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen')
+TENS = {2: 'twenty', 3: 'thirty', 4: 'forty', 5: 'fifty'}
+
+
+def _number_words(number):
+    if number < 20:
+        return ONES[number]
+    tens, ones = divmod(number, 10)
+    return TENS[tens] + ('-' + ONES[ones] if ones else '')
+
+
 def spoken_time(when):
-    """'9:55 PM': twelve-hour time, as people say it."""
-    hour = when.hour % 12 or 12
-    return f'{hour}:{when.minute:02d} ' + ('AM' if when.hour < 12 else 'PM')
+    """'nine fifty-five PM', 'three oh seven AM', 'twelve PM': twelve-hour time in words, as
+    people say it. Words, not 9:55, so no voice pauses after the hour or says zero (Will, October 2026)."""
+    hour = _number_words(when.hour % 12 or 12)
+    minute = '' if when.minute == 0 else ' oh ' + ONES[when.minute] if when.minute < 10 else ' ' + _number_words(when.minute)
+    return hour + minute + (' AM' if when.hour < 12 else ' PM')
 
 
 def clean(text):

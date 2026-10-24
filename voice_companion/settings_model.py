@@ -168,6 +168,7 @@ def keyboard_request(key,mode):
         if mode=='update_download':return 'cancel update'
         if mode=='email_draft':return 'cancel'
         if mode=='document':return 'leave document'
+        if mode=='note':return 'exit note'
         if mode=='web':return 'go back'
         if mode=='help':return 'back to topics'
         if mode=='tutorial':return 'main menu'

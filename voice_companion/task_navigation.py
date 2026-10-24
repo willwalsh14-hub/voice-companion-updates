@@ -108,6 +108,10 @@ class TaskNavigation:
         if mode == 'word_processor':
             return [('Create a document', 'Ctrl+N', 'create a document'), ('Open a document', 'Ctrl+O', '@open'),
                     ('Recent documents', 'Ctrl+R', '@recent'), ('Options', 'Alt+O', '@options')]
+        if mode == 'notepad_menu':
+            # Opening Notepad lands here first (Will, October 2026).
+            return [('Create a note', 'Ctrl+N', 'write a note'), ('Open a note', 'Ctrl+O', 'list notes'),
+                    ('Options', 'Alt+O', '@options:Notepad'), ('Main menu', 'Ctrl+F1', 'main menu')]
         if mode == 'media_menu':
             return [('Radio', '', 'radio'), ('Podcasts', '', 'podcasts'), ('Media player', '', 'media player')]
         if mode == 'recent_documents':
@@ -271,7 +275,13 @@ class TaskNavigation:
                     'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')
             return 'task_input'
-        return m.handle(command, 'document' if mode == 'document_menu' else 'awake' if mode in ('media_menu','word_processor') else mode, typed=True)
+        if mode == 'notepad_menu':
+            if command == 'list notes':
+                # The notes list opens over this menu; Escape closes it and stays here.
+                m.list_saved_notes(); return mode
+            if command.startswith('@options:'):return m.screen_menu().run(command, mode)
+            if command == 'main menu':return 'awake'
+        return m.handle(command, 'document' if mode == 'document_menu' else 'awake' if mode in ('media_menu','word_processor','notepad_menu') else mode, typed=True)
 
     def keyboard(self, key, mode):
         if mode=='document_menu' and key.startswith('MenuPick:'):
@@ -295,6 +305,8 @@ class TaskNavigation:
         if self.items(mode) is not None:
             if mode == 'word_processor' and key in ('Ctrl+N','Ctrl+O','Ctrl+R','Alt+O'):
                 return {'Ctrl+N':'create a document','Ctrl+O':'@open','Ctrl+R':'@recent','Alt+O':'@options'}[key]
+            if mode == 'notepad_menu' and key in ('Ctrl+N','Ctrl+O','Alt+O'):
+                return {'Ctrl+N':'write a note','Ctrl+O':'list notes','Alt+O':'@options:Notepad'}[key]
             return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'enter','Escape':'escape','Home':'home','End':'end'}.get(key)
         if mode == 'task_input' and key == 'Escape': return 'cancel'
         return None
@@ -324,7 +336,7 @@ class TaskNavigation:
             return self.action('@options',mode)
         if mode=='document_menu' and command in ('main menu','back to main menu','exit companion'):
             return m.handle(text,'document',typed=True)
-        if mode in ('word_processor','media_menu','recent_documents','document_menu','local_media') and (m.spoken_control(command) or command in ('help','exit companion','go to sleep','wake up','main menu','back to main menu')):
+        if mode in ('word_processor','media_menu','recent_documents','document_menu','local_media','notepad_menu') and (m.spoken_control(command) or command in ('help','exit companion','go to sleep','wake up','main menu','back to main menu')):
             return None
         editor = m.document if mode == 'document' else m.email_draft if mode == 'email_draft' else None
         if editor is not None and command in ('toggle bold','toggle italic','toggle underline') and (mode == 'document' or (editor.compose_step or 'body') == 'body'):
@@ -339,6 +351,10 @@ class TaskNavigation:
             elif mode=='email_draft' and m.email_draft:m.email_draft.save()
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')
+        if command in ('notepad','open notepad','notepad menu') and mode not in ('document','email_draft','note'):
+            return self.enter('notepad_menu', 'Notepad')
+        if mode == 'notepad_menu' and command in ('create a note','new note','open a note','open notes','options','open options','notepad options'):
+            return self.action({'create a note':'write a note','new note':'write a note','open a note':'list notes','open notes':'list notes'}.get(command,'@options:Notepad'), mode)
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
             return self.enter('media_menu', 'Media menu')
         if command in ('media player','open media player'):

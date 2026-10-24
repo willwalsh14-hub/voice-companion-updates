@@ -138,7 +138,7 @@
 },
 "awake | Time.": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "awake"
 },
@@ -180,7 +180,7 @@
 },
 "awake | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "awake"
 },
@@ -989,7 +989,7 @@
 },
 "awake | date and time": {
 "said": [
-"9:55 PM. Thursday, October 22, 2026."
+"nine fifty-five PM. Thursday, October 22, 2026."
 ],
 "screen_after": "awake"
 },
@@ -1930,6 +1930,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | mailto": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | main menu": {
 "said": [
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
@@ -2260,9 +2266,9 @@
 },
 "awake | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "note"
+"screen_after": "notepad_menu"
 },
 "awake | notes list": {
 "said": [
@@ -2428,9 +2434,9 @@
 },
 "awake | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "note"
+"screen_after": "notepad_menu"
 },
 "awake | open notes": {
 "said": [
@@ -4457,7 +4463,7 @@
 },
 "document | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "document",
 "text": [
@@ -7042,6 +7048,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. mailbox"
+]
+},
+"document | mailto": {
+"said": [
+"mailto"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. mailto"
 ]
 },
 "document | main menu": {
@@ -10610,7 +10625,7 @@
 },
 "email_draft | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -13330,6 +13345,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. mailbox"
+]
+},
+"email_draft | mailto": {
+"said": [
+"mailto"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. mailto"
 ]
 },
 "email_draft | main menu": {
@@ -16761,7 +16785,7 @@
 },
 "help | Time.": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "help"
 },
@@ -16797,7 +16821,7 @@
 },
 "help | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "help"
 },
@@ -17369,7 +17393,7 @@
 },
 "help | date and time": {
 "said": [
-"9:55 PM. Thursday, October 22, 2026."
+"nine fifty-five PM. Thursday, October 22, 2026."
 ],
 "screen_after": "help"
 },
@@ -18016,6 +18040,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | mailto": {
+"said": [],
+"screen_after": "help"
+},
 "help | main menu": {
 "said": [
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
@@ -18244,8 +18272,10 @@
 "screen_after": "help"
 },
 "help | notepad": {
-"said": [],
-"screen_after": "help"
+"said": [
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+],
+"screen_after": "notepad_menu"
 },
 "help | notes list": {
 "said": [],
@@ -18366,8 +18396,10 @@
 "screen_after": "help"
 },
 "help | open notepad": {
-"said": [],
-"screen_after": "help"
+"said": [
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+],
+"screen_after": "notepad_menu"
 },
 "help | open notes": {
 "said": [],
@@ -19785,7 +19817,7 @@
 },
 "mailbox | Time.": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "mailbox"
 },
@@ -19827,7 +19859,7 @@
 },
 "mailbox | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "mailbox"
 },
@@ -20918,7 +20950,7 @@
 },
 "mailbox | date and time": {
 "said": [
-"9:55 PM. Thursday, October 22, 2026."
+"nine fifty-five PM. Thursday, October 22, 2026."
 ],
 "screen_after": "mailbox"
 },
@@ -22170,6 +22202,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | mailto": {
+"calls": [
+"call.process('mailto')"
+],
+"said": [
+"session handled: mailto"
+],
+"screen_after": "mailbox"
+},
 "mailbox | main menu": {
 "said": [
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
@@ -22612,9 +22653,9 @@
 },
 "mailbox | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "note"
+"screen_after": "notepad_menu"
 },
 "mailbox | notes list": {
 "calls": [
@@ -22837,9 +22878,9 @@
 },
 "mailbox | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "note"
+"screen_after": "notepad_menu"
 },
 "mailbox | open notes": {
 "calls": [
@@ -25270,7 +25311,7 @@
 },
 "note | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "note"
 },
@@ -25432,10 +25473,9 @@
 },
 "note | back": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "awake"
+"screen_after": "notepad_menu"
 },
 "note | back a list": {
 "said": [
@@ -26365,10 +26405,9 @@
 },
 "note | exit": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "awake"
+"screen_after": "notepad_menu"
 },
 "note | exit browser": {
 "said": [
@@ -26402,10 +26441,9 @@
 },
 "note | exit note": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "awake"
+"screen_after": "notepad_menu"
 },
 "note | exit web browser": {
 "said": [
@@ -26572,10 +26610,9 @@
 },
 "note | go back": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "awake"
+"screen_after": "notepad_menu"
 },
 "note | go back a list": {
 "said": [
@@ -27000,6 +27037,12 @@
 "note | mailbox": {
 "said": [
 "mailbox"
+],
+"screen_after": "note"
+},
+"note | mailto": {
+"said": [
+"mailto"
 ],
 "screen_after": "note"
 },
@@ -29387,7 +29430,7 @@
 },
 "web | Time.": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "web"
 },
@@ -29429,7 +29472,7 @@
 },
 "web | What time is it?": {
 "said": [
-"9:55 PM."
+"nine fifty-five PM."
 ],
 "screen_after": "web"
 },
@@ -30628,7 +30671,7 @@
 },
 "web | date and time": {
 "said": [
-"9:55 PM. Thursday, October 22, 2026."
+"nine fifty-five PM. Thursday, October 22, 2026."
 ],
 "screen_after": "web"
 },
@@ -32029,6 +32072,16 @@
 ],
 "screen_after": "web"
 },
+"web | mailto": {
+"calls": [
+"call.command('mailto')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: mailto"
+],
+"screen_after": "web"
+},
 "web | main menu": {
 "calls": [
 "call.leave(False)"
@@ -32519,9 +32572,9 @@
 },
 "web | notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "note"
+"screen_after": "notepad_menu"
 },
 "web | notes list": {
 "calls": [
@@ -32767,9 +32820,9 @@
 },
 "web | open notepad": {
 "said": [
-"Dictation started. Speak naturally. Say save note when finished. Say list notes to open a saved note."
+"Notepad. Create a note (C), 1 of 4. Ctrl+N."
 ],
-"screen_after": "note"
+"screen_after": "notepad_menu"
 },
 "web | open notes": {
 "calls": [

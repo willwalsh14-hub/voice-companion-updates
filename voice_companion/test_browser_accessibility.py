@@ -140,14 +140,17 @@ class EmailControlTests(unittest.TestCase):
     def test_image_donation_link_and_aria_button_are_read_as_controls(self):
         body=render_html('<p>Help us.</p><a href="https://example.com/donate"><img src="remote.png" alt="Click to donate"></a><p><a role="button" href="https://example.com/give">Donate now</a></p>')
         self.assertEqual([body[a:b] for a,b,s,u in message_controls(body)],['Click to donate','Donate now'])
-        speech=spoken_range(body,0,len(body));self.assertIn('Click to donate, link',speech);self.assertIn('Donate now, button',speech)
-        session=self.session(body);self.assertIn('Click to donate, link',session._next_body())
+        # Read as the web browser reads them (Will, October 2026): "link" first, "button" after.
+        speech=spoken_range(body,0,len(body));self.assertIn('link Click to donate',speech);self.assertIn('Donate now, button',speech)
+        session=self.session(body);self.assertIn('link Click to donate',session._next_body())
         session.reading.position=0
-        self.assertIn('Click to donate, link',session.process('next link'))
-        self.assertIn('Donate now, button',session.process('next button'))
+        self.assertEqual(session.process('next link'),'Link Click to donate.')
+        self.assertEqual(session.process('next button'),'Donate now, button.')
+        # Companion opens it in the guided browser, never another program.
         with patch('webbrowser.open') as opener:
-            self.assertIn('Opening',session.process('activate current button'));opener.assert_called_once_with('https://example.com/give')
-        self.assertIn('Click to donate, link',session.process('previous link'))
+            self.assertEqual(session.process('activate current button'),'Opening Donate now.');opener.assert_not_called()
+        self.assertEqual(session.link_request,'https://example.com/give')
+        self.assertEqual(session.process('previous link'),'Link Click to donate.')
     def test_empty_image_anchor_has_label_and_button_without_url_is_passive(self):
         body=render_html('<a href="https://example.com/donate" aria-label="Donate"><img src="background.png"></a><button>Click to donate</button>')
         self.assertTrue(body.startswith('Donate'));self.assertEqual(len(message_controls(body)),2)
@@ -160,7 +163,7 @@ class EmailControlTests(unittest.TestCase):
         self.assertEqual([(body[a:b],s,u) for a,b,s,u in controls],[('Click to donate','button','https://example.com/donate'),('Give','button','https://example.com/give')])
     def test_voice_line_reports_role_without_changing_copyable_body(self):
         body=render_html('<p>First</p><p><a href="https://example.com">Donate</a></p>');session=self.session(body)
-        self.assertEqual(session.process('next line'),'Donate, link');self.assertEqual(str(session.body_text),'First\nDonate')
+        self.assertEqual(session.process('next line'),'link Donate');self.assertEqual(str(session.body_text),'First\nDonate')
         self.assertEqual(app.navigation_key('Email:next link','mailbox'),'next link')
     def test_plain_text_does_not_enable_html_controls(self):
         session=self.session(render_html('<a href="https://example.com">Donate</a>'));session.set_format('plain text')

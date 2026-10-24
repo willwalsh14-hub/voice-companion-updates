@@ -313,12 +313,13 @@ class CompanionWindow:
                 # then handled as usual.
                 if event.keysym=='Escape':user_stop.request()
                 if event.keysym in ('Alt_L','Alt_R'):
-                    if not alt_tap['alone']:alt_tap.update(alone=True,when=time.monotonic())
+                    if not alt_tap['alone']:alt_tap.update(alone=True,when=time.monotonic());alt_tap.pop('sent',None)
                 else:alt_tap['alone']=False
             root.bind('<KeyPress>',watch_alt,add='+')
             root.bind('<FocusOut>',lambda event:alt_tap.update(alone=False),add='+')
             def alt_release(event):
                 if event.keysym not in ('Alt_L','Alt_R'):return
+                if alt_tap.pop('sent',False):alt_tap['alone']=False;return 'break'
                 alone=alt_tap['alone'] and time.monotonic()-alt_tap['when']<2;alt_tap['alone']=False
                 if not alone or event.widget.winfo_toplevel()!=root:return
                 from screen_menus import alt_menu_key,alt_unavailable
@@ -337,7 +338,6 @@ class CompanionWindow:
             root.bind_all('<KeyRelease>',alt_release,add='+')
             from time_date import PressCounter,clock_key,key_request
             clock_presses=PressCounter()
-            print_screen=[0.0]
             def shortcut(event):
                 if event.keysym.lower()=='p' and event.state&4 and not event.state&1 and not alt_held(event.state):
                     if not self.media_shortcut.registered:self.commands.put(('keyboard','Ctrl+P'))
@@ -356,13 +356,12 @@ class CompanionWindow:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     cancel_phonetic()
                     self.commands.put(('keyboard','F9'));return 'break'
-                if key=='Print':
-                    # Print Screen goes to the main menu from every screen. Windows often sends
-                    # only the key release, so the release below covers that case.
-                    print_screen[0]=time.monotonic()
+                if key=='F1' and event.state&4 and not event.state&1 and not alt_held(event.state):
+                    # Control+F1 goes to the main menu from every screen. (Print Screen stays
+                    # with Windows, for screenshots.)
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     cancel_phonetic()
-                    self.commands.put(('keyboard','Print'));return 'break'
+                    self.commands.put(('keyboard','Ctrl+F1'));return 'break'
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 watch_alt(event)
@@ -434,7 +433,7 @@ class CompanionWindow:
                             # Add the typed words to the note first, as Enter would.
                             self.commands.put(typed.get().strip());typed.delete(0,'end')
                         self.commands.put(('keyboard',direct));return 'break'
-                if mode in ('document','word_processor','document_menu','recent_documents','media_menu','local_media','task_input'):
+                if mode in ('document','word_processor','document_menu','recent_documents','media_menu','local_media','notepad_menu','task_input'):
                     from task_navigation import SHORTCUTS
                     if mode=='document' and self.context.get('document_table') and key in ('Tab','ISO_Left_Tab'):
                         flush_pending_edit();cancel_phonetic()
@@ -450,6 +449,9 @@ class CompanionWindow:
                     if mode=='document_menu' and key in ('Alt_L','Alt_R'):chord='Escape'
                     if chord in requests and not (mode=='task_input' or self.command_entry_active):
                         flush_pending_edit();cancel_phonetic()
+                        # Alt already did its job here (the player or document menu), so letting
+                        # it go must not also say "This screen has no Alt menu".
+                        if chord=='Alt' and mode in ('local_media','document','document_menu'):alt_tap['sent']=True
                         self.commands.put(('keyboard','Space' if chord=='space' else 'Enter' if chord=='Return' else 'ShiftTab' if chord=='ISO_Left_Tab' else chord));return 'break'
                 if mode=='files' and self.context.get('file_name_input') and event.widget==typed and key!='Escape':return
                 if key.lower()=='t' and not control and alt_held(event.state):
@@ -590,12 +592,6 @@ class CompanionWindow:
             root.bind_all('<KeyPress>',shortcut,add='+')
             def release_activation_key(event):
                 self.key_trace.append(f'release {event.keysym} state={event.state:#x} held={sorted(activation_keys)}')
-                if event.keysym=='Print' and event.widget.winfo_toplevel()==root and time.monotonic()-print_screen[0]>1:
-                    # Windows sent no key press for Print Screen: act on the release instead.
-                    print_screen[0]=time.monotonic()
-                    if self.keyboard_output:self.keyboard_output.interrupt()
-                    cancel_phonetic()
-                    self.commands.put(('keyboard','Print'))
                 activation_keys.discard(event.keysym)
             root.bind_all('<KeyRelease>',release_activation_key,add='+')
             root.bind('<FocusOut>',lambda event:activation_keys.clear() if event.widget==root else None,add='+')
