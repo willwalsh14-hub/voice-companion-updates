@@ -128,8 +128,17 @@ $bootloader = & $python -c "import pathlib, PyInstaller; print(pathlib.Path(PyIn
 if (-not (Test-Path -LiteralPath $bootloader)) { throw "PyInstaller's launcher was not built: $bootloader" }
 Write-Output ('PyInstaller launcher built here: ' + (Get-FileHash -LiteralPath $bootloader -Algorithm SHA256).Hash)
 if ($LASTEXITCODE -ne 0) { throw 'Could not install the Windows build tools.' }
-& $python build_webview2.py
-if ($LASTEXITCODE -ne 0) { throw 'The embedded Edge host could not be built.' }
+# Keep the compiler's output so a failure names the line and the error (logs cannot be read remotely).
+$webviewLog = Join-Path $PSScriptRoot 'VoiceCompanion-WebView2-Build.txt'
+$previousPreference = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+& $python build_webview2.py 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $webviewLog | Out-Host
+$webviewExit = $LASTEXITCODE; $ErrorActionPreference = $previousPreference
+if ($webviewExit -ne 0) {
+  $errors = (Get-Content -LiteralPath $webviewLog -ErrorAction SilentlyContinue | Where-Object { $_ -match 'error|warning CS|\.cs\(' }) -join "`n"
+  if (-not $errors) { $errors = (Get-Content -LiteralPath $webviewLog -Tail 40 -ErrorAction SilentlyContinue) -join "`n" }
+  Write-BuildAnnotation 'Embedded Edge host compile errors' $errors
+  throw 'The embedded Edge host could not be built.'
+}
 $env:VOICE_COMPANION_REQUIRE_WEBVIEW2 = '1'
 $embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests')
 if ($embeddedResult -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }

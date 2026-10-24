@@ -153,13 +153,14 @@ class CompanionWebView : Form {
     }
     private void ReportDownload(string id, CoreWebView2DownloadOperation operation, bool started, string path, bool refused) {
         try {
-            long? total = operation.TotalBytesToReceive;
+            // WebView2 reports the size as ulong? (null when the server does not say).
+            ulong? total = operation.TotalBytesToReceive;
             string url = operation.Uri ?? "";
             if (url.Length > 2048) url = url.Substring(0, 2048);
             Send(new { method = "Host.download", @params = new {
                 id = id, @new = started, refused = refused, path = path ?? operation.ResultFilePath, url = url,
                 state = operation.State.ToString(), reason = operation.InterruptReason.ToString(),
-                received = operation.BytesReceived, total = total.HasValue ? total.Value : -1L, canResume = operation.CanResume } });
+                received = operation.BytesReceived, total = total.HasValue ? (long)total.Value : -1L, canResume = operation.CanResume } });
         } catch (Exception) { }
     }
     private static string FreePath(string folder, string name) {
