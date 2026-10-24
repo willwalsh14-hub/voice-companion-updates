@@ -319,6 +319,22 @@ class MailSession:
         return 'Start and end of list.' if first and last else 'Start of list.' if first else 'End of list.' if last else ''
 
 
+    def _page_hint(self, older):
+        """At the edge of a page: how to reach the next one, when there is one."""
+        if older and self.next_cursor:
+            return ' More messages are on the next page. Press Page Down, or say next page.'
+        if not older and self.previous_cursors:
+            return ' Newer messages are on the previous page. Press Page Up, or say previous page.'
+        return ''
+
+    def page_edge(self, bottom=False):
+        """Home and End: the first or last message on this page. Already there: say so."""
+        if not self.rows:return 'Empty list.'
+        target = len(self.rows) if bottom else 1
+        if self.current == target:
+            return ('End of list. ' if bottom else 'Start of list. ') + self._focus(target) + self._page_hint(bottom)
+        return self._focus(target)
+
     # Going to the end one page at a time stops after this many pages, and says so.
     MAX_END_PAGES = 100
 
@@ -525,8 +541,12 @@ class MailSession:
                 if command in ('cancel', 'go back', 'back'):
                     return 'Folder choice canceled. Nothing was changed.'
                 return 'Say rename to followed by the new name, or cancel.'
+            if command in ('first message on page','last message on page') and self.rows and not self.folder_picker:
+                return self.page_edge(command.startswith('last'))
+            if command in ('newest message','first message in folder','oldest message','last message in folder') and self.rows and not self.folder_picker:
+                return self.list_boundary(command in ('oldest message','last message in folder'))
             if command in ('first message','start of list','beginning of list','last message','end of list') and self.rows and not self.folder_picker:
-                return self.list_boundary(command in ('last message','end of list'))
+                return self.page_edge(command in ('last message','end of list'))
             if command in ('next','previous') and self.rows:
                 command += ' message'
             if command in ('message details','who is this from','read message details') and (self.view == 'message' or self.rows and self.current):
@@ -627,20 +647,12 @@ class MailSession:
                 if self.current is None:
                     return self._focus(1) if command == 'next message' and self.rows else 'Say read message followed by a number first.'
                 delta = 1 if command == 'next message' else -1
+                # A page is a list with a hard start and end, like every menu: the arrows
+                # stop there. Another page is opened only on purpose (Page Down, Page Up).
                 if delta == 1 and self.current == len(self.rows):
-                    if not self.next_cursor:
-                        return 'End of list. This is the last message in this folder.'
-                    cursor = self.next_cursor
-                    previous=self.page_cursor
-                    self.list_messages(cursor)
-                    self.previous_cursors.append(previous)
-                    return self._focus(1) if self.rows else 'No more messages were returned.'
+                    return 'End of list. ' + self._focus(self.current) + self._page_hint(True)
                 if delta == -1 and self.current == 1:
-                    if not self.previous_cursors:
-                        return 'Start of list. This is the first message in this folder.'
-                    self.list_messages(self.previous_cursors[-1])
-                    self.previous_cursors.pop()
-                    return self._focus(len(self.rows)) if self.rows else 'No previous messages were returned.'
+                    return 'Start of list. ' + self._focus(self.current) + self._page_hint(False)
                 return self._focus(self.current + delta)
             if command in ('extend selection next','extend selection previous'):
                 if not self.rows:return 'No messages to select.'

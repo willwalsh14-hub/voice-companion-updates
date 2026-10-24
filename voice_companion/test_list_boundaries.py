@@ -1,6 +1,7 @@
 """Navigation boundaries, SAPI labels and confirmation accelerators."""
 import tempfile,unittest
 from unittest.mock import patch,Mock
+from pathlib import Path
 import companion as app
 from menu_navigation import bounded_index,boundary_notice,next_match
 from settings_model import SettingsSession,DEFAULTS
@@ -76,11 +77,18 @@ class BoundaryTests(unittest.TestCase):
                 return pages[cursor]
         with tempfile.TemporaryDirectory() as folder:
             session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
-            session.list_messages();self.assertNotIn('of list',session.list_boundary(True));self.assertIn('End of list',session.process('next message'))
-            self.assertEqual(session.rows[session.current-1]['id'],'c')
-            self.assertIn('last message',session.process('next message'));self.assertEqual(session.rows[0]['id'],'c')
-            self.assertNotIn('of list',session.list_boundary(False));self.assertIn('Start of list',session.process('previous message'));self.assertEqual(session.rows[0]['id'],'a')
-            self.assertIn('first message',session.process('previous message'));self.assertEqual(session.rows[0]['id'],'a')
+            # Will, October 2026: arrows stop at the page's edges; pages change only on purpose.
+            session.list_messages()
+            said=session.process('next message')
+            self.assertTrue(said.startswith('End of list.'));self.assertIn('Press Page Down',said);self.assertEqual(session.rows[0]['id'],'a')
+            said=session.process('previous message')
+            self.assertTrue(said.startswith('Start of list.'));self.assertNotIn('Page Up',said)
+            self.assertIn('Middle',session.process('next page'));self.assertEqual(session.rows[0]['id'],'b')
+            self.assertIn('Page Up',session.process('previous message'))
+            # Control+End and Control+Home: the oldest and newest message in the folder.
+            self.assertNotIn('of list',session.list_boundary(True));self.assertEqual(session.rows[0]['id'],'c')
+            said=session.process('next message');self.assertTrue(said.startswith('End of list.'));self.assertNotIn('Page Down',said)
+            self.assertNotIn('of list',session.list_boundary(False));self.assertEqual(session.rows[0]['id'],'a')
     def test_failed_email_end_preserves_current_page(self):
         from mailbox_access import MailboxError
         with tempfile.TemporaryDirectory() as folder:
@@ -149,9 +157,10 @@ class EverydayWorkflowTests(unittest.TestCase):
             session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox'
             self.assertNotIn('of list',session.list_messages())
             self.assertNotIn('End of list.',session._focus(1))
-            self.assertIn('Last',session.process('next message'));self.assertTrue(session.process('next message').startswith('End of list.'))
+            self.assertTrue(session.process('next message').startswith('End of list.'))
+            self.assertIn('Last',session.process('next page'));self.assertTrue(session.process('next message').startswith('End of list.'))
             self.assertNotIn('Start of list.',session._focus(1))
-            self.assertIn('First',session.process('previous message'));self.assertTrue(session.process('previous message').startswith('Start of list.'))
+            self.assertIn('First',session.process('previous page'));self.assertTrue(session.process('previous message').startswith('Start of list.'))
     def test_singleton_inbox_entry_announces_both_boundaries(self):
         with tempfile.TemporaryDirectory() as folder:
             session=MailSession('gmail',folder);session.client=lambda:Mock(list_messages=Mock(return_value=([{'id':'a','subject':'Only','from':'Sam'}],None)))
@@ -159,7 +168,7 @@ class EverydayWorkflowTests(unittest.TestCase):
 
     def test_network_failure_preserves_email_page_and_history(self):
         from mailbox_access import MailboxError
-        for command in ('next message','next page','previous message','previous page'):
+        for command in ('next page','previous page'):
             with tempfile.TemporaryDirectory() as folder:
                 session=MailSession('gmail',folder)
                 session.rows=[{'id':'a','subject':'Keep','from':'Sam'}];session.current=1
@@ -206,3 +215,78 @@ class EverydayWorkflowTests(unittest.TestCase):
                 self.assertIn('still open',speech.call_args.args[0])
 
 if __name__=='__main__':unittest.main()
+
+
+class EmailPageKeyTests(unittest.TestCase):
+    """Will, October 2026: Home and End stay on this page; Page Down and Page Up change the
+    page; Control+Home and Control+End reach the newest and oldest message in the folder."""
+    def session(self):
+        class Client:
+            def list_messages(self,folder,cursor=None,limit=10):
+                pages={None:([{'id':'a1','subject':'One','from':'A'},{'id':'a2','subject':'Two','from':'B'}],'p2'),
+                       'p2':([{'id':'b1','subject':'Three','from':'C'},{'id':'b2','subject':'Four','from':'D'}],None)}
+                return pages[cursor]
+        folder=tempfile.mkdtemp();self.addCleanup(__import__('shutil').rmtree,folder,True)
+        session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
+        session.list_messages();return session
+
+    def test_home_and_end_stay_on_the_page(self):
+        session=self.session()
+        self.assertIn('Two',session.page_edge(True));self.assertEqual(session.rows[0]['id'],'a1')
+        said=session.page_edge(True);self.assertTrue(said.startswith('End of list.'));self.assertIn('Page Down',said)
+        self.assertIn('One',session.page_edge(False))
+        self.assertTrue(session.page_edge(False).startswith('Start of list.'))
+
+    def test_page_keys_and_control_home_end_reach_the_app(self):
+        import companion
+        session=self.session();said=[]
+        with patch.object(companion,'mail_session',session),patch.object(companion,'speak',said.append):
+            self.assertEqual(companion.navigation_key('Next','mailbox'),'next messages')
+            self.assertEqual(companion.navigation_key('Prior','mailbox'),'previous messages')
+            self.assertEqual(companion.navigation_key('Ctrl+End','mailbox'),'oldest message')
+            self.assertIn('Four',session.process('oldest message'));self.assertEqual(session.rows[0]['id'],'b1')
+            self.assertEqual(companion.navigation_key('Ctrl+Home','mailbox'),'newest message')
+            self.assertIn('One',session.process('newest message'));self.assertEqual(session.rows[0]['id'],'a1')
+            self.assertIsNone(companion.navigation_key('End','mailbox'))
+            self.assertEqual(session.rows[0]['id'],'a1');self.assertIn('Two',said[-1])
+
+    def test_the_window_passes_page_keys_on_the_mail_screen(self):
+        source=(Path(__file__).parent/'app_window.py').read_text(encoding='utf-8')
+        branch=source[source.index("elif mode=='mailbox':"):source.index("elif mode=='email_draft' and key in ('Tab','ISO_Left_Tab'):")]
+        self.assertIn("key in ('Next','Prior')",branch);self.assertIn("request='Ctrl+'+key",branch)
+
+
+class EmailLetterKeyTests(unittest.TestCase):
+    """Will, October 2026: email actions on one key each, no modifiers."""
+    def test_each_letter_runs_its_email_command(self):
+        import companion
+        from input_parity import screen_key
+        session=Mock();session.view='folder';session.pending=None;session.folder_picker=None;session.folder_choice=None
+        expected={'N':'new email','R':'reply','A':'reply all','F':'forward','M':'move','G':'go to folder','W':'which folder',
+                  'I':'message details','C':'copy sender address','E':'new email to sender','D':'open email draft',
+                  'P':'list contacts','U':'clear selection','S':'what is selected'}
+        with patch.object(companion,'mail_session',session),patch.object(companion,'speak'):
+            for letter,command in expected.items():
+                self.assertEqual(screen_key('mailbox',letter.lower(),0,{},None,''),letter)
+                self.assertEqual(companion.navigation_key(letter,'mailbox'),command)
+
+    def test_letters_never_act_while_typing_or_in_a_folder_list(self):
+        from input_parity import screen_key
+        self.assertIsNone(screen_key('mailbox','r',0,{},None,'list messages'))
+        self.assertIsNone(screen_key('mailbox','r',0,{'menu_letters':True},None,''))
+        # In an open message, K and B still move by link and button.
+        self.assertEqual(screen_key('mailbox','r',0,{'source':'mail:1'},None,''),'R')
+        self.assertIsNone(screen_key('mailbox','k',0,{'source':'mail:1'},None,''))
+        self.assertIsNone(screen_key('mailbox','b',0,{'source':'mail:1'},None,''))
+
+
+class OldKeysStillWorkTests(unittest.TestCase):
+    def test_earlier_keys_still_run_their_commands(self):
+        from input_parity import screen_key, screen_command, OLD_KEYS
+        self.assertEqual(screen_key('mailbox','I',0x4,{},None,''),'Ctrl+I')
+        self.assertEqual(screen_command('Ctrl+I','mailbox'),'message details')
+        self.assertEqual(screen_command('Ctrl+Shift+R','email_draft'),'read email draft')
+        self.assertEqual(screen_command('Ctrl+Shift+F','tutorial'),'@prompt:explain command {value}')
+        for mode,keys in OLD_KEYS.items():
+            for key in keys:
+                self.assertTrue(screen_command(key,mode),(mode,key))

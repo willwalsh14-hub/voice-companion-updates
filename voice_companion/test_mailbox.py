@@ -167,7 +167,7 @@ class MailboxTests(unittest.TestCase):
             session = MailSession('gmail', folder, FakeClient)
             session.process('open inbox')
             session.process('mark message')
-            session.process('next message')
+            session.process('next page')
             session.process('mark message')
             self.assertIn('Marked 2 messages', session.process('what is selected'))
             self.assertIn('2 marked messages to Trash', session.process('delete'))
@@ -242,9 +242,9 @@ class MailboxTests(unittest.TestCase):
             session = MailSession('outlook', '/unused', FakeClient)
             self.assertIn('Sent Items.', session.process('go to sent'))
             self.assertEqual(session.folder_id, 'sentitems')
-            session.process('next message')
+            session.process('next page')
             self.assertEqual(session.rows[0]['id'], 'next')
-            session.process('previous message')
+            session.process('previous page')
             self.assertEqual(session.rows[0]['id'], 'first')
 
     def test_mailbox_short_open_phrases_reach_session_before_voice_picker(self):
@@ -651,9 +651,11 @@ class MailboxTests(unittest.TestCase):
             session = MailSession('gmail','/unused',FakeClient)
             session.process('open inbox')
             session.process('read message one')
-            self.assertIn('second. unavailable', session.process('next message'))
+            # The arrows stop at the page's end; Page Down opens the next page.
+            self.assertTrue(session.process('next message').startswith('End of list.'))
+            self.assertIn('second. unavailable', session.process('next page'))
             self.assertIn('Body second', session.process('open current message'))
-            self.assertIn('first. unavailable', session.process('previous message'))
+            self.assertIn('first. unavailable', session.process('previous page'))
 
 
 if __name__ == '__main__': unittest.main()

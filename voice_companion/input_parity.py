@@ -7,16 +7,19 @@ from pathlib import Path
 SCREEN_KEYS = {
     'awake': {'F1': 'help', 'Ctrl+Shift+V': 'what version', 'Ctrl+Shift+M': 'what mode',
               'Ctrl+Shift+G': 'open user guides', 'Ctrl+Shift+T': 'start tutorial'},
-    'note': {'Ctrl+S': 'save note', 'Ctrl+Shift+R': 'read from top', 'F1': 'help with notepad'},
-    'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+Shift+R': 'read email draft', 'F1': 'help with writing email',
+    'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
+    'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
                     'Ctrl+K': 'list contacts'},
-    'mailbox': {'Next': 'next messages', 'Prior': 'previous messages', 'Ctrl+I': 'message details',
-                'F1': 'help with email', 'Ctrl+Shift+I': 'which folder', 'Ctrl+O': 'open email draft',
-                'Ctrl+K': 'list contacts', 'Ctrl+Shift+K': 'add contact {value}',
-                'Ctrl+Shift+A': 'clear selection', 'Ctrl+Shift+S': 'what is selected',
-                'Ctrl+Shift+M': 'move folder', 'F7': 'list links', 'F8': 'list buttons'},
-    'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+Shift+R': 'read document', 'F1': 'help with document reader'},
+    # Email: one letter per action, no modifiers (Will, October 2026). Letters act in the
+    # message list and in an open message; K and B stay for links and buttons in a message.
+    'mailbox': {'N': 'new email', 'R': 'reply', 'A': 'reply all', 'F': 'forward', 'M': 'move',
+                'G': 'go to folder', 'W': 'which folder', 'I': 'message details',
+                'C': 'copy sender address', 'E': 'new email to sender', 'D': 'open email draft',
+                'P': 'list contacts', 'U': 'clear selection', 'S': 'what is selected',
+                'Next': 'next messages', 'Prior': 'previous messages',
+                'F1': 'help with email', 'F7': 'list links', 'F8': 'list buttons'},
+    'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+R': 'read document', 'F1': 'help with document reader'},
     'web': {'F1': 'help with web', 'Ctrl+F': 'find {value}', 'F8': 'list fields', 'Ctrl+Shift+W': 'close browser window'},
     'browser_menu': {'F1': 'help with web', 'Ctrl+Shift+W': 'close browser window'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
@@ -26,10 +29,21 @@ SCREEN_KEYS = {
     'local_media': {'F1': 'help with media player'},
     # Sentences in an open help topic (Up and Down move by paragraph).
     'help': {'Ctrl+Down': 'next sentence', 'Ctrl+Up': 'previous sentence'},
-    'tutorial': {'Ctrl+Shift+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
-                 'Ctrl+F': 'find lesson {value}', 'Ctrl+Shift+F': 'explain command {value}',
+    'tutorial': {'Ctrl+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
+                 'Ctrl+F': 'find lesson {value}', 'Ctrl+E': 'explain command {value}',
                  'Ctrl+Down': 'continue reading'},
     'sleep': {'Ctrl+F12': 'wake up'},
+}
+# Earlier keys that still work, so nobody's habits break. The guide and menus name the
+# simpler keys above; these are not listed there (Will, October 2026).
+OLD_KEYS = {
+    'note': {'Ctrl+Shift+R': 'read from top'},
+    'email_draft': {'Ctrl+Shift+R': 'read email draft'},
+    'file_reader': {'Ctrl+Shift+R': 'read document'},
+    'tutorial': {'Ctrl+Shift+R': 'repeat', 'Ctrl+Shift+F': 'explain command {value}'},
+    'mailbox': {'Ctrl+I': 'message details', 'Ctrl+Shift+I': 'which folder', 'Ctrl+O': 'open email draft',
+                'Ctrl+K': 'list contacts', 'Ctrl+Shift+K': 'add contact {value}', 'Ctrl+Shift+A': 'clear selection',
+                'Ctrl+Shift+S': 'what is selected', 'Ctrl+Shift+M': 'move folder'},
 }
 # Control+F12 puts the microphone to sleep from any main screen; while asleep it wakes it.
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
@@ -57,13 +71,17 @@ def chord(keysym, state):
 def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
     """The SCREEN_KEYS key for this event, or None to leave the key alone."""
     key = chord(keysym, state)
-    if key is None or key not in SCREEN_KEYS.get(mode, {}):
+    if key is None or (key not in SCREEN_KEYS.get(mode, {}) and key not in OLD_KEYS.get(mode, {})):
         return None
     # A Yes or No question owns the keyboard until it is answered.
     if context.get('confirmation') is not None or context.get('named_list'):
         return None
     # Private and naming boxes keep their typed text until Enter or Escape.
     if any(context.get(name) for name in ('web_private', 'media_input', 'browser_name_input', 'file_name_input', 'task_input')):
+        return None
+    # Email letters: never while a command is typed or while a folder or account list
+    # takes letters to jump through its names.
+    if mode == 'mailbox' and len(key) == 1 and (typed_text or context.get('menu_letters')):
         return None
     if mode == 'mailbox' and key in ('Next', 'Prior') and (context.get('source') or typed_text):
         return None  # Page keys scroll an open message; they change pages only in the list.
@@ -76,7 +94,7 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
 
 def screen_command(key, mode):
     """The spoken command for a SCREEN_KEYS key. A command that needs a value opens a prompt."""
-    command = SCREEN_KEYS.get(mode, {}).get(key)
+    command = SCREEN_KEYS.get(mode, {}).get(key) or OLD_KEYS.get(mode, {}).get(key)
     if command and '{value}' in command:
         return '@prompt:' + command
     return command

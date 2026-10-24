@@ -237,8 +237,7 @@ class FolderAccountTests(AccountScreenTestCase):
         self.key('Alt')
         companion.handle('3', 'mailbox')  # Go to folder group
         self.key('End')
-        for _ in range(3):
-            self.key('Up')
+        self.key('Up')     # the last two items are Choose a folder and Which folder
         self.assertIn('Choose a folder', self.last())
         self.key('Enter')
         self.assertTrue(self.last().startswith('Choose an account.'), self.last())
