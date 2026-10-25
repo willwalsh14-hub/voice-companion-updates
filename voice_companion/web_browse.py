@@ -1,4 +1,5 @@
 """Screen-reader style browse cursor and logical table coordinates."""
+ACTIONABLE={'link','button','checkbox','radio','combobox','listbox','edit','switch','slider','menuitem','menuitemradio','menuitemcheckbox'}
 QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','m':'frame','p':'paragraph','s':'listbox'}
 
 def voice_browse_key(command):
@@ -136,7 +137,9 @@ class BrowseCursor:
         if current and position==self.position==current.get('start',0):return
         self.position=position
         matches=[(i,e) for i,e in enumerate(self.elements) if e.get('start',0)<=position<e.get('end',0)]
-        if matches:self.index=min(matches,key=lambda x:x[1].get('end',0)-x[1].get('start',0))[0]
+        # The smallest element here wins; when a list item and its link cover the same
+        # words, the link wins, so Enter follows it and the line says "Link".
+        if matches:self.index=min(matches,key=lambda x:(x[1].get('end',0)-x[1].get('start',0),kind(x[1]) not in ACTIONABLE))[0]
         else:self.index=max((i for i,e in enumerate(self.elements) if e.get('start',0)<=position),default=-1)
     def current(self):return self.elements[self.index] if 0<=self.index<len(self.elements) else None
     def move(self,key,backward=False,tab=False):
@@ -241,6 +244,9 @@ SEMANTICS = r'''
             if(presentation)role='';
             if(!presentation){
               if(tableMaps.has(e))role='cell';else if(role==='grid')role='table';
+              // An image whose alt text is "Placeholder", "image" or a file name tells a
+              // listener nothing: treat it as decoration, as screen readers should.
+              else if(tag==='img'&&accessibleLabel.junkAlt(e)){role='';}
               else if(['img','graphics-document','graphics-symbol','graphics-object'].includes(role)||tag==='svg'&&(e.hasAttribute('aria-label')||e.hasAttribute('aria-labelledby')||e.querySelector('title')))role='graphic';
               else if(['input','textarea','select'].includes(tag)||editable)role=role||'field';
               else if(tag==='p'&&!role)role='paragraph';

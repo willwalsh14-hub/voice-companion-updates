@@ -4,9 +4,16 @@ import sys
 
 _LIBRARY=(Path(getattr(sys, '_MEIPASS', Path(__file__).parent))/'accessible_names.js').read_text(encoding='utf-8')
 ACCESSIBLE_LABEL='(()=>{'+_LIBRARY+r'''
+// Alt text that names nothing: "Placeholder", "image", "photo", a file name.
+const JUNK_ALT=/^\s*(?:placeholder(?: image)?|image|img|picture|photo|graphic|spacer|blank|thumbnail|thumb|icon|untitled|default|null|undefined|no image|image placeholder)?\s*$|^[\w\-. ]+\.(?:png|jpe?g|gif|webp|svg|bmp|ico)\s*$/i;
+const junkAlt=e=>e.tagName==='IMG'&&e.hasAttribute('alt')&&!e.hasAttribute('aria-label')&&!e.hasAttribute('aria-labelledby')&&JUNK_ALT.test(e.getAttribute('alt'));
 const label=e=>{
-  const name=VoiceCompanionAccessibility.computeAccessibleName(e);
-  if(name)return name.trim().replace(/\s+/g,' ').slice(0,1000);
+  if(junkAlt(e))return '';
+  let name=VoiceCompanionAccessibility.computeAccessibleName(e);
+  // A link such as <a><img alt="Placeholder">Visiting the Library</a> is named by its words.
+  if(name&&!e.hasAttribute('aria-label')&&!e.hasAttribute('aria-labelledby'))
+    for(const img of e.querySelectorAll?e.querySelectorAll('img[alt]'):[])if(junkAlt(img)){const alt=img.getAttribute('alt').trim();if(alt&&name.trim().startsWith(alt))name=name.trim().slice(alt.length);else if(alt)name=name.replace(alt,' ');}
+  if(name&&name.trim())return name.trim().replace(/\s+/g,' ').slice(0,1000);
   const role=VoiceCompanionAccessibility.getRole(e);
   if(['list','listitem','region','main','navigation','complementary','banner','contentinfo','form','search'].includes(role))return '';
   if(e.matches('iframe,frame'))return e.getAttribute('title')||e.getAttribute('name')||'Unlabeled frame';
@@ -20,6 +27,7 @@ const label=e=>{
   return 'Unlabeled '+(role==='img'?'graphic':e.isContentEditable?'text field':role||'control');
 };
 label.role=VoiceCompanionAccessibility.getRole;
+label.junkAlt=junkAlt;
 label.nativeName=VoiceCompanionAccessibility.computeAccessibleName;
 label.description=VoiceCompanionAccessibility.computeAccessibleDescription;
 // HTML checked state wins over a stale, conflicting ARIA attribute.
