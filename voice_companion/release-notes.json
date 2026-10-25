@@ -1,40 +1,18 @@
 {
-  "version": "0.2.166-test",
+  "version": "0.2.167-test",
   "status": "Testing build",
   "date": "October 24, 2026",
-  "baseline": "0.2.165-test",
-  "scope": "A download manager for the web, a Notepad menu, simpler main menu keys, and Control+F1 for the main menu.",
+  "baseline": "0.2.166-test",
+  "scope": "Links with a picture inside now read and open correctly on web pages.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Download manager",
+          "title": "Pictures with useless names are skipped",
           "details": [
-            "When you choose a download link, you hear Downloading and the file name. You hear again when it is done.",
-            "Press Control+D on a web page to open Downloads. It is also in the Web browser menu.",
-            "Use Up and Down to move through your downloads. A file that is still coming says how far along it is.",
-            "Space pauses or resumes. Delete cancels. Control+Up and Control+Down move a waiting download earlier or later.",
-            "Enter opens a finished file. Sound and video play in the media player. Documents open in the reader.",
-            "Escape goes back to the page where you were.",
-            "Files go to your Downloads folder. You can pick another folder in Web browser options.",
-            "This works the same in Chrome and in the built-in browser.",
-            "If you use Chrome, open the Voice Companion extension card and choose Reload."
-          ]
-        },
-        {
-          "title": "Notepad menu",
-          "details": [
-            "Notepad now opens to its own menu. It has Create a note, Open a note, Options, and Main menu.",
-            "Control+N creates a note. Control+O opens one. Alt+O opens options.",
-            "Escape in a note saves it and goes back to this menu."
-          ]
-        },
-        {
-          "title": "Control+F1 goes to the main menu",
-          "details": [
-            "Press Control+F1 on any screen to go to the main menu.",
-            "Print Screen takes screenshots again, as usual in Windows."
+            "Some pictures are named Placeholder, image, or a file name. Voice Companion no longer reads these names.",
+            "This works the same in Chrome and in the built-in browser."
           ]
         }
       ]
@@ -43,28 +21,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Main menu keys",
+          "title": "Links in lists",
           "details": [
-            "Control+V says the version. Control+M says the speech mode.",
-            "Control+G opens the user guide. Control+T starts the tutorial.",
-            "The old keys with Shift still work."
-          ]
-        },
-        {
-          "title": "Web and email",
-          "details": [
-            "A heading that is also a link now says so. For example: JAWS downloads, heading level 3, link.",
-            "Links and buttons in email sound the same as on the web.",
-            "A link you open from an email goes to the browser you chose in Web browser options.",
-            "An email address link starts a new email to that address."
-          ]
-        },
-        {
-          "title": "Microphone and time",
-          "details": [
-            "F9 off is now remembered when you close Voice Companion. At start, you hear that it is off.",
-            "The time is said in words, such as two forty-six PM or three oh seven AM.",
-            "In the media player, Alt no longer says this screen has no Alt menu."
+            "When a list item is a link, Down Arrow now says Link before its name.",
+            "Enter now opens the link. Before, Enter did nothing on some sites, such as Mystic Access Downloads."
           ]
         }
       ]
