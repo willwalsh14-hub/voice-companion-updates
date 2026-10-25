@@ -3,11 +3,20 @@
   "status": "Testing build",
   "date": "October 24, 2026",
   "baseline": "0.2.166-test",
-  "scope": "Links with a picture inside now read and open correctly on web pages.",
+  "scope": "A rewritten user guide, and links with a picture inside now read and open correctly on web pages.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
+        {
+          "title": "A new user guide",
+          "details": [
+            "The user guide is rewritten from start to end. Each part starts with the task, then says what to say or press.",
+            "Chapter 1 now lists the keys that work on every screen.",
+            "The web page version works well with JAWS, NVDA, and Narrator. Use H to move by heading, or the contents list to jump to a chapter.",
+            "It follows the current web accessibility rules."
+          ]
+        },
         {
           "title": "Pictures with useless names are skipped",
           "details": [
