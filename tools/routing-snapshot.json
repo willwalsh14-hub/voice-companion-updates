@@ -17599,7 +17599,7 @@
 },
 "help | end of list": {
 "said": [
-"Download Files (D), 28 of 28."
+"Fix A Problem (F), 28 of 28."
 ],
 "screen_after": "help"
 },
@@ -17920,7 +17920,7 @@
 },
 "help | last item": {
 "said": [
-"Download Files (D), 28 of 28."
+"Fix A Problem (F), 28 of 28."
 ],
 "screen_after": "help"
 },

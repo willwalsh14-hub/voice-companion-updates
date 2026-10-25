@@ -371,7 +371,9 @@ class ScreenMenuTests(unittest.TestCase):
 
     def test_guide_tells_how_to_open_each_menu(self):
         text = GUIDE.read_text(encoding='utf-8')
-        html = GUIDE_HTML.read_text(encoding='utf-8')
+        # The HTML marks key names with <kbd>; compare the words a reader hears.
+        import re
+        html = re.sub(r'</?kbd>', '', GUIDE_HTML.read_text(encoding='utf-8'))
         for mode, (title, groups) in MENUS.items():
             sentence = 'Press Alt to open the ' + title[0].lower() + title[1:] + '.'
             with self.subTest(mode=mode):

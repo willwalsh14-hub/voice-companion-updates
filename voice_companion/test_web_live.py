@@ -195,6 +195,23 @@ class LiveWebTests(unittest.TestCase):
         self.assertIn('Page loaded',result);self.assertIn('heading',self.session.keyboard('Quick:h'))
         self.assertIn('Link Result link',self.session.keyboard('Quick:k'));self.assertEqual(self.session.browse.current()['href'],'https://fixture.test/next')
 
+    def test_download_list_links_skip_placeholder_images_and_open_with_enter(self):
+        # mysticaccessdownloads.com, Featured (Will, October 2026): each list item is a link
+        # with a thumbnail whose alt text is "Placeholder". Screen readers say the link's words.
+        self.page.set_content("""<h1>Downloads</h1><div><h3>Featured</h3><ul>
+<li><a class="dlm-download-link" href="https://fixture.test/next" rel="nofollow">
+<img alt="Placeholder" src="https://fixture.test/placeholder.png">Visiting the Library (93)
+</a></li><li><a href="https://fixture.test/other"><img alt="image.png" src="x.png">SpokenRX Reader Demo (135)</a></li></ul></div>""")
+        self.session._refresh(read=False)
+        self.assertNotIn('Placeholder',self.session.reading.text);self.assertNotIn('image.png',self.session.reading.text)
+        self.session.keyboard('Quick:h');self.assertIn('Featured',self.session.keyboard('Quick:h'))
+        line=self.session.keyboard('Read:Down')
+        self.assertEqual(line,'Link Visiting the Library (93)')
+        self.assertEqual(self.session.browse.current()['role'],'link')
+        self.assertEqual(self.session.keyboard('Quick:k'),'Link SpokenRX Reader Demo (135).')
+        self.session.keyboard('Read:Up')
+        self.assertIn('Page loaded:',self.session.keyboard('Activate'));self.assertIn('Destination',self.session.reading.text)
+
     def test_result_navigation_waits_for_delayed_single_page_content(self):
         self.page.set_content("""<title>Old</title><h1>Old page</h1><a href="https://fixture.test/next" onclick="event.preventDefault();history.pushState({},'','/next');document.body.setAttribute('aria-busy','true');setTimeout(()=>{document.title='New';document.body.innerHTML='<h1>New page</h1><p>Fresh content</p>';document.body.removeAttribute('aria-busy');},700)">Search result</a>""")
         self.session._refresh();self.session.keyboard('Quick:k');result=self.session.keyboard('Activate')

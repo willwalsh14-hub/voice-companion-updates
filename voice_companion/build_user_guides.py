@@ -5,9 +5,10 @@ from xml.etree import ElementTree as ET
 from zipfile import ZipFile, ZIP_STORED, ZIP_DEFLATED
 import html
 import re
+from html.parser import HTMLParser
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
-from guide_text import guide_blocks, PART, STEP
+from guide_text import guide_blocks, CHAPTER, PART, STEP
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / 'START HERE - Veteran.txt'
@@ -24,54 +25,270 @@ def subtitle(value):
     return match[3] if match else None
 
 
-def content_markup(blocks):
+def chapter_id(heading, index):
+    """A stable address for a chapter: chapter-6 for "6. FILE MANAGER"."""
+    match = CHAPTER.fullmatch(heading)
+    return 'chapter-'+match[1] if match else 'section-'+str(index)
+
+
+def part_id(value):
+    """A stable address for a part: part-6-2 for "6.2 Move through a list"."""
+    match = PART.fullmatch(value)
+    return 'part-'+match[1]+'-'+match[2]
+
+
+# Keys are marked with <kbd> so they stand out on screen. Screen readers read the
+# words as usual. Only clear key names are marked: key combinations, function
+# keys, arrow keys, and key names right after "press". Spoken commands in
+# quotation marks are never marked.
+_MOD = r'(?:Control|Shift|Alt|Insert|Windows)'
+_NAMED = (r'(?:F(?:1[0-2]|[1-9])|Page Up|Page Down|(?:Up|Down|Left|Right) Arrow|Print Screen|Enter|Escape|Tab|'
+          r'Space|Home|End|Delete|Backspace|Up|Down|Left|Right|Alt|Control|Shift|Insert)')
+_COMBO = _MOD + r'(?:\+' + _MOD + r')*\+(?:' + _NAMED + r'|[A-Z0-9])(?![\w+])'
+_ALONE = r'(?:F(?:1[0-2]|[1-9])|Page Up|Page Down|(?:Up|Down|Left|Right) Arrow)(?![\w+])'
+_KEY = re.compile(r'\b(?:' + _COMBO + '|' + _ALONE + r')')
+_PRESS = re.compile(r'(\b[Pp]ress )((?:' + _COMBO + '|' + _NAMED + r'|[A-Z0-9])(?![\w+])'
+                    r'(?:(?:, then |, or |, | or | and | then )(?:' + _COMBO + '|' + _NAMED + r'|[A-Z0-9])(?![\w+]))*)')
+_TOKEN = re.compile(r'(?:' + _COMBO + '|' + _NAMED + r'|[A-Z0-9])(?![\w+])')
+# A sentence that starts with key names and then says what they do, such as
+# "Home and End reach the first item." or "Escape goes back".
+_SINGLE = r'(?:Enter|Escape|Tab|Space|Home|End|Delete|Backspace|Shift\+Tab)'
+_LEAD = re.compile(r'(?:^|(?<=[.:] ))(' + _SINGLE + r'(?:(?:, | or | and )' + _SINGLE + r')*)(?= (?:moves?|goes|go|opens?|reach(?:es)?|'
+                   r'chooses?|cancels?|closes?|plays?|pauses?|stops?|keeps?|saves?|selects?|tries|takes|deletes?|uses?|reads?|'
+                   r'marks?|clears?|removes?|means?|answers?|cycles?|activates?|starts?|again|also|on|twice|or)\b)')
+
+
+def key_markup(text):
+    """Escape text for HTML and mark key names with <kbd>, outside quotations."""
+    output = []
+    for k, piece in enumerate(re.split(r'("[^"]*")', text)):
+        if k % 2:
+            output.append(html.escape(piece, quote=False));continue
+        marks = set()
+        for match in _PRESS.finditer(piece):
+            base = match.start(2)
+            for token in _TOKEN.finditer(match[2]):
+                marks.add((base+token.start(), base+token.end()))
+        for match in _LEAD.finditer(piece):
+            for token in _TOKEN.finditer(match[1]):
+                marks.add((match.start(1)+token.start(), match.start(1)+token.end()))
+        for match in _KEY.finditer(piece):
+            if not any(a <= match.start() < b for a, b in marks):
+                marks.add((match.start(), match.end()))
+        position = 0
+        for a, b in sorted(marks):
+            if a < position:continue
+            output.append(html.escape(piece[position:a], quote=False))
+            output.append('<kbd>'+html.escape(piece[a:b], quote=False)+'</kbd>')
+            position = b
+        output.append(html.escape(piece[position:], quote=False))
+    return ''.join(output)
+
+
+def guide_markup(blocks, web=False):
+    """The guide body. With web=True (the HTML page), the opening paragraphs get
+    their own heading and each chapter ends with a link back to the contents."""
     output = []
     for i, (heading, paragraphs) in enumerate(blocks):
         if heading:
-            output.append(f'<section aria-labelledby="section-{i}"><h2 id="section-{i}">{html.escape(heading.title())}</h2>')
+            output.append(f'<section><h2 id="{chapter_id(heading, i)}">{html.escape(heading.title())}</h2>')
+        elif web and paragraphs:
+            output.append('<section><h2 id="about">About this guide</h2>')
         ordered = False; bulleted = False
-        for j, value in enumerate(paragraphs):
+        for value in paragraphs:
             step = STEP.fullmatch(value)
             bullet = value.startswith('- ')
             if bulleted and not bullet:output.append('</ul>');bulleted=False
             if ordered and (not step or step[1]=='1'):
                 output.append('</ol>'); ordered = False
             if subtitle(value):
-                output.append(f'<h3 id="part-{i}-{j}">{html.escape(value)}</h3>')
+                output.append(f'<h3 id="{part_id(value)}">{html.escape(value)}</h3>')
             elif bullet:
                 if not bulleted:output.append('<ul>');bulleted=True
-                output.append('<li>'+html.escape(value[2:])+'</li>')
+                output.append('<li>'+key_markup(value[2:])+'</li>')
             elif step:
                 if not ordered:
                     output.append('<ol>'); ordered = True
-                output.append('<li>'+html.escape(step[2])+'</li>')
+                output.append('<li>'+key_markup(step[2])+'</li>')
             else:
-                output.append('<p>'+html.escape(value)+'</p>')
+                output.append('<p>'+key_markup(value)+'</p>')
         if ordered: output.append('</ol>')
         if bulleted: output.append('</ul>')
-        if heading: output.append('</section>')
+        if heading and web: output.append('<p class="back"><a href="#contents">Back to contents</a></p>')
+        if heading or (web and paragraphs): output.append('</section>')
     return '\n'.join(output)
 
 
-def navigation(blocks, prefix=''):
+# release_documents.py swaps in its own markup for the release notes.
+content_markup = guide_markup
+
+
+def navigation(blocks, prefix='', about=False):
     output=[]
+    if about:output.append(f'<li><a href="{prefix}#about">About this guide</a></li>')
     for i,(heading,paragraphs) in enumerate(blocks):
         if not heading:continue
-        children=''.join(f'<li><a href="{prefix}#part-{i}-{j}">{html.escape(value)}</a></li>'
-                         for j,value in enumerate(paragraphs) if subtitle(value))
-        output.append(f'<li><a href="{prefix}#section-{i}">{html.escape(heading.title())}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
+        children=''.join(f'<li><a href="{prefix}#{part_id(value)}">{html.escape(value)}</a></li>'
+                         for value in paragraphs if subtitle(value))
+        output.append(f'<li><a href="{prefix}#{chapter_id(heading, i)}">{html.escape(heading.title())}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
     return ''.join(output)
 
 
+# Colours meet WCAG 2.2 AA contrast (4.5 to 1 for text, 3 to 1 for focus and
+# borders) in both light and dark mode. Sizes are in rem and ch, so the page
+# zooms and reflows to 320 CSS pixels without sideways scrolling.
+STYLE = """
+:root{color-scheme:light dark;--text:#1a1a1a;--back:#ffffff;--link:#0645ad;--visited:#5b2a86;--focus:#0645ad;--rule:#6b6b6b;--key:#f2f2f2}
+@media (prefers-color-scheme:dark){:root{--text:#f2f2f2;--back:#121212;--link:#9cc3ff;--visited:#d4b3ff;--focus:#ffd24d;--rule:#9a9a9a;--key:#2b2b2b}}
+html{font-size:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:Verdana,Arial,sans-serif;font-size:1.125rem;line-height:1.6;max-width:70ch;margin:0 auto;padding:1rem;color:var(--text);background:var(--back);overflow-wrap:break-word}
+h1,h2,h3{line-height:1.3}
+h2{margin-top:2.5rem;padding-top:.5rem;border-top:2px solid var(--rule)}
+nav h2{border-top:0}
+h3{margin-top:1.75rem}
+p,li{max-width:70ch}
+li{margin-block:.4rem}
+a{color:var(--link);text-decoration:underline;text-underline-offset:.15em}
+a:visited{color:var(--visited)}
+a:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+a:hover{text-decoration-thickness:.15em}
+kbd{font-family:inherit;font-size:.95em;padding:0 .3em;border:1px solid var(--rule);border-radius:.25em;background:var(--key);color:var(--text);white-space:nowrap}
+.skip{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip:focus{position:static;width:auto;height:auto;display:inline-block;padding:.5rem;margin-bottom:.5rem;outline:3px solid var(--focus)}
+.back{margin-top:1.5rem}
+main:focus{outline:none}
+@media (forced-colors:active){kbd{border-color:CanvasText}a:focus-visible{outline-color:Highlight}}
+@media print{.skip,.back{display:none}nav{break-after:page}h2,h3{break-after:avoid}a{color:inherit}}
+"""
+
+
 def build_html(title, blocks):
-    page = f'''<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{html.escape(title.title())}</title>
-<style>body{{font:1.125rem/1.6 Arial,sans-serif;max-width:48rem;margin:auto;padding:1rem;color:#111;background:#fff}}h1,h2,h3{{line-height:1.3}}h2{{margin-top:2.5rem}}h3{{margin-top:1.5rem}}a{{color:#0645ad}}li{{margin-block:.4rem}}:focus-visible{{outline:3px solid #0645ad}}@media print{{nav{{break-after:page}}h2,h3{{break-after:avoid}}}}</style></head><body>
-<a href="#guide">Skip to the guide</a><header><h1>{html.escape(title.title())}</h1></header>
-<nav aria-label="Contents"><h2>Contents</h2><ul>{navigation(blocks)}</ul></nav>
-<main id="guide">{content_markup(blocks)}</main></body></html>'''
+    body = content_markup(blocks, web=True) if content_markup is guide_markup else content_markup(blocks)
+    name = html.escape(title.title())
+    page = f'''<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{name}</title>
+<style>{STYLE}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header><h1>{name}</h1></header>
+<nav aria-labelledby="contents"><h2 id="contents">Contents</h2><ul>{navigation(blocks, about='id="about"' in body)}</ul></nav>
+<main id="main" tabindex="-1">
+{body}
+</main>
+</body>
+</html>
+'''
     (ROOT / f'{STEM}.html').write_text(page, encoding='utf-8')
+
+
+class _Audit(HTMLParser):
+    """Collect what an HTML accessibility check needs: the element tree, ids,
+    links, headings and landmarks. Problems are listed, not raised."""
+    VOID = {'area','base','br','col','embed','hr','img','input','link','meta','source','track','wbr'}
+    BLOCK = {'address','article','aside','blockquote','div','dl','fieldset','figure','footer','form','h1','h2','h3',
+             'h4','h5','h6','header','hr','main','nav','ol','p','pre','section','table','ul'}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack=[];self.problems=[];self.ids=[];self.links=[];self.headings=[];self.tags=[]
+        self.doctype=None;self.lang=None;self.title='';self.meta=[];self.focusable=[]
+        self._link=None;self._heading=None;self._title=False
+
+    def handle_decl(self, decl):self.doctype=decl
+
+    def handle_starttag(self, tag, attrs):
+        attrs=dict(attrs);parent=self.stack[-1] if self.stack else None
+        self.tags.append((tag,attrs,parent))
+        if tag=='html':self.lang=attrs.get('lang')
+        if tag=='meta':self.meta.append(attrs)
+        if 'id' in attrs:self.ids.append(attrs['id'])
+        if tag=='li' and parent not in ('ul','ol'):self.problems.append('A list item is outside a list.')
+        if parent in ('ul','ol') and tag!='li':self.problems.append('A list holds a '+tag+' element directly.')
+        if parent in ('p','kbd','a','h1','h2','h3','h4','h5','h6') and tag in self.BLOCK:
+            self.problems.append('A '+tag+' element is inside a '+parent+' element.')
+        if tag in ('table','font','center','marquee','blink'):self.problems.append('The page uses a '+tag+' element.')
+        if tag=='a':
+            self._link={'href':attrs.get('href'),'text':''};self.focusable.append(attrs.get('href'))
+        if tag=='title':self._title=True
+        if re.fullmatch(r'h[1-6]',tag):self._heading={'level':int(tag[1]),'id':attrs.get('id'),'text':''}
+        if tag not in self.VOID:self.stack.append(tag)
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in self.VOID and self.stack and self.stack[-1]==tag:self.stack.pop()
+
+    def handle_endtag(self, tag):
+        if tag in self.VOID:return
+        if not self.stack or self.stack[-1]!=tag:
+            self.problems.append('The closing '+tag+' tag does not match the open '+(self.stack[-1] if self.stack else 'nothing')+' element.')
+            if tag in self.stack:
+                while self.stack and self.stack.pop()!=tag:pass
+            return
+        self.stack.pop()
+        if tag=='a' and self._link:self.links.append(self._link);self._link=None
+        if tag=='title':self._title=False
+        if re.fullmatch(r'h[1-6]',tag) and self._heading:self.headings.append(self._heading);self._heading=None
+
+    def handle_data(self, data):
+        if self._link is not None:self._link['text']+=data
+        if self._heading is not None:self._heading['text']+=data
+        if self._title:self.title+=data
+
+
+def audit_html(page):
+    """Problems that keep the page from being valid, navigable HTML that meets
+    WCAG 2.2 AA in structure. An empty list means the page passed."""
+    audit=_Audit();audit.feed(page);audit.close()
+    problems=list(audit.problems)
+    if not audit.doctype or audit.doctype.lower()!='doctype html':problems.append('The page needs <!DOCTYPE html>.')
+    if not audit.lang:problems.append('The html element needs a lang attribute.')
+    if audit.stack:problems.append('These elements are never closed: '+', '.join(audit.stack)+'.')
+    if not audit.title.strip():problems.append('The page needs a title.')
+    if not any(m.get('charset','').lower()=='utf-8' for m in audit.meta):problems.append('The page needs a UTF-8 charset.')
+    viewport=[m.get('content','') for m in audit.meta if m.get('name')=='viewport']
+    if not viewport or re.search(r'user-scalable\s*=\s*no|maximum-scale',viewport[0]):
+        problems.append('The viewport must allow zoom.')
+    for tag in ('main','header'):
+        count=sum(1 for t,_,_ in audit.tags if t==tag)
+        if count!=1:problems.append('The page needs exactly one '+tag+' element, not '+str(count)+'.')
+    navs=[a for t,a,_ in audit.tags if t=='nav']
+    if not navs or any(not (a.get('aria-label') or a.get('aria-labelledby')) for a in navs):problems.append('Each nav needs a name.')
+    duplicates=sorted({i for i in audit.ids if audit.ids.count(i)>1})
+    if duplicates:problems.append('These ids are used twice: '+', '.join(duplicates)+'.')
+    for a in [a for t,a,_ in audit.tags if 'aria-labelledby' in a]:
+        if a['aria-labelledby'] not in audit.ids:problems.append('aria-labelledby points to a missing id: '+a['aria-labelledby']+'.')
+    levels=[h['level'] for h in audit.headings]
+    if levels.count(1)!=1:problems.append('The page needs exactly one h1, not '+str(levels.count(1))+'.')
+    if levels and levels[0]!=1:problems.append('The first heading must be the h1.')
+    for before,after in zip(audit.headings,audit.headings[1:]):
+        if after['level']>before['level']+1:
+            problems.append('Heading level skips from h'+str(before['level'])+' to h'+str(after['level'])+' at '+after['text']+'.')
+    for h in audit.headings:
+        if not h['text'].strip():problems.append('A heading is empty.')
+    for link in audit.links:
+        text=' '.join(link['text'].split())
+        if not text:problems.append('A link has no text.')
+        if text.casefold() in ('click here','here','more','read more','link') or re.fullmatch(r'(?:https?://|www\.)\S+',text):
+            problems.append('A link is not labeled clearly: '+text+'.')
+        href=link['href'] or ''
+        if href.startswith('#') and href[1:] not in audit.ids:problems.append('A link points to a missing place: '+href+'.')
+    if audit.focusable and not (audit.focusable[0] or '').startswith('#'):problems.append('The first link must skip to the main content.')
+    elif audit.focusable:
+        target=audit.focusable[0][1:]
+        if not any(t=='main' and a.get('id')==target for t,a,_ in audit.tags):problems.append('The skip link must lead to the main element.')
+    return problems
+
+
+def html_outline(page):
+    """The headings of a page as (level, id, text), in order."""
+    audit=_Audit();audit.feed(page);audit.close()
+    return [(h['level'],h['id'],' '.join(h['text'].split())) for h in audit.headings]
 
 
 def word_bookmark(paragraph, name, number):
@@ -223,8 +440,11 @@ def validate(blocks):
     chapters=[h.title() for h,_ in blocks if h]
     parts=[p for _,paragraphs in blocks for p in paragraphs if subtitle(p)]
     page=(ROOT / f'{STEM}.html').read_text(encoding='utf-8')
-    assert re.findall(r'<h2 id="section-\d+">([^<]+)</h2>',page)==chapters
-    assert re.findall(r'<h3 id="part-\d+-\d+">([^<]+)</h3>',page)==[html.escape(p) for p in parts]
+    problems=audit_html(page)
+    assert not problems, 'The HTML guide has accessibility problems: '+' '.join(problems)
+    outline=html_outline(page)
+    assert [t for level,_,t in outline if level==2 and t not in ('Contents','About this guide')]==chapters
+    assert [t for level,_,t in outline if level==3]==parts
     doc=Document(ROOT / f'{STEM}.docx')
     assert [p.text for p in doc.paragraphs if p.style.name=='Title']==['Voice Companion User Guide']
     assert [p.text for p in doc.paragraphs if p.style.name=='Heading 1' and p.text!='Contents']==chapters
