@@ -1,7 +1,7 @@
 import unittest,tempfile,queue
 from pathlib import Path
 from email.message import EmailMessage
-from unittest.mock import patch,Mock
+from unittest.mock import patch
 from email_reader import render_html,plain_body,safe_link
 from yahoo_mailbox import message_body
 from email_draft import VoiceEmail

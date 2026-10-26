@@ -34,7 +34,7 @@ def message_date(value):
         return 'unavailable'
 
 
-from email_reader import render_html, plain_body
+from email_reader import render_html
 
 
 def html_text(source):

@@ -67,7 +67,7 @@ class StoreTestCase(unittest.TestCase):
 
 class RetireRemovedAccountsTests(StoreTestCase):
     def test_only_kinds_left_are_thunderbird_and_yahoo(self):
-        self.assertEqual(mail_accounts.PROVIDERS, ('yahoo', 'thunderbird'))
+        self.assertEqual(mail_accounts.PROVIDERS, ('thunderbird', 'yahoo'))
         self.assertFalse(hasattr(mail_accounts, 'gmail_connect'))
         self.assertFalse(hasattr(mail_accounts, 'microsoft_connect'))
 

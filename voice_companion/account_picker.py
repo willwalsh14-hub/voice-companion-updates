@@ -108,10 +108,11 @@ def choice(text, accounts):
                 return matches[0]
             return ('several', provider) if matches else None
     if company_word(words):
+        # "Gmail": the Thunderbird account with a Gmail address.
         matches = company_accounts(words, accounts)
         if len(matches) == 1:
             return accounts.index(matches[0])
-        return ('several', '') if matches else None
+        return ('several', words) if matches else None
     from email_draft import normalize_recipient
     kind, rest = spoken_account(plain)
     try:
@@ -132,6 +133,9 @@ def choice(text, accounts):
 
 
 def several(provider, accounts):
+    if provider and company_word(provider):
+        count = len(company_accounts(provider, accounts))
+        return 'There are ' + str(count) + ' ' + company_name(provider) + ' accounts. Say the account number or the address.'
     count = len([a for p, a in accounts if p == provider]) if provider else 0
     if provider and count > 1:
         return 'There are ' + str(count) + ' ' + name(provider) + ' accounts. Say the account number or the address.'

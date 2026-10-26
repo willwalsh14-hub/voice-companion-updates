@@ -122,7 +122,7 @@ def yahoo_connect(store, address, password, smtp_factory=None, imap_factory=None
     return address
 
 
-PROVIDERS = ('yahoo', 'thunderbird')
+PROVIDERS = ('thunderbird', 'yahoo')
 # Kinds older versions connected directly. Their saved files are removed at startup.
 REMOVED_PROVIDERS = ('gmail', 'outlook')
 
@@ -157,7 +157,8 @@ class ProtectedStore:
     def accounts(self):
         result = []
         for provider in PROVIDERS:
-            paths = list(self.folder.glob(provider + '-*.account')) + [self._path(provider)]
+            # Sorted by name, so the order is the same on every computer (NTFS lists by name).
+            paths = sorted(self.folder.glob(provider + '-*.account')) + [self._path(provider)]
             for path in paths:
                 if not path.is_file(): continue
                 try:
