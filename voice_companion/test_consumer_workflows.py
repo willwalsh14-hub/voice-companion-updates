@@ -76,7 +76,7 @@ class ConsumerWorkflowTests(unittest.TestCase):
             else:self.assertTrue(notice.startswith(app.MAIN_MENU_CHOICES[expected][0]));self.assertNotIn('of list',notice)
 
     def test_keyboard_and_voice_email_draft_switching_does_not_send(self):
-        self.stack.enter_context(patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('gmail','user@example.test')))))
+        self.stack.enter_context(patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('thunderbird','user@example.test')))))
         self.stack.enter_context(patch.object(app,'MailSession',return_value=Mock(folder_name='Inbox',pending=None,process=Mock(return_value='Inbox.'))))
         self.stack.enter_context(patch.object(app,'submit',side_effect=AssertionError('Unexpected send')))
         mode=self.say('new email','awake',typed=True)

@@ -216,7 +216,7 @@ class ScreenKeyEffectTests(unittest.TestCase):
         states=[]
         for use_key in (False,True):
             with patch('mail_voice.account_token',return_value=('me@example.com','token')):
-                session=MailSession('gmail',str(self.root),FakeClient);session.process('open inbox')
+                session=MailSession('thunderbird',str(self.root),FakeClient);session.process('open inbox')
                 app.mail_session=session
                 said=[]
                 for key,voice in (('Next','next messages'),('Ctrl+I','message details'),('Prior','previous messages'),('Ctrl+I','message details')):
@@ -322,7 +322,7 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
     def mailbox(self):
         from mail_voice import MailSession
         self.stack.enter_context(patch('mail_voice.account_token',return_value=('me@example.com','token')))
-        session=MailSession('gmail',str(self.root),MailFake);session.process('open inbox')
+        session=MailSession('thunderbird',str(self.root),MailFake);session.process('open inbox')
         app.mail_session=session
         return session
 
@@ -451,14 +451,15 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
                 pressed.focus='actions';pressed.index=[a.label for a in pressed.actions].index(action.label);pressed.activate()
                 self.assertEqual(spoken.form['name'],pressed.form['name'])
 
-    def test_google_contacts_is_in_email_options(self):
+    def test_google_contacts_is_gone_from_email_options(self):
+        # It needed the direct Gmail sign-in, which was removed (Will, October 2026).
         from settings_model import fields
         from app_settings import ACTIONS
-        field=next(f for f in fields('Email options',{}) if f.key=='google_contacts')
-        self.assertEqual(field.kind,'action');self.assertEqual(ACTIONS['google_contacts'],'connect google contacts')
-        with patch('google_contacts.sync',return_value='Google Contacts synced.') as sync:
-            app.settings_action('google_contacts','mailbox')
-        sync.assert_called_once()
+        self.assertNotIn('google_contacts', [f.key for f in fields('Email options',{})])
+        self.assertNotIn('google_contacts', ACTIONS)
+        with patch.object(app,'speak') as speech:
+            app.handle('connect google contacts','mailbox')
+        self.assertIn('Your contacts here are kept', speech.call_args.args[0])
 
 
 class CatalogParityTests(unittest.TestCase):
