@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.167-test'
+APP_VERSION = '0.2.168-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -503,6 +503,10 @@ def announce_main_menu():
     speak_prompt(MAIN_MENU_PROMPT)
 
 def startup_prompt():
+    if MICROPHONE_OFF:
+        # No voice at all: say how to use the keys and how to turn the microphone on.
+        return ('Voice Companion ' + APP_VERSION + ' is ready. ' + MICROPHONE_STILL_OFF +
+                ' You are on the main menu. Use the Up and Down arrow keys and Enter.')
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
@@ -1946,6 +1950,40 @@ def set_microphone(on, mode):
     else:
         speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.')
     return mode
+
+
+FREEZE_WATCH = {'beat': None, 'reported': False}
+
+
+def start_freeze_watch(limit=15.0, interval=5.0):
+    """If the main loop stops for `limit` seconds, write where every thread is to
+    freeze-report.txt in the app folder, once per freeze. faulthandler reads the
+    stacks without making Python objects of other threads' frames, so it cannot
+    free the window's Tk objects on the wrong thread."""
+    def watch():
+        while True:
+            time.sleep(interval)
+            beat = FREEZE_WATCH['beat']
+            if beat is None:
+                continue
+            stalled = time.monotonic() - beat > limit
+            if stalled and not FREEZE_WATCH['reported']:
+                FREEZE_WATCH['reported'] = True
+                try:
+                    import faulthandler
+                    APP.mkdir(parents=True, exist_ok=True)
+                    with open(APP / 'freeze-report.txt', 'w', encoding='utf-8') as report:
+                        report.write('Voice Companion ' + APP_VERSION + ' stopped responding for ' + str(int(time.monotonic() - beat))
+                                     + ' seconds at ' + time.strftime('%Y-%m-%d %H:%M:%S') + '.\n')
+                        report.flush()
+                        faulthandler.dump_traceback(file=report, all_threads=True)
+                except Exception:
+                    pass
+            elif not stalled:
+                FREEZE_WATCH['reported'] = False
+    thread = threading.Thread(target=watch, name='Freeze watch', daemon=True)
+    thread.start()
+    return thread
 
 
 def remember_thunderbird_identity(account, identity_id, account_id):
@@ -4269,9 +4307,14 @@ STARTUP_UPDATE_PENDING = False
 
 
 def return_from_update():
-    global STARTUP_UPDATE_PENDING
+    global STARTUP_UPDATE_PENDING, SLEEP_RETURN_MODE
     if STARTUP_UPDATE_PENDING:
         STARTUP_UPDATE_PENDING = False
+        if MICROPHONE_OFF:
+            # Nobody can say "wake up" with the microphone off: go to the main menu.
+            SLEEP_RETURN_MODE = 'awake'
+            speak(MICROPHONE_STILL_OFF)   # handle() then says Main menu.
+            return 'awake'
         speak(startup_prompt())
         return 'sleep'
     return UPDATE_RETURN_MODE
@@ -4577,8 +4620,15 @@ def main():
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
         mode = startup_update_mode()
         mode = __import__('chrome_setup').startup_request(sys.modules[__name__],mode)
+        if MICROPHONE_OFF and mode=='sleep':
+            # Nobody can say "wake up" with the microphone off: start on the main menu.
+            mode='awake';SLEEP_RETURN_MODE='awake'
         sync_app_context(mode,True)
-        if MICROPHONE_OFF:speak(MICROPHONE_STILL_OFF)
+        # Keys must reach this window at once (Thunderbird or the installer may have the foreground).
+        if APP_WINDOW is not None and hasattr(APP_WINDOW,'reclaim_focus'):APP_WINDOW.reclaim_focus()
+        start_freeze_watch()
+        # On the main menu the ready message already said so; a question asked first says it here.
+        if MICROPHONE_OFF and mode!='awake':speak(MICROPHONE_STILL_OFF)
         elif input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
         # Listen and process keys while the asynchronous startup speech plays.
         result_file = APP / 'update-result.json'
@@ -4594,6 +4644,7 @@ def main():
         web_refresh=RefreshPacer();startup_speaking=True;startup_quiet_until=time.monotonic()+.3
         microphone_retry_at=0
         while True:
+            FREEZE_WATCH['beat']=time.monotonic()
             poll_dictation_echo()
             mode=poll_thunderbird_watch(mode)
             if input_stream is not None and (MICROPHONE_OFF or not microphone_active(input_stream)):
