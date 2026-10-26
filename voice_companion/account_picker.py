@@ -6,18 +6,21 @@ module only builds the words and understands the answers; companion.py keeps
 the list open and acts on the choice.
 
 Every account is spoken the same way everywhere: its kind, then its address,
-such as "Thunderbird, will@gmail.com". A Gmail address used through Thunderbird
-and the same address connected to Gmail directly are two accounts, so the kind
-always comes first ("Gmail, will@gmail.com" is the direct one).
+such as "Thunderbird, will@gmail.com". The kinds are Thunderbird and Yahoo.
+Gmail, Outlook and Microsoft 365 addresses work through Thunderbird, so saying
+"Gmail" or "Outlook" finds the Thunderbird account at that company.
 """
 import re
 
-PROVIDER_NAMES = {'gmail': 'Gmail', 'outlook': 'Outlook', 'yahoo': 'Yahoo', 'thunderbird': 'Thunderbird'}
+PROVIDER_NAMES = {'yahoo': 'Yahoo', 'thunderbird': 'Thunderbird'}
 # What people call each kind of account.
-PROVIDER_WORDS = {'gmail': ('gmail', 'google', 'google mail'),
-                  'outlook': ('outlook', 'microsoft', 'microsoft 365', 'exchange', 'hotmail'),
-                  'yahoo': ('yahoo', 'yahoo mail'),
+PROVIDER_WORDS = {'yahoo': ('yahoo', 'yahoo mail'),
                   'thunderbird': ('thunderbird', 'mozilla thunderbird')}
+# Mail companies whose addresses work through Thunderbird (thunderbird_accounts.company).
+COMPANY_WORDS = {'Google': ('gmail', 'google', 'google mail'),
+                 'Microsoft': ('outlook', 'microsoft', 'microsoft 365', 'exchange', 'hotmail')}
+# The kinds older versions connected directly, for the message when they are removed.
+RETIRED_NAMES = {'gmail': 'Gmail', 'outlook': 'Outlook'}
 NUMBERS = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
            'first': 1, 'second': 2, 'third': 3, 'fourth': 4, 'fifth': 5, 'sixth': 6, 'seventh': 7, 'eighth': 8,
            'ninth': 9, 'tenth': 10}
@@ -104,6 +107,11 @@ def choice(text, accounts):
             if len(matches) == 1:
                 return matches[0]
             return ('several', provider) if matches else None
+    if company_word(words):
+        matches = company_accounts(words, accounts)
+        if len(matches) == 1:
+            return accounts.index(matches[0])
+        return ('several', '') if matches else None
     from email_draft import normalize_recipient
     kind, rest = spoken_account(plain)
     try:
@@ -147,12 +155,57 @@ def removal_question(account):
 
 def removal_note(provider):
     """What else the user may want to know after removing an account of this kind."""
-    if provider == 'gmail':
-        return ('Your email is still with Gmail. To also take back its permission, open your Google Account, '
-                'choose Security, and remove Voice Companion from the apps that can use your account.')
-    if provider == 'outlook':
-        return ('Your email is still with Outlook. To also take back its permission, open your Microsoft account, '
-                'choose Privacy or Security, and remove Voice Companion from the apps that can use your account.')
     if provider == 'yahoo':
         return 'Your email is still with Yahoo. The app password still works until you delete it in Yahoo Account security.'
     return 'Thunderbird and its email are not changed. Voice Companion just stops using this account.'
+
+
+def company_word(words):
+    """'Google' for "gmail", 'Microsoft' for "outlook", or ''."""
+    plain = re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', ' ', (words or '').casefold())).strip()
+    plain = re.sub(r'\s+(?:email|mail|account|inbox)$', '', plain) if plain not in ('google mail',) else plain
+    return next((company for company, names in COMPANY_WORDS.items() if plain in names), '')
+
+
+def company_accounts(words, accounts):
+    """The Thunderbird accounts whose address belongs to the company named, such as Gmail."""
+    from thunderbird_accounts import company
+    wanted = company_word(words)
+    return [(p, a) for p, a in accounts if wanted and p == 'thunderbird' and company(a) == wanted]
+
+
+def company_name(words):
+    """How the company's mail is spoken: Gmail or Outlook."""
+    return {'Google': 'Gmail', 'Microsoft': 'Outlook'}.get(company_word(words), '')
+
+
+def retired_message(result):
+    """What to say once after older Gmail or Microsoft accounts were removed (mail_accounts.Retired)."""
+    removed = list(result.removed)
+    if not removed:
+        return ''
+    def one(item, first):
+        provider, address = item
+        name = RETIRED_NAMES.get(provider, provider.capitalize())
+        if address:
+            return ('Your ' if first else 'your ') + name + ' account ' + address
+        return ('An ' if first else 'an ') + name + ' account'
+    parts = [one(item, index == 0) for index, item in enumerate(removed)]
+    if len(parts) == 1:
+        who = parts[0] + ' was'
+    else:
+        who = ', '.join(parts[:-1]) + (',' if len(parts) > 2 else '') + ' and ' + parts[-1] + ' were'
+    kinds = [RETIRED_NAMES.get(p, p.capitalize()) for p in dict.fromkeys(p for p, _ in removed)]
+    works = 'Email now works' if len(kinds) == 1 else ' and '.join(kinds) + ' email now work'
+    words = [who + ' removed from Voice Companion.', works + ' through Thunderbird.',
+             'Your drafts and contacts are kept.']
+    now = result.selected
+    if now is not None and result.changed_selection:
+        words.append('Now using the ' + name(now[0]) + ' account ' + now[1] + '.')
+    connected = {a.casefold() for p, a in result.remaining if p == 'thunderbird'}
+    missing = [a for _, a in removed if a and a.casefold() not in connected]
+    if not result.remaining:
+        words.append('Say add account to set it up in Thunderbird.')
+    elif missing:
+        words.append('To use ' + ' and '.join(dict.fromkeys(missing)) + ' again, say add account and choose Thunderbird.')
+    return ' '.join(words)

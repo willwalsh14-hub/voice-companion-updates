@@ -2804,6 +2804,31 @@ def remove_mail_account(account, mode):
     return 'awake' if mode == 'mailbox' else mode
 
 
+def retire_old_mail_accounts():
+    """At startup: remove Gmail and Microsoft accounts older versions connected directly.
+
+    Email works only through Thunderbird and Yahoo now. Said once, when files
+    were removed. A problem here must never stop the app."""
+    global mail_session, pending_send
+    import mail_accounts
+    import account_picker
+    try:
+        result = mail_accounts.retire_removed_accounts(APP)
+        if not result.removed:
+            return
+        if mail_session is not None and mail_session.provider in mail_accounts.REMOVED_PROVIDERS:
+            mail_session = None
+        if pending_send is not None and pending_send[1] in mail_accounts.REMOVED_PROVIDERS:
+            pending_send = None
+        speak(account_picker.retired_message(result))
+    except Exception:
+        try:
+            APP.mkdir(parents=True, exist_ok=True)
+            (APP / 'Email-Accounts-Error.txt').write_text(traceback.format_exc(), encoding='utf-8')
+        except OSError:
+            pass
+
+
 def new_thunderbird_setup(adding=False):
     """Thunderbird setup on this computer, with the add-on package this copy of the app ships.
 
@@ -4639,6 +4664,8 @@ def main():
             except (OSError, ValueError): pass
             try: result_file.unlink(missing_ok=True)
             except OSError: pass
+        # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
+        retire_old_mail_accounts()
         settings_quiet_until=0
         settings_audio_blocked=False
         web_refresh=RefreshPacer();startup_speaking=True;startup_quiet_until=time.monotonic()+.3

@@ -1,60 +1,26 @@
-"""Windows-only account authorization for the optional email send workflow.
+"""Saved email accounts: Thunderbird and Yahoo only.
 
-Public OAuth client IDs must be registered by the distributor. Account data is
-encrypted for the signed-in Windows user using DPAPI. Yahoo uses an app password
-entered by a helper, never the normal account password.
+Gmail, Outlook and other mail now work through Thunderbird, which holds the
+sign-in. Yahoo uses an app password entered by a helper, never the normal
+account password. Account data is encrypted for the signed-in Windows user
+using DPAPI.
+
+Older versions also connected Gmail and Microsoft accounts directly. Those are
+removed when the app starts (retire_removed_accounts) and are never listed.
 """
-from network_security import secure_service_open
 import json
 import re
-import os
 import hashlib
-import sys
+from collections import namedtuple
 from pathlib import Path
-
-
-GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.send',
-                'https://www.googleapis.com/auth/gmail.modify',
-                'https://www.googleapis.com/auth/userinfo.email', 'openid']
-MICROSOFT_SCOPES = ['Mail.Send', 'Mail.ReadWrite', 'User.Read']
 
 
 class AccountError(Exception):
     pass
 
 
-def registration(folder):
-    """Public client IDs are configuration, never a user's password."""
-    path = Path(folder) / 'mail-registration.json'
-    data = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else {}
-    if not isinstance(data, dict):
-        raise AccountError('Mail registration is invalid.')
-    app_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
-    packaged_registration = app_dir / 'microsoft-registration.json'
-    if not data.get('microsoft_client_id') and packaged_registration.is_file():
-        supplied = json.loads(packaged_registration.read_text(encoding='utf-8'))
-        data['microsoft_client_id'] = supplied['microsoft_client_id']
-    if data.get('google_credentials_file'):
-        client_path = Path(data['google_credentials_file'])
-        if not client_path.is_absolute():
-            data['google_credentials_file'] = str(Path(folder) / client_path)
-    else:
-        # A distributor can ship its public desktop OAuth registration with
-        # Setup. A pre-existing Microsoft configuration must not hide it.
-        app_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
-        packaged_google = app_dir / 'google-client.json'
-        if packaged_google.is_file():
-            data['google_credentials_file'] = str(packaged_google)
-    return data
-
-
 def account_token(provider, folder):
-    config = registration(folder)
     store = ProtectedStore(folder)
-    if provider == 'gmail':
-        return gmail_token(store, config.get('google_credentials_file', ''))
-    if provider == 'outlook':
-        return microsoft_token(store, config.get('microsoft_client_id', ''))
     if provider == 'yahoo':
         saved = store.load('yahoo')
         return saved['address'], saved['app_password']
@@ -62,7 +28,7 @@ def account_token(provider, folder):
         # Thunderbird holds the sign-in. The "token" is which Thunderbird account to use.
         saved = store.load('thunderbird')
         return saved['address'], saved
-    raise AccountError('That provider is not connected.')
+    raise AccountError('That email account is not connected. Email works through Thunderbird or Yahoo. Say add account.')
 
 
 def thunderbird_connect(store):
@@ -86,12 +52,7 @@ def thunderbird_connect(store):
 
 
 def connect(provider, folder, graphical=False):
-    config = registration(folder)
     store = ProtectedStore(folder)
-    if provider == 'gmail':
-        return gmail_connect(store, config.get('google_credentials_file', ''))
-    if provider == 'outlook':
-        return microsoft_connect(store, config.get('microsoft_client_id', ''))
     if provider == 'thunderbird':
         return thunderbird_connect(store)
     if provider == 'yahoo':
@@ -103,7 +64,7 @@ def connect(provider, folder, graphical=False):
         address = input('Yahoo email address: ').strip()
         password = getpass.getpass('Yahoo app password (not your account password): ')
         return yahoo_connect(store, address, password)
-    raise AccountError('This provider is not supported for account connection yet.')
+    raise AccountError('Email works through Thunderbird or Yahoo. Say add account and choose one.')
 
 
 YAHOO_SMTP = ('smtp.mail.yahoo.com', 465)
@@ -161,7 +122,9 @@ def yahoo_connect(store, address, password, smtp_factory=None, imap_factory=None
     return address
 
 
-PROVIDERS = ('gmail', 'outlook', 'yahoo', 'thunderbird')
+PROVIDERS = ('yahoo', 'thunderbird')
+# Kinds older versions connected directly. Their saved files are removed at startup.
+REMOVED_PROVIDERS = ('gmail', 'outlook')
 
 
 class ProtectedStore:
@@ -206,8 +169,11 @@ class ProtectedStore:
     def selected(self):
         path = self.folder / 'mail-selection.account'
         if path.is_file():
-            choice = self._unseal(path)
-            if (choice.get('provider'), choice.get('address')) in self.accounts():
+            try:
+                choice = self._unseal(path)
+            except AccountError:
+                choice = None    # A damaged choice is no choice; it must not stop the app.
+            if isinstance(choice, dict) and (choice.get('provider'), choice.get('address')) in self.accounts():
                 return choice['provider'], choice['address']
         accounts = self.accounts()
         return accounts[0] if len(accounts) == 1 else None
@@ -295,134 +261,79 @@ class ProtectedStore:
             raise AccountError('Choose the account by its address before disconnecting.')
 
 
-GMAIL_SIGN_IN_SECONDS = 300
+# What retire_removed_accounts did: the removed (kind, address) pairs (address
+# '' when its file could not be read), the account selected afterwards, whether
+# that selection changed, and the accounts that remain.
+Retired = namedtuple('Retired', 'removed selected changed_selection remaining')
 
 
-def _gmail_sign_in_problem(exc):
-    """A plain sentence for a Gmail sign-in that did not finish."""
-    again = ' Say add account and choose Gmail to try again.'
-    if exc is None or isinstance(exc, AttributeError):
-        # No answer from the browser in time (the library has no address to read).
-        return 'Gmail sign-in took too long, so it was stopped.' + again
-    if getattr(exc, 'error', '') == 'access_denied' or 'access_denied' in str(exc):
-        return 'You did not allow Voice Companion to use this Gmail account.' + again
-    if isinstance(exc, OSError):
-        return 'Gmail sign-in could not open or reach the sign-in page. Check the internet connection.' + again
-    return 'Gmail sign-in did not finish.' + again
+def _removed_files(folder):
+    found = []
+    for provider in REMOVED_PROVIDERS:
+        for pattern in (provider + '-*.account', provider + '.account', provider + '-*.writing', provider + '.writing'):
+            found.extend((provider, path) for path in sorted(folder.glob(pattern)) if path.is_file())
+    return found
 
 
-def gmail_connect(store, client_file):
-    path = Path(client_file)
-    if not path.is_file():
-        raise AccountError('This copy of Voice Companion has no Google app registration. Gmail cannot connect until the distributor provides an updated installer.')
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    config = json.loads(path.read_text(encoding='utf-8'))
-    if 'installed' not in config:
-        raise AccountError('A Google desktop app registration is required.')
-    # Google may grant fewer permissions when a box is left unticked. Without this,
-    # oauthlib stops with a technical "Scope has changed" error; the check below
-    # explains it instead.
-    os.environ.setdefault('OAUTHLIB_RELAX_TOKEN_SCOPE', '1')
+def retire_removed_accounts(folder):
+    """Delete saved Gmail and Microsoft accounts that Voice Companion connected directly.
+
+    Only those account files are deleted, never Thunderbird or Yahoo accounts,
+    drafts, contacts or notes. A selection naming a removed account is cleared,
+    and a remaining Thunderbird account, or else a Yahoo account, is selected.
+    A file that cannot be deleted now is tried again next time; it is never
+    listed meanwhile. Nothing here raises for a damaged or missing file."""
+    folder = Path(folder)
+    store = ProtectedStore(folder)
+    removed = []
     try:
-        credentials = InstalledAppFlow.from_client_config(config, GMAIL_SCOPES).run_local_server(
-            port=0, timeout_seconds=GMAIL_SIGN_IN_SECONDS, authorization_prompt_message='',
-            success_message='Gmail sign-in is complete. Close this window and go back to Voice Companion.')
-    except Exception as exc:
-        raise AccountError(_gmail_sign_in_problem(exc)) from exc
-    if credentials is None:
-        raise AccountError(_gmail_sign_in_problem(None))
-    granted = getattr(credentials, 'granted_scopes', None)
-    if isinstance(granted, str): granted = granted.split()
-    if granted is not None and not {'https://www.googleapis.com/auth/gmail.send',
-                                    'https://www.googleapis.com/auth/gmail.modify'}.issubset(set(granted)):
-        raise AccountError('Google did not give Voice Companion permission to read and send your mail. '
-                           'Say add account, choose Gmail, and sign in again. On the Google page, check every box, then choose Continue.')
-    from urllib import request
-    # Identify the signed-in account rather than trusting a spoken label.
-    if not credentials.valid and credentials.refresh_token:
-        from google.auth.transport.requests import Request
-        credentials.refresh(Request())
-    if not credentials.valid:
-        raise AccountError('Gmail sign-in did not finish.')
-    with secure_service_open(request.Request('https://www.googleapis.com/oauth2/v3/userinfo',
-                                       headers={'Authorization': 'Bearer ' + credentials.token}), timeout=30) as response:
-        address = json.load(response).get('email')
-    if not address:
-        raise AccountError('Google did not identify the signed-in email address.')
-    store.save('gmail', {'address': address, 'credentials': credentials.to_json(),
-                         'client_id': config['installed']['client_id'], 'scopes': GMAIL_SCOPES})
-    return address
-
-
-def gmail_token(store, client_file):
-    saved = store.load('gmail')
-    if not set(GMAIL_SCOPES).issubset(set(saved.get('scopes', []))):
-        raise AccountError('Gmail needs new mail permissions. Ask your helper to reconnect it.')
-    if not Path(client_file).is_file():
-        raise AccountError('Gmail registration is missing. Ask your helper.')
-    config = json.loads(Path(client_file).read_text(encoding='utf-8'))
-    if saved['client_id'] != config['installed']['client_id']:
-        raise AccountError('The Gmail app registration changed. Reconnect the account.')
-    from google.oauth2.credentials import Credentials
-    from google.auth.transport.requests import Request
-    from google.auth.exceptions import RefreshError, TransportError
-    credentials = Credentials.from_authorized_user_info(json.loads(saved['credentials']), GMAIL_SCOPES)
-    if not credentials.valid:
-        if not credentials.refresh_token:
-            raise AccountError('Gmail sign-in expired. Reconnect the account.')
+        files = _removed_files(folder) if folder.is_dir() else []
+    except OSError:
+        files = []
+    if not files:
+        return Retired([], None, False, [])
+    selection = folder / 'mail-selection.account'
+    try:
+        choice = store._unseal(selection) if selection.is_file() else None
+    except (AccountError, OSError):
+        choice = None
+    chosen = ((choice.get('provider'), choice.get('address'))
+              if isinstance(choice, dict) else None)
+    for provider, path in files:
+        address = ''
+        if path.suffix == '.account':
+            try:
+                data = store._unseal(path)
+                address = data.get('address', '') if isinstance(data, dict) else ''
+                address = address if isinstance(address, str) else ''
+            except (AccountError, OSError):
+                address = ''
         try:
-            credentials.refresh(Request())
-        except RefreshError as exc:
-            if getattr(exc, 'retryable', False):
-                raise AccountError('Gmail sign-in is temporarily unavailable. Wait a moment and say check email again.') from exc
-            raise AccountError('Gmail sign-in expired or was refused. Say add account, choose Gmail, and sign in again to reconnect it.') from exc
-        except TransportError as exc:
-            raise AccountError('I could not reach Google to renew your Gmail sign-in. Check the internet connection, then say check email again.') from exc
-        store.save('gmail', {**saved, 'credentials': credentials.to_json()}, select=False)
-    return saved['address'], credentials.token
-
-
-def microsoft_connect(store, client_id):
-    if not client_id:
-        raise AccountError('Microsoft sign-in is not set up in this build. Ask your helper.')
-    import msal
-    from urllib import request
-    cache = msal.SerializableTokenCache()
-    app = msal.PublicClientApplication(client_id, authority='https://login.microsoftonline.com/common',
-                                       token_cache=cache)
-    result = app.acquire_token_interactive(scopes=MICROSOFT_SCOPES)
-    if 'access_token' not in result:
-        raise AccountError('Microsoft sign-in did not finish.')
-    accounts = app.get_accounts()
-    if len(accounts) != 1 or not accounts[0].get('username'):
-        raise AccountError('The signed-in Microsoft account could not be identified.')
-    with secure_service_open(request.Request('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName',
-                                       headers={'Authorization': 'Bearer ' + result['access_token']}), timeout=30) as response:
-        identity = json.load(response)
-    address = identity.get('mail') or identity.get('userPrincipalName')
-    if not address:
-        raise AccountError('Microsoft did not identify the sending mailbox.')
-    store.save('outlook', {'address': address, 'client_id': client_id,
-                           'home_account_id': accounts[0]['home_account_id'],
-                           'cache': cache.serialize()})
-    return address
-
-
-def microsoft_token(store, client_id):
-    saved = store.load('outlook')
-    if saved['client_id'] != client_id:
-        raise AccountError('The Microsoft app registration changed. Reconnect the account.')
-    import msal
-    cache = msal.SerializableTokenCache()
-    cache.deserialize(saved['cache'])
-    app = msal.PublicClientApplication(client_id, authority='https://login.microsoftonline.com/common',
-                                       token_cache=cache)
-    accounts = [a for a in app.get_accounts() if a['home_account_id'] == saved['home_account_id']]
-    if len(accounts) != 1:
-        raise AccountError('Microsoft sign-in expired. Reconnect the account.')
-    result = app.acquire_token_silent(MICROSOFT_SCOPES, account=accounts[0])
-    if not result or 'access_token' not in result:
-        raise AccountError('Microsoft sign-in expired. Reconnect the account.')
-    if cache.has_state_changed:
-        store.save('outlook', {**saved, 'cache': cache.serialize()}, select=False)
-    return saved['address'], result['access_token']
+            path.unlink(missing_ok=True)
+        except OSError:
+            continue
+        if path.suffix == '.account' and (provider, address) not in removed:
+            removed.append((provider, address))
+    if not removed:
+        return Retired([], None, False, [])
+    remaining = store.accounts()
+    changed = False
+    if chosen is None or chosen[0] in REMOVED_PROVIDERS or chosen not in remaining:
+        # Clear a removed or unreadable choice, then use what is left.
+        try:
+            selection.unlink(missing_ok=True)
+        except OSError:
+            pass
+        pick = (next((a for a in remaining if a[0] == 'thunderbird'), None) or
+                next((a for a in remaining if a[0] == 'yahoo'), None))
+        if pick is not None:
+            try:
+                store.select(*pick)
+                changed = True
+            except (AccountError, OSError):
+                pass
+    try:
+        now = store.selected()
+    except (AccountError, OSError):
+        now = None
+    return Retired(removed, now, changed, remaining)
