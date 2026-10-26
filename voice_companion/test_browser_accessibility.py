@@ -125,7 +125,10 @@ class BrowserAccessibilityTests(unittest.TestCase):
                     embedded.assert_called_once_with(Path(folder),True);embedded.return_value.start.assert_called_once()
                 continue
             driver=Mock();driver.chromium.launch_persistent_context.return_value.pages=[Mock()]
-            with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))):
+            # A driver another test left running is shared per thread (shared_playwright);
+            # start this one from the patched Playwright instead.
+            import shared_playwright
+            with tempfile.TemporaryDirectory() as folder,patch.dict(shared_playwright._DRIVERS,{},clear=True),patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))):
                 backend=BrowserBackend(folder,browser,headless=True);backend.start()
                 args=driver.chromium.launch_persistent_context.call_args.kwargs
                 self.assertTrue(args['headless']);self.assertEqual(args['channel'],'chrome')
