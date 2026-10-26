@@ -402,7 +402,7 @@
 },
 "awake | beginning of list": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1259,7 +1259,7 @@
 },
 "awake | end of list": {
 "said": [
-"Exit Voice Companion (E), 12 of 12."
+"Exit Voice Companion (E), 13 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1419,7 +1419,7 @@
 },
 "awake | first item": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -1713,7 +1713,7 @@
 },
 "awake | last item": {
 "said": [
-"Exit Voice Companion (E), 12 of 12."
+"Exit Voice Companion (E), 13 of 13."
 ],
 "screen_after": "awake"
 },
@@ -2158,7 +2158,7 @@
 },
 "awake | next": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -2743,7 +2743,7 @@
 },
 "awake | previous": {
 "said": [
-"Exit Voice Companion (E), 12 of 12."
+"Exit Voice Companion (E), 13 of 13."
 ],
 "screen_after": "awake"
 },
@@ -2906,6 +2906,12 @@
 "awake | read yahoo": {
 "said": [
 "That account is not connected. Say add account."
+],
+"screen_after": "awake"
+},
+"awake | reader": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -3507,7 +3513,7 @@
 },
 "awake | start of list": {
 "said": [
-"File manager (F), 1 of 12."
+"File manager (F), 1 of 13."
 ],
 "screen_after": "awake"
 },
@@ -8500,6 +8506,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. read yahoo"
+]
+},
+"document | reader": {
+"said": [
+"reader"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. reader"
 ]
 },
 "document | recipient": {
@@ -14819,6 +14834,15 @@
 "Hello world. read yahoo"
 ]
 },
+"email_draft | reader": {
+"said": [
+"reader"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. reader"
+]
+},
 "email_draft | recipient": {
 "said": [
 "recipient"
@@ -18766,6 +18790,10 @@
 "screen_after": "help"
 },
 "help | read yahoo": {
+"said": [],
+"screen_after": "help"
+},
+"help | reader": {
 "said": [],
 "screen_after": "help"
 },
@@ -23524,6 +23552,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | reader": {
+"calls": [
+"call.process('reader')"
+],
+"said": [
+"session handled: reader"
+],
+"screen_after": "mailbox"
+},
 "mailbox | recipient": {
 "calls": [
 "call.process('recipient')"
@@ -28040,6 +28077,12 @@
 "note | read yahoo": {
 "said": [
 "read yahoo"
+],
+"screen_after": "note"
+},
+"note | reader": {
+"said": [
+"reader"
 ],
 "screen_after": "note"
 },
@@ -33541,6 +33584,16 @@
 ],
 "said": [
 "session handled: read yahoo"
+],
+"screen_after": "web"
+},
+"web | reader": {
+"calls": [
+"call.command('reader')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: reader"
 ],
 "screen_after": "web"
 },

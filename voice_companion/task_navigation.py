@@ -92,6 +92,7 @@ class TaskNavigation:
         # 'downloads' when the file playing was opened from the Downloads list.
         self.player_return = None
         self.reader_return = 'files'
+        self.reader_recent = []
 
     def remember(self, path):
         path = Path(path)
@@ -110,6 +111,13 @@ class TaskNavigation:
         if mode == 'word_processor':
             return [('Create a document', 'Ctrl+N', 'create a document'), ('Open a document', 'Ctrl+O', '@open'),
                     ('Recent documents', 'Ctrl+R', '@recent'), ('Options', 'Alt+O', '@options')]
+        if mode == 'reader_menu':
+            # Document reader is an app of its own (Will, October 2026).
+            return [('Open a document', 'Ctrl+O', '@reader_open'), ('Recent documents', 'Ctrl+R', '@reader_recent'),
+                    ('Options', 'Alt+O', '@options:Document reader'), ('Help', 'F1', 'help with document reader'),
+                    ('Main menu', 'Ctrl+F1', 'main menu')]
+        if mode == 'reader_recent':
+            return [(Path(p).name, '', '@reader_file:'+p) for p in self.reader_recent]
         if mode == 'notepad_menu':
             # Opening Notepad lands here first (Will, October 2026).
             return [('Create a note', 'Ctrl+N', 'write a note'), ('Open a note', 'Ctrl+O', 'list notes'),
@@ -156,8 +164,12 @@ class TaskNavigation:
         m.FILE_MANAGER = FileManager()
         m.FILE_MANAGER.pick_extensions = MEDIA_TYPES if kind == 'media' else DOCUMENT_TYPES
         m.FILE_MANAGER.pick_label = 'media' if kind == 'media' else 'document'
+        if kind == 'reader':
+            from document_reader import SUPPORTED
+            m.FILE_MANAGER.pick_extensions = set(SUPPORTED) | DOCUMENT_TYPES
         self.picker = kind
-        m.speak(('Open media file. ' if kind == 'media' else 'Open a document. ')+m.FILE_MANAGER.refresh())
+        from file_manager import start_location
+        m.speak(('Open media file. ' if kind == 'media' else 'Open a document. ')+m.FILE_MANAGER.refresh(start_location(m.PREFERENCES.get('file_manager_start'))))
         return 'files'
 
     def open_document(self, path):
@@ -223,14 +235,58 @@ class TaskNavigation:
             # The player menu is not focused yet, so do not read its items here.
             self.app.speak('Playing '+path.name+'. Press Alt for the player menu.')
             return 'local_media'
+        if kind == 'reader':
+            return self.read_file(path)
         self.reader_return='files'
         result=self.open_document(path)
         self.picker=None
         return result
 
+    def reader_list(self):
+        try:
+            names = json.loads((self.app.APP/'recent-reader.json').read_text(encoding='utf-8'))
+        except (OSError, ValueError, TypeError):
+            names = []
+        return [p for p in names if isinstance(p, str)][:20] if isinstance(names, list) else []
+
+    def remember_read(self, path):
+        target = self.app.APP/'recent-reader.json'
+        try:
+            names = [str(Path(path).resolve())] + [p for p in self.reader_list() if p.casefold() != str(Path(path).resolve()).casefold()]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temp = target.with_suffix('.writing'); temp.write_text(json.dumps(names[:20]), encoding='utf-8'); temp.replace(target)
+        except OSError:
+            pass
+
+    def read_file(self, path):
+        """Open any supported file in Document reader (read-only), from the Document reader menu."""
+        m = self.app
+        from document_reader import open_document
+        path = Path(path)
+        self.picker = None
+        if not path.is_file():
+            m.speak(path.name+' is no longer there. It may have been moved or deleted.'); return self.enter('reader_menu', 'Document reader')
+        try:
+            m.FILE_READER = open_document(path)
+        except (ValueError, OSError) as error:
+            m.speak(str(error)); return self.enter('reader_menu', 'Document reader')
+        self.remember_read(path); self.reader_return = 'reader_menu'
+        if m.PREFERENCES.get('reader_auto_read', True):
+            m.speak('Opened '+path.name+'. '+m.FILE_READER.reading.read(True))
+        else:
+            m.speak('Opened '+path.name+'. Press Control+R to read it. Escape goes back to the Document reader menu.')
+        return 'file_reader'
+
     def action(self, command, mode):
         m = self.app
         if command == '@open': return self.pick('document')
+        if command == '@reader_open': return self.pick('reader')
+        if command == '@reader_recent':
+            self.reader_recent = self.reader_list()
+            if not self.reader_recent:
+                m.speak('No recent documents yet. Choose Open a document.'); return mode
+            return self.enter('reader_recent', 'Recent documents')
+        if command.startswith('@reader_file:'): return self.read_file(command[len('@reader_file:'):])
         if command == '@media_open': return self.pick('media')
         if command == '@recent':
             try: self.recent = json.loads((m.APP/'recent-documents.json').read_text(encoding='utf-8'))[:20]
@@ -278,6 +334,9 @@ class TaskNavigation:
                     'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')
             return 'task_input'
+        if mode == 'reader_menu':
+            if command.startswith('@options:'):return m.screen_menu().run(command, mode)
+            if command == 'main menu':return 'awake'
         if mode == 'notepad_menu':
             if command == 'list notes':
                 # The notes list opens over this menu; Escape closes it and stays here.
@@ -308,6 +367,8 @@ class TaskNavigation:
         if self.items(mode) is not None:
             if mode == 'word_processor' and key in ('Ctrl+N','Ctrl+O','Ctrl+R','Alt+O'):
                 return {'Ctrl+N':'create a document','Ctrl+O':'@open','Ctrl+R':'@recent','Alt+O':'@options'}[key]
+            if mode == 'reader_menu' and key in ('Ctrl+O','Ctrl+R','Alt+O'):
+                return {'Ctrl+O':'@reader_open','Ctrl+R':'@reader_recent','Alt+O':'@options:Document reader'}[key]
             if mode == 'notepad_menu' and key in ('Ctrl+N','Ctrl+O','Alt+O'):
                 return {'Ctrl+N':'write a note','Ctrl+O':'list notes','Alt+O':'@options:Notepad'}[key]
             return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'enter','Escape':'escape','Home':'home','End':'end'}.get(key)
@@ -339,7 +400,7 @@ class TaskNavigation:
             return self.action('@options',mode)
         if mode=='document_menu' and command in ('main menu','back to main menu','exit companion'):
             return m.handle(text,'document',typed=True)
-        if mode in ('word_processor','media_menu','recent_documents','document_menu','local_media','notepad_menu') and (m.spoken_control(command) or command in ('help','exit companion','go to sleep','wake up','main menu','back to main menu')):
+        if mode in ('word_processor','media_menu','recent_documents','document_menu','local_media','notepad_menu','reader_menu','reader_recent') and (m.spoken_control(command) or command in ('help','exit companion','go to sleep','wake up','main menu','back to main menu')):
             return None
         editor = m.document if mode == 'document' else m.email_draft if mode == 'email_draft' else None
         if editor is not None and command in ('toggle bold','toggle italic','toggle underline') and (mode == 'document' or (editor.compose_step or 'body') == 'body'):
@@ -354,6 +415,10 @@ class TaskNavigation:
             elif mode=='email_draft' and m.email_draft:m.email_draft.save()
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')
+        if command in ('document reader','open document reader','document reader menu') and mode not in ('document','email_draft','note'):
+            return self.enter('reader_menu', 'Document reader')
+        if mode == 'reader_menu' and command in ('open a document','open document','recent documents','recent','options','open options','help'):
+            return self.action({'open a document':'@reader_open','open document':'@reader_open','recent documents':'@reader_recent','recent':'@reader_recent'}.get(command,'@options:Document reader' if 'options' in command else 'help with document reader'), mode)
         if command in ('notepad','open notepad','notepad menu') and mode not in ('document','email_draft','note'):
             return self.enter('notepad_menu', 'Notepad')
         if mode == 'notepad_menu' and command in ('create a note','new note','open a note','open notes','options','open options','notepad options'):
@@ -412,6 +477,7 @@ class TaskNavigation:
                 if self.group: self.group = None; return self.enter(mode, 'Document menu')
                 m.speak('Back to document.'); return 'document'
             if mode == 'recent_documents': return self.enter('word_processor', 'Word processor menu')
+            if mode == 'reader_recent': return self.enter('reader_menu', 'Document reader')
             if mode == 'local_media':
                 if not m.PREFERENCES.get('keep_audio_playing',False) and m.MEDIA_HUB and m.MEDIA_HUB.player.kind=='local':m.MEDIA_HUB.player.control('stop')
                 files, self.player_files = self.player_files, None

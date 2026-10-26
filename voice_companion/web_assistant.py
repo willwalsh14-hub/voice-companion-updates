@@ -252,8 +252,8 @@ class BrowserBackend:
             from playwright.sync_api import sync_playwright
             self.folder.mkdir(parents=True, exist_ok=True)
             from browser_process import browser_process_environment
-            with browser_process_environment(self.folder):
-                self.playwright = sync_playwright().start()
+            import shared_playwright
+            self.playwright = shared_playwright.start(self.folder)
             with browser_process_environment(self.folder):
                 self.context = self.playwright.chromium.launch_persistent_context(
                     str(self.folder), headless=self.headless, accept_downloads=False, channel='chrome')

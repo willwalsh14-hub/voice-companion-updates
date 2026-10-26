@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 601
-- Already had both ways: 474
+- Actions inventoried: 609
+- Already had both ways: 482
 - Gaps found: 127
 - Gaps fixed (Added): 119
 - Not applicable (N/A, with reason): 8
@@ -24,6 +24,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Word processor
 
 - Voice: "Word processor"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Document reader
+
+- Voice: "Document reader"
 - Keyboard: First letter, arrows, Enter
 - Status: Both
 
@@ -937,6 +943,38 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+F1
 - Status: Both
 
+## Reader Menu
+
+### Open a document
+
+- Voice: "Open a document"
+- Keyboard: Ctrl+O
+- Status: Both
+
+### Recent documents
+
+- Voice: "Recent documents"
+- Keyboard: Ctrl+R
+- Status: Both
+
+### Options
+
+- Voice: "Options"
+- Keyboard: Alt+O
+- Status: Both
+
+### Help
+
+- Voice: "Help with document reader"
+- Keyboard: F1
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Ctrl+F1
+- Status: Both
+
 ## Media Menu
 
 ### Radio
@@ -1241,6 +1279,22 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Write a note"
 - Keyboard: Alt+O, arrows to Notepad options, Tab to the button, Enter
+- Status: Both
+
+## Document reader options
+
+### Read a document aloud when it opens
+
+- Voice: "Set Read a document aloud when it opens to ..."
+- Keyboard: Alt+O, arrows to Document reader options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+## File manager options
+
+### Start File manager in
+
+- Voice: "Set file manager start to ..."
+- Keyboard: Alt+O, arrows to File manager options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
 ## Web browser options

@@ -51,10 +51,11 @@ Contents
   6.10 Find commands and keys
   6.11 Find and sort items
 7 Document Reader
-  7.1 Open supported files
-  7.2 Read with keys or speech
-  7.3 Return to your files
-  7.4 Know the reading limits
+  7.1 Open the Document reader menu
+  7.2 Open supported files
+  7.3 Read with keys or speech
+  7.4 Return to your files
+  7.5 Know the reading limits
 8 Write A Document
   8.1 Create and name a document
   8.2 Write and move through the document
@@ -192,6 +193,7 @@ The keyboard works even while voice commands are asleep. Press Down Arrow to hea
 The main menu is where every task starts. It has these choices, in this order:
 - File manager
 - Word processor
+- Document reader
 - Notepad
 - Email
 - Web browser
@@ -457,7 +459,7 @@ Choose a matching place if asked. Then speak the words to add. In Commands only,
 6. FILE MANAGER
 
 6.1 Open File manager
-File manager is the first choice on the main menu. Say "File manager", or press Enter on it. You start at the drive list.
+File manager is the first choice on the main menu. Say "File manager", or press Enter on it. You start at the drive list. To start somewhere else, such as C drive or Documents, see File manager options in chapter 23.
 The drive list comes from Windows, the same as in File Explorer. It has your local drives, network drives, and cloud folders such as OneDrive.
 Desktop and Documents are folders inside a drive. They are not drives.
 A cloud file may need an internet connection to download before you can read it.
@@ -553,14 +555,23 @@ Tab and Shift+Tab move between the list and these buttons: Search, Search subfol
 
 7. DOCUMENT READER
 
-7.1 Open supported files
-To read a file, press Enter on it in File manager. It opens in the Document reader inside Voice Companion. You do not need Microsoft Word.
+7.1 Open the Document reader menu
+Document reader is on the main menu. Say "Document reader", or press Enter on it. Its menu has:
+- Open a document, Control+O. Browse to a file, then press Enter to read it.
+- Recent documents, Control+R. The files you read last, newest first.
+- Options, Alt+O. Choose whether a file is read aloud as soon as it opens.
+- Help, F1.
+- Main menu, Control+F1.
+Escape in a document goes back to this menu. Escape on the menu goes to the main menu.
+
+7.2 Open supported files
+You can also press Enter on a file in File manager. It opens in the Document reader inside Voice Companion. You do not need Microsoft Word.
 The reader opens these file types: Word DOCX, TXT, MD, CSV, TSV, HTML, PDF, ODT, and EPUB.
 Files open read-only. Your file is never changed.
 To edit a DOCX file, open it from the Word processor with Open a document. A Word file with features the editor cannot keep opens in the reader instead.
 Old DOC files and other types are not opened in another app.
 
-7.2 Read with keys or speech
+7.3 Read with keys or speech
 - To read the whole document, say "Read document", or press Control+R.
 - To read by character or line, use the arrow keys.
 - To move by word, press Control+Left Arrow or Control+Right Arrow.
@@ -573,12 +584,12 @@ Old DOC files and other types are not opened in another app.
 For reader help, say "Help with document reader", or press F1.
 Press Alt to open the document reader menu. It has Read, Move by, and Leave and help.
 
-7.3 Return to your files
-To close the reader, say "Back to files", or press Escape. You return to the same folder and file.
+7.4 Return to your files
+To close the reader, say "Back to files", or press Escape. You return to where you opened the file: the same folder and file in File manager, or the Document reader menu.
 To go to the main menu, say "Main menu", or press Control+F1.
 You can open Options while you read. When you save Options, you return to the reader.
 
-7.4 Know the reading limits
+7.5 Know the reading limits
 - Web pages and books are read without scripts or online content.
 - PDF pages have page labels.
 - A scanned PDF page with no text is read with offline text recognition, also called OCR. No page is sent to a web service.
@@ -1577,6 +1588,8 @@ In Word processor options, you can set the font, size, line spacing, and alignme
 - Font for new documents is a list of common fonts, such as Arial, Calibri, Times New Roman, and Verdana. Use Up Arrow and Down Arrow, or type the first letter of a font. You can also say "Font" and its name, such as "Font Arial".
 - Font size choices run from 6 to 72 points.
 In Notepad options, choose Open Notepad to go back to your note or start a new one.
+In Document reader options, turn off Read a document aloud when it opens if you want to start reading yourself. Then press Control+R to read.
+In File manager options, choose where File manager starts. Pick drive list, C drive, Documents, Desktop, Downloads, or Music. Or type a full folder path, such as C:\Users\Will\Music. If that folder is missing, such as an unplugged drive, File manager starts at the drive list.
 
 23.7 Web browser options
 - Default search engine: choose Google, Bing, Brave Search, or DuckDuckGo.

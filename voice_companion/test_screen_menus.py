@@ -148,7 +148,7 @@ class ScreenMenuTests(unittest.TestCase):
         # The main menu is a menu already: Alt says so and where you are.
         self.said.clear()
         self.assertEqual(self.press('Alt', 'awake'), 'awake')
-        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 12.')
+        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 13.')
         self.assertEqual(self.press('Down', 'awake'), 'awake')
         self.assertIn('Word processor', self.said[-1])
 

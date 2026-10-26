@@ -13,7 +13,7 @@ class MenuKeyboardTests(unittest.TestCase):
         with patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'account_setup',False),patch.object(app,'speak') as say:
             app.navigation_key('Letter:e','awake')
             self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Email')
-            say.assert_called_with('Email (E), 4 of 12.')
+            say.assert_called_with('Email (E), 5 of 13.')
             app.navigation_key('Letter:e','awake')
             self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Exit Voice Companion')
             app.navigation_key('Letter:e','awake')

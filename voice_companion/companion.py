@@ -510,7 +510,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'notepad'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Document reader', 'document reader'), ('Notepad', 'notepad'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -864,7 +864,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -3367,7 +3367,9 @@ def _handle(text, mode, typed=False):
         task_navigation().picker=None
         FILE_MANAGER.pick_extensions=None
         FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
-        speak('File manager. '+FILE_MANAGER.refresh())
+        from file_manager import start_location
+        # Opens where File manager options say (drive list, C drive, Documents, ...).
+        speak('File manager. '+FILE_MANAGER.refresh(start_location(PREFERENCES.get('file_manager_start'))))
         return 'files'
     if mode=='files':
         if command in ('main menu','back to main menu','close file manager','leave file manager'):
@@ -3383,6 +3385,7 @@ def _handle(text, mode, typed=False):
             picker=task_navigation().picker
             task_navigation().picker=None
             # Escape from the drive list: Open a media file returns to the Media menu.
+            if picker=='reader':return task_navigation().enter('reader_menu','Document reader')
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
             return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
@@ -3393,6 +3396,7 @@ def _handle(text, mode, typed=False):
     if mode=='file_reader' and not (command in ('help','user guide','open user guide','manual','open manual') or command.startswith(('help with ','help for '))):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
+            if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
                 if back:return back
