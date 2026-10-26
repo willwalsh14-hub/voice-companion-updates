@@ -4,6 +4,7 @@ ThunderbirdMailbox has the same methods as the Gmail, Outlook and Yahoo
 mailboxes, so every email screen and voice command works unchanged. It talks
 to the Voice Companion Mail Connection add-on through thunderbird_bridge.
 """
+import re
 from email.utils import getaddresses
 
 from mailbox_access import MailboxError, html_text, message_date
@@ -89,6 +90,40 @@ def call(method, **params):
         raise MailboxError(str(exc)) from exc
 
 
+_BARE = re.compile(r'[^\s<>@,"]+@[^\s<>@,"]+')
+
+
+def addresses(values):
+    """(name, address) pairs from Thunderbird's address strings.
+
+    Thunderbird decodes an encoded sender such as =?UTF-8?Q?Smith=2C_John?= <j@x.com>
+    to Smith, John <j@x.com>, without the quotes a comma needs. A plain parser then splits
+    the name at the comma: the message list failed and a reply went to "Smith".
+    """
+    found = []
+    for value in values:
+        value = ' '.join(str(value or '').split())
+        if not value:
+            continue
+        parsed = getaddresses([value])
+        if all('@' in address for _, address in parsed):
+            found.extend(parsed)
+            continue
+        # A name with a comma: each <address> takes the words before it, except
+        # leading bare addresses, which stand alone.
+        for piece in re.split(r'(?<=>)\s*,?\s*', value):
+            piece = piece.strip(' ,')
+            angle = re.search(r'<([^<>]*)>\s*$', piece)
+            words = (piece[:angle.start()] if angle else piece).split(',')
+            while words and (_BARE.fullmatch(words[0].strip()) or not words[0].strip()):
+                if words[0].strip():
+                    found.append(('', words[0].strip()))
+                words.pop(0)
+            if angle and '@' in angle[1]:
+                found.append((','.join(words).strip().strip('"').strip(), angle[1].strip()))
+    return [(name, address) for name, address in found if '@' in address]
+
+
 def accounts():
     """Thunderbird accounts with sending identities, for connecting in Companion."""
     return call('accounts')
@@ -139,7 +174,8 @@ class ThunderbirdMailbox:
     def _rows(page):
         rows = []
         for item in page.get('rows', []):
-            (name, sender), = getaddresses([item.get('from', '')]) or [('', '')]
+            # The first sender; a damaged From must not stop the whole list.
+            name, sender = (addresses([item.get('from', '')]) or [('', '')])[0]
             rows.append({'id': item['id'], 'from': sender or item.get('from') or 'Unknown sender',
                          'sender_name': name, 'subject': item.get('subject') or '(no subject)',
                          'date': message_date(item.get('date')),
@@ -169,8 +205,8 @@ class ThunderbirdMailbox:
         if action not in ('reply', 'reply_all', 'forward'):
             raise MailboxError('Unknown email response.')
         info = call('context', messageId=self._message(message_id))
-        sender = getaddresses([info.get('replyTo') or info.get('author', '')])
-        others = getaddresses(list(info.get('recipients', [])) + list(info.get('ccList', []))) if action == 'reply_all' else []
+        sender = addresses([info.get('replyTo') or info.get('author', '')])
+        others = addresses(list(info.get('recipients', [])) + list(info.get('ccList', []))) if action == 'reply_all' else []
         recipients = []
         for _, found in sender + others:
             if found and found.casefold() != own_address.casefold() and found.casefold() not in [a.casefold() for a in recipients]:

@@ -103,7 +103,15 @@ class MailRelay:
             with self.send_lock:
                 pipe = self.pipe
                 if pipe is None: raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
-                pipe.send_bytes(encode({'id': ident, 'method': method, 'params': params or {}}))
+                try:
+                    pipe.send_bytes(encode({'id': ident, 'method': method, 'params': params or {}}))
+                except OSError as exc:
+                    # Thunderbird closed before this connection noticed: the request never
+                    # reached it. Say so plainly (and let the caller start it again), instead
+                    # of an unexplained error.
+                    with self.state_lock:
+                        if self.pipe is pipe: self.pipe = None; self.connected.clear()
+                    raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.') from exc
             import user_stop
             waited, answered = 0, False
             while not answered and waited < timeout:
