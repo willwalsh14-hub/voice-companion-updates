@@ -115,11 +115,6 @@ def record(phrases):
     class MailSession(Session): pass
     class WebSession(Session): pass
 
-    class SignIn(mock.MagicMock):
-        def __getattr__(self, name):
-            if name.startswith('_'): return super().__getattr__(name)
-            raise OSError('sign-in disabled for routing snapshot')
-
     baseline = {name: copy.deepcopy(value) for name, value in vars(companion).items()
                 if not name.startswith('__') and isinstance(value, (str, int, float, bool, type(None), tuple, list, dict, set))}
     spoken = []
@@ -130,9 +125,6 @@ def record(phrases):
         # Real classes, because the app checks isinstance(web_session, WebSession).
         mock.patch.object(companion, 'MailSession', MailSession),
         mock.patch.object(companion, 'WebSession', WebSession),
-        # Sign-in libraries: the same stand-in whether or not they are installed here.
-        mock.patch.dict(sys.modules, {name: SignIn(name=name) for name in
-                                      ('msal', 'google_auth_oauthlib', 'google_auth_oauthlib.flow')}),
         mock.patch.object(urllib.request, 'urlopen', side_effect=OSError('network disabled for routing snapshot')),
         mock.patch('subprocess.Popen', mock.MagicMock(name='Popen')),
         mock.patch('subprocess.run', mock.MagicMock(name='run')),
@@ -180,7 +172,7 @@ def record(phrases):
                     companion.checkpoint_document()
                 elif screen == 'email_draft':
                     editor = companion.email_draft = VoiceEmail(folder / 'Drafts', title='Routing check', recipient='friend@example.com',
-                                                                subject='Hi', provider='gmail', compose_step='body')
+                                                                subject='Hi', provider='thunderbird', compose_step='body')
                     editor.paragraphs = [Paragraph('Hello world.')]; editor.dictating = True
                 elif screen == 'mailbox':
                     companion.mail_session = MailSession(name='mail', view='folder', pending=None, folder_picker=None,

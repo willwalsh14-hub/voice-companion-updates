@@ -1,11 +1,10 @@
-import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 import companion
 from email_draft import VoiceEmail
-from email_delivery import microsoft_request
+from test_email_delivery import yahoo_message
 from document_editor import Paragraph
 
 class DraftCancelTests(unittest.TestCase):
@@ -13,7 +12,7 @@ class DraftCancelTests(unittest.TestCase):
         for action in ('', 'reply', 'reply_all', 'forward'):
             for field in ('recipient','cc','bcc','subject','body'):
                 with self.subTest(action=action,field=field), tempfile.TemporaryDirectory() as folder:
-                    draft=VoiceEmail(Path(folder),recipient='old@example.com',subject='Test',provider='gmail')
+                    draft=VoiceEmail(Path(folder),recipient='old@example.com',subject='Test',provider='thunderbird')
                     if action:draft.response_context={'action':action,'source_id':'original'}
                     draft.compose_step=field
                     draft.save();draft.save()
@@ -30,7 +29,7 @@ class DraftCancelTests(unittest.TestCase):
                        'go to inbox','return to my inbox','go back to the inbox','take me to inbox','back','go back'):
             with self.subTest(phrase=phrase),tempfile.TemporaryDirectory() as folder:
                 draft=VoiceEmail(Path(folder),compose_step='recipient')
-                with patch.object(companion,'email_draft',draft),patch.object(companion,'mail_session',Mock()),patch.object(companion,'pending_send',('hash','gmail','me')),patch.object(companion,'speak'),patch.object(companion,'finish_mail_announcement'),patch.object(companion,'APP_WINDOW',None):
+                with patch.object(companion,'email_draft',draft),patch.object(companion,'mail_session',Mock()),patch.object(companion,'pending_send',('hash','thunderbird','me')),patch.object(companion,'speak'),patch.object(companion,'finish_mail_announcement'),patch.object(companion,'APP_WINDOW',None):
                     companion.handle(phrase,'email_draft')
                     self.assertIsNone(companion.pending_send)
                     self.assertEqual(draft.recipient,'')
@@ -56,16 +55,15 @@ class DraftCancelTests(unittest.TestCase):
     def test_cc_bcc_are_editable_in_every_response_and_outgoing_request(self):
         for action in ('reply','reply_all','forward'):
             with self.subTest(action=action),tempfile.TemporaryDirectory() as folder:
-                draft=VoiceEmail(Path(folder),recipient='friend@example.com',subject='Subject',provider='outlook')
+                draft=VoiceEmail(Path(folder),recipient='friend@example.com',subject='Subject',provider='yahoo')
                 draft.response_context={'action':action,'source_id':'original'}
                 draft.paragraphs=[Paragraph(text='Reply body')]
                 for field in ('cc','bcc'):
                     self.assertIn(field.upper(),draft.process('go to '+field))
                     draft.process(field+'@example.com')
                     self.assertEqual(getattr(draft,field),[field+'@example.com'])
-                payload=json.loads(microsoft_request(draft,'token').data)
-                self.assertEqual(payload['message']['bccRecipients'][0]['emailAddress']['address'],'bcc@example.com')
-                self.assertNotIn('toRecipients',payload)
+                sent=yahoo_message(draft)
+                self.assertEqual((sent['Cc'],sent['Bcc'],sent['To']),('cc@example.com','bcc@example.com','friend@example.com'))
 
     def test_quick_test_explicitly_opens_entry_window_and_reports_startup_errors(self):
         root=Path(__file__).parent

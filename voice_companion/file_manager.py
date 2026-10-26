@@ -19,6 +19,53 @@ class Item:
     added:float|None=None
     def label(self):return self.name+', '+('drive' if self.drive else 'folder' if self.folder else 'file')
 
+START_PLACES = {'drive list': None, 'drives': None, 'c drive': 'C:\\', 'c': 'C:\\',
+                'documents': ('{FDD39AD0-238F-46AF-ADB4-6C85480369C7}', 'Documents'),
+                'desktop': ('{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}', 'Desktop'),
+                'downloads': ('{374DE290-123F-4565-9164-39C4925E467B}', 'Downloads'),
+                'music': ('{4BD8D571-6D19-48D3-BE97-422220080E43}', 'Music')}
+
+
+def _place(name):
+    from downloads import known_folder
+    found = START_PLACES[name]
+    if found is None or isinstance(found, str):
+        return found
+    return str(known_folder(*found))
+
+
+def start_setting(value):
+    """The File manager start place to save: a named place (drive list, C drive, Documents,
+    Desktop, Downloads, Music) or a full folder path that exists."""
+    from downloads import spoken_path
+    text = spoken_path(value)
+    plain = re.sub(r'[^a-z ]+', ' ', text.casefold()).strip()
+    plain = re.sub(r'\s+', ' ', re.sub(r'^(?:my|the) ', '', plain)).removesuffix(' folder').strip()
+    if not text or plain in ('drive list', 'drives', 'default'):
+        return 'drive list'
+    for name in START_PLACES:
+        if plain == name:
+            return {'c drive': 'C drive', 'c': 'C drive'}.get(name, name.title() if name != 'drive list' else name)
+    path = Path(os.path.expandvars(os.path.expanduser(text)))
+    if not path.is_dir():
+        raise ValueError('That folder does not exist. Type the full folder path, such as C:\\Users\\Will\\Music, or pick a place from the list.')
+    return str(path)
+
+
+def start_location(setting):
+    """Where File manager opens: None for the drive list, or a folder that exists now.
+    A folder that is gone (an unplugged drive) falls back to the drive list."""
+    text = str(setting or '').strip()
+    key = text.casefold()
+    try:
+        path = _place(key) if key in START_PLACES else text
+    except Exception:
+        return None
+    if not path:
+        return None
+    return path if Path(path).is_dir() else None
+
+
 def location_name(path):
     if path is None:return 'Drive list'
     clean=str(path).rstrip('\\/')

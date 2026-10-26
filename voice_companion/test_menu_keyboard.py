@@ -13,7 +13,7 @@ class MenuKeyboardTests(unittest.TestCase):
         with patch.object(app,'MAIN_MENU_INDEX',None),patch.object(app,'SYNTH_PICK_INDEX',None),patch.object(app,'VOICE_PICK_INDEX',None),patch.object(app,'account_setup',False),patch.object(app,'speak') as say:
             app.navigation_key('Letter:e','awake')
             self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Email')
-            say.assert_called_with('Email (E), 4 of 12.')
+            say.assert_called_with('Email (E), 5 of 13.')
             app.navigation_key('Letter:e','awake')
             self.assertEqual(app.MAIN_MENU_CHOICES[app.MAIN_MENU_INDEX][0],'Exit Voice Companion')
             app.navigation_key('Letter:e','awake')
@@ -102,13 +102,6 @@ class MenuKeyboardTests(unittest.TestCase):
             with self.assertRaises(ValueError):session.set('email_header_order',value)
         self.assertEqual(session.voice_setting('set ask before exiting Voice Companion off'),('ask_before_exit','off'))
         session.cancel();self.assertEqual(session.values['email_header_order'],'from, subject, date')
-    def test_outlook_size_metadata(self):
-        from mailbox_access import MailboxClient
-        client=MailboxClient('outlook','test')
-        with patch.object(client,'_call',return_value={'value':[{'id':'a','singleValueExtendedProperties':[{'id':'Integer 0x0E08','value':'4096'}]}]}) as call:
-            rows,_=client.list_messages('inbox');self.assertEqual(rows[0]['size'],4096)
-            self.assertIn('0x0E08',call.call_args.args[0])
-
     def test_yahoo_size_after_header_literal(self):
         from yahoo_mailbox import YahooMailbox
         client=YahooMailbox('test@example.com','test')

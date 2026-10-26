@@ -1,5 +1,11 @@
 # Yahoo Mail parity with Gmail
 
+Note, October 26, 2026: the direct Gmail account was removed. Gmail now works
+only through Thunderbird. The Gmail column below is history. The tests that
+compared Yahoo with Gmail's code now check the same values directly
+(`test_message_bodies_read_the_html_and_keep_the_plain_part`,
+`test_reply_and_forward_context`, `test_yahoo_and_a_plain_mailbox_answer_alike`).
+
 Every mail command a user can give, compared on Gmail (the reference) and Yahoo.
 "Before" is `main` at 0.2.156-test. "Now" is branch `claude/yahoo-mailbox`.
 Tests are in `voice_companion/test_yahoo_mail.py` unless named otherwise. They

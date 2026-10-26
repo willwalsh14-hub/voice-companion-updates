@@ -1,23 +1,9 @@
-import base64
-import json
 import unittest
 
-from mailbox_access import MailboxClient, MailboxError, gmail_body, message_date
+from mailbox_access import MailboxError, html_text, message_date
 from mail_voice import MailSession
 from yahoo_mailbox import YahooMailbox, encode_folder_name, decode_folder_name
 from unittest.mock import patch
-
-
-class Reply:
-    def __init__(self, value):
-        self.body = json.dumps(value).encode()
-        self.offset = 0
-    def __enter__(self): return self
-    def __exit__(self, *args): return None
-    def read(self, length):
-        chunk = self.body[self.offset:self.offset + length]
-        self.offset += len(chunk)
-        return chunk
 
 
 class MailboxTests(unittest.TestCase):
@@ -27,7 +13,7 @@ class MailboxTests(unittest.TestCase):
             rows = ['a', 'b', 'c']
             fetches = 0
             def __init__(self, *args): pass
-            def folders(self): return [('Inbox', 'INBOX'), ('Saved', 'saved')]
+            def folders(self): return [('Inbox', 'inbox'), ('Saved', 'saved')]
             def list_messages(self, folder, cursor=None, limit=10):
                 self.__class__.fetches += 1
                 return ([{'id': ident, 'from': ident + '@example.com', 'subject': ident}
@@ -36,7 +22,7 @@ class MailboxTests(unittest.TestCase):
                 self.__class__.rows = [ident for ident in self.rows if ident not in ids]
             def move(self, ids, source, destination): self.trash(ids)
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('me@example.com', 'token')):
-            session = MailSession('gmail', folder, FakeClient)
+            session = MailSession('thunderbird', folder, FakeClient)
             session.process('list messages')
             self.assertIn('Marked message 1', session.process('mark'))
             session.process('next message')
@@ -63,7 +49,7 @@ class MailboxTests(unittest.TestCase):
                 self.limits.append(limit)
                 return ([{'id':'a','from':'a@example.com','subject':'Mail'}], None)
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('a@example.com','token')):
-            session = MailSession('gmail', folder, FakeClient)
+            session = MailSession('thunderbird', folder, FakeClient)
             session.process('open inbox')
             self.assertEqual(FakeClient.limits[-1], 10)
             for size in (20,30,40,50,100):
@@ -73,7 +59,7 @@ class MailboxTests(unittest.TestCase):
             self.assertEqual(FakeClient.limits[-1], 100)
             self.assertIn('All messages are available', session.process('set email list size all'))
             self.assertEqual(FakeClient.limits[-1], 10)
-            self.assertTrue(MailSession('gmail', folder, FakeClient).all_messages)
+            self.assertTrue(MailSession('thunderbird', folder, FakeClient).all_messages)
 
     def test_natural_list_size_phrases_are_saved(self):
         import tempfile
@@ -82,18 +68,18 @@ class MailboxTests(unittest.TestCase):
             def list_messages(self, folder, cursor=None, limit=10):
                 return ([{'id':'one','from':'friend@example.com','subject':'Hello'}], None)
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail', folder, FakeClient)
+            session = MailSession('thunderbird', folder, FakeClient)
             for phrase, count in [('list 20',20), ('list 30 messages',30),
                                   ('40 number of messages',40), ('set list to 50',50)]:
                 self.assertIn('Showing ' + str(count), session.process(phrase), phrase)
-                self.assertEqual(MailSession('gmail', folder, FakeClient).list_size, count)
+                self.assertEqual(MailSession('thunderbird', folder, FakeClient).list_size, count)
 
     def test_current_message_actions_ignore_marked_messages_and_folder_prompts(self):
         import tempfile
         class FakeClient:
             actions = []
             def __init__(self, *args): pass
-            def folders(self): return [('Inbox','INBOX'), ('Saved','saved')]
+            def folders(self): return [('Inbox','inbox'), ('Saved','saved')]
             def list_messages(self, folder, cursor=None, limit=10):
                 return ([{'id':'a','from':'a@example.com','subject':'One'},
                          {'id':'b','from':'b@example.com','subject':'Two'}], None)
@@ -101,7 +87,7 @@ class MailboxTests(unittest.TestCase):
             def move(self, ids, source, destination): self.actions.append(('move', ids, source, destination))
         FakeClient.actions = []
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail', folder, FakeClient)
+            session = MailSession('thunderbird', folder, FakeClient)
             session.process('list messages')
             session.process('mark message')
             session.process('next message')
@@ -134,7 +120,7 @@ class MailboxTests(unittest.TestCase):
             self.assertIn('Saved', session.process('next folder'))
             self.assertIn('this message to Saved', session.process('that one'))
             session.process('yes')
-            self.assertEqual(FakeClient.actions[-1], ('move',['a'],'INBOX','saved'))
+            self.assertEqual(FakeClient.actions[-1], ('move',['a'],'inbox','saved'))
             session.process('list messages')
             self.assertIn('delete it', session.process('delete folder'))
             self.assertIn('delete it', session.process('next folder'))
@@ -164,7 +150,7 @@ class MailboxTests(unittest.TestCase):
             def trash(self, ids): self.actions.append(ids)
         FakeClient.actions = []
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail', folder, FakeClient)
+            session = MailSession('thunderbird', folder, FakeClient)
             session.process('open inbox')
             session.process('mark message')
             session.process('next page')
@@ -182,11 +168,11 @@ class MailboxTests(unittest.TestCase):
             def list_messages(self, folder, cursor=None, limit=10):
                 return ([{'id':'a','from':'a@example.com','subject':'One'},
                          {'id':'b','from':'b@example.com','subject':'Two'}], None)
-            def folders(self): return [('Inbox','INBOX'), ('Saved','saved')]
+            def folders(self): return [('Inbox','inbox'), ('Saved','saved')]
             def move(self, ids, source, destination): self.actions.append((ids, source, destination))
         FakeClient.actions = []
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail', folder, FakeClient)
+            session = MailSession('thunderbird', folder, FakeClient)
             session.process('list messages')
             session.process('mark message')
             session.process('next message')
@@ -196,7 +182,7 @@ class MailboxTests(unittest.TestCase):
             self.assertIn('2 marked messages to Saved', session.process('that one'))
             self.assertEqual(FakeClient.actions, [])
             session.process('yes')
-            self.assertEqual(FakeClient.actions, [(['a','b'],'INBOX','saved')])
+            self.assertEqual(FakeClient.actions, [(['a','b'],'inbox','saved')])
 
     def test_thousand_message_choice_reports_progress_in_bounded_batches(self):
         import tempfile
@@ -210,7 +196,7 @@ class MailboxTests(unittest.TestCase):
                          for n in range(limit)], str(page + 1) if page < 9 else None)
         feedback = []
         with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('a@example.com','token')):
-            session = MailSession('gmail', folder, FakeClient, progress=feedback.append)
+            session = MailSession('thunderbird', folder, FakeClient, progress=feedback.append)
             self.assertIn('Showing 1000', session.process('set list to 1000'))
             self.assertEqual((len(session.rows), FakeClient.limits), (1000, [100] * 10))
             self.assertIn('Getting messages', feedback[0])
@@ -239,7 +225,7 @@ class MailboxTests(unittest.TestCase):
                 return ([{'id': str(cursor or 'first'), 'from': 'person@example.com',
                           'subject': 'Subject', 'date': 'Today'}], 'next' if cursor is None else None)
         with patch('mail_voice.account_token', return_value=('me@example.com', 'token')):
-            session = MailSession('outlook', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             self.assertIn('Sent Items.', session.process('go to sent'))
             self.assertEqual(session.folder_id, 'sentitems')
             session.process('next page')
@@ -262,105 +248,28 @@ class MailboxTests(unittest.TestCase):
                 self.assertEqual(companion.handle(phrase,'mailbox'),'mailbox')
                 self.assertEqual(speech.call_args.args[0],'Opened '+phrase)
 
-    def test_gmail_listing_read_and_trash(self):
-        calls = []
-        raw = base64.urlsafe_b64encode(b'From: friend@example.com\nSubject: Hello\nContent-Type: text/plain; charset=utf-8\n\nA readable message.').decode()
-        metadata = {'payload': {'headers': [{'name':'From','value':'friend@example.com'},
-                                            {'name':'Subject','value':'Hello'}]}, 'labelIds':['UNREAD','INBOX'],
-                    'internalDate':'1783036800000'}
-        def open_request(req, timeout):
-            calls.append((req.full_url, req.get_method(), req.data))
-            if req.full_url == 'https://gmail.googleapis.com/batch/gmail/v1':
-                # Gmail answers a batch as multipart/mixed, one HTTP response per call.
-                self.assertIn(b'GET /gmail/v1/users/me/messages/abc?format=metadata', req.data)
-                self.assertIn(b'Content-ID: <item0>', req.data)
-                reply = Reply({})
-                reply.body = ('--batch_x\r\nContent-Type: application/http\r\nContent-ID: <response-item0>\r\n\r\n'
-                              'HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
-                              json.dumps(metadata) + '\r\n--batch_x--\r\n').encode()
-                reply.headers = {'Content-Type': 'multipart/mixed; boundary=batch_x'}
-                return reply
-            if 'format=metadata' in req.full_url:
-                return Reply(metadata)
-            if 'format=minimal' in req.full_url: return Reply({'labelIds':['INBOX']})
-            if 'format=raw' in req.full_url: return Reply({'raw':raw})
-            if '?labelIds=' in req.full_url: return Reply({'messages':[{'id':'abc'}], 'nextPageToken':'next'})
-            return Reply({})
-        client = MailboxClient('gmail', 'token', open_request)
-        rows, cursor = client.list_messages('INBOX')
-        self.assertEqual((rows[0]['subject'], rows[0]['unread'], cursor), ('Hello', True, 'next'))
-        self.assertIn('2026', rows[0]['date'])
-        self.assertEqual(client.read_message('abc').strip(), 'A readable message.')
-        client.move(['abc'], 'INBOX', 'Label_123')
-        self.assertEqual(json.loads(calls[-1][2]), {'addLabelIds':['Label_123'], 'removeLabelIds':['INBOX']})
-        client.trash(['abc'])
-        self.assertTrue(calls[-1][0].endswith('/messages/abc/trash'))
-
-    def test_graph_page_host_restricted_and_move(self):
-        calls = []
-        def open_request(req, timeout):
-            calls.append((req.full_url, req.get_method(), req.data))
-            return Reply({'value':[{'id':'graph-id','subject':'News','from':{'emailAddress':{'address':'a@example.com'}},'isRead':False,
-                                    'receivedDateTime':'2026-07-03T12:00:00Z'}],
-                          '@odata.nextLink':'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$skip=10'})
-        client = MailboxClient('outlook', 'token', open_request)
-        rows, next_link = client.list_messages('inbox')
-        self.assertEqual(rows[0]['from'], 'a@example.com')
-        self.assertTrue(rows[0]['unread'])
-        self.assertIn('2026', rows[0]['date'])
-        client.list_messages('inbox', next_link)
-        with self.assertRaises(MailboxError):
-            client.list_messages('inbox', 'https://graph.microsoft.com.evil.example/steal')
-        client.move(['graph-id'], 'inbox', 'archive-id')
-        self.assertEqual(json.loads(calls[-1][2]), {'destinationId':'archive-id'})
-        client.trash(['graph-id'])
-        self.assertEqual(json.loads(calls[-1][2]), {'destinationId':'deleteditems'})
-
-    def test_graph_nested_folder_requests(self):
-        calls = []
-        def open_request(req, timeout):
-            calls.append((req.full_url, req.get_method(), req.data))
-            if '/childFolders?' in req.full_url:
-                return Reply({'value':[{'id':'child','displayName':'2026','childFolderCount':0}]})
-            if 'mailFolders?' in req.full_url:
-                return Reply({'value':[{'id':'parent','displayName':'Projects','childFolderCount':1}]})
-            return Reply({'id':'new-folder'})
-        client = MailboxClient('outlook','token',open_request)
-        self.assertIn(('Projects/2026','child'), client.folders())
-        client.create_folder('Receipts','parent','Projects/')
-        self.assertTrue(calls[-1][0].endswith('/mailFolders/parent/childFolders'))
-        client.rename_folder('child','2027','Projects/')
-        self.assertEqual(json.loads(calls[-1][2]), {'displayName':'2027'})
-        client.move_folder('child','Projects/2026','other','Archive/')
-        self.assertEqual(json.loads(calls[-1][2]), {'destinationId':'other'})
-        client.delete_folder('child')
-        self.assertEqual(calls[-1][1], 'DELETE')
-
     def test_html_body_omits_script(self):
-        raw = base64.urlsafe_b64encode(b'Content-Type: text/html; charset=utf-8\n\n<p>Hello</p><script>secret()</script><p>World</p>').decode()
-        self.assertEqual(gmail_body(raw), 'Hello\nWorld')
+        self.assertEqual(html_text('<p>Hello</p><script>secret()</script><p>World</p>'), 'Hello\nWorld')
 
-    def test_mail_dates_and_stale_message(self):
+    def test_mail_dates(self):
         self.assertEqual(message_date('03-Jul-2026 12:00:00 +0000'), 'July 3, 2026')
         self.assertEqual(message_date('not a date'), 'unavailable')
-        client = MailboxClient('gmail', 'token', lambda req, timeout: Reply({'id':'other','raw':'aGVsbG8='}))
-        with self.assertRaises(MailboxError): client.read_message('original')
 
-    def test_reply_all_excludes_own_account(self):
-        raw = base64.urlsafe_b64encode(
-            b'From: Friend <friend@example.com>\nTo: me@example.com, Other <other@example.com>\n'
-            b'Subject: Hello\nMessage-ID: <original@example.com>\n\nBody').decode()
-        client = MailboxClient('gmail', 'token', lambda req, timeout: Reply({'raw':raw,'threadId':'thread'}))
-        context = client.response_context('source', 'reply_all', 'me@example.com')
-        self.assertEqual(context['recipient'], 'friend@example.com')
-        self.assertEqual(context['cc'], ['other@example.com'])
-        self.assertEqual(context['subject'], 'Re: Hello')
+    def test_only_thunderbird_and_yahoo_mailboxes_open(self):
+        # Gmail and Microsoft mailboxes were removed; their addresses work through Thunderbird.
+        from mail_accounts import AccountError
+        with patch('mail_voice.account_token', return_value=('me@gmail.com', 'token')):
+            for provider in ('gmail', 'outlook'):
+                session = MailSession(provider, '/unused')
+                with self.assertRaises(AccountError):
+                    session.client()
+                self.assertIn('Thunderbird or Yahoo', session.process('list messages'))
 
     def test_voice_selection_requires_confirmation(self):
         class FakeClient:
             actions = []
             def __init__(self, provider, token): pass
-            def folders(self): return [('Inbox','INBOX'), ('Saved','Label_1')]
+            def folders(self): return [('Inbox','inbox'), ('Saved','Label_1')]
             def list_messages(self, folder, cursor=None, limit=10):
                 return ([{'id':'a','from':'a@example.com','subject':'First','unread':True},
                          {'id':'b','from':'b@example.com','subject':'Second','unread':False}], None)
@@ -368,7 +277,7 @@ class MailboxTests(unittest.TestCase):
             def move(self, ids, source, dest): self.actions.append(('move', ids, source, dest))
             def trash(self, ids): self.actions.append(('trash', ids))
         with patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             self.assertIn('Sender name unavailable. First. unavailable. 1 of 2.', session.process('open inbox'))
             self.assertIn('Body a', session.process('read message 1'))
             self.assertNotIn('First. unavailable', session.process('open message'))
@@ -401,7 +310,7 @@ class MailboxTests(unittest.TestCase):
             self.assertIn('Say yes or no', session.process('confirm that'))
             self.assertEqual(FakeClient.actions, [])
             self.assertIn('2 messages moved', session.process('confirm move'))
-            self.assertEqual(FakeClient.actions, [('move',['a','b'],'INBOX','Label_1')])
+            self.assertEqual(FakeClient.actions, [('move',['a','b'],'inbox','Label_1')])
             session.process('list messages')
             session.process('select message 1')
             self.assertIn('Is that right? Say yes or no.', session.process('delete selected'))
@@ -420,7 +329,7 @@ class MailboxTests(unittest.TestCase):
             def move_folder(self, *args): self.actions.append(('move', args))
             def delete_folder(self, *args): self.actions.append(('delete', args))
         with patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('outlook', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             session.process('list folders')
             self.assertIn('Projects/Receipts', session.process('create folder Receipts inside Projects'))
             session.process('cancel')
@@ -448,7 +357,7 @@ class MailboxTests(unittest.TestCase):
                 return ([{'id': ident, 'from': 'friend@example.com',
                           'subject': 'Hello', 'date': 'September 26, 2026'}], None)
         with patch('mail_voice.account_token', return_value=('me@example.com', 'token')):
-            session = MailSession('outlook', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             self.assertIn('Receipts.', session.process('go to folder Receipts'))
             self.assertEqual(session.folder_id, 'r')
             self.assertIn('Important.', session.process('go to important'))
@@ -472,7 +381,7 @@ class MailboxTests(unittest.TestCase):
             def folders(self): return [('Inbox', 'inbox'), ('2026', 'root'), ('Projects/2026', 'nested')]
             def list_messages(self, ident, cursor=None, limit=10): return ([], None)
         with patch('mail_voice.account_token', return_value=('me@example.com', 'token')):
-            session = MailSession('outlook', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             prompt = session.process('go to 2026')
             self.assertIn('I see 2 folders named 2026. First choice: 2026.', prompt)
             self.assertNotIn('inside of Projects', prompt)
@@ -489,7 +398,7 @@ class MailboxTests(unittest.TestCase):
             def folders(self): return [('Inbox', 'inbox'), ('Projects/2026', 'p26')]
             def list_messages(self, ident, cursor=None, limit=10): return ([], None)
         with patch('mail_voice.account_token', return_value=('me@example.com', 'token')):
-            session = MailSession('outlook', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             self.assertIn('Projects/2026', session.process('go to 2026'))
             self.assertEqual(session.folder_id, 'p26')
 
@@ -508,7 +417,7 @@ class MailboxTests(unittest.TestCase):
             def move_folder(self, *args): self.actions.append(('folder_move', args))
             def delete_folder(self, *args): self.actions.append(('delete', args))
         with patch('mail_voice.account_token', return_value=('me@example.com', 'token')):
-            session = MailSession('outlook', '/unused', FakeClient)
+            session = MailSession('thunderbird', '/unused', FakeClient)
             self.assertIn('Folder 1: Inbox', session.process('go to folder'))
             self.assertIn('Receipts', session.process('move down'))
             self.assertIn('Receipts.', session.process('okay'))
@@ -554,7 +463,7 @@ class MailboxTests(unittest.TestCase):
             def folder_info(self, ident): return {'totalItemCount':0,'childFolderCount':0}
             def move_folder(self, *args): self.actions.append(args)
         with patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('outlook','/unused',FakeClient)
+            session = MailSession('thunderbird','/unused',FakeClient)
             session.process('list folders')
             self.assertIn('Is that right? Say yes or no.', session.process('move folder Letters into Projects'))
             FakeClient.folders_now = [('Inbox','inbox'),('Letters','l'),('Projects New','p')]
@@ -589,7 +498,7 @@ class MailboxTests(unittest.TestCase):
         import companion
         from unittest.mock import patch
         class Session:
-            provider = 'gmail'
+            provider = 'thunderbird'
             folder_name = 'Letters'
             view = 'message'
             def response_context(self, action):
@@ -617,7 +526,7 @@ class MailboxTests(unittest.TestCase):
                 return ([{'id':'a','from':'a@example.com','subject':'Mail','unread':False}],
                         'second' if cursor is None else None)
         with patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail','/unused',FakeClient)
+            session = MailSession('thunderbird','/unused',FakeClient)
             session.process('open inbox')
             session.process('get more emails')
             session.process('go back a list')
@@ -630,7 +539,7 @@ class MailboxTests(unittest.TestCase):
                 return ([{'id':'a','from':'a@example.com','subject':'Long','unread':False}], None)
             def read_message(self, ident, folder): return 'word ' * 2500
         with patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail','/unused',FakeClient)
+            session = MailSession('thunderbird','/unused',FakeClient)
             session.process('open inbox')
             first = session.process('read message 1')
             self.assertIn('continue reading', first)
@@ -648,7 +557,7 @@ class MailboxTests(unittest.TestCase):
                         'page-two' if cursor is None else None)
             def read_message(self, ident, folder): return 'Body ' + ident
         with patch('mail_voice.account_token', return_value=('me@example.com','token')):
-            session = MailSession('gmail','/unused',FakeClient)
+            session = MailSession('thunderbird','/unused',FakeClient)
             session.process('open inbox')
             session.process('read message one')
             # The arrows stop at the page's end; Page Down opens the next page.

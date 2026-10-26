@@ -248,9 +248,13 @@ class ThunderbirdOfflineTests(unittest.TestCase):
             self.assertEqual(companion.pending_send[1:], ('thunderbird', 'me@gmail.com'))
         self.assertFalse(any('Choose a connected email account' in line for line in spoken), spoken)
 
-    def test_account_type_menu_offers_thunderbird(self):
+    def test_account_type_menu_offers_thunderbird_then_yahoo_only(self):
         import companion
-        self.assertIn(('Thunderbird', 'thunderbird'), companion.ACCOUNT_TYPES)
+        self.assertEqual([kind for _, kind in companion.ACCOUNT_TYPES], ['thunderbird', 'yahoo'])
+        # The Thunderbird item says it is the way for Gmail and Microsoft mail.
+        label = companion.ACCOUNT_TYPES[0][0]
+        for word in ('Thunderbird', 'Gmail', 'Outlook', 'Microsoft 365'):
+            self.assertIn(word, label)
 
 
 if __name__ == '__main__':
@@ -269,7 +273,7 @@ class EndOfLongListTests(unittest.TestCase):
                          'date': 'October 1, 2026', 'size': 1, 'unread': False} for n in range(limit)]
                 return rows, str(start + limit)
         with tempfile.TemporaryDirectory() as folder:
-            session = MailSession('gmail', Path(folder))
+            session = MailSession('yahoo', Path(folder))
             said = []; session.progress = said.append
             with mock.patch.object(MailSession, 'client', lambda self: EndlessMailbox()):
                 session.list_messages()

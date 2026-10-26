@@ -31,6 +31,8 @@ SCREEN_KEYS = {
     'recent_documents': {'F1': 'help with documents'},
     'media_menu': {'F1': 'help with media player'},
     'notepad_menu': {'F1': 'help with notepad'},
+    'reader_menu': {'F1': 'help with document reader'},
+    'reader_recent': {'F1': 'help with document reader'},
     'local_media': {'F1': 'help with media player'},
     # Sentences in an open help topic (Up and Down move by paragraph).
     'help': {'Ctrl+Down': 'next sentence', 'Ctrl+Up': 'previous sentence'},
@@ -55,7 +57,7 @@ OLD_KEYS = {
 # Control+F12 puts the microphone to sleep from any main screen; while asleep it wakes it.
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
-              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads'):
+              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
@@ -129,7 +131,7 @@ def catalog():
     for group,items in DOCUMENT_ACTIONS.items():
         for name,key,voice in items:add('Document: '+group,name,voice,key or 'Alt, group number, item key')
     nav=app.task_navigation()
-    for mode in ('word_processor','notepad_menu','media_menu','local_media'):
+    for mode in ('word_processor','notepad_menu','reader_menu','media_menu','local_media'):
         for name,key,voice in nav.items(mode):add(mode.replace('_',' ').title(),name,name if voice.startswith('@') else voice,key or 'First letter, arrows, Enter')
     from app_settings import ACTIONS
     for category in CATEGORIES:

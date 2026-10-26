@@ -28,7 +28,7 @@ if (-not (Test-Path $python)) {
 
 # Keep dependencies in the short user-profile path. Playwright's own folders
 # can exceed Windows' path limit when the ZIP is extracted into Downloads.
-& $python -c "import vosk,sounddevice,win32crypt,playwright,google_auth_oauthlib,msal,docx"
+& $python -c "import vosk,sounddevice,win32crypt,playwright,docx"
 if ($LASTEXITCODE -ne 0) {
   Write-Output 'Preparing Quick Test dependencies for the first run.'
   & $python -m pip install --disable-pip-version-check -r requirements.txt

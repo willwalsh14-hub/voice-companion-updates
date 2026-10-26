@@ -1,23 +1,21 @@
-import base64,json,tempfile,unittest
+import tempfile,unittest
 from pathlib import Path
 from email import policy
 from email.parser import BytesParser
 from document_editor import Paragraph,TextRun
 from email_draft import VoiceEmail
-from email_delivery import gmail_request,microsoft_request,yahoo_submit
+from email_delivery import yahoo_submit
 from email_formatting import formatted_body
 
 class EmailRichFormattingTests(unittest.TestCase):
     def test_save_reopen_and_provider_html_match(self):
         with tempfile.TemporaryDirectory() as folder:
-            draft=VoiceEmail(Path(folder),recipient='a@example.com',subject='Formatting',provider='gmail',compose_step='body')
+            draft=VoiceEmail(Path(folder),recipient='a@example.com',subject='Formatting',provider='yahoo',compose_step='body')
             draft.paragraphs=[Paragraph('<Title>',kind='Heading 3',alignment='center'),Paragraph('Rich\ntext',runs=[TextRun('Rich',True,True,True,'Arial',18,'yellow'),TextRun('\ntext')],alignment='both',line_spacing_twips=480),Paragraph('Bullet',kind='Bulleted list'),Paragraph('Number',kind='Numbered list'),Paragraph('Cell A',table_id=1,row=1,column=1),Paragraph('Cell B',table_id=1,row=1,column=2),Paragraph('End',line_spacing_twips=360,line_spacing_rule='exact')]
             expected=formatted_body(draft)
             for token in ('<h3','&lt;Title&gt;','font-family:Arial','font-size:18pt','<u>','<mark>','text-align:justify','line-height:2','<ul>','<ol>','<table','Cell A','Cell B','line-height:18pt','<br>'):self.assertIn(token,expected)
             draft.save();self.assertEqual(formatted_body(VoiceEmail.open_existing(Path(folder),draft.title)),expected)
             saved=BytesParser(policy=policy.default).parsebytes(draft.path.read_bytes());self.assertEqual(saved.get_body(preferencelist=('html',)).get_content().strip(),expected)
-            gmail=BytesParser(policy=policy.default).parsebytes(base64.urlsafe_b64decode(json.loads(gmail_request(draft,'token').data)['raw']));self.assertEqual(gmail.get_body(preferencelist=('html',)).get_content().strip(),expected)
-            self.assertEqual(json.loads(microsoft_request(draft,'token').data)['message']['body']['content'],expected)
             messages=[]
             class SMTP:
                 def __init__(self,*a,**k):pass
@@ -27,12 +25,13 @@ class EmailRichFormattingTests(unittest.TestCase):
                 def send_message(self,message):messages.append(message);return {}
             yahoo_submit(draft,'me@yahoo.com','secret',SMTP);self.assertEqual(messages[0].get_body(preferencelist=('html',)).get_content().strip(),expected)
 
-    def test_outlook_responses_use_html_without_comment_conflict(self):
+    def test_responses_keep_html_and_the_typed_recipient(self):
+        from test_email_delivery import yahoo_message
         with tempfile.TemporaryDirectory() as folder:
             for action in ('reply','reply_all','forward'):
-                draft=VoiceEmail(Path(folder),recipient='a@example.com',subject='Response',provider='outlook');draft.paragraphs=[Paragraph('Rich reply',kind='Heading 2',bold=True)]
+                draft=VoiceEmail(Path(folder),recipient='a@example.com',subject='Response',provider='yahoo');draft.paragraphs=[Paragraph('Rich reply',kind='Heading 2',bold=True)]
                 draft.response_context={'action':action,'source_id':'original','recipient_override':True};draft.cc=['cc@example.com'];draft.bcc=['bcc@example.com']
-                payload=json.loads(microsoft_request(draft,'token').data);self.assertNotIn('comment',payload);self.assertEqual(payload['message']['body']['contentType'],'HTML');self.assertIn('<h2',payload['message']['body']['content']);self.assertEqual(payload['message']['toRecipients'][0]['emailAddress']['address'],'a@example.com')
+                sent=yahoo_message(draft);self.assertIn('<h2',sent.get_body(preferencelist=('html',)).get_content());self.assertEqual(sent['To'],'a@example.com')
 
     def test_email_dictation_formatting_and_spacing_prompt(self):
         from unittest.mock import patch

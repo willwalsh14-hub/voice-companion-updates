@@ -197,7 +197,8 @@ class WebView2Backend(BrowserBackend):
         from playwright.sync_api import sync_playwright
         self.host=WebViewPipe(self.folder,self.headless,self.executable)
         self._link_downloads(self.host)
-        self.playwright=self.external_driver or sync_playwright().start()
+        import shared_playwright
+        self.playwright=self.external_driver or shared_playwright.start(self.folder)
         self.remote_browser=self.playwright.chromium.connect_over_cdp(self.host.endpoint,timeout=20000,no_defaults=True)
         self.context=self.remote_browser.contexts[0]
         self.page=self.context.pages[0]

@@ -1,4 +1,4 @@
-"""Yahoo Mail behaves like Gmail for every mail command.
+"""Yahoo Mail answers every mail command the way the other mailboxes do.
 
 The tests drive the real yahoo_mailbox code through the real imaplib and
 smtplib, talking over a local socket to small servers that answer the way
@@ -593,19 +593,20 @@ class YahooMessagesTests(YahooTestCase):
                 if isinstance(value, str):
                     value.encode('utf-8')  # Speech engines fail on leftover surrogates.
 
-    def test_message_bodies_are_read_exactly_like_gmail(self):
-        from mailbox_access import gmail_body
-        samples = [message(body='Plain words only.'),
-                   message(body=None, html='<p>Only <b>HTML</b> here.</p><script>alert(1)</script>'),
-                   message(body='Plain part.', html='<p>Rich <i>part</i>.</p>'),
-                   message(raw=b'From: a@example.com\nContent-Type: text/plain; charset=x-unknown\n\nReadable anyway\n')]
-        for raw in samples:
+    def test_message_bodies_read_the_html_and_keep_the_plain_part(self):
+        # The values the removed Gmail reader gave for the same messages (0.2.168).
+        samples = [(message(body='Plain words only.'), 'Plain words only.', 'Plain words only.'),
+                   (message(body=None, html='<p>Only <b>HTML</b> here.</p><script>alert(1)</script>'),
+                    'Only HTML here.', 'Only HTML here.'),
+                   (message(body='Plain part.', html='<p>Rich <i>part</i>.</p>'), 'Rich part.', 'Plain part.'),
+                   (message(raw=b'From: a@example.com\nContent-Type: text/plain; charset=x-unknown\n\nReadable anyway\n'),
+                    'Readable anyway', 'Readable anyway')]
+        for raw, spoken, plain in samples:
             uid = self.server.add('Inbox', raw)
             yahoo = self.mailbox().read_message(str(uid), 'inbox')
-            gmail = gmail_body(base64.urlsafe_b64encode(raw).decode())
-            self.assertEqual(str(yahoo), str(gmail))
-            self.assertEqual(getattr(yahoo, 'plain', None), getattr(gmail, 'plain', None))
-        # Reading never marks the message read, as with Gmail.
+            self.assertEqual(str(yahoo), spoken)
+            self.assertEqual(getattr(yahoo, 'plain', None), plain)
+        # Reading never marks the message read.
         self.assertTrue(all('\\Seen' not in m['flags'] for m in self.server.folders['Inbox'].messages))
 
     def test_missing_and_huge_messages(self):
@@ -618,21 +619,23 @@ class YahooMessagesTests(YahooTestCase):
         # The size is checked first, so six megabytes are never downloaded.
         self.assertFalse([c for c in self.server.log if 'BODY.PEEK[]' in c[2]])
 
-    def test_reply_and_forward_context_match_gmail(self):
-        from mailbox_access import MailboxClient
+    def test_reply_and_forward_context(self):
+        # The values the removed Gmail code gave for the same message (0.2.168).
         raw = message(sender='Sam Lee <sam@example.com>', subject='Plans', body='Meet at nine.',
                       to=ADDRESS + ', pat@example.com', extra={'Cc': 'kim@example.com', 'References': '<a@x>'})
+        message_id = str(BytesParser(policy=policy.default).parsebytes(raw)['Message-ID'])
         uid = self.server.add('Inbox', raw)
-        gmail = MailboxClient('gmail', 'token')
-        encoded = base64.urlsafe_b64encode(raw).decode()
-        gmail._call = lambda path, *a, **k: {'id': str(uid), 'threadId': 't', 'raw': encoded}
-        for action in ('reply', 'reply_all', 'forward'):
+        expected = {'reply': ('sam@example.com', [], 'Re: Plans', ''),
+                    'reply_all': ('sam@example.com', ['pat@example.com', 'kim@example.com'], 'Re: Plans', ''),
+                    'forward': ('', [], 'Fwd: Plans', 'Meet at nine.')}
+        for action, (recipient, cc, subject, body) in expected.items():
             yahoo = self.mailbox().response_context(str(uid), action, ADDRESS, 'inbox')
-            google = gmail.response_context(str(uid), action, ADDRESS)
-            for key in ('action', 'source_id', 'message_id', 'references', 'recipient', 'cc', 'subject',
-                        'original_from', 'original_subject'):
-                self.assertEqual(yahoo[key], google[key], (action, key))
-            self.assertEqual(str(yahoo['original_body']), str(google['original_body']))
+            self.assertEqual({key: yahoo[key] for key in ('action', 'source_id', 'message_id', 'references', 'recipient',
+                                                          'cc', 'subject', 'original_from', 'original_subject')},
+                             {'action': action, 'source_id': str(uid), 'message_id': message_id, 'references': '<a@x>',
+                              'recipient': recipient, 'cc': cc, 'subject': subject,
+                              'original_from': 'Sam Lee <sam@example.com>', 'original_subject': 'Plans'}, action)
+            self.assertEqual(str(yahoo['original_body']), body)
         with self.assertRaises(MailboxError):
             self.mailbox().response_context(str(uid), 'delete', ADDRESS, 'inbox')
 
@@ -844,10 +847,11 @@ class YahooSendingTests(YahooTestCase):
         self.assertEqual(delivery_note(result), '')
 
 
-class GmailShapedClient:
-    """Gmail's MailboxClient results for the same messages, held in memory."""
-    labels = [('INBOX', 'INBOX'), ('SENT', 'SENT'), ('DRAFT', 'DRAFT'), ('TRASH', 'TRASH'), ('SPAM', 'SPAM'),
-              ('Archive', 'Label_1')]
+class ReferenceClient:
+    """A plain mailbox held in memory, shaped like the removed Gmail client was:
+    the same commands through MailSession must give Yahoo's answers."""
+    labels = [('Inbox', 'inbox'), ('Sent', 'sent'), ('Drafts', 'drafts'), ('Trash', 'trash'), ('Spam', 'spam'),
+              ('Archive', 'archive')]
 
     def __init__(self, store):
         self.store = store
@@ -856,7 +860,7 @@ class GmailShapedClient:
         return list(self.labels)
 
     def folder_info(self, ident):
-        return {'type': 'user' if ident.startswith('Label') else 'system', 'messagesTotal': len(self.store[ident])}
+        return {'messagesTotal': len(self.store[ident])}
 
     def list_messages(self, folder_id, cursor=None, limit=10):
         from mailbox_access import message_date
@@ -870,9 +874,9 @@ class GmailShapedClient:
         return rows, (str(start + limit) if len(items) > start + limit else None)
 
     def read_message(self, message_id, folder_id=None):
-        from mailbox_access import gmail_body
+        from yahoo_mailbox import message_body
         raw = next(raw for box in self.store.values() for ident, raw in box if ident == message_id)
-        return gmail_body(base64.urlsafe_b64encode(raw).decode())
+        return message_body(BytesParser(policy=policy.default).parsebytes(raw))
 
     def move(self, ids, source_id, destination_id):
         for ident in ids:
@@ -881,14 +885,14 @@ class GmailShapedClient:
             self.store[destination_id].append(item)
 
     def trash(self, ids):
-        for box in [b for b in self.store if b != 'TRASH']:
+        for box in [b for b in self.store if b != 'trash']:
             for item in [e for e in self.store[box] if e[0] in ids]:
                 self.store[box].remove(item)
-                self.store['TRASH'].append(item)
+                self.store['trash'].append(item)
 
 
 class SameCommandsSameResultsTests(YahooTestCase):
-    """The same spoken commands give the same answers on Gmail and Yahoo."""
+    """The same spoken commands give the same answers on Yahoo and a plain mailbox."""
 
     SCRIPT = ('open inbox', 'next message', 'Read message 2.', 'continue reading', 'message details',
               'which folder', 'back to folder', 'next page', 'next message', 'previous page', 'last message',
@@ -907,23 +911,22 @@ class SameCommandsSameResultsTests(YahooTestCase):
             session = MailSession(provider, folder, factory)
             return [session.process(command) for command in self.SCRIPT]
 
-    def test_gmail_and_yahoo_answer_alike(self):
+    def test_yahoo_and_a_plain_mailbox_answer_alike(self):
         raws = [message(subject='Note ' + str(n), body='Body of note ' + str(n) + '.') for n in range(1, 16)]
         for raw in raws:
             self.server.add('Inbox', raw, date='05-Oct-2026 10:00:00 +0000')
         self.server.add('Bulk', message(subject='Prize'), date='05-Oct-2026 10:00:00 +0000')
-        store = {'INBOX': [(str(n), raw) for n, raw in enumerate(raws, 1)], 'SENT': [], 'DRAFT': [], 'TRASH': [],
-                 'SPAM': [('99', message(subject='Prize'))], 'Label_1': []}
+        store = {'inbox': [(str(n), raw) for n, raw in enumerate(raws, 1)], 'sent': [], 'drafts': [], 'trash': [],
+                 'spam': [('99', message(subject='Prize'))], 'archive': []}
         def yahoo(*args):
             return YahooMailbox(ADDRESS, APP_PASSWORD, self.server.factory)
-        gmail = self.run_script('gmail', lambda provider, token: GmailShapedClient(store))
+        reference = self.run_script('thunderbird', lambda provider, token: ReferenceClient(store))
         yahoo_answers = self.run_script('yahoo', yahoo)
-        for command, google, answer in zip(self.SCRIPT, gmail, yahoo_answers):
+        for command, expected, answer in zip(self.SCRIPT, reference, yahoo_answers):
             if command in ('rename folder Spam to Other', 'delete folder Trash'):
                 self.assertIn('cannot be changed', answer)
                 continue
-            # Gmail calls its folders INBOX, TRASH, SPAM, DRAFT; Yahoo says Inbox, Trash, Spam, Drafts.
-            self.assertEqual(google.casefold().replace('draft.', 'drafts.'), answer.casefold(), command)
+            self.assertEqual(expected.casefold(), answer.casefold(), command)
         self.assertEqual(len(self.server.folders['Trash'].messages), 4)
         self.assertEqual(len(self.server.folders['Archive'].messages), 1)
 

@@ -49,7 +49,7 @@ class DocumentationQualityTests(unittest.TestCase):
                         'Resume where you left off','Rename favorite','Delete favorite','Auto download 5 episodes',
                         'Cancel selected scheduled recording','Normal mode','What is selected','Undo','Go to folder'):
             self.assertIn(command,text)
-        for explanation in ('Nothing is sent before the review and confirmation','Gmail and Yahoo forwarding do not include',
+        for explanation in ('Nothing is sent before the review and confirmation','Yahoo forwarding does not include',
                             'Google Calendar and Google Drive are not connected','Keep Companion running and the computer awake',
                             'Some podcast hosts do not allow downloads','The same selection and editing rules'):
             self.assertIn(explanation,text)

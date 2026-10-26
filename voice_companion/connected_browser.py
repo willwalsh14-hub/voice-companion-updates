@@ -20,7 +20,8 @@ class ConnectedBrowserBackend(BrowserBackend):
         self.close()
         from playwright.sync_api import sync_playwright
         try:
-            self.playwright = sync_playwright().start()
+            import shared_playwright
+            self.playwright = shared_playwright.start(self.folder)
             self.remote_browser = self.playwright.chromium.connect_over_cdp(self.relay.endpoint,timeout=15000,no_defaults=True)
             self.generation=self.relay.generation
             self.context = self.remote_browser.contexts[0]

@@ -24,7 +24,7 @@ from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
 from media_hub import MediaHub
 from email_delivery import DeliveryError, delivery_note, message_parts, submit
-from mail_accounts import AccountError, ProtectedStore, account_token, connect, yahoo_connect, PROVIDERS as MAIL_PROVIDERS
+from mail_accounts import AccountError, ProtectedStore, account_token, connect, yahoo_connect, PROVIDERS as MAIL_PROVIDERS, REMOVED_PROVIDERS as REMOVED_MAIL_PROVIDERS
 from mail_voice import MailSession
 from mailbox_access import MailboxError
 from practice_tutorial import PracticeTutorial
@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.168-test'
+APP_VERSION = '0.2.169-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -161,8 +161,15 @@ YAHOO_PASSWORD_PROMPT = ('Now type or paste your Yahoo app password, then press 
                          'For privacy, do not say it aloud. Each character is spoken as hidden. '
                          'Say change address to fix the address, or cancel to stop.')
 ACCOUNT_MENU_INDEX = None
-# Spoken name and account type, in menu order. Thunderbird uses its own sign-in.
-ACCOUNT_TYPES = (('Gmail', 'gmail'), ('Outlook or Exchange', 'outlook'), ('Yahoo', 'yahoo'), ('Thunderbird', 'thunderbird'))
+# Spoken name and account type, in menu order. Thunderbird uses its own sign-in and
+# is how Gmail, Outlook and Microsoft 365 work (Will, October 2026: no direct sign-in).
+ACCOUNT_TYPES = (('Thunderbird, for Gmail, Outlook, Microsoft 365 and most email', 'thunderbird'), ('Yahoo', 'yahoo'))
+ACCOUNT_TYPE_PROMPT = ('Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. '
+                       'Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop.')
+# Gmail and Microsoft mail are set up in Thunderbird; these words start that.
+THROUGH_THUNDERBIRD = {'gmail': 'Gmail', 'google': 'Gmail', 'google mail': 'Gmail', 'outlook': 'Outlook',
+                       'microsoft': 'Microsoft', 'microsoft 365': 'Microsoft 365', 'office 365': 'Office 365',
+                       'exchange': 'Exchange', 'hotmail': 'Hotmail', 'work email': 'Work email'}
 help_session = None
 help_return_mode = 'awake'
 TEXT_MODE = False
@@ -510,7 +517,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Notepad', 'notepad'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Document reader', 'document reader'), ('Notepad', 'notepad'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -864,7 +871,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -2419,7 +2426,7 @@ def handle_mailbox_screen(text, command, mode, typed):
                               'Recipient ' + email_draft.recipient +
                               ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
             attachment_note = (' Original attachments are not included in this forward.'
-                               if context['action'] == 'forward' and mail_session.provider != 'outlook' else '')
+                               if context['action'] == 'forward' else '')
             speak('New ' + command + ' draft. ' + recipient_note +
                   'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
             focus_email_entry()
@@ -2546,6 +2553,19 @@ ACCOUNT_REMOVE_COMMANDS = ('remove account', 'remove an account', 'remove email 
                            'remove mail account', 'delete account', 'delete an account', 'delete email account',
                            'delete an email account', 'delete mail account', 'disconnect account',
                            'disconnect an account', 'disconnect email account', 'disconnect an email account')
+
+
+def account_picker_words():
+    import account_picker
+    return account_picker
+
+
+def connected_selection():
+    """The chosen (provider, address), or None; never raises for a damaged or locked file."""
+    try:
+        return ProtectedStore(APP).selected()
+    except (TypeError, AccountError, OSError):
+        return None
 
 
 def connected_accounts(store):
@@ -2739,14 +2759,18 @@ def choose_mail_account(index, mode):
 def switch_mail_account(provider, address, mode):
     """Use another connected account: the inbox, the email draft, or the next email."""
     global pending_send, mail_session
-    if mode == 'email_draft' and email_draft and email_draft.response_context:
+    if (mode == 'email_draft' and email_draft and email_draft.response_context
+            and email_draft.provider not in REMOVED_MAIL_PROVIDERS):
         speak('This reply or forward belongs to its original mailbox. Save it and start a new email to use another account.')
         return mode
     provider, address = ProtectedStore(APP).select(provider, address)
     pending_send = None
     if mode == 'email_draft' and email_draft:
-        email_draft.provider = provider
-        email_draft.save()
+        if email_draft.provider in REMOVED_MAIL_PROVIDERS:
+            email_draft.move_to_account(provider)
+        else:
+            email_draft.provider = provider
+            email_draft.save()
     from account_picker import label
     if mode == 'mailbox':
         mail_session = MailSession(provider, APP, progress=mail_progress)
@@ -2802,6 +2826,31 @@ def remove_mail_account(account, mode):
         message += ' Say email to open it.'
     speak(message)
     return 'awake' if mode == 'mailbox' else mode
+
+
+def retire_old_mail_accounts():
+    """At startup: remove Gmail and Microsoft accounts older versions connected directly.
+
+    Email works only through Thunderbird and Yahoo now. Said once, when files
+    were removed. A problem here must never stop the app."""
+    global mail_session, pending_send
+    import mail_accounts
+    import account_picker
+    try:
+        result = mail_accounts.retire_removed_accounts(APP)
+        if not result.removed:
+            return
+        if mail_session is not None and mail_session.provider in mail_accounts.REMOVED_PROVIDERS:
+            mail_session = None
+        if pending_send is not None and pending_send[1] in mail_accounts.REMOVED_PROVIDERS:
+            pending_send = None
+        speak(account_picker.retired_message(result))
+    except Exception:
+        try:
+            APP.mkdir(parents=True, exist_ok=True)
+            (APP / 'Email-Accounts-Error.txt').write_text(traceback.format_exc(), encoding='utf-8')
+        except OSError:
+            pass
 
 
 def new_thunderbird_setup(adding=False):
@@ -3367,7 +3416,9 @@ def _handle(text, mode, typed=False):
         task_navigation().picker=None
         FILE_MANAGER.pick_extensions=None
         FILE_MANAGER.menu=False;FILE_MANAGER.pending=None
-        speak('File manager. '+FILE_MANAGER.refresh())
+        from file_manager import start_location
+        # Opens where File manager options say (drive list, C drive, Documents, ...).
+        speak('File manager. '+FILE_MANAGER.refresh(start_location(PREFERENCES.get('file_manager_start'))))
         return 'files'
     if mode=='files':
         if command in ('main menu','back to main menu','close file manager','leave file manager'):
@@ -3383,6 +3434,7 @@ def _handle(text, mode, typed=False):
             picker=task_navigation().picker
             task_navigation().picker=None
             # Escape from the drive list: Open a media file returns to the Media menu.
+            if picker=='reader':return task_navigation().enter('reader_menu','Document reader')
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
             return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
@@ -3393,6 +3445,7 @@ def _handle(text, mode, typed=False):
     if mode=='file_reader' and not (command in ('help','user guide','open user guide','manual','open manual') or command.startswith(('help with ','help for '))):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
+            if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
                 if back:return back
@@ -3514,6 +3567,10 @@ def _handle(text, mode, typed=False):
         speak('Draft canceled without saving.' if discarded else
               'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
         finish_mail_announcement()
+        if mail_session is None and provider in REMOVED_MAIL_PROVIDERS:
+            # A draft from a removed Gmail or Microsoft connection: back to the chosen account.
+            chosen = connected_selection()
+            provider = chosen[0] if chosen else provider
         if mail_session is None and provider in MAIL_PROVIDERS:
             mail_session = MailSession(provider, APP, progress=mail_progress)
         if mail_session is not None:
@@ -3682,31 +3739,35 @@ def _handle(text, mode, typed=False):
         return mode
     direct_connection = re.fullmatch(
         r'(?:connect|add|set up|setup|sign in to|log in to)\s+(?:my\s+|an?\s+)?'
-        r'(gmail|google mail|outlook|microsoft 365|exchange|yahoo|thunderbird)(?:\s+(?:email|mail|account))?', command)
+        r'(gmail|google mail|outlook|microsoft 365|office 365|exchange|hotmail|yahoo|thunderbird)(?:\s+(?:email|mail|account))?', command)
     if command in thunderbird_accounts.ADD_COMMANDS and (direct_connection or not writing_dictation(mode, typed)):
         account_setup = False
         return start_thunderbird_add(mode)
+    if direct_connection and direct_connection[1] in THROUGH_THUNDERBIRD:
+        # "Add Gmail account": Gmail and Microsoft mail are added in Thunderbird.
+        account_setup = False
+        speak(THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
+        return start_thunderbird_add(mode)
     if direct_connection:
         account_setup = True
-        selected_type = direct_connection[1]
-        command = ('gmail' if selected_type in ('gmail','google mail') else
-                   'outlook' if selected_type in ('outlook','microsoft 365','exchange') else
-                   'thunderbird' if selected_type == 'thunderbird' else 'yahoo')
+        command = direct_connection[1]
     if command in ('add account', 'add another account', 'add email account', 'connect email account', 'set up email'):
         account_setup = True
-        speak('Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird.')
+        speak(ACCOUNT_TYPE_PROMPT)
         return mode
     if account_setup:
         if command in ('cancel', 'cancel account setup'):
             account_setup = False
             speak('Account setup canceled.')
             return mode
-        provider = ('gmail' if command in ('gmail','google','google mail') else
-                    'outlook' if command in ('outlook','microsoft','microsoft 365','exchange','work email') else
-                    'yahoo' if command in ('yahoo','yahoo mail') else
+        if command in THROUGH_THUNDERBIRD:
+            account_setup = False
+            speak(THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
+            return start_thunderbird_add(mode)
+        provider = ('yahoo' if command in ('yahoo','yahoo mail') else
                     'thunderbird' if command in ('thunderbird','thunderbird mail','mozilla thunderbird') else None)
         if not provider:
-            speak('Say Gmail, Outlook or Exchange, Yahoo, Thunderbird, or cancel.')
+            speak('Say Thunderbird, Yahoo, or cancel. Gmail, Outlook and Microsoft 365 work through Thunderbird.')
             return mode
         account_setup = False
         if provider == 'yahoo':
@@ -3722,15 +3783,8 @@ def _handle(text, mode, typed=False):
                 return thunderbird_setup_step(flow.start(), mode)
             except Exception:
                 THUNDERBIRD_SETUP = None
-                speak('Thunderbird setup stopped because of a problem. Ask your helper to check Email Setup Helper, section 4.')
+                speak('Thunderbird setup stopped because of a problem. Ask your helper to check Email Setup Helper, section 3.')
                 return mode
-        speak('Opening ' + provider.capitalize() + ' account setup. A trusted person may complete the private sign-in. Please wait for the result.')
-        try:
-            address = connect(provider, APP, graphical=True)
-            speak(provider.capitalize() + ' account ' + address + ' is connected and selected. Say check email to open it.')
-        except (AccountError, ValueError, OSError) as exc:
-            speak('Account setup did not finish. ' + str(exc))
-        return mode
     if command in ('list email accounts', 'which email account', 'what email account', 'my email accounts'):
         accounts = store.accounts()
         selected = store.selected()
@@ -3752,14 +3806,7 @@ def _handle(text, mode, typed=False):
     if contact:
         try:
             address = contacts.save(contact[1], contact[2])
-            result = 'Saved contact ' + contact[1] + ' at ' + address + '.'
-            if contact_account and contact_account[0] == 'gmail':
-                try:
-                    from google_contacts import sync
-                    result += ' ' + sync(APP, authorize=False)
-                except Exception:
-                    result += ' Saved locally. Say sync Google Contacts after granting permission.'
-            speak(result)
+            speak('Saved contact ' + contact[1] + ' at ' + address + '.')
         except (ValueError, OSError) as exc:
             speak(str(exc))
         return mode
@@ -3773,15 +3820,10 @@ def _handle(text, mode, typed=False):
         entry = contacts.get(contact[1])
         speak(entry['name'] + ', ' + entry['address'] if entry else 'No contact with that name. Say list contacts.')
         return mode
-    if command in ('connect google contacts','sync google contacts','refresh google contacts'):
-        try:
-            from google_contacts import sync
-            speak('Connecting to Google Contacts. Please complete the Google permission screen if it opens.')
-            speak(sync(APP, authorize=True))
-        except (AccountError, ValueError, OSError, KeyError, TimeoutError) as exc:
-            speak('Google Contacts did not sync. ' + str(exc))
-        except Exception:
-            speak('Google Contacts could not sync. Gmail remains connected. Ask your helper to check that the People API is enabled and Contacts permission is granted.')
+    if command in ('connect google contacts','sync google contacts','refresh google contacts') and not writing_dictation(mode, typed):
+        # Google Contacts needed the direct Gmail sign-in, which is removed. Contacts stay here.
+        speak('Google Contacts no longer connects to Voice Companion. Your contacts here are kept. '
+              'Say list contacts to hear them, or add contact to add one.')
         return mode
     match_account = re.fullmatch(r'(?:switch to|use|select) (.+)', command)
     if match_account and not ('@' in match_account[1] or ' at ' in match_account[1] or match_account[1] in
@@ -3804,9 +3846,15 @@ def _handle(text, mode, typed=False):
         accounts = store.accounts()
         if '@' in choice:
             matches = [(p,a) for p,a in accounts if a.casefold() == choice.casefold() and account_kind in (None, p)]
+        elif account_picker_words().company_word(choice):
+            # "Switch to Gmail": the Thunderbird account at Gmail.
+            matches = account_picker_words().company_accounts(choice, accounts)
+            if not matches:
+                speak('No ' + account_picker_words().company_name(choice) + ' address is connected. '
+                      + account_picker_words().company_name(choice) + ' works through Thunderbird. Say add account to set it up.')
+                return mode
         else:
-            provider = 'outlook' if choice in ('exchange','microsoft 365') else choice
-            matches = [(p,a) for p,a in accounts if p == provider]
+            matches = [(p,a) for p,a in accounts if p == choice]
         if len(matches) != 1:
             from account_picker import label as account_label
             speak(('That address is connected ' + str(len(matches)) + ' ways. Say ' +
@@ -3954,6 +4002,16 @@ def _handle(text, mode, typed=False):
                     speak('This same draft was already attempted. Check Sent Mail before trying again. Ask your helper if you need to send a corrected message.')
                     return mode
                 provider = email_draft.provider
+                if provider in REMOVED_MAIL_PROVIDERS:
+                    # A draft started with a removed Gmail or Microsoft connection goes
+                    # from the chosen account; the review below says which one. The
+                    # "already attempted" check above used its old fingerprint first.
+                    chosen = ProtectedStore(APP).selected()
+                    if not chosen:
+                        raise AccountError('No email account is connected. Say add account to connect one in Thunderbird.')
+                    email_draft.move_to_account(chosen[0])
+                    provider = email_draft.provider
+                    recipient, subject, body = message_parts(email_draft)
                 if provider not in MAIL_PROVIDERS:
                     raise AccountError('Choose a connected email account first. The draft has not been sent.')
                 address = ProtectedStore(APP).load(provider)['address']
@@ -3965,7 +4023,7 @@ def _handle(text, mode, typed=False):
                 context = email_draft.response_context
                 source_note = ('. This ' + context['action'].replace('_', ' ') +
                                ' uses the original message in your mailbox' +
-                               ('. Original attachments are not included' if context['action'] == 'forward' and provider != 'outlook' else '')
+                               ('. Original attachments are not included' if context['action'] == 'forward' else '')
                                if context else '')
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
@@ -4136,12 +4194,19 @@ def _handle(text, mode, typed=False):
                 return mode
             provider = selected[0]
         else:
-            provider = 'gmail' if 'gmail' in command else ('yahoo' if 'yahoo' in command else 'outlook')
-            matches = [(p,a) for p,a in store.accounts() if p == provider]
+            words = account_picker_words()
+            kind = 'gmail' if 'gmail' in command else ('yahoo' if 'yahoo' in command else 'outlook')
+            accounts = connected_accounts(store)
+            # Gmail and Outlook addresses are Thunderbird accounts now.
+            matches = ([(p,a) for p,a in accounts if p == 'yahoo'] if kind == 'yahoo' else
+                       words.company_accounts(kind, accounts))
             if len(matches) != 1:
-                speak('Say list email accounts and switch to the full email address.' if matches else 'That account is not connected. Say add account.')
+                speak('Say list email accounts and switch to the full email address.' if matches else
+                      'That account is not connected. Say add account.' if kind == 'yahoo' else
+                      'No ' + words.company_name(kind) + ' address is connected. ' + words.company_name(kind) +
+                      ' works through Thunderbird. Say add account to set it up.')
                 return mode
-            store.select(*matches[0])
+            provider = store.select(*matches[0])[0]
         mail_session = MailSession(provider, APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
         return 'mailbox'
@@ -4477,8 +4542,6 @@ def main():
         try:
             import tkinter
             import win32crypt
-            import google_auth_oauthlib.flow
-            import msal
             import sounddevice
             from playwright.sync_api import sync_playwright
             import web_assistant
@@ -4509,8 +4572,8 @@ def main():
         except Exception as exc:
             print('A packaged component is missing or broken: ' + str(exc), file=sys.stderr, flush=True)
             return 3
-    if any('--connect-' + p in sys.argv for p in ('gmail', 'outlook', 'yahoo')):
-        provider = next(p for p in ('gmail', 'outlook', 'yahoo') if '--connect-' + p in sys.argv)
+    if '--connect-yahoo' in sys.argv:
+        provider = 'yahoo'
         try:
             address = connect(provider, APP)
             speak(provider.capitalize() + ' account ' + address + ' connected. You may close this window.')
@@ -4518,8 +4581,8 @@ def main():
         except (AccountError, OSError, ValueError, KeyError) as exc:
             speak('Account connection did not finish. Ask your helper to check the registration and try again.')
             return 3
-    if any('--disconnect-' + p in sys.argv for p in ('gmail', 'outlook', 'yahoo')):
-        provider = next(p for p in ('gmail', 'outlook', 'yahoo') if '--disconnect-' + p in sys.argv)
+    if '--disconnect-yahoo' in sys.argv:
+        provider = 'yahoo'
         try:
             ProtectedStore(APP).disconnect(provider)
             speak('Selected ' + provider.capitalize() + ' account disconnected.')
@@ -4639,6 +4702,8 @@ def main():
             except (OSError, ValueError): pass
             try: result_file.unlink(missing_ok=True)
             except OSError: pass
+        # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
+        retire_old_mail_accounts()
         settings_quiet_until=0
         settings_audio_blocked=False
         web_refresh=RefreshPacer();startup_speaking=True;startup_quiet_until=time.monotonic()+.3

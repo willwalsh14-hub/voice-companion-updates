@@ -1,9 +1,11 @@
-"""Thunderbird accounts: told apart from direct ones, added from Voice Companion, started by themselves.
+"""Thunderbird accounts: told apart from direct Yahoo ones, added from Voice Companion, started by themselves.
 
 Before 0.2.160:
-- "Gmail, will@gmail.com" could be a direct Gmail connection or the same
-  address in Thunderbird; switching, the send review and "list email accounts"
-  could not tell them apart ("Switched to will@gmail.com").
+- An address could be connected directly and also through Thunderbird;
+  switching, the send review and "list email accounts" could not tell them
+  apart ("Switched to will@gmail.com"). Since Gmail and Microsoft now work only
+  through Thunderbird, the same address two ways means Yahoo directly and in
+  Thunderbird.
 - Adding another Thunderbird account needed a helper in Thunderbird.
 - A closed Thunderbird gave "Thunderbird is not connected. Open Thunderbird".
 - A computer without Thunderbird got a website to visit.
@@ -40,90 +42,103 @@ from test_email_accounts import AccountScreenTestCase, plain_store
 from test_thunderbird_setup import ACCOUNT_PREFS, INSTALLED, FakeRelay, FakeSystem, registered
 
 HERE = Path(__file__).parent
-GMAIL, BIRD_GMAIL = ('gmail', 'will@gmail.com'), ('thunderbird', 'will@gmail.com')
+# One Yahoo address connected directly and through Thunderbird, and a Gmail address in Thunderbird.
+YAHOO_WILL, BIRD_WILL, BIRD_SAM = ('yahoo', 'will@yahoo.com'), ('thunderbird', 'will@yahoo.com'), ('thunderbird', 'sam@gmail.com')
 
 
 # ---- 1. Telling Thunderbird accounts apart -----------------------------------
 
 class WordingTests(unittest.TestCase):
     def test_kind_then_address_everywhere(self):
-        self.assertEqual(account_picker.label(BIRD_GMAIL), 'Thunderbird, will@gmail.com')
-        self.assertEqual(account_picker.label(GMAIL, GMAIL), 'Gmail, will@gmail.com, current')
+        self.assertEqual(account_picker.label(BIRD_WILL), 'Thunderbird, will@yahoo.com')
+        self.assertEqual(account_picker.label(YAHOO_WILL, YAHOO_WILL), 'Yahoo, will@yahoo.com, current')
 
     def test_spoken_kind_and_address_in_any_order(self):
         for said, expected in [('Thunderbird, will at gmail dot com.', ('thunderbird', 'will at gmail dot com')),
                                ('will@gmail.com through Thunderbird', ('thunderbird', 'will@gmail.com')),
                                ('the Thunderbird account will@gmail.com', ('thunderbird', 'will@gmail.com')),
                                ('will@gmail.com in Mozilla Thunderbird.', ('thunderbird', 'will@gmail.com')),
-                               ('Gmail will@gmail.com', ('gmail', 'will@gmail.com')),
-                               ('Google mail, will@gmail.com', ('gmail', 'will@gmail.com')),
+                               ('Yahoo will@yahoo.com', ('yahoo', 'will@yahoo.com')),
+                               ('Yahoo mail, will@yahoo.com', ('yahoo', 'will@yahoo.com')),
+                               # Gmail is an address, not a kind of account, now.
+                               ('Gmail will@gmail.com', (None, 'gmail will@gmail.com')),
                                ('will at gmail dot com', (None, 'will at gmail dot com')),
                                ('sam at yahoo dot com', (None, 'sam at yahoo dot com'))]:
             with self.subTest(said):
                 self.assertEqual(account_picker.spoken_account(said), expected)
 
     def test_choice_with_the_same_address_both_ways(self):
-        accounts = [GMAIL, BIRD_GMAIL, ('yahoo', 'sam@yahoo.com')]
-        self.assertEqual(account_picker.choice('Thunderbird, will at gmail dot com.', accounts), 1)
-        self.assertEqual(account_picker.choice('will@gmail.com through Thunderbird', accounts), 1)
-        self.assertEqual(account_picker.choice('Gmail, will@gmail.com', accounts), 0)
-        self.assertEqual(account_picker.choice('Thunderbird', accounts), 1)
-        found = account_picker.choice('will@gmail.com', accounts)
+        accounts = [YAHOO_WILL, BIRD_WILL, BIRD_SAM]
+        self.assertEqual(account_picker.choice('Thunderbird, will at yahoo dot com.', accounts), 1)
+        self.assertEqual(account_picker.choice('will@yahoo.com through Thunderbird', accounts), 1)
+        self.assertEqual(account_picker.choice('Yahoo, will@yahoo.com', accounts), 0)
+        self.assertEqual(account_picker.choice('Yahoo', accounts), 0)
+        # "Gmail" is the Thunderbird account with a Gmail address.
+        self.assertEqual(account_picker.choice('Gmail.', accounts), 2)
+        self.assertEqual(account_picker.choice('Thunderbird', accounts), ('several', 'thunderbird'))
+        found = account_picker.choice('will@yahoo.com', accounts)
         self.assertEqual(found, ('several', ''))
         self.assertEqual(account_picker.several('', accounts),
                          'More than one account has that address. Say the account number, '
-                         'or say the kind of account first, such as Thunderbird, will@gmail.com.')
-        self.assertIsNone(account_picker.choice('Outlook, will@gmail.com', accounts))
+                         'or say the kind of account first, such as Thunderbird, will@yahoo.com.')
+        self.assertIsNone(account_picker.choice('Outlook, will@yahoo.com', accounts))
+        self.assertIsNone(account_picker.choice('Outlook', accounts))
 
 
 class SameAddressTwoWaysTests(AccountScreenTestCase):
-    ACCOUNTS = (GMAIL, BIRD_GMAIL, ('yahoo', 'sam@yahoo.com'))
+    ACCOUNTS = (YAHOO_WILL, BIRD_WILL, BIRD_SAM)
 
     def test_account_list_says_the_kind_first(self):
         companion.handle('switch account', 'awake')
-        self.assertTrue(self.last().startswith('Choose an account to open. Gmail, will@gmail.com, current, 1 of 3.'), self.last())
-        self.key('End', 'awake')
-        self.assertEqual(self.last(), 'Thunderbird, will@gmail.com, 3 of 3.')
+        self.assertTrue(self.last().startswith('Choose an account to open. Yahoo, will@yahoo.com, current, 1 of 3.'), self.last())
+        self.key('Down', 'awake')
+        self.assertEqual(self.last(), 'Thunderbird, will@yahoo.com, 2 of 3.')
         self.assertEqual(self.key('Enter', 'awake'), 'mailbox')
-        self.assertEqual(self.store.selected(), BIRD_GMAIL)
-        self.assertTrue(self.said[-1].startswith('Switched to Thunderbird, will@gmail.com.'), self.said[-1])
+        self.assertEqual(self.store.selected(), BIRD_WILL)
+        self.assertTrue(self.said[-1].startswith('Switched to Thunderbird, will@yahoo.com.'), self.said[-1])
 
     def test_voice_choice_in_the_list(self):
         companion.handle('switch account', 'awake')
-        companion.handle('Will at Gmail dot com.', 'awake')
-        self.assertIn('say the kind of account first, such as Thunderbird, will@gmail.com', self.last())
+        companion.handle('Will at Yahoo dot com.', 'awake')
+        self.assertIn('say the kind of account first, such as Thunderbird, will@yahoo.com', self.last())
         self.assertIsNotNone(companion.ACCOUNT_PICKER)
-        companion.handle('Thunderbird, will at gmail dot com.', 'awake')
-        self.assertEqual(self.store.selected(), BIRD_GMAIL)
+        companion.handle('Thunderbird, will at yahoo dot com.', 'awake')
+        self.assertEqual(self.store.selected(), BIRD_WILL)
 
     def test_switch_to_names_both_ways_and_accepts_the_kind(self):
-        companion.handle('switch to will@gmail.com', 'awake')
-        self.assertEqual(self.last(), 'That address is connected 2 ways. Say switch to Gmail, will@gmail.com, '
-                                      'or switch to Thunderbird, will@gmail.com.')
-        self.assertEqual(self.store.selected(), GMAIL)
-        companion.handle('Switch to Thunderbird, will at gmail dot com.', 'awake')
-        self.assertEqual(self.store.selected(), BIRD_GMAIL)
-        self.assertEqual(self.last(), 'Switched to Thunderbird, will@gmail.com.')
-        companion.handle('switch to will@gmail.com through gmail', 'awake')
-        self.assertEqual(self.store.selected(), GMAIL)
-        companion.handle('use thunderbird', 'awake')
-        self.assertEqual(self.store.selected(), BIRD_GMAIL)
+        companion.handle('switch to will@yahoo.com', 'awake')
+        self.assertEqual(self.last(), 'That address is connected 2 ways. Say switch to Thunderbird, will@yahoo.com, '
+                                      'or switch to Yahoo, will@yahoo.com.')
+        self.assertEqual(self.store.selected(), YAHOO_WILL)
+        companion.handle('Switch to Thunderbird, will at yahoo dot com.', 'awake')
+        self.assertEqual(self.store.selected(), BIRD_WILL)
+        self.assertEqual(self.last(), 'Switched to Thunderbird, will@yahoo.com.')
+        companion.handle('switch to will@yahoo.com through yahoo', 'awake')
+        self.assertEqual(self.store.selected(), YAHOO_WILL)
+        # "Gmail" finds the Thunderbird account with the Gmail address.
+        companion.handle('use gmail', 'awake')
+        self.assertEqual(self.store.selected(), BIRD_SAM)
+        companion.handle('switch to outlook', 'awake')
+        self.assertEqual(self.last(), 'No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up.')
+        self.assertEqual(self.store.selected(), BIRD_SAM)
+        companion.handle('switch to yahoo', 'awake')
+        self.assertEqual(self.store.selected(), YAHOO_WILL)
 
     def test_list_email_accounts_are_two_items_that_each_switch(self):
         companion.handle('list email accounts', 'awake')
         items = companion.NAMED_LIST['items']
-        self.assertEqual([label for label, _ in items], ['Gmail, will@gmail.com, current', 'Yahoo, sam@yahoo.com',
-                                                         'Thunderbird, will@gmail.com'])
-        companion.handle(items[2][1], 'awake')
-        self.assertEqual(self.store.selected(), BIRD_GMAIL)
+        self.assertEqual([label for label, _ in items], ['Thunderbird, will@yahoo.com', 'Thunderbird, sam@gmail.com',
+                                                         'Yahoo, will@yahoo.com, current'])
         companion.handle(items[0][1], 'awake')
-        self.assertEqual(self.store.selected(), GMAIL)
+        self.assertEqual(self.store.selected(), BIRD_WILL)
+        companion.handle(items[2][1], 'awake')
+        self.assertEqual(self.store.selected(), YAHOO_WILL)
 
     def test_send_review_says_which_way_it_sends(self):
-        self.store.select(*BIRD_GMAIL)
+        self.store.select(*BIRD_WILL)
         draft = self.draft_for('thunderbird')
         companion.handle('send email', 'email_draft')
-        self.assertTrue(self.last().startswith('Review before sending. From Thunderbird, will@gmail.com. To friend@example.com'),
+        self.assertTrue(self.last().startswith('Review before sending. From Thunderbird, will@yahoo.com. To friend@example.com'),
                         self.last())
         self.assertIs(companion.email_draft, draft)
 
@@ -602,7 +617,7 @@ class StarterTests(StarterCase):
             for item in plain_store():
                 item.start(); self.addCleanup(item.stop)
             store = ProtectedStore(self.folder)
-            store.save('gmail', {'address': 'a@gmail.com'})
+            store.save('yahoo', {'address': 'a@yahoo.com'})
             self.assertIsNone(companion.start_thunderbird_quietly())
             store.save('thunderbird', {'address': 'b@x.org', 'account_id': 'a', 'identity_id': 'i'})
             thread = companion.start_thunderbird_quietly()

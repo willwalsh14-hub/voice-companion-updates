@@ -24,7 +24,9 @@ def plain_store():
             patch.object(mail_accounts.ProtectedStore, '_unseal', staticmethod(lambda path: json.loads(path.read_bytes())))]
 
 
-WILL, SAM, YAHOO, BIRD = (('gmail', 'will@gmail.com'), ('gmail', 'sam@gmail.com'),
+# Gmail addresses work through Thunderbird. Saved order: Thunderbird accounts (by file
+# name, the same on every computer: Will, Sam, Pat), then Yahoo.
+WILL, SAM, YAHOO, BIRD = (('thunderbird', 'will@gmail.com'), ('thunderbird', 'sam@gmail.com'),
                           ('yahoo', 'sam@yahoo.com'), ('thunderbird', 'pat@example.com'))
 
 
@@ -59,10 +61,10 @@ class StoreRemovalTests(unittest.TestCase):
 
     def test_removes_only_that_address_and_moves_the_selection_to_the_next(self):
         files = sorted(p.name for p in self.folder.glob('*.account'))
-        self.assertEqual(self.store.remove('GMAIL', 'Will@Gmail.com'), SAM)
-        self.assertEqual(self.store.accounts(), [SAM, YAHOO, BIRD])
+        self.assertEqual(self.store.remove('THUNDERBIRD', 'Will@Gmail.com'), SAM)
+        self.assertEqual(self.store.accounts(), [SAM, BIRD, YAHOO])
         self.assertEqual(self.store.selected(), SAM)
-        self.assertEqual(self.store.load('gmail')['secret'], 'sam@gmail.com-token')
+        self.assertEqual(self.store.load('thunderbird')['secret'], 'sam@gmail.com-token')
         self.assertEqual(len(list(self.folder.glob('*.account'))), len(files) - 1)
         self.assertFalse(list(self.folder.glob('*.writing')))
 
@@ -72,14 +74,14 @@ class StoreRemovalTests(unittest.TestCase):
         self.assertEqual(self.store.selected(), WILL)
 
     def test_last_account_in_the_list_selects_the_one_before(self):
-        self.store.select(*BIRD)
-        self.assertEqual(self.store.remove(*BIRD), YAHOO)
-        self.assertEqual(self.store.selected(), YAHOO)
+        self.store.select(*YAHOO)
+        self.assertEqual(self.store.remove(*YAHOO), BIRD)
+        self.assertEqual(self.store.selected(), BIRD)
 
     def test_removing_every_account_leaves_nothing_selected(self):
-        for account in (WILL, SAM, YAHOO):
+        for account in (WILL, SAM, BIRD):
             self.store.remove(*account)
-        self.assertIsNone(self.store.remove(*BIRD))
+        self.assertIsNone(self.store.remove(*YAHOO))
         self.assertEqual(self.store.accounts(), [])
         self.assertIsNone(self.store.selected())
         self.assertEqual(list(self.folder.iterdir()), [])
@@ -87,16 +89,16 @@ class StoreRemovalTests(unittest.TestCase):
     def test_old_single_file_is_removed_only_when_it_holds_that_address(self):
         legacy = self.folder / 'yahoo.account'
         legacy.write_bytes(json.dumps({'address': 'sam@yahoo.com'}).encode())
-        (self.folder / 'outlook.account').write_bytes(json.dumps({'address': 'old@outlook.com'}).encode())
+        (self.folder / 'thunderbird.account').write_bytes(json.dumps({'address': 'old@example.com'}).encode())
         self.store.remove(*YAHOO)
         self.assertFalse(legacy.exists())
         self.assertNotIn(YAHOO, self.store.accounts())
-        self.assertIn(('outlook', 'old@outlook.com'), self.store.accounts())
+        self.assertIn(('thunderbird', 'old@example.com'), self.store.accounts())
 
     def test_unknown_account_changes_nothing(self):
         before = sorted(p.read_bytes() for p in self.folder.iterdir())
         with self.assertRaises(AccountError):
-            self.store.remove('gmail', 'nobody@gmail.com')
+            self.store.remove('thunderbird', 'nobody@gmail.com')
         self.assertEqual(sorted(p.read_bytes() for p in self.folder.iterdir()), before)
 
 
@@ -144,25 +146,25 @@ class FolderAccountTests(AccountScreenTestCase):
         self.open_inbox()
         self.assertEqual(companion.navigation_key('Ctrl+Y', 'mailbox'), 'go to folder')
         self.key('Ctrl+Y')
-        self.assertEqual(self.last(), 'Choose an account. Gmail, will@gmail.com, current, 1 of 4. '
+        self.assertEqual(self.last(), 'Choose an account. Thunderbird, will@gmail.com, current, 1 of 4. '
                                       'Arrows move, Enter chooses, and Escape cancels. You can also say the account number or name.')
         self.key('Down')
-        self.assertEqual(self.last(), 'Gmail, sam@gmail.com, 2 of 4.')
+        self.assertEqual(self.last(), 'Thunderbird, sam@gmail.com, 2 of 4.')
         self.key('End')
-        self.assertEqual(self.last(), 'Thunderbird, pat@example.com, 4 of 4.')
+        self.assertEqual(self.last(), 'Yahoo, sam@yahoo.com, 4 of 4.')
         self.key('Down')
-        self.assertEqual(self.last(), 'End of list. Thunderbird, pat@example.com, 4 of 4.')
+        self.assertEqual(self.last(), 'End of list. Yahoo, sam@yahoo.com, 4 of 4.')
         self.key('Home')
         self.key('Down')
         self.key('Enter')
         self.assertEqual(self.store.selected(), SAM)
-        self.assertTrue(self.last().startswith('Switched to Gmail, sam@gmail.com. Found 2 folders. Folder 1: Inbox'), self.last())
+        self.assertTrue(self.last().startswith('Switched to Thunderbird, sam@gmail.com. Found 2 folders. Folder 1: Inbox'), self.last())
         self.assertIsNone(companion.ACCOUNT_PICKER)
         self.key('Down')
         self.assertIn('Sam receipts', self.last())
         self.key('Enter')
         self.assertIn('For sam@gmail.com in r-sam@gmail.com', self.last())
-        self.assertEqual(companion.mail_session.provider, 'gmail')
+        self.assertEqual(companion.mail_session.provider, 'thunderbird')
         self.assertIsNone(companion.mail_session.folder_picker)
 
     def test_choosing_the_current_account_keeps_its_session(self):
@@ -178,14 +180,14 @@ class FolderAccountTests(AccountScreenTestCase):
         self.key('Down')
         self.key('Down')
         self.key('Enter')
-        self.assertEqual(self.store.selected(), YAHOO)
+        self.assertEqual(self.store.selected(), BIRD)
         self.assertIsNotNone(companion.mail_session.folder_picker)
         self.assertEqual(companion.navigation_key('Escape', 'mailbox'), 'cancel')
         self.key('Escape')
-        self.assertTrue(self.last().startswith('Choose an account. Yahoo, sam@yahoo.com, current, 1 of 4.'), self.last())
+        self.assertTrue(self.last().startswith('Choose an account. Thunderbird, pat@example.com, current, 1 of 4.'), self.last())
         self.assertIsNone(companion.mail_session.folder_picker)
         self.key('Escape')
-        self.assertEqual(self.last(), 'Folder list canceled. Back to Gmail, will@gmail.com, Inbox.')
+        self.assertEqual(self.last(), 'Folder list canceled. Back to Thunderbird, will@gmail.com, Inbox.')
         self.assertIsNone(companion.ACCOUNT_PICKER)
         self.assertEqual(self.store.selected(), WILL)
         self.assertIs(companion.mail_session, session)
@@ -202,27 +204,29 @@ class FolderAccountTests(AccountScreenTestCase):
         self.open_inbox()
         companion.handle('Go to folder.', 'mailbox')
         self.assertTrue(self.last().startswith('Choose an account.'))
+        # "Gmail" means the Thunderbird accounts with Gmail addresses.
         companion.handle('Gmail.', 'mailbox')
         self.assertEqual(self.last(), 'There are 2 Gmail accounts. Say the account number or the address.')
         self.assertIsNotNone(companion.ACCOUNT_PICKER)
         companion.handle('Banana bread', 'mailbox')
         self.assertEqual(self.last(), 'Say next or previous, then that one. Or say the account number or name. Say cancel to close the list.')
         companion.handle('next', 'mailbox')
-        self.assertEqual(self.last(), 'Gmail, sam@gmail.com, 2 of 4.')
+        self.assertEqual(self.last(), 'Thunderbird, sam@gmail.com, 2 of 4.')
         companion.handle('That one.', 'mailbox')
         self.assertEqual(self.store.selected(), SAM)
         companion.handle('cancel', 'mailbox')
-        self.assertTrue(self.last().startswith('Choose an account. Gmail, sam@gmail.com, current, 1 of 4.'))
+        self.assertTrue(self.last().startswith('Choose an account. Thunderbird, sam@gmail.com, current, 1 of 4.'))
         companion.handle('Yahoo.', 'mailbox')
         self.assertEqual(self.store.selected(), YAHOO)
         companion.handle('go back', 'mailbox')
         companion.handle('Sam at Gmail, dot com.', 'mailbox')
         self.assertEqual(self.store.selected(), SAM)
         companion.handle('back', 'mailbox')
+        # The current account (Sam) is listed first, then Will, Pat and Yahoo.
         companion.handle('Number four.', 'mailbox')
-        self.assertEqual(self.store.selected(), BIRD)
+        self.assertEqual(self.store.selected(), YAHOO)
         companion.handle('cancel', 'mailbox')
-        # The current account is listed first: Thunderbird, then Will, Sam and Yahoo.
+        # Now Yahoo first, then Will, Sam and Pat.
         companion.handle('the third one', 'mailbox')
         self.assertEqual(self.store.selected(), SAM)
 
@@ -265,15 +269,14 @@ class SingleAccountTests(AccountScreenTestCase):
 
     def test_switch_account_with_one_account(self):
         companion.handle('switch account', 'awake')
-        self.assertEqual(self.last(), 'Only one email account is connected: Gmail, will@gmail.com. Say add account to connect another.')
+        self.assertEqual(self.last(), 'Only one email account is connected: Thunderbird, will@gmail.com. Say add account to connect another.')
 
 
 class SwitchAccountTests(AccountScreenTestCase):
     def test_switch_account_from_the_main_menu_opens_that_inbox(self):
         self.assertEqual(companion.handle('Switch account.', 'awake'), 'awake')
-        self.assertTrue(self.last().startswith('Choose an account to open. Gmail, will@gmail.com, current, 1 of 4.'))
-        self.assertEqual(self.key('Down', 'awake'), 'awake')
-        self.assertEqual(self.key('Down', 'awake'), 'awake')
+        self.assertTrue(self.last().startswith('Choose an account to open. Thunderbird, will@gmail.com, current, 1 of 4.'))
+        self.assertEqual(self.key('End', 'awake'), 'awake')
         self.assertEqual(self.key('Enter', 'awake'), 'mailbox')
         self.assertEqual(self.store.selected(), YAHOO)
         self.assertIn('Switched to Yahoo, sam@yahoo.com', self.said[-1])
@@ -306,7 +309,7 @@ class SwitchAccountTests(AccountScreenTestCase):
 class RemoveAccountTests(AccountScreenTestCase):
     def test_no_keeps_the_account(self):
         companion.handle('Remove email account.', 'awake')
-        self.assertTrue(self.last().startswith('Choose the account to remove. Gmail, will@gmail.com, current, 1 of 4.'))
+        self.assertTrue(self.last().startswith('Choose the account to remove. Thunderbird, will@gmail.com, current, 1 of 4.'))
         companion.handle('Yahoo', 'awake')
         self.assertEqual(self.last(), 'Remove the Yahoo account sam@yahoo.com from Voice Companion? '
                                       'Your email stays with Yahoo. Say yes or no.')
@@ -321,15 +324,14 @@ class RemoveAccountTests(AccountScreenTestCase):
 
     def test_enter_on_the_question_is_no_unless_yes_is_chosen(self):
         companion.handle('delete email account', 'awake')
-        self.key('Down', 'awake')
-        self.key('Down', 'awake')
+        self.key('End', 'awake')
         self.key('Enter', 'awake')
         self.assertIn('Say yes or no.', self.last())
         self.key('Enter', 'awake')
         self.assertEqual(self.last(), 'Nothing was removed.')
         self.assertIn(YAHOO, self.store.accounts())
         companion.handle('remove account', 'awake')
-        companion.handle('3', 'awake')
+        companion.handle('4', 'awake')
         self.key('Up', 'awake')
         self.key('Enter', 'awake')
         self.assertNotIn(YAHOO, self.store.accounts())
@@ -340,7 +342,7 @@ class RemoveAccountTests(AccountScreenTestCase):
         companion.handle('Yes, please.', 'awake')
         self.assertEqual(self.last(), 'The Yahoo account sam@yahoo.com is removed from Voice Companion. '
                                       'Your email is still with Yahoo. The app password still works until you delete it in Yahoo Account security. '
-                                      'You are still using the Gmail account will@gmail.com.')
+                                      'You are still using the Thunderbird account will@gmail.com.')
         self.assertEqual(self.store.accounts(), [WILL, SAM, BIRD])
         self.assertEqual(self.store.selected(), WILL)
 
@@ -348,19 +350,21 @@ class RemoveAccountTests(AccountScreenTestCase):
         self.open_inbox()
         self.assertEqual(companion.handle('remove email account', 'mailbox', typed=True), 'mailbox')
         companion.handle('that one', 'mailbox')
-        self.assertIn('Remove the Gmail account will@gmail.com from Voice Companion? Your email stays with Gmail.', self.last())
+        self.assertIn('Remove the Thunderbird account will@gmail.com from Voice Companion? Your email stays in Thunderbird.', self.last())
         self.assertEqual(companion.handle('yes', 'mailbox'), 'mailbox')
         said = ' '.join(self.said[-2:])
-        self.assertIn('The Gmail account will@gmail.com is removed from Voice Companion.', said)
-        self.assertIn('Google Account', said)
-        self.assertIn('Now using the Gmail account sam@gmail.com.', said)
+        self.assertIn('The Thunderbird account will@gmail.com is removed from Voice Companion.', said)
+        self.assertIn('Thunderbird and its email are not changed.', said)
+        self.assertIn('Now using the Thunderbird account sam@gmail.com.', said)
         self.assertIn('For sam@gmail.com in inbox', said)
         self.assertEqual(self.store.selected(), SAM)
-        self.assertEqual(self.store.accounts(), [SAM, YAHOO, BIRD])
+        self.assertEqual(self.store.accounts(), [SAM, BIRD, YAHOO])
 
     def test_thunderbird_is_only_disconnected(self):
         companion.handle('remove account', 'awake')
         companion.handle('thunderbird', 'awake')
+        self.assertEqual(self.last(), 'There are 3 Thunderbird accounts. Say the account number or the address.')
+        companion.handle('pat at example dot com', 'awake')
         self.assertIn('Your email stays in Thunderbird.', self.last())
         companion.handle('yes', 'awake')
         self.assertIn('Thunderbird and its email are not changed.', self.last())
@@ -375,23 +379,23 @@ class RemoveAccountTests(AccountScreenTestCase):
 
 
 class LastAccountTests(AccountScreenTestCase):
-    ACCOUNTS = (('outlook', 'me@outlook.com'),)
+    ACCOUNTS = (('yahoo', 'me@yahoo.com'),)
 
     def test_last_account_asks_at_once_and_leaves_email(self):
         self.open_inbox()
         companion.handle('remove email account', 'mailbox', typed=True)
-        self.assertEqual(self.last(), 'Remove the Outlook account me@outlook.com from Voice Companion? '
-                                      'Your email stays with Outlook. Say yes or no.')
+        self.assertEqual(self.last(), 'Remove the Yahoo account me@yahoo.com from Voice Companion? '
+                                      'Your email stays with Yahoo. Say yes or no.')
         self.assertEqual(companion.handle('yes', 'mailbox'), 'awake')
         said = ' '.join(self.said)
-        self.assertIn('The Outlook account me@outlook.com is removed from Voice Companion.', said)
-        self.assertIn('Microsoft account', said)
+        self.assertIn('The Yahoo account me@yahoo.com is removed from Voice Companion.', said)
+        self.assertIn('Yahoo Account security', said)
         self.assertIn('No email account is connected now. Say add account to connect one.', said)
         self.assertIsNone(companion.mail_session)
         self.assertEqual(self.store.accounts(), [])
 
     def test_nothing_to_remove(self):
-        self.store.remove('outlook', 'me@outlook.com')
+        self.store.remove('yahoo', 'me@yahoo.com')
         companion.handle('remove email account', 'awake')
         self.assertEqual(self.last(), 'No email account is connected. Say add account.')
         self.assertIsNone(companion.ACCOUNT_PICKER)

@@ -125,7 +125,10 @@ class BrowserAccessibilityTests(unittest.TestCase):
                     embedded.assert_called_once_with(Path(folder),True);embedded.return_value.start.assert_called_once()
                 continue
             driver=Mock();driver.chromium.launch_persistent_context.return_value.pages=[Mock()]
-            with tempfile.TemporaryDirectory() as folder,patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))):
+            # A driver another test left running is shared per thread (shared_playwright);
+            # start this one from the patched Playwright instead.
+            import shared_playwright
+            with tempfile.TemporaryDirectory() as folder,patch.dict(shared_playwright._DRIVERS,{},clear=True),patch('playwright.sync_api.sync_playwright',return_value=Mock(start=Mock(return_value=driver))):
                 backend=BrowserBackend(folder,browser,headless=True);backend.start()
                 args=driver.chromium.launch_persistent_context.call_args.kwargs
                 self.assertTrue(args['headless']);self.assertEqual(args['channel'],'chrome')
@@ -136,7 +139,7 @@ class BrowserAccessibilityTests(unittest.TestCase):
 
 class EmailControlTests(unittest.TestCase):
     def session(self,body):
-        session=MailSession('gmail','unused');session.view='message';session.body_content=body;session.set_format('html');return session
+        session=MailSession('thunderbird','unused');session.view='message';session.body_content=body;session.set_format('html');return session
     def test_image_donation_link_and_aria_button_are_read_as_controls(self):
         body=render_html('<p>Help us.</p><a href="https://example.com/donate"><img src="remote.png" alt="Click to donate"></a><p><a role="button" href="https://example.com/give">Donate now</a></p>')
         self.assertEqual([body[a:b] for a,b,s,u in message_controls(body)],['Click to donate','Donate now'])

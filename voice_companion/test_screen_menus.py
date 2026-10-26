@@ -24,10 +24,10 @@ FALLBACKS = ('I can write a note or document', 'Say go to folder to choose from 
 
 
 class FakeMailClient:
-    """Behaves like mailbox_access.MailboxClient for one small Gmail inbox."""
+    """Behaves like a Thunderbird or Yahoo mailbox with one small inbox."""
     def __init__(self, *args): pass
     def folders(self):
-        return [('Inbox', 'INBOX'), ('Sent Mail', 'SENT'), ('Drafts', 'DRAFT'), ('Trash', 'TRASH'), ('Spam', 'SPAM'), ('Saved', 'Label_1')]
+        return [('Inbox', 'inbox'), ('Sent Mail', 'SENT'), ('Drafts', 'DRAFT'), ('Trash', 'TRASH'), ('Spam', 'SPAM'), ('Saved', 'Label_1')]
     def list_messages(self, folder, cursor=None, limit=10):
         return ([{'id': 'm1', 'from': 'Sam <sam@example.com>', 'subject': 'Lunch'},
                  {'id': 'm2', 'from': 'Ann <ann@example.com>', 'subject': 'Plans'}], None)
@@ -78,7 +78,6 @@ class ScreenMenuTests(unittest.TestCase):
         self.stack.enter_context(patch.object(app, 'finish_mail_announcement'))
         self.stack.enter_context(patch.object(app, 'WebSession', WebStandIn))
         self.stack.enter_context(patch('mail_voice.account_token', return_value=('me@example.com', 'token')))
-        self.stack.enter_context(patch('google_contacts.sync', return_value='Google Contacts synced.'))
         self.stack.enter_context(patch('document_editor.copy_to_clipboard'))
         self.stack.enter_context(patch('webbrowser.open'))
         self.stack.enter_context(patch('subprocess.Popen'))
@@ -91,7 +90,7 @@ class ScreenMenuTests(unittest.TestCase):
         app.note_buffer[:] = []
         if mode == 'mailbox':
             from mail_voice import MailSession
-            app.mail_session = MailSession('gmail', str(self.root), FakeMailClient)
+            app.mail_session = MailSession('thunderbird', str(self.root), FakeMailClient)
             app.mail_session.process('open inbox')
         elif mode == 'email_draft':
             from email_draft import VoiceEmail
@@ -148,7 +147,7 @@ class ScreenMenuTests(unittest.TestCase):
         # The main menu is a menu already: Alt says so and where you are.
         self.said.clear()
         self.assertEqual(self.press('Alt', 'awake'), 'awake')
-        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 12.')
+        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 13.')
         self.assertEqual(self.press('Down', 'awake'), 'awake')
         self.assertIn('Word processor', self.said[-1])
 

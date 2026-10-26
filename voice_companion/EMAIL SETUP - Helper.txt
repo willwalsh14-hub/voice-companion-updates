@@ -3,19 +3,13 @@ VOICE COMPANION - SET UP EMAIL
 1. Before you start
 The account owner must agree to connect their email. They can do the setup or ask someone they trust for help.
 Use the same Windows account that will run Companion. Enter passwords and sign-in codes privately.
-The installer includes the app setup for Google and Microsoft sign-in. The person using the app does not need to edit setup files.
-A work or school account may need approval from its own support team. A private Exchange server is not supported in this version.
+Companion uses email in two ways:
+- Thunderbird, for Gmail, Outlook, Microsoft 365, and most other email. See part 3.
+- Yahoo, straight from Companion with an app password. See part 2.
+Companion no longer signs in to Gmail or Microsoft by itself. If an older version connected one of those, Companion removes it when it starts and says so once. Drafts and contacts are kept. Add the address again through Thunderbird.
+A work or school account may need approval from its own support team.
 
-2. Connect Gmail or Outlook
-1. Open Companion and say "Add account".
-2. Choose Gmail or Outlook or Exchange.
-3. Follow the normal browser sign-in prompts.
-4. Check the account name and the access being requested.
-5. Agree only if the owner wants to connect that account.
-6. Listen to the address read after setup. Check that it is right.
-If sign-in fails, note the exact message. Ask the app supplier or the account's support team for help. Do not guess at changes to setup files.
-
-3. Connect Yahoo
+2. Connect Yahoo
 Yahoo needs an app password. This is a separate password made in Yahoo's account settings for an email app.
 1. The account owner makes an app password in Yahoo's account settings.
 2. In Companion, say "Add account" and choose Yahoo.
@@ -24,9 +18,9 @@ Yahoo needs an app password. This is a separate password made in Yahoo's account
 Use the app password here. Keep your usual Yahoo password private.
 Companion protects the saved connection for the Windows user who made it.
 
-4. Connect through Thunderbird
-Thunderbird can hold the email sign-in instead of Companion. This works for Gmail, Outlook, Yahoo and most other email. Thunderbird must be version 128 or newer.
-1. In Companion, say "Add Thunderbird account". Companion checks each part and says what is missing.
+3. Connect through Thunderbird
+Thunderbird holds the email sign-in instead of Companion. This is the way to use Gmail, Outlook and Microsoft 365. It also works for Yahoo and most other email. Thunderbird must be version 128 or newer.
+1. In Companion, say "Add Thunderbird account". Saying "Add Gmail account" or "Add Outlook account" does the same. Companion checks each part and says what is missing.
 2. If Thunderbird is not installed, Companion offers to install it. Say yes. Companion uses Windows Package Manager. Without it, Companion downloads the installer from Mozilla and runs it only if Windows confirms Mozilla signed it. If Windows asks whether to allow changes, choose Yes.
 3. If Companion asks to install the Voice Companion connection, say yes. Companion adds a small add-on to Thunderbird. If Thunderbird is open, close it when Companion asks.
 4. Type or say the email address to add. The first time, also give the name people see on email.
@@ -36,7 +30,7 @@ Thunderbird can hold the email sign-in instead of Companion. This works for Gmai
 8. To add another address, say "Add Thunderbird account" again.
 If the email account is already set up in Thunderbird, say "Add account" and choose Thunderbird. Companion connects every address set up in Thunderbird.
 Companion starts Thunderbird by itself, minimized, when a Thunderbird account is used. It also starts it when Companion opens, if a Thunderbird account is in use. Nobody needs to open Thunderbird first.
-Companion says Thunderbird accounts with Thunderbird first, such as "Thunderbird, sam@gmail.com". The same address can also be connected straight to Gmail. Then there are two accounts, and each says its kind.
+Companion says Thunderbird accounts with Thunderbird first, such as "Thunderbird, sam@gmail.com". A Yahoo address can also be connected straight to Yahoo. Then there are two accounts, and each says its kind.
 The add-on goes in the extensions folder of the Thunderbird profile. Companion also adds two lines to the profile's user.js file. They let Thunderbird turn on the add-on without a prompt. When Companion has a newer add-on, it replaces the old one while Thunderbird is closed.
 The add-on uses a small Thunderbird Experiment. It opens the Thunderbird page for adding an account, reads it, presses its main button, and fills in a password typed in Companion. While an account is being added, it hands the Gmail or Outlook sign-in page to Companion. It never reads or changes saved passwords or settings.
 To install the add-on by hand, open Add-ons and Themes in Thunderbird. Choose the gear button, then Install Add-on From File. Pick Voice Companion Mail Connection.xpi in the Voice Companion program folder. It is in AppData, Local, Programs, Voice Companion. Agree to the add-on's requests. It reads, moves and sends mail only when Companion asks.
@@ -44,14 +38,14 @@ If Companion says the connection is turned off, open Add-ons and Themes in Thund
 When Companion sends mail, Thunderbird sends it. A Thunderbird window may open briefly and close.
 If Companion says Thunderbird did not connect within one minute, close Thunderbird. Then try again. If it still fails, check the add-on as above.
 
-5. Choose the right account
+4. Choose the right account
 Say "List email accounts" to hear saved accounts.
 Say "Switch to" followed by the full email address when you have more than one account of the same type.
-When one address is connected two ways, say the kind first. For example, say "Switch to Thunderbird, sam at gmail dot com".
+When one address is connected two ways, say the kind first. For example, say "Switch to Thunderbird, sam at yahoo dot com".
 Say "Which email account?" to check the current choice. Check it before sending.
 Without a connected account, the app can save a draft but cannot send it.
 
-6. Test a message
+5. Test a message
 Use an address you control or someone who has agreed to help.
 1. Say "Write an email".
 2. Give the test address, a short subject, and one sentence.
@@ -64,25 +58,21 @@ A sent message may not appear in Yahoo's Sent folder. Check arrival with the rec
 If the result is uncertain, check the account and receiver before trying again. This helps avoid sending the same message twice.
 Close and reopen Companion. Check that the saved account still works.
 
-7. Test folders and replies
+6. Test folders and replies
 Use spare messages and empty test folders. Keep important mail out of these tests.
 Read a message and return to its folder. Try reply, reply all, and forward. Check all addresses before sending.
 Choose one message, then several messages. Move them to a test folder and check the result in your email service.
 Try making, renaming, and moving an empty folder. Delete it only after checking the name in the Yes or No question.
-Gmail and Yahoo forwards do not include the original attachments in this version. Some email services also limit folder changes.
+Yahoo forwards do not include the original attachments in this version. Some email services also limit folder changes.
 Read chapters 8, 9, and 10 of the user guide for the full steps.
 
-8. Add Google Contacts if wanted
-Select the correct Gmail account. Say "Connect Google Contacts".
-Google asks separately for permission to use contacts. Check the account and agree only if the owner wants this.
-Say "Sync Google Contacts" to check for changes. Try a spare contact first.
-The app brings in Google contacts and can add new local contacts to Google. It does not delete Google contacts.
-If access is refused, mail stays connected. The local contact list can still be used.
-The app supplier may need to finish the Google service setup. Google Calendar and Google Drive are not connected in this version.
+7. Contacts
+Contacts are saved on this computer, one list for each address. Companion does not connect to Google Contacts. Contacts it brought in from Google before are kept and can be changed in Companion.
+Google Calendar and Google Drive are not connected in this version.
 
-9. Remove access
-To fully remove access, the owner can use the email service's account security page. For Yahoo, remove the app password made for Companion.
+8. Remove access
+To fully remove access, the owner can use the email service's account security page. For Yahoo, remove the app password made for Companion. For an account in Thunderbird, remove it in Thunderbird too if it should stop there.
 A support person can remove a saved connection from this computer. First choose the exact address in Companion. Then close the app.
-The support person runs VoiceCompanion-Diagnostics.exe. Use --disconnect-gmail, --disconnect-outlook, or --disconnect-yahoo for that account type.
-This removes the selected saved account of that type. Other saved accounts stay in place.
+The support person runs VoiceCompanion-Diagnostics.exe with --disconnect-yahoo.
+This removes the selected saved Yahoo account. Other saved accounts stay in place. To remove a Thunderbird account from Companion, say "Remove email account" in Companion.
 Ask the support person to check the result. Removing the local connection does not replace removing access at the email service.

@@ -31,34 +31,13 @@ class AddressBook:
             raise ValueError('Use a short contact name without symbols.')
         address = normalize_recipient(address)
         entries = self.all()
-        if entries.get(name.casefold(), {}).get('source') == 'google':
-            raise ValueError('Edit this imported contact in Google Contacts, then say sync Google Contacts. The local copy was not changed.')
+        # Contacts once brought in from Google Contacts are ordinary local contacts now.
         entries[name.casefold()] = {'name': name, 'address': address}
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix('.writing.json')
         temporary.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding='utf-8')
         temporary.replace(self.path)
         return address
-
-    def import_google(self, contacts):
-        entries = {key:value for key,value in self.all().items() if value.get('source') != 'google'}
-        added = 0
-        for name, address in contacts:
-            try: address = normalize_recipient(address)
-            except (ValueError, TypeError, AttributeError): continue
-            name = (name.strip() if isinstance(name, str) else '') or address
-            key = name.casefold()
-            if key in entries and entries[key].get('address') != address:
-                name = name + ' (' + address + ')'
-                key = name.casefold()
-            if key not in entries:
-                entries[key] = {'name': name, 'address': address, 'source': 'google'}
-                added += 1
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix('.writing.json')
-        temporary.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
-        return added
 
     def delete(self, name):
         entries = self.all()

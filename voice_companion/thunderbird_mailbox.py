@@ -1,7 +1,7 @@
 """Read, organize and send email through Thunderbird, using its own sign-in.
 
-ThunderbirdMailbox has the same methods as the Gmail, Outlook and Yahoo
-mailboxes, so every email screen and voice command works unchanged. It talks
+ThunderbirdMailbox has the same methods as the Yahoo mailbox,
+so every email screen and voice command works unchanged. It talks
 to the Voice Companion Mail Connection add-on through thunderbird_bridge.
 """
 from email.utils import getaddresses

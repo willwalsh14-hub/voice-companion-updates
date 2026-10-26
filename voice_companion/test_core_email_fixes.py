@@ -11,7 +11,7 @@ import companion
 import mail_accounts
 from dictation_text import clean_dictation
 from document_editor import Paragraph, VoiceDocument
-from email_delivery import microsoft_request, outgoing_body
+from email_delivery import outgoing_body
 from email_draft import VoiceEmail, normalize_recipient
 from keyboard_text import paragraph_destination
 from mailbox_access import message_date
@@ -37,7 +37,7 @@ class CompanionTestCase(unittest.TestCase):
 
     def draft(self, **fields):
         draft = VoiceEmail(self.folder / 'Email Drafts', **{'recipient': 'friend@example.com', 'subject': 'Hi',
-                                                            'provider': 'gmail', 'compose_step': 'body', **fields})
+                                                            'provider': 'thunderbird', 'compose_step': 'body', **fields})
         draft.paragraphs = [Paragraph('See you soon.')]
         companion.email_draft = draft
         return draft
@@ -87,7 +87,7 @@ class SendReviewTests(CompanionTestCase):
     def setUp(self):
         super().setUp()
         store = Mock(); store.load.return_value = {'address': 'me@gmail.com'}
-        store.selected.return_value = ('gmail', 'me@gmail.com'); store.accounts.return_value = [('gmail', 'me@gmail.com')]
+        store.selected.return_value = ('thunderbird', 'me@gmail.com'); store.accounts.return_value = [('thunderbird', 'me@gmail.com')]
         for target, value in (('ProtectedStore', Mock(return_value=store)),
                               ('account_token', Mock(return_value=('me@gmail.com', 'tok'))),
                               ('MailSession', Mock()), ('finish_mail_announcement', Mock())):
@@ -104,7 +104,7 @@ class SendReviewTests(CompanionTestCase):
 
     def test_yes_with_recognizer_punctuation_sends(self):
         draft = self.draft()
-        companion.pending_send = (draft.send_hash(), 'gmail', 'me@gmail.com')
+        companion.pending_send = (draft.send_hash(), 'thunderbird', 'me@gmail.com')
         companion.handle('Yes, please.', 'email_draft')
         self.assertTrue(self.submit.called)
         self.assertEqual(companion.document_text(draft), 'See you soon.')
@@ -171,7 +171,7 @@ class SettingsSnapshotTests(CompanionTestCase):
 
         class Store:
             def __init__(self, folder): pass
-            def accounts(self): return [('gmail', 'a@example.com'), ('outlook', 'b@example.com')]
+            def accounts(self): return [('thunderbird', 'a@example.com'), ('yahoo', 'b@yahoo.com')]
             def selected(self): return None
 
         preferences = dict(companion.PREFERENCES)
@@ -214,27 +214,26 @@ class EmailAddressTests(unittest.TestCase):
             self.assertEqual(draft.cc, ['bob@example.com'])
 
 
-class OutlookResponseTests(unittest.TestCase):
+class ResponseFieldTests(unittest.TestCase):
     def test_recipient_typed_in_a_reply_field_is_used(self):
         context = {'action': 'reply', 'source_id': 'AAMk1', 'recipient': 'orig@example.com', 'cc': [],
-                   'subject': 'Re: Hi', 'original_body': '', 'source_address': 'me@outlook.com'}
+                   'subject': 'Re: Hi', 'original_body': '', 'source_address': 'me@example.com'}
         with tempfile.TemporaryDirectory() as folder:
-            draft = VoiceEmail(Path(folder), recipient='orig@example.com', subject='Re: Hi', provider='outlook',
+            draft = VoiceEmail(Path(folder), recipient='orig@example.com', subject='Re: Hi', provider='thunderbird',
                                response_context=dict(context), compose_step='recipient')
             draft.paragraphs = [Paragraph('Hello')]
             with patch.object(companion, 'email_draft', draft), patch.object(companion, 'speak'), \
                     patch.object(companion, 'navigation_key', lambda key, mode: None):
                 companion.commit_email_field_tab({'field': 'recipient', 'value': 'other@example.com', 'backward': False}, 'email_draft')
-            payload = json.loads(microsoft_request(draft, 'tok').data)
-            self.assertEqual(payload['message']['toRecipients'], [{'emailAddress': {'address': 'other@example.com'}}])
+            from email_delivery import message_parts
+            self.assertEqual(message_parts(draft)[0], 'other@example.com')
 
-    def test_outlook_forward_has_no_empty_forwarded_block(self):
+    def test_forward_has_no_empty_forwarded_block(self):
         context = {'action': 'forward', 'source_id': 'AAMk1', 'recipient': '', 'cc': [], 'subject': 'Fwd: Hi',
-                   'original_body': '', 'source_address': 'me@outlook.com'}
+                   'original_body': '', 'source_address': 'me@example.com'}
         with tempfile.TemporaryDirectory() as folder:
-            draft = VoiceEmail(Path(folder), recipient='x@example.com', subject='Fwd: Hi', provider='outlook', response_context=context)
+            draft = VoiceEmail(Path(folder), recipient='x@example.com', subject='Fwd: Hi', provider='yahoo', response_context=context)
             draft.paragraphs = [Paragraph('FYI')]
-            self.assertNotIn('Forwarded message', json.loads(microsoft_request(draft, 'tok').data)['message']['body']['content'])
             self.assertEqual(outgoing_body(draft, 'FYI'), 'FYI')
             draft.response_context = dict(context, original_from='a@b.com', original_body='Original text')
             self.assertIn('Original text', outgoing_body(draft, 'FYI'))
@@ -252,11 +251,11 @@ class MailboxTests(unittest.TestCase):
             # Windows DPAPI is replaced by plain JSON for this check.
             with patch.object(mail_accounts.ProtectedStore, '_seal', staticmethod(lambda data: json.dumps(data).encode())), \
                     patch.object(mail_accounts.ProtectedStore, '_unseal', staticmethod(lambda path: json.loads(path.read_bytes()))):
-                store.save('outlook', {'address': 'me@outlook.com'})
-                store.save('gmail', {'address': 'me@gmail.com'}, select=False)
-                self.assertEqual(store.selected(), ('outlook', 'me@outlook.com'))
-                store.save('gmail', {'address': 'me@gmail.com'})
-                self.assertEqual(store.selected(), ('gmail', 'me@gmail.com'))
+                store.save('yahoo', {'address': 'me@yahoo.com'})
+                store.save('thunderbird', {'address': 'me@gmail.com'}, select=False)
+                self.assertEqual(store.selected(), ('yahoo', 'me@yahoo.com'))
+                store.save('thunderbird', {'address': 'me@gmail.com'})
+                self.assertEqual(store.selected(), ('thunderbird', 'me@gmail.com'))
 
 
 class TextCleanupTests(unittest.TestCase):

@@ -75,7 +75,8 @@ class MediaPlayer:
         html=self.folder/'audio-player.html'
         html.write_text(PLAYER_HTML,encoding='utf-8')
         try:
-            self.playwright=sync_playwright().start()
+            import shared_playwright   # one driver per thread, shared with the web browser
+            self.playwright=shared_playwright.start(self.folder)
             self.context=self.playwright.firefox.launch_persistent_context(
                 str(self.folder/'profile'),headless=False,
                 firefox_user_prefs={'media.autoplay.default':0})
