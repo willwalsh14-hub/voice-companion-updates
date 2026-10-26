@@ -240,13 +240,13 @@
 },
 "awake | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "awake"
 },
 "awake | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "awake"
 },
@@ -258,7 +258,7 @@
 },
 "awake | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "awake"
 },
@@ -660,19 +660,19 @@
 },
 "awake | check gmail": {
 "said": [
-"That account is not connected. Say add account."
+"No Gmail address is connected. Gmail works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
 "awake | check microsoft email": {
 "said": [
-"That account is not connected. Say add account."
+"No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
 "awake | check outlook": {
 "said": [
-"That account is not connected. Say add account."
+"No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
@@ -899,14 +899,13 @@
 },
 "awake | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "awake"
 },
 "awake | connect google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "awake"
 },
@@ -2392,7 +2391,7 @@
 },
 "awake | open gmail inbox": {
 "said": [
-"That account is not connected. Say add account."
+"No Gmail address is connected. Gmail works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
@@ -2464,7 +2463,7 @@
 },
 "awake | open outlook inbox": {
 "said": [
-"That account is not connected. Say add account."
+"No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
@@ -2875,7 +2874,7 @@
 },
 "awake | read gmail": {
 "said": [
-"That account is not connected. Say add account."
+"No Gmail address is connected. Gmail works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
@@ -2887,7 +2886,7 @@
 },
 "awake | read outlook": {
 "said": [
-"That account is not connected. Say add account."
+"No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
@@ -2923,8 +2922,7 @@
 },
 "awake | refresh google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "awake"
 },
@@ -3369,7 +3367,7 @@
 },
 "awake | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "awake"
 },
@@ -3661,8 +3659,7 @@
 },
 "awake | sync google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "awake"
 },
@@ -4559,7 +4556,7 @@
 },
 "document | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "document",
 "text": [
@@ -4568,7 +4565,7 @@
 },
 "document | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "document",
 "text": [
@@ -4586,7 +4583,7 @@
 },
 "document | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "document",
 "text": [
@@ -5540,7 +5537,7 @@
 },
 "document | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "document",
 "text": [
@@ -5549,12 +5546,11 @@
 },
 "document | connect google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"connect google contacts"
 ],
 "screen_after": "document",
 "text": [
-"Hello world. Second sentence."
+"Hello world. Second sentence. connect google contacts"
 ]
 },
 "document | connect regular browser": {
@@ -8522,12 +8518,11 @@
 },
 "document | refresh google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"refresh google contacts"
 ],
 "screen_after": "document",
 "text": [
-"Hello world. Second sentence."
+"Hello world. Second sentence. refresh google contacts"
 ]
 },
 "document | refresh subscriptions": {
@@ -9174,7 +9169,7 @@
 },
 "document | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "document",
 "text": [
@@ -9613,12 +9608,11 @@
 },
 "document | sync google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"sync google contacts"
 ],
 "screen_after": "document",
 "text": [
-"Hello world. Second sentence."
+"Hello world. Second sentence. sync google contacts"
 ]
 },
 "document | take a note": {
@@ -10730,7 +10724,7 @@
 },
 "email_draft | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -10739,7 +10733,7 @@
 },
 "email_draft | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -10757,7 +10751,7 @@
 },
 "email_draft | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -11798,7 +11792,7 @@
 },
 "email_draft | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -11807,12 +11801,11 @@
 },
 "email_draft | connect google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"connect google contacts"
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world."
+"Hello world. connect google contacts"
 ]
 },
 "email_draft | connect regular browser": {
@@ -14839,12 +14832,11 @@
 },
 "email_draft | refresh google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"refresh google contacts"
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world."
+"Hello world. refresh google contacts"
 ]
 },
 "email_draft | refresh subscriptions": {
@@ -15496,7 +15488,7 @@
 },
 "email_draft | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -15935,12 +15927,11 @@
 },
 "email_draft | sync google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"sync google contacts"
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world."
+"Hello world. sync google contacts"
 ]
 },
 "email_draft | take a note": {
@@ -19968,13 +19959,13 @@
 },
 "mailbox | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "mailbox"
 },
 "mailbox | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "mailbox"
 },
@@ -19989,7 +19980,7 @@
 },
 "mailbox | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "mailbox"
 },
@@ -20858,14 +20849,13 @@
 },
 "mailbox | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "mailbox"
 },
 "mailbox | connect google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "mailbox"
 },
@@ -23544,8 +23534,7 @@
 },
 "mailbox | refresh google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "mailbox"
 },
@@ -24153,7 +24142,7 @@
 },
 "mailbox | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "mailbox"
 },
@@ -24517,8 +24506,7 @@
 },
 "mailbox | sync google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "mailbox"
 },
@@ -25408,13 +25396,13 @@
 },
 "note | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "note"
 },
 "note | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "note"
 },
@@ -25426,7 +25414,7 @@
 },
 "note | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "note"
 },
@@ -26063,14 +26051,13 @@
 },
 "note | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "note"
 },
 "note | connect google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"connect google contacts"
 ],
 "screen_after": "note"
 },
@@ -28057,8 +28044,7 @@
 },
 "note | refresh google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"refresh google contacts"
 ],
 "screen_after": "note"
 },
@@ -28494,7 +28480,7 @@
 },
 "note | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "note"
 },
@@ -28786,8 +28772,7 @@
 },
 "note | sync google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"sync google contacts"
 ],
 "screen_after": "note"
 },
@@ -29603,13 +29588,13 @@
 },
 "web | add account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "web"
 },
 "web | add another account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "web"
 },
@@ -29625,7 +29610,7 @@
 },
 "web | add email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "web"
 },
@@ -30592,14 +30577,13 @@
 },
 "web | connect email account": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "web"
 },
 "web | connect google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "web"
 },
@@ -33566,8 +33550,7 @@
 },
 "web | refresh google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "web"
 },
@@ -34222,7 +34205,7 @@
 },
 "web | set up email": {
 "said": [
-"Which email account type? Gmail (G), Outlook or Exchange (O), Yahoo (Y), or Thunderbird (T). Press a letter then Enter, or say the account type. A trusted person can use the normal sign-in page or type private details. Thunderbird uses the accounts already set up in Thunderbird."
+"Which email account type? Thunderbird (T) works with Gmail, Outlook, Microsoft 365 and most other email. Yahoo (Y) uses a Yahoo app password. Press a letter then Enter, or say the account type. Say cancel to stop."
 ],
 "screen_after": "web"
 },
@@ -34610,8 +34593,7 @@
 },
 "web | sync google contacts": {
 "said": [
-"Connecting to Google Contacts. Please complete the Google permission screen if it opens.",
-"Google Contacts did not sync. Select a connected Gmail account before syncing Google Contacts."
+"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
 ],
 "screen_after": "web"
 },
