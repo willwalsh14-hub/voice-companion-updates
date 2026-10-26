@@ -136,7 +136,7 @@ class BrowserAccessibilityTests(unittest.TestCase):
 
 class EmailControlTests(unittest.TestCase):
     def session(self,body):
-        session=MailSession('gmail','unused');session.view='message';session.body_content=body;session.set_format('html');return session
+        session=MailSession('thunderbird','unused');session.view='message';session.body_content=body;session.set_format('html');return session
     def test_image_donation_link_and_aria_button_are_read_as_controls(self):
         body=render_html('<p>Help us.</p><a href="https://example.com/donate"><img src="remote.png" alt="Click to donate"></a><p><a role="button" href="https://example.com/give">Donate now</a></p>')
         self.assertEqual([body[a:b] for a,b,s,u in message_controls(body)],['Click to donate','Donate now'])

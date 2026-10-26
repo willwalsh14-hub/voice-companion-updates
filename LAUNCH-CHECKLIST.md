@@ -23,15 +23,17 @@ pull requests. Update this file as items are finished.
       with NVDA and with JAWS running, to check that speech does not clash.
 
 ### Accounts and store reviews (Will)
-- [ ] **Gmail:** the Google app is in Testing mode, so only listed test users
-      can sign in. Public launch needs Google's verification for Gmail
-      scopes, which includes a third-party security assessment for
-      restricted scopes. Start early; it takes weeks.
-      Alternative in 0.2.153: the Thunderbird account type needs no Google
-      or Microsoft approval. If Thunderbird works well for testers, Gmail and
-      Outlook sign-in can stay test-only and these two items can be dropped.
-- [ ] **Outlook:** complete Microsoft publisher verification for the app
-      registration so users do not see an "unverified" warning.
+- [x] **Gmail and Outlook verification:** no longer needed. Will decided on
+      October 26, 2026 that email works only through Thunderbird and Yahoo.
+      The direct Gmail and Microsoft sign-in, Google Contacts sync and their
+      app registrations were removed (branch `claude/email-thunderbird-only`).
+      Saved Gmail and Microsoft accounts are removed at startup, said once.
+      Will can delete the `GOOGLE_CLIENT_JSON` repository secret, and the
+      Google and Microsoft app registrations, after that release is out.
+- [ ] **Will or a tester (Thunderbird-only email):** on a PC that had a
+      direct Gmail account, start the new version once. Check that it says
+      the Gmail account was removed, then selects the Thunderbird account,
+      and that saved email drafts still open and send from it.
 - [x] **Browser extension:** approved and live on the Chrome Web Store
       (version 0.4.0, October 17, 2026).
 - [x] **Will:** upload extension 0.4.1 (shipped in app 0.2.152-test) to the
@@ -40,14 +42,14 @@ pull requests. Update this file as items are finished.
       their own Chrome or Edge, and for sites that need Google sign-in.
 - [ ] **Will or a tester:** try Thunderbird email on a real PC: install
       Thunderbird, add the email account, install "Voice Companion Mail
-      Connection.xpi" from the app folder (EMAIL SETUP - Helper, section 4),
+      Connection.xpi" from the app folder (EMAIL SETUP - Helper, section 3),
       then in Companion say Add account and choose Thunderbird. Check reading,
       replying, sending, moving and deleting.
 - [ ] **Will or a tester:** on a PC without WebView2 problems, check that web
       pages open in embedded Edge by default and that NVDA or JAWS do not
       fight Companion's speech in that window.
 - [ ] Review `PRIVACY-POLICY.md` against what the app actually sends
-      (OpenAI narration when the AI voice is on, Google and Microsoft mail APIs,
+      (OpenAI narration when the AI voice is on, Yahoo mail servers,
       station and podcast directories, GitHub for updates).
 
 - [ ] **Will or a tester (0.2.158):** try on a real PC:

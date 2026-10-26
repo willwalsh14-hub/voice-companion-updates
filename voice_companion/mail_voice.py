@@ -6,7 +6,7 @@ import traceback
 from pathlib import Path
 
 from mail_accounts import AccountError, account_token
-from mailbox_access import MailboxClient, MailboxError
+from mailbox_access import MailboxError
 from yahoo_mailbox import YahooMailbox
 from reading_navigation import ReadingCursor, reading_request
 from storage import write_text_atomic
@@ -31,13 +31,15 @@ def sender_name(row):
     return row.get('sender_name') or name or (row.get('from','') if '@' not in row.get('from','') else 'Sender name unavailable') or 'Unknown sender'
 
 class MailSession:
-    def __init__(self, provider, folder, client_factory=MailboxClient, progress=None):
+    def __init__(self, provider, folder, client_factory=None, progress=None):
+        """provider is 'thunderbird' or 'yahoo'. client_factory(provider, token), when
+        given, makes the mailbox instead (tests use a stand-in mail server)."""
         self.provider, self.folder = provider, folder
         self.client_factory = client_factory
         self.progress = progress
         self.folders = []
         self.folder_name = 'Inbox'
-        self.folder_id = 'INBOX' if provider == 'gmail' else 'inbox'
+        self.folder_id = 'inbox'
         self.rows = []
         self.next_cursor = None
         self.page_cursor = None
@@ -64,12 +66,14 @@ class MailSession:
 
     def client(self):
         address, token = account_token(self.provider, self.folder)
+        if self.client_factory is not None:
+            return self.client_factory(self.provider, token)
         if self.provider == 'yahoo':
             return YahooMailbox(address, token)
         if self.provider == 'thunderbird':
             from thunderbird_mailbox import ThunderbirdMailbox
             return ThunderbirdMailbox(address, token)
-        return self.client_factory(self.provider, token)
+        raise AccountError('Email works through Thunderbird or Yahoo. Say add account to connect one.')
 
     def list_folders(self):
         return self._choose_folder('open')
@@ -96,14 +100,11 @@ class MailSession:
         if title.casefold() in ('inbox', 'sent', 'sent items', 'drafts', 'draft', 'trash',
                                 'deleted items', 'junk', 'junk email', 'spam', 'bulk', 'all mail', 'archive'):
             raise MailboxError('That standard folder cannot be changed by voice.')
-        if self.provider == 'gmail' and self.client().folder_info(ident).get('type', '').lower() != 'user':
-            raise MailboxError('That Gmail system label cannot be changed.')
-        if self.provider in ('gmail', 'yahoo') and any(path.startswith(title + '/') for path, _ in self.folders):
+        if self.provider == 'yahoo' and any(path.startswith(title + '/') for path, _ in self.folders):
             raise MailboxError('This folder has child folders. Move the children first.')
 
     def _parent_allowed(self, ident):
-        if self.provider == 'gmail' and self.client().folder_info(ident).get('type', '').lower() != 'user':
-            raise MailboxError('A Gmail system label cannot contain a new label.')
+        """Any folder may hold a new folder; the mail service refuses one it cannot."""
 
     @staticmethod
     def _spoken_folder(title):
@@ -145,7 +146,7 @@ class MailSession:
             matches = [item for item in self.folders if item[0].casefold() in ('sent', 'sent mail', 'sent items')
                        or item[1].casefold() in ('sent', 'sentitems')]
         if not matches:
-            # Folder IDs: Gmail (SPAM), Outlook (junkemail) and Yahoo (Bulk) name these differently.
+            # Standard folders have different IDs by mail service; Yahoo calls spam Bulk.
             spam = ('spam', 'junkemail', 'bulk')
             standard = {'drafts': ('draft', 'drafts'), 'draft': ('draft', 'drafts'),
                         'trash': ('trash', 'deleteditems'), 'deleted items': ('trash', 'deleteditems'),
@@ -584,13 +585,13 @@ class MailSession:
                 return self._open_named_folder(match[1])
             if command in ('open inbox', 'go to inbox'):
                 self.folder_name = 'Inbox'
-                self.folder_id = 'INBOX' if self.provider == 'gmail' else 'inbox'
+                self.folder_id = 'inbox'
                 self.previous_cursors.clear()
                 self._clear_marks()
                 return self.list_messages()
             if command in ('back to inbox', 'return to inbox'):
                 self.folder_name = 'Inbox'
-                self.folder_id = 'INBOX' if self.provider == 'gmail' else 'inbox'
+                self.folder_id = 'inbox'
                 self.previous_cursors.clear()
                 self._clear_marks()
                 return self.list_messages()
@@ -808,7 +809,7 @@ class MailSession:
                         return 'Folder deletion canceled because it is not empty.'
                     client.delete_folder(ident)
                 self.folders = []
-                self.folder_name, self.folder_id = 'Inbox', ('INBOX' if self.provider == 'gmail' else 'inbox')
+                self.folder_name, self.folder_id = 'Inbox', 'inbox'
                 self.rows, self.current = [], None
                 self._clear_marks()
                 return 'Folder change completed. Back at Inbox. Say list folders to check it.'

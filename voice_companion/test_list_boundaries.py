@@ -76,7 +76,7 @@ class BoundaryTests(unittest.TestCase):
                 pages={None:([{'id':'a','subject':'First','from':'A'}],'p2'),'p2':([{'id':'b','subject':'Middle','from':'B'}],'p3'),'p3':([{'id':'c','subject':'Last','from':'C'}],None)}
                 return pages[cursor]
         with tempfile.TemporaryDirectory() as folder:
-            session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
+            session=MailSession('yahoo',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
             # Will, October 2026: arrows stop at the page's edges; pages change only on purpose.
             session.list_messages()
             said=session.process('next message')
@@ -92,14 +92,14 @@ class BoundaryTests(unittest.TestCase):
     def test_failed_email_end_preserves_current_page(self):
         from mailbox_access import MailboxError
         with tempfile.TemporaryDirectory() as folder:
-            session=MailSession('gmail',folder);session.rows=[{'id':'a'}];session.current=1;session.next_cursor='p2';session.page_cursor=None;session.previous_cursors=[]
+            session=MailSession('yahoo',folder);session.rows=[{'id':'a'}];session.current=1;session.next_cursor='p2';session.page_cursor=None;session.previous_cursors=[]
             def fail(cursor):session.rows=[];session.current=None;raise MailboxError('Offline')
             session.list_messages=fail
             self.assertIn('Could not reach the end',session.list_boundary(True))
             self.assertEqual(session.rows,[{'id':'a'}]);self.assertEqual(session.current,1);self.assertEqual(session.next_cursor,'p2');self.assertEqual(session.previous_cursors,[])
     def test_repeated_email_cursor_reports_failure_without_looping(self):
         with tempfile.TemporaryDirectory() as folder:
-            session=MailSession('gmail',folder);session.rows=[{'id':'a'}];session.next_cursor='repeat';session.page_cursor=None;session.previous_cursors=[]
+            session=MailSession('yahoo',folder);session.rows=[{'id':'a'}];session.next_cursor='repeat';session.page_cursor=None;session.previous_cursors=[]
             def fetch(cursor):session.rows=[{'id':'a'}];session.next_cursor='repeat';session.page_cursor=cursor
             session.list_messages=fetch
             self.assertIn('could not reach the end',session.list_boundary(True))
@@ -117,7 +117,7 @@ class EverydayWorkflowTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as folder,ExitStack() as stack:
                     for name,value in {'APP':Path(folder),'VERBOSITY':level,'email_draft':None,'mail_session':None,'pending_send':None,'NAMED_LIST':None,'MAIN_MENU_INDEX':None,'SYNTH_PICK_INDEX':None,'VOICE_PICK_INDEX':None,'account_setup':False,'KEYBOARD_NAVIGATION':False,'INPUT_MODE':'mixed'}.items():
                         stack.enter_context(patch.object(app,name,value))
-                    stack.enter_context(patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('gmail','me@example.test')))))
+                    stack.enter_context(patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('thunderbird','me@example.test')))))
                     window=stack.enter_context(patch.object(app,'APP_WINDOW',Mock()))
                     speech=stack.enter_context(patch.object(app,'speak'))
                     self.assertEqual(app.handle('new email','awake',typed=typed),'email_draft')
@@ -154,7 +154,7 @@ class EverydayWorkflowTests(unittest.TestCase):
             def list_messages(self,folder,cursor=None,limit=10):
                 return ([{'id':'a','subject':'First','from':'Sam'}],'page2') if cursor is None else ([{'id':'b','subject':'Last','from':'Alex'}],None)
         with tempfile.TemporaryDirectory() as folder:
-            session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox'
+            session=MailSession('yahoo',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox'
             self.assertNotIn('of list',session.list_messages())
             self.assertNotIn('End of list.',session._focus(1))
             self.assertTrue(session.process('next message').startswith('End of list.'))
@@ -163,14 +163,14 @@ class EverydayWorkflowTests(unittest.TestCase):
             self.assertIn('First',session.process('previous page'));self.assertTrue(session.process('previous message').startswith('Start of list.'))
     def test_singleton_inbox_entry_announces_both_boundaries(self):
         with tempfile.TemporaryDirectory() as folder:
-            session=MailSession('gmail',folder);session.client=lambda:Mock(list_messages=Mock(return_value=([{'id':'a','subject':'Only','from':'Sam'}],None)))
+            session=MailSession('yahoo',folder);session.client=lambda:Mock(list_messages=Mock(return_value=([{'id':'a','subject':'Only','from':'Sam'}],None)))
             self.assertIn('Only',session.list_messages());self.assertTrue(session.process('next message').startswith('End of list.'));self.assertTrue(session.process('previous message').startswith('Start of list.'))
 
     def test_network_failure_preserves_email_page_and_history(self):
         from mailbox_access import MailboxError
         for command in ('next page','previous page'):
             with tempfile.TemporaryDirectory() as folder:
-                session=MailSession('gmail',folder)
+                session=MailSession('yahoo',folder)
                 session.rows=[{'id':'a','subject':'Keep','from':'Sam'}];session.current=1
                 session.next_cursor='next';session.page_cursor='current';session.previous_cursors=[None]
                 session.client=lambda:Mock(list_messages=Mock(side_effect=MailboxError('Offline')))
@@ -184,7 +184,7 @@ class EverydayWorkflowTests(unittest.TestCase):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as folder:
             window=Mock();window.commands=queue.Queue();window.commands.put(('keyboard','Ctrl+N'))
-            with patch.object(app,'APP',Path(folder)),patch.object(app,'APP_WINDOW',window),patch.object(app,'email_draft',None),patch.object(app,'mail_session',Mock(folder_picker=None,folder_choice=None,pending=None)),patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('gmail','me@example.test')))),patch.object(app,'interrupt_speech'),patch.object(app,'sync_app_context'),patch.object(app,'KEYBOARD_BATCH_TEXT',None),patch.object(app,'KEYBOARD_BATCH',False),patch.object(app,'NAMED_LIST',None),patch.object(app,'INPUT_MODE','mixed'):
+            with patch.object(app,'APP',Path(folder)),patch.object(app,'APP_WINDOW',window),patch.object(app,'email_draft',None),patch.object(app,'mail_session',Mock(folder_picker=None,folder_choice=None,pending=None)),patch.object(app,'ProtectedStore',return_value=Mock(selected=Mock(return_value=('thunderbird','me@example.test')))),patch.object(app,'interrupt_speech'),patch.object(app,'sync_app_context'),patch.object(app,'KEYBOARD_BATCH_TEXT',None),patch.object(app,'KEYBOARD_BATCH',False),patch.object(app,'NAMED_LIST',None),patch.object(app,'INPUT_MODE','mixed'):
                 self.assertEqual(app.process_keyboard_batch('mailbox'),'email_draft')
                 window.feedback.assert_called_once_with('New email. To field.')
 
@@ -227,7 +227,7 @@ class EmailPageKeyTests(unittest.TestCase):
                        'p2':([{'id':'b1','subject':'Three','from':'C'},{'id':'b2','subject':'Four','from':'D'}],None)}
                 return pages[cursor]
         folder=tempfile.mkdtemp();self.addCleanup(__import__('shutil').rmtree,folder,True)
-        session=MailSession('gmail',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
+        session=MailSession('yahoo',folder);session.client=lambda:Client();session.folder_id='inbox';session.folder_name='Inbox';session.list_size=10
         session.list_messages();return session
 
     def test_home_and_end_stay_on_the_page(self):

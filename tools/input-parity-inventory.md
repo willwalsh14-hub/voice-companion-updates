@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 609
+- Actions inventoried: 606
 - Already had both ways: 482
-- Gaps found: 127
-- Gaps fixed (Added): 119
+- Gaps found: 124
+- Gaps fixed (Added): 116
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1241,12 +1241,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the button, Enter
 - Status: Both
 
-### Connect Google Contacts
-
-- Voice: "Connect google contacts"
-- Keyboard: Alt+O, arrows to Email options, Tab to the button, Enter
-- Status: Added: Options button
-
 ## Word processor options
 
 ### Font for new documents
@@ -1927,12 +1921,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Add contact ..."
 - Keyboard: Alt, 5, 3
-- Status: Added: Alt menu path
-
-### Connect Google Contacts
-
-- Voice: "Connect google contacts"
-- Keyboard: Alt, 5, 4
 - Status: Added: Alt menu path
 
 ## Alt menu, Email: Accounts
@@ -3087,10 +3075,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, Email options, Add an email account
 - Status: Both
 
-### Choose Gmail, Outlook, Yahoo or Thunderbird
+### Choose Thunderbird (for Gmail, Outlook and others) or Yahoo
 
 - Voice: Say the service name
-- Keyboard: G, O, Y or T, or arrows, Enter
+- Keyboard: T or Y, or arrows, Enter
 - Status: Both
 
 ### Thunderbird setup
@@ -3128,12 +3116,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Add contact Bob as bob@example.com"
 - Keyboard: Ctrl+Shift+K in the inbox, type, Enter
 - Status: Added: Ctrl+Shift+K
-
-### Connect Google Contacts
-
-- Voice: "Connect Google Contacts"
-- Keyboard: Alt+O, Email options, Connect Google Contacts
-- Status: Added: Options button
 
 ## Email: write
 

@@ -107,14 +107,13 @@ HAND = [
     ('Notepad', 'Start or end of the typing line', 'N/A', 'Home, End in the typing box', 'N/A - speech always adds to the end of the note'),
     # Email setup
     ('Email setup', 'Add an account', '"Add account"', 'Alt+O, Email options, Add an email account', 'Both'),
-    ('Email setup', 'Choose Gmail, Outlook, Yahoo or Thunderbird', 'Say the service name', 'G, O, Y or T, or arrows, Enter', 'Both'),
+    ('Email setup', 'Choose Thunderbird (for Gmail, Outlook and others) or Yahoo', 'Say the service name', 'T or Y, or arrows, Enter', 'Both'),
     ('Email setup', 'Thunderbird setup', '"Thunderbird"', 'T or arrows to Thunderbird, Enter', 'Both'),
     ('Email setup', 'List, switch or check the account', '"List email accounts", "Switch to Yahoo", "Which email account?"', 'Alt+O, Email options, Sending account', 'Both'),
     ('Email setup', 'Switch account from a list', '"Switch account", then the number, name or address', 'Email menu: Alt, 6, 2; arrows, Enter', 'Added: account list to choose from'),
     ('Email setup', 'Remove an email account', '"Remove email account", then "Yes"', 'Email menu: Alt, 6, 4; arrows, Enter, Y', 'Added: voice and Alt menu item'),
     ('Email setup', 'List contacts / find a contact', '"List contacts", "Find contact Bob"', 'Ctrl+K in email, arrows, Enter', 'Added: Ctrl+K'),
     ('Email setup', 'Add a contact', '"Add contact Bob as bob@example.com"', 'Ctrl+Shift+K in the inbox, type, Enter', 'Added: Ctrl+Shift+K'),
-    ('Email setup', 'Connect Google Contacts', '"Connect Google Contacts"', 'Alt+O, Email options, Connect Google Contacts', 'Added: Options button'),
     # Write email
     ('Email: write', 'New message', '"Write an email", "New message"', 'Ctrl+N in email', 'Both'),
     ('Email: write', 'Move between To, CC, BCC, Subject, body', '"Go to CC", "Go to Subject", ...', 'Tab, Shift+Tab', 'Both'),
@@ -235,8 +234,7 @@ HAND = [
 ]
 
 # Catalog rows whose status is not plain Both: (area, action) -> status.
-ADDED = {('Email options', 'Connect Google Contacts'): 'Added: Options button',
-         ('Word processor document: More commands', 'Run any document voice command'):
+ADDED = {('Word processor document: More commands', 'Run any document voice command'):
              'N/A - this item is the keyboard way to type any spoken command'}
 ADDED_AREAS = {'Radio station actions': 'Added: voice (say the action name)'}
 

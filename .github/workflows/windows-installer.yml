@@ -39,15 +39,6 @@ jobs:
         run: |
           choco install innosetup --yes --no-progress
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
-      - name: Restore distributor Gmail registration
-        shell: pwsh
-        env:
-          GOOGLE_CLIENT_JSON: ${{ secrets.GOOGLE_CLIENT_JSON }}
-        run: |
-          if (-not $env:GOOGLE_CLIENT_JSON) { throw 'Add the distributor Desktop OAuth registration as the GOOGLE_CLIENT_JSON repository secret before building.' }
-          $registration = $env:GOOGLE_CLIENT_JSON | ConvertFrom-Json
-          if (-not $registration.installed.client_id -or -not $registration.installed.client_secret) { throw 'The Gmail Desktop OAuth registration is invalid.' }
-          [System.IO.File]::WriteAllText((Join-Path $PWD 'voice_companion/google-client.json'), $env:GOOGLE_CLIENT_JSON)
       - name: Restore pinned eSpeak runtime and corresponding source
         shell: pwsh
         run: |

@@ -325,7 +325,7 @@ class AddOnTests(SetupCase):
         step = flow.answer('install', False)
         self.assertFalse((folder / 'extensions').exists())
         self.assertFalse((folder / 'user.js').exists())
-        self.assertIn('Email Setup Helper, section 4', step.message)
+        self.assertIn('Email Setup Helper, section 3', step.message)
 
     def test_install_failure_is_explained(self):
         folder = self.profile()

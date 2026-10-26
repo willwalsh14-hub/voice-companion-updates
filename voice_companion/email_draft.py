@@ -107,6 +107,23 @@ class VoiceEmail(VoiceDocument):
         super().checkpoint()
         self.last_metadata = (self.recipient, self.subject, self.provider)
 
+    def move_to_account(self, provider):
+        """Send this draft from another kind of account (Gmail and Microsoft were removed).
+
+        A reply or forward cannot point at a message in the removed mailbox, so it
+        becomes a new email to the same people with the same subject. A forward
+        keeps the forwarded text, added at the end so the review reads it."""
+        context = self.response_context or {}
+        if context.get('action') == 'forward' and (context.get('original_from') or context.get('original_body')):
+            lines = ['Forwarded message:', 'From: ' + str(context.get('original_from', '')),
+                     'Subject: ' + str(context.get('original_subject', ''))]
+            body = str(context.get('original_body', '') or '')
+            lines += [part.strip() for part in re.split(r'\n\s*\n', body) if part.strip()]
+            self.paragraphs = [p for p in self.paragraphs if p.text.strip()] + [Paragraph(text=line) for line in lines]
+        self.response_context = {}
+        self.provider = provider
+        self.save()
+
     @property
     def path(self):
         safe = re.sub(r'[^\w .-]+', '', self.title).strip(' .')[:80] or 'Untitled'
@@ -288,7 +305,7 @@ class VoiceEmail(VoiceDocument):
         if command.startswith(('type literally ', 'dictate literally ')):
             literal = re.sub(r'^(?:type|dictate) literally\s+', '', text, flags=re.I)
             return self.append_text(literal, literal=True)
-        if command.startswith(('use gmail', 'use outlook', 'use yahoo')):
+        if command.startswith('use yahoo'):
             provider = command.split()[1]
             self.checkpoint()
             self.provider = provider

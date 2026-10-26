@@ -50,13 +50,6 @@ class SecurityPrivacyTests(unittest.TestCase):
             app.speak('PRIVATE DOCUMENT TEXT')
         self.assertNotIn('PRIVATE DOCUMENT TEXT',out.getvalue())
 
-    def test_mail_paging_cannot_send_token_to_a_different_port_or_embedded_user(self):
-        from mailbox_access import MailboxClient,MailboxError
-        opener=Mock();client=MailboxClient('outlook','TOKEN',opener)
-        for url in ('https://graph.microsoft.com:8443/v1.0/me/messages','https://user:pass@graph.microsoft.com/v1.0/me/messages'):
-            with self.subTest(url=url),self.assertRaises(MailboxError):client._call(url)
-        opener.assert_not_called()
-
 if __name__=='__main__':unittest.main()
 
 class ThemeAndCleanupTests(unittest.TestCase):

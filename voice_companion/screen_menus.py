@@ -53,8 +53,7 @@ MENUS = {
         ('Drafts and contacts', [
             ('Email drafts', 'D', 'open email draft'),
             ('List contacts', 'P', 'list contacts'),
-            ('Add contact', '', 'add contact {value}'),
-            ('Connect Google Contacts', '', 'connect google contacts')]),
+            ('Add contact', '', 'add contact {value}')]),
         ('Accounts', [
             ('Add account', '', 'add account'),
             ('Switch account', '', 'switch account'),

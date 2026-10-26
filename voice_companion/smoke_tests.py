@@ -43,17 +43,6 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         self.assertIn('Set 1.75', spoken.call_args.args[0])
         self.assertEqual(companion.document.paragraphs[0].line_spacing_twips, 420)
 
-    def test_packaged_google_registration_is_detected_without_user_setup(self):
-        import mail_accounts
-        with tempfile.TemporaryDirectory() as folder:
-            installation = Path(folder) / 'installed'
-            installation.mkdir()
-            (installation / 'google-client.json').write_text('{"installed":{}}', encoding='utf-8')
-            with patch.object(sys, 'frozen', True, create=True), patch.object(
-                    sys, 'executable', str(installation / 'VoiceCompanion.exe')):
-                config = mail_accounts.registration(Path(folder) / 'user-data')
-            self.assertEqual(config['google_credentials_file'], str(installation / 'google-client.json'))
-
     def test_setup_keeps_upgrade_identity_and_location(self):
         setup = (Path(__file__).parent / 'VoiceCompanion.iss').read_text(encoding='utf-8')
         self.assertIn('AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}', setup)
@@ -331,25 +320,29 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertIn('add account', speech.call_args.args[0])
             self.assertEqual(companion.handle('add account', 'awake'), 'awake')
             self.assertIn('Which email account type', speech.call_args.args[0])
-            with patch.object(companion, 'connect', return_value='one@example.com') as connect:
+            # Gmail works through Thunderbird: choosing it starts adding a Thunderbird account.
+            with patch.object(companion, 'connect') as connect, patch.object(
+                    companion, 'start_thunderbird_add', return_value='awake') as add:
                 self.assertEqual(companion.handle('Gmail', 'awake'), 'awake')
-                connect.assert_called_once_with('gmail', self.root, graphical=True)
+                add.assert_called_once_with('awake')
+                connect.assert_not_called()
             store = ProtectedStore(self.root)
-            store.save('gmail', {'address':'one@example.com'})
-            store.save('outlook', {'address':'two@example.com'})
+            store.save('thunderbird', {'address':'one@example.com'})
+            store.save('yahoo', {'address':'two@yahoo.com'})
             self.assertEqual(companion.handle('switch to one at example dot com', 'awake',typed=True), 'awake')
-            self.assertEqual(store.selected(), ('gmail','one@example.com'))
+            self.assertEqual(store.selected(), ('thunderbird','one@example.com'))
             self.assertEqual(companion.handle('write an email', 'awake'), 'email_draft')
-            self.assertEqual(companion.email_draft.provider, 'gmail')
-            self.assertEqual(companion.handle('switch to Outlook', 'email_draft'), 'email_draft')
-            self.assertEqual(companion.email_draft.provider, 'outlook')
+            self.assertEqual(companion.email_draft.provider, 'thunderbird')
+            self.assertEqual(companion.handle('switch to Yahoo', 'email_draft'), 'email_draft')
+            self.assertEqual(companion.email_draft.provider, 'yahoo')
 
-    def test_connect_my_gmail_starts_account_authorization(self):
-        with patch.object(companion, 'speak') as speech, patch.object(
-                companion, 'connect', return_value='david@example.com') as connect:
+    def test_connect_my_gmail_adds_it_in_thunderbird(self):
+        with patch.object(companion, 'speak') as speech, patch.object(companion, 'connect') as connect, patch.object(
+                companion, 'start_thunderbird_add', return_value='awake') as add:
             self.assertEqual(companion.handle('Connect my Gmail', 'awake'), 'awake')
-            connect.assert_called_once_with('gmail', self.root, graphical=True)
-            self.assertIn('connected and selected', speech.call_args.args[0])
+            connect.assert_not_called()
+            add.assert_called_once_with('awake')
+            self.assertEqual(speech.call_args.args[0], 'Gmail works through Thunderbird.')
 
     def test_build_version_is_reported_by_diagnostics(self):
         output = io.StringIO()

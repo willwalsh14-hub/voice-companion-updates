@@ -1,14 +1,13 @@
-import base64,unittest,tempfile,queue
+import unittest,tempfile,queue
 from pathlib import Path
 from email.message import EmailMessage
-from unittest.mock import patch,Mock
-from urllib.error import HTTPError
+from unittest.mock import patch
 from email_reader import render_html,plain_body,safe_link
-from mailbox_access import gmail_body
+from yahoo_mailbox import message_body
 from email_draft import VoiceEmail
 from document_editor import Paragraph
 import companion as app
-from email_delivery import submit,DeliveryError
+from email_delivery import DeliveryError
 class EmailReaderTests(unittest.TestCase):
     def test_html_has_links_lists_and_styles_without_source_whitespace(self):
         body=render_html('<html><head><style>hidden</style></head><body>\n <div><p>Hello <b>friend</b></p>\n <ul><li>First</li><li><a href="https://example.com">Visit</a></li></ul></div><script>evil</script></body></html>')
@@ -19,7 +18,9 @@ class EmailReaderTests(unittest.TestCase):
         self.assertEqual(plain_body('\r\nOne\r\n \r\n\r\n\r\nTwo\r\n'),'One\n\nTwo')
     def test_mime_prefers_html_and_preserves_link(self):
         msg=EmailMessage();msg.set_content('plain');msg.add_alternative('<p><a href="https://example.com">HTML</a></p>',subtype='html')
-        body=gmail_body(base64.urlsafe_b64encode(msg.as_bytes()).decode())
+        from email import policy
+        from email.parser import BytesParser
+        body=message_body(BytesParser(policy=policy.default).parsebytes(msg.as_bytes()))
         self.assertEqual(body,'HTML');self.assertEqual(body.spans[0][3],'https://example.com')
     def test_links_only_allow_expected_schemes(self):
         for url in ('javascript:alert(1)','file:///c:/secret','data:text/html,hi',''):self.assertFalse(safe_link(url))
@@ -32,7 +33,7 @@ class EmailReaderTests(unittest.TestCase):
         self.assertEqual(session.values['email_format'],'plain text')
     def test_update_and_send_confirmation_keys(self):
         for mode in ('update_offer','email_draft'):
-            with patch.object(app,'pending_send',('hash','gmail','address')),patch.object(app,'CONFIRM_CHOICE','yes'),patch.object(app,'speak'),patch.object(app,'interrupt_speech'):
+            with patch.object(app,'pending_send',('hash','thunderbird','address')),patch.object(app,'CONFIRM_CHOICE','yes'),patch.object(app,'speak'),patch.object(app,'interrupt_speech'):
                 self.assertEqual(app.navigation_key('y',mode),'yes')
                 self.assertEqual(app.navigation_key('n',mode),'no')
                 self.assertIsNone(app.navigation_key('Tab',mode));self.assertEqual(app.CONFIRM_CHOICE,'no')
@@ -54,13 +55,13 @@ class EmailReaderTests(unittest.TestCase):
     def test_expired_signin_is_not_recorded_as_an_attempt(self):
         from mail_accounts import AccountError
         with tempfile.TemporaryDirectory() as folder:
-            draft=VoiceEmail(Path(folder),provider='gmail',recipient='friend@example.com',subject='Test');draft.paragraphs=[Paragraph(text='Hello')]
-            with patch.object(app,'email_draft',draft),patch.object(app.ProtectedStore,'load',return_value={'address':'me@example.com'}),patch.object(app,'account_token',side_effect=AccountError('Gmail sign-in expired. Reconnect the account.')),patch.object(app,'speak') as speech:
+            draft=VoiceEmail(Path(folder),provider='thunderbird',recipient='friend@example.com',subject='Test');draft.paragraphs=[Paragraph(text='Hello')]
+            with patch.object(app,'email_draft',draft),patch.object(app.ProtectedStore,'load',return_value={'address':'me@example.com'}),patch.object(app,'account_token',side_effect=AccountError('Thunderbird sign-in expired. Reconnect the account.')),patch.object(app,'speak') as speech:
                 app.pending_send=None;app.handle('send it','email_draft');app.handle('yes','email_draft')
                 self.assertEqual(draft.last_attempt_hash,'');self.assertIn('sign-in expired',speech.call_args.args[0]);self.assertIn('It has not been sent',speech.call_args.args[0])
     def test_definite_rejection_releases_attempt_block(self):
         with tempfile.TemporaryDirectory() as folder:
-            draft=VoiceEmail(Path(folder),provider='gmail',recipient='friend@example.com',subject='Test');draft.paragraphs=[Paragraph(text='Hello')]
+            draft=VoiceEmail(Path(folder),provider='thunderbird',recipient='friend@example.com',subject='Test');draft.paragraphs=[Paragraph(text='Hello')]
             with patch.object(app,'email_draft',draft),patch.object(app.ProtectedStore,'load',return_value={'address':'me@example.com'}),patch.object(app,'account_token',return_value=('me@example.com','token')),patch.object(app,'submit',side_effect=DeliveryError('Permission denied',uncertain=False)) as sender,patch.object(app,'speak') as speech:
                 app.pending_send=None;app.handle('send it','email_draft');app.handle('yes','email_draft')
                 self.assertEqual(draft.last_attempt_hash,'')
@@ -69,14 +70,8 @@ class EmailReaderTests(unittest.TestCase):
     def test_format_switch_uses_original_plain_part(self):
         from mail_voice import MailSession
         body=render_html('<p>HTML</p>');body.plain='Original plain'
-        session=MailSession('gmail','unused');session.body_content=body
+        session=MailSession('thunderbird','unused');session.body_content=body
         session.set_format('html');self.assertEqual(session.body_text,'HTML')
         session.set_format('plain text');self.assertEqual(session.body_text,'Original plain')
         session.set_format('html');self.assertEqual(session.body_text.spans,body.spans)
-    def test_permission_rejection_is_definite(self):
-        with tempfile.TemporaryDirectory() as folder:
-            draft=VoiceEmail(Path(folder),provider='gmail',recipient='friend@example.com',subject='Test');draft.paragraphs=[Paragraph(text='Hello')]
-            with self.assertRaises(DeliveryError) as caught:
-                submit('gmail',draft,'token',opener=Mock(side_effect=HTTPError('url',403,'Forbidden',{},None)))
-            self.assertFalse(caught.exception.uncertain);self.assertIn('permission',str(caught.exception))
 if __name__=='__main__':unittest.main()
