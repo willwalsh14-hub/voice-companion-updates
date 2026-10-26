@@ -1,18 +1,27 @@
 {
-  "version": "0.2.168-test",
+  "version": "0.2.169-test",
   "status": "Testing build",
-  "date": "October 25, 2026",
-  "baseline": "0.2.167-test",
-  "scope": "Voice Companion no longer seems frozen when it starts with the microphone off.",
+  "date": "October 26, 2026",
+  "baseline": "0.2.168-test",
+  "scope": "Document reader has its own menu, File manager can start where you choose, downloaded songs play, and email works through Thunderbird or Yahoo.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Problem reports",
+          "title": "Document reader menu",
           "details": [
-            "If Voice Companion ever stops responding, it now writes down where it got stuck.",
-            "This helps fix the problem quickly. You do not need to do anything."
+            "Document reader is now on the main menu.",
+            "Its menu lets you open a file, find one you read before, or change how it reads.",
+            "Control+O opens a document. Control+R lists the ones you read last.",
+            "In Document reader options, you can stop a file from being read aloud as soon as it opens."
+          ]
+        },
+        {
+          "title": "Where File manager starts",
+          "details": [
+            "In File manager options, choose where File manager starts.",
+            "Pick the drive list, C drive, Documents, Desktop, Downloads, or Music. Or type a folder."
           ]
         }
       ]
@@ -21,12 +30,19 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Starting with the microphone off",
+          "title": "Downloads",
           "details": [
-            "When the microphone is off, Voice Companion now starts on the main menu. The arrow keys work right away.",
-            "It no longer tells you to say wake up, since it cannot hear you.",
-            "It also takes the keyboard back when it starts, even if Thunderbird opened first.",
-            "If you say no to an update, you go to the main menu."
+            "A song or video you downloaded now plays when you press Enter on it in Downloads.",
+            "Before, it would not play while a web page was open. This works in Chrome and in the built-in browser."
+          ]
+        },
+        {
+          "title": "Email through Thunderbird or Yahoo",
+          "details": [
+            "Email now works through Thunderbird, or through a Yahoo account.",
+            "Gmail, Outlook, and Microsoft 365 work through Thunderbird.",
+            "If Voice Companion had its own Gmail or Outlook account, it is removed. You hear what to do next.",
+            "Your drafts and contacts are kept."
           ]
         }
       ]
