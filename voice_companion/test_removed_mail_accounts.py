@@ -240,6 +240,105 @@ class StartupAnnouncementTests(CompanionTestCase):
             companion.retire_old_mail_accounts()
         self.assertEqual(self.said, [])
 
+    def test_main_runs_it_at_startup(self):
+        import inspect
+        source = inspect.getsource(companion.main)
+        self.assertIn('retire_old_mail_accounts()', source)
+        # After the update result, before the listening loop starts.
+        self.assertLess(source.index("result_file = APP / 'update-result.json'"), source.index('retire_old_mail_accounts()'))
+        self.assertLess(source.index('retire_old_mail_accounts()'), source.index('while True:'))
+
+
+class OldDraftTests(CompanionTestCase):
+    """Drafts saved with a removed Gmail or Outlook connection are never lost."""
+
+    def setUp(self):
+        super().setUp()
+        for item in plain_store():
+            item.start(); self.addCleanup(item.stop)
+        for target in ('MailSession', 'finish_mail_announcement'):
+            p = patch.object(companion, target); p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'submit', return_value='accepted'); self.submit = p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'account_token', return_value=('will@gmail.com', {'address': 'will@gmail.com'}))
+        p.start(); self.addCleanup(p.stop)
+        self.store = ProtectedStore(self.folder)
+
+    def connect_thunderbird(self):
+        self.store.save('thunderbird', {'address': 'will@gmail.com', 'account_id': 'a', 'identity_id': 'i'})
+
+    def reopened(self, draft):
+        from email_draft import VoiceEmail
+        return VoiceEmail.open_existing(self.folder / 'Email Drafts', draft.title)
+
+    def test_new_email_draft_is_sent_from_the_thunderbird_account(self):
+        self.connect_thunderbird()
+        draft = self.draft(provider='gmail'); draft.save()
+        companion.handle('send email', 'email_draft', typed=True)
+        self.assertTrue(self.said[-1].startswith('Review before sending. From Thunderbird, will@gmail.com. To friend@example.com. '
+                                                 'Subject Hi. Message: See you soon.'), self.said[-1])
+        self.assertEqual(self.reopened(draft).provider, 'thunderbird')
+        companion.handle('yes', 'email_draft')
+        self.submit.assert_called_once()
+        self.assertEqual(self.submit.call_args.args[0], 'thunderbird')
+
+    def test_reply_becomes_a_new_email_to_the_same_person(self):
+        self.connect_thunderbird()
+        draft = self.draft(provider='gmail', subject='Re: Lunch', response_context={
+            'action': 'reply', 'source_id': 'gmail-id', 'thread_id': 'thread', 'message_id': '<a@b>',
+            'recipient': 'friend@example.com', 'cc': [], 'subject': 'Re: Lunch', 'source_address': 'will@gmail.com'})
+        draft.save()
+        companion.handle('send email', 'email_draft', typed=True)
+        self.assertIn('From Thunderbird, will@gmail.com. To friend@example.com. Subject Re: Lunch.', self.said[-1])
+        self.assertNotIn('original message', self.said[-1])
+        saved = self.reopened(draft)
+        self.assertEqual((saved.provider, saved.response_context, saved.recipient), ('thunderbird', {}, 'friend@example.com'))
+
+    def test_forward_keeps_the_forwarded_text(self):
+        self.connect_thunderbird()
+        draft = self.draft(provider='gmail', subject='Fwd: Plans', response_context={
+            'action': 'forward', 'source_id': 'gmail-id', 'original_from': 'Sam <sam@example.com>',
+            'original_subject': 'Plans', 'original_body': 'Meet at nine.\n\nBring maps.'})
+        draft.save()
+        companion.handle('send email', 'email_draft', typed=True)
+        self.assertIn('Message: See you soon.', self.said[-1])
+        self.assertIn('Forwarded message:', self.said[-1])
+        self.assertEqual([p.text for p in self.reopened(draft).paragraphs],
+                         ['See you soon.', 'Forwarded message:', 'From: Sam <sam@example.com>', 'Subject: Plans',
+                          'Meet at nine.', 'Bring maps.'])
+
+    def test_an_old_draft_already_sent_is_not_sent_again(self):
+        self.connect_thunderbird()
+        draft = self.draft(provider='gmail')
+        draft.last_accepted_hash = draft.send_hash(); draft.save()
+        companion.handle('send email', 'email_draft', typed=True)
+        self.assertIn('This same draft was already attempted.', self.said[-1])
+        self.assertEqual(self.reopened(draft).provider, 'gmail')
+        companion.handle('yes', 'email_draft')
+        self.submit.assert_not_called()
+
+    def test_without_an_account_the_draft_is_kept_and_nothing_is_sent(self):
+        draft = self.draft(provider='outlook'); draft.save()
+        companion.handle('send email', 'email_draft', typed=True)
+        self.assertEqual(self.said[-1], 'No email account is connected. Say add account to connect one in Thunderbird. '
+                                        'The draft is saved locally. It has not been sent.')
+        saved = self.reopened(draft)
+        self.assertEqual((saved.provider, [p.text for p in saved.paragraphs]), ('outlook', ['See you soon.']))
+        companion.handle('yes', 'email_draft')
+        self.submit.assert_not_called()
+
+    def test_canceling_an_old_draft_opens_the_chosen_inbox(self):
+        self.connect_thunderbird()
+        draft = self.draft(provider='gmail')
+        self.assertEqual(companion.handle('cancel', 'email_draft'), 'mailbox')
+        companion.MailSession.assert_called_once_with('thunderbird', self.folder, progress=companion.mail_progress)
+
+    def test_switch_account_on_an_old_reply_is_allowed(self):
+        self.store.save('yahoo', {'address': 'pat@yahoo.com', 'app_password': 'x'})
+        draft = self.draft(provider='gmail', response_context={'action': 'reply', 'source_id': 'gmail-id'})
+        companion.handle('switch to pat at yahoo dot com', 'email_draft', typed=True)
+        self.assertEqual(self.said[-1], 'Switched to Yahoo, pat@yahoo.com.')
+        self.assertEqual((draft.provider, draft.response_context), ('yahoo', {}))
+
 
 if __name__ == '__main__':
     unittest.main()

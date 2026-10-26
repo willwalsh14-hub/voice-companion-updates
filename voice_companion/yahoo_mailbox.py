@@ -8,7 +8,7 @@ anything could have changed, the request is tried once more.
 
 Yahoo's own folders are Inbox, Sent, Draft, Trash, Bulk (spam) and Archive.
 They are named here the way Yahoo Mail shows them (Drafts, Spam), so the same
-spoken commands work as on Gmail and Outlook.
+spoken commands work as on Thunderbird.
 """
 import base64
 import imaplib

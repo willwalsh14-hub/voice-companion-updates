@@ -2560,6 +2560,14 @@ def account_picker_words():
     return account_picker
 
 
+def connected_selection():
+    """The chosen (provider, address), or None; never raises for a damaged or locked file."""
+    try:
+        return ProtectedStore(APP).selected()
+    except (TypeError, AccountError, OSError):
+        return None
+
+
 def connected_accounts(store):
     """The connected (provider, address) pairs; none when the saved accounts cannot be read."""
     try:
@@ -3555,6 +3563,10 @@ def _handle(text, mode, typed=False):
         speak('Draft canceled without saving.' if discarded else
               'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
         finish_mail_announcement()
+        if mail_session is None and provider in REMOVED_MAIL_PROVIDERS:
+            # A draft from a removed Gmail or Microsoft connection: back to the chosen account.
+            chosen = connected_selection()
+            provider = chosen[0] if chosen else provider
         if mail_session is None and provider in MAIL_PROVIDERS:
             mail_session = MailSession(provider, APP, progress=mail_progress)
         if mail_session is not None:
@@ -3988,12 +4000,14 @@ def _handle(text, mode, typed=False):
                 provider = email_draft.provider
                 if provider in REMOVED_MAIL_PROVIDERS:
                     # A draft started with a removed Gmail or Microsoft connection goes
-                    # from the chosen account; the review below says which one.
+                    # from the chosen account; the review below says which one. The
+                    # "already attempted" check above used its old fingerprint first.
                     chosen = ProtectedStore(APP).selected()
                     if not chosen:
                         raise AccountError('No email account is connected. Say add account to connect one in Thunderbird.')
                     email_draft.move_to_account(chosen[0])
                     provider = email_draft.provider
+                    recipient, subject, body = message_parts(email_draft)
                 if provider not in MAIL_PROVIDERS:
                     raise AccountError('Choose a connected email account first. The draft has not been sent.')
                 address = ProtectedStore(APP).load(provider)['address']
