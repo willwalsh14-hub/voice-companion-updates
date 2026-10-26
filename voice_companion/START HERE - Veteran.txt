@@ -754,12 +754,15 @@ If you have no saved notes yet, Companion tells you how to start one.
 10. SET UP EMAIL
 
 10.1 Connect an email account
-Connect an account before you rely on Companion to send or sort email.
+Connect an account before you rely on Companion to send or sort email. Companion uses email in two ways:
+- Thunderbird, for Gmail, Outlook, Microsoft 365, and most other email.
+- Yahoo, for a Yahoo address.
 1. Say "Add account". Or press Alt+O, choose Email options, then choose Add an email account.
-2. Choose your email service: Gmail, Outlook or Exchange, Yahoo, or Thunderbird. Say its name, or press G, O, Y, or T, then Enter.
-3. Follow the sign-in prompts. Ask your helper if you need help with the sign-in page.
+2. Choose Thunderbird or Yahoo. Say its name, or press T or Y, then Enter.
+3. Follow the steps Companion gives. Ask your helper if you need help with a sign-in page.
 4. Open the inbox and send a test message to someone you know.
-Gmail and Outlook use the usual Google or Microsoft sign-in page. Work or school accounts may need approval from your organization.
+You can also say "Add Gmail account" or "Add Outlook account". Companion adds it to Thunderbird. See part 10.4.
+Older versions of Companion could connect Gmail and Outlook by themselves. They now work only through Thunderbird. If you had one of those accounts, Companion removes it the first time it starts and tells you. Your drafts and contacts are kept. To use that address again, say "Add account" and choose Thunderbird.
 Yahoo uses an app password, not your normal password. To make one, sign in to Yahoo, open Account security, and choose Generate app password. Copy it. Then follow these steps.
 1. Choose Yahoo. Companion asks for your email address.
 2. Type or say the address, then press Enter.
@@ -779,13 +782,13 @@ If account setup is not available, ask your helper to check the app's email setu
 - To hear the account in use, say "Which email account?". Check it before you send mail.
 To switch to another account:
 1. Say "Switch account". Or in email, press Alt, 6, then 2.
-2. You hear each account, such as "Gmail, sam@gmail.com, 2 of 3". The account in use comes first and is called current.
-3. Press Up Arrow or Down Arrow, then Enter. Or say "Next" and "That one". You can also say the number, the service, or the address, such as "2", "Yahoo", or "sam at gmail dot com".
+2. You hear each account, such as "Thunderbird, sam@gmail.com, 2 of 3". The account in use comes first and is called current.
+3. Press Up Arrow or Down Arrow, then Enter. Or say "Next" and "That one". You can also say the number, the service, or the address, such as "2", "Yahoo", "Gmail", or "sam at gmail dot com".
 Companion switches to that account and opens its inbox. To keep the account you have, say "Cancel", or press Escape.
-You can also say "Switch to", followed by the service name, such as "Switch to Yahoo". This works when only one account of that type is connected. With two accounts of the same type, say "Switch to" and the full address.
-"Check Gmail", "Check Outlook", and "Check Yahoo" open that account when only one of its type is connected.
+You can also say "Switch to", followed by the service name, such as "Switch to Yahoo" or "Switch to Gmail". Gmail and Outlook find the Thunderbird account with that kind of address. This works when only one such account is connected. Otherwise, say "Switch to" and the full address.
+"Check Gmail", "Check Outlook", and "Check Yahoo" open that account when only one such account is connected.
 With the keyboard, you can also press Alt+O and choose Email options. Sending account names the account in use. Choose another one there to switch.
-Thunderbird accounts always start with the word Thunderbird, such as "Thunderbird, sam@gmail.com". You can connect the same address two ways, straight to Gmail and through Thunderbird. Then you hear both, "Gmail, sam@gmail.com" and "Thunderbird, sam@gmail.com". To pick one by voice, say the kind, then the address. For example, say "Switch to Thunderbird, sam at gmail dot com".
+Each account starts with its kind, Thunderbird or Yahoo, such as "Thunderbird, sam@gmail.com". You can connect a Yahoo address two ways, straight to Yahoo and through Thunderbird. Then you hear both, "Yahoo, sam@yahoo.com" and "Thunderbird, sam@yahoo.com". To pick one by voice, say the kind, then the address. For example, say "Switch to Thunderbird, sam at yahoo dot com".
 To remove an account from Companion:
 1. Say "Remove email account". Or in email, press Alt, 6, then 4.
 2. Choose the account from the list, the same way as above.
@@ -794,7 +797,6 @@ To remove an account from Companion:
 Nothing is removed until you say yes. Pressing Enter alone answers no.
 Removing an account only removes its saved sign-in from Companion. Your email stays with your email service. Your other accounts do not change. If you remove the account in use, Companion picks the next one and tells you which.
 To fully end access, a helper can also do this:
-- Gmail or Microsoft: open the account's security page and remove Voice Companion from the apps list.
 - Yahoo: delete the app password in Yahoo Account security.
 - Thunderbird: nothing more. Removing it only stops Companion from using that account. Thunderbird does not change.
 To connect the account again later, say "Add account".
@@ -806,7 +808,7 @@ A contact is a saved name and email address. Each email account has its own cont
 - To hear saved names, say "List contacts", or press P in the inbox. While you write an email, press Control+K. Use the arrows to hear each name. Press Enter to hear the address.
 - To find a contact, say "Find contact", followed by the saved name, such as "Find contact Bob".
 - When Companion asks who to email, you can say a saved contact's name.
-With a Gmail account, say "Connect Google Contacts" to link your Google contacts. Or press Alt+O, choose Email options, then choose Connect Google Contacts. Approve the access only if you want to link them. A helper can assist with the permission page.
+Contacts are saved on this computer. Companion does not connect to Google Contacts. Contacts it brought in from Google Contacts before are kept, and you can change them here.
 Google Calendar and Google Drive are not connected in this version.
 
 10.4 Add a Thunderbird account
@@ -929,7 +931,7 @@ Inside an open message, Control+A selects text to copy. It does not mark other m
 Open the message first. Then say "Reply", "Reply all", or "Forward". Or press R, A, or F.
 Reply all goes to the sender and everyone else on the message. Check the addresses before you send.
 For a forward, give the new address when asked. Speak your added text. Then review and send as in part 11.5.
-Gmail and Yahoo forwarding do not include the original attachments in this version.
+Yahoo forwarding does not include the original attachments in this version.
 To throw away the reply, say "Cancel" or "Back to inbox". Say "Save draft" first if you want to keep it.
 
 12.5 Create and manage folders
@@ -940,7 +942,7 @@ To throw away the reply, say "Cancel" or "Back to inbox". Say "Save draft" first
 - To delete a folder, say "Delete folder", or press Alt, 4, then 4, and choose it. Or name it, such as "Delete folder Bills".
 Listen to the full folder place and the action. Say "Yes" to go ahead or "No" to cancel.
 You can delete only empty folders you made. Built-in folders such as Inbox are protected.
-Some email services limit folder changes. For example, Gmail limits how you rename, move, or delete a label that has labels inside it.
+Some email services limit folder changes. For example, Yahoo does not let you rename, move, or delete a folder that has folders inside it.
 
 12.6 Read links and load more mail
 Some email has web-style formatting. Companion reads its links and buttons as part of the message, the same way as on the web. You hear "link" before a link's words, and "button" after a button's words.
@@ -1570,7 +1572,6 @@ In Email options:
 - Announce email header names sets whether Companion says From, Subject, or another header name before its value.
 - Spoken email headers chooses which details you hear: From, Subject, Date, or Size. Keep at least one. Press Space to add or remove one. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
 - Add an email account starts the setup steps in chapter 10.
-- Connect Google Contacts links the Google contacts of a Gmail account.
 
 23.6 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents. These do not change a document or draft you already have.

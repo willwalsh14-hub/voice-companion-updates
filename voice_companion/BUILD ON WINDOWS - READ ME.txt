@@ -37,7 +37,7 @@ from the installed Voice Companion folder, then
 follows TRAINER TEST CHECKLIST.txt. The packaged-runtime check detects missing modules and model files. A build passing on the build computer does not prove that the microphone, speech output, browser, or sign-in works on another computer.
 
 The app is experimental. Connected email and guided web browsing require live testing before client use.
-This builder includes a Google Desktop OAuth registration for Gmail testing. It does not include an email account or grant access by itself. Google sign-in is still required, and only accounts added to the project's test users can authorize while the Google app remains in Testing. Production use requires Google's review of the requested Gmail permissions.
+This builder includes no Google or Microsoft sign-in registration. Gmail, Outlook and Microsoft 365 work through Thunderbird, which holds the sign-in. Yahoo uses an app password.
 The separate START HERE - Veteran.txt explains what the app can do today.
 
 If packaging fails, the builder prints the final PyInstaller errors in its transcript. In the builder folder, send VoiceCompanion-Build-Log.txt and both VoiceCompanion-Diagnostics-PyInstaller-Output.txt and VoiceCompanion-Diagnostics-PyInstaller-Errors.txt (or the Application equivalents if that step failed). Tests may pass even if packaging fails. Do not run a leftover Setup file from a failed attempt.

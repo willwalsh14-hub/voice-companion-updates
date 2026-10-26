@@ -82,12 +82,11 @@ ___ Repeat the needed formatting in an email body.
 Result: ____________________
 
 7. Email accounts and contacts
-___ Test Gmail, Outlook or Exchange, and Yahoo separately when available.
+___ Test a Thunderbird account (Gmail or Outlook) and a Yahoo account separately when available.
 ___ Enter passwords and codes privately. Check the address after sign-in.
 ___ Add a second account of the same type. Switch using the full address.
 ___ Check Which email account before writing or sending.
 ___ Add a spare local contact and use its name in a draft.
-___ If using Google Contacts, connect with the right account and try a spare contact.
 ___ Close and reopen the app. Check that the right account is kept.
 Result: ____________________
 

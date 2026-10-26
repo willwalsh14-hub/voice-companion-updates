@@ -8,6 +8,6 @@ The run must be in the updates repository because the existing update feed point
 
 A failed run does not announce a successful update. Its build and publishing logs remain available in the Actions run for seven days. Updates committed to the source folder or the Windows build workflow on main automatically start a build. Run workflow remains available for manual retries. Only a passing build is published.
 
-Do not upload your personal app settings, email tokens, passwords, AI API key, local user data, or build logs with the source. The distributor's Microsoft desktop registration is a public client ID. If Gmail requires a distributor registration, provide the intended Desktop OAuth registration through a repository secret rather than committing a personal credentials file.
+Do not upload your personal app settings, email tokens, passwords, AI API key, local user data, or build logs with the source. The build needs no Google or Microsoft sign-in registration. Gmail and Microsoft mail work through Thunderbird. The GOOGLE_CLIENT_JSON repository secret is no longer used and can be deleted.
 
 GitHub has no speaker playback device. Unattended builds generate and validate Windows speech audio in a WAV file and exercise pause, resume, and purge calls. Audible speaker playback and microphone timing still require testing on a local Windows computer. Local builds retain the speaker playback and speech interruption checks. The local installer builder continues to work normally; its Unattended option is for the automated Windows build.

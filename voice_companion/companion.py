@@ -3767,7 +3767,7 @@ def _handle(text, mode, typed=False):
                 return thunderbird_setup_step(flow.start(), mode)
             except Exception:
                 THUNDERBIRD_SETUP = None
-                speak('Thunderbird setup stopped because of a problem. Ask your helper to check Email Setup Helper, section 4.')
+                speak('Thunderbird setup stopped because of a problem. Ask your helper to check Email Setup Helper, section 3.')
                 return mode
     if command in ('list email accounts', 'which email account', 'what email account', 'my email accounts'):
         accounts = store.accounts()

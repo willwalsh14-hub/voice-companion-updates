@@ -98,9 +98,9 @@ ADDON_INSTALLED = 'The Voice Companion connection is installed. '
 ADDON_RESTART = ('Thunderbird must restart to use the Voice Companion connection. '
                  'Close Thunderbird, then say add account and choose Thunderbird.')
 ADDON_NOT_INSTALLED = ('Okay. Nothing was installed. A helper can install the connection by hand. '
-                       'The steps are in Email Setup Helper, section 4.')
+                       'The steps are in Email Setup Helper, section 3.')
 ADDON_FAILED = ('The Voice Companion connection could not be installed. Your Thunderbird email was not changed. '
-                'Ask a helper to install it by hand. The steps are in Email Setup Helper, section 4.')
+                'Ask a helper to install it by hand. The steps are in Email Setup Helper, section 3.')
 ADDON_OFF = ('The Voice Companion connection is turned off in Thunderbird. Ask a helper to open Add-ons and Themes '
              'in Thunderbird and turn on Voice Companion Mail Connection. ' + AGAIN)
 ADDON_BLOCKED = ('Thunderbird cannot use the Voice Companion connection. Ask a helper to update Thunderbird '
@@ -112,7 +112,7 @@ START_FAILED = 'Thunderbird could not start. Try opening it from the Start menu.
 WAITING = 'Thunderbird is open. Waiting for it to connect.'
 STILL_WAITING = 'Still waiting for Thunderbird to connect.'
 NO_CONNECTION = ('Thunderbird did not connect after one minute. Close Thunderbird, then say add account and choose '
-                 'Thunderbird to try again. If it still does not connect, ask a helper to check Email Setup Helper, section 4.')
+                 'Thunderbird to try again. If it still does not connect, ask a helper to check Email Setup Helper, section 3.')
 NO_RELAY = 'Voice Companion could not get ready for Thunderbird. Close Voice Companion and open it again. ' + AGAIN
 
 Step = namedtuple('Step', 'message question')
