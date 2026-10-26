@@ -990,6 +990,10 @@ class CompanionWindow:
                     if action == 'reclaim_focus':
                         root.deiconify()
                         root.lift()
+                        # focus_force alone cannot take the keyboard back from another program
+                        # (Thunderbird starting, or the installer); Windows needs the foreground call.
+                        try:foreground_window(root)
+                        except (AttributeError,OSError):pass
                         root.focus_force()
                     if action == 'clear_email':
                         self.email_field = None

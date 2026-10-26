@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.167-test.
+Guide version: 0.2.168-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -1616,7 +1616,7 @@ Sleep pauses voice commands but keeps your place.
 - If an email was waiting for your Yes to send, that is canceled. Review the message again before you send it.
 To turn the microphone fully off, press F9. Companion then hears nothing, not even "Wake up". Press F9 again to turn it back on. You can also say "Turn off the microphone".
 - F9 works on every screen.
-- Companion remembers your choice. If you close it with the microphone off, it starts with the microphone off and tells you to press F9.
+- Companion remembers your choice. If you close it with the microphone off, it starts with the microphone off. It starts on the main menu, so the arrow keys work right away, and it tells you to press F9 to turn the microphone on.
 Sleep is not the same as closing the app or putting Windows to sleep.
 
 24.2 Close Companion
