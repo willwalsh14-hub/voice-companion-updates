@@ -419,3 +419,77 @@ class RememberWorkingIdentityTests(unittest.TestCase):
         send = next(params for method, params in calls if method == 'send')
         self.assertEqual((send['identityId'], send['email']), ('id5', 'will@work.example'))
         self.assertEqual(remembered, [(account, 'id7', 'account7')])
+
+
+class SenderNamesWithCommasTests(unittest.TestCase):
+    """Weekly review, October 26, 2026: Thunderbird decodes a sender such as
+    =?UTF-8?Q?M=C3=BCller=2C_Hans?= <hans@example.com> to Müller, Hans <hans@example.com>,
+    with no quotes. One such message stopped the whole Thunderbird inbox from listing,
+    and a reply to it was addressed to "Müller"."""
+    def answers(self, **results):
+        return mock.patch.object(thunderbird_mailbox, 'call', lambda method, **params: results[method])
+
+    def test_the_list_shows_a_sender_whose_name_has_a_comma(self):
+        page = {'rows': [{'id': 1, 'from': 'Müller, Hans <hans@example.com>', 'subject': 'Hi'},
+                         {'id': 2, 'from': 'first@example.com, second@example.com', 'subject': 'Two senders'},
+                         {'id': 3, 'from': '"Doe, Jane" <jane@example.com>', 'subject': 'Quoted'}]}
+        with self.answers(inbox={'id': 'account1://INBOX'}, list=page):
+            rows, _ = ThunderbirdMailbox('me@example.com', ACCOUNT).list_messages('inbox')
+        self.assertEqual([(row['sender_name'], row['from']) for row in rows],
+                         [('Müller, Hans', 'hans@example.com'), ('', 'first@example.com'),
+                          ('Doe, Jane', 'jane@example.com')])
+
+    def test_reply_goes_to_the_address_not_part_of_the_name(self):
+        info = {'author': 'Müller, Hans <hans@example.com>', 'subject': 'Plans',
+                'recipients': ['Doe, Jane <jane@example.com>', 'me@example.com'], 'ccList': ['Roe, Rick <rick@example.com>']}
+        mailbox = ThunderbirdMailbox('me@example.com', ACCOUNT)
+        with self.answers(context=info):
+            reply = mailbox.response_context(7, 'reply', 'me@example.com')
+            everyone = mailbox.response_context(7, 'reply_all', 'me@example.com')
+        self.assertEqual((reply['recipient'], reply['cc']), ('hans@example.com', []))
+        self.assertEqual((everyone['recipient'], everyone['cc']),
+                         ('hans@example.com', ['jane@example.com', 'rick@example.com']))
+
+
+class ThunderbirdClosedBeforeRequestTests(unittest.TestCase):
+    """Weekly review, October 26, 2026: if Thunderbird closed just before a request, writing
+    to it raised a bare OSError. Email then said to ask a helper for Email-Error.txt, and
+    Voice Companion never started Thunderbird again."""
+    def test_a_closed_connection_is_reported_as_not_connected(self):
+        bridge = thunderbird_bridge.MailRelay.__new__(thunderbird_bridge.MailRelay)
+        bridge.connected = threading.Event(); bridge.connected.set()
+        bridge.pending = {}; bridge.ids = iter(range(1, 100))
+        bridge.send_lock = threading.Lock(); bridge.state_lock = threading.Lock()
+        class ClosedPipe:
+            def send_bytes(self, data):
+                raise BrokenPipeError(32, 'The pipe is being closed')
+        bridge.pipe = ClosedPipe()
+        with self.assertRaises(thunderbird_bridge.ThunderbirdUnavailable):
+            bridge.request('list', {})
+        self.assertFalse(bridge.connected.is_set())
+        self.assertIsNone(bridge.pipe)
+        self.assertEqual(bridge.pending, {})
+
+    def test_the_mailbox_starts_thunderbird_again_and_repeats_the_request(self):
+        state = {'bridge': None}
+        class Closed:
+            connected = threading.Event()
+            def request(self, method, params=None, **options):
+                raise thunderbird_bridge.ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
+        class Fresh:
+            connected = threading.Event()
+            def request(self, method, params=None, **options):
+                return [{'name': 'Inbox', 'id': 'account1://INBOX'}]
+        Fresh.connected.set()
+        closed = Closed(); closed.connected.set()
+        state['bridge'] = closed
+        def start():
+            state['bridge'] = Fresh()
+        def first_request(method, params=None, **options):
+            closed.connected.clear()   # what MailRelay.request now does on a failed write
+            raise thunderbird_bridge.ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
+        closed.request = first_request
+        with mock.patch.object(thunderbird_mailbox, 'current', lambda: state['bridge']), \
+             mock.patch.object(thunderbird_mailbox, 'STARTER', start):
+            folders = ThunderbirdMailbox('me@example.com', ACCOUNT).folders()
+        self.assertEqual(folders, [('Inbox', 'account1://INBOX')])
