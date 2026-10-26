@@ -1,15 +1,14 @@
-import base64,json,queue,tempfile,unittest
-from email import policy
-from email.parser import BytesParser
+import queue,tempfile,unittest
 from pathlib import Path
 from unittest.mock import Mock,patch
 from email_draft import VoiceEmail
 from document_editor import Paragraph
-from email_delivery import gmail_request,microsoft_request,message_parts,DeliveryError
+from email_delivery import message_parts,DeliveryError
+from test_email_delivery import yahoo_message
 import companion as app
 class EmailStatusStartupTests(unittest.TestCase):
     def draft(self,folder,subject,body):
-        draft=VoiceEmail(Path(folder),provider='gmail',recipient='friend@example.com',subject=subject)
+        draft=VoiceEmail(Path(folder),provider='yahoo',recipient='friend@example.com',subject=subject)
         draft.paragraphs=[Paragraph(text=body)] if body else []
         return draft
     def test_subject_only_and_body_only_provider_requests(self):
@@ -17,10 +16,8 @@ class EmailStatusStartupTests(unittest.TestCase):
             for subject,body in (('Only subject',''),('','Only body'),('','')):
                 draft=self.draft(folder,subject,body)
                 self.assertEqual(message_parts(draft),('friend@example.com',subject,body))
-                msg=BytesParser(policy=policy.default).parsebytes(base64.urlsafe_b64decode(json.loads(gmail_request(draft,'token').data)['raw']))
+                msg=yahoo_message(draft)
                 self.assertEqual(str(msg['Subject']),subject)
-                payload=json.loads(microsoft_request(draft,'token').data)
-                self.assertEqual(payload['message']['subject'],subject)
             self.assertEqual(message_parts(self.draft(folder,'','')),('friend@example.com','',''))
     def test_skip_subject_preserves_guided_compose(self):
         with tempfile.TemporaryDirectory() as folder:

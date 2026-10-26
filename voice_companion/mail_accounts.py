@@ -191,6 +191,8 @@ class ProtectedStore:
     def save(self, provider, data, select=True):
         """Store an account. Only connecting an account selects it; a token refresh
         or contacts sync for another account must not switch the sending account."""
+        if provider not in PROVIDERS:
+            raise AccountError('Email works through Thunderbird or Yahoo. Say add account to connect one.')
         self.folder.mkdir(parents=True, exist_ok=True)
         address = data.get('address')
         if not address: raise AccountError('The account address is missing.')

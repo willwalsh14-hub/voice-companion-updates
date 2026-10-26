@@ -1,4 +1,3 @@
-import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,14 +6,14 @@ import companion
 from app_window import CompanionWindow
 from dictation_text import clean_dictation
 from email_draft import VoiceEmail
-from email_delivery import microsoft_request, gmail_request
+from test_email_delivery import yahoo_message
 from document_editor import Paragraph
 from mail_voice import MailSession
 
 class WorkflowRegressions(unittest.TestCase):
     def test_sleep_preserves_email_folder_selection_and_draft(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(companion, 'speak'), patch.object(companion, 'MEDIA_HUB', None):
-            session = MailSession('gmail', folder)
+            session = MailSession('thunderbird', folder)
             session.folder_name, session.folder_id = 'Drafts', 'DRAFT'
             session.rows = [{'id': 'one'}]
             session.current = 1
@@ -30,12 +29,12 @@ class WorkflowRegressions(unittest.TestCase):
                 self.assertIs(companion.email_draft, draft)
                 self.assertEqual(draft.compose_step, 'recipient')
 
-    def test_gmail_drafts_alias_loads_actual_system_label(self):
+    def test_drafts_alias_loads_the_folder_by_its_id(self):
         client = Mock()
         client.folders.return_value = [('INBOX', 'INBOX'), ('DRAFT', 'DRAFT')]
         client.list_messages.return_value = ([], None)
         with tempfile.TemporaryDirectory() as folder:
-            session = MailSession('gmail', folder)
+            session = MailSession('thunderbird', folder)
             with patch.object(session, 'client', return_value=client):
                 self.assertIn('No messages', session.process('go to drafts'))
             client.list_messages.assert_called_once_with('DRAFT', None, limit=10)
@@ -69,29 +68,24 @@ class WorkflowRegressions(unittest.TestCase):
                     self.assertEqual(draft.recipient, 'new@example.com')
                     self.assertEqual(draft.compose_step, 'body' if action else 'subject')
 
-    def test_edited_reply_recipient_is_used_for_outlook_and_gmail(self):
+    def test_edited_reply_recipient_is_used(self):
         with tempfile.TemporaryDirectory() as folder:
-            draft = VoiceEmail(Path(folder), recipient='old@example.com', subject='Re: Test', provider='outlook')
+            draft = VoiceEmail(Path(folder), recipient='old@example.com', subject='Re: Test', provider='yahoo')
             draft.response_context = {'action':'reply', 'source_id':'source', 'thread_id':'thread'}
             draft.process('go to to');draft.process('new@example.com')
             draft.paragraphs = [Paragraph(text='Reply body')]
-            request = microsoft_request(draft, 'token')
-            self.assertEqual(json.loads(request.data)['message']['toRecipients'][0]['emailAddress']['address'], 'new@example.com')
-            import base64
-            from email.parser import BytesParser
-            raw = json.loads(gmail_request(draft, 'token').data)['raw']
-            self.assertEqual(BytesParser().parsebytes(base64.urlsafe_b64decode(raw))['To'], 'new@example.com')
+            self.assertEqual(yahoo_message(draft)['To'], 'new@example.com')
 
     def test_send_confirmation_completes_before_current_folder_refresh(self):
         with tempfile.TemporaryDirectory() as folder:
-            draft = VoiceEmail(Path(folder), recipient='friend@example.com', subject='Test', provider='gmail')
+            draft = VoiceEmail(Path(folder), recipient='friend@example.com', subject='Test', provider='thunderbird')
             draft.paragraphs = [Paragraph(text='Message')]
-            session = MailSession('gmail', folder)
+            session = MailSession('thunderbird', folder)
             session.folder_name, session.folder_id, session.page_cursor = 'Projects', 'projects', 'page2'
             events = []
             def refresh(cursor):
                 events.append(('refresh', cursor, session.folder_id));return 'Folder reloaded.'
-            with patch.object(companion, 'email_draft', draft), patch.object(companion, 'mail_session', session), patch.object(companion, 'pending_send', (draft.send_hash(), 'gmail', 'me@example.com')), patch.object(companion, 'account_token', return_value=('me@example.com','token')), patch.object(companion, 'submit', side_effect=lambda *a, **k:events.append('send')), patch.object(companion, 'speak', side_effect=lambda text:events.append(text)), patch.object(companion, 'finish_mail_announcement', side_effect=lambda:events.append('announcement finished')), patch.object(session, 'list_messages', side_effect=refresh):
+            with patch.object(companion, 'email_draft', draft), patch.object(companion, 'mail_session', session), patch.object(companion, 'pending_send', (draft.send_hash(), 'thunderbird', 'me@example.com')), patch.object(companion, 'account_token', return_value=('me@example.com','token')), patch.object(companion, 'submit', side_effect=lambda *a, **k:events.append('send')), patch.object(companion, 'speak', side_effect=lambda text:events.append(text)), patch.object(companion, 'finish_mail_announcement', side_effect=lambda:events.append('announcement finished')), patch.object(session, 'list_messages', side_effect=refresh):
                 self.assertEqual(companion.handle('yes', 'email_draft'), 'mailbox')
             self.assertEqual(events[:4], ['send','Email sent successfully.','announcement finished',('refresh','page2','projects')])
 

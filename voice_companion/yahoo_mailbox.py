@@ -91,7 +91,7 @@ def _header(msg, name, fallback=''):
 
 
 def message_body(msg):
-    """Readable body of one message, the same way Gmail messages are read."""
+    """Readable body of one message: HTML when there is some, with the plain part kept for plain text."""
     from email_reader import plain_body
     try:
         part = msg.get_body(preferencelist=('html', 'plain'))

@@ -1,17 +1,13 @@
 """New guided mail, local contacts, provider BCC, and link choice checks."""
-import base64
 import json
 import tempfile
 import unittest
-from email import policy
-from email.parser import BytesParser
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from address_book import AddressBook
 from email_draft import VoiceEmail
-from email_delivery import gmail_request, microsoft_request
-from google_contacts import sync
+from test_email_delivery import yahoo_message
 from test_web_assistant import FakeBackend
 from web_assistant import WebSession
 from media_hub import MediaHub
@@ -168,7 +164,7 @@ class GuidedChecks(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             AddressBook(root).save('Bob', 'bob@example.com')
-            draft = VoiceEmail(root/'Email Drafts', provider='gmail', compose_step='recipient')
+            draft = VoiceEmail(root/'Email Drafts', provider='yahoo', compose_step='recipient')
             self.assertIn('What is the subject?', draft.process('Bob'))
             self.assertEqual(draft.recipient, 'bob@example.com')
             self.assertIn('What would you like', draft.process('Meeting tomorrow'))
@@ -182,28 +178,20 @@ class GuidedChecks(unittest.TestCase):
             self.assertEqual(reopened.bcc, ['private@example.com'])
             self.assertEqual(reopened.cc, ['helper@example.com'])
             self.assertEqual(reopened.paragraphs[0].text, 'See you soon.')
-            mime = BytesParser(policy=policy.default).parsebytes(base64.urlsafe_b64decode(json.loads(gmail_request(reopened,'token').data)['raw']))
-            self.assertEqual(mime['Bcc'], 'private@example.com')
-            graph = json.loads(microsoft_request(reopened,'token').data)['message']
-            self.assertEqual(graph['bccRecipients'][0]['emailAddress']['address'], 'private@example.com')
+            self.assertEqual(yahoo_message(reopened)['Bcc'], 'private@example.com')
 
-    def test_google_sync_imports_and_uploads_without_another_account(self):
+    def test_contacts_once_brought_from_google_are_kept_and_can_be_changed(self):
+        # Google Contacts sync was removed with the direct Gmail sign-in. The contacts it
+        # brought in stay in the local address book and can now be changed here.
         with tempfile.TemporaryDirectory() as tmp:
-            book = AddressBook(tmp, 'me@example.com')
-            book.save('Local friend', 'local@example.com')
-            remote = {'connections':[{'names':[{'displayName':'Google friend'}],
-                                      'emailAddresses':[{'value':'google@example.com'}]}]}
-            class Selected:
-                def __init__(self, _): pass
-                def selected(self): return ('gmail','me@example.com')
-            calls = []
-            def api(url, token, data=None):
-                if data is not None: calls.append(data); return {}
-                return remote
-            with patch('google_contacts._token', return_value='token'), patch('google_contacts.ProtectedStore', Selected), patch('google_contacts._api', side_effect=api):
-                self.assertIn('1 contacts added here; 1 local contacts added to Google', sync(tmp))
-            self.assertEqual(book.get('Google friend')['address'], 'google@example.com')
-            self.assertEqual(calls[0]['emailAddresses'][0]['value'], 'local@example.com')
+            book = AddressBook(tmp, 'me@gmail.com')
+            book.path.write_text(json.dumps({'google friend': {'name': 'Google friend', 'address': 'old@example.com',
+                                                               'source': 'google'}}), encoding='utf-8')
+            self.assertEqual(book.get('Google friend')['address'], 'old@example.com')
+            self.assertEqual(book.save('Google friend', 'new@example.com'), 'new@example.com')
+            self.assertEqual(book.get('Google friend'), {'name': 'Google friend', 'address': 'new@example.com'})
+            # The same address through Thunderbird finds the same contacts.
+            self.assertEqual(AddressBook(tmp, 'Me@Gmail.com').get('google friend')['address'], 'new@example.com')
 
     def test_link_picker_next_previous_confirm_and_spoken_number(self):
         with tempfile.TemporaryDirectory() as tmp:

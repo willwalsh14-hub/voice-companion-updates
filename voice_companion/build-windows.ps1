@@ -159,7 +159,7 @@ $env:VOICE_COMPANION_WINDOW_TESTS_APART = '1'
 $releaseTests = Start-Process -FilePath $python -NoNewWindow -Wait -PassThru `
   -ArgumentList @('-m','unittest','-q','smoke_tests','test_email_delivery','test_mailbox','test_chrome_setup',
     'test_media_update_fixes','test_web_fixes','test_document_fixes','test_core_email_fixes','test_storage','test_embedded_edge_default','test_thunderbird_mail','test_thunderbird_setup','test_web_performance',
-    'test_web_assistant','test_browser_recovery','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_gmail_refresh','test_dictation_text','test_ai_dictation','test_dictation_echo','test_file_manager','test_file_explorer','test_input_parity','test_task_navigation','test_media_player_menu','test_document_reader','test_rich_documents','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge','test_regular_browser','test_browser_cdp_relay','test_launch_review_fixes','test_notepad_and_document_options','test_gmail_sign_in','test_yahoo_setup','test_yahoo_mail','test_screen_menus','test_web_modes','test_web_history','test_web_fields','test_email_accounts','test_audio_ducking','test_time_date','test_time_date_windows','test_thunderbird_accounts','test_user_stop','test_key_state','test_microphone_switch','test_microphone_off_startup','test_guide_html_accessibility','test_main_menu_key','test_notepad_menu','test_heading_links','test_email_links_open_in_guided_browser','test_downloads') `
+    'test_web_assistant','test_browser_recovery','test_web_browse','test_browser_accessibility','test_browser_media_polish','test_virtual_browser','test_document_formatting','test_text_selection','test_contacts_and_composing','test_media_hub','test_onboard_help','test_practice_tutorial','test_ai_speech','test_ai_voice_settings','test_voice_choices','test_build_packaging','test_dictation_text','test_ai_dictation','test_dictation_echo','test_file_manager','test_file_explorer','test_input_parity','test_task_navigation','test_media_player_menu','test_document_reader','test_rich_documents','test_workflow_regressions','test_draft_cancel','test_structural_selection','test_cross_area_selection','test_email_rich_formatting','test_document_controls','test_formatting_navigation','test_espeak_speech','test_command_latency','test_speech_controls','test_guide_files','test_app_updates','test_release_publishing','test_github_login','test_menu_prompts','test_sapi_build_check','test_settings', 'test_windows_actions','test_native_settings','test_keyboard_text','test_release_documents','test_menu_keyboard','test_list_boundaries','test_accessibility_fixes','test_browser_menu','test_documentation_quality','test_reading_responsiveness','test_email_reader','test_email_status_startup','test_consumer_workflows','test_consumer_regressions','test_browser_bridge','test_regular_browser','test_browser_cdp_relay','test_launch_review_fixes','test_notepad_and_document_options','test_removed_mail_accounts','test_yahoo_setup','test_yahoo_mail','test_screen_menus','test_web_modes','test_web_history','test_web_fields','test_email_accounts','test_audio_ducking','test_time_date','test_time_date_windows','test_thunderbird_accounts','test_user_stop','test_key_state','test_microphone_switch','test_microphone_off_startup','test_guide_html_accessibility','test_main_menu_key','test_notepad_menu','test_heading_links','test_email_links_open_in_guided_browser','test_downloads') `
   -RedirectStandardOutput $releaseOutput -RedirectStandardError $releaseErrors
 if (Test-Path $releaseErrors) { Get-Content $releaseErrors | Out-Host }
 if ($releaseTests.ExitCode -ne 0) {
@@ -242,10 +242,9 @@ $arguments = @('--clean', '--noconfirm', '--onedir', '--contents-directory', '.'
   '--add-data', 'Voice Companion Release Notes - DAISY 3.zip:.',
   '--add-data', 'Voice Companion Release Notes.brf:.',
   '--add-data', 'START HERE - Veteran - DAISY 3.zip:.', '--hidden-import', 'sounddevice',
-  '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'google_contacts', '--hidden-import', 'tkinter', '--hidden-import', 'chrome_setup', '--hidden-import', 'audio_ducking', '--hidden-import', 'key_state', '--hidden-import', 'downloads', '--hidden-import', 'download_screen',
+  '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes', '--hidden-import', 'win32crypt', '--hidden-import', 'win32clipboard', '--hidden-import', 'tkinter', '--hidden-import', 'chrome_setup', '--hidden-import', 'audio_ducking', '--hidden-import', 'key_state', '--hidden-import', 'downloads', '--hidden-import', 'download_screen',
   '--hidden-import', 'thunderbird_bridge', '--hidden-import', 'thunderbird_mailbox', '--hidden-import', 'thunderbird_setup', '--hidden-import', 'thunderbird_accounts',
   '--collect-all', 'win32com', '--collect-all', 'vosk',
-  '--collect-all', 'google_auth_oauthlib', '--collect-all', 'msal',
   '--collect-all', 'playwright', '--collect-all', 'rapidocr', '--collect-all', 'onnxruntime',
   '--collect-all', 'pypdfium2', '--collect-all', 'pypdfium2_raw', '--collect-all', 'shapely',
   '--collect-all', 'pyclipper', '--collect-all', 'omegaconf', '--hidden-import', 'rapidocr.inference_engine.onnxruntime')
@@ -370,19 +369,6 @@ Copy-Item (Join-Path $PSScriptRoot 'README.txt') (Join-Path $PSScriptRoot 'dist\
 Copy-Item (Join-Path $PSScriptRoot 'EMAIL SETUP - Helper.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\EMAIL SETUP - Helper.txt') -Force
 Copy-Item (Join-Path $PSScriptRoot 'AI VOICE SETUP - Trainer.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\AI VOICE SETUP - Trainer.txt') -Force
 Copy-Item (Join-Path $PSScriptRoot 'UPDATES - Trainer.txt') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\UPDATES - Trainer.txt') -Force
-$googleRegistration = Join-Path $PSScriptRoot 'google-client.json'
-if (Test-Path $googleRegistration) {
-  & $python -c "import json,sys; c=json.load(open(sys.argv[1],encoding='utf-8')); allowed={'client_id','project_id','auth_uri','token_uri','auth_provider_x509_cert_url','client_secret','redirect_uris'}; assert set(c)=={'installed'} and set(c['installed']) <= allowed, 'Only a public Google Desktop OAuth registration may be packaged; user tokens and server credentials are forbidden'; assert all(isinstance(v,str) for k,v in c['installed'].items() if k!='redirect_uris'); assert c['installed']['client_id'] and c['installed']['client_secret'] and c['installed']['auth_uri'] and c['installed']['token_uri']" $googleRegistration
-  if ($LASTEXITCODE -ne 0) { throw 'The supplied Google Desktop app registration is invalid.' }
-  Copy-Item $googleRegistration (Join-Path $PSScriptRoot 'dist\VoiceCompanion\google-client.json') -Force
-}
-# Ship the distributor public Microsoft registration beside the executable.
-$microsoftRegistration = Join-Path $PSScriptRoot 'microsoft-registration.json'
-if (Test-Path $microsoftRegistration) {
-  & $python -c "import json,sys,uuid; c=json.load(open(sys.argv[1],encoding='utf-8')); uuid.UUID(c['microsoft_client_id'])" $microsoftRegistration
-  if ($LASTEXITCODE -ne 0) { throw 'The supplied Microsoft desktop app registration is invalid.' }
-  Copy-Item $microsoftRegistration (Join-Path $PSScriptRoot 'dist\VoiceCompanion\microsoft-registration.json') -Force
-}
 Copy-Item (Join-Path $PSScriptRoot 'espeak') (Join-Path $PSScriptRoot 'dist\VoiceCompanion\espeak') -Recurse -Force
 & $iscc (Join-Path $PSScriptRoot 'VoiceCompanion.iss')
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $PSScriptRoot 'dist\installer\VoiceCompanion-Setup.exe'))) {
@@ -416,14 +402,6 @@ if ((Get-FileHash -LiteralPath $installedApp -Algorithm SHA256).Hash -ne
     (Get-FileHash -LiteralPath $installedDiagnostics -Algorithm SHA256).Hash -ne
     (Get-FileHash -LiteralPath $diagnosticTarget -Algorithm SHA256).Hash) {
   throw 'The installed EXE files do not match this build. Do not use the old shortcut.'
-}
-if (Test-Path $googleRegistration) {
-  $installedGoogle = Join-Path $installedFolder 'google-client.json'
-  if (-not (Test-Path $installedGoogle) -or
-      (Get-FileHash -LiteralPath $installedGoogle -Algorithm SHA256).Hash -ne
-      (Get-FileHash -LiteralPath $googleRegistration -Algorithm SHA256).Hash) {
-    throw 'The installed Gmail registration is missing or does not match this build.'
-  }
 }
 $browserManifest = Join-Path $installedFolder 'browser-native-host.json'
 if (-not (Test-Path $browserManifest)) { throw 'The installed browser native host manifest is missing.' }
