@@ -18,6 +18,19 @@ NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'nine': 9, 'ninth': 9, 'ten': 10, 'tenth': 10}
 NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
+# Commands about "the message you are on". In an empty folder each says the list is empty.
+EMPTY_LIST_COMMANDS = ('next', 'previous', 'next message', 'previous message', 'first message', 'last message',
+                       'start of list', 'beginning of list', 'end of list', 'first message on page',
+                       'last message on page', 'newest message', 'first message in folder', 'oldest message',
+                       'last message in folder', 'message details', 'who is this from', 'read message details',
+                       'open current message', 'read current message', 'repeat message', 'read message',
+                       'open message', 'open that', 'read that', 'open it', 'read email', 'open email',
+                       'that one', 'okay', 'ok', 'confirm', 'confirm that', 'select all messages',
+                       'toggle message selection', 'extend selection next', 'extend selection previous',
+                       'select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message',
+                       'unmark message', 'deselect message', 'unselect message', 'delete', 'delete message',
+                       'delete this message', 'move', 'move to folder', 'move message', 'move this message',
+                       'move message to folder')
 
 
 def sender_address(row):
@@ -560,6 +573,11 @@ class MailSession:
                 if command in ('cancel', 'go back', 'back'):
                     return 'Folder choice canceled. Nothing was changed.'
                 return 'Say rename to followed by the new name, or cancel.'
+            if (not self.rows and self.view == 'folder' and command in EMPTY_LIST_COMMANDS and
+                    not (self.marked_ids and command in ('delete', 'move', 'move to folder'))):
+                # An empty folder is an empty list, the same for every key and command.
+                return ('Empty list. No messages on this page of ' + self.folder_name +
+                        '. Press F5 or say list messages to check again.')
             if command in ('first message on page','last message on page') and self.rows and not self.folder_picker:
                 return self.page_edge(command.startswith('last'))
             if command in ('newest message','first message in folder','oldest message','last message in folder') and self.rows and not self.folder_picker:

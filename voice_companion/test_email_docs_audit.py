@@ -113,6 +113,21 @@ class MailSessionTests(unittest.TestCase):
         self.assertEqual(session.process('next'), 'End of list. Folder 2 of 2: Receipts.')
 
 
+class EmptyMailboxTests(unittest.TestCase):
+    def test_every_message_command_in_an_empty_folder_says_the_list_is_empty(self):
+        # Down Arrow said "Say read message followed by a number first", and Control+Home or
+        # "message details" read the whole list of email commands.
+        from mail_voice import EMPTY_LIST_COMMANDS, MailSession
+        class Empty(Inbox):
+            def list_messages(self, folder, cursor=None, limit=10): return [], None
+        with tempfile.TemporaryDirectory() as folder, mock.patch('mail_voice.account_token', return_value=(ME, 'token')):
+            session = MailSession('thunderbird', folder, Empty)
+            self.assertEqual(session.process('open inbox'), 'Empty list. No messages on this page of Inbox.')
+            for command in EMPTY_LIST_COMMANDS:
+                self.assertEqual(session.process(command), 'Empty list. No messages on this page of Inbox. '
+                                                          'Press F5 or say list messages to check again.', command)
+
+
 class CompanionEmailTests(unittest.TestCase):
     def setUp(self):
         import companion
