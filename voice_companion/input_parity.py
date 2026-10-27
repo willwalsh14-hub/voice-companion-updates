@@ -26,6 +26,9 @@ SCREEN_KEYS = {
     # The Downloads screen (download_screen.py). Up, Down, Home, End, Enter and Escape work as in every list.
     'downloads': {'F1': 'help with downloads', 'Space': 'pause or resume download', 'Delete': 'delete download',
                   'Ctrl+Up': 'move download earlier', 'Ctrl+Down': 'move download later'},
+    # Contacts (contacts_screen.py). Up, Down, Home, End, letters, Enter and Escape work as in every list.
+    'contacts': {'F1': 'help with contacts', 'Ctrl+N': 'add contact', 'Ctrl+E': 'email contact',
+                 'Ctrl+F': 'find contact {value}', 'Delete': 'delete contact'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
@@ -57,7 +60,8 @@ OLD_KEYS = {
 # Control+F12 puts the microphone to sleep from any main screen; while asleep it wakes it.
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
-              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads'):
+              'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads',
+              'contacts'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}

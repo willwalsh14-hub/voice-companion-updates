@@ -330,6 +330,7 @@ class TaskNavigation:
                     'create table with {value}':'Table size. Type or say the rows and columns, such as two rows and two columns. Press Enter.',
                     'find {value}':'Find. Type or say the words to find, then press Enter.',
                     'add contact {value}':'Add contact. Type or say the name, the word as, then the email address. Press Enter.',
+                    'find contact {value}':'Find contact. Type or say a name, then press Enter.',
                     'find lesson {value}':'Find lesson. Type or say a subject, then press Enter.',
                     'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')
@@ -373,19 +374,25 @@ class TaskNavigation:
                 return {'Ctrl+N':'write a note','Ctrl+O':'list notes','Alt+O':'@options:Notepad'}[key]
             return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'enter','Escape':'escape','Home':'home','End':'end'}.get(key)
         if mode == 'task_input' and key == 'Escape': return 'cancel'
+        if mode == 'task_input' and key == 'Enter' and self.prompt and len(self.prompt) > 2 and self.prompt[2]: return '@task:skip'
         return None
 
     def handle(self, text, mode):
         m = self.app
         command = text if text.startswith('@') else m.normalized_command(text)
         if mode == 'task_input':
-            template, target = self.prompt
+            # A third value True: the answer may be left out (Enter with nothing typed, or "skip").
+            prompt = self.prompt
+            template, target = prompt[:2]
+            optional = len(prompt) > 2 and prompt[2]
             if command in ('cancel','escape','go back'):
                 self.prompt=None
                 m.speak('Canceled. Back to '+{'file_reader':'document reader','mailbox':'email','web':'the web page'}.get(target,target.replace('_',' '))+'.'); return target
-            if not text.strip():m.speak('Enter a value, or press Escape to cancel.');return mode
+            if text == '@task:skip' and optional: text = ''
+            if not text.strip() and not optional:m.speak('Enter a value, or press Escape to cancel.');return mode
             result=self.handle(template.format(value=text.strip()), target) if target == 'local_media' else m.handle(template.format(value=text.strip()), target, typed=True)
-            self.prompt=None
+            # The answer may lead to another question (a contact's email after its name); keep that one.
+            if self.prompt is prompt:self.prompt=None
             return result
         if text.startswith('@prompt:'):
             # A direct key for a command that needs a value, such as Ctrl+F in Document reader.

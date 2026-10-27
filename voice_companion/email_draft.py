@@ -266,8 +266,9 @@ class VoiceEmail(VoiceDocument):
             from mail_accounts import ProtectedStore
             selected = ProtectedStore(self.folder.parent).selected()
             account = selected[1] if selected and selected[0] == self.provider else ''
-            entry = AddressBook(self.folder.parent, account).get(value.strip().rstrip('.!?,;').strip())
-            return entry['address'] if entry else value
+            # The contacts saved here, then Thunderbird's address books (contacts_book.py).
+            from contacts_book import address_for
+            return address_for(self.folder.parent, account, value) or value
         def parses(value):
             try: normalize_recipient(contact_address(value)); return True
             except ValueError: return False

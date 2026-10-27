@@ -1,0 +1,89 @@
+"""Contacts and calendars through Thunderbird (the add-on's pim.js and calendar Experiment).
+
+Thunderbird syncs Google, Microsoft and other address books (CardDAV) and
+calendars (CalDAV) by itself once the account is set up there. Voice Companion
+asks the add-on for them, the same way it asks for mail (thunderbird_mailbox.call):
+Thunderbird is started in the background when it is not running.
+
+Every failure becomes PimError with a plain sentence that says what to do.
+"""
+from mailbox_access import MailboxError
+
+# An add-on copy from before contacts and calendars (1.2 and older) answers this.
+UNSUPPORTED = 'Unsupported mail request.'
+UPDATE_NEEDED = ('The Voice Companion connection in Thunderbird must be updated first. Close Thunderbird, '
+                 'then try again. Voice Companion updates the connection and starts Thunderbird again.')
+NO_THUNDERBIRD = ('Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. '
+                  'Say add Thunderbird account to set it up.')
+
+
+class PimError(Exception):
+    """Thunderbird could not give or change contacts or events. The text says why and what to do."""
+
+
+def connected():
+    import thunderbird_mailbox
+    return thunderbird_mailbox.connected()
+
+
+def has_thunderbird_account(folder):
+    """True when Voice Companion has a Thunderbird email account saved, so starting Thunderbird makes sense."""
+    try:
+        from mail_accounts import ProtectedStore
+        return any(provider == 'thunderbird' for provider, _ in ProtectedStore(folder).accounts())
+    except Exception:
+        return False
+
+
+def usable(folder):
+    """Ask Thunderbird only when it is connected now, or when the user uses Thunderbird for email.
+    Opening Contacts must never start installing Thunderbird by itself."""
+    return connected() or has_thunderbird_account(folder)
+
+
+def call(method, **params):
+    import thunderbird_mailbox
+    try:
+        return thunderbird_mailbox.call(method, **params)
+    except MailboxError as exc:
+        text = str(exc)
+        raise PimError(UPDATE_NEEDED if text == UNSUPPORTED else text) from exc
+
+
+def contacts():
+    """{'books': [...], 'contacts': [...], 'failed': n} from every Thunderbird address book."""
+    answer = call('contacts')
+    if not isinstance(answer, dict) or not isinstance(answer.get('contacts'), list):
+        raise PimError('Thunderbird sent contacts Voice Companion could not read. Try again.')
+    return answer
+
+
+def add_contact(name, email='', phone='', book_id=''):
+    return call('addContact', bookId=book_id, name=name, email=email, phone=phone)
+
+
+def delete_contact(contact_id):
+    return call('deleteContact', id=contact_id)
+
+
+def calendars():
+    answer = call('calendars')
+    if not isinstance(answer, list):
+        raise PimError('Thunderbird sent calendars Voice Companion could not read. Try again.')
+    return answer
+
+
+def events(start_ms, end_ms):
+    answer = call('events', start=int(start_ms), end=int(end_ms))
+    if not isinstance(answer, dict) or not isinstance(answer.get('events'), list):
+        raise PimError('Thunderbird sent events Voice Companion could not read. Try again.')
+    return answer
+
+
+def add_event(calendar_id, title, start, end, all_day=False, location='', notes=''):
+    return call('addEvent', calendarId=calendar_id, title=title, start=start, end=end, allDay=bool(all_day),
+                location=location, notes=notes)
+
+
+def delete_event(calendar_id, event_id, occurrence='', all_of_them=False):
+    return call('deleteEvent', calendarId=calendar_id, id=event_id, occurrence=occurrence, all=bool(all_of_them))

@@ -144,6 +144,20 @@ MENUS = {
             ('Downloads help', 'F1', 'help with downloads'),
             ('Close downloads', 'Escape', 'close downloads')]),
     ]),
+    'contacts': ('Contacts menu', [
+        ('Contact', [
+            ('Email this person', 'Ctrl+E', 'email contact'),
+            ('Open details', 'Enter', 'open contact'),
+            ('Read all details', '', 'read contact'),
+            ('Phone number', '', 'call details'),
+            ('Delete contact', 'Delete', 'delete contact')]),
+        ('Contacts', [
+            ('Add contact', 'Ctrl+N', 'add contact'),
+            ('Find contact', 'Ctrl+F', 'find contact {value}'),
+            ('Refresh contacts', '', 'refresh contacts'),
+            ('Contacts help', 'F1', 'help with contacts'),
+            ('Main menu', 'Ctrl+F1', 'main menu')]),
+    ]),
     'help': ('Help menu', [
         ('Help', [
             ('Help topics', '', 'help topics'),
@@ -196,7 +210,8 @@ ALT_SCREENS = frozenset(MENUS) | {'awake', 'browser_menu', 'media', 'podcast'}
 # Spoken ways to open a menu, besides its name ("email menu").
 OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('menu', 'open menu', 'reader menu'),
                 'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('note menu',),
-                'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu')}
+                'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu'),
+                'contacts': ('menu', 'open menu', 'contact menu')}
 NUMBER_WORDS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
 # Context flags that mean a text box, list or question owns the keyboard.
 BUSY_CONTEXT = ('named_list', 'task_input', 'account_entry', 'browser_name_input', 'file_name_input', 'media_input',
