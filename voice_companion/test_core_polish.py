@@ -395,5 +395,16 @@ class MicrophoneRetryTests(CompanionTestCase):
         self.assertEqual(self.said, [])
 
 
+class WakeNamesTests(CompanionTestCase):
+    def test_waking_names_the_screen_the_same_way_as_everywhere_else(self):
+        # It used to say "Returning to reader menu.", "local media", "file reader".
+        for mode, name in (('reader_menu', 'Back to Document reader menu.'), ('word_processor', 'Back to Word processor menu.'),
+                           ('local_media', 'Back to Media player.'), ('notepad_menu', 'Back to Notepad menu.'),
+                           ('file_reader', 'Back to document reader.'), ('document', 'Back to document.')):
+            with mock.patch.object(companion, 'SLEEP_RETURN_MODE', mode), mock.patch.object(companion, 'focus_email_entry'):
+                self.assertEqual(companion.resume_from_sleep(), mode)
+            self.assertEqual(self.said[-1], 'I am listening. ' + name)
+
+
 if __name__ == '__main__':
     unittest.main()

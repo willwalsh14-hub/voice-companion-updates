@@ -113,7 +113,7 @@ class OptionsSaveReturnTests(unittest.TestCase):
                 self.assertEqual(app.save_options({'verbosity':'low'},'settings'),destination)
                 apply.assert_called_once_with({'verbosity':'low'})
                 panel.accepted.assert_called_once()
-                speech.assert_called_once_with('Options saved. '+{'document':'Back to document.','email_draft':'Back to email draft.','web':'Back to web page.','note':'Back to Notepad.','awake':'Main menu.'}[destination])
+                speech.assert_called_once_with('Options saved. '+{'document':'Back to document.','email_draft':'Back to email draft.','web':'Back to web page.','note':'Back to your note.','awake':'Main menu.'}[destination])
                 sync.assert_called_once_with(destination,True)
 
     def test_success_drops_old_field_notices_before_save_confirmation(self):
