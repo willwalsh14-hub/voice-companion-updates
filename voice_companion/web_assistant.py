@@ -27,6 +27,20 @@ class WebError(Exception):
     pass
 
 
+LEAVE_NOTICE=('This page has changes that are not saved, so it stayed open. '
+              'To leave it anyway, try again. The changes will be lost.')
+
+
+def dialog_text(kind_,message):
+    """What is said for a page's alert, confirm or prompt box. Companion answers
+    Cancel to questions, so a page never takes an action the user did not choose."""
+    message=_plain(message)
+    if message and message[-1] not in '.!?':message+='.'
+    if kind_=='alert':return 'Page message: '+message if message else 'The page showed a message with no words.'
+    if kind_=='prompt':return 'The page asked you to type an answer, so it was canceled.'+(' It asked: '+message if message else '')
+    return 'Website confirmation canceled: '+message if message else 'The website asked a question with no words, so it was canceled.'
+
+
 class FileDownloading(WebError):
     """The address is a file: the browser downloads it and the page stays as it was."""
 
@@ -409,6 +423,8 @@ class BrowserBackend:
         import time
         deadline=time.monotonic()+self.HISTORY_WAIT;checks=0;page=self.page
         while True:
+            if getattr(self,'dialog_notice','')==LEAVE_NOTICE:
+                self.dialog_notice='';raise WebError(LEAVE_NOTICE)
             now=self._history_identity()
             if now is not None and now!=start:
                 if not now[0].startswith(('http://','https://')) and start[0].startswith(('http://','https://')):
@@ -752,12 +768,22 @@ class BrowserBackend:
             return element.count()==1 and element.is_visible() and element.evaluate("(e,item)=>!e.closest('[aria-hidden=\"true\"],[inert]')&&e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
         except Exception:return False
 
+    # How long a second try to leave a page with unsaved changes leaves it.
+    LEAVE_AGAIN=60
+
     def _watch_dialogs(self):
         if not hasattr(self.page,'on'):return
         if getattr(self,'dialog_page',None) is self.page:return
         self.dialog_page=self.page
         def dialog_notice(dialog):
-            self.dialog_notice=('Page message: ' if dialog.type=='alert' else 'Website confirmation canceled: ')+dialog.message
+            import time
+            if dialog.type=='beforeunload':
+                # The page has changes that are not saved. Stay the first time and
+                # say why; a second try soon after leaves, as Leave does in a browser.
+                if time.monotonic()-getattr(self,'leave_asked',float('-inf'))<self.LEAVE_AGAIN:
+                    self.leave_asked=float('-inf');dialog.accept();return
+                self.leave_asked=time.monotonic();self.dialog_notice=LEAVE_NOTICE;dialog.dismiss();return
+            self.dialog_notice=dialog_text(dialog.type,dialog.message)
             dialog.dismiss()
         self.page.on('dialog',dialog_notice)
 
@@ -818,6 +844,7 @@ class BrowserBackend:
             deadline=clicked_at+8
             changed=False
             while time.monotonic()<deadline:
+                if getattr(self,'dialog_notice','')==LEAVE_NOTICE:break
                 candidates=[p for p in opened if not p.is_closed()]
                 if self.context:
                     candidates.extend(p for p in self.context.pages if p not in before_pages and p not in candidates and not p.is_closed())
@@ -848,9 +875,12 @@ class BrowserBackend:
                 try:changed=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text
                 except Exception:pass
             if not changed:
-                if kind(item)=='link':raise WebError('The link did not finish opening. The current page remains available; the link was not clicked again.')
                 dialog_notice=getattr(self,'dialog_notice','')
-                return {'unchanged':True,'notice':(dialog_notice+'. ' if isinstance(dialog_notice,str) and dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
+                dialog_notice=dialog_notice if isinstance(dialog_notice,str) else ''
+                if dialog_notice:self.dialog_notice=''
+                if dialog_notice==LEAVE_NOTICE:raise WebError(LEAVE_NOTICE)
+                if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
+                return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
                     if frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")==before_text:
@@ -1520,7 +1550,7 @@ class WebSession:
         from web_modes import page_key_feedback
         notice=page_key_feedback(key,before,after)
         dialog=getattr(self.backend,'dialog_notice','')
-        if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+'. '+notice).strip()
+        if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+' '+notice).strip()
         return notice
 
     def app_changes(self):
@@ -1974,8 +2004,8 @@ class WebSession:
         if dialog_notice:self.backend.dialog_notice=''
         if self.running_browser()=='webview2' and (urlsplit(url).hostname or '').lower()=='accounts.google.com':
             # Google blocks its own sign-in inside embedded browsers such as WebView2.
-            dialog_notice=GOOGLE_SIGN_IN_NOTICE+(' '+dialog_notice if dialog_notice else '')
-        return ((dialog_notice+'. ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
+            dialog_notice=GOOGLE_SIGN_IN_NOTICE+'.'+(' '+dialog_notice if dialog_notice else '')
+        return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
 
     def refresh_changed(self):
@@ -2165,7 +2195,12 @@ class WebSession:
         except ValueError as exc:
             return str(exc)
         except Exception:
-            return 'The page did not open. Check the address and internet connection.'
+            return self.take_leave_notice() or 'The page did not open. Check the address and internet connection.'
+
+    def take_leave_notice(self):
+        """The notice for a page that stayed open because of unsaved changes, once."""
+        if getattr(self.backend,'dialog_notice','')!=LEAVE_NOTICE:return ''
+        self.backend.dialog_notice='';return LEAVE_NOTICE
 
     def search(self, query, provider=None):
         if not _plain(query): return 'What would you like to look up?'
