@@ -20,6 +20,11 @@ class MailBridge {
     // The newest-first list of the folder last paged through, so each later page
     // (and End) does not read the whole folder again: {folderId, at, headers}.
     this.listCache = null;
+    // The attachment file being saved, kept between its pieces: {key, file}.
+    this.attachmentCache = null;
+    // Files Voice Companion is sending, arriving in pieces: id -> {name, size, received, chunks, at}.
+    this.uploads = new Map();
+    this.uploadSerial = 0;
   }
 
   async handle(message) {
@@ -185,7 +190,10 @@ class MailBridge {
       html = MailBridge.textOf(full, 'text/html')[0] || '';
       plain = MailBridge.textOf(full, 'text/plain')[0] || '';
     }
-    return {html, plain};
+    // The message's files, said when it is read. null: Thunderbird could not list them.
+    let attachments = null;
+    try { attachments = await this.listFiles(messageId); } catch (error) { attachments = null; }
+    return {html, plain, attachments};
   }
 
   async context({messageId}) {
@@ -249,6 +257,152 @@ class MailBridge {
   async deleteFolder({folderId}) {
     await this.api.folders.delete(await this.folder(folderId));
     return true;
+  }
+
+  // ---- Attachments -----------------------------------------------------------------
+
+  // A part the person would call an attachment. Left out: pictures that are only part of the
+  // message's look (Thunderbird names an unnamed part "Part 1.2"), and attachments deleted earlier.
+  static isFile(item) {
+    if (!item || typeof item.partName !== 'string' || !item.partName) return false;
+    const type = String(item.contentType || '').toLowerCase();
+    if (type === 'text/x-moz-deleted') return false;
+    const headers = item.headers || {};
+    const disposition = String((headers['content-disposition'] || [''])[0] || '').toLowerCase();
+    const name = String(item.name || '').trim();
+    const named = name && !/^part \d+(\.\d+)*$/i.test(name);
+    return Boolean(named || /^\s*attachment/.test(disposition) || type === 'message/rfc822');
+  }
+
+  static fileRows(items) {
+    return (items || []).filter(MailBridge.isFile).map(item => ({
+      partName: item.partName,
+      name: String(item.name || '').trim() || (String(item.contentType || '').toLowerCase() === 'message/rfc822' ? 'Attached message.eml' : 'Attachment ' + item.partName),
+      size: Number.isInteger(item.size) && item.size >= 0 ? item.size : null,
+      contentType: String(item.contentType || '')
+    }));
+  }
+
+  // The message's files, or null when this Thunderbird cannot list attachments.
+  async listFiles(messageId) {
+    if (!this.api.messages.listAttachments) return null;
+    return MailBridge.fileRows(await this.api.messages.listAttachments(messageId));
+  }
+
+  async attachments({messageId}) {
+    if (!Number.isInteger(messageId)) throw MailBridge.fail('message', 'That message is not available.');
+    let rows;
+    try { rows = await this.listFiles(messageId); } catch (error) {
+      throw MailBridge.fail('attachment', 'Thunderbird could not list the attachments of this message.');
+    }
+    if (rows === null) throw MailBridge.fail('attachment', 'This version of Thunderbird cannot list attachments.');
+    return rows;
+  }
+
+  static toBase64(bytes) {
+    let text = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) text += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(text);
+  }
+
+  static fromBase64(text) {
+    if (typeof text !== 'string' || /[^A-Za-z0-9+/=]/.test(text)) throw MailBridge.fail('upload', 'The file did not reach Thunderbird whole. Try again.');
+    let binary;
+    try { binary = atob(text); } catch (error) { throw MailBridge.fail('upload', 'The file did not reach Thunderbird whole. Try again.'); }
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  // One piece of an attachment, so a large file never passes in one message.
+  async attachmentChunk({messageId, partName, offset = 0, length = MailBridge.CHUNK}) {
+    if (!Number.isInteger(messageId) || typeof partName !== 'string' || !partName) throw MailBridge.fail('message', 'That attachment is not available.');
+    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(length) || length < 1 || length > MailBridge.CHUNK) {
+      throw MailBridge.fail('attachment', 'Invalid attachment piece.');
+    }
+    const key = messageId + ':' + partName;
+    let file = this.attachmentCache && this.attachmentCache.key === key ? this.attachmentCache.file : null;
+    if (!file) {
+      try { file = await this.api.messages.getAttachmentFile(messageId, partName); } catch (error) { file = null; }
+      if (!file || typeof file.slice !== 'function') {
+        this.attachmentCache = null;
+        throw MailBridge.fail('attachment', 'Thunderbird could not read this attachment. It may be damaged.');
+      }
+      this.attachmentCache = {key, file};
+    }
+    const piece = new Uint8Array(await file.slice(offset, offset + length).arrayBuffer());
+    const done = offset + piece.length >= file.size;
+    if (done) this.attachmentCache = null;
+    return {data: MailBridge.toBase64(piece), size: file.size, done};
+  }
+
+  // A file to send arrives in pieces. Unfinished ones are dropped after a while.
+  uploadStart({name, size}) {
+    if (typeof name !== 'string' || !name.trim() || name.length > 255 || /[\\/\x00-\x1f]/.test(name)) throw MailBridge.fail('upload', 'That file name cannot be attached.');
+    if (!Number.isInteger(size) || size < 0 || size > MailBridge.MAX_UPLOAD) throw MailBridge.fail('upload', 'That file is too large to attach.');
+    const now = this.clock();
+    for (const [id, upload] of this.uploads) if (now - upload.at > MailBridge.UPLOAD_KEEP_MS) this.uploads.delete(id);
+    const uploadId = 'upload' + (++this.uploadSerial);
+    this.uploads.set(uploadId, {name: name.trim(), size, received: 0, chunks: [], at: now});
+    return {uploadId};
+  }
+
+  uploadChunk({uploadId, offset, data}) {
+    const upload = this.uploads.get(uploadId);
+    if (!upload) throw MailBridge.fail('upload', 'The file did not reach Thunderbird. Try again.');
+    if (offset !== upload.received) throw MailBridge.fail('upload', 'The file did not reach Thunderbird whole. Try again.');
+    const bytes = MailBridge.fromBase64(data);
+    if (upload.received + bytes.length > upload.size) throw MailBridge.fail('upload', 'The file did not reach Thunderbird whole. Try again.');
+    upload.chunks.push(bytes); upload.received += bytes.length; upload.at = this.clock();
+    return {received: upload.received};
+  }
+
+  uploadCancel({uploadId}) {
+    this.uploads.delete(uploadId);
+    return true;
+  }
+
+  // The finished File for each upload id, in order.
+  uploadedFiles(ids) {
+    if (ids === undefined || ids === null) return [];
+    if (!Array.isArray(ids) || !ids.every(id => typeof id === 'string')) throw MailBridge.fail('upload', 'The attachments did not reach Thunderbird. Try again.');
+    return ids.map(id => {
+      const upload = this.uploads.get(id);
+      if (!upload || upload.received !== upload.size) throw MailBridge.fail('upload', 'The attachments did not reach Thunderbird whole. Nothing was sent. Try again.');
+      return new File(upload.chunks, upload.name);
+    });
+  }
+
+  // Attach the files, and on a forward, the original's attachments, less the ones the person
+  // took off. Then check that every one is there before anything is sent.
+  async attachFiles(tab, files, forward) {
+    const compose = this.api.compose;
+    let expected = files.length;
+    if (forward && this.api.messages.listAttachments) {
+      const originals = await this.listFiles(forward.messageId) || [];
+      const drop = Array.isArray(forward.drop) ? forward.drop.map(String) : [];
+      // Thunderbird usually brings the original's files along; add any it left out.
+      const present = compose.listAttachments ? (await compose.listAttachments(tab.id)).map(item => item.name) : [];
+      for (const original of originals) {
+        const at = present.indexOf(original.name);
+        if (at >= 0) { present.splice(at, 1); continue; }
+        const file = await this.api.messages.getAttachmentFile(forward.messageId, original.partName);
+        await compose.addAttachment(tab.id, {file, name: original.name});
+      }
+      let kept = originals.length;
+      for (const name of drop) {
+        if (!originals.some(original => original.name === name)) continue;
+        const listed = compose.listAttachments ? await compose.listAttachments(tab.id) : [];
+        const found = listed.find(item => item.name === name);
+        if (found) { await compose.removeAttachment(tab.id, found.id); kept--; }
+      }
+      expected += kept;
+    }
+    for (const file of files) await compose.addAttachment(tab.id, {file, name: file.name});
+    if ((files.length || forward) && compose.listAttachments) {
+      const count = (await compose.listAttachments(tab.id)).length;
+      if (count < expected) throw MailBridge.fail('attach', 'Thunderbird did not add every attachment, so nothing was sent.');
+    }
   }
 
   // Thunderbird's own "add email account" page, driven by Voice Companion (experiment/).
@@ -355,8 +509,18 @@ class MailBridge {
   }
 
   async send(params) {
-    const {identityId, email = '', to = [], cc = [], bcc = [], subject = '', html = '', plain = '', plainOnly = false, reply, forward} = params;
+    const {identityId, attachments} = params;
     if (typeof identityId !== 'string' || !identityId) throw MailBridge.fail('identity', 'Choose a Thunderbird account first.');
+    try {
+      // Files Voice Companion sent ahead (uploadStart, uploadChunk), attached before sending.
+      return await this.sendWith(params, this.uploadedFiles(attachments));
+    } finally {
+      for (const id of Array.isArray(attachments) ? attachments : []) this.uploads.delete(id);
+    }
+  }
+
+  async sendWith(params, files) {
+    const {identityId, email = '', to = [], cc = [], bcc = [], subject = '', html = '', plain = '', plainOnly = false, reply, forward} = params;
     const choices = await this.sendingIdentities(identityId, email);
     if (!choices.length) {
       throw MailBridge.fail('identity', 'This address is no longer in Thunderbird. Say add Thunderbird account to set it up again.');
@@ -365,6 +529,16 @@ class MailBridge {
     for (let index = 0; index < choices.length; index++) {
       const {account, identity} = choices[index];
       const tab = await this.compose(identity.id, {to, cc, bcc, subject, html, plain, plainOnly, reply, forward});
+      try {
+        await this.attachFiles(tab, files, forward);
+      } catch (error) {
+        const copy = await this.saveDraftAndClose(tab);
+        if (error && error.safeMessage) {
+          throw MailBridge.fail(error.code, error.safeMessage + (copy ? ' Your message is saved in Drafts in Thunderbird.' : ''));
+        }
+        throw MailBridge.fail('attach', 'Thunderbird could not attach the files, so nothing was sent.' +
+          (copy ? ' Your message is saved in Drafts in Thunderbird.' : ''));
+      }
       try {
         const sent = await this.api.compose.sendMessage(tab.id, {mode: 'sendNow'});
         // Sent. Thunderbird usually closes its compose window now, but a window can stay
@@ -486,10 +660,14 @@ class MailBridge {
 
 MailBridge.MAIL_CHECK_MS = 15000;   // longest wait for Thunderbird's check for new mail
 MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for its later pages
-MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn'];
+MailBridge.CHUNK = 1024 * 1024;              // largest piece of an attachment sent to Voice Companion
+MailBridge.MAX_UPLOAD = 60 * 1024 * 1024;    // largest file Voice Companion may attach
+MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dropped after this long
+MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn',
+  'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
-  'captureSignIn', 'takeSignIn', 'minimize', 'quit'];
+  'captureSignIn', 'takeSignIn', 'minimize', 'quit', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api) {
