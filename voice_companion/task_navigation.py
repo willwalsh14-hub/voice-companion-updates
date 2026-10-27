@@ -331,6 +331,7 @@ class TaskNavigation:
                     'find {value}':'Find. Type or say the words to find, then press Enter.',
                     'add contact {value}':'Add contact. Type or say the name, the word as, then the email address. Press Enter.',
                     'find contact {value}':'Find contact. Type or say a name, then press Enter.',
+                    'go to {value}':'Go to a day. Type or say a day, such as Friday or October 30, then press Enter.',
                     'find lesson {value}':'Find lesson. Type or say a subject, then press Enter.',
                     'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')

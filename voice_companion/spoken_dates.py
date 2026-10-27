@@ -245,10 +245,11 @@ def _taken(spans, start, end):
     return any(start < b and a < end for a, b in spans)
 
 
-def parse_when(text, now, future=True):
+def parse_when(text, now, future=True, base=None):
     """A day, time and length from words such as "tomorrow from 2 to 3:30 PM called dentist".
 
-    The day defaults to today when only a time is given. rest holds the other words."""
+    "Tomorrow" and "Friday" count from today. When only a time is given, the day is base
+    (the day shown in the Calendar), else today. rest holds the other words."""
     today = now.date() if isinstance(now, datetime) else now
     low = prepare(text)
     result = When()
@@ -314,7 +315,7 @@ def parse_when(text, now, future=True):
             result.minutes = minutes
             result.spans.append(length.span())
     if result.day is None and (result.start is not None or result.all_day):
-        result.day = today
+        result.day = base or today
     rest = list(str(text))
     for a, b in result.spans:
         rest[a:b] = [' '] * (b - a)

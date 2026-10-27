@@ -29,6 +29,10 @@ SCREEN_KEYS = {
     # Contacts (contacts_screen.py). Up, Down, Home, End, letters, Enter and Escape work as in every list.
     'contacts': {'F1': 'help with contacts', 'Ctrl+N': 'add contact', 'Ctrl+E': 'email contact',
                  'Ctrl+F': 'find contact {value}', 'Delete': 'delete contact'},
+    # Calendar (calendar_screen.py). Enter reads the event; Escape goes to the main menu.
+    'calendar': {'F1': 'help with calendar', 'Up': 'previous event', 'Down': 'next event', 'Left': 'previous day',
+                 'Right': 'next day', 'Home': 'today', 'Prior': 'previous week', 'Next': 'next week',
+                 'Ctrl+N': 'add event', 'Delete': 'delete event'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
@@ -61,7 +65,7 @@ OLD_KEYS = {
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
               'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads',
-              'contacts'):
+              'contacts', 'calendar'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
@@ -100,6 +104,8 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
         return None  # Control+V pastes into a typed command; the main menu keys wait.
     if mode == 'downloads' and key == 'Space' and typed_text:
         return None  # a space inside a typed command
+    if mode in ('contacts', 'calendar') and typed_text and not key.startswith(('Ctrl+', 'F')):
+        return None  # arrows, Home and Delete edit a typed command
     if mode == 'mailbox' and key in ('Next', 'Prior') and (context.get('source') or typed_text):
         return None  # Page keys scroll an open message; they change pages only in the list.
     if mode == 'email_draft' and key in BODY_ONLY and email_field:

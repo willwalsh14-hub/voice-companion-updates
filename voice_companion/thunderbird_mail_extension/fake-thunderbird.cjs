@@ -17,6 +17,9 @@ if (process.env.FAKE_THUNDERBIRD_SERVER_MAIL) {
     html: '', plain: 'Plain text of message 26', replyTo: ''});
 }
 state.mailCheck = process.env.FAKE_THUNDERBIRD_MAIL_CHECK || 'ok';
+// Calendars: only Thunderbird's own Home calendar (no Google calendar added), or answers that cannot be read.
+if (process.env.FAKE_THUNDERBIRD_ONLY_HOME_CALENDAR) { state.calendars = state.calendars.filter(c => c.type === 'storage'); state.events = []; }
+if (process.env.FAKE_THUNDERBIRD_CALENDAR_BROKEN) state.calendarBroken = true;
 const messageListeners = [], disconnectListeners = [];
 
 function write(message) {

@@ -35,6 +35,7 @@ class CompanionHarness(unittest.TestCase):
     """Companion's state, patched like the other screen tests, with speech recorded."""
     thunderbird = True        # start the simulated Thunderbird
     old_addon = False         # a copy of the add-on from before contacts and calendars
+    thunderbird_env = {}      # other switches for fake-thunderbird.cjs
 
     def setUp(self):
         self.stack = ExitStack(); self.addCleanup(self.stack.close)
@@ -84,6 +85,7 @@ class CompanionHarness(unittest.TestCase):
         env = dict(os.environ)
         if self.old_addon:
             env['FAKE_THUNDERBIRD_OLD_ADDON'] = '1'
+        env.update(self.thunderbird_env)
         process = subprocess.Popen(['node', str(HERE / 'thunderbird_mail_extension' / 'fake-thunderbird.cjs')],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         def stop():

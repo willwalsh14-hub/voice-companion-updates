@@ -281,6 +281,7 @@ def app_context(mode):
         context['file_index']=(0 if CONFIRM_CHOICE=='yes' else 1) if context.get('confirmation') is not None else FILE_MANAGER.menu_index if FILE_MANAGER.menu else FILE_MANAGER.index
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
     if logical=='contacts':__import__('contacts_screen').context(sys.modules[__name__],context)
+    if logical=='calendar':__import__('calendar_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
         context['menu_letters']=not context['browser_name_input']
@@ -721,6 +722,9 @@ def _navigation_key(key,mode):
         if request!='':return request
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    if mode=='calendar' and __import__('calendar_screen').PENDING is not None:
+        # A question on the Calendar owns the arrows and Enter (this one, all, or no).
+        return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
     from input_parity import screen_command
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
@@ -749,6 +753,7 @@ def _navigation_key(key,mode):
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
     # The Contacts screen (contacts_screen.py); a list opened over it keeps its own keys.
     if mode=='contacts' and not NAMED_LIST:return __import__('contacts_screen').navigation_key(sys.modules[__name__],key)
+    if mode=='calendar' and not NAMED_LIST:return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
@@ -2974,6 +2979,9 @@ def _handle(text, mode, typed=False):
         # The Contacts screen, and "email John" or "open contacts" from the main menu (contacts_screen.py).
         contacts_result=__import__('contacts_screen').handle(sys.modules[__name__],text,mode,typed)
         if contacts_result is not None:return contacts_result
+        # The Calendar screen, and "what's on my calendar today?" from other screens (calendar_screen.py).
+        calendar_result=__import__('calendar_screen').handle(sys.modules[__name__],text,mode,typed)
+        if calendar_result is not None:return calendar_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
     # A whole command only; in a document, email or note these words are text.

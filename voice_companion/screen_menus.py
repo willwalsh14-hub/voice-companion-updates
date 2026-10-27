@@ -158,6 +158,25 @@ MENUS = {
             ('Contacts help', 'F1', 'help with contacts'),
             ('Main menu', 'Ctrl+F1', 'main menu')]),
     ]),
+    'calendar': ('Calendar menu', [
+        ('Event', [
+            ('Read event', 'Enter', 'read event'),
+            ('Next event', 'Down', 'next event'),
+            ('Previous event', 'Up', 'previous event'),
+            ('Add event', 'Ctrl+N', 'add event'),
+            ('Delete event', 'Delete', 'delete event')]),
+        ('Day', [
+            ('Today', 'Home', 'today'),
+            ('Next day', 'Right', 'next day'),
+            ('Previous day', 'Left', 'previous day'),
+            ('Next week', 'Page Down', 'next week'),
+            ('Previous week', 'Page Up', 'previous week'),
+            ('Go to a day', '', 'go to {value}')]),
+        ('Calendar', [
+            ('Refresh calendar', '', 'refresh calendar'),
+            ('Calendar help', 'F1', 'help with calendar'),
+            ('Main menu', 'Ctrl+F1', 'main menu')]),
+    ]),
     'help': ('Help menu', [
         ('Help', [
             ('Help topics', '', 'help topics'),
@@ -211,7 +230,7 @@ ALT_SCREENS = frozenset(MENUS) | {'awake', 'browser_menu', 'media', 'podcast'}
 OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('menu', 'open menu', 'reader menu'),
                 'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('note menu',),
                 'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu'),
-                'contacts': ('menu', 'open menu', 'contact menu')}
+                'contacts': ('menu', 'open menu', 'contact menu'), 'calendar': ('menu', 'open menu')}
 NUMBER_WORDS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
 # Context flags that mean a text box, list or question owns the keyboard.
 BUSY_CONTEXT = ('named_list', 'task_input', 'account_entry', 'browser_name_input', 'file_name_input', 'media_input',
