@@ -155,6 +155,83 @@
     return true;
   };
 
+  // Change a vCard's name (FN and N), first EMAIL or first TEL. Every other line is kept as it
+  // was, with its group and parameters (item1.EMAIL;TYPE=home). An empty email or phone removes
+  // that line. Undefined leaves it alone.
+  Bridge.editVcard = function (text, {name, email, phone}) {
+    const lines = String(text || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/).filter(line => line.trim());
+    const nameOf = line => {
+      const colon = line.indexOf(':');
+      if (colon < 1) return '';
+      const head = line.slice(0, colon).split(';')[0];
+      return head.slice(head.lastIndexOf('.') + 1).toUpperCase();
+    };
+    const head = line => line.slice(0, line.indexOf(':') + 1);
+    const endAt = () => {
+      const at = lines.findIndex(line => /^END:VCARD$/i.test(line.trim()));
+      return at < 0 ? lines.length : at;
+    };
+    // Replace the value of the first line with this name, add one before END:VCARD, or remove it.
+    const put = (property, value, fresh) => {
+      const at = lines.findIndex(line => nameOf(line) === property);
+      if (value === '') { if (at >= 0) lines.splice(at, 1); return; }
+      if (at >= 0) {
+        const kept = head(lines[at]);
+        lines[at] = kept + (property === 'TEL' && /;VALUE=uri/i.test(kept) ? 'tel:' : '') + escapeValue(value);
+      } else if (fresh) {
+        lines.splice(endAt(), 0, fresh + escapeValue(value));
+      }
+    };
+    if (!lines.length || !/^BEGIN:VCARD$/i.test(lines[0].trim())) lines.unshift('BEGIN:VCARD', 'VERSION:4.0');
+    if (!lines.some(line => /^END:VCARD$/i.test(line.trim()))) lines.push('END:VCARD');
+    if (typeof name === 'string') {
+      put('FN', name, 'FN:');
+      const at = lines.findIndex(line => nameOf(line) === 'N');
+      if (at >= 0) {
+        const parts = name.trim().split(/\s+/);
+        const family = parts.length > 1 ? parts.pop() : '';
+        lines[at] = head(lines[at]) + escapeValue(family) + ';' + escapeValue(parts.join(' ')) + ';;;';
+      }
+    }
+    if (typeof email === 'string') put('EMAIL', email, 'EMAIL;PREF=1:');
+    if (typeof phone === 'string') put('TEL', phone, 'TEL;VALUE=TEXT:');
+    return lines.join('\r\n') + '\r\n';
+  };
+
+  Bridge.prototype.updateContact = async function ({id, name, email, phone}) {
+    if (typeof id !== 'string' || !id) throw Bridge.fail('contact', 'That contact is not available.');
+    if (name !== undefined && (typeof name !== 'string' || !name.trim() || name.length > 100 || /[\r\n<>]/.test(name))) {
+      throw Bridge.fail('name', 'Use a shorter name without symbols.');
+    }
+    if (email !== undefined && (typeof email !== 'string' || email.length > 254 || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())))) {
+      throw Bridge.fail('address', 'That is not a complete email address.');
+    }
+    if (phone !== undefined && (typeof phone !== 'string' || phone.length > 40 || /[\r\n]/.test(phone))) {
+      throw Bridge.fail('phone', 'Use a shorter phone number.');
+    }
+    if (name === undefined && email === undefined && phone === undefined) throw Bridge.fail('contact', 'Nothing was changed.');
+    const {api, vcardOnly} = this.contactsApi();
+    let node = null;
+    try { node = await api.get(id); } catch (error) { node = null; }
+    if (!node) throw Bridge.fail('contact', 'That contact is no longer in Thunderbird.');
+    if (node.readOnly) throw Bridge.fail('contact', 'This address book cannot be changed, so the contact was not changed.');
+    const old = node.vCard || (node.properties || {}).vCard || '';
+    const changes = {name: name === undefined ? undefined : name.trim(), email: email === undefined ? undefined : email.trim(),
+      phone: phone === undefined ? undefined : phone.trim()};
+    let card;
+    if (old) {
+      card = Bridge.editVcard(old, changes);
+    } else {
+      // An old contact with no vCard: make one from what it has, with the changes.
+      const now = Bridge.contactFrom(node, null);
+      card = Bridge.vcard(changes.name !== undefined ? changes.name : now.name, changes.email !== undefined ? changes.email : (now.emails[0] || ''),
+        changes.phone !== undefined ? changes.phone : (now.phones[0] || ''), newUid());
+    }
+    if (vcardOnly) await api.update(id, card);
+    else await api.update(id, {vCard: card});
+    return true;
+  };
+
   // ---- Calendars (the voiceCompanionCalendar Experiment) ---------------------------
 
   Bridge.prototype.calendarApi = function () {
@@ -288,7 +365,7 @@
   };
 
   const reading = ['addressBooks', 'contacts', 'calendars', 'events'];
-  const changing = ['addContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent'];
+  const changing = ['addContact', 'updateContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent'];
   for (const name of reading.concat(changing)) if (!Bridge.METHODS.includes(name)) Bridge.METHODS.push(name);
   // None of these change mail, so the kept message list stays valid.
   for (const name of reading.concat(changing)) if (!Bridge.READ_ONLY.includes(name)) Bridge.READ_ONLY.push(name);

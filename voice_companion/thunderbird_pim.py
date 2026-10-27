@@ -62,6 +62,12 @@ def add_contact(name, email='', phone='', book_id=''):
     return call('addContact', bookId=book_id, name=name, email=email, phone=phone)
 
 
+def update_contact(contact_id, **changes):
+    """Change a contact's name, first email address or first phone number (name=, email=, phone=).
+    An empty email or phone removes it; the rest of the contact is kept."""
+    return call('updateContact', id=contact_id, **{key: value for key, value in changes.items() if value is not None})
+
+
 def delete_contact(contact_id):
     return call('deleteContact', id=contact_id)
 

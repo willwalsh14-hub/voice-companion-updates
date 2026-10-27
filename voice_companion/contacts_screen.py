@@ -6,7 +6,10 @@ Keys (each also has a voice command, see input_parity.SCREEN_KEYS and the guide)
 - Enter opens the contact: Email this person comes first, then the name, each email,
   each phone and the address book. Escape goes back to the list.
 - Control+E starts an email to the contact at once. Control+N adds a contact
-  (name, then email, then phone). Delete removes one after a Yes or No question.
+  (name, then email, then phone). F2 edits one: choose the name, email or phone,
+  say the new one, then answer a Yes or No question ("rename contact to Bob" and
+  "change the phone to 555 0100" do it in one step). Delete removes one after a
+  Yes or No question.
   Control+F finds a contact by name. F1 is help. Alt opens the Contacts menu.
 - Escape on the list goes to the main menu.
 
@@ -43,8 +46,10 @@ SELECTED = None        # the contact's key, so a reload keeps your place
 VIEW = 'list'          # 'list' or 'details'
 DETAILS = []           # [(label, action)] for the open contact
 DETAIL_INDEX = 0
-PENDING = None         # ('delete', contact): a Yes or No question
+PENDING = None         # ('delete', contact), ('edit-field', contact) or ('edit', contact): a question
 CHOICE = 'no'
+CHOICES = ('yes', 'no')
+EDIT = {}              # the contact being changed, which part, and its new value
 ADDING = {}            # the new contact while its name, email and phone are asked
 BOOK = None
 
@@ -61,6 +66,7 @@ def book(m):
 def reset():
     global CONTACTS, INDEX, SELECTED, VIEW, DETAILS, DETAIL_INDEX, PENDING, ADDING, BOOK
     CONTACTS, INDEX, SELECTED, VIEW, DETAILS, DETAIL_INDEX, PENDING, ADDING, BOOK = [], 0, None, 'list', [], 0, None, {}, None
+    EDIT.clear()
 
 
 def reload(m, keep=None):
@@ -118,6 +124,19 @@ def menu_state(m):
 def navigation_key(m, key):
     """The command for a key on the Contacts screen, or None when the key does nothing here."""
     global CHOICE
+    if PENDING is not None and PENDING[0] == 'edit-field':
+        # What to change: Name, Email, Phone. Enter sends an internal request ("email" alone opens Email).
+        if key in ('Up', 'Left', 'ShiftTab', 'Home', 'Down', 'Right', 'Tab', 'End'):
+            place = CHOICES.index(CHOICE)
+            wanted = 0 if key == 'Home' else len(CHOICES) - 1 if key == 'End' else place + (-1 if key in ('Up', 'Left', 'ShiftTab') else 1)
+            if not 0 <= wanted < len(CHOICES) or wanted == place:
+                m.speak('Start of list.' if key in ('Up', 'Left', 'ShiftTab', 'Home') else 'End of list.')
+            else:
+                CHOICE = CHOICES[wanted]
+                m.speak(field_choice())
+                m.sync_app_context(MODE)
+            return None
+        return {'Enter': '@contacts:field ' + CHOICE, 'Space': '@contacts:field ' + CHOICE, 'Escape': 'no'}.get(key)
     if PENDING is not None:
         if key.lower() in ('y', 'alt+y'):
             return 'yes'
@@ -191,6 +210,8 @@ def _handle(m, raw, command, mode, typed):
 
 def command_here(m, raw, command):
     global PENDING, CHOICE, VIEW, DETAIL_INDEX
+    if PENDING is not None and PENDING[0] in ('edit-field', 'edit'):
+        return edit_answer(m, command)
     if PENDING is not None:
         _, contact = PENDING
         if command in YES:
@@ -288,6 +309,11 @@ def command_here(m, raw, command):
             m.speak(describe())
             return MODE
         return email_contact(m, contact)
+    if command in EDIT_START:
+        return start_editing(m)
+    phrase = edit_phrase(raw)
+    if phrase is not None:
+        return start_editing(m, *phrase)
     if command in ('delete contact', 'remove contact', 'delete this contact', 'delete', 'remove'):
         if contact is None:
             m.speak(describe())
@@ -350,6 +376,12 @@ def internal(m, raw, mode):
         return mode
     if action == 'delete':
         return command_here(m, 'delete contact', 'delete contact')
+    if action == 'edit':
+        return command_here(m, 'edit contact', 'edit contact')
+    if action == 'field' and PENDING is not None and PENDING[0] == 'edit-field':
+        return edit_answer(m, letter or value)
+    if action in ('edit-name', 'edit-email', 'edit-phone'):
+        return edit_step(m, action[5:], value)
     if action in ('add-name', 'add-email', 'add-phone'):
         return add_step(m, action[4:], value)
     if action == 'find':
@@ -382,6 +414,7 @@ def details_for(contact):
         items.append(('Phone: ' + phone, ''))
     items.append(('Saved in: ' + contact.where(), ''))
     if not contact.read_only:
+        items.append(('Edit contact', '@contacts:edit'))
         items.append(('Delete contact', '@contacts:delete'))
     return items
 
@@ -557,4 +590,189 @@ def add_step(m, step, value):
     if found is not None:
         select(found)
     m.speak('Saved ' + details['name'] + ' ' + where + '. ' + describe())
+    return MODE
+
+
+# ---- Editing ---------------------------------------------------------------------
+#
+# F2 or "edit contact": choose the name, email address or phone number, say the new one,
+# then a Yes or No question that names the change. "Rename contact to Bob", "change the
+# email to bob at example dot com" and "change the phone to 555 0100" skip the choice.
+# Only the first email address and phone number change; the others are kept.
+
+EDIT_FIELDS = ('name', 'email', 'phone')
+FIELD_WORDS = {
+    'name': ('name', 'the name', 'full name', 'rename', 'rename it', 'change the name', 'change name'),
+    'email': ('email', 'e mail', 'email address', 'e mail address', 'the email', 'the email address', 'address',
+              'change the email', 'change the email address'),
+    'phone': ('phone', 'phone number', 'number', 'the phone', 'the phone number', 'telephone', 'change the phone',
+              'change the phone number'),
+}
+EDIT_START = ('edit contact', 'edit', 'change contact', 'edit this contact', 'change this contact', 'edit it',
+              'modify contact', 'edit the contact', 'change the contact')
+_WHOSE = r'(?:the |their |his |her |its )?'
+EDIT_PHRASES = (
+    ('name', r'(?:rename)(?: the| this)?(?: contact| it)?(?: (?:to|as) (?P<to>.+))?'),
+    ('name', r'change ' + _WHOSE + r'name(?: to (?P<value>.+))?'),
+    ('email', r'change ' + _WHOSE + r'(?:e-?mail|e mail)(?: address)?(?: to (?P<value>.+))?'),
+    ('phone', r'change ' + _WHOSE + r'(?:phone|telephone|cell phone|phone number|number)(?: number)?(?: to (?P<value>.+))?'),
+)
+NONE_WORDS = ('', 'none', 'no', 'nothing', 'remove', 'remove it', 'clear', 'clear it', 'delete', 'delete it', 'skip',
+              'no email', 'no phone', 'no phone number', 'leave it blank', 'leave it out')
+
+
+def edit_phrase(raw):
+    """(field, value) for a one-step edit such as "rename contact to Bob", else None."""
+    words = ' '.join(str(raw).replace('’', "'").split()).strip(' .!?,')
+    for field, pattern in EDIT_PHRASES:
+        found = re.fullmatch(pattern, words, re.I)
+        if found:
+            value = found.groupdict().get('to') or found.groupdict().get('value')
+            return field, (value.strip(' !?,') if value else None)
+    return None
+
+
+def field_label(field, contact):
+    if field == 'name':
+        return 'Name: ' + (contact.name or 'none')
+    if field == 'email':
+        return 'Email: ' + (contact.emails[0] if contact.emails else 'none')
+    return 'Phone: ' + (contact.phones[0] if contact.phones else 'none')
+
+
+def field_choice():
+    return announce_item(field_label(CHOICE, EDIT['contact']), CHOICES.index(CHOICE), len(CHOICES), hotkey=False)
+
+
+def ask(m, action, words, optional=False):
+    m.task_navigation().prompt = ('@contacts:' + action + ' {value}', MODE) + ((True,) if optional else ())
+    m.speak(words)
+    return 'task_input'
+
+
+def start_editing(m, field=None, value=None):
+    global PENDING, CHOICE, CHOICES, VIEW
+    contact = current()
+    if contact is None:
+        m.speak(describe())
+        return MODE
+    if contact.read_only:
+        m.speak(contact.name + ' is in a Thunderbird address book that cannot be changed, so it cannot be edited.')
+        return MODE
+    VIEW = 'list'           # afterwards the list says the changed contact
+    EDIT.clear()
+    EDIT['contact'] = contact
+    if field is None:
+        PENDING, CHOICES, CHOICE = ('edit-field', contact), EDIT_FIELDS, EDIT_FIELDS[0]
+        m.speak('Edit ' + contact.name + '. What do you want to change? ' + field_choice() +
+                ' Use the arrows and Enter, or say what to change. Escape cancels.')
+        return MODE
+    return choose_field(m, field, value)
+
+
+def choose_field(m, field, value=None):
+    contact = EDIT['contact']
+    EDIT['field'] = field
+    if value:
+        return edit_step(m, field, value)
+    if field == 'name':
+        return ask(m, 'edit-name', 'New name for ' + contact.name + '? Type or say it, then press Enter. Escape cancels.')
+    what = 'email address' if field == 'email' else 'phone number'
+    return ask(m, 'edit-' + field, 'New ' + what + ' for ' + contact.name + '? Type or say it, then press Enter. '
+                                   'To remove it, press Enter or say none. Escape cancels.', optional=True)
+
+
+def edit_step(m, field, value):
+    contact = EDIT.get('contact')
+    if contact is None:
+        return MODE
+    EDIT['field'] = field
+    value = str(value).strip()
+    if field == 'name':
+        name = value.rstrip('.!?').strip()
+        if not name:
+            return ask(m, 'edit-name', 'Type or say the name, then press Enter. Escape cancels.')
+        if len(name) > 80 or re.search(r'[\r\n<>]', name):
+            return ask(m, 'edit-name', 'Use a shorter name without symbols. Type or say the name, then press Enter.')
+        EDIT['value'] = name
+        return confirm_edit(m)
+    removing = m.normalized_command(value) in NONE_WORDS
+    if field == 'email':
+        new = ''
+        if not removing:
+            from email_draft import normalize_recipient
+            try:
+                new = normalize_recipient(value)
+            except ValueError as exc:
+                return ask(m, 'edit-email', str(exc) + ' Type it again, or press Escape to cancel.', optional=True)
+    else:
+        new = '' if removing else value.rstrip('.!?').strip()
+        if len(new) > 40 or re.search(r'[\r\n]', new):
+            return ask(m, 'edit-phone', 'Use a shorter phone number. Type it again, or press Escape to cancel.', optional=True)
+    others = contact.phones if field == 'email' else contact.emails
+    rest = (contact.emails if field == 'email' else contact.phones)[1:]
+    if not new and not others and not rest:
+        return ask(m, 'edit-' + field, 'A contact needs an email address or a phone number. Type ' +
+                   ('an email address' if field == 'email' else 'a phone number') + ', or press Escape to cancel.', optional=True)
+    EDIT['value'] = new
+    return confirm_edit(m)
+
+
+def confirm_edit(m):
+    global PENDING, CHOICE, CHOICES
+    contact, field, new = EDIT['contact'], EDIT['field'], EDIT['value']
+    old = contact.name if field == 'name' else ((contact.emails if field == 'email' else contact.phones) or [''])[0]
+    if new == old or field == 'email' and new.casefold() == old.casefold():
+        EDIT.clear()
+        PENDING = None
+        m.speak('That is the same as before, so nothing was changed. ' + describe())
+        return MODE
+    if field == 'name':
+        question = 'Rename ' + contact.name + ' to ' + new + '?'
+    else:
+        what = 'email address' if field == 'email' else 'phone number'
+        question = ('Change the ' + what + ' for ' + contact.name + ' to ' + new + '?') if new else \
+            ('Remove the ' + what + ' ' + old + ' from ' + contact.name + '?')
+    PENDING, CHOICES, CHOICE = ('edit', contact), ('yes', 'no'), 'yes'
+    m.speak(question + ' Say Yes to save or No to cancel.')
+    return MODE
+
+
+def edit_answer(m, command):
+    global PENDING, CHOICE
+    action, contact = PENDING
+    if command in ('help', 'what mode', 'toggle audio') or command.startswith(('help with ', 'help for ')):
+        return None
+    if command in NO:
+        PENDING = None
+        EDIT.clear()
+        m.speak('Not changed. ' + describe())
+        return MODE
+    if action == 'edit-field':
+        field = next((f for f, words in FIELD_WORDS.items() if command in words), None)
+        if field is None:
+            m.speak('What do you want to change for ' + contact.name + '? ' + field_choice() +
+                    ' Use the arrows and Enter, or say what to change. Escape cancels.')
+            return MODE
+        PENDING = None
+        return choose_field(m, field)
+    if command not in YES:
+        return confirm_edit(m)
+    PENDING = None
+    field, value = EDIT['field'], EDIT['value']
+    EDIT.clear()
+    global BOOK
+    BOOK = BOOK or book(m)
+    try:
+        name = BOOK.update(contact, **{field: value})
+    except ValueError as exc:
+        m.speak(str(exc) + ' The change was not saved.')
+        return MODE
+    reload(m, keep=contact.key)
+    email = value if field == 'email' else (contact.emails[0] if contact.emails else '')
+    found = next((i for i, c in enumerate(CONTACTS) if c.source == contact.source and (c.id == contact.id and contact.source == 'thunderbird'
+                  or c.name == name and (not email or email in c.emails))), None)
+    if found is not None:
+        select(found)
+    m.speak('Saved ' + name + '. ' + describe())
     return MODE

@@ -28,7 +28,7 @@ SCREEN_KEYS = {
                   'Ctrl+Up': 'move download earlier', 'Ctrl+Down': 'move download later'},
     # Contacts (contacts_screen.py). Up, Down, Home, End, letters, Enter and Escape work as in every list.
     'contacts': {'F1': 'help with contacts', 'Ctrl+N': 'add contact', 'Ctrl+E': 'email contact',
-                 'Ctrl+F': 'find contact {value}', 'Delete': 'delete contact'},
+                 'Ctrl+F': 'find contact {value}', 'Delete': 'delete contact', 'F2': 'edit contact'},
     # Calendar (calendar_screen.py). Enter reads the event; Escape goes to the main menu.
     'calendar': {'F1': 'help with calendar', 'Up': 'previous event', 'Down': 'next event', 'Left': 'previous day',
                  'Right': 'next day', 'Home': 'today', 'Prior': 'previous week', 'Next': 'next week',

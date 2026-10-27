@@ -97,7 +97,8 @@ Contents
   13.3 Email a contact
   13.4 Add a contact
   13.5 Find or delete a contact
-  13.6 Get your Google or Outlook contacts
+  13.6 Change a contact
+  13.7 Get your Google or Outlook contacts
 14 Calendar
   14.1 Open your calendar
   14.2 Move to another day
@@ -1066,6 +1067,7 @@ Press Enter on a contact to open its details. If it has an email address, the fi
 - To go back to the list, press Escape.
 - To hear all the details at once, say "Read contact".
 - To hear only the phone numbers, say "Call details".
+- To change the contact, say "Edit contact", or press F2. See part 13.6.
 
 13.3 Email a contact
 - To email the contact you are on, say "Email contact", or press Control+E. A new email opens with the address filled in. Then Companion asks for the subject.
@@ -1082,6 +1084,7 @@ Press Enter on a contact to open its details. If it has an email address, the fi
 4. Type or say the phone number, then press Enter. To leave it out, press Enter.
 A contact needs an email address or a phone number. To stop, press Escape.
 When you use Thunderbird, the contact goes into Thunderbird. It goes into the address book for your email account, if Thunderbird has one. If not, it goes into Personal Address Book. Thunderbird then copies it to Google or Outlook. Without Thunderbird, the contact is saved on this computer.
+If a contact on this computer already has that name, Companion tells you and keeps it. To change that contact, see part 13.6.
 You can also say it all at once, such as "Add contact Bob as bob@example.com".
 
 13.5 Find or delete a contact
@@ -1089,7 +1092,17 @@ You can also say it all at once, such as "Add contact Bob as bob@example.com".
 - To delete the contact you are on, say "Delete contact", or press Delete. Companion asks first. No is chosen first. Press Up Arrow, then Enter, for Yes. You can also press Y or N.
 Some address books, such as a company list, cannot be changed. Companion tells you when a contact cannot be deleted.
 
-13.6 Get your Google or Outlook contacts
+13.6 Change a contact
+1. Move to the contact.
+2. Say "Edit contact", or press F2. You hear what you can change: the name, the email address, and the phone number.
+3. Use Up Arrow and Down Arrow, then press Enter. Or say what to change, such as "Phone".
+4. Type or say the new one, then press Enter. To remove an email address or phone number, press Enter with nothing typed, or say "None".
+5. Listen to the question. It names the change. Say "Yes" to save, or "No" to cancel. Yes is chosen first, so Enter saves.
+You can also say it all at once, such as "Rename contact to Bob Smith", "Change the email to bob at example dot com", or "Change the phone to 555 0100".
+If a contact has more than one email address or phone number, the first one changes. The others are kept. A contact needs an email address or a phone number, so Companion will not remove the last one.
+You can also press Enter on a contact, then choose Edit contact. Some address books, such as a company list, cannot be changed. Companion tells you when a contact cannot be edited.
+
+13.7 Get your Google or Outlook contacts
 Companion gets these contacts from Thunderbird. Thunderbird needs your account first. See part 10.4.
 When you add a Google account, Thunderbird offers to add its address book and calendar. Choose both.
 If your account is in Thunderbird but its contacts are missing, a helper can add them in Thunderbird:

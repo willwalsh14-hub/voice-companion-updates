@@ -159,6 +159,7 @@ MENUS = {
             ('Open details', 'Enter', 'open contact'),
             ('Read all details', '', 'read contact'),
             ('Phone number', '', 'call details'),
+            ('Edit contact', 'F2', 'edit contact'),
             ('Delete contact', 'Delete', 'delete contact')]),
         ('Contacts', [
             ('Add contact', 'Ctrl+N', 'add contact'),

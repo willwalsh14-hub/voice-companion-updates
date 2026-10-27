@@ -284,6 +284,16 @@ function addContactsAndCalendars(api, state) {
       return id;
     },
     delete: async id => { state.contactCalls.push({delete: id}); state.contacts = state.contacts.filter(c => c.id !== id); },
+    // Thunderbird 128, manifest version 2: update(id, properties). A vCard replaces the card, and
+    // Thunderbird works out the old single fields (DisplayName, PrimaryEmail) from it again.
+    update: async (id, properties) => {
+      if (typeof properties !== 'object' || !properties.vCard) throw new Error('Type error for parameter properties');
+      const found = state.contacts.find(c => c.id === id);
+      if (!found) throw new Error('Contact does not exist');
+      if (found.readOnly) throw new Error('Cannot modify a read-only address book');
+      state.contactCalls.push({update: id, vCard: properties.vCard});
+      found.properties = {vCard: properties.vCard};
+    },
   };
 
   // Times are milliseconds (UTC) for timed events, YYYY-MM-DD for all-day ones.

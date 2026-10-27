@@ -90,6 +90,51 @@ async function contactChecks() {
   await assert.rejects(call('deleteContact', {id: 'c5'}), /cannot be changed/);
   await assert.rejects(call('deleteContact', {id: 'nope'}), /no longer in Thunderbird/);
 
+  // Changing a contact: only the lines asked for change; the rest of the card is kept as it was.
+  const card = id => state.contacts.find(c => c.id === id).properties.vCard;
+  assert.equal(await call('updateContact', {id: 'c1', name: 'John Smyth', phone: '555-0200'}), true);
+  assert.match(card('c1'), /\r\nFN:John Smyth\r\n/);
+  assert.match(card('c1'), /\r\nEMAIL:john@example\.com\r\n/, 'the email address is kept');
+  assert.match(card('c1'), /\r\nTEL;TYPE=cell:555-0200\r\n/, 'the phone keeps its type');
+  assert.match(card('c1'), /^BEGIN:VCARD\r\nVERSION:4\.0\r\n[\s\S]*END:VCARD\r\n$/);
+  let after = (await call('contacts')).contacts;
+  assert.deepEqual(after.find(c => c.id === 'c1'), {id: 'c1', bookId: 'book-google', book: 'me@gmail.com', name: 'John Smyth',
+    emails: ['john@example.com'], phones: ['555-0200'], readOnly: false});
+  // The first email address changes; others stay. An empty one removes it.
+  await call('updateContact', {id: 'c2', email: 'mary@new.example'});
+  assert.deepEqual((await call('contacts')).contacts.find(c => c.id === 'c2').emails, ['mary@new.example', 'mary.work@example.org']);
+  await call('updateContact', {id: 'c2', email: ''});
+  assert.deepEqual((await call('contacts')).contacts.find(c => c.id === 'c2').emails, ['mary.work@example.org']);
+  // A card with no phone gets one before END:VCARD; a grouped line (item1.EMAIL) keeps its group and type.
+  await call('updateContact', {id: 'c2', phone: '555-0300'});
+  assert.match(card('c2'), /\r\nTEL;VALUE=TEXT:555-0300\r\nEND:VCARD\r\n$/);
+  await call('updateContact', {id: 'c4', email: 'ann@new.example'});
+  assert.match(card('c4'), /\r\nitem1\.EMAIL;TYPE=home:ann@new\.example\r\n/);
+  assert.match(card('c4'), /\r\nN:Brown;Ann;;;\r\n/, 'the name is not touched when it is not changed');
+  // A new name changes the N line too, and adds the FN line a card must have.
+  await call('updateContact', {id: 'c4', name: 'Ann Green'});
+  assert.match(card('c4'), /\r\nN:Green;Ann;;;\r\n/);
+  assert.match(card('c4'), /\r\nFN:Ann Green\r\nEND:VCARD\r\n$/);
+  assert.equal((await call('contacts')).contacts.find(c => c.id === 'c4').name, 'Ann Green');
+  // A phone saved as a tel: address stays one.
+  state.contacts.push({id: 'c9', parentId: 'book-personal', type: 'contact', readOnly: false,
+    properties: {vCard: 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Tel Uri\r\nTEL;VALUE=uri:tel:+1-555-0123\r\nNOTE:Keep me\r\nEND:VCARD\r\n'}});
+  await call('updateContact', {id: 'c9', phone: '+1-555-0999'});
+  assert.equal(card('c9'), 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Tel Uri\r\nTEL;VALUE=uri:tel:+1-555-0999\r\nNOTE:Keep me\r\nEND:VCARD\r\n');
+  // A name with a comma is escaped; a card with no N line is not given one.
+  await call('updateContact', {id: 'c9', name: 'Uri, Tel'});
+  assert.equal(card('c9'), 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Uri\\, Tel\r\nTEL;VALUE=uri:tel:+1-555-0999\r\nNOTE:Keep me\r\nEND:VCARD\r\n');
+  // Checks before Thunderbird is asked, and Thunderbird's answers.
+  const before = state.contactCalls.length;
+  await assert.rejects(call('updateContact', {id: 'c1', name: ' '}), /shorter name/);
+  await assert.rejects(call('updateContact', {id: 'c1', email: 'not an address'}), /not a complete email address/);
+  await assert.rejects(call('updateContact', {id: 'c1', phone: '1'.repeat(41)}), /shorter phone number/);
+  await assert.rejects(call('updateContact', {id: 'c1'}), /Nothing was changed/);
+  await assert.rejects(call('updateContact', {id: ''}), /not available/);
+  assert.equal(state.contactCalls.length, before);
+  await assert.rejects(call('updateContact', {id: 'c5', name: 'X'}), /cannot be changed, so the contact was not changed/);
+  await assert.rejects(call('updateContact', {id: 'nope', name: 'X'}), /no longer in Thunderbird/);
+
   // Newer Thunderbird (addressBooks.contacts): create takes the vCard itself.
   const newer = createFakeMessenger();
   const created = [];
@@ -99,6 +144,11 @@ async function contactChecks() {
   const newerBridge = loadBridge(newer.api);
   const answer = plain(await newerBridge.handle({id: 6, method: 'addContact', params: {name: 'Ray', email: 'ray@example.com'}}));
   assert.deepEqual(answer.result, {id: 'new1', bookId: 'book-personal', book: 'Personal Address Book'});
+  // ... and update takes the vCard itself too.
+  const updated = [];
+  newer.api.addressBooks.contacts.update = async (id, vCard) => { assert.equal(typeof vCard, 'string'); updated.push([id, vCard]); };
+  assert.equal(plain(await newerBridge.handle({id: 10, method: 'updateContact', params: {id: 'c3', name: 'Joe Plumber'}})).result, true);
+  assert.match(updated[0][1], /\r\nFN:Joe Plumber\r\n/);
   assert.equal(plain(await newerBridge.handle({id: 7, method: 'contacts'})).result.contacts.length, 5);
 
   // Without the address book permission (an older add-on copy's manifest), a plain answer.

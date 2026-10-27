@@ -160,12 +160,12 @@ class ContactsScreenTests(CompanionHarness):
         mode = self.open()
         self.press('Letter:j', mode)
         self.press('Enter', mode)
-        self.assertEqual(self.said(), 'John Smith. Email this person, 1 of 6. Escape goes back to the list.')
+        self.assertEqual(self.said(), 'John Smith. Email this person, 1 of 7. Escape goes back to the list.')
         labels = [label for label, _ in contacts_screen.DETAILS]
         self.assertEqual(labels, ['Email this person', 'Name: John Smith', 'Email: john@example.com', 'Phone: 555-0100',
-                                  'Saved in: Thunderbird address book me@gmail.com', 'Delete contact'])
+                                  'Saved in: Thunderbird address book me@gmail.com', 'Edit contact', 'Delete contact'])
         self.press('Down', mode); self.press('Down', mode); self.press('Down', mode)
-        self.assertEqual(self.said(), 'Phone: 555-0100, 4 of 6.')
+        self.assertEqual(self.said(), 'Phone: 555-0100, 4 of 7.')
         self.press('Escape', mode)
         self.assertEqual(self.said(), 'Contacts. John Smith, john@example.com, 555-0100, 3 of 5.')
         self.press('Enter', mode)
@@ -245,13 +245,81 @@ class ContactsScreenTests(CompanionHarness):
         self.assertEqual(self.said(), 'Deleted Plumber. Mary Jones, mary@example.com, 4 of 4.')
         # From the details view: Delete contact is the last line; afterwards the list is back.
         self.press('Letter:a', mode); self.press('Enter', mode); self.press('End', mode)
-        self.assertEqual(self.said(), 'Delete contact, 5 of 5.')
+        self.assertEqual(self.said(), 'Delete contact, 6 of 6.')
         self.press('Enter', mode); self.press('Up', mode); self.press('Enter', mode)
         self.assertEqual(self.said(), 'Deleted Ann Brown. Help Desk, help@work.example, 555-0111, 1 of 3.')
         self.assertEqual(contacts_screen.VIEW, 'list')
         self.say('first contact', mode)
         self.press('Delete', mode)
         self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be deleted.')
+
+    def test_f2_edits_a_contact_with_a_question(self):
+        mode = self.open()
+        self.press('Letter:j', mode)
+        self.assertEqual(app.navigation_key('F2', mode), 'edit contact')
+        self.press('F2', mode)
+        self.assertEqual(self.said(), 'Edit John Smith. What do you want to change? Name: John Smith, 1 of 3. '
+                                      'Use the arrows and Enter, or say what to change. Escape cancels.')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'Email: john@example.com, 2 of 3.')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'Phone: 555-0100, 3 of 3.')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'End of list.')
+        mode = self.press('Enter', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'New phone number for John Smith? Type or say it, then press Enter. '
+                                                             'To remove it, press Enter or say none. Escape cancels.'))
+        mode = app.handle('555-0200', mode)
+        self.assertEqual((mode, self.said()), ('contacts', 'Change the phone number for John Smith to 555-0200? '
+                                                           'Say Yes to save or No to cancel.'))
+        self.assertEqual(app.app_context(mode)['confirmation'], 'yes')
+        self.press('Enter', mode)
+        self.assertEqual(self.said(), 'Saved John Smith. John Smith, john@example.com, 555-0200, 3 of 5.')
+        # By voice, in one step, with recognizer punctuation.
+        app.handle('Rename contact to John Smyth.', mode)
+        self.assertEqual(self.said(), 'Rename John Smith to John Smyth? Say Yes to save or No to cancel.')
+        app.handle('Yes.', mode)
+        self.assertEqual(self.said(), 'Saved John Smyth. John Smyth, john@example.com, 555-0200, 3 of 5.')
+        app.handle('change the email to john at new dot com', mode)
+        self.assertEqual(self.said(), 'Change the email address for John Smyth to john@new.com? Say Yes to save or No to cancel.')
+        app.handle('no', mode)
+        self.assertEqual(self.said(), 'Not changed. John Smyth, john@example.com, 555-0200, 3 of 5.')
+        # The details have Edit contact too; it is the same list.
+        self.press('Enter', mode)
+        self.assertIn(('Edit contact', '@contacts:edit'), contacts_screen.DETAILS)
+        self.say('edit contact', mode)
+        self.press('Escape', mode)
+        self.assertEqual(self.said(), 'Not changed. John Smyth, john@example.com, 555-0200, 3 of 5.')
+        self.assertEqual(contacts_screen.VIEW, 'list')
+
+    def test_editing_keeps_an_email_or_phone_and_refuses_read_only_books(self):
+        mode = self.open()
+        self.press('Letter:p', mode)
+        mode = app.handle('change the phone number', mode)
+        mode = self.press('Enter', mode)        # nothing typed: remove it
+        self.assertEqual((mode, self.said()), ('task_input', 'A contact needs an email address or a phone number. '
+                                                             'Type a phone number, or press Escape to cancel.'))
+        mode = self.press('Escape', mode)
+        self.assertEqual(mode, 'contacts')
+        self.assertEqual(contacts_screen.current().phones, ['555-0199'])
+        self.press('Letter:j', mode)
+        mode = app.handle('change the email', mode)
+        mode = app.handle('not an address', mode)
+        self.assertEqual(mode, 'task_input')
+        self.assertTrue(self.said().startswith('I could not understand one complete email address.'))
+        self.assertTrue(self.said().endswith('Type it again, or press Escape to cancel.'))
+        mode = app.handle('none', mode)
+        self.assertEqual(self.said(), 'Remove the email address john@example.com from John Smith? Say Yes to save or No to cancel.')
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'Saved John Smith. John Smith, 555-0100, 3 of 5.')
+        # The same name again changes nothing.
+        app.handle('rename contact to John Smith', mode)
+        self.assertEqual(self.said(), 'That is the same as before, so nothing was changed. John Smith, 555-0100, 3 of 5.')
+        app.handle('first contact', mode)
+        app.handle('next contact', mode)
+        self.press('F2', mode)
+        self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be edited.')
+        self.assertIsNone(contacts_screen.PENDING)
 
     def test_find_by_control_f_and_by_voice(self):
         mode = self.open()
@@ -369,6 +437,36 @@ class NoThunderbirdContactsTests(CompanionHarness):
         mode = self.press('Delete', mode)
         self.press('Up', mode); self.press('Enter', mode)
         self.assertIsNone(AddressBook(self.root).get('plumber'))
+
+    def test_contacts_on_this_computer_can_be_edited_without_losing_any(self):
+        book = AddressBook(self.root)
+        book.save('Lee', 'lee@example.com', '555-0101')
+        book.save('Bob', 'bob@example.com')
+        mode = app.handle('open contacts', 'awake')
+        self.press('Letter:l', mode)
+        app.handle('rename contact to Lee Ann', mode)
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'Saved Lee Ann. Lee Ann, lee@example.com, 555-0101, 2 of 2.')
+        self.assertIsNone(AddressBook(self.root).get('lee'))
+        self.assertEqual(AddressBook(self.root).get('lee ann'), {'name': 'Lee Ann', 'address': 'lee@example.com', 'phone': '555-0101'})
+        # Another contact's name is never taken over.
+        app.handle('rename contact to bob', mode)
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'There is already a contact named Bob. The change was not saved.')
+        self.assertEqual(AddressBook(self.root).get('bob')['address'], 'bob@example.com')
+        app.handle('change the phone to 555 0102', mode)
+        app.handle('yes', mode)
+        self.assertEqual(AddressBook(self.root).get('lee ann')['phone'], '555 0102')
+
+    def test_adding_a_name_already_saved_here_does_not_replace_it(self):
+        AddressBook(self.root).save('Bob', 'bob@example.com')
+        mode = app.handle('open contacts', 'awake')
+        mode = app.handle('add contact', mode)
+        for answer in ('Bob', 'skip', '555 0100'):
+            mode = app.handle(answer, mode)
+        self.assertEqual(self.said(), 'There is already a contact named Bob. To change it, choose Bob, then press F2. '
+                                      'The contact was not saved.')
+        self.assertEqual(AddressBook(self.root).get('bob'), {'name': 'Bob', 'address': 'bob@example.com'})
 
     def test_add_contact_as_address_still_works_everywhere(self):
         app.handle('add contact Bob as bob at example dot com', 'awake')

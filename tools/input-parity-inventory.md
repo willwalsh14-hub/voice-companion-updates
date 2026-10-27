@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 649
-- Already had both ways: 515
+- Actions inventoried: 650
+- Already had both ways: 516
 - Gaps found: 134
 - Gaps fixed (Added): 126
 - Not applicable (N/A, with reason): 8
@@ -2438,6 +2438,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Call details"
 - Keyboard: Alt, 1, 4
 - Status: Added: Alt menu path
+
+### Edit contact
+
+- Voice: "Edit contact"
+- Keyboard: F2
+- Status: Both
 
 ### Delete contact
 
