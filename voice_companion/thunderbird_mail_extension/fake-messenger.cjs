@@ -338,6 +338,41 @@ function addContactsAndCalendars(api, state) {
       state.events = state.events.filter(e => !(e.calendarId === calendarId && e.id === id && (removeAll || e.occurrence === occurrence)));
       return {deleted: true, all: removeAll};
     },
+    // Like experiment/calendar.js: one event, one day of a repeating event (occurrence), or all of them.
+    modifyEvent: async ({calendarId, id, occurrence, all, changes}) => {
+      state.calendarCalls.push({modify: JSON.parse(JSON.stringify({calendarId, id, occurrence, all, changes}))});
+      const calendar = state.calendars.find(c => c.id === calendarId);
+      if (!calendar) return {modified: false, reason: 'missing'};
+      if (calendar.readOnly) return {modified: false, reason: 'readonly'};
+      const series = state.events.filter(e => e.calendarId === calendarId && e.id === id);
+      if (!series.length) return {modified: false, reason: 'missing'};
+      const one = occurrence && !all && series[0].recurring;
+      const target = changes.calendarId ? state.calendars.find(c => c.id === changes.calendarId) : null;
+      if (changes.calendarId && !target) return {modified: false, reason: 'missing'};
+      if (target && target.readOnly) return {modified: false, reason: 'readonly'};
+      if (target && one) return {modified: false, reason: 'series'};
+      const chosen = one ? series.filter(e => e.occurrence === occurrence) : series;
+      if (!chosen.length) return {modified: false, reason: 'missing'};
+      for (const event of chosen) {
+        for (const key of ['title', 'location', 'notes']) if (typeof changes[key] === 'string') event[key] = changes[key];
+        if (changes.start !== undefined) {
+          event.allDay = Boolean(changes.allDay);
+          event.start = event.allDay ? changes.start : Number(changes.start);
+          event.end = event.allDay ? changes.end : Number(changes.end);
+        }
+        if (changes.shift || changes.length) {
+          if (!event.allDay) event.start += (changes.shift || 0) * 60000;
+          const length = changes.length || (event.allDay ? 0 : (event.end - (event.start - (changes.shift || 0) * 60000)) / 60000);
+          if (event.allDay) {
+            if (changes.length) event.end = new Date(Date.parse(event.start + 'T00:00:00Z') + changes.length * 60000).toISOString().slice(0, 10);
+          } else {
+            event.end = event.start + length * 60000;
+          }
+        }
+        if (target) Object.assign(event, {calendarId: target.id, calendarName: target.name});
+      }
+      return {modified: true, id};
+    },
   };
 }
 

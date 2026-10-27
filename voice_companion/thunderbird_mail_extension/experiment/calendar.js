@@ -10,6 +10,8 @@
  *    into one entry per day they happen.
  *  - createEvent: add one event (all-day or timed) to one calendar.
  *  - deleteEvent: delete one event, or one day of a repeating event.
+ *  - modifyEvent: change one event, one day of a repeating event, or all of them;
+ *    or move an event to another calendar.
  *
  * Times cross this boundary as milliseconds since 1970 (UTC). All-day events
  * cross as YYYY-MM-DD dates, because they have no time zone. Thunderbird syncs
@@ -143,6 +145,87 @@ async function deleteEvent(calendarId, id, occurrence, all) {
   return { deleted: true, all: false };
 }
 
+// A calIDuration: whole days for an all-day date, else seconds (negative moves earlier).
+function duration(cal, seconds, isDate) {
+  const value = cal.createDuration();
+  if (isDate) value.days = Math.round(seconds / 86400);
+  else value.inSeconds = seconds;
+  return value;
+}
+
+// Put the changes on a changeable copy of an event (or one day of a repeating event).
+function applyChanges(cal, item, changes) {
+  if (typeof changes.title === 'string') item.title = changes.title;
+  for (const [key, property] of [['location', 'LOCATION'], ['notes', 'DESCRIPTION']]) {
+    if (typeof changes[key] !== 'string') continue;
+    if (changes[key]) item.setProperty(property, changes[key]);
+    else item.deleteProperty(property);
+  }
+  if (typeof changes.start === 'string') {
+    if (changes.allDay) {
+      item.startDate = cal.createDateTime(changes.start.replace(/-/g, ''));
+      item.endDate = cal.createDateTime(changes.end.replace(/-/g, ''));
+    } else {
+      // The event keeps its own time zone; a floating or all-day one gets this computer's.
+      const old = item.startDate;
+      const zone = old && !old.isDate && old.timezone && !old.timezone.isFloating ? old.timezone : cal.dtz.defaultTimezone;
+      item.startDate = cal.dtz.jsDateToDateTime(new Date(Number(changes.start)), zone);
+      item.endDate = cal.dtz.jsDateToDateTime(new Date(Number(changes.end)), zone);
+    }
+  }
+  if (Number.isInteger(changes.shift) || Number.isInteger(changes.length)) {
+    // A whole repeating event: the first day moves by the same minutes (in its own time zone,
+    // so daylight saving does not change the hour), and the rule makes every other day from it.
+    const start = item.startDate.clone();
+    if (changes.shift) start.addDuration(duration(cal, changes.shift * 60, start.isDate));
+    const minutes = Number.isInteger(changes.length) ? changes.length
+      : Math.round((millis(cal, item.endDate) - millis(cal, item.startDate)) / 60000);
+    const end = start.clone();
+    end.addDuration(duration(cal, minutes * 60, start.isDate));
+    item.startDate = start;
+    item.endDate = end;
+  }
+}
+
+async function modifyEvent(details) {
+  const { cal } = modules();
+  const changes = details.changes || {};
+  const calendar = calendarById(cal, details.calendarId);
+  if (!calendar) return { modified: false, reason: 'missing' };
+  if (calendar.readOnly) return { modified: false, reason: 'readonly' };
+  let target = null;
+  if (changes.calendarId && changes.calendarId !== details.calendarId) {
+    target = calendarById(cal, changes.calendarId);
+    if (!target) return { modified: false, reason: 'missing' };
+    if (target.readOnly) return { modified: false, reason: 'readonly' };
+  }
+  const item = await calendar.getItem(details.id);
+  if (!item) return { modified: false, reason: 'missing' };
+  if (details.occurrence && !details.all && item.recurrenceInfo) {
+    // One day of a repeating event: what Thunderbird's "Edit only this occurrence" does.
+    if (target) return { modified: false, reason: 'series' };
+    const occurrence = item.recurrenceInfo.getOccurrenceFor(cal.createDateTime(details.occurrence));
+    if (!occurrence) return { modified: false, reason: 'missing' };
+    const changed = occurrence.clone();
+    applyChanges(cal, changed, changes);
+    const series = item.clone();
+    series.recurrenceInfo.modifyException(changed, true);
+    await calendar.modifyItem(series, item);
+    return { modified: true, id: String(item.id) };
+  }
+  const changed = item.clone();
+  applyChanges(cal, changed, changes);
+  if (target) {
+    // Another calendar: add it there first, then remove it here, so a failure never loses it.
+    changed.calendar = target.superCalendar;
+    const added = await target.adoptItem(changed);
+    await calendar.deleteItem(item);
+    return { modified: true, id: String((added && added.id) || changed.id) };
+  }
+  await calendar.modifyItem(changed, item);
+  return { modified: true, id: String(item.id) };
+}
+
 var voiceCompanionCalendar = class extends ExtensionCommon.ExtensionAPI {
   getAPI(context) {
     return {
@@ -164,6 +247,9 @@ var voiceCompanionCalendar = class extends ExtensionCommon.ExtensionAPI {
         },
         async deleteEvent(calendarId, id, occurrence, all) {
           try { return await deleteEvent(calendarId, id, occurrence, all); } catch (error) { return { deleted: false, reason: 'failed' }; }
+        },
+        async modifyEvent(details) {
+          try { return await modifyEvent(details); } catch (error) { return { modified: false, reason: 'failed' }; }
         },
       },
     };

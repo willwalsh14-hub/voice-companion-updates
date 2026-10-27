@@ -228,8 +228,67 @@
     return {all: Boolean(result.all)};
   };
 
+  // Change one event, one day of a repeating event (occurrence), or a whole repeating event (all).
+  // changes holds only what changes: title, location, notes; allDay with start and end (as for addEvent);
+  // calendarId to move it; or, for a whole repeating event, shift (minutes later or earlier, the same
+  // day) and length (minutes), so every day keeps its own date.
+  Bridge.prototype.modifyEvent = async function ({calendarId, id, occurrence = '', all = false, changes = {}}) {
+    if (typeof calendarId !== 'string' || !calendarId || typeof id !== 'string' || !id || typeof occurrence !== 'string' ||
+        !changes || typeof changes !== 'object') {
+      throw Bridge.fail('event', 'That event is not available.');
+    }
+    const clean = {};
+    if ('title' in changes) {
+      if (typeof changes.title !== 'string' || !changes.title.trim() || changes.title.length > 300) throw Bridge.fail('title', 'Give the event a shorter name.');
+      clean.title = changes.title.trim();
+    }
+    for (const [key, limit] of [['location', 300], ['notes', 4000]]) {
+      if (!(key in changes)) continue;
+      if (typeof changes[key] !== 'string' || changes[key].length > limit) throw Bridge.fail('details', 'The place or notes are too long.');
+      clean[key] = key === 'location' ? changes[key].trim() : changes[key];
+    }
+    if ('start' in changes || 'end' in changes || 'allDay' in changes) {
+      const {start, end} = changes;
+      const allDay = Boolean(changes.allDay);
+      if (allDay ? !(DAY.test(String(start)) && DAY.test(String(end)) && end > start)
+        : !(Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= MAX_RANGE_MS)) {
+        throw Bridge.fail('time', 'The event must end after it starts.');
+      }
+      Object.assign(clean, {allDay, start: String(start), end: String(end)});
+    }
+    if ('shift' in changes || 'length' in changes) {
+      if (!all) throw Bridge.fail('time', 'A new time for every day works only for a whole repeating event.');
+      const shift = 'shift' in changes ? changes.shift : 0;
+      const length = 'length' in changes ? changes.length : null;
+      if (!Number.isInteger(shift) || Math.abs(shift) >= 1440 || length !== null && !(Number.isInteger(length) && length > 0 && length <= 62 * 1440)) {
+        throw Bridge.fail('time', 'Every one of them must stay on the same day.');
+      }
+      if (shift) clean.shift = shift;
+      if (length !== null) clean.length = length;
+    }
+    if ('calendarId' in changes) {
+      if (typeof changes.calendarId !== 'string' || !changes.calendarId) throw Bridge.fail('calendar', 'Choose a calendar first.');
+      if (occurrence && !all) throw Bridge.fail('calendar', 'Only a whole repeating event can move to another calendar.');
+      if (changes.calendarId !== calendarId) clean.calendarId = changes.calendarId;
+    }
+    if (!Object.keys(clean).length) throw Bridge.fail('event', 'Nothing was changed.');
+    const calendar = this.calendarApi();
+    if (typeof calendar.modifyEvent !== 'function') {
+      throw Bridge.fail('calendar', 'The Thunderbird calendar is not available. Close Thunderbird, then try again.');
+    }
+    const result = await calendar.modifyEvent({calendarId, id, occurrence, all: Boolean(all), changes: clean});
+    if (!result || !result.modified) {
+      const reason = result && result.reason;
+      throw Bridge.fail('event', reason === 'missing' ? 'That event is no longer in the calendar.'
+        : reason === 'readonly' ? 'That calendar cannot be changed, so the event was not changed.'
+          : reason === 'series' ? 'Only a whole repeating event can move to another calendar.'
+            : 'Thunderbird could not save the change.');
+    }
+    return {id: String(result.id || id)};
+  };
+
   const reading = ['addressBooks', 'contacts', 'calendars', 'events'];
-  const changing = ['addContact', 'deleteContact', 'addEvent', 'deleteEvent'];
+  const changing = ['addContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent'];
   for (const name of reading.concat(changing)) if (!Bridge.METHODS.includes(name)) Bridge.METHODS.push(name);
   // None of these change mail, so the kept message list stays valid.
   for (const name of reading.concat(changing)) if (!Bridge.READ_ONLY.includes(name)) Bridge.READ_ONLY.push(name);
