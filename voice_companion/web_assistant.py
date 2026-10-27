@@ -2946,12 +2946,12 @@ class WebSession:
             try: self.favorites.add(name, self.snapshot['url'])
             except WebError as exc: return str(exc)
             return 'Saved favorite ' + name + '. Say list favorites to hear it.'
-        match = re.fullmatch(r'(?:save|add) favorite (?:as |called )?(.+)', spoken, re.I)
+        match = re.fullmatch(r'(?:save|add) favorite (?:as |called )?(.+)', _plain(spoken).rstrip('.!?,'), re.I)
         if match:
             if not self.snapshot: return 'Open a website first.'
             try: self.favorites.add(match[1], self.snapshot['url'])
             except WebError as exc: return str(exc)
-            return 'Saved favorite ' + match[1] + '.'
+            return 'Saved favorite ' + _plain(match[1]) + '.'
         if command in ('list favorites','my favorites'):
             values = self.favorites.all()
             self.favorite_items=list(values.items())

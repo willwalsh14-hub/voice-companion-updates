@@ -286,5 +286,16 @@ class PlayerSpeedTests(unittest.TestCase):
                 self.assertEqual(said[-1], heard, spoken)
 
 
+class FavoriteNameTests(unittest.TestCase):
+    def test_a_spoken_favorite_name_keeps_no_closing_period(self):
+        from web_assistant import WebSession
+        folder = tempfile.mkdtemp(); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        session = WebSession(folder, Mock())
+        session.snapshot = {'url': 'https://www.va.gov/', 'title': 'VA', 'text': 'x', 'controls': [], 'elements': []}
+        session._sync_browser_tab = lambda: None
+        self.assertEqual(session.command('Save favorite as VA news.'), 'Saved favorite VA news.')
+        self.assertEqual([item['name'] for item in session.favorites.all().values()], ['VA news'])
+
+
 if __name__ == '__main__':
     unittest.main()
