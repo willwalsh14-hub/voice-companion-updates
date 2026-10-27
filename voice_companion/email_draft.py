@@ -66,6 +66,7 @@ class VoiceEmail(VoiceDocument):
     response_context: dict = field(default_factory=dict)
     # Files from this computer: [{'path', 'name', 'size'}]. Read again when the email is sent.
     attachments: list = field(default_factory=list)
+    EMPTY_NOTICE = 'The message body is empty.'
 
     def __post_init__(self):
         super().__post_init__()

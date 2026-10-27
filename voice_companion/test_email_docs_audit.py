@@ -287,6 +287,30 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(document.process('list headings'),
                          'Title, heading level 1, paragraph 1. Plans, heading level 2, paragraph 3.')
 
+    def test_cell_moves_outside_a_table_and_at_its_ends(self):
+        # "Next cell" in a normal paragraph said "End of table."
+        from document_editor import Paragraph
+        document = self.document(Paragraph('Intro.'))
+        self.assertEqual(document.process('next cell'), 'You are not in a table.')
+        self.assertEqual(document.process('previous cell'), 'You are not in a table.')
+        document.process('go to end of document')
+        document.process('create table with one row and two columns')
+        document.dictating = True
+        document.process('Name')
+        self.assertEqual(document.process('previous cell'), 'Start of table. Row 1, column 1. Name')
+        document.process('next cell')
+        self.assertEqual(document.process('next cell'), 'End of table. Row 1, column 2. Empty cell.')
+
+    def test_reading_an_empty_document_says_it_is_empty(self):
+        from document_editor import Paragraph
+        for document in (self.document(), self.document(Paragraph(''), Paragraph(' '))):
+            for command in ('read document', 'start reading', 'next word', 'previous line', 'continue reading'):
+                self.assertEqual(document.process(command), 'The document is empty.', command)
+        from email_draft import VoiceEmail
+        draft = VoiceEmail(self.folder / 'Email Drafts', recipient='sam@example.com', subject='Hi')
+        draft.compose_step = 'body'
+        self.assertEqual(draft.process('read email draft'), 'The message body is empty.')
+
     def test_moving_past_the_first_or_last_paragraph_says_so(self):
         from document_editor import Paragraph
         document = self.document(Paragraph('One.'), Paragraph('Two.'))

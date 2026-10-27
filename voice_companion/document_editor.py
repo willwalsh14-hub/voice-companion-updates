@@ -250,6 +250,9 @@ class VoiceDocument:
     # Alignment and spacing for the first paragraph; later paragraphs copy it.
     pending_layout: tuple | None = field(default=None, repr=False)
 
+    # Said when there is nothing to read; an email draft says "message body".
+    EMPTY_NOTICE = 'The document is empty.'
+
     def __setattr__(self, name, value):
         # A selection is a pair of paragraph/offset positions. Remember the text it
         # was made against so a later edit (delete paragraph, dictation, undo...)
@@ -1159,6 +1162,8 @@ class VoiceDocument:
                 return self.describe_cell()
             return p.text.strip() or 'Empty paragraph.'
         if request:
+            if not any(p.text.strip() for p in self.paragraphs):
+                return self.EMPTY_NOTICE   # as every other command says it
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             unit, direction = request
             if unit!='read' and self.paragraphs:
@@ -1453,20 +1458,24 @@ class VoiceDocument:
             return self.describe_cell()
         if command in ('next cell', 'move right a cell'):
             cell = self.table_cell()
-            if cell:
-                for index in range(self.cursor+1, len(self.paragraphs)):
-                    if self.paragraphs[index].table_id == cell.table_id:
-                        self.cursor = index
-                        return self.describe_cell()
-            return 'End of table.'
+            if cell is None:
+                return 'You are not in a table.'
+            for index in range(self.cursor+1, len(self.paragraphs)):
+                if self.paragraphs[index].table_id == cell.table_id:
+                    self.cursor = index
+                    return self.describe_cell()
+            # At the last (or first) cell, say where you stay, as at the other table edges.
+            return 'End of table. ' + self.describe_cell()
         if command in ('previous cell', 'move left a cell'):
             cell = self.table_cell()
-            if cell:
-                for index in range(self.cursor-1, -1, -1):
-                    if self.paragraphs[index].table_id == cell.table_id:
-                        self.cursor = index
-                        return self.describe_cell()
-            return 'Start of table.'
+            if cell is None:
+                return 'You are not in a table.'
+            for index in range(self.cursor-1, -1, -1):
+                if self.paragraphs[index].table_id == cell.table_id:
+                    self.cursor = index
+                    return self.describe_cell()
+            # At the last (or first) cell, say where you stay, as at the other table edges.
+            return 'Start of table. ' + self.describe_cell()
         if command in ('next row', 'row down'):
             return self.table_move(row_delta=1)
         if command in ('previous row', 'row up'):
