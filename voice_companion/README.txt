@@ -28,7 +28,7 @@ After an update, close and reopen a guide to see its new text.
 5. Before you rely on it
 This is still a test app. Check important text and actions. Speech can hear the wrong words.
 Email needs an account connection. Test sending with someone you know before relying on it. Read the whole review before you say "Yes".
-Some web pages and audio streams may not work. See chapter 22 of the guide for help.
+Some web pages and audio streams may not work. See the Fix A Problem chapter of the guide for help.
 
 6. If you are building the app
 These source files are also used to make the installer. Build instructions are in BUILD ON WINDOWS - READ ME.txt.

@@ -274,6 +274,9 @@ class ContactsScreenTests(CompanionHarness):
         self.assertIn('Which email address for Mary Jones?', self.said())
         mode = app.handle('send an email to Bob', 'awake')
         self.assertEqual(self.said(), 'No contact named bob. Say open contacts to hear your contacts, or add contact to save one.')
+        # A sentence is not a name.
+        app.handle('Write to the council about the road.', 'awake')
+        self.assertNotIn('No contact named', self.said())
         mode = app.handle('email the plumber', 'awake')
         self.assertNotEqual(mode, 'email_draft')
         app.handle('email plumber', 'awake')

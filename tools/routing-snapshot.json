@@ -1,4 +1,23 @@
 {
+"awake | Add appointment tomorrow at 3 PM called doctor": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | Add contact": {
+"said": [
+"Contacts. No contacts yet. Press Control+N to add one, or say add contact. Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account.",
+"New contact. Type or say the name, then press Enter. Escape cancels."
+],
+"screen_after": "task_input"
+},
+"awake | Add event": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
 "awake | Browser tabs are confusing.": {
 "said": [
 "Choose one of the available Guided browser options."
@@ -11,15 +30,39 @@
 ],
 "screen_after": "awake"
 },
+"awake | Calendar": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | Call details": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | Capital letters are important.": {
 "said": [
 "Choose one of the available When encountering capital letters options."
 ],
 "screen_after": "awake"
 },
+"awake | Contacts": {
+"said": [
+"Contacts. No contacts yet. Press Control+N to add one, or say add contact. Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account."
+],
+"screen_after": "contacts"
+},
 "awake | Date.": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "awake"
+},
+"awake | Delete contact": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -41,6 +84,29 @@
 ],
 "screen_after": "awake"
 },
+"awake | Email John about lunch tomorrow.": {
+"said": [
+"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | Email John.": {
+"said": [
+"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | Find John": {
+"calls": [
+"call.search('Find John', provider=None)",
+"call.page_revision.__ne__(<mock>)",
+"call.search().__str__()"
+],
+"said": [
+"<mock>"
+],
+"screen_after": "web"
+},
 "awake | Find a way to call Bob.": {
 "calls": [
 "call.search('Find a way to call Bob.', provider=None)",
@@ -51,6 +117,12 @@
 "<mock>"
 ],
 "screen_after": "web"
+},
+"awake | Go to October 30": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
 },
 "awake | Hello there.": {
 "said": [
@@ -70,11 +142,35 @@
 ],
 "screen_after": "awake"
 },
+"awake | Next contact": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Next event": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | No, thanks.": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
+},
+"awake | Open calendar": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | Open contacts": {
+"said": [
+"Contacts. No contacts yet. Press Control+N to add one, or say add contact. Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account."
+],
+"screen_after": "contacts"
 },
 "awake | Pitch the tent by the lake.": {
 "said": [
@@ -91,6 +187,18 @@
 "awake | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "awake"
+},
+"awake | Read event": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Send an email to John Smith": {
+"said": [
+"No contact named john smith. Say open contacts to hear your contacts, or add contact to save one."
 ],
 "screen_after": "awake"
 },
@@ -142,6 +250,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | Today": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | Tomorrow.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -178,6 +298,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | What do I have tomorrow?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | What is on the menu tonight?": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -190,9 +322,33 @@
 ],
 "screen_after": "awake"
 },
+"awake | What's on Friday?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | What's on my calendar today?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "awake"
+},
 "awake | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "awake"
+},
+"awake | Write to Mary": {
+"said": [
+"No contact named mary. Say open contacts to hear your contacts, or add contact to save one."
+],
+"screen_after": "awake"
+},
+"awake | Write to the council about the road.": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -402,7 +558,7 @@
 },
 "awake | beginning of list": {
 "said": [
-"File manager (F), 1 of 13."
+"File manager (F), 1 of 15."
 ],
 "screen_after": "awake"
 },
@@ -905,7 +1061,7 @@
 },
 "awake | connect google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "awake"
 },
@@ -1258,7 +1414,7 @@
 },
 "awake | end of list": {
 "said": [
-"Exit Voice Companion (E), 13 of 13."
+"Exit Voice Companion (E), 15 of 15."
 ],
 "screen_after": "awake"
 },
@@ -1418,7 +1574,7 @@
 },
 "awake | first item": {
 "said": [
-"File manager (F), 1 of 13."
+"File manager (F), 1 of 15."
 ],
 "screen_after": "awake"
 },
@@ -1592,7 +1748,7 @@
 },
 "awake | help": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -1712,7 +1868,7 @@
 },
 "awake | last item": {
 "said": [
-"Exit Voice Companion (E), 13 of 13."
+"Exit Voice Companion (E), 15 of 15."
 ],
 "screen_after": "awake"
 },
@@ -1955,7 +2111,7 @@
 },
 "awake | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2157,7 +2313,7 @@
 },
 "awake | next": {
 "said": [
-"File manager (F), 1 of 13."
+"File manager (F), 1 of 15."
 ],
 "screen_after": "awake"
 },
@@ -2421,7 +2577,7 @@
 },
 "awake | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2534,7 +2690,7 @@
 },
 "awake | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2742,7 +2898,7 @@
 },
 "awake | previous": {
 "said": [
-"Exit Voice Companion (E), 13 of 13."
+"Exit Voice Companion (E), 15 of 15."
 ],
 "screen_after": "awake"
 },
@@ -2928,7 +3084,7 @@
 },
 "awake | refresh google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "awake"
 },
@@ -3511,7 +3667,7 @@
 },
 "awake | start of list": {
 "said": [
-"File manager (F), 1 of 13."
+"File manager (F), 1 of 15."
 ],
 "screen_after": "awake"
 },
@@ -3665,7 +3821,7 @@
 },
 "awake | sync google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "awake"
 },
@@ -3803,7 +3959,7 @@
 },
 "awake | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -4209,6 +4365,33 @@
 ],
 "screen_after": "awake"
 },
+"document | Add appointment tomorrow at 3 PM called doctor": {
+"said": [
+"Add appointment tomorrow at 3 PM called doctor"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Add appointment tomorrow at 3 PM called doctor"
+]
+},
+"document | Add contact": {
+"said": [
+"Add contact"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Add contact"
+]
+},
+"document | Add event": {
+"said": [
+"Add event"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Add event"
+]
+},
 "document | Browser tabs are confusing.": {
 "said": [
 "Browser tabs are confusing."
@@ -4227,6 +4410,24 @@
 "Hello world. Second sentence. CC is fine with me."
 ]
 },
+"document | Calendar": {
+"said": [
+"Calendar"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Calendar"
+]
+},
+"document | Call details": {
+"said": [
+"Call details"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Call details"
+]
+},
 "document | Capital letters are important.": {
 "said": [
 "Capital letters are important."
@@ -4236,6 +4437,15 @@
 "Hello world. Second sentence. Capital letters are important."
 ]
 },
+"document | Contacts": {
+"said": [
+"Contacts"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Contacts"
+]
+},
 "document | Date.": {
 "said": [
 "Date."
@@ -4243,6 +4453,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Date."
+]
+},
+"document | Delete contact": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Ducking level, loud.": {
@@ -4272,6 +4491,33 @@
 "Hello world. Second sentence. Ducking under the fence was hard."
 ]
 },
+"document | Email John about lunch tomorrow.": {
+"said": [
+"Email John about lunch tomorrow."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Email John about lunch tomorrow."
+]
+},
+"document | Email John.": {
+"said": [
+"Email John."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Email John."
+]
+},
+"document | Find John": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | Find a way to call Bob.": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
@@ -4279,6 +4525,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | Go to October 30": {
+"said": [
+"Go to October 30"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Go to October 30"
 ]
 },
 "document | Hello there.": {
@@ -4308,6 +4563,24 @@
 "Hello world. Second sentence."
 ]
 },
+"document | Next contact": {
+"said": [
+"Next contact"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Next contact"
+]
+},
+"document | Next event": {
+"said": [
+"Next event"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Next event"
+]
+},
 "document | No, thanks.": {
 "said": [
 "No, thanks."
@@ -4315,6 +4588,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. No, thanks."
+]
+},
+"document | Open calendar": {
+"said": [
+"Open calendar"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Open calendar"
+]
+},
+"document | Open contacts": {
+"said": [
+"Open contacts"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Open contacts"
 ]
 },
 "document | Pitch the tent by the lake.": {
@@ -4342,6 +4633,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Rate this product five stars."
+]
+},
+"document | Read event": {
+"said": [
+"Read event"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Read event"
+]
+},
+"document | Send an email to John Smith": {
+"said": [
+"Send an email to John Smith"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Send an email to John Smith"
 ]
 },
 "document | Send to the team at the office.": {
@@ -4416,6 +4725,24 @@
 "Hello world. Second sentence. Time."
 ]
 },
+"document | Today": {
+"said": [
+"Today"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Today"
+]
+},
+"document | Tomorrow.": {
+"said": [
+"Tomorrow."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Tomorrow."
+]
+},
 "document | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -4470,6 +4797,24 @@
 "Hello world. Second sentence."
 ]
 },
+"document | What do I have tomorrow?": {
+"said": [
+"What do I have tomorrow?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. What do I have tomorrow?"
+]
+},
+"document | What is on the menu tonight?": {
+"said": [
+"What is on the menu tonight?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. What is on the menu tonight?"
+]
+},
 "document | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -4488,6 +4833,24 @@
 "Hello world. Second sentence. What time is the meeting?"
 ]
 },
+"document | What's on Friday?": {
+"said": [
+"What's on Friday?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. What's on Friday?"
+]
+},
+"document | What's on my calendar today?": {
+"said": [
+"What's on my calendar today?"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. What's on my calendar today?"
+]
+},
 "document | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
@@ -4495,6 +4858,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | Write to Mary": {
+"said": [
+"Write to Mary"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Write to Mary"
+]
+},
+"document | Write to the council about the road.": {
+"said": [
+"Write to the council about the road."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. Write to the council about the road."
 ]
 },
 "document | Yes, please.": {
@@ -6565,7 +6946,7 @@
 },
 "document | help": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -7096,7 +7477,7 @@
 },
 "document | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -7790,7 +8171,7 @@
 },
 "document | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -7957,7 +8338,7 @@
 },
 "document | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -9830,7 +10211,7 @@
 },
 "document | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -10386,6 +10767,33 @@
 "Hello world. Second sentence. yes send that"
 ]
 },
+"email_draft | Add appointment tomorrow at 3 PM called doctor": {
+"said": [
+"Add appointment tomorrow at 3 PM called doctor"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Add appointment tomorrow at 3 PM called doctor"
+]
+},
+"email_draft | Add contact": {
+"said": [
+"Add contact"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Add contact"
+]
+},
+"email_draft | Add event": {
+"said": [
+"Add event"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Add event"
+]
+},
 "email_draft | Browser tabs are confusing.": {
 "said": [
 "Browser tabs are confusing."
@@ -10404,6 +10812,24 @@
 "Hello world. CC is fine with me."
 ]
 },
+"email_draft | Calendar": {
+"said": [
+"Calendar"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Calendar"
+]
+},
+"email_draft | Call details": {
+"said": [
+"Call details"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Call details"
+]
+},
 "email_draft | Capital letters are important.": {
 "said": [
 "Capital letters are important."
@@ -10413,6 +10839,15 @@
 "Hello world. Capital letters are important."
 ]
 },
+"email_draft | Contacts": {
+"said": [
+"Contacts"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Contacts"
+]
+},
 "email_draft | Date.": {
 "said": [
 "Date."
@@ -10420,6 +10855,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Date."
+]
+},
+"email_draft | Delete contact": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Ducking level, loud.": {
@@ -10449,6 +10893,33 @@
 "Hello world. Ducking under the fence was hard."
 ]
 },
+"email_draft | Email John about lunch tomorrow.": {
+"said": [
+"Email John about lunch tomorrow."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Email John about lunch tomorrow."
+]
+},
+"email_draft | Email John.": {
+"said": [
+"Email John."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Email John."
+]
+},
+"email_draft | Find John": {
+"said": [
+"I could not find that exact text. Say read paragraph and try the words you hear."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | Find a way to call Bob.": {
 "said": [
 "I could not find that exact text. Say read paragraph and try the words you hear."
@@ -10456,6 +10927,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | Go to October 30": {
+"said": [
+"Go to October 30"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Go to October 30"
 ]
 },
 "email_draft | Hello there.": {
@@ -10485,6 +10965,24 @@
 "Hello world."
 ]
 },
+"email_draft | Next contact": {
+"said": [
+"Next contact"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Next contact"
+]
+},
+"email_draft | Next event": {
+"said": [
+"Next event"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Next event"
+]
+},
 "email_draft | No, thanks.": {
 "said": [
 "No, thanks."
@@ -10492,6 +10990,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. No, thanks."
+]
+},
+"email_draft | Open calendar": {
+"said": [
+"Open calendar"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Open calendar"
+]
+},
+"email_draft | Open contacts": {
+"said": [
+"Open contacts"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Open contacts"
 ]
 },
 "email_draft | Pitch the tent by the lake.": {
@@ -10519,6 +11035,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Rate this product five stars."
+]
+},
+"email_draft | Read event": {
+"said": [
+"Read event"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Read event"
+]
+},
+"email_draft | Send an email to John Smith": {
+"said": [
+"Send an email to John Smith"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Send an email to John Smith"
 ]
 },
 "email_draft | Send to the team at the office.": {
@@ -10593,6 +11127,24 @@
 "Hello world. Time."
 ]
 },
+"email_draft | Today": {
+"said": [
+"Today"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Today"
+]
+},
+"email_draft | Tomorrow.": {
+"said": [
+"Tomorrow."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Tomorrow."
+]
+},
 "email_draft | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -10647,6 +11199,24 @@
 "Hello world."
 ]
 },
+"email_draft | What do I have tomorrow?": {
+"said": [
+"What do I have tomorrow?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. What do I have tomorrow?"
+]
+},
+"email_draft | What is on the menu tonight?": {
+"said": [
+"What is on the menu tonight?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. What is on the menu tonight?"
+]
+},
 "email_draft | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -10665,6 +11235,24 @@
 "Hello world. What time is the meeting?"
 ]
 },
+"email_draft | What's on Friday?": {
+"said": [
+"What's on Friday?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. What's on Friday?"
+]
+},
+"email_draft | What's on my calendar today?": {
+"said": [
+"What's on my calendar today?"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. What's on my calendar today?"
+]
+},
 "email_draft | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
@@ -10672,6 +11260,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | Write to Mary": {
+"said": [
+"Write to Mary"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Write to Mary"
+]
+},
+"email_draft | Write to the council about the road.": {
+"said": [
+"Write to the council about the road."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. Write to the council about the road."
 ]
 },
 "email_draft | Yes, please.": {
@@ -12871,7 +13477,7 @@
 },
 "email_draft | help": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -13409,7 +14015,7 @@
 },
 "email_draft | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14113,7 +14719,7 @@
 },
 "email_draft | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14280,7 +14886,7 @@
 },
 "email_draft | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -16158,7 +16764,7 @@
 },
 "email_draft | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -16714,6 +17320,18 @@
 "Hello world."
 ]
 },
+"help | Add appointment tomorrow at 3 PM called doctor": {
+"said": [],
+"screen_after": "help"
+},
+"help | Add contact": {
+"said": [],
+"screen_after": "help"
+},
+"help | Add event": {
+"said": [],
+"screen_after": "help"
+},
 "help | Browser tabs are confusing.": {
 "said": [
 "Choose one of the available Guided browser options."
@@ -16724,16 +17342,32 @@
 "said": [],
 "screen_after": "help"
 },
+"help | Calendar": {
+"said": [],
+"screen_after": "help"
+},
+"help | Call details": {
+"said": [],
+"screen_after": "help"
+},
 "help | Capital letters are important.": {
 "said": [
 "Choose one of the available When encountering capital letters options."
 ],
 "screen_after": "help"
 },
+"help | Contacts": {
+"said": [],
+"screen_after": "help"
+},
 "help | Date.": {
 "said": [
 "Thursday, October 22, 2026."
 ],
+"screen_after": "help"
+},
+"help | Delete contact": {
+"said": [],
 "screen_after": "help"
 },
 "help | Ducking level, loud.": {
@@ -16752,7 +17386,23 @@
 "said": [],
 "screen_after": "help"
 },
+"help | Email John about lunch tomorrow.": {
+"said": [],
+"screen_after": "help"
+},
+"help | Email John.": {
+"said": [],
+"screen_after": "help"
+},
+"help | Find John": {
+"said": [],
+"screen_after": "help"
+},
 "help | Find a way to call Bob.": {
+"said": [],
+"screen_after": "help"
+},
+"help | Go to October 30": {
 "said": [],
 "screen_after": "help"
 },
@@ -16772,7 +17422,23 @@
 ],
 "screen_after": "help"
 },
+"help | Next contact": {
+"said": [],
+"screen_after": "help"
+},
+"help | Next event": {
+"said": [],
+"screen_after": "help"
+},
 "help | No, thanks.": {
+"said": [],
+"screen_after": "help"
+},
+"help | Open calendar": {
+"said": [],
+"screen_after": "help"
+},
+"help | Open contacts": {
 "said": [],
 "screen_after": "help"
 },
@@ -16790,6 +17456,14 @@
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
 ],
+"screen_after": "help"
+},
+"help | Read event": {
+"said": [],
+"screen_after": "help"
+},
+"help | Send an email to John Smith": {
+"said": [],
 "screen_after": "help"
 },
 "help | Send to the team at the office.": {
@@ -16828,6 +17502,14 @@
 ],
 "screen_after": "help"
 },
+"help | Today": {
+"said": [],
+"screen_after": "help"
+},
+"help | Tomorrow.": {
+"said": [],
+"screen_after": "help"
+},
 "help | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -16858,6 +17540,16 @@
 ],
 "screen_after": "help"
 },
+"help | What do I have tomorrow?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "help"
+},
+"help | What is on the menu tonight?": {
+"said": [],
+"screen_after": "help"
+},
 "help | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -16868,10 +17560,28 @@
 "said": [],
 "screen_after": "help"
 },
+"help | What's on Friday?": {
+"said": [],
+"screen_after": "help"
+},
+"help | What's on my calendar today?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "help"
+},
 "help | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
 ],
+"screen_after": "help"
+},
+"help | Write to Mary": {
+"said": [],
+"screen_after": "help"
+},
+"help | Write to the council about the road.": {
+"said": [],
 "screen_after": "help"
 },
 "help | Yes, please.": {
@@ -17011,7 +17721,7 @@
 },
 "help | back to topics": {
 "said": [
-"About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -17614,7 +18324,7 @@
 },
 "help | end of list": {
 "said": [
-"Fix A Problem (F), 28 of 28."
+"Fix A Problem (F), 30 of 30."
 ],
 "screen_after": "help"
 },
@@ -17843,7 +18553,7 @@
 },
 "help | help": {
 "said": [
-"About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -17935,7 +18645,7 @@
 },
 "help | last item": {
 "said": [
-"Fix A Problem (F), 28 of 28."
+"Fix A Problem (F), 30 of 30."
 ],
 "screen_after": "help"
 },
@@ -18099,7 +18809,7 @@
 },
 "help | manual": {
 "said": [
-"About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18235,7 +18945,7 @@
 },
 "help | next": {
 "said": [
-"Getting Started (G), 2 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"Getting Started (G), 2 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18426,7 +19136,7 @@
 },
 "help | open manual": {
 "said": [
-"About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18519,7 +19229,7 @@
 },
 "help | open user guide": {
 "said": [
-"About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19433,7 +20143,7 @@
 },
 "help | user guide": {
 "said": [
-"About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19697,6 +20407,33 @@
 "said": [],
 "screen_after": "help"
 },
+"mailbox | Add appointment tomorrow at 3 PM called doctor": {
+"calls": [
+"call.process('Add appointment tomorrow at 3 PM called doctor')"
+],
+"said": [
+"session handled: Add appointment tomorrow at 3 PM called doctor"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Add contact": {
+"calls": [
+"call.process('Add contact')"
+],
+"said": [
+"session handled: Add contact"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Add event": {
+"calls": [
+"call.process('Add event')"
+],
+"said": [
+"session handled: Add event"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Browser tabs are confusing.": {
 "said": [
 "Choose one of the available Guided browser options."
@@ -19712,15 +20449,51 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Calendar": {
+"calls": [
+"call.process('Calendar')"
+],
+"said": [
+"session handled: Calendar"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Call details": {
+"calls": [
+"call.process('Call details')"
+],
+"said": [
+"session handled: Call details"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Capital letters are important.": {
 "said": [
 "Choose one of the available When encountering capital letters options."
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Contacts": {
+"calls": [
+"call.process('Contacts')"
+],
+"said": [
+"session handled: Contacts"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Date.": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Delete contact": {
+"calls": [
+"call.process('Delete contact')"
+],
+"said": [
+"session handled: Delete contact"
 ],
 "screen_after": "mailbox"
 },
@@ -19745,12 +20518,48 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Email John about lunch tomorrow.": {
+"calls": [
+"call.process('Email John about lunch tomorrow.')"
+],
+"said": [
+"session handled: Email John about lunch tomorrow."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Email John.": {
+"calls": [
+"call.process('Email John.')"
+],
+"said": [
+"session handled: Email John."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Find John": {
+"calls": [
+"call.process('Find John')"
+],
+"said": [
+"session handled: Find John"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Find a way to call Bob.": {
 "calls": [
 "call.process('Find a way to call Bob.')"
 ],
 "said": [
 "session handled: Find a way to call Bob."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Go to October 30": {
+"calls": [
+"call.process('Go to October 30')"
+],
+"said": [
+"session handled: Go to October 30"
 ],
 "screen_after": "mailbox"
 },
@@ -19775,12 +20584,48 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Next contact": {
+"calls": [
+"call.process('Next contact')"
+],
+"said": [
+"session handled: Next contact"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Next event": {
+"calls": [
+"call.process('Next event')"
+],
+"said": [
+"session handled: Next event"
+],
+"screen_after": "mailbox"
+},
 "mailbox | No, thanks.": {
 "calls": [
 "call.process('No, thanks.')"
 ],
 "said": [
 "session handled: No, thanks."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Open calendar": {
+"calls": [
+"call.process('Open calendar')"
+],
+"said": [
+"session handled: Open calendar"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Open contacts": {
+"calls": [
+"call.process('Open contacts')"
+],
+"said": [
+"session handled: Open contacts"
 ],
 "screen_after": "mailbox"
 },
@@ -19802,6 +20647,24 @@
 "mailbox | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Read event": {
+"calls": [
+"call.process('Read event')"
+],
+"said": [
+"session handled: Read event"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Send an email to John Smith": {
+"calls": [
+"call.process('Send an email to John Smith')"
+],
+"said": [
+"session handled: Send an email to John Smith"
 ],
 "screen_after": "mailbox"
 },
@@ -19868,6 +20731,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Today": {
+"calls": [
+"call.process('Today')"
+],
+"said": [
+"session handled: Today"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Tomorrow.": {
+"calls": [
+"call.process('Tomorrow.')"
+],
+"said": [
+"session handled: Tomorrow."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -19904,6 +20785,21 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | What do I have tomorrow?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "mailbox"
+},
+"mailbox | What is on the menu tonight?": {
+"calls": [
+"call.process('What is on the menu tonight?')"
+],
+"said": [
+"session handled: What is on the menu tonight?"
+],
+"screen_after": "mailbox"
+},
 "mailbox | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -19919,9 +20815,42 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | What's on Friday?": {
+"calls": [
+"call.process(\"What's on Friday?\")"
+],
+"said": [
+"session handled: What's on Friday?"
+],
+"screen_after": "mailbox"
+},
+"mailbox | What's on my calendar today?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "mailbox"
+},
 "mailbox | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "mailbox"
+},
+"mailbox | Write to Mary": {
+"calls": [
+"call.process('Write to Mary')"
+],
+"said": [
+"session handled: Write to Mary"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Write to the council about the road.": {
+"calls": [
+"call.process('Write to the council about the road.')"
+],
+"said": [
+"session handled: Write to the council about the road."
 ],
 "screen_after": "mailbox"
 },
@@ -20883,7 +21812,7 @@
 },
 "mailbox | connect google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "mailbox"
 },
@@ -21812,7 +22741,7 @@
 },
 "mailbox | help": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22280,7 +23209,7 @@
 },
 "mailbox | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22909,7 +23838,7 @@
 },
 "mailbox | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23049,7 +23978,7 @@
 },
 "mailbox | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23571,7 +24500,7 @@
 },
 "mailbox | refresh google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "mailbox"
 },
@@ -24543,7 +25472,7 @@
 },
 "mailbox | sync google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "mailbox"
 },
@@ -24723,7 +25652,7 @@
 },
 "mailbox | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -25197,6 +26126,24 @@
 ],
 "screen_after": "mailbox"
 },
+"note | Add appointment tomorrow at 3 PM called doctor": {
+"said": [
+"Add appointment tomorrow at 3 PM called doctor"
+],
+"screen_after": "note"
+},
+"note | Add contact": {
+"said": [
+"Add contact"
+],
+"screen_after": "note"
+},
+"note | Add event": {
+"said": [
+"Add event"
+],
+"screen_after": "note"
+},
 "note | Browser tabs are confusing.": {
 "said": [
 "Browser tabs are confusing."
@@ -25209,15 +26156,39 @@
 ],
 "screen_after": "note"
 },
+"note | Calendar": {
+"said": [
+"Calendar"
+],
+"screen_after": "note"
+},
+"note | Call details": {
+"said": [
+"Call details"
+],
+"screen_after": "note"
+},
 "note | Capital letters are important.": {
 "said": [
 "Capital letters are important."
 ],
 "screen_after": "note"
 },
+"note | Contacts": {
+"said": [
+"Contacts"
+],
+"screen_after": "note"
+},
 "note | Date.": {
 "said": [
 "Date."
+],
+"screen_after": "note"
+},
+"note | Delete contact": {
+"said": [
+"Delete contact"
 ],
 "screen_after": "note"
 },
@@ -25239,9 +26210,33 @@
 ],
 "screen_after": "note"
 },
+"note | Email John about lunch tomorrow.": {
+"said": [
+"Email John about lunch tomorrow."
+],
+"screen_after": "note"
+},
+"note | Email John.": {
+"said": [
+"Email John."
+],
+"screen_after": "note"
+},
+"note | Find John": {
+"said": [
+"Find John"
+],
+"screen_after": "note"
+},
 "note | Find a way to call Bob.": {
 "said": [
 "Find a way to call Bob."
+],
+"screen_after": "note"
+},
+"note | Go to October 30": {
+"said": [
+"Go to October 30"
 ],
 "screen_after": "note"
 },
@@ -25263,9 +26258,33 @@
 ],
 "screen_after": "note"
 },
+"note | Next contact": {
+"said": [
+"Next contact"
+],
+"screen_after": "note"
+},
+"note | Next event": {
+"said": [
+"Next event"
+],
+"screen_after": "note"
+},
 "note | No, thanks.": {
 "said": [
 "No, thanks."
+],
+"screen_after": "note"
+},
+"note | Open calendar": {
+"said": [
+"Open calendar"
+],
+"screen_after": "note"
+},
+"note | Open contacts": {
+"said": [
+"Open contacts"
 ],
 "screen_after": "note"
 },
@@ -25284,6 +26303,18 @@
 "note | Rate this product five stars.": {
 "said": [
 "Rate this product five stars."
+],
+"screen_after": "note"
+},
+"note | Read event": {
+"said": [
+"Read event"
+],
+"screen_after": "note"
+},
+"note | Send an email to John Smith": {
+"said": [
+"Send an email to John Smith"
 ],
 "screen_after": "note"
 },
@@ -25335,6 +26366,18 @@
 ],
 "screen_after": "note"
 },
+"note | Today": {
+"said": [
+"Today"
+],
+"screen_after": "note"
+},
+"note | Tomorrow.": {
+"said": [
+"Tomorrow."
+],
+"screen_after": "note"
+},
 "note | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -25371,6 +26414,18 @@
 ],
 "screen_after": "note"
 },
+"note | What do I have tomorrow?": {
+"said": [
+"What do I have tomorrow?"
+],
+"screen_after": "note"
+},
+"note | What is on the menu tonight?": {
+"said": [
+"What is on the menu tonight?"
+],
+"screen_after": "note"
+},
 "note | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -25383,9 +26438,33 @@
 ],
 "screen_after": "note"
 },
+"note | What's on Friday?": {
+"said": [
+"What's on Friday?"
+],
+"screen_after": "note"
+},
+"note | What's on my calendar today?": {
+"said": [
+"What's on my calendar today?"
+],
+"screen_after": "note"
+},
 "note | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "note"
+},
+"note | Write to Mary": {
+"said": [
+"Write to Mary"
+],
+"screen_after": "note"
+},
+"note | Write to the council about the road.": {
+"said": [
+"Write to the council about the road."
 ],
 "screen_after": "note"
 },
@@ -26773,7 +27852,7 @@
 },
 "note | help": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -27128,7 +28207,7 @@
 },
 "note | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -27590,7 +28669,7 @@
 },
 "note | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -27703,7 +28782,7 @@
 },
 "note | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28953,7 +30032,7 @@
 },
 "note | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -29323,6 +30402,36 @@
 ],
 "screen_after": "note"
 },
+"web | Add appointment tomorrow at 3 PM called doctor": {
+"calls": [
+"call.command('Add appointment tomorrow at 3 PM called doctor')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Add appointment tomorrow at 3 PM called doctor"
+],
+"screen_after": "web"
+},
+"web | Add contact": {
+"calls": [
+"call.command('Add contact')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Add contact"
+],
+"screen_after": "web"
+},
+"web | Add event": {
+"calls": [
+"call.command('Add event')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Add event"
+],
+"screen_after": "web"
+},
 "web | Browser tabs are confusing.": {
 "said": [
 "Choose one of the available Guided browser options."
@@ -29339,15 +30448,55 @@
 ],
 "screen_after": "web"
 },
+"web | Calendar": {
+"calls": [
+"call.command('Calendar')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Calendar"
+],
+"screen_after": "web"
+},
+"web | Call details": {
+"calls": [
+"call.command('Call details')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Call details"
+],
+"screen_after": "web"
+},
 "web | Capital letters are important.": {
 "said": [
 "Choose one of the available When encountering capital letters options."
 ],
 "screen_after": "web"
 },
+"web | Contacts": {
+"calls": [
+"call.command('Contacts')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Contacts"
+],
+"screen_after": "web"
+},
 "web | Date.": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "web"
+},
+"web | Delete contact": {
+"calls": [
+"call.command('Delete contact')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Delete contact"
 ],
 "screen_after": "web"
 },
@@ -29373,6 +30522,36 @@
 ],
 "screen_after": "web"
 },
+"web | Email John about lunch tomorrow.": {
+"calls": [
+"call.command('Email John about lunch tomorrow.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Email John about lunch tomorrow."
+],
+"screen_after": "web"
+},
+"web | Email John.": {
+"calls": [
+"call.command('Email John.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Email John."
+],
+"screen_after": "web"
+},
+"web | Find John": {
+"calls": [
+"call.command('Find John')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Find John"
+],
+"screen_after": "web"
+},
 "web | Find a way to call Bob.": {
 "calls": [
 "call.command('Find a way to call Bob.')",
@@ -29380,6 +30559,16 @@
 ],
 "said": [
 "session handled: Find a way to call Bob."
+],
+"screen_after": "web"
+},
+"web | Go to October 30": {
+"calls": [
+"call.command('Go to October 30')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Go to October 30"
 ],
 "screen_after": "web"
 },
@@ -29405,6 +30594,26 @@
 ],
 "screen_after": "web"
 },
+"web | Next contact": {
+"calls": [
+"call.command('Next contact')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Next contact"
+],
+"screen_after": "web"
+},
+"web | Next event": {
+"calls": [
+"call.command('Next event')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Next event"
+],
+"screen_after": "web"
+},
 "web | No, thanks.": {
 "calls": [
 "call.command('No, thanks.')",
@@ -29412,6 +30621,26 @@
 ],
 "said": [
 "session handled: No, thanks."
+],
+"screen_after": "web"
+},
+"web | Open calendar": {
+"calls": [
+"call.command('Open calendar')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Open calendar"
+],
+"screen_after": "web"
+},
+"web | Open contacts": {
+"calls": [
+"call.command('Open contacts')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Open contacts"
 ],
 "screen_after": "web"
 },
@@ -29434,6 +30663,26 @@
 "web | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
+],
+"screen_after": "web"
+},
+"web | Read event": {
+"calls": [
+"call.command('Read event')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Read event"
+],
+"screen_after": "web"
+},
+"web | Send an email to John Smith": {
+"calls": [
+"call.command('Send an email to John Smith')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Send an email to John Smith"
 ],
 "screen_after": "web"
 },
@@ -29505,6 +30754,26 @@
 ],
 "screen_after": "web"
 },
+"web | Today": {
+"calls": [
+"call.command('Today')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Today"
+],
+"screen_after": "web"
+},
+"web | Tomorrow.": {
+"calls": [
+"call.command('Tomorrow.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Tomorrow."
+],
+"screen_after": "web"
+},
 "web | Turn audio ducking off.": {
 "said": [
 "Audio ducking off. Browser and media sound stays at full volume."
@@ -29541,6 +30810,22 @@
 ],
 "screen_after": "web"
 },
+"web | What do I have tomorrow?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "web"
+},
+"web | What is on the menu tonight?": {
+"calls": [
+"call.command('What is on the menu tonight?')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: What is on the menu tonight?"
+],
+"screen_after": "web"
+},
 "web | What time is it?": {
 "said": [
 "nine fifty-five PM."
@@ -29557,9 +30842,45 @@
 ],
 "screen_after": "web"
 },
+"web | What's on Friday?": {
+"calls": [
+"call.command(\"What's on Friday?\")",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: What's on Friday?"
+],
+"screen_after": "web"
+},
+"web | What's on my calendar today?": {
+"said": [
+"Contacts and calendars come from Thunderbird, and Thunderbird is not set up yet. Say add Thunderbird account to set it up."
+],
+"screen_after": "web"
+},
 "web | What's the date?": {
 "said": [
 "Thursday, October 22, 2026."
+],
+"screen_after": "web"
+},
+"web | Write to Mary": {
+"calls": [
+"call.command('Write to Mary')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Write to Mary"
+],
+"screen_after": "web"
+},
+"web | Write to the council about the road.": {
+"calls": [
+"call.command('Write to the council about the road.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Write to the council about the road."
 ],
 "screen_after": "web"
 },
@@ -30626,7 +31947,7 @@
 },
 "web | connect google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "web"
 },
@@ -31649,7 +32970,7 @@
 },
 "web | help": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -32180,7 +33501,7 @@
 },
 "web | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -32874,7 +34195,7 @@
 },
 "web | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33027,7 +34348,7 @@
 },
 "web | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33603,7 +34924,7 @@
 },
 "web | refresh google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "web"
 },
@@ -34646,7 +35967,7 @@
 },
 "web | sync google contacts": {
 "said": [
-"Google Contacts no longer connects to Voice Companion. Your contacts here are kept. Say list contacts to hear them, or add contact to add one."
+"Google contacts now come from Thunderbird. Add your Google account to Thunderbird, then say open contacts. Your contacts saved here are kept."
 ],
 "screen_after": "web"
 },
@@ -34840,7 +36161,7 @@
 },
 "web | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 28. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },

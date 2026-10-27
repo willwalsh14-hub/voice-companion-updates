@@ -24,7 +24,7 @@ HELP_TOPIC = 'contacts'
 YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'yes delete it', 'delete it', 'enter')
 NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'keep it', 'do not delete')
 SKIP = ('', 'skip', 'none', 'no email', 'no phone', 'no phone number', 'leave it out', 'leave it blank', 'nothing')
-PASS_THROUGH = ('help', 'options', 'open options', 'main menu', 'back to main menu', 'exit companion', 'go to sleep',
+PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'new email', 'contacts menu', 'menu', 'open menu')
 OPEN = ('contacts', 'open contacts', 'my contacts', 'contact list', 'address book', 'open address book', 'show contacts',
@@ -210,7 +210,8 @@ def command_here(m, raw, command):
     if command in PASS_THROUGH or command.startswith(('help with ', 'help for ')) or m.speech_control(raw) \
             or m.speech_setting_request(raw) is not None or m.spoken_control(command) or command in m.VOICE_LIST_COMMANDS:
         return None
-    if command in ('close contacts', 'leave contacts', 'exit contacts') or command in ('escape', 'go back', 'back') and VIEW == 'list':
+    if command in ('close contacts', 'leave contacts', 'exit contacts', 'main menu', 'back to main menu', 'go to main menu') \
+            or command in ('escape', 'go back', 'back') and VIEW == 'list':
         reset()
         return 'awake'      # handle() says Main menu when the screen changes
     if command in ('back to contacts', 'back to list', 'contact list', 'escape', 'go back', 'back') and VIEW == 'details':
@@ -461,15 +462,15 @@ def email_by_name(m, command, mode):
         return None
     name = match['name'].strip()
     explicit = not command.startswith(('email ', 'e mail '))
-    if name in RESERVED or name.startswith(('to ', 'list', 'draft', 'the sender')) or '@' in name:
-        return None
+    if name in RESERVED or name.startswith(('to ', 'list', 'draft', 'the sender')) or '@' in name or len(name.split()) > 5:
+        return None     # a command word, an address, or a sentence ("write to the council about the road")
     contacts = CONTACTS if mode == MODE and CONTACTS else book(m).cached()
     if not contacts and mode != MODE:
         contacts = book(m).load()
     matches = contacts_book.find(contacts, name)
     if not matches:
-        if not explicit:
-            return None
+        if not explicit or len(name.split()) > 3:
+            return None     # maybe another command, or a sentence ("write to the council about the road")
         m.speak('No contact named ' + name + '. Say open contacts to hear your contacts, or add contact to save one.')
         return mode
     if len(matches) == 1:

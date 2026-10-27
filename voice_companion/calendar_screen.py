@@ -25,7 +25,7 @@ from spoken_dates import find_day, parse_day, parse_when, spoken_day
 MODE = 'calendar'
 YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'save', 'save it', 'yes save it', 'enter', 'do it')
 NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'do not save', 'keep it', 'do not delete')
-PASS_THROUGH = ('help', 'options', 'open options', 'main menu', 'back to main menu', 'exit companion', 'go to sleep',
+PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'calendar menu', 'menu', 'open menu')
 OPEN = ('calendar', 'open calendar', 'my calendar', 'show calendar', 'show my calendar', 'open my calendar', 'calendar app')
@@ -173,7 +173,7 @@ def handle(m, text, mode, typed=False):
                 or getattr(m, 'NAMED_LIST', None):
             return None
         asked = ASK.fullmatch(command)
-        if asked and (asked['day'] is None or parse_day(asked['day'], today(m)) is not None or asked['day'] in ('today', 'tonight')):
+        if asked and (asked['day'] is None or whole_day(asked['day'], m) is not None):
             if command.startswith(('what s on', 'what is on', 'whats on')) and 'calendar' not in command and 'schedule' not in command \
                     and mode not in ('awake',):
                 return None     # "what's on" alone is only for the main menu; elsewhere it may be about a page
@@ -196,7 +196,7 @@ def handle(m, text, mode, typed=False):
 
 def tell_day(m, words, mode):
     """'What's on my calendar tomorrow?' from any screen: the day's events, without moving."""
-    day = parse_day(words, today(m)) or today(m)
+    day = whole_day(words, m) or today(m)
     if not thunderbird_pim.usable(m.APP):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode
@@ -223,7 +223,8 @@ def command_here(m, raw, command):
     if command in PASS_THROUGH or command.startswith(('help with ', 'help for ')) or m.speech_control(raw) \
             or m.speech_setting_request(raw) is not None or m.spoken_control(command) or command in m.VOICE_LIST_COMMANDS:
         return None
-    if command in ('close calendar', 'leave calendar', 'exit calendar', 'escape', 'go back', 'back'):
+    if command in ('close calendar', 'leave calendar', 'exit calendar', 'escape', 'go back', 'back', 'main menu',
+                   'back to main menu', 'go to main menu'):
         reset()
         return 'awake'      # handle() says Main menu when the screen changes
     if command in OPEN + ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'refresh', 'refresh calendar'):
@@ -277,11 +278,19 @@ def command_here(m, raw, command):
     return MODE
 
 
+def whole_day(words, m):
+    """The day when the words are only a day ("Friday", "October 30", "tomorrow"); else None.
+    "the menu tonight" is not a day, though it ends with one."""
+    words = words.strip()
+    found, span = find_day(words, today(m))
+    return found if found is not None and span == (0, len(words)) else None
+
+
 def day_command(m, command):
     """The day for "go to October 30", "what's on Friday", or a day said alone ("Friday", "the 30th")."""
     asked = ASK.fullmatch(command)
     if asked:
-        return parse_day(asked['day'] or 'today', today(m))
+        return whole_day(asked['day'] or 'today', m)
     moved = re.fullmatch(r'(?:go to|show|show me|open|jump to|move to|read) (.+)', command)
     words = moved[1] if moved else command
     found, span = find_day(words, today(m))

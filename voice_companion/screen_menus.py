@@ -156,7 +156,7 @@ MENUS = {
             ('Find contact', 'Ctrl+F', 'find contact {value}'),
             ('Refresh contacts', '', 'refresh contacts'),
             ('Contacts help', 'F1', 'help with contacts'),
-            ('Main menu', 'Ctrl+F1', 'main menu')]),
+            ('Main menu', '', 'main menu')]),
     ]),
     'calendar': ('Calendar menu', [
         ('Event', [
@@ -175,7 +175,7 @@ MENUS = {
         ('Calendar', [
             ('Refresh calendar', '', 'refresh calendar'),
             ('Calendar help', 'F1', 'help with calendar'),
-            ('Main menu', 'Ctrl+F1', 'main menu')]),
+            ('Main menu', '', 'main menu')]),
     ]),
     'help': ('Help menu', [
         ('Help', [

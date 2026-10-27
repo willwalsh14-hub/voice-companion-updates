@@ -190,6 +190,11 @@ class CalendarScreenTests(CalendarHarness):
         self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. 1 event. Nine AM to ten AM, Group meeting, me@gmail.com.')
         app.handle("what's on my calendar Saturday", 'awake')
         self.assertEqual(self.said(), 'Saturday, October 31. No events.')
+        # Only a whole day counts: this is a question about a menu, not the calendar.
+        self.speech.reset_mock()
+        app.handle('What is on the menu tonight?', 'awake')
+        self.assertNotIn('Doctor appointment', self.everything_said())
+        self.assertNotIn('No events', self.everything_said())
         # Writing comes first: in a note these words are text.
         mode = app.handle('write a note', 'awake')
         self.assertEqual(app.handle("What's on my calendar today?", mode), 'note')

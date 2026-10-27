@@ -70,7 +70,7 @@ MESSAGES = {
     'store': ('Chrome is opening the Voice Companion page in the Chrome Web Store. Press Tab until you hear '
               'Add to Chrome, then press Enter. Chrome asks again. Press Tab until you hear Add extension, '
               'then press Enter. I will read the Chrome buttons for you.'),
-    'store_failed': ('The extension has not linked yet. Ask your helper to finish setup with section 23 of the guide. '
+    'store_failed': ('The extension has not linked yet. Ask your helper to finish setup with the Regular Browser Connection chapter of the guide. '
                      'Everything else in Voice Companion still works.'),
     'no_open': 'Chrome could not be opened. Open Chrome yourself. I will keep waiting.',
     'offer_chrome': 'Chrome is not set up yet. Set it up now? Say yes or no, or press Y or N.',

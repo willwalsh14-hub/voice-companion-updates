@@ -459,7 +459,9 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
         self.assertNotIn('google_contacts', ACTIONS)
         with patch.object(app,'speak') as speech:
             app.handle('connect google contacts','mailbox')
-        self.assertIn('Your contacts here are kept', speech.call_args.args[0])
+        # Google contacts come through Thunderbird now (Contacts screen, October 2026).
+        self.assertIn('Google contacts now come from Thunderbird.', speech.call_args.args[0])
+        self.assertIn('Your contacts saved here are kept', speech.call_args.args[0])
 
 
 class CatalogParityTests(unittest.TestCase):

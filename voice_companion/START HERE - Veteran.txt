@@ -88,87 +88,101 @@ Contents
   12.4 Reply or forward
   12.5 Create and manage folders
   12.6 Read links and load more mail
-13 Browse The Web
-  13.1 Open the web browser menu
-  13.2 Search or open an address
-  13.3 Read a page
-  13.4 Move to headings, links, or controls
-  13.5 Open links and use lists
-  13.6 Enter or change a web answer
-  13.7 Fill in and review a form by voice
-  13.8 Read a web table and leave a page
-  13.9 Identify graphics, lists, regions, and frames
-  13.10 Use website keys and sliders
-14 Favorites And Web History
-  14.1 Save the current page
-  14.2 Open or find a favorite
-  14.3 Rename or delete a favorite
-  14.4 Open a page from history
-  14.5 Resume where you left off
-15 Download Files
-  15.1 Download a file
-  15.2 Open your downloads
-  15.3 Pause, resume, or cancel
-  15.4 Choose what downloads next
-  15.5 Open a finished file
-  15.6 Choose the download folder
-16 Regular Browser Connection
-  16.1 Set up Chrome and the extension
-  16.2 Read and use your browser
-  16.3 Understand this testing connection
-17 Media Player
-  17.1 Open and play a file
-  17.2 Control playback
-  17.3 Use the player menu
-18 Listen To Radio
-  18.1 Find and play a station
-  18.2 Use the radio menus and keys
-  18.3 Control audio
-  18.4 Choose a station list
-19 Saved Radio Stations
-  19.1 Save a preset
-  19.2 Play saved stations
-  19.3 Delete a saved station
-20 Record Radio
-  20.1 Record a station now
-  20.2 Schedule a recording
-  20.3 Cancel a scheduled recording
-21 Listen To Podcasts
-  21.1 Find a show and play an episode
-  21.2 Use the podcast menus and keys
-  21.3 Pause, seek, or move by chapter
-22 Saved Podcasts And Downloads
-  22.1 Subscribe to a show
-  22.2 Download and play an episode
-  22.3 Choose automatic downloads
-  22.4 Remove a subscription
-23 Change Your Options
-  23.1 Open, change, and save a setting
-  23.2 Choose how much speech you hear
-  23.3 Voice and Synthesizer options
-  23.4 Audio ducking
-  23.5 Input and Email options
-  23.6 Word processor and Notepad options
-  23.7 Web browser options
-  23.8 Radio and Podcasts options
-  23.9 Auto-update and Startup and exit options
-24 Sleep, Exit, And Computer Power
-  24.1 Put the microphone to sleep
-  24.2 Close Companion
-  24.3 Restart or shut down the computer
-25 Check For Updates
-  25.1 Find a newer version
-  25.2 Install an update
-  25.3 Read the release notes
-26 Find Your Guide Files
-  26.1 Open the guide folder
-  26.2 Choose a guide format
-27 Fix A Problem
-  27.1 Companion hears the wrong words
-  27.2 You cannot hear speech
-  27.3 Email or a website will not work
-  27.4 A guide or update will not open
-  27.5 Understand privacy and online services
+13 Contacts
+  13.1 Open your contacts
+  13.2 Hear a contact's details
+  13.3 Email a contact
+  13.4 Add a contact
+  13.5 Find or delete a contact
+  13.6 Get your Google or Outlook contacts
+14 Calendar
+  14.1 Open your calendar
+  14.2 Move to another day
+  14.3 Add an event
+  14.4 Delete an event
+  14.5 Ask what is on your calendar
+  14.6 Get your Google calendar
+15 Browse The Web
+  15.1 Open the web browser menu
+  15.2 Search or open an address
+  15.3 Read a page
+  15.4 Move to headings, links, or controls
+  15.5 Open links and use lists
+  15.6 Enter or change a web answer
+  15.7 Fill in and review a form by voice
+  15.8 Read a web table and leave a page
+  15.9 Identify graphics, lists, regions, and frames
+  15.10 Use website keys and sliders
+16 Favorites And Web History
+  16.1 Save the current page
+  16.2 Open or find a favorite
+  16.3 Rename or delete a favorite
+  16.4 Open a page from history
+  16.5 Resume where you left off
+17 Download Files
+  17.1 Download a file
+  17.2 Open your downloads
+  17.3 Pause, resume, or cancel
+  17.4 Choose what downloads next
+  17.5 Open a finished file
+  17.6 Choose the download folder
+18 Regular Browser Connection
+  18.1 Set up Chrome and the extension
+  18.2 Read and use your browser
+  18.3 Understand this testing connection
+19 Media Player
+  19.1 Open and play a file
+  19.2 Control playback
+  19.3 Use the player menu
+20 Listen To Radio
+  20.1 Find and play a station
+  20.2 Use the radio menus and keys
+  20.3 Control audio
+  20.4 Choose a station list
+21 Saved Radio Stations
+  21.1 Save a preset
+  21.2 Play saved stations
+  21.3 Delete a saved station
+22 Record Radio
+  22.1 Record a station now
+  22.2 Schedule a recording
+  22.3 Cancel a scheduled recording
+23 Listen To Podcasts
+  23.1 Find a show and play an episode
+  23.2 Use the podcast menus and keys
+  23.3 Pause, seek, or move by chapter
+24 Saved Podcasts And Downloads
+  24.1 Subscribe to a show
+  24.2 Download and play an episode
+  24.3 Choose automatic downloads
+  24.4 Remove a subscription
+25 Change Your Options
+  25.1 Open, change, and save a setting
+  25.2 Choose how much speech you hear
+  25.3 Voice and Synthesizer options
+  25.4 Audio ducking
+  25.5 Input and Email options
+  25.6 Word processor and Notepad options
+  25.7 Web browser options
+  25.8 Radio and Podcasts options
+  25.9 Auto-update and Startup and exit options
+26 Sleep, Exit, And Computer Power
+  26.1 Put the microphone to sleep
+  26.2 Close Companion
+  26.3 Restart or shut down the computer
+27 Check For Updates
+  27.1 Find a newer version
+  27.2 Install an update
+  27.3 Read the release notes
+28 Find Your Guide Files
+  28.1 Open the guide folder
+  28.2 Choose a guide format
+29 Fix A Problem
+  29.1 Companion hears the wrong words
+  29.2 You cannot hear speech
+  29.3 Email or a website will not work
+  29.4 A guide or update will not open
+  29.5 Understand privacy and online services
 
 1. GETTING STARTED
 
@@ -196,6 +210,8 @@ The main menu is where every task starts. It has these choices, in this order:
 - Document reader
 - Notepad
 - Email
+- Contacts
+- Calendar
 - Web browser
 - Media
 - Options
@@ -331,7 +347,7 @@ The tutorial is a set of spoken lessons. It waits for you between lessons. It ex
 3. Say a course name, such as "Email" or "Web browser". You can also use the arrows and Enter.
 4. Listen to the first lesson.
 5. When you are ready, say "Next lesson", or press Down Arrow.
-Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager.
+Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, Options, Help and updates, and File manager.
 
 3.4 Find, repeat, and leave a lesson
 - To hear the same lesson, say "Repeat", or press Control+R.
@@ -459,7 +475,7 @@ Choose a matching place if asked. Then speak the words to add. In Commands only,
 6. FILE MANAGER
 
 6.1 Open File manager
-File manager is the first choice on the main menu. Say "File manager", or press Enter on it. You start at the drive list. To start somewhere else, such as C drive or Documents, see File manager options in chapter 23.
+File manager is the first choice on the main menu. Say "File manager", or press Enter on it. You start at the drive list. To start somewhere else, such as C drive or Documents, see File manager options in chapter 25.
 The drive list comes from Windows, the same as in File Explorer. It has your local drives, network drives, and cloud folders such as OneDrive.
 Desktop and Documents are folders inside a drive. They are not drives.
 A cloud file may need an internet connection to download before you can read it.
@@ -814,13 +830,13 @@ To connect the account again later, say "Add account".
 Accounts are also in the email menu. In email, press Alt, then 6. Choose Add account, Switch account, Which account, Remove account, or Add Thunderbird account.
 
 10.3 Add and find contacts
-A contact is a saved name and email address. Each email account has its own contact list. Contacts work without internet access.
+A contact is a saved name with an email address or a phone number. Contacts has its own screen on the main menu. See chapter 13.
 - To save a contact, say "Add contact", the person's name, "as", and their email address. For example, say "Add contact Bob as bob@example.com". Or in the inbox, press Alt, 5, then 3. Type the name, the word as, and the address, then press Enter.
 - To hear saved names, say "List contacts", or press P in the inbox. While you write an email, press Control+K. Use the arrows to hear each name. Press Enter to hear the address.
 - To find a contact, say "Find contact", followed by the saved name, such as "Find contact Bob".
 - When Companion asks who to email, you can say a saved contact's name.
-Contacts are saved on this computer. Companion does not connect to Google Contacts. Contacts it brought in from Google Contacts before are kept, and you can change them here.
-Google Calendar and Google Drive are not connected in this version.
+Your Google and Outlook contacts come from Thunderbird. Contacts saved only on this computer are kept too. Contacts brought in from Google Contacts before are kept, and you can change them.
+Your Google calendar is on the Calendar screen. See chapter 14. Google Drive is not connected in this version.
 
 10.4 Add a Thunderbird account
 You can add an email account to Thunderbird without leaving Companion. Each address becomes its own account in Companion. You can add several, one after another.
@@ -987,9 +1003,122 @@ Email letter keys work in the message list and in an open message:
 For email help, say "Help with email", or press F1.
 The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
 
-13. BROWSE THE WEB
+13. CONTACTS
 
-13.1 Open the web browser menu
+13.1 Open your contacts
+Choose Contacts on the main menu, or say "Open contacts".
+Contacts is one list of the people you saved. It joins two places:
+- Thunderbird's address books. Thunderbird keeps your Google, Outlook, and other contacts up to date by itself.
+- Contacts saved only on this computer.
+A person saved in both places is in the list once. The list is in order by name.
+- Up Arrow and Down Arrow read each contact. You hear the name, the email address, and the phone number.
+- Home and End reach the first and last contact. At either end you hear Start of list or End of list.
+- To jump to a name, type its first letter.
+- To hear the next or previous contact by voice, say "Next contact" or "Previous contact".
+- To go back to the main menu, say "Close contacts", or press Escape.
+Press Alt to open the contacts menu. It lists every action with its key.
+For help on this screen, say "Help with contacts", or press F1.
+
+13.2 Hear a contact's details
+Press Enter on a contact to open its details. If it has an email address, the first choice is Email this person. Then you hear the name, each email address, each phone number, and where it is saved.
+- Use Up Arrow and Down Arrow to hear each line.
+- Press Enter on Email this person, or on an email address, to write to that address.
+- To go back to the list, press Escape.
+- To hear all the details at once, say "Read contact".
+- To hear only the phone numbers, say "Call details".
+
+13.3 Email a contact
+- To email the contact you are on, say "Email contact", or press Control+E. A new email opens with the address filled in. Then Companion asks for the subject.
+- From the main menu or Contacts, say "Email", then a name. For example, say "Email John", "Send an email to John Smith", or "Write to Mary".
+- A first name works when only one contact has it.
+- If two contacts match, you hear a short list. If a contact has more than one email address, you hear its addresses. Use the arrows and Enter to choose.
+- If a contact has no email address, Companion says so.
+- While you write an email, you can say a contact's name in the To box.
+
+13.4 Add a contact
+1. Say "Add contact", or press Control+N.
+2. Type or say the name, then press Enter.
+3. Type or say the email address, then press Enter. To leave it out, press Enter, or say "Skip".
+4. Type or say the phone number, then press Enter. To leave it out, press Enter.
+A contact needs an email address or a phone number. To stop, press Escape.
+When you use Thunderbird, the contact goes into Thunderbird. It goes into the address book for your email account, if Thunderbird has one. If not, it goes into Personal Address Book. Thunderbird then copies it to Google or Outlook. Without Thunderbird, the contact is saved on this computer.
+You can also say it all at once, such as "Add contact Bob as bob@example.com".
+
+13.5 Find or delete a contact
+- To find a contact, say "Find contact", then the name, or press Control+F. You can also say "Find", then the name, such as "Find John".
+- To delete the contact you are on, say "Delete contact", or press Delete. Companion asks first. No is chosen first. Press Up Arrow, then Enter, for Yes. You can also press Y or N.
+Some address books, such as a company list, cannot be changed. Companion tells you when a contact cannot be deleted.
+
+13.6 Get your Google or Outlook contacts
+Companion gets these contacts from Thunderbird. Thunderbird needs your account first. See part 10.4.
+When you add a Google account, Thunderbird offers to add its address book and calendar. Choose both.
+If your account is in Thunderbird but its contacts are missing, a helper can add them in Thunderbird:
+1. Open the Address Book.
+2. Choose New Address Book, then Add CardDAV Address Book. CardDAV is the way online address books share contacts.
+3. Type your email address, then choose Continue.
+4. Sign in if asked. Choose the address books to add.
+Then say "Refresh contacts" in Companion.
+If you hear that the Voice Companion connection must be updated, close Thunderbird. Then open Contacts again.
+
+14. CALENDAR
+
+14.1 Open your calendar
+Choose Calendar on the main menu, or say "Open calendar". It opens on today. You hear the date, how many events there are, and the first event. For example: Today, Monday, October 26. 3 events.
+The calendar comes from Thunderbird. Thunderbird keeps Google and other online calendars up to date by itself. Companion starts Thunderbird in the background when it needs it.
+Each event says its time, its name, and its calendar. For example: ten thirty AM to eleven AM, Doctor appointment, Google.
+- To hear the next event, say "Next event", or press Down Arrow.
+- To hear the previous event, say "Previous event", or press Up Arrow.
+- To hear the time, place, and notes, say "Read event", or press Enter.
+- To go back to the main menu, say "Close calendar", or press Escape.
+A day with no events says No events. An event that goes past midnight is on both days.
+Press Alt to open the calendar menu. It lists every action with its key.
+For help on this screen, say "Help with calendar", or press F1.
+
+14.2 Move to another day
+- To go to the next day, say "Next day", or press Right Arrow.
+- To go to the day before, say "Previous day", or press Left Arrow.
+- To go a week ahead, say "Next week", or press Page Down.
+- To go a week back, say "Previous week", or press Page Up.
+- To come back to today, say "Today", or press Home.
+- To go to any day, say "Go to", then the day. For example, say "Go to October 30" or "Go to Friday". You can also say "What's on Friday?" or "Tomorrow".
+
+14.3 Add an event
+1. Say "Add event", or press Control+N.
+2. Say when it is, then press Enter. For example, say "Tomorrow at 3 PM", "Friday from 2 to 3:30", or "October 30 all day".
+3. If you gave only a day, say a time, or say "All day".
+4. Say what it is called, such as "Doctor", then press Enter.
+5. Listen to the question. It names the day, the time, and the calendar. Say "Yes" to save, or "No" to cancel. Yes is chosen first, so Enter saves.
+An event is one hour long unless you say more, such as "for 2 hours" or "from 2 to 4".
+A time with no AM or PM means 7 to 11 in the morning, or 12 to 6 in the afternoon. Say "AM" or "PM" to be sure. Words such as "tonight" and "morning" help too.
+To use another calendar, say "Change calendar" before you say Yes. Companion remembers the calendar you used last.
+You can also say it all at once, from the main menu or the calendar. For example, say "Add appointment tomorrow at 3 PM called doctor".
+
+14.4 Delete an event
+1. Move to the event.
+2. Say "Delete event", or press Delete.
+3. Say "Yes" to delete it, or "No" to keep it. No is chosen first.
+If the event repeats, such as every week, Companion asks: this one, or all of them. Say "This one" to delete only that day. Say "All" to delete every one. Say "No" to keep it. You can also use the arrows and Enter.
+Some calendars, such as a holiday calendar, cannot be changed. Companion tells you when an event cannot be deleted.
+
+14.5 Ask what is on your calendar
+You can ask about a day from the main menu and most other screens. Your calendar does not need to be open. For example, say "What's on my calendar today?", "What's on my calendar tomorrow?", or "What do I have Friday?". You hear the day and each event.
+In a document, email, or note, these words are written as text.
+
+14.6 Get your Google calendar
+When you add a Google account, Thunderbird offers to add its calendar and address book. Choose both.
+If your account is in Thunderbird but its calendar is missing, a helper can add it in Thunderbird:
+1. Open the Calendar.
+2. Choose New Calendar.
+3. Choose On the Network, then Next.
+4. Type your email address, then choose Find Calendars.
+5. Sign in if asked. Choose the calendars to add, then choose Subscribe.
+Then say "Refresh calendar" in Companion.
+If only Thunderbird's own Home calendar is there, Companion tells you how to add one when you open the calendar.
+Thunderbird keeps a copy of your calendar. Without internet access, you hear the events Thunderbird already has.
+
+15. BROWSE THE WEB
+
+15.1 Open the web browser menu
 Choose Web browser on the main menu. The web browser menu opens, even if you used a page earlier. It has these choices:
 - Resume where you left off. This shows only when a page is kept open.
 - Search or enter address
@@ -1005,7 +1134,7 @@ Choose Web browser on the main menu. The web browser menu opens, even if you use
 Use the arrows and Enter, or say the name of a menu item. Press Escape to go back to the main menu.
 On this menu, Alt reads the menu again.
 
-13.2 Search or open an address
+15.2 Search or open an address
 1. Choose Search or enter address. From a page, you can also say "Search", or press Control+L.
 2. Say your search, or type it and press Enter. For example, type weather in Houston.
 3. Wait for the page title and site name.
@@ -1018,7 +1147,7 @@ Google is the default search engine. You can also choose Bing, Brave Search, or 
 - To use another engine just once, say its name, then your search words, such as "Bing weather". Your default stays the same.
 If a site asks you to prove you are human, Companion cannot solve that check. It may offer another search engine. Say "Try Brave Search", "Try Bing", or "Try DuckDuckGo" to repeat the search there.
 
-13.3 Read a page
+15.3 Read a page
 Companion reads the page in its own window. Use the page view in the Companion window for these keys.
 - Up Arrow and Down Arrow read blocks of page text. A block can be a paragraph, a list item, or text between links.
 - Left Arrow and Right Arrow read characters.
@@ -1034,7 +1163,7 @@ When a website changes a form without a new page, the page view updates. For exa
 A new page may start reading by itself. To stop this, turn off Automatic page reading in Web browser options.
 Press Alt to open the web page menu. It has Page, Lists, Favorites, and Options and help. The menu does not close the page. While you type in a page field, Alt does not open the menu.
 
-13.4 Move to headings, links, or controls
+15.4 Move to headings, links, or controls
 Single letter keys move you around the page. Hold Shift with any of them to move back.
 - H: next heading. Numbers 1 to 6 go to a heading at that level.
 - K: next link.
@@ -1055,7 +1184,7 @@ A heading that is also a link, such as a search result, says so after its level.
 You can also move by voice. Say "Next heading", "Previous link", or "Next form control". To choose a heading level, say "Next heading level", followed by the number, such as "Next heading level two".
 These keys move through the page. They do not type letters until you go into a text box.
 
-13.5 Open links and use lists
+15.5 Open links and use lists
 To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter.
 To find words on the page, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. Listen to the choice before you use it.
 To see a list of items on the page:
@@ -1066,7 +1195,7 @@ Use the arrows, Home, or End to choose an item, then press Enter. A heading move
 To find a name in a links or headings list, type its first letter. Type more letters quickly to narrow it. You can type the full name, with spaces. Backspace removes the last letter.
 Type the same first letter again to move through matching names. The search stops at the last match. Pause before you start a new name. Typing only chooses an item. Press Enter to open it.
 
-13.6 Enter or change a web answer
+15.6 Enter or change a web answer
 1. Use Tab to reach the next control. Or press Up Arrow or Down Arrow to reach a text box. You can type as soon as you reach it.
 2. You can also press E or Shift+E to move to a text box and start typing at once.
 3. Type or speak the answer.
@@ -1092,8 +1221,8 @@ How text boxes, choice boxes, and sliders act:
 - When you arrow past a choice box or slider, Companion only reads it. Its value never changes by accident.
 - To use a choice box or slider, press Enter. Tab onto it also starts using it.
 
-13.7 Fill in and review a form by voice
-Say "Fill out this form". Companion asks for one answer at a time. With the keyboard, use Tab to reach each field and type each answer, as in part 13.6.
+15.7 Fill in and review a form by voice
+Say "Fill out this form". Companion asks for one answer at a time. With the keyboard, use Tab to reach each field and type each answer, as in part 15.6.
 - For a text question, speak the answer.
 - For a choice, say the option name.
 - For a checkbox, say Yes or No.
@@ -1113,7 +1242,7 @@ The check box may clear while the site opens another challenge. Move through its
 On a booking calendar, choose a service before a date. Some sites mark every date as No information until you choose a service. Press Space or Enter on the radio button, then wait for the dates to load. Dates the site turns off stay marked unavailable.
 File uploads and some custom controls may need help. If a page cannot be read, do not guess at a final button. Say "Ask for help" to hear which page needs attention.
 
-13.8 Read a web table and leave a page
+15.8 Read a web table and leave a page
 To move to a table, say "Next table", or press T. Then use these keys:
 - Control+Alt+Up Arrow and Control+Alt+Down Arrow move by row.
 - Control+Alt+Left Arrow and Control+Alt+Right Arrow move by column.
@@ -1133,7 +1262,7 @@ To leave the page:
 - To close the browser window, say "Close browser window", or press Control+Shift+W. This works even when Keep browser window open is on, and from the web browser menu. Companion then goes to the main menu.
 If you use your own Chrome with the extension, its tabs stay open. Companion just lets go of it.
 
-13.9 Identify graphics, lists, regions, and frames
+15.9 Identify graphics, lists, regions, and frames
 Companion uses the names that the website gives. A good name tells you what an item is or what it does. If a name is missing, Companion says the item is unlabeled. It does not guess what a picture shows.
 - Pictures: press G or Shift+G. Or say "Next graphic", "Previous graphic", "Next image", or "Previous image". Pictures marked as decoration are skipped.
 - Lists: press L or Shift+L. Or say "Next list" or "Previous list". You hear the list name, if it has one, and the number of items.
@@ -1143,7 +1272,7 @@ Companion uses the names that the website gives. A good name tells you what an i
 - Frames: press M or Shift+M. Or say "Next frame" or "Previous frame". A frame holds another page inside this page. You hear its title or label.
 Frame text appears where the frame is on the page. Companion marks the end of the frame. Hidden frames are skipped.
 
-13.10 Use website keys and sliders
+15.10 Use website keys and sliders
 Some websites have their own keys. For example, on YouTube, K plays or pauses a video. J and L skip back and ahead. M turns the sound off, and F fills the screen.
 In browse mode, Companion uses letter keys to move through the page. To send your keys to the website instead, use app mode.
 - To use app mode, say "App mode" or "Focus mode", or press Insert+Space.
@@ -1161,9 +1290,9 @@ A slider sets a level, such as the place in a video or the volume. Companion rea
 3. Use Left Arrow and Right Arrow, or Up Arrow and Down Arrow, to change it. Page Up and Page Down make bigger changes. Home and End go to the start and the end. You hear the new value each time.
 4. Press Escape to stop and go back to browse mode. Tab also moves on to the next control.
 
-14. FAVORITES AND WEB HISTORY
+16. FAVORITES AND WEB HISTORY
 
-14.1 Save the current page
+16.1 Save the current page
 A favorite saves a page address so you can open it again later. Older website favorites are in the same list.
 1. Open the page you want to save.
 2. Say "New favorite", or choose New favorite in the web browser menu.
@@ -1172,7 +1301,7 @@ A favorite saves a page address so you can open it again later. Older website fa
 A name can have up to 60 characters. If the name is already used, choose a new one.
 To save with a name in one command, say "Save favorite as", followed by the name, such as "Save favorite as News".
 
-14.2 Open or find a favorite
+16.2 Open or find a favorite
 - While you browse, say "Go to", followed by the saved name, such as "Go to My news". This works from the web browser menu too.
 - To open a favorite by name, you can also say "Open favorite", followed by the name, such as "Open favorite News".
 - To open the list, say "List favorites", or choose Go to favorite in the web browser menu. Use the arrows and Enter to choose.
@@ -1183,20 +1312,20 @@ Home and End reach the first and last items. An empty list says it is empty. Esc
 If your chosen browser cannot start, Companion tries the other guided browser. Your browser choice and your favorites stay saved.
 If a page cannot open, you stay in the web browser menu. Check your internet access, then try again.
 
-14.3 Rename or delete a favorite
+16.3 Rename or delete a favorite
 1. Say "Rename favorite" or "Delete favorite", or choose it in the web browser menu.
 2. Choose a name with the arrows and Enter. You can also type letters to find it, as when you open a favorite.
 3. To rename, say the new name, or type it and press Enter. To delete, choosing the name removes the favorite.
 Deleting a favorite does not delete the website. Escape cancels naming or closes the list.
 
-14.4 Open a page from history
+16.4 Open a page from history
 Web history is a saved list of recent pages. It keeps up to 200 pages, newest first.
 1. Say "Web history", or choose Web history in the web browser menu.
 2. Use the arrows to hear page names, or type letters to find a name.
 3. Press Enter to open the page.
 History stays saved when you close and reopen Companion. Back and Forward use only the pages from the current browser window.
 
-14.5 Resume where you left off
+16.5 Resume where you left off
 To keep a page open for later, open Options, then Web browser options. Check Keep browser window open.
 With this setting on:
 - Escape from page reading opens the web browser menu and leaves the page open.
@@ -1206,9 +1335,9 @@ With this setting off, leaving page reading closes Companion's browser windows. 
 If the saved browser window was closed some other way, Companion removes Resume where you left off from the menu.
 Favorites and history stay saved either way.
 
-15. DOWNLOAD FILES
+17. DOWNLOAD FILES
 
-15.1 Download a file
+17.1 Download a file
 To download a file, choose a download link on a web page, the same as any link.
 - Companion says "Downloading", then the file name.
 - When the file is ready, you hear its name and "finished downloading".
@@ -1218,7 +1347,7 @@ Files go to your Downloads folder unless you choose another folder. This works t
 If you type the address of a file, Companion says the address is a file and downloads it. The page you were on stays open.
 If you leave the page while embedded Edge is still downloading, its window stays open until the downloads end.
 
-15.2 Open your downloads
+17.2 Open your downloads
 To open the download manager, say "Download manager", or press Control+D on a web page or in the web browser menu. You can also choose Downloads in the web browser menu.
 - The newest download is first. Press Up Arrow and Down Arrow to hear each one.
 - Home and End reach the first and last. At either end you hear Start of list or End of list.
@@ -1230,19 +1359,19 @@ To open the download manager, say "Download manager", or press Control+D on a we
 Press Alt to open the downloads menu. It lists every action with its key.
 For help on this screen, say "Help with downloads", or press F1.
 
-15.3 Pause, resume, or cancel
+17.3 Pause, resume, or cancel
 - To pause or resume the download you are on, say "Pause or resume download", or press Space. You can also say "Pause download" or "Resume download".
 - If a download failed and can go on, Space tries it again.
 - To cancel, say "Delete download" or "Cancel download", or press Delete. Companion asks first, because the part already saved is deleted. No is chosen first. Press Up Arrow, then Enter, for Yes. You can also press Y or N.
 - On a download that has ended, Delete takes it off the list. The file stays in its folder.
 
-15.4 Choose what downloads next
+17.4 Choose what downloads next
 When more than three files download at once, the rest wait in line. A waiting download says queued and its place, such as number 2 in line.
 - To move it up one place, say "Move download earlier", or press Control+Up Arrow.
 - To move it down one place, say "Move download later", or press Control+Down Arrow.
 - To make it the next one to start, say "Move to next".
 
-15.5 Open a finished file
+17.5 Open a finished file
 To open a finished download, say "Open download", or press Enter on it.
 - Sound and video files play in the Voice Companion media player. Escape there goes back to your downloads.
 - Word, text, PDF, web page, and book files open in the Document reader. Escape there goes back to your downloads.
@@ -1250,7 +1379,7 @@ To open a finished download, say "Open download", or press Enter on it.
 - Programs, such as setup files, ask first. Only run programs from websites you trust.
 To find the file in File manager, say "Open downloads folder".
 
-15.6 Choose the download folder
+17.6 Choose the download folder
 Downloads go to your own Downloads folder at first. To choose another folder:
 1. Press Alt+O. Choose Web browser options.
 2. Tab to Download folder.
@@ -1259,9 +1388,9 @@ Downloads go to your own Downloads folder at first. To choose another folder:
 Companion checks that the folder exists and can hold files. If it cannot, you hear what to fix.
 In Chrome, a file is saved first in Chrome's own folder. When it is finished, Companion moves it to the folder you chose.
 
-16. REGULAR BROWSER CONNECTION
+18. REGULAR BROWSER CONNECTION
 
-16.1 Set up Chrome and the extension
+18.1 Set up Chrome and the extension
 You need this only to use your own Chrome, with the sites you are already signed in to. Embedded Edge works without it.
 1. Say "Set up Chrome". Or choose Set up Chrome in the web browser menu or in the web page menu. Or open Options, choose Web browser options, and choose Set up Chrome and the Voice Companion extension. Companion asks before each change. Say yes or no, or press Y or N.
 2. If Chrome is missing, Companion offers to install it. This takes a few minutes. Companion tells you how it is going. If Windows asks for permission, press Alt+Y.
@@ -1274,14 +1403,14 @@ If Chrome is not ready when you open Web browser, Companion asks: "Chrome is not
 The installer has a box named Set up Chrome and the Voice Companion extension when Voice Companion opens. It is off unless you check it. When it is on, setup starts the next time Companion opens.
 If setup does not finish, ask your helper. A helper can open Voice Companion Browser Connection in the Chrome Web Store and choose Add to Chrome. For Edge or a test copy, a helper can follow Browser Connection Setup in the Voice Companion Start menu folder.
 
-16.2 Read and use your browser
+18.2 Read and use your browser
 1. Open Web browser from the main menu. Choose Resume where you left off to read the active browser tab.
-2. Use your usual web keys and voice commands. They work the same as in chapter 13, including letter keys, lists, tables, and forms.
+2. Use your usual web keys and voice commands. They work the same as in chapter 15, including letter keys, lists, tables, and forms.
 3. Type and dictate in fields from Companion as usual. Tab moves among controls. Enter uses a control. Space selects a radio button or checkbox.
 4. Escape goes back to the web browser menu. From there, Escape goes to the main menu.
 Search, favorites, web history, Go back, and Go forward stay in the web browser menu. You do not need to switch to your browser to type.
 
-16.3 Understand this testing connection
+18.3 Understand this testing connection
 - This uses your ordinary Chrome or Edge tab. The browser shows its normal notice while it is linked.
 - Companion links normal website tabs. New tabs and sites link by themselves. When you switch tabs, Companion uses the active tab.
 - Browser settings pages are never linked. Companion does not copy your cookies.
@@ -1289,16 +1418,16 @@ Search, favorites, web history, Go back, and Go forward stay in the web browser 
 - If the link stops, keep Companion open. The extension tries again by itself. Companion does not open a separate guided browser in its place.
 - Closing the connection leaves your browser tabs open.
 
-17. MEDIA PLAYER
+19. MEDIA PLAYER
 
-17.1 Open and play a file
+19.1 Open and play a file
 1. Choose Media on the main menu, then Media player. Radio and Podcasts are also in the Media menu.
 2. Press Control+O to open the drive list.
 3. Use the arrows and Enter to open a drive, then a folder, then a sound or video file. Escape goes up one folder. Escape at the drive list goes back to the player.
 4. Companion says the file name and starts to play it.
 You can also press Enter on a sound or video file in File manager.
 
-17.2 Control playback
+19.2 Control playback
 While a file plays, these keys control it:
 - To play or pause, say "Play" or "Pause", or press Space or Enter.
 - To stop, say "Stop media", or press Control+S.
@@ -1311,7 +1440,7 @@ When you move, you hear how far you moved and where you are, such as 1 minute 23
 To change the speed, say "Playback speed", or choose it in the player menu. Then type a number from 0.5 to 3 and press Enter.
 For player help, say "Help with media player", or press F1.
 
-17.3 Use the player menu
+19.3 Use the player menu
 While a file plays, only Alt opens the player menu. You can also say "Player menu".
 - Use Up Arrow and Down Arrow, or Left Arrow and Right Arrow, to choose an item. Then press Enter.
 - Space, Control+S, and Control+I still work while the menu is open.
@@ -1324,9 +1453,9 @@ To leave the player, press Escape, from the menu or while a file plays.
 - If you did not open the file from a folder, Escape goes back to the Media menu.
 Audio stops when you leave, unless Keep audio playing in the background is on.
 
-18. LISTEN TO RADIO
+20. LISTEN TO RADIO
 
-18.1 Find and play a station
+20.1 Find and play a station
 1. Say "Radio". Or choose Media on the main menu, then Radio.
 2. Say "Search radio", or press Control+F.
 3. Give a station name, such as WGN, or a type of music.
@@ -1340,7 +1469,7 @@ If a name matches more than one station, say the number you want when asked. You
 If a station fails, try another result. A stream may not work even when its name is listed.
 "Main menu" goes back to the main menu.
 
-18.2 Use the radio menus and keys
+20.2 Use the radio menus and keys
 The radio screen has two lists: an actions list and a results list. Tab or Shift+Tab moves between them.
 - Use the arrows, Home, End, and first letters to choose an item. Enter opens an action or plays a station.
 - Escape from the station results says "Station actions." The next Escape says "Radio menu." Escape again goes to the Media menu.
@@ -1351,16 +1480,16 @@ The radio screen has two lists: an actions list and a results list. Tab or Shift
 When a station is selected, its actions include saving it, recording it, scheduling a recording, and playing or pausing.
 For radio help, say "Help with radio", or press F1.
 
-18.3 Control audio
+20.3 Control audio
 - Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
 - Say "Pause radio" or "Stop podcast" to make clear which audio you mean. "Stop talking" silences the app's speech instead.
 - Control+P pauses or resumes radio and podcasts from any screen in Companion, even Options.
 - In Radio or Podcasts, Space pauses or resumes. Control+R resumes. Control+S stops.
 - Control+Left Arrow moves back 15 seconds. Control+Right Arrow moves forward 15 seconds. Some streams cannot do this.
 Going back to the main menu stops audio at first. To keep listening, turn on Keep audio playing in the background in Radio or Podcasts options. The same setting is used for both. You can also say "Keep audio playing in the background on" or "Keep audio playing in the background off".
-Companion can lower the sound of media while it speaks. See part 23.4, Audio ducking.
+Companion can lower the sound of media while it speaks. See part 25.4, Audio ducking.
 
-18.4 Choose a station list
+20.4 Choose a station list
 The Station database setting chooses which lists to search. All is the default. It searches every list the app can use.
 - To hear the current choice, say "Station database". With the keyboard, choose Station database in the radio actions list.
 - To choose a list, say "Choose station database", then its name: "Choose station database Radio Browser", "Choose station database IPRD", "Choose station database RadioSure", or "Choose station database All".
@@ -1369,9 +1498,9 @@ A helper can import a RadioSure station file with "Import RadioSure" followed by
 There is no daily limit on radio searches or listening. You still need internet access and a working station stream.
 TuneIn and ooTunes are not connected in this version. If you are not sure which list to use, keep All. You can change it later.
 
-19. SAVED RADIO STATIONS
+21. SAVED RADIO STATIONS
 
-19.1 Save a preset
+21.1 Save a preset
 A preset is a saved station. It lets you play a station again without a new search.
 1. Find or play the station you want.
 2. Say "Save preset" or "Add preset", or press Control+D.
@@ -1379,21 +1508,21 @@ A preset is a saved station. It lets you play a station again without a new sear
 4. Listen for the saved name.
 In Radio, you can also say "Add favorite" or "Save favorite". To give a name, say "Save favorite as", followed by the name, such as "Save favorite as Jazz".
 
-19.2 Play saved stations
+21.2 Play saved stations
 In Radio, say "List presets" or "List favorites", or press Control+Shift+P.
 To hear the names, say "Next" and "Previous", or use the arrows. To play the chosen station, say "That one", or press Enter.
 To play a saved station directly, say "Play preset", followed by its name or list number, such as "Play preset Jazz" or "Play preset 1".
 Saved stations stay after you close Companion. If one no longer plays, search for it again.
 
-19.3 Delete a saved station
+21.3 Delete a saved station
 1. Choose a station in the preset list.
 2. Say "Delete preset", or press Delete. Or say "Delete preset" and its name, such as "Delete preset Jazz".
 3. Listen to the name. Say "Yes" to remove it, or "No" to keep it.
 Removing a preset does not remove the station from the internet.
 
-20. RECORD RADIO
+22. RECORD RADIO
 
-20.1 Record a station now
+22.1 Record a station now
 To record now, choose a station first. Then say "Record current station", or choose that action and press Enter.
 To give the details in one command, say "Record station", the station number, "for", the length, and "minutes". For example, say "Record station 1 for 30 minutes".
 In a recording form:
@@ -1404,7 +1533,7 @@ To finish early, say "Stop recording", or choose Stop recording in the actions l
 To hear your recordings, say "List recordings", or choose List saved recordings. To play one, say "Play recording", followed by its number, such as "Play recording 1".
 Recording works with some direct audio streams, not every station. Check the file after recording.
 
-20.2 Schedule a recording
+22.2 Schedule a recording
 To schedule by voice, say "Schedule station", the number, the day, "at", the time, "for", the length, and "minutes". For example, say "Schedule station 1 tomorrow at 8 PM for 30 minutes". Add "Every day" for a daily recording.
 Or say "Schedule recording", or choose that action and press Enter. Then fill in the form. Set the day, the time, the length in minutes, and whether to repeat it each day.
 - To move through the form, say "Next field" or "Previous field", or press Tab or Shift+Tab.
@@ -1413,7 +1542,7 @@ Or say "Schedule recording", or choose that action and press Enter. Then fill in
 - When the form is ready, say "Okay", or press Enter on OK.
 Keep Companion running and the computer awake until the recording is done. A sleeping or shut-down computer cannot record.
 
-20.3 Cancel a scheduled recording
+22.3 Cancel a scheduled recording
 This list holds radio shows you plan to record later. Check the station and time before you remove one.
 1. Say "List scheduled recordings", or choose Cancel scheduled recordings in Radio.
 2. Use the arrows to hear the station and time you want to cancel.
@@ -1422,9 +1551,9 @@ This list holds radio shows you plan to record later. Check the station and time
 Pressing Delete on an item asks the same question. "Cancel selected scheduled recording" works by voice too.
 Then check the list again. Other plans and saved recordings stay in place.
 
-21. LISTEN TO PODCASTS
+23. LISTEN TO PODCASTS
 
-21.1 Find a show and play an episode
+23.1 Find a show and play an episode
 1. Say "Podcasts". Or choose Media on the main menu, then Podcasts.
 2. Say "Search podcasts for", followed by a topic or show name, such as "Search podcasts for history". Or press Control+F and type the words.
 3. To hear show names, say "Next" and "Previous", or use the arrows.
@@ -1437,7 +1566,7 @@ Then check the list again. Other plans and saved recordings stay in place.
 - To play an episode by number, say "Play episode" or "Play", followed by its number, such as "Play episode 2" or "Play 2".
 - To go from episodes back to the show results, say "Back to podcasts", or press Escape.
 
-21.2 Use the podcast menus and keys
+23.2 Use the podcast menus and keys
 The podcast screen has an actions list and a results list. Tab and Shift+Tab move between them.
 - Use the arrows, Home, End, and first letters to choose.
 - Enter on a show opens its episodes. Enter on an episode or downloaded file plays it.
@@ -1448,7 +1577,7 @@ The podcast screen has an actions list and a results list. Tab and Shift+Tab mov
 Actions also include downloads, playback, chapters, and the previous or next episode or show.
 For podcast help, say "Help with podcasts", or press F1.
 
-21.3 Pause, seek, or move by chapter
+23.3 Pause, seek, or move by chapter
 - Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
 - Control+P pauses or resumes audio from any screen in Companion.
 - In Podcasts, Space pauses or resumes. Control+Left Arrow and Control+Right Arrow move back or forward where the episode allows.
@@ -1457,9 +1586,9 @@ For podcast help, say "Help with podcasts", or press F1.
 At the main menu, audio stops unless Keep audio playing in the background is on. This checkbox is in Radio and Podcasts options. It is off at first.
 A new voice request stops the app's spoken message so it can answer you.
 
-22. SAVED PODCASTS AND DOWNLOADS
+24. SAVED PODCASTS AND DOWNLOADS
 
-22.1 Subscribe to a show
+24.1 Subscribe to a show
 A subscription saves a show and checks for its new episodes.
 - To subscribe, open a show, then say "Subscribe". Or choose Subscribe to selected podcast in the actions list.
 - To subscribe by number, say "Subscribe to podcast", followed by its list number, such as "Subscribe to podcast 1".
@@ -1468,7 +1597,7 @@ A subscription saves a show and checks for its new episodes.
 Companion checks saved shows when it starts and about every six hours while it runs. To check now, say "Refresh subscriptions", or press F5.
 If a show cannot be reached, its last saved episode list is still there.
 
-22.2 Download and play an episode
+24.2 Download and play an episode
 - To save the selected episode for use without internet, say "Download this episode", or press Control+D.
 - To download by number, say "Download episode", followed by its number, such as "Download episode 1".
 - To hear saved files, say "List downloads", or choose List downloaded episodes in the actions list.
@@ -1476,7 +1605,7 @@ If a show cannot be reached, its last saved episode list is still there.
 Files are kept in the Podcast Downloads folder. Each episode can be up to 500 MB. New searches and downloads need internet access.
 Some podcast hosts do not allow downloads. If one fails, try another episode, or ask your helper about the message.
 
-22.3 Choose automatic downloads
+24.3 Choose automatic downloads
 A new subscription starts with manual downloads. It does not download new episodes by itself.
 - To keep a number of the newest episodes for the open show, say "Auto download", the number, and "episodes". For example, say "Auto download 5 episodes".
 - To choose a show by number, add "for podcast" and its list number, such as "Auto download 5 episodes for podcast 2".
@@ -1486,15 +1615,15 @@ Automatic downloads is in the actions list too. You can also set the limit in Po
 With a limit, the app removes older automatic downloads after new ones succeed. It keeps the newest episodes up to your limit. Files you saved with "Download episode" are never removed by the limit.
 Saving every episode may use a lot of disk space. Companion pauses automatic downloads when space is low. Keep Companion running for automatic checks and downloads.
 
-22.4 Remove a subscription
+24.4 Remove a subscription
 1. Say "Remove selected subscription", or choose it in the podcast actions list. You can also press Delete on a saved show.
 2. Listen to the show name.
 3. Answer Yes to remove the subscription, or No to keep it.
 Check the name before you agree, so you do not remove the wrong show.
 
-23. CHANGE YOUR OPTIONS
+25. CHANGE YOUR OPTIONS
 
-23.1 Open, change, and save a setting
+25.1 Open, change, and save a setting
 To open Options, say "Options", or press Alt+O.
 1. Use the arrows to choose a category, then press Enter. You hear its full name, such as Verbosity options dialog.
 2. Use Tab or Shift+Tab to reach a setting, OK, or Cancel.
@@ -1507,7 +1636,7 @@ Each button in Options also has its own spoken command, such as "Add account" or
 To go back to the categories without saving, say "Cancel" or "Back", or press Escape. To leave Options, say "Close settings".
 If you open another category or tool before you choose OK, unsaved changes are lost.
 
-23.2 Choose how much speech you hear
+25.2 Choose how much speech you hear
 These settings are in Verbosity options.
 - Verbosity: how many hints you hear. High gives full hints. Medium gives shorter hints. Low gives brief prompts. This never shortens a document, email, error message, or Yes or No question.
 - Spoken punctuation: which marks are read. Choose none, some, most, or all.
@@ -1525,8 +1654,8 @@ When encountering capital letters sets how a single capital letter sounds while 
 The choice is used in every part of the app, and is kept after you close it.
 Letter names, such as Alpha after A, use your normal voice. Whole words and sentences keep their usual voice. With an AI voice, single letters use the local voice so you hear them quickly. Private password text is never read aloud.
 
-23.3 Voice and Synthesizer options
-In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Voice options also hold the audio ducking settings. See part 23.4.
+25.3 Voice and Synthesizer options
+In Voice options, you can change Voice pitch, Speech rate, and Speech volume. Voice options also hold the audio ducking settings. See part 25.4.
 Listen to the voice sample before you save. Control silences the sample. Escape cancels the category.
 In Synthesizer options, you can choose SAPI, eSpeak, or an AI voice when one is set up. This category also holds the private AI service key.
 - The checkbox Allow narration text to be sent to OpenAI gives your permission for online speech.
@@ -1534,7 +1663,7 @@ In Synthesizer options, you can choose SAPI, eSpeak, or an AI voice when one is 
 - To remove the saved key, check Remove saved AI key and choose OK.
 Ask your helper if you need to set up an AI voice.
 
-23.4 Audio ducking
+25.4 Audio ducking
 Audio ducking makes other sound quieter while Companion speaks. When Companion stops, the sound comes back up slowly. This works like audio ducking on an iPhone with VoiceOver.
 Audio ducking is on at first. It lowers sound from these places:
 - Web pages in the guided browser, such as videos and music.
@@ -1562,7 +1691,7 @@ To change these settings by voice, say one of these. They save at once.
 If you close Companion while the sound is low, the sound comes back. If the computer or app stops all at once, the sound comes back the next time Companion starts.
 If a program is still too quiet, open the Windows volume mixer and raise it there. Companion keeps your new level.
 
-23.5 Input and Email options
+25.5 Input and Email options
 In Input options, you can choose Normal, Commands only, or Dictation only. See part 2.2.
 Dictation type is a separate choice:
 - Old school keeps the speech entry you used before. It is the default.
@@ -1584,7 +1713,7 @@ In Email options:
 - Spoken email headers chooses which details you hear: From, Subject, Date, or Size. Keep at least one. Press Space to add or remove one. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
 - Add an email account starts the setup steps in chapter 10.
 
-23.6 Word processor and Notepad options
+25.6 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents. These do not change a document or draft you already have.
 - Font for new documents is a list of common fonts, such as Arial, Calibri, Times New Roman, and Verdana. Use Up Arrow and Down Arrow, or type the first letter of a font. You can also say "Font" and its name, such as "Font Arial".
 - Font size choices run from 6 to 72 points.
@@ -1592,11 +1721,11 @@ In Notepad options, choose Open Notepad to go back to your note or start a new o
 In Document reader options, turn off Read a document aloud when it opens if you want to start reading yourself. Then press Control+R to read.
 In File manager options, choose where File manager starts. Pick drive list, C drive, Documents, Desktop, Downloads, or Music. Or type a full folder path, such as C:\Users\Will\Music. If that folder is missing, such as an unplugged drive, File manager starts at the drive list.
 
-23.7 Web browser options
+25.7 Web browser options
 - Default search engine: choose Google, Bing, Brave Search, or DuckDuckGo.
-- Keep browser window open: keeps a page open when you leave page reading. It is off at first. See part 14.5.
+- Keep browser window open: keeps a page open when you leave page reading. It is off at first. See part 16.5.
 - Automatic page reading: new pages start reading aloud. It is on at first.
-- Download folder: where new downloads go. Leave it empty to use your Downloads folder. See part 15.6.
+- Download folder: where new downloads go. Leave it empty to use your Downloads folder. See part 17.6.
 - List website favorites opens the saved website list.
 The Guided browser setting chooses the browser Companion uses for its pages. It uses a separate browser profile.
 - Embedded Edge is the usual choice. Say "Use embedded Edge". It opens a browser window owned by Companion and does not need the browser extension.
@@ -1607,21 +1736,21 @@ Google does not allow signing in to a Google account in embedded Edge. For a sit
 A site may ask you to sign in again, even if you are signed in on your usual browser.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To ask for HTTP, type the full address, such as http://example.com. HTTP does not protect the connection. The guided voice review still needs HTTPS before it sends a form.
 
-23.8 Radio and Podcasts options
+25.8 Radio and Podcasts options
 Both categories have Keep audio playing in the background. It is off at first. When it is on, audio keeps playing when you go back to the main menu.
 In Radio options, you can choose a Station database, List radio presets, or List scheduled recordings. Station database chooses which station lists to search. Presets are saved stations. Scheduled recordings are recordings planned for later.
 In Podcasts options, choose a Podcast subscription, then set Automatic downloads for this subscription. Choose manual, all, or a whole number. The limit applies only to that show. List subscriptions opens the saved-show list.
 
-23.9 Auto-update and Startup and exit options
+25.9 Auto-update and Startup and exit options
 In Auto-update options, you can turn Check automatically at startup on or off. Choose Check for updates now to check at any time.
 In Startup and exit options:
 - Start with Windows is off at first. Turn it on to open the app when you sign in to Windows. The app starts asleep and waits for "Wake up" or a key. Uninstalling Companion removes this choice.
 - Ask before exiting Voice Companion, Ask before shutting down the computer, and Ask before restarting the computer are on at first. Each one controls its own Yes or No question.
 Even with the exit question turned off, you are still asked to save an open document.
 
-24. SLEEP, EXIT, AND COMPUTER POWER
+26. SLEEP, EXIT, AND COMPUTER POWER
 
-24.1 Put the microphone to sleep
+26.1 Put the microphone to sleep
 Sleep pauses voice commands but keeps your place.
 - To sleep, say "Go to sleep", or press Control+F12.
 - To wake up, say "Wake up", or press Control+F12 again.
@@ -1633,14 +1762,14 @@ To turn the microphone fully off, press F9. Companion then hears nothing, not ev
 - Companion remembers your choice. If you close it with the microphone off, it starts with the microphone off. It starts on the main menu, so the arrow keys work right away, and it tells you to press F9 to turn the microphone on.
 Sleep is not the same as closing the app or putting Windows to sleep.
 
-24.2 Close Companion
+26.2 Close Companion
 To close the app, say "Exit Companion" or "Close Companion", or press Alt+F4. You can also choose Exit Voice Companion on the main menu. Escape on the main menu also asks to exit.
 At the exit question, No is chosen first. To exit, say "Yes", or press Alt+Y. To keep working, say "No", or press Alt+N.
 If a document is open, answer its save question first. Escape cancels the exit and keeps the document open.
 Companion says "Shutting down. Goodbye." and waits for the whole message before it closes.
 Closing Companion does not shut down Windows.
 
-24.3 Restart or shut down the computer
+26.3 Restart or shut down the computer
 These choices affect the whole computer. Save your work in other apps first.
 1. Choose Restart the computer or Shut down the computer on the main menu. Or say "Restart computer" or "Shut down computer".
 2. Listen to the question. It names the action.
@@ -1649,15 +1778,15 @@ If a document is open, Companion asks whether to save it first. Press Escape at 
 Windows may ask about unsaved work in other apps. Companion does not force them to close.
 The startup choice and the computer power choices are separate settings.
 
-25. CHECK FOR UPDATES
+27. CHECK FOR UPDATES
 
-25.1 Find a newer version
+27.1 Find a newer version
 To check now, say "Check for updates", or choose Check for updates on the main menu.
 Companion also checks when it starts, if automatic checks are on. If an update is offered, say "Yes" to install it or "No" to keep working.
 A later update offer waits until you are back at the main menu or at a pause in your work.
 If the check fails, keep using the current version and try again later.
 
-25.2 Install an update
+27.2 Install an update
 1. Say Yes to the update.
 2. Let Companion save your work and download the file.
 3. Listen to the progress. Say "Status" or "Update status" to hear the current percentage.
@@ -1672,22 +1801,22 @@ When setup finishes, you hear "Installation complete, restarting Voice Companion
 Your accounts and documents stay in their usual folders. The installer also updates the guides.
 Companion does not force Windows to restart. It tells you if a restart is needed.
 
-25.3 Read the release notes
+27.3 Read the release notes
 Release notes tell you what changed in a version and how to use the changes.
 - To open them, say "What's new" or "Release notes". Or press F1 on the main menu, press End to reach What's new, then press Enter.
 - To review them, use "Continue reading", "Next paragraph", "Previous paragraph", and the other reading commands.
 - To go back to your task, say "Close help", or press Escape until Help closes.
 The notes name the current version and the earlier version they compare it with.
 
-26. FIND YOUR GUIDE FILES
+28. FIND YOUR GUIDE FILES
 
-26.1 Open the guide folder
+28.1 Open the guide folder
 To open the guide folder, say "Open user guides" or "Open guides folder", or press Control+G on the main menu.
 You can also use the Voice Companion User Guides shortcut on the desktop or in the Start menu.
 The folder is in Documents, then Voice Companion, then User Guides. Opening it does not leave your task in Companion.
 After an update, close and reopen any guide that was open, so you get the new text.
 
-26.2 Choose a guide format
+28.2 Choose a guide format
 Each format has the same instructions. Choose the one that suits you:
 - Text: open it in Notepad or any text reader.
 - HTML: open it in a web browser. It has a contents list with links, and headings for each chapter and part.
@@ -1698,37 +1827,37 @@ Each format has the same instructions. Choose the one that suits you:
 Release notes have the version in their file names. Older notes can stay in the folder.
 Updating the guides does not remove your own files. The guides stay after you uninstall Companion.
 
-27. FIX A PROBLEM
+29. FIX A PROBLEM
 
-27.1 Companion hears the wrong words
+29.1 Companion hears the wrong words
 - Speak one short sentence or command at a time. Wait for the reply before you speak again.
 - Check which microphone is chosen, and where it is. A headset helps keep the app from hearing its own speech.
 - Use "Commands only" while you review text. Switch to "Normal mode" before you write by voice.
 - If a command still fails, press Alt+T, type it, and press Enter. Listen to the result before you try again.
 - Do not repeat a send, move, or delete command if the result was uncertain. Check what happened first.
 
-27.2 You cannot hear speech
+29.2 You cannot hear speech
 - Check the computer's sound output and volume.
 - Press Control to clear old speech, then give a new reading command.
 - If an AI voice is not working, say "Use SAPI". AI speech needs an internet connection and a working setup.
 - Check Speech volume and Speech rate in Voice options.
 - Ask your helper if you cannot hear any voice.
 
-27.3 Email or a website will not work
+29.3 Email or a website will not work
 - For mail, check the account in use with "Which email account?". Ask your helper to check the sign-in if needed.
 - For a page, say "Refresh page", or press F5. If the layout is hard to explore, say "List links".
 - If letter keys type letters, press Escape to leave the text box. Use the Companion page window for its reading keys.
 - A site may ask you to prove you are human, or use a control Companion cannot read. Ask for help instead of guessing.
 - Some email folder changes and forwarded attachments are limited by the service or this version. Read the email chapters before you try again.
 
-27.4 A guide or update will not open
+29.4 A guide or update will not open
 - Close any open guide files. Then say "Open user guides", or press Control+G, again. This asks Companion to refresh its guide copies.
 - If your Documents folder is not there, ask your helper to restore access to it.
 - If an update fails, keep using the current app if it opens. Try Check for updates again later.
 - Use the installed desktop icon. If it opens an older version, ask your helper to check the install.
 When you ask for help, give the app version, what you tried, and the exact message you heard. This makes the problem easier to find.
 
-27.5 Understand privacy and online services
+29.5 Understand privacy and online services
 Offline speech works on your computer. It does not send your microphone audio to a speech service.
 Online services need your permission:
 - Online recognition needs your permission in Input options.

@@ -50,6 +50,12 @@ SENTENCES = (
     'Ducking under the fence was hard.',
     'What time is it?', "What's the date?", 'What day is it?', 'Time.', 'Date.', 'date and time',
     'Time to go home.', 'The date of the party is Friday.', 'What time is the meeting?',
+    # Contacts and Calendar (contacts_screen.py, calendar_screen.py), and sentences that look like them.
+    'Contacts', 'Calendar', 'Open contacts', 'Open calendar', 'Email John.', 'Send an email to John Smith', 'Write to Mary',
+    'Email John about lunch tomorrow.', "What's on my calendar today?", 'What do I have tomorrow?',
+    'Add appointment tomorrow at 3 PM called doctor', 'Add event', 'Add contact', 'Next event', 'Next contact',
+    'Today', 'Tomorrow.', 'Find John', 'Delete contact', 'Read event', 'Call details', 'Go to October 30',
+    "What's on Friday?", 'What is on the menu tonight?', 'Write to the council about the road.',
 )
 
 

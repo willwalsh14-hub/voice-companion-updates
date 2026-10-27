@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 606
-- Already had both ways: 482
-- Gaps found: 124
-- Gaps fixed (Added): 116
+- Actions inventoried: 632
+- Already had both ways: 501
+- Gaps found: 131
+- Gaps fixed (Added): 123
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -42,6 +42,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Email
 
 - Voice: "Email"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Contacts
+
+- Voice: "Contacts"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
+### Calendar
+
+- Voice: "Calendar"
 - Keyboard: First letter, arrows, Enter
 - Status: Both
 
@@ -2348,6 +2360,160 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Close downloads"
 - Keyboard: Escape
 - Status: Both
+
+## Alt menu, Contacts: Contact
+
+### Email this person
+
+- Voice: "Email contact"
+- Keyboard: Ctrl+E
+- Status: Both
+
+### Open details
+
+- Voice: "Open contact"
+- Keyboard: Enter
+- Status: Both
+
+### Read all details
+
+- Voice: "Read contact"
+- Keyboard: Alt, 1, 3
+- Status: Added: Alt menu path
+
+### Phone number
+
+- Voice: "Call details"
+- Keyboard: Alt, 1, 4
+- Status: Added: Alt menu path
+
+### Delete contact
+
+- Voice: "Delete contact"
+- Keyboard: Delete
+- Status: Both
+
+## Alt menu, Contacts: Contacts
+
+### Add contact
+
+- Voice: "Add contact"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Find contact
+
+- Voice: "Find contact ..."
+- Keyboard: Ctrl+F
+- Status: Both
+
+### Refresh contacts
+
+- Voice: "Refresh contacts"
+- Keyboard: Alt, 2, 3
+- Status: Added: Alt menu path
+
+### Contacts help
+
+- Voice: "Help with contacts"
+- Keyboard: F1
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 2, 5
+- Status: Added: Alt menu path
+
+## Alt menu, Calendar: Event
+
+### Read event
+
+- Voice: "Read event"
+- Keyboard: Enter
+- Status: Both
+
+### Next event
+
+- Voice: "Next event"
+- Keyboard: Down
+- Status: Both
+
+### Previous event
+
+- Voice: "Previous event"
+- Keyboard: Up
+- Status: Both
+
+### Add event
+
+- Voice: "Add event"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Delete event
+
+- Voice: "Delete event"
+- Keyboard: Delete
+- Status: Both
+
+## Alt menu, Calendar: Day
+
+### Today
+
+- Voice: "Today"
+- Keyboard: Home
+- Status: Both
+
+### Next day
+
+- Voice: "Next day"
+- Keyboard: Right
+- Status: Both
+
+### Previous day
+
+- Voice: "Previous day"
+- Keyboard: Left
+- Status: Both
+
+### Next week
+
+- Voice: "Next week"
+- Keyboard: Page Down
+- Status: Both
+
+### Previous week
+
+- Voice: "Previous week"
+- Keyboard: Page Up
+- Status: Both
+
+### Go to a day
+
+- Voice: "Go to ..."
+- Keyboard: Alt, 2, 6
+- Status: Added: Alt menu path
+
+## Alt menu, Calendar: Calendar
+
+### Refresh calendar
+
+- Voice: "Refresh calendar"
+- Keyboard: Alt, 3, 1
+- Status: Added: Alt menu path
+
+### Calendar help
+
+- Voice: "Help with calendar"
+- Keyboard: F1
+- Status: Both
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 3, 3
+- Status: Added: Alt menu path
 
 ## Alt menu, Help: Help
 

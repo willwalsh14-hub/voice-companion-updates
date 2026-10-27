@@ -147,7 +147,7 @@ class ScreenMenuTests(unittest.TestCase):
         # The main menu is a menu already: Alt says so and where you are.
         self.said.clear()
         self.assertEqual(self.press('Alt', 'awake'), 'awake')
-        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 13.')
+        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 15.')
         self.assertEqual(self.press('Down', 'awake'), 'awake')
         self.assertIn('Word processor', self.said[-1])
 
@@ -208,6 +208,7 @@ class ScreenMenuTests(unittest.TestCase):
     def test_shortcut_keys_shown_in_menus_do_the_same_thing(self):
         # Internal names for keys the window sends on these screens.
         internal = {('mailbox', 'Page Down'): 'Next', ('mailbox', 'Page Up'): 'Prior',
+                    ('calendar', 'Page Down'): 'Next', ('calendar', 'Page Up'): 'Prior',
                     ('web', 'Alt+Left'): 'Web:Back', ('web', 'Alt+Right'): 'Web:Forward', ('web', 'F5'): 'Web:Refresh',
                     ('web', 'Ctrl+L'): 'Web:Search'}
         expected = {('web', 'Escape'): 'web browser menu', ('file_reader', 'Escape'): 'back to files'}

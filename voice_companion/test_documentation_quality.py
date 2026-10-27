@@ -50,7 +50,8 @@ class DocumentationQualityTests(unittest.TestCase):
                         'Cancel selected scheduled recording','Normal mode','What is selected','Undo','Go to folder'):
             self.assertIn(command,text)
         for explanation in ('Nothing is sent before the review and confirmation','Yahoo forwarding does not include',
-                            'Google Calendar and Google Drive are not connected','Keep Companion running and the computer awake',
+                            'Google Drive is not connected','Your Google calendar is on the Calendar screen',
+                            'Keep Companion running and the computer awake',
                             'Some podcast hosts do not allow downloads','The same selection and editing rules'):
             self.assertIn(explanation,text)
         self.assertNotRegex(text,r'(?i)regression|checksum|runtime|dispatch|stale caret|virtual cursor|source build|provider registration')

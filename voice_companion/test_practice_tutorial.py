@@ -11,7 +11,7 @@ from settings_model import CATEGORIES, fields
 class PracticeTutorialTests(unittest.TestCase):
     def test_every_app_has_task_lessons_and_complete_documented_reference(self):
         session=PracticeTutorial()
-        self.assertEqual([c['name'] for c in session.courses],['Getting started','Word processor','Notepad','Email','Web browser','Radio','Podcasts','Options','Help and updates','File manager'])
+        self.assertEqual([c['name'] for c in session.courses],['Getting started','Word processor','Notepad','Email','Contacts and calendar','Web browser','Radio','Podcasts','Options','Help and updates','File manager'])
         guide={t['key']:t for t in HelpSession(Path(__file__).with_name('START HERE - Veteran.txt')).topics}
         for course,definition in zip(session.courses,COURSES):
             self.assertGreaterEqual(len(course['lessons']),12,course['name'])
@@ -19,7 +19,7 @@ class PracticeTutorialTests(unittest.TestCase):
             reference=' '.join(l['text'] for l in course['lessons'] if l['reference'])
             for source in definition[-1]:
                 for paragraph in guide[source]['paragraphs']:self.assertIn(paragraph,reference)
-        option_titles={l['title'] for l in session.courses[7]['lessons']}
+        option_titles={l['title'] for l in next(c for c in session.courses if c['name']=='Options')['lessons']}
         for category in CATEGORIES:
             for field in fields(category,{}):self.assertIn(category+': '+field.label,option_titles)
 
