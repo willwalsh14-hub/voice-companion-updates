@@ -1000,6 +1000,7 @@ class CompanionWindow:
                 except tk.TclError:pass
                 for child in widget.winfo_children():paint(child,palette,ring)
             def set_full_screen(on):
+                if __import__('os').environ.get('VC_DIAG_NO_ZOOM'):return
                 if not on:
                     try:root.state('normal')
                     except tk.TclError:pass
@@ -1042,6 +1043,7 @@ class CompanionWindow:
                 # Windows Magnifier, ZoomText and Fusion follow the system caret: put it on the
                 # selected item or the reading place.
                 local['caret_after']=None
+                if __import__('os').environ.get('VC_DIAG_NO_CARET'):return
                 target=local['caret_target']
                 if not target:return
                 widget,index=target

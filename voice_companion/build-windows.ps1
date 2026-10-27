@@ -127,6 +127,24 @@ if (-not $NoPublish) {
 & $python -m pip install --disable-pip-version-check --upgrade 'pip==26.2.1'
 if ($LASTEXITCODE -ne 0) { throw 'Could not update the package installer securely.' }
 & $python -m pip install --disable-pip-version-check -r requirements.txt 'pyinstaller==6.22.3' 'pyinstaller-hooks-contrib==2026.7'
+# DIAGNOSTIC (try branch only): which change takes keyboard focus from the File manager list?
+$diagTests = @('test_keyboard_text.WindowKeyboardTests.test_file_manager_ctrl_d_replaces_old_drive_and_main_shortcuts','test_keyboard_text.WindowKeyboardTests.test_file_search_shortcut_from_each_toolbar_control_and_input','test_keyboard_text.WindowKeyboardTests.test_file_list_routes_selection_clipboard_menu_and_rename_keys','test_keyboard_text.WindowKeyboardTests.test_file_toolbar_tab_order_and_typeahead_search_sort_keys','test_keyboard_text.WindowKeyboardTests.test_document_command_shortcuts_are_routed_before_text_editing')
+$diagSummary = @()
+foreach ($variant in @('none','VC_DIAG_NO_CARET','VC_DIAG_NO_ZOOM','VC_DIAG_NO_CARET+VC_DIAG_NO_ZOOM')) {
+  Remove-Item Env:VC_DIAG_NO_CARET -ErrorAction SilentlyContinue; Remove-Item Env:VC_DIAG_NO_ZOOM -ErrorAction SilentlyContinue
+  foreach ($name in ($variant -split '\+')) { if ($name -ne 'none') { Set-Item -Path ('Env:' + $name) -Value '1' } }
+  foreach ($test in $diagTests) {
+    $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    $out = (& $python -m unittest $test 2>&1 | ForEach-Object { "$_" }) -join "`n"
+    $code = $LASTEXITCODE; $ErrorActionPreference = $previous
+    $short = ($test -split '\.')[-1]
+    $line = $variant + ' / ' + $short + ': ' + $(if ($code -eq 0) { 'PASS' } else { 'FAIL' })
+    if ($code -ne 0) { $err = ($out -split "`n" | Where-Object { $_ -match '^AssertionError' } | Select-Object -First 1); if ($err) { $line += ' ' + $err.Substring(0, [Math]::Min(300, $err.Length)) } }
+    Write-Output $line; $diagSummary += $line
+  }
+}
+Write-BuildAnnotation 'Focus diagnostic results' ($diagSummary -join "`n")
+throw 'Focus diagnostic finished (try branch). See the annotation.'
 # Build PyInstaller's launcher here, from source, rather than using the stock
 # launcher shared by every PyInstaller program. Antivirus tools learn the stock
 # launcher from malware that also uses it, and then flag Voice Companion too.
