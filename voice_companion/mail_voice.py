@@ -203,7 +203,10 @@ class MailSession:
             step = 1 if command in ('next folder', 'move down', 'down', 'next') else -1
             new = picker['index'] + step
             if not 0 <= new < len(picker['folders']):
-                return 'That is the ' + ('last' if step > 0 else 'first') + ' folder. ' + picker['folders'][picker['index']][0] + '.'
+                # Said as in every other list (Start of list, End of list).
+                index = picker['index']
+                return (('End of list. ' if step > 0 else 'Start of list. ') + 'Folder ' + str(index + 1) + ' of ' +
+                        str(len(picker['folders'])) + ': ' + self._spoken_folder(picker['folders'][index][0]) + '.')
             picker['index'] = new
             return name_first('Folder ' + str(new + 1) + ' of ' + str(len(picker['folders'])) + ': ' + self._spoken_folder(picker['folders'][new][0]) + '. Say that one to ' + verb + '.')
         if command in ('current folder', 'repeat folder'):
@@ -419,7 +422,7 @@ class MailSession:
         self.body_content=body or ''
         self.body_format=None
         import json
-        try:format=json.loads((Path(self.folder)/'preferences.json').read_text()).get('email_format','html')
+        try:format=json.loads((Path(self.folder)/'preferences.json').read_text(encoding='utf-8')).get('email_format','html')
         except (OSError,ValueError):format='html'
         self.set_format(format)
         self.body_offset = 0
@@ -641,7 +644,7 @@ class MailSession:
                 return self._read(self.current) if self.current else 'Say read message followed by a number first.'
             if command in ('list links','read links','list buttons','read buttons') or re.fullmatch(r'(?:open|activate) (?:link|button) (\d+)',command):
                 import json
-                try:format=json.loads((Path(self.folder)/'preferences.json').read_text()).get('email_format','html')
+                try:format=json.loads((Path(self.folder)/'preferences.json').read_text(encoding='utf-8')).get('email_format','html')
                 except (OSError,ValueError):format='html'
                 if self.view!='message':return 'Open a message first.'
                 if format!='html':return 'Choose HTML under Options, Email, Email format to navigate links.'
@@ -827,7 +830,7 @@ class MailSession:
                 self.folder_name, self.folder_id = 'Inbox', 'inbox'
                 self.rows, self.current = [], None
                 self._clear_marks()
-                return 'Folder change completed. Back at Inbox. Say list folders to check it.'
+                return 'Folder change completed. Back to Inbox. Say list folders to check it.'
             if command.startswith('move selected to '):
                 ids = self._selected_ids()
                 name = command[len('move selected to '):].strip()
@@ -930,6 +933,8 @@ class MailSession:
     def _current_list(self):
         if not self.rows:
             return self.list_messages()
-        parts = [self._summary(i) for i in range(1, len(self.rows) + 1)]
-        return 'Back to ' + self.folder_name + '. ' + ' '.join(parts)
+        # The message you were on, as in any list; never the whole page read aloud.
+        if self.current is None or not 1 <= self.current <= len(self.rows):
+            self.current = 1
+        return 'Back to ' + self.folder_name + '. ' + self._summary(self.current)
 

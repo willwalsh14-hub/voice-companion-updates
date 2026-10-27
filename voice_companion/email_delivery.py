@@ -18,6 +18,9 @@ class DeliveryError(Exception):
 
 
 def message_parts(draft):
+    if not str(draft.recipient or '').strip():
+        # Said instead of "I could not understand one complete email address".
+        raise ValueError('This email has no recipient. Say email to, followed by an address, then send it again.')
     recipient = normalize_recipient(draft.recipient)
     subject = draft.subject.strip()
     body = '\n\n'.join(p.text for p in draft.paragraphs).strip()

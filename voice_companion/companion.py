@@ -2431,10 +2431,13 @@ def handle_mailbox_screen(text, command, mode, typed):
             email_draft.cc = context['cc']
             email_draft.subject = context['subject']
             email_draft.response_context = context
-            email_draft.compose_step = 'recipient' if context['action'] == 'forward' else 'body'
+            email_draft.compose_step = 'recipient' if context['action'] == 'forward' or not context['recipient'] else 'body'
             email_draft.save()
             recipient_note = ('Say email to followed by the forwarding address. '
                               if context['action'] == 'forward' else
+                              # No address to reply to (none in the message): ask for one, never "Recipient ."
+                              'This message has no address to reply to. Say email to followed by an address. '
+                              if not email_draft.recipient else
                               'Recipient ' + email_draft.recipient +
                               ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
             attachment_note = forward_attachment_note(context)
@@ -3622,7 +3625,7 @@ def _handle(text, mode, typed=False):
         if mail_session is not None:
             speak(mail_session.process('open inbox'))
             return 'mailbox'
-        speak('Back at the main menu. No email account is connected.')
+        speak('No email account is connected.')
         return 'awake'
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
@@ -4143,9 +4146,11 @@ def _handle(text, mode, typed=False):
                     mail_session.view = 'message'
                     mail_session.body_text = original_body
                     mail_session.reading.set_text(original_body, reset=True)
-                    speak('Back at the original message. ' + mail_session._next_body())
+                    speak('Back to the original message. ' + mail_session._next_body())
                 else:
-                    speak('Back to ' + mail_session.folder_name + '. ' + result)
+                    # The list already starts with the folder name; say it once.
+                    speak('Back to ' + (result if result.startswith(mail_session.folder_name + '. ') else
+                                        mail_session.folder_name + '. ' + result))
             except Exception:
                 speak_prompt('Your message was accepted, but the folder could not refresh. Say list messages to try again.')
             return 'mailbox'
@@ -4158,7 +4163,7 @@ def _handle(text, mode, typed=False):
                        'go back', 'back', 'exit', 'exit email', 'main menu'):
             email_draft.save()
             if mail_session is not None and command not in ('back to main menu', 'main menu'):
-                speak('Email draft saved. Back to ' + mail_session.folder_name + '. ' + mail_session.process('back to folder'))
+                speak('Email draft saved. ' + mail_session.process('back to folder'))
                 return 'mailbox'
             speak('Email draft saved locally. Check whether it was sent before sending it again.')
             return 'awake'
