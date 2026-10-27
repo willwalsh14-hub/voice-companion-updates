@@ -122,5 +122,21 @@ class MenuNamesTests(CompanionTestCase):
         self.assertIn('document reader menu', OPEN_PHRASES['file_reader'])
 
 
+class DialogWordTests(CompanionTestCase):
+    """Will: dialogs say the word dialog when they open."""
+    def test_ai_voice_setup_says_dialog(self):
+        window = mock.Mock()
+        with mock.patch.object(companion, 'APP_WINDOW', window):
+            companion.handle('set up AI voice', 'awake')
+        window.setup_ai_voice.assert_called_once()
+        self.assertTrue(self.said[-1].startswith('AI voice setup dialog. '), self.said[-1])
+
+    def test_options_announces_each_category_as_a_dialog(self):
+        import inspect, native_settings
+        source = inspect.getsource(native_settings.NativeSettings._run)
+        self.assertIn("self.session.category_name()+' dialog. '", source)
+        self.assertIn('last_focus[0]=focused_control()', source)
+
+
 if __name__ == '__main__':
     unittest.main()

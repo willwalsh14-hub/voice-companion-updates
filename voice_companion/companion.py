@@ -3340,7 +3340,7 @@ def _handle(text, mode, typed=False):
     if normalized_command(text) in ('set up ai voice', 'setup ai voice', 'ai voice setup'):
         if APP_WINDOW is not None:
             APP_WINDOW.setup_ai_voice()
-            speak('AI voice setup is open for your trainer. The key is hidden. Use Tab to move between fields.')
+            speak('AI voice setup dialog. It is for your trainer. The key is hidden. Use Tab to move between fields.')
         else:
             speak('AI voice setup requires the app window.')
         return mode

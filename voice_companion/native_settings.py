@@ -70,6 +70,13 @@ class NativeSettings:
             for hwnd,field in controls.items():
                 if field.kind=='action' or (field.kind=='choice' and not field.choices):continue
                 self.session.set(field.key,raw(hwnd,field))
+        def focused_control():
+            # An editable combo box (File manager options) gives keyboard focus to the edit box
+            # inside it. Remember the combo itself, as the focus watcher in the timer does;
+            # otherwise the watcher sees a "change" and speaks the field again, which cut off
+            # "File manager options dialog" just after it began.
+            hwnd=get_focus()
+            return parent(hwnd) if parent(hwnd) in controls else hwnd
         def describe(hwnd):
             if hwnd not in controls and parent(hwnd) in controls:hwnd=parent(hwnd)
             if hwnd==category[0]:return menu_label(self.session.category_name())+', '+str(self.session.category+1)+' of '+str(len(CATEGORIES))+'.'
@@ -160,7 +167,7 @@ class NativeSettings:
             else:self.announce('Settings closed.');close()
         def open_category():
             baseline[0]=copy.deepcopy(self.session.values);editing[0]=True;render()
-            self.announce(self.session.category_name()+' dialog. '+describe(get_focus()));last_focus[0]=get_focus()
+            self.announce(self.session.category_name()+' dialog. '+describe(get_focus()));last_focus[0]=focused_control()
         def save():
             if not editing[0]:open_category();return
             if self.pending:return
@@ -218,7 +225,7 @@ class NativeSettings:
                 if not editing[0]:baseline[0]=copy.deepcopy(self.session.values);editing[0]=True
                 message=self.session.set(key,value)
                 self.session.category=next(i for i,name in enumerate(CATEGORIES) if any(f.key==key for f in __import__('settings_model').fields(name,self.session.context)))
-                send(category[0],0x186,self.session.category,0);render(key);announce_value(get_focus()) if key in ('rate','pitch','volume','engine','windows_voice','espeak_voice','ai_voice') else self.announce(message);last_focus[0]=get_focus();return
+                send(category[0],0x186,self.session.category,0);render(key);announce_value(focused_control()) if key in ('rate','pitch','volume','engine','windows_voice','espeak_voice','ai_voice') else self.announce(message);last_focus[0]=focused_control();return
             if cmd in ('on','off','toggle'):
                 hwnd=get_focus();hwnd=parent(hwnd) if parent(hwnd) in controls else hwnd;field=controls.get(hwnd)
                 if field and field.kind=='check':
