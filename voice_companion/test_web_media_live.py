@@ -88,5 +88,52 @@ class LiveDialogTests(unittest.TestCase):
         self.assertIn('Next', self.session.keyboard('Forward'))
 
 
+class SlowSiteTests(unittest.TestCase):
+    """A real local web server that takes longer than the click wait to answer."""
+    DELAY = 12
+
+    @classmethod
+    def setUpClass(cls):
+        import threading
+        from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+        delay = cls.DELAY
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args): pass
+            def do_GET(self):
+                if self.path.startswith('/slow'):
+                    time.sleep(delay); body = b'<title>Slow</title><h1>Slow page arrived</h1>'
+                else:
+                    body = (b'<title>Home</title><h1>Home</h1><a href="/slow">Slow page</a>'
+                            b'<form action="/slow"><label>Search<input name="q"></label><button>Find</button></form>')
+                self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers(); self.wfile.write(body)
+        cls.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        LiveDialogTests.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close(); cls.driver.stop(); cls.server.shutdown(); cls.server.server_close()
+
+    def setUp(self):
+        self.context = self.browser.new_context(); self.addCleanup(self.context.close)
+        self.page = self.context.new_page(); self.page.set_default_timeout(5000)
+        self.page.goto('http://127.0.0.1:%d/' % self.server.server_address[1], timeout=30000)
+        self.backend = BrowserBackend(tempfile.gettempdir()); self.backend.page = self.page; self.backend.context = self.context; self.backend.start = lambda: None
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, self.backend); self.session._refresh()
+
+    at = LiveDialogTests.at
+
+    def test_a_slow_link_opens_its_page_instead_of_reporting_a_failure(self):
+        said = self.at('Slow page')
+        self.assertTrue(said.startswith('Page loaded: Slow.'), said)
+        self.assertIn('Slow page arrived', said)
+
+    def test_a_slow_form_button_opens_its_page(self):
+        said = self.at('Find')
+        self.assertTrue(said.startswith('Page loaded: Slow.'), said)
+
+
 if __name__ == '__main__':
     unittest.main()

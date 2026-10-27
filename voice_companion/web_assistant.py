@@ -830,8 +830,11 @@ class BrowserBackend:
         try:
             self.last_action_started=True
             if key and focused:self.page.keyboard.press(key)
-            elif key:element.press(key,timeout=10000)
-            else:element.click(timeout=10000)
+            # The driver would wait for a navigation the click starts, up to the
+            # timeout, then fail; a slow site made a working link sound broken.
+            # The loop below watches the page instead.
+            elif key:element.press(key,timeout=10000,no_wait_after=True)
+            else:element.click(timeout=10000,no_wait_after=True)
             if kind(item)=='button' or key:
                 try:
                     # A button that removes itself when pressed (Skip ad, Close,
@@ -843,7 +846,11 @@ class BrowserBackend:
             clicked_at=time.monotonic()
             deadline=clicked_at+8
             changed=False
-            while time.monotonic()<deadline:
+            def loading():
+                # A slow site is still sending the next page: keep waiting, as a browser does.
+                try:return any(r.resource_type=='document' for r in pending_requests) and time.monotonic()<clicked_at+30
+                except Exception:return False
+            while time.monotonic()<deadline or loading():
                 if getattr(self,'dialog_notice','')==LEAVE_NOTICE:break
                 candidates=[p for p in opened if not p.is_closed()]
                 if self.context:
