@@ -197,5 +197,28 @@ class DialogFocusTests(LiveBrowser):
         self.assertEqual(self.session.keyboard('Activate'), 'Dialog closed. Open settings, button.')
 
 
+ARTICLE = """<title>Benefits</title><h1>Benefits</h1><p>Read this first.</p><p>Your eligibility depends on your service dates.</p>
+<p>More text.</p><p>Eligibility also needs a form.</p><a href="/apply">Apply now</a>"""
+
+
+class FindTextTests(LiveBrowser):
+    def setUp(self):
+        self.context = self.browser.new_context(); self.addCleanup(self.context.close)
+        self.context.route('https://fixture.test/**', lambda route: route.fulfill(content_type='text/html', body=ARTICLE))
+        self.page = self.context.new_page(); self.page.goto('https://fixture.test/', timeout=30000)
+        self.backend = BrowserBackend(tempfile.gettempdir()); self.backend.page = self.page; self.backend.context = self.context; self.backend.start = lambda: None
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, self.backend); self.session._refresh()
+
+    def test_find_moves_to_words_in_the_page_text_when_no_link_has_them(self):
+        self.assertEqual(self.session.command('Find eligibility.'), 'Found: Your eligibility depends on your service dates.')
+        self.assertEqual(self.session.keyboard('Read:Down'), 'More text.')
+        self.assertEqual(self.session.command('find eligibility'), 'Found: Eligibility also needs a form.')
+        self.assertEqual(self.session.command('find eligibility'), 'Found from the top of the page: Your eligibility depends on your service dates.')
+        # A link or button with the words is still offered first.
+        self.assertTrue(self.session.command('find apply').startswith('I found Apply now'))
+        self.assertTrue(self.session.command('find zebra').startswith('I could not find zebra on this page.'))
+
+
 if __name__ == '__main__':
     unittest.main()

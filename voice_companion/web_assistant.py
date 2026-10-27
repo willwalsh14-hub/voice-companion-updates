@@ -2279,6 +2279,11 @@ class WebSession:
         self.link_position = None
         controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
         self.choices = match_choices(controls, request)
+        words = re.sub(r"^(?:find|look for|i am looking for|i'm looking for|where is|how do i)\s+", '', _plain(request), flags=re.I).rstrip('.!?,').strip()
+        if not self.choices and words:
+            # Words in the page text: move the reading place there, as Find does in a browser.
+            found = self.find_text(words)
+            if found: return found
         if not self.choices:
             # A result can arrive after the initial page paint.
             for _ in range(3):
@@ -2291,10 +2296,31 @@ class WebSession:
                 self.choices = match_choices(controls, request)
                 if self.choices: break
         if not self.choices:
-            return ('I could not identify a matching link or button. The site may have changed or hidden its controls. '
+            return (('I could not find ' + words + ' on this page. ' if words else 'I could not identify a matching link or button. ') +
+                    'The site may have changed or hidden its controls. '
                     'Say list links to hear what I can find, or ask your helper to inspect the page.')
         self.suggestion_index = 0
         return self._suggest()
+
+    def find_text(self, words):
+        """Move the reading place to the next place the words appear, and read that line."""
+        text = self.reading.text or ''
+        wanted = words.casefold()
+        if not wanted or not text:return ''
+        folded = text.casefold()
+        before = self.reading.position
+        start = folded.find(wanted, min(len(text), before + 1))
+        wrapped = start < 0
+        if wrapped:start = folded.find(wanted)
+        if start < 0:return ''
+        self.reading.position = self.reading.continuation = start
+        if self.browse:self.browse.set_position(start)
+        self.preferred_column = None
+        line_start = text.rfind('\n', 0, start) + 1
+        line_end = text.find('\n', start)
+        line = text[line_start:len(text) if line_end < 0 else line_end].strip()
+        self.cursor_changed(True)
+        return ('Found from the top of the page: ' if wrapped and before > 0 else 'Found: ') + line
 
     def link_items(self):
         snapshot=self.snapshot or {}

@@ -1225,7 +1225,7 @@ These keys move through the page. They do not type letters until you go into a t
 
 15.5 Open links and use lists
 To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter.
-To find words on the page, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. Listen to the choice before you use it.
+To find words on the page, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. If a link or button has those words, Companion offers it first. Listen to the choice before you use it. Otherwise it moves to the words in the page text and reads that line. Say the same Find again for the next place.
 To see a list of items on the page:
 - For links, say "List links", or press F7 or Insert+F7. Links are listed in Tab order.
 - For headings, say "List headings", or press F6 or Insert+F6. Each heading says its level.
