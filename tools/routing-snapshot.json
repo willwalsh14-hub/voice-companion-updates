@@ -1760,7 +1760,7 @@
 },
 "awake | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2123,7 +2123,7 @@
 },
 "awake | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2589,7 +2589,7 @@
 },
 "awake | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2702,7 +2702,7 @@
 },
 "awake | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -3971,7 +3971,7 @@
 },
 "awake | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -6976,7 +6976,7 @@
 },
 "document | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -7507,7 +7507,7 @@
 },
 "document | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -8201,7 +8201,7 @@
 },
 "document | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -8368,7 +8368,7 @@
 },
 "document | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -10241,7 +10241,7 @@
 },
 "document | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -13525,7 +13525,7 @@
 },
 "email_draft | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14063,7 +14063,7 @@
 },
 "email_draft | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14767,7 +14767,7 @@
 },
 "email_draft | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14934,7 +14934,7 @@
 },
 "email_draft | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -16812,7 +16812,7 @@
 },
 "email_draft | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -17777,7 +17777,7 @@
 },
 "help | back to topics": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18380,7 +18380,7 @@
 },
 "help | end of list": {
 "said": [
-"Fix A Problem (F), 30 of 30."
+"Large Text And Colors (L), 31 of 31."
 ],
 "screen_after": "help"
 },
@@ -18609,7 +18609,7 @@
 },
 "help | help": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18701,7 +18701,7 @@
 },
 "help | last item": {
 "said": [
-"Fix A Problem (F), 30 of 30."
+"Large Text And Colors (L), 31 of 31."
 ],
 "screen_after": "help"
 },
@@ -18865,7 +18865,7 @@
 },
 "help | manual": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19001,7 +19001,7 @@
 },
 "help | next": {
 "said": [
-"Getting Started (G), 2 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"Getting Started (G), 2 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19192,7 +19192,7 @@
 },
 "help | open manual": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19285,7 +19285,7 @@
 },
 "help | open user guide": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -20199,7 +20199,7 @@
 },
 "help | user guide": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22817,7 +22817,7 @@
 },
 "mailbox | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23285,7 +23285,7 @@
 },
 "mailbox | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23914,7 +23914,7 @@
 },
 "mailbox | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -24054,7 +24054,7 @@
 },
 "mailbox | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -25728,7 +25728,7 @@
 },
 "mailbox | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -27940,7 +27940,7 @@
 },
 "note | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28295,7 +28295,7 @@
 },
 "note | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28757,7 +28757,7 @@
 },
 "note | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28870,7 +28870,7 @@
 },
 "note | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -30120,7 +30120,7 @@
 },
 "note | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33078,7 +33078,7 @@
 },
 "web | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33609,7 +33609,7 @@
 },
 "web | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -34303,7 +34303,7 @@
 },
 "web | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -34456,7 +34456,7 @@
 },
 "web | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -36269,7 +36269,7 @@
 },
 "web | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },

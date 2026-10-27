@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 650
-- Already had both ways: 516
-- Gaps found: 134
-- Gaps fixed (Added): 126
+- Actions inventoried: 655
+- Already had both ways: 520
+- Gaps found: 135
+- Gaps fixed (Added): 127
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1205,6 +1205,50 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Set Remove saved AI key to ..."
 - Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+## Display options
+
+### Color scheme
+
+- Voice: "Set Color scheme to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Text size
+
+- Voice: "Set Text size to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Screen font
+
+- Voice: "Set Screen font to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Bold text
+
+- Voice: "Set Bold text to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Highlight color
+
+- Voice: "Set Highlight color to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Line spacing on screen
+
+- Voice: "Set Line spacing on screen to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Show the window full screen
+
+- Voice: "Set Show the window full screen to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
 ## Input options
@@ -2439,12 +2483,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 1, 4
 - Status: Added: Alt menu path
 
-### Edit contact
-
-- Voice: "Edit contact"
-- Keyboard: F2
-- Status: Both
-
 ### Delete contact
 
 - Voice: "Delete contact"
@@ -2509,12 +2547,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+N
 - Status: Both
 
-### Edit event
-
-- Voice: "Edit event"
-- Keyboard: F2
-- Status: Both
-
 ### Delete event
 
 - Voice: "Delete event"
@@ -2553,11 +2585,11 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Page Up
 - Status: Both
 
-### Go to a date
+### Go to a day
 
-- Voice: "Go to date"
-- Keyboard: Ctrl+G
-- Status: Both
+- Voice: "Go to ..."
+- Keyboard: Alt, 2, 6
+- Status: Added: Alt menu path
 
 ## Alt menu, Calendar: Calendar
 

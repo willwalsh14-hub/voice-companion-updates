@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import copy
 import re
+import display_options
 from audio_ducking import LEVEL_CHOICES as DUCK_LEVELS, spoken_level
 
 @dataclass(frozen=True)
@@ -11,8 +12,10 @@ class Field:
     kind: str = 'choice'
     choices: tuple = ()
 
-CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Input', 'Email', 'Word processor', 'Notepad', 'Document reader', 'File manager', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
+CATEGORIES = tuple(name+' options' for name in ('Verbosity', 'Voice', 'Synthesizer', 'Display', 'Input', 'Email', 'Word processor', 'Notepad', 'Document reader', 'File manager', 'Web browser', 'Radio', 'Podcasts', 'Auto-update'))+('Startup and exit options',)
 DEFAULTS = {'dictation_echo':'phrase by phrase','dictation_type':'old school','cloud_consent':False,'web_search_engine':'google','web_keep_open':False,'keep_audio_playing':False,'web_auto_read':True,'download_folder':'','email_format':'html','pitch':'0','verbosity':'high','capital_letters':'do nothing','typing_echo':'characters','phonetic_enabled':True,'phonetic_delay':'0.5','duck_audio':True,'duck_level':'strong, 75 percent quieter','duck_other_apps':False,'check_updates':True,'start_with_windows':False,'ask_before_exit':True,'ask_before_shutdown':True,'ask_before_restart':True,'email_header_names':False,'email_header_order':'from, subject, date','document_font':'Calibri','document_size':'11','document_spacing':'single','document_alignment':'left','file_manager_start':'drive list','reader_auto_read':True}
+# Display options (display_options.py): large, high-contrast text by default.
+DEFAULTS.update(display_options.DEFAULTS)
 
 # Fonts that come with Windows 11 or Microsoft Office, in alphabetical order so
 # a first letter moves through them. A saved font outside this list is added.
@@ -47,6 +50,7 @@ def fields(category, context):
         'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation')),Field('dictation_type','Dictation type','choice',('old school','ai-based')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition; Old school only','check')],
         'Email':[Field('email_format','Email format','choice',('plain text','html')),Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('add_account','Add an email account','action')],
         'Notepad':[Field('open_notepad','Open Notepad','action')],
+        'Display':[Field('display_colors','Color scheme','choice',display_options.SCHEMES),Field('display_text_size','Text size','choice',display_options.SIZE_CHOICES),Field('display_font','Screen font','choice',display_options.font_choices(context.get('display_fonts'),context.get('display_font'))),Field('display_bold','Bold text','check'),Field('display_highlight','Highlight color','choice',display_options.HIGHLIGHTS),Field('display_spacing','Line spacing on screen','choice',display_options.SPACING),Field('display_full_screen','Show the window full screen','check')],
         'Document reader':[Field('reader_auto_read','Read a document aloud when it opens','check')],
         'File manager':[Field('file_manager_start','Start File manager in; type a folder path or pick one','combo',('drive list','C drive','Documents','Desktop','Downloads','Music'))],
         'Documents':[Field('document_font','Font for new documents','choice',font_choices(context)),Field('document_size','Font size for new documents','choice',tuple(str(x) for x in range(6,73))),Field('document_spacing','Line spacing for new documents','choice',('single','one and a half','double')),Field('document_alignment','Alignment for new documents','choice',('left','center','right','justify'))],
@@ -68,6 +72,7 @@ class SettingsSession:
         if saved_font and saved_font.casefold() not in (f.casefold() for f in DOCUMENT_FONTS):
             context['document_fonts'] = tuple(context.get('document_fonts', ())) + (saved_font,)
         self.values['capital_letters']={'with a sound':'play a sound','with a higher pitch':'raise pitch','with a lower pitch':'lower pitch'}.get(self.values['capital_letters'],self.values['capital_letters'])
+        if self.values.get('display_font'):context.setdefault('display_font',self.values['display_font'])
         self.context = context
         if self.values.get('engine')=='windows' and 'SAPI' in context.get('engines',('SAPI',)):self.values['engine']='SAPI'
         self.values.setdefault('podcast_limits',copy.deepcopy(context.get('podcast_limits',{})))
@@ -88,6 +93,8 @@ class SettingsSession:
                    'firefox':'embedded Edge','chrome':'Chrome','google chrome':'Chrome'}.get(str(value).strip().lower(),value)
         if key=='web_search_engine':value={'brave search':'brave','duck duck go':'duckduckgo','google search':'google','bing search':'bing'}.get(str(value).lower(),str(value).lower())
         if key=='duck_level':value=spoken_level(value) or value
+        if key=='display_text_size':value=display_options.size_choice(value) or value
+        if key=='display_colors' and str(value).strip().casefold() in ('windows colours','windows','system colors','system colours'):value='Windows colors'
         if key in ('duck_audio','duck_other_apps') and isinstance(value,str):
             value={'enabled':'on','disabled':'off','enable':'on','disable':'off'}.get(re.sub(r'[^a-z]+','',value.lower()),re.sub(r'[^a-z]+','',value.lower()))
         if key=='phonetic_delay':
