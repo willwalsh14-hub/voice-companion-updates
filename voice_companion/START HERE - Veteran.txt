@@ -1224,7 +1224,7 @@ You can also move by voice. Say "Next heading", "Previous link", or "Next form c
 These keys move through the page. They do not type letters until you go into a text box.
 
 15.5 Open links and use lists
-To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter.
+To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter. If it only changes the page you are on, you hear what changed, such as "Added to cart", and you stay where you were. A page dialog says "Dialog opened". When it closes, you are back on the button that opened it.
 To find words on the page, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. If a link or button has those words, Companion offers it first. Listen to the choice before you use it. Otherwise it moves to the words in the page text and reads that line. Say the same Find again for the next place.
 To see a list of items on the page:
 - For links, say "List links", or press F7 or Insert+F7. Links are listed in Tab order.
