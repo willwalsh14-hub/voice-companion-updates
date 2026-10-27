@@ -116,7 +116,9 @@ class MediaPlayer:
         self.kind=None
         if self.page.url != (self.folder/'audio-player.html').as_uri():
             self.page.goto((self.folder/'audio-player.html').as_uri())
-        result=self.page.evaluate('''async ({url,title,timeout,video}) => {
+        result=self.page.evaluate('''async ({url,title,timeout,video,ducked}) => {
+            // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
+            window.voiceCompanionDucked=ducked;
             let a=document.getElementById('audio');
             if(a.tagName!==(video?'VIDEO':'AUDIO')){
                 const replacement=document.createElement(video?'video':'audio');
@@ -135,7 +137,8 @@ class MediaPlayer:
                 if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
                 return started;
             } finally {clearTimeout(timer);}
-        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov')})
+        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov'),
+              'ducked':getattr(self,'duck_factor',0) if self.ducked else 0})
         if not result:
             self.kind=None
             raise OSError('This audio format could not start in the player.')

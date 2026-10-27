@@ -268,6 +268,28 @@ class PlayerWindowTests(unittest.TestCase):
         self.assertEqual(events, ['old browser closed', 'old driver released', 'new browser'])
         self.assertIs(player.playwright, driver)
 
+    def test_a_new_stream_after_ducking_ended_plays_at_full_volume(self):
+        from media_player import MediaPlayer
+        folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        player = MediaPlayer(folder); player.start = lambda: None
+        page = Mock(); page.is_closed.return_value = False; page.url = (folder / 'audio-player.html').as_uri()
+        window = {}
+        def evaluate(script, arg=None):
+            if isinstance(arg, dict) and 'ducked' in arg and 'url' not in arg:
+                window['ducked'] = arg['factor'] if arg['ducked'] else 0
+            if isinstance(arg, dict) and 'url' in arg:
+                window['ducked'] = arg.get('ducked', window.get('ducked', 0))
+                window['volume'] = 1 * (window['ducked'] or 1)
+                return True
+        page.evaluate.side_effect = evaluate
+        player.page = page
+        player.open('https://radio.example/one', 'One', 'radio')
+        player.set_ducked(True, .2)          # Companion speaks
+        player.kind = None                   # the stream stopped while lowered
+        player.set_ducked(False)             # speech ended
+        player.open('https://radio.example/two', 'Two', 'radio')
+        self.assertEqual(window['volume'], 1)
+
     def test_audio_controls_after_the_player_window_closed_say_nothing_is_playing(self):
         from media_player import MediaPlayer
         from media_hub import MediaHub
