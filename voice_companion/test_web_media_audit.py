@@ -267,5 +267,24 @@ class ChromeDangerTests(unittest.TestCase):
             self.assertEqual(chrome_report({**running, 'danger': danger})['state'], 'blocked', danger)
 
 
+class PlayerSpeedTests(unittest.TestCase):
+    def test_playback_speed_takes_spoken_forms_and_explains_a_wrong_one(self):
+        import companion as app
+        said = []
+        hub = Mock(); hub.player.kind = 'local'
+        def adjust(setting, value):
+            if not .5 <= value <= 3: raise ValueError('Choose a playback speed from 0.5 to 3.')
+            return value
+        hub.player.adjust.side_effect = adjust
+        with patch.object(app, 'MEDIA_HUB', hub), patch.object(app, 'speak', side_effect=lambda t, *a, **k: said.append(t)), \
+             patch.object(app, 'TEXT_MODE', True), patch.object(app, 'APP_WINDOW', None), redirect_stdout(io.StringIO()):
+            nav = app.task_navigation()
+            for spoken, heard in (('1.5x', 'Playback speed 1.5.'), ('Two times.', 'Playback speed 2.0.'), ('one point two five', 'Playback speed 1.25.'),
+                                  ('fast', 'Say a number from 0.5 to 3, such as 1.5.'), ('9', 'Choose a playback speed from 0.5 to 3.')):
+                nav.prompt = ('speed {value}', 'local_media')
+                app.handle(spoken, 'task_input')
+                self.assertEqual(said[-1], heard, spoken)
+
+
 if __name__ == '__main__':
     unittest.main()

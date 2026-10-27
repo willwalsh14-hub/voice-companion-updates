@@ -74,6 +74,20 @@ for _group,_items in DOCUMENT_ACTIONS.items():
     DOCUMENT_ACTIONS[_group]=[(name,key or next((k for k,v in SHORTCUTS.items() if v==command),'Alt, '+str(list(DOCUMENT_ACTIONS).index(_group)+1)+', '+('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[i])),command) for i,(name,key,command) in enumerate(_items)]
 
 
+def spoken_speed(text):
+    """A playback speed typed or said: 1.5, 1.5x, one point five, two times."""
+    import re
+    value = re.sub(r'(?:\s*(?:x|times|speed))+$', '', str(text).strip().rstrip('.!?').casefold()).strip()
+    try:
+        return float(value)
+    except ValueError:
+        number = __import__('document_editor').spoken_number(value)
+    try:
+        return float(number)
+    except (TypeError, ValueError):
+        raise ValueError('Say a number from 0.5 to 3, such as 1.5.') from None
+
+
 class TaskNavigation:
     def __init__(self, app):
         self.app = app
@@ -468,7 +482,7 @@ class TaskNavigation:
                 m.speak(('Paused.' if result else 'Playing.') if action == 'toggle' else {'play':'Playing.','pause':'Paused.','stop':'Stopped.'}[action]); return mode
             if command in ('volume up','volume down') or command.startswith('speed '):
                 if player.kind!='local': m.speak('Open a media file first.'); return mode
-                value = player.adjust('volume', .1 if command=='volume up' else -.1) if command.startswith('volume') else player.adjust('speed', float(__import__('document_editor').spoken_number(text.strip()[6:]) or text.strip()[6:]))
+                value = player.adjust('volume', .1 if command=='volume up' else -.1) if command.startswith('volume') else player.adjust('speed', spoken_speed(text.strip()[6:]))
                 m.speak(('Volume '+str(round(value*100))+' percent.') if command.startswith('volume') else 'Playback speed '+str(value)+'.'); return mode
             if command in ('status','media status'):
                 if player.kind!='local':m.speak('No media file open. Choose Open a media file.');return mode
