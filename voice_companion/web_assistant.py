@@ -2070,7 +2070,10 @@ class WebSession:
         old_lines=set(self.reading.text.split('\n'))
         try:message=self._refresh(wait=False,read=False,preserve=True)
         except Exception:return None
-        if 'Dialog opened.' in message or 'Dialog closed.' in message:return message
+        if 'Dialog opened.' in message:
+            # A dialog's contents are read as a new page's are, when automatic reading is on.
+            return (message+' '+self.reading.read(True)).strip() if self.auto_read and not self.app_mode else message
+        if 'Dialog closed.' in message:return message
         sentence=lambda t:t if t.endswith(('.','!','?')) else t+'.'
         news=self._live_news()
         if news:return ' '.join(sentence(t) for t in news)
