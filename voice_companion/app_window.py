@@ -332,13 +332,16 @@ class CompanionWindow:
                 # Large text makes a row of buttons wider than the window: wrap them onto more lines.
                 def arrange(event=None):
                     width=frame.winfo_width()
-                    if width<=1:width=max(1,root.winfo_width()-36)
+                    if width<=1:width=max(400,root.winfo_width()-36)
                     height=max([button.winfo_reqheight() for button in buttons] or [0])
                     places,total=flow_positions([button.winfo_reqwidth() for button in buttons],height,width)
                     for button,(x,y) in zip(buttons,places):button.place(x=x,y=y)
                     if int(frame.cget('height'))!=total:frame.configure(height=total)
                 frame.bind('<Configure>',arrange,add='+')
                 arrangers.append(arrange)
+                # Place the buttons now, so the row is never empty or unplaced when it first
+                # appears: Tab to a button that is not placed yet would leave focus where it was.
+                arrange()
             arrangers=[]
             flow(file_toolbar,self.file_buttons)
             update_toolbar=tk.Frame(root)
@@ -361,6 +364,10 @@ class CompanionWindow:
                 index=controls.index(event.widget) if event.widget in controls else 0
                 backward=bool(event.state&1) or event.keysym=='ISO_Left_Tab'
                 target=controls[(index+(-1 if backward else 1))%len(controls)]
+                if not target.winfo_ismapped():
+                    # The toolbar was just shown: finish laying it out before moving focus.
+                    for arrange in arrangers:arrange()
+                    root.update_idletasks()
                 target.focus_set()
                 if target==file_list:self.feedback('File list. Use arrows or type the first letters of an item.')
                 return 'break'

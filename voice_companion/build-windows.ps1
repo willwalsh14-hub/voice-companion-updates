@@ -23,6 +23,17 @@ function Invoke-UnitTests([string]$Title, [string[]]$Arguments) {
     $failed = @(Select-String -LiteralPath $log -Pattern '^(FAIL|ERROR): ' | ForEach-Object { $_.Line })
     $tail = (Get-Content -LiteralPath $log -Tail 60) -join "`n"
     Write-BuildAnnotation ($Title + ' failed') ((($failed | Select-Object -First 15) -join "`n") + "`n---`n" + $tail) | Out-Host
+    # One short annotation per failed test with its error line, so every failure
+    # names its reason even when the combined output above is cut short.
+    $current = $null; $reasons = 0
+    foreach ($line in (Get-Content -LiteralPath $log)) {
+      if ($line -match '^(FAIL|ERROR): (\S+)') { $current = $Matches[2]; continue }
+      if ($current -and $line -match '^[A-Za-z_][\w.]*(Error|Exception|Exit|Failure)\b') {
+        $reason = if ($line.Length -gt 900) { $line.Substring(0, 900) + '...' } else { $line }
+        if ($reasons -lt 8) { Write-BuildAnnotation ($Title + ': ' + $current) $reason | Out-Host }
+        $reasons += 1; $current = $null
+      }
+    }
   }
   return $code
 }
