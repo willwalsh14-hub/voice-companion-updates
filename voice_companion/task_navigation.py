@@ -1,7 +1,7 @@
 """Word processor, document commands, and local media navigation."""
 import json
 from pathlib import Path
-from menu_navigation import announce_item, bounded_index, next_match
+from menu_navigation import announce_item, bounded_index, next_match, spoken_key
 
 DOCUMENT_TYPES = {'.docx', '.txt', '.md', '.csv', '.tsv', '.html', '.htm', '.pdf', '.odt', '.epub'}
 MEDIA_TYPES = {'.mp3', '.wav', '.ogg', '.oga', '.opus', '.flac', '.m4a', '.aac', '.mp4', '.m4v', '.webm', '.ogv', '.mov'}
@@ -154,7 +154,7 @@ class TaskNavigation:
         return mode
 
     def describe(self, item, index, count):
-        return announce_item(item[0], index, count) + (' '+item[1]+'.' if item[1] else '')
+        return announce_item(item[0], index, count) + (' '+spoken_key(item[1])+'.' if item[1] else '')
 
     def pick(self, kind):
         m = self.app

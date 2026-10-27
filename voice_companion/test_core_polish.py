@@ -287,5 +287,56 @@ class ExitKeepsWorkTests(CompanionTestCase):
         self.assertEqual(self.said[-1], 'Voice Companion closed. Some of your work could not be saved.')
 
 
+class SpokenKeyNamesTests(CompanionTestCase):
+    """Key names are spoken the way the guide writes them: "Control+O", never "Ctrl+O"."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(TASK_NAV=None, NAMED_LIST=None, FILE_MANAGER=None, SCREEN_MENU=None).items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_spoken_key_uses_the_guide_words(self):
+        from menu_navigation import spoken_key
+        for key, words in (('Ctrl+O', 'Control+O'), ('Ctrl+Shift+S', 'Control+Shift+S'), ('Up', 'Up Arrow'),
+                           ('Ctrl+Shift+Down', 'Control+Shift+Down Arrow'), ('PgDn', 'Page Down'), ('Esc', 'Escape'),
+                           ('ShiftTab', 'Shift+Tab'), ('Alt, 3, 2', 'Alt, 3, 2'), ('F1', 'F1'), ('Enter', 'Enter'),
+                           ('Insert+Shift+Down', 'Insert+Shift+Down Arrow'), ('Ctrl+Alt+1', 'Control+Alt+1'), ('', '')):
+            self.assertEqual(spoken_key(key), words)
+
+    def spoken_menu_text(self):
+        """Everything a menu can say about its items, on every screen."""
+        import file_manager, screen_menus, task_navigation, tutorial_curriculum
+        texts = []
+        nav = companion.task_navigation()
+        for mode in ('word_processor', 'reader_menu', 'notepad_menu', 'media_menu', 'local_media'):
+            items = nav.items(mode)
+            texts += [nav.describe(item, i, len(items)) for i, item in enumerate(items)]
+        for group in task_navigation.DOCUMENT_ACTIONS:
+            nav.group = group
+            items = nav.items('document_menu')
+            texts += [nav.describe(item, i, len(items)) for i, item in enumerate(items)]
+        menu = companion.screen_menu()
+        for mode, (title, groups) in screen_menus.MENUS.items():
+            menu.mode = mode
+            for g, (_, entries) in enumerate(groups):
+                menu.group = g
+                if len(groups) > 1:
+                    menu.level = 'items'
+                texts += [menu.describe(i) for i in range(len(entries))]
+        manager = file_manager.FileManager()
+        for kind in (True, 'sort'):
+            manager.menu = kind
+            texts += manager.labels()
+        texts.append(file_manager.HELP)
+        texts += [text for course in tutorial_curriculum.__dict__.values() if isinstance(course, (list, tuple))
+                  for entry in course if isinstance(entry, tuple) for text in entry if isinstance(text, str)]
+        return texts
+
+    def test_no_spoken_menu_text_says_ctrl(self):
+        texts = self.spoken_menu_text()
+        self.assertGreater(len(texts), 200)
+        bad = [text for text in texts if 'Ctrl' in text or 'PgDn' in text or 'PgUp' in text]
+        self.assertEqual(bad, [])
+
+
 if __name__ == '__main__':
     unittest.main()

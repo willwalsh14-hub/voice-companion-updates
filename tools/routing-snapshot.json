@@ -2439,7 +2439,7 @@
 },
 "awake | notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -2607,7 +2607,7 @@
 },
 "awake | open notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -19128,7 +19128,7 @@
 },
 "help | notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -19252,7 +19252,7 @@
 },
 "help | open notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -23767,7 +23767,7 @@
 },
 "mailbox | notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -23992,7 +23992,7 @@
 },
 "mailbox | open notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -26774,7 +26774,7 @@
 },
 "note | back": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27711,7 +27711,7 @@
 },
 "note | exit": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27747,7 +27747,7 @@
 },
 "note | exit note": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27916,7 +27916,7 @@
 },
 "note | go back": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -34165,7 +34165,7 @@
 },
 "web | notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -34413,7 +34413,7 @@
 },
 "web | open notepad": {
 "said": [
-"Notepad menu. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },

@@ -6,6 +6,7 @@ import ntpath
 import queue
 import re
 import threading
+from menu_navigation import spoken_key
 
 @dataclass(frozen=True)
 class Item:
@@ -213,7 +214,7 @@ MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfold
 # Email this file and Attach to draft need the app (attachment_screen.py); File manager hands them over.
 ATTACH_COMMANDS=('email this file','attach to draft')
 
-HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl D returns to drives. Type the first few letters of an item to jump to it. Repeated letters cycle matches. Backspace removes a letter. Ctrl F searches names in this list; Ctrl Shift F searches subfolders. Ctrl Shift X clears search. Alt S opens Sort. Ctrl Shift 1 through 4 sorts by name, date created, date modified, or date added. Ctrl Shift Up and Down choose ascending and descending. Date added means first seen here. Tab and Shift Tab reach Search, Sort, Clear search and Drives buttons. Alt Home returns to the main menu. Say Main menu to leave File manager.'
+HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Control+A selects all; Control+Shift+A clears selections. F2 renames. Delete asks you to confirm removal. Control+C copies; Control+X cuts; Control+V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Control+D returns to drives. Type the first few letters of an item to jump to it. Repeated letters cycle matches. Backspace removes a letter. Control+F searches names in this list; Control+Shift+F searches subfolders. Control+Shift+X clears search. Alt+S opens Sort. Control+Shift+1 through 4 sorts by name, date created, date modified, or date added. Control+Shift+Up Arrow and Control+Shift+Down Arrow choose ascending and descending. Date added means first seen here. Tab and Shift Tab reach Search, Sort, Clear search and Drives buttons. Alt+Home returns to the main menu. Say Main menu to leave File manager.'
 
 class FileManager:
     def __init__(self,backend=None):
@@ -242,7 +243,7 @@ class FileManager:
     def labels(self):
         if self.busy:return ['File manager is working']
         if self.pending:return ['Yes','No'] if self.pending[0]=='delete' else []
-        if self.menu:return [name+'. '+key+'. Say '+voice+'.' for name,key,voice in self.menu_items()]
+        if self.menu:return [name+'. '+spoken_key(key)+'. Say '+voice+'.' for name,key,voice in self.menu_items()]
         return [i.label()+(', selected' if i.path in self.selected else '') for i in self.items]
     def current(self):return self.items[self.index] if self.items and 0<=self.index<len(self.items) else None
     def say_current(self):

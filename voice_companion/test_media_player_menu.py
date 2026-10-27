@@ -112,7 +112,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
                 mode=self.open_from_file_manager()
                 mode=self.key(opener,mode)
                 self.assertEqual(mode,'local_media')
-                self.assertEqual(self.said[-1],'Media player menu. Open a media file (O), 1 of 10. Ctrl+O.')
+                self.assertEqual(self.said[-1],'Media player menu. Open a media file (O), 1 of 10. Control+O.')
                 self.assertFalse(self.player.paused)
                 self.assertNotIn(('stop',15,None),self.player.calls)
                 # Arrows now move through the menu instead of changing the volume.
@@ -144,7 +144,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
     def test_media_player_from_media_menu_opens_with_menu_and_working_arrows(self):
         mode=app.handle('media player','media_menu')
         self.assertEqual(mode,'local_media')
-        self.assertEqual(self.said[-1],'Media player. Open a media file (O), 1 of 10. Ctrl+O.')
+        self.assertEqual(self.said[-1],'Media player. Open a media file (O), 1 of 10. Control+O.')
         self.key('Down',mode)
         self.assertTrue(self.said[-1].startswith('Play or pause (P), 2 of 10'),self.said[-1])
         self.assertEqual(self.key('Escape',mode),'media_menu')

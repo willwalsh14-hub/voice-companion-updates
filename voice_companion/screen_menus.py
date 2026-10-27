@@ -11,7 +11,7 @@ The Word processor, File manager and Media player keep their own Alt menus
 list as the menu, the main menu is already a menu, and on the Web browser menu
 Alt says where you are.
 """
-from menu_navigation import announce_item, next_match
+from menu_navigation import announce_item, next_match, spoken_key
 
 # (label, key, command). The key is the shortcut that does the same thing, or ''
 # when there is none; the menu then says its menu path, such as "Alt, 3, 2".
@@ -351,7 +351,7 @@ class ScreenMenu:
             return text
         groups = MENUS[self.mode][1]
         group = 0 if len(groups) == 1 else self.group
-        text += ' ' + (key or menu_path(self.mode, group, index)) + '.'
+        text += ' ' + (spoken_key(key) or menu_path(self.mode, group, index)) + '.'
         if not command.startswith(('@', 'web key ')) and '{value}' not in command:
             text += ' Say ' + command + '.'
         return text
