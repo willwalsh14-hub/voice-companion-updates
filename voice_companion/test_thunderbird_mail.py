@@ -229,8 +229,10 @@ class ThunderbirdOfflineTests(unittest.TestCase):
         from build_thunderbird_addon import build
         with tempfile.TemporaryDirectory() as folder:
             with zipfile.ZipFile(build(Path(folder) / 'mail.xpi')) as archive:
-                self.assertEqual(sorted(archive.namelist()), ['background.js', 'experiment/implementation.js',
-                                                              'experiment/schema.json', 'manifest.json'])
+                # pim.js and the calendar Experiment: contacts and calendars (add-on 1.3.0).
+                self.assertEqual(sorted(archive.namelist()), ['background.js', 'experiment/calendar-schema.json',
+                                                              'experiment/calendar.js', 'experiment/implementation.js',
+                                                              'experiment/schema.json', 'manifest.json', 'pim.js'])
 
     def test_send_review_accepts_a_thunderbird_draft(self):
         # The send step listed only Gmail, Outlook and Yahoo, so a Thunderbird

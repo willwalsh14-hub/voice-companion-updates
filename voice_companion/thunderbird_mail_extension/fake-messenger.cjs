@@ -182,6 +182,7 @@ function createFakeMessenger() {
     },
     runtime: {getManifest: () => ({version: require('./manifest.json').version})},
   };
+  addContactsAndCalendars(api, state);
   function newTab(info) {
     const id = nextTab++;
     const tab = {id, windowId: 100 + id, ...info, current: {isPlainText: false, body: info.body || '', plainTextBody: info.plainTextBody || '', ...(info.details || {})}};
@@ -189,6 +190,111 @@ function createFakeMessenger() {
     return {id, windowId: tab.windowId};
   }
   return {api, state};
+}
+
+// Address books (messenger.addressBooks, messenger.contacts) as Thunderbird 128 gives them to a
+// manifest version 2 add-on: each contact has properties with the full vCard and the legacy fields.
+// Calendars through the voiceCompanionCalendar Experiment (experiment/calendar.js), in its answer shapes.
+function addContactsAndCalendars(api, state) {
+  const card = (name, emails, phones, extra = '') => ['BEGIN:VCARD', 'VERSION:4.0', 'FN:' + name,
+    ...emails.map(e => 'EMAIL:' + e), ...phones.map(p => 'TEL;TYPE=cell:' + p), extra, 'END:VCARD'].filter(Boolean).join('\r\n');
+  const contact = (id, parentId, name, emails, phones, extra) => ({id, parentId, type: 'contact', readOnly: parentId === 'book-ro',
+    properties: {vCard: card(name, emails, phones, extra), DisplayName: name, PrimaryEmail: emails[0] || '', SecondEmail: emails[1] || ''}});
+  state.addressBooks = [
+    {id: 'book-personal', type: 'addressBook', name: 'Personal Address Book', readOnly: false, remote: false},
+    {id: 'book-collected', type: 'addressBook', name: 'Collected Addresses', readOnly: false, remote: false},
+    {id: 'book-google', type: 'addressBook', name: 'me@gmail.com', readOnly: false, remote: false},
+    {id: 'book-ro', type: 'addressBook', name: 'Company directory', readOnly: true, remote: false},
+    {id: 'book-ldap', type: 'addressBook', name: 'LDAP', readOnly: true, remote: true},
+  ];
+  state.contacts = [
+    contact('c1', 'book-google', 'John Smith', ['john@example.com'], ['555-0100']),
+    contact('c2', 'book-google', 'Mary Jones', ['mary@example.com', 'mary.work@example.org'], []),
+    contact('c3', 'book-personal', 'Plumber', [], ['555-0199']),
+    // A family-name-first N line and no FN: the name is still found.
+    {id: 'c4', parentId: 'book-collected', type: 'contact', readOnly: false,
+     properties: {vCard: 'BEGIN:VCARD\r\nVERSION:4.0\r\nN:Brown;Ann;;;\r\nitem1.EMAIL;TYPE=home:ann@example.com\r\nEND:VCARD'}},
+    contact('c5', 'book-ro', 'Help Desk', ['help@work.example'], ['555-0111']),
+    contact('c6', 'book-ldap', 'Remote Person', ['remote@example.com'], []),
+  ];
+  state.contactCalls = [];
+  state.failBook = null;
+  let nextContact = 100;
+  api.addressBooks = {
+    list: async complete => state.addressBooks.map(b => ({...b})),
+  };
+  api.contacts = {
+    list: async parentId => {
+      if (state.failBook === parentId) throw new Error('Address book is not ready');
+      return state.contacts.filter(c => c.parentId === parentId).map(c => JSON.parse(JSON.stringify(c)));
+    },
+    get: async id => { const found = state.contacts.find(c => c.id === id); return found ? JSON.parse(JSON.stringify(found)) : null; },
+    // Thunderbird 128, manifest version 2: create(parentId, [id], properties). The optional id is skipped
+    // when the second argument is the properties object.
+    create: async (parentId, ...rest) => {
+      const properties = rest.length === 2 ? rest[1] : rest[0];
+      if (typeof properties !== 'object' || !properties.vCard) throw new Error('Type error for parameter properties');
+      const id = 'c' + nextContact++;
+      state.contactCalls.push({create: parentId, vCard: properties.vCard});
+      state.contacts.push({id, parentId, type: 'contact', readOnly: false, properties: {vCard: properties.vCard}});
+      return id;
+    },
+    delete: async id => { state.contactCalls.push({delete: id}); state.contacts = state.contacts.filter(c => c.id !== id); },
+  };
+
+  // Times are milliseconds (UTC) for timed events, YYYY-MM-DD for all-day ones.
+  const at = (y, m, d, h, min = 0) => Date.UTC(y, m - 1, d, h, min);
+  state.calendars = [
+    {id: 'cal-home', name: 'Home', type: 'storage', readOnly: false},
+    {id: 'cal-google', name: 'me@gmail.com', type: 'caldav', readOnly: false},
+    {id: 'cal-holidays', name: 'Holidays', type: 'ics', readOnly: true},
+  ];
+  state.events = [
+    {id: 'e1', calendarId: 'cal-google', calendarName: 'me@gmail.com', title: 'Doctor appointment', location: 'VA clinic',
+     notes: 'Bring the card.', allDay: false, start: at(2026, 10, 26, 15, 30), end: at(2026, 10, 26, 16), recurring: false, occurrence: ''},
+    {id: 'e2', calendarId: 'cal-holidays', calendarName: 'Holidays', title: 'Veterans Day', location: '', notes: '',
+     allDay: true, start: '2026-11-11', end: '2026-11-12', recurring: false, occurrence: ''},
+    {id: 'e3', calendarId: 'cal-google', calendarName: 'me@gmail.com', title: 'Group meeting', location: '', notes: '',
+     allDay: false, start: at(2026, 10, 27, 14), end: at(2026, 10, 27, 15), recurring: true, occurrence: '20261027T140000Z'},
+    {id: 'e3', calendarId: 'cal-google', calendarName: 'me@gmail.com', title: 'Group meeting', location: '', notes: '',
+     allDay: false, start: at(2026, 11, 3, 14), end: at(2026, 11, 3, 15), recurring: true, occurrence: '20261103T140000Z'},
+  ];
+  state.calendarCalls = [];
+  state.calendarBroken = false;
+  let nextEvent = 100;
+  const overlaps = (event, startMs, endMs) => {
+    const ms = value => (typeof value === 'number' ? value : Date.parse(value + 'T00:00:00Z'));
+    return ms(event.start) < endMs && ms(event.end) > startMs;
+  };
+  api.voiceCompanionCalendar = {
+    listCalendars: async () => (state.calendarBroken ? null : state.calendars.map(c => ({...c}))),
+    listEvents: async (startMs, endMs) => {
+      state.calendarCalls.push({list: [startMs, endMs]});
+      if (state.calendarBroken) return null;
+      return {events: state.events.filter(e => overlaps(e, startMs, endMs)).map(e => ({...e})), failed: state.failedCalendars || []};
+    },
+    createEvent: async details => {
+      state.calendarCalls.push({create: {...details}});
+      const calendar = state.calendars.find(c => c.id === details.calendarId);
+      if (!calendar) return {created: false, reason: 'missing'};
+      if (calendar.readOnly) return {created: false, reason: 'readonly'};
+      const id = 'e' + nextEvent++;
+      state.events.push({id, calendarId: calendar.id, calendarName: calendar.name, title: details.title, location: details.location || '',
+        notes: details.notes || '', allDay: details.allDay, start: details.allDay ? details.start : Number(details.start),
+        end: details.allDay ? details.end : Number(details.end), recurring: false, occurrence: ''});
+      return {created: true, id};
+    },
+    deleteEvent: async (calendarId, id, occurrence, all) => {
+      state.calendarCalls.push({delete: {calendarId, id, occurrence, all}});
+      const calendar = state.calendars.find(c => c.id === calendarId);
+      if (calendar && calendar.readOnly) return {deleted: false, reason: 'readonly'};
+      const matching = state.events.filter(e => e.calendarId === calendarId && e.id === id);
+      if (!matching.length) return {deleted: false, reason: 'missing'};
+      const removeAll = all || !occurrence;
+      state.events = state.events.filter(e => !(e.calendarId === calendarId && e.id === id && (removeAll || e.occurrence === occurrence)));
+      return {deleted: true, all: removeAll};
+    },
+  };
 }
 
 module.exports = {createFakeMessenger};

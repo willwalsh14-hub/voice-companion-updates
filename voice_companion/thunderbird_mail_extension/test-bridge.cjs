@@ -774,3 +774,6 @@ async function experimentChecks() {
   // 1.2.0 checks for new mail before listing; a higher version replaces installed 1.1 copies.
   assert.ok(major > 1 || minor >= 2, 'the add-on version was raised so installed copies are replaced');
 }
+
+// Contacts and calendars (pim.js, experiment/calendar.js) have their own file.
+require('./test-pim.cjs');

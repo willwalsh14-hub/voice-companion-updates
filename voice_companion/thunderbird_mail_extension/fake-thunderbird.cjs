@@ -55,6 +55,8 @@ api.runtime.connectNative = name => {
 
 const context = vm.createContext({console, setTimeout, clearTimeout, messenger: api, JSON});
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
+// Contacts and calendars (pim.js). FAKE_THUNDERBIRD_OLD_ADDON is a copy installed before they existed.
+if (!process.env.FAKE_THUNDERBIRD_OLD_ADDON) vm.runInContext(fs.readFileSync(path.join(__dirname, 'pim.js'), 'utf8'), context);
 // A short wait for the mail check, so a check that never ends does not slow the tests.
 if (process.env.FAKE_THUNDERBIRD_CHECK_MS) {
   vm.runInContext('MailBridge.MAIL_CHECK_MS = ' + Number(process.env.FAKE_THUNDERBIRD_CHECK_MS), context);
