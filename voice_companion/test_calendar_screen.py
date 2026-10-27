@@ -319,6 +319,17 @@ class EditEventTests(CalendarHarness):
         app.handle('no', mode)
         self.assertEqual(self.said(), 'Not changed. Three PM to three thirty PM, Doctor appointment, me@gmail.com, 1 of 1.')
 
+    def test_move_to_a_day_still_goes_there_and_move_it_edits(self):
+        mode = self.open()
+        app.handle('Move to Friday.', mode)
+        self.assertEqual((calendar_screen.DAY, calendar_screen.PENDING), (date(2026, 10, 30), None))
+        app.handle('today', mode)
+        app.handle('Move it to Friday.', mode)
+        self.assertTrue(self.said().startswith('Change Doctor appointment to Friday, October 30, ten thirty AM'))
+        app.handle('no', mode)
+        app.handle('Reschedule to Thursday at 9', mode)
+        self.assertTrue(self.said().startswith('Change Doctor appointment to Thursday, October 29, nine AM to nine thirty AM?'))
+
     def test_bad_times_are_asked_again_and_escape_cancels(self):
         mode = self.open()
         mode = app.handle('move event', mode)

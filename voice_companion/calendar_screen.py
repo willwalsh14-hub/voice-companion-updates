@@ -646,7 +646,9 @@ EDIT_PHRASES = (
                  r'(?:another|a different|the other) calendar'),
     ('name', r'(?:rename|retitle)(?: the| this)?(?: event| appointment| it)?(?: (?:to|as) (?P<to>.+)| (?P<value>.+))?'),
     ('name', r'change (?:the |its )?(?:name|title)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
-    ('time', r'(?:move|reschedule)(?: the| this)?(?: event| appointment| it)?(?: to (?P<value>.+))?'),
+    # "Move to Friday" alone goes to Friday (see day_command); moving the event names it.
+    ('time', r'move(?: the| this)? (?:event|appointment|it)(?: to (?P<value>.+))?'),
+    ('time', r'reschedule(?: the| this)?(?: event| appointment| it)?(?: (?:to|for) (?P<to>.+))?'),
     ('time', r'change (?:the |its )?(?:day and time|date and time|time|date|day|start time)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
     ('length', r'change (?:the |its )?(?:length|end time|end)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
     ('make all day', r'make (?:it|this|the event|this event) (?:an )?all day(?: event)?'),
