@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 648
-- Already had both ways: 513
+- Actions inventoried: 649
+- Already had both ways: 514
 - Gaps found: 135
 - Gaps fixed (Added): 127
 - Not applicable (N/A, with reason): 8
@@ -1442,6 +1442,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Ask before restarting the computer
 
 - Voice: "Set Ask before restarting the computer to ..."
+- Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Keep a transcript of everything Voice Companion says
+
+- Voice: "Set Keep a transcript of everything Voice Companion says to ..."
 - Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 

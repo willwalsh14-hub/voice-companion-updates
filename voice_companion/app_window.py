@@ -141,7 +141,10 @@ class CompanionWindow:
     def feedback(self,text):
         if text:
             self.show(text)
-            if getattr(self,'keyboard_output',None) and not self.keyboard_output.problem:self.keyboard_output.speak(text)
+            if getattr(self,'keyboard_output',None) and not self.keyboard_output.problem:
+                # The opt-in speech transcript (speech_transcript.py); the queue below is written by the main loop.
+                __import__('speech_transcript').TRANSCRIPT.said(text)
+                self.keyboard_output.speak(text)
             else:self.key_feedback.put(text)
 
     def focus_email_field(self, field, value=''):

@@ -346,6 +346,7 @@ def app_context(mode):
 
 def sync_app_context(mode,focus=False):
     global UI_CONTEXT_CACHE
+    TRANSCRIPT.mode=SLEEP_RETURN_MODE+', asleep' if mode=='sleep' else mode
     if APP_WINDOW is None:return
     context=app_context(mode)
     if UI_CONTEXT_CACHE and context.get('source')!=UI_CONTEXT_CACHE.get('source'):DICTATION_ECHO.clear()
@@ -453,6 +454,11 @@ def process_keyboard_batch(mode):
         for _ in range(100):
             try:command=APP_WINDOW.commands.get_nowait()
             except queue.Empty:break
+            if TRANSCRIPT.enabled:
+                if isinstance(command,tuple) and command and command[0] in ('account_secret','web_private_value'):
+                    TRANSCRIPT.remember_private(command[1].get('value') if isinstance(command[1],dict) else command[1])
+                label=__import__('speech_transcript').key_label(command)
+                if label:TRANSCRIPT.mode=SLEEP_RETURN_MODE+', asleep' if mode=='sleep' else mode;TRANSCRIPT.key(label)
             # The Escape that stopped a wait (user_stop) is not also used to go back.
             if user_stop.begin_command() and command in (('keyboard','Escape'),'Escape'):continue
             if not (isinstance(command,tuple) and command[0]=='keyboard' and str(command[1]).startswith('Web:Pass:')):page_keys_only=False
@@ -1531,6 +1537,7 @@ def speak(text):
     global KEYBOARD_BATCH_TEXT
     if KEYBOARD_BATCH:
         KEYBOARD_BATCH_TEXT=text;return
+    TRANSCRIPT.said(text)   # off unless chosen; never raises
     if TEXT_MODE:print('Companion:', text, flush=True)
     if APP_WINDOW is not None:
         APP_WINDOW.show(text)
@@ -1557,6 +1564,7 @@ def speak(text):
 
 def speak_keyboard_feedback(text):
     # Character echo must be immediate and must not wait for an API request.
+    TRANSCRIPT.said(text)
     if APP_WINDOW is not None: APP_WINDOW.show(text)
     if not TEXT_MODE:
         update_audio_ducking(True)
@@ -1959,6 +1967,29 @@ MICROPHONE_STILL_OFF = 'The microphone is off, as you left it. Press F9 to turn 
 # The microphone could not open (none plugged in, or blocked in Windows privacy settings).
 # The main loop keeps trying; voice works by itself once it opens.
 MICROPHONE_FAILED = False
+
+
+from speech_transcript import TRANSCRIPT   # speech-transcript.txt, opt-in (Options or "start transcript")
+TRANSCRIPT_START_PHRASES = ('start transcript', 'start the transcript', 'start speech transcript', 'turn on transcript',
+                            'turn on the transcript', 'transcript on')
+TRANSCRIPT_STOP_PHRASES = ('stop transcript', 'stop the transcript', 'stop speech transcript', 'turn off transcript',
+                           'turn off the transcript', 'transcript off')
+
+
+def apply_transcript():
+    """Start or stop the transcript as the preference says."""
+    if PREFERENCES.get('speech_transcript', False):TRANSCRIPT.start(APP)
+    else:TRANSCRIPT.stop()
+
+
+def set_transcript(on, mode):
+    PREFERENCES['speech_transcript'] = bool(on)
+    try:save_preferences()
+    except OSError:pass   # it still works now; it is only not remembered
+    apply_transcript()
+    speak('Transcript on. I will write everything I say, and every key you press, to a file named speech-transcript in the Voice Companion data folder. Say stop transcript to turn it off.'
+          if on else 'Transcript off.')
+    return mode
 
 
 def microphone_state():
@@ -2982,6 +3013,8 @@ def _handle(text, mode, typed=False):
         return handle('main menu', mode, typed=True)
     if command in MICROPHONE_OFF_PHRASES+MICROPHONE_ON_PHRASES and not writing_dictation(mode, typed):
         return set_microphone(command in MICROPHONE_ON_PHRASES, mode)
+    if command in TRANSCRIPT_START_PHRASES+TRANSCRIPT_STOP_PHRASES and not writing_dictation(mode, typed):
+        return set_transcript(command in TRANSCRIPT_START_PHRASES, mode)
     if ACCOUNT_ENTRY is not None:
         return account_entry_step(text, command, mode)
     if THUNDERBIRD_SETUP is not None:
@@ -4553,6 +4586,7 @@ def announce_startup():
         except OSError:pass
     # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
     retire_old_mail_accounts()
+    apply_transcript()
     if PREFERENCES.get('speech_transcript', False):
         STARTUP_NOTICES.append('The speech transcript is on. Say stop transcript to turn it off.')
     notices, STARTUP_NOTICES = STARTUP_NOTICES, None
@@ -4565,6 +4599,7 @@ _HANDLE_DEPTH = 0
 
 def handle(text, mode, typed=False):
     global _HANDLE_DEPTH, CONFIRM_CHOICE, KEYBOARD_NAVIGATION
+    if _HANDLE_DEPTH==0:TRANSCRIPT.mode=SLEEP_RETURN_MODE+', asleep' if mode=='sleep' else mode
     if _HANDLE_DEPTH==0 and not typed:user_stop.begin_command()
     if not typed and _HANDLE_DEPTH==0 and APP_WINDOW is not None and not APP_WINDOW.commands.empty():
         mode=process_keyboard_batch(mode)
