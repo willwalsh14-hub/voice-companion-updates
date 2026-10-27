@@ -151,5 +151,39 @@ class MediaTests(unittest.TestCase):
         self.assertEqual(len(json.loads((self.folder / 'podcast-subscriptions.json').read_text(encoding='utf-8'))), 3)
 
 
+class PlayerWindowTests(unittest.TestCase):
+    def test_a_player_window_the_user_closed_is_replaced_cleanly(self):
+        """Closing the player window left its browser and driver running; the next
+        file then started a second browser on the same profile, which failed once."""
+        from media_player import MediaPlayer
+        folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        player = MediaPlayer(folder)
+        old_context, old_driver = Mock(), Mock()
+        player.context, player.playwright = old_context, old_driver
+        player.page = Mock(); player.page.is_closed.return_value = True
+        events = []
+        old_context.close.side_effect = lambda: events.append('old browser closed')
+        old_driver.stop.side_effect = lambda: events.append('old driver released')
+        driver = Mock()
+        driver.firefox.launch_persistent_context.side_effect = lambda *a, **k: events.append('new browser') or Mock(pages=[Mock()])
+        with patch('shared_playwright.start', return_value=driver):
+            player.start()
+        self.assertEqual(events, ['old browser closed', 'old driver released', 'new browser'])
+        self.assertIs(player.playwright, driver)
+
+    def test_audio_controls_after_the_player_window_closed_say_nothing_is_playing(self):
+        from media_player import MediaPlayer
+        from media_hub import MediaHub
+        folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        player = MediaPlayer(folder)
+        player.page = Mock(); player.page.is_closed.return_value = False; player.page.evaluate.return_value = 5
+        player.kind = 'radio'
+        hub = MediaHub(folder, player=player, fetch_json=Mock())
+        self.assertEqual(hub.command('pause audio'), 'Audio paused.')
+        player.page.is_closed.return_value = True   # the user closed the player window
+        self.assertEqual(hub.command('pause audio'), 'No audio is playing. Choose a station or episode first.')
+        self.assertIsNone(player.kind)
+
+
 if __name__ == '__main__':
     unittest.main()

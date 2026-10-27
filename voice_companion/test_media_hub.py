@@ -11,6 +11,11 @@ from media_hub import MediaHub, IPRD_CATALOG, _interval_seconds, _episode_count
 from media_player import MediaPlayer, PLAYER_HTML
 
 
+class OpenPage:
+    """The player window, still open (a closed window means nothing is loaded)."""
+    def is_closed(self): return False
+
+
 class MediaHubTests(unittest.TestCase):
     def test_radio_presets_save_play_navigate_and_confirm_delete(self):
         self.hub.stations = [{'name':'WJLB 97.9','url':'https://radio.example/wjlb'},
@@ -159,7 +164,7 @@ class MediaHubTests(unittest.TestCase):
     def test_pause_has_one_spoken_confirmation(self):
         self.assertNotIn('aria-live',PLAYER_HTML)
         self.assertNotIn('role="status"',PLAYER_HTML)
-        self.hub.player.kind='podcast'
+        self.hub.player.page=OpenPage();self.hub.player.kind='podcast'
         self.hub.player.control=lambda action,seconds=15,position=None: 0
         self.assertEqual(self.hub.command('pause',section='podcast'),'Audio paused.')
 
@@ -349,7 +354,7 @@ class MediaHubTests(unittest.TestCase):
 
     def test_companion_routes_audio_controls_even_outside_media_mode(self):
         import companion
-        self.hub.player.kind='podcast'
+        self.hub.player.page=OpenPage();self.hub.player.kind='podcast'
         self.hub.player.control=lambda action,seconds=15,position=None: 12
         with patch.object(companion,'MEDIA_HUB',self.hub),patch.object(companion,'speak') as speak:
             self.assertEqual(companion.handle('Fast forward 30 minutes.', 'awake'),'awake')

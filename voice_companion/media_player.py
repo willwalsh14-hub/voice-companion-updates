@@ -66,8 +66,23 @@ class MediaPlayer:
         self.ducked=False
         self.start_timeout_ms=12000
 
+    @property
+    def kind(self):
+        """'radio', 'podcast' or 'local' while something is loaded; None once
+        the player window is gone (the user may close it), so no control
+        reports a pause or a stop that did not happen."""
+        page=self.page
+        if self._kind and (page is None or page.is_closed()):self._kind=None
+        return self._kind
+
+    @kind.setter
+    def kind(self,value):self._kind=value
+
     def start(self):
         if self.page and not self.page.is_closed(): return
+        # The window was closed: release its browser and driver before starting
+        # again, or the new browser finds its profile still in use.
+        if self.context or self.playwright: self.close()
         from playwright.sync_api import sync_playwright
         bundled=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'browser-runtime'
         if bundled.exists(): os.environ['PLAYWRIGHT_BROWSERS_PATH']=str(bundled)
