@@ -493,6 +493,9 @@ class TaskNavigation:
                 if getattr(self, 'player_return', None) == 'downloads':
                     self.player_return = None
                     return __import__('download_screen').back_to_list(m)
+                if getattr(self, 'player_return', None) == 'attachments':
+                    self.player_return = None
+                    return __import__('attachment_screen').back_to_list(m)
                 if files is not None and files is m.FILE_MANAGER and files.location is not None:
                     # Go back to the same folder and file. Escape there moves up one folder at a time,
                     # then out of the drive list to the Media menu.

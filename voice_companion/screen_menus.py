@@ -70,6 +70,11 @@ MENUS = {
             ('Messages per page', '', 'email list size'),
             ('Email help', 'F1', 'help with email'),
             ('Main menu', '', 'main menu')]),
+        # Last, so the Alt paths people learned for the groups above stay the same.
+        ('Attachments', [
+            ('List attachments', 'L', 'list attachments'),
+            ('Save all attachments', '', 'save all attachments'),
+            ('Open attachment', '', 'open attachment')]),
     ]),
     'email_draft': ('Email draft menu', [
         ('Message', [
@@ -93,6 +98,10 @@ MENUS = {
             ('Add contact', '', 'add contact {value}'),
             ('Email options', '', '@options:Email'),
             ('Writing email help', 'F1', 'help with writing email')]),
+        ('Attachments', [
+            ('Attach a file', 'Ctrl+T', 'attach a file'),
+            ('List attachments', 'Ctrl+L', 'list attachments'),
+            ('Remove an attachment', '', 'remove attachment')]),
     ]),
     'note': ('Notepad menu', [
         ('Notepad', [
@@ -199,6 +208,17 @@ MENUS = {
             ('List commands', 'F1', 'list commands'),
             ('Main menu', '', 'main menu')]),
     ]),
+    'attachments': ('Attachments menu', [
+        ('Attachment', [
+            ('Open', 'Enter', 'open attachment'),
+            ('Save in Downloads', 'Ctrl+S', 'save attachment'),
+            ('Save to a folder', '', 'save attachment to folder'),
+            ('Save all', 'Ctrl+Shift+S', 'save all attachments'),
+            ('Remove from this email', 'Delete', 'remove attachment'),
+            ('Attach another file', 'Ctrl+T', 'attach a file'),
+            ('Attachments help', 'F1', 'help with attachments'),
+            ('Close the list', 'Escape', 'close attachments')]),
+    ]),
     'file_reader': ('Document reader menu', [
         ('Read', [
             ('Read document', 'Ctrl+R', 'read document'),
@@ -230,7 +250,8 @@ ALT_SCREENS = frozenset(MENUS) | {'awake', 'browser_menu', 'media', 'podcast'}
 OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('menu', 'open menu', 'reader menu'),
                 'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('note menu',),
                 'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu'),
-                'contacts': ('menu', 'open menu', 'contact menu'), 'calendar': ('menu', 'open menu')}
+                'contacts': ('menu', 'open menu', 'contact menu'), 'calendar': ('menu', 'open menu'),
+                'attachments': ('menu', 'open menu', 'attachment menu')}
 NUMBER_WORDS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
 # Context flags that mean a text box, list or question owns the keyboard.
 BUSY_CONTEXT = ('named_list', 'task_input', 'account_entry', 'browser_name_input', 'file_name_input', 'media_input',

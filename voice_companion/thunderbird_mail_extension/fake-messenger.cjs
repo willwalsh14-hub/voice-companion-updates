@@ -43,13 +43,23 @@ function createFakeMessenger() {
       subject: `Message ${i}`, read: i % 2 === 0, size: 1000 + i, recipients: ['me@gmail.com'], ccList: i === 25 ? ['other@example.com'] : [],
       headerMessageId: `msg${i}@example.com`, html: i === 25 ? '<html><head><title>x</title></head><body><p>Latest <b>news</b></p></body></html>' : '',
       plain: `Plain text of message ${i}`, replyTo: i === 25 ? 'Replies <replies@example.com>' : '',
+      attachments: [],
     });
   }
+  // Message 24 has two files, an inline picture without a name (part of its look), and an
+  // attachment deleted earlier. Thunderbird 128 lists all of them; only two are files.
+  const bytes = (text, repeat = 1) => new Uint8Array(Buffer.from(text.repeat(repeat), 'utf8'));
+  state.messages[23].attachments = [
+    {partName: '1.2', name: 'report.pdf', contentType: 'application/pdf', data: bytes('%PDF-1.4 report ', 90000)},
+    {partName: '1.3', name: 'Part 1.3', contentType: 'image/png', data: bytes('PNG')},
+    {partName: '1.4', name: 'photo.jpg', contentType: 'image/jpeg', data: bytes('JPEGDATA')},
+    {partName: '1.5', name: 'old.txt', contentType: 'text/x-moz-deleted', data: bytes('')},
+  ];
   const folder = id => state.folders.find(f => f.id === id) || null;
   const header = m => ({id: m.id, date: m.date, author: m.author, subject: m.subject, read: m.read, size: m.size,
     recipients: m.recipients, ccList: m.ccList, headerMessageId: m.headerMessageId, folder: folder(m.folderId)});
   const lists = new Map();
-  let nextList = 1, nextTab = 1;
+  let nextList = 1, nextTab = 1, nextAttachment = 1;
   const page = (items, size) => {
     const first = items.slice(0, size), rest = items.slice(size);
     let id = null;
@@ -96,6 +106,19 @@ function createFakeMessenger() {
         const m = state.messages.find(x => x.id === id);
         return [{contentType: 'text/plain', content: m.plain}, ...(m.html ? [{contentType: 'text/html', content: m.html}] : [])];
       },
+      // Like Thunderbird 128: every part it shows as an attachment, with its decoded size.
+      listAttachments: async id => {
+        const m = state.messages.find(x => x.id === id);
+        if (!m) throw new Error('Message not found: ' + id);
+        return m.attachments.map(a => ({contentType: a.contentType, name: a.name, partName: a.partName, size: a.data.length}));
+      },
+      getAttachmentFile: async (id, partName) => {
+        state.attachmentReads = (state.attachmentReads || 0) + 1;
+        const m = state.messages.find(x => x.id === id);
+        const found = m && m.attachments.find(a => a.partName === partName);
+        if (!found || found.damaged) throw new Error('Part not found: ' + partName);
+        return new File([found.data], found.name, {type: found.contentType});
+      },
       move: async (ids, destination) => {
         if (!destination || !destination.id) throw new Error('Invalid folder');
         for (const id of ids) state.messages.find(m => m.id === id).folderId = destination.id;
@@ -110,8 +133,28 @@ function createFakeMessenger() {
       beginNew: async (messageId, details) => newTab({kind: 'new', details}),
       beginReply: async (messageId, replyType, details) => newTab({kind: 'reply', messageId, replyType, details,
         body: '<html><body><blockquote>Original message</blockquote></body></html>', plainTextBody: '> Original message'}),
+      // Forwarding inline brings the original's files (state.forwardWithoutFiles: a Thunderbird that does not).
       beginForward: async (messageId, forwardType, details) => newTab({kind: 'forward', messageId, forwardType, details,
-        body: '<html><body><div>Forwarded original</div></body></html>', plainTextBody: 'Forwarded original'}),
+        body: '<html><body><div>Forwarded original</div></body></html>', plainTextBody: 'Forwarded original',
+        attachments: state.forwardWithoutFiles ? [] : (state.messages.find(m => m.id === messageId).attachments || [])
+          .filter(a => a.contentType !== 'text/x-moz-deleted').map(a => new File([a.data], a.name, {type: a.contentType}))}),
+      addAttachment: async (tabId, attachment) => {
+        const tab = tabs.get(tabId);
+        if (state.failAttach) throw new Error('Could not attach');
+        if (!attachment || !(attachment.file instanceof Blob)) throw new Error('Type error for parameter attachment');
+        const file = new File([attachment.file], attachment.name || attachment.file.name);
+        const id = nextAttachment++;
+        tab.attachments.push({id, file});
+        return {id, name: file.name, size: file.size};
+      },
+      // Attachment ids stay the same while the window is open, as in Thunderbird.
+      listAttachments: async tabId => tabs.get(tabId).attachments.map(({id, file}) => ({id, name: file.name, size: file.size})),
+      removeAttachment: async (tabId, attachmentId) => {
+        const tab = tabs.get(tabId);
+        const at = tab.attachments.findIndex(item => item.id === attachmentId);
+        if (at < 0) throw new Error('Invalid attachment ID: ' + attachmentId);
+        tab.attachments.splice(at, 1);
+      },
       getComposeDetails: async tabId => ({...tabs.get(tabId).current}),
       setComposeDetails: async (tabId, details) => { Object.assign(tabs.get(tabId).current, details); },
       saveMessage: async (tabId, options) => {
@@ -185,7 +228,8 @@ function createFakeMessenger() {
   addContactsAndCalendars(api, state);
   function newTab(info) {
     const id = nextTab++;
-    const tab = {id, windowId: 100 + id, ...info, current: {isPlainText: false, body: info.body || '', plainTextBody: info.plainTextBody || '', ...(info.details || {})}};
+    const tab = {id, windowId: 100 + id, ...info, attachments: (info.attachments || []).map(file => ({id: nextAttachment++, file})),
+      current: {isPlainText: false, body: info.body || '', plainTextBody: info.plainTextBody || '', ...(info.details || {})}};
     tabs.set(id, tab); state.composed.push(tab); state.openCompose.push(tab.windowId);
     return {id, windowId: tab.windowId};
   }

@@ -85,6 +85,7 @@ class HelpSession:
             'keyboard':'using voice commands', 'email lists':'read and organize email', 'station database':'listen to radio',
             'notepad':'write a note', 'notes':'write a note', 'updates':'check for updates', 'tutorial':'using help and lessons',
             'downloads':'download files', 'download manager':'download files', 'download':'download files', 'download folder':'download files',
+            'attachments':'read and organize email', 'attachment':'read and organize email', 'email attachments':'read and organize email',
         }
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)

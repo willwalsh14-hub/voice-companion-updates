@@ -50,6 +50,7 @@ Contents
   6.9 Delete files and folders
   6.10 Find commands and keys
   6.11 Find and sort items
+  6.12 Email a file
 7 Document Reader
   7.1 Open the Document reader menu
   7.2 Open supported files
@@ -81,6 +82,7 @@ Contents
   11.3 Write and format the message
   11.4 Save or cancel a draft
   11.5 Review and send
+  11.6 Attach files
 12 Read And Organize Email
   12.1 Read messages
   12.2 Go to folders
@@ -88,6 +90,7 @@ Contents
   12.4 Reply or forward
   12.5 Create and manage folders
   12.6 Read links and load more mail
+  12.7 Open and save attachments
 13 Contacts
   13.1 Open your contacts
   13.2 Hear a contact's details
@@ -569,6 +572,12 @@ To sort, press Alt+S for the Sort menu, or use these keys:
 The older Control+Shift number keys and Control+Shift arrow keys also still work. Folders stay before files. Items with no date go last.
 Tab and Shift+Tab move between the list and these buttons: Search, Search subfolders, Sort, Clear search, Drives, and Main menu. Enter uses a button. Alt+Home goes to the main menu.
 
+6.12 Email a file
+Choose a file in File manager. To send more than one, press Space on each file first. Folders cannot be sent.
+- To start a new email with the files attached, say "Email this file", or press Control+N. Then give the address, as in part 11.1.
+- To add the files to the email you are writing, say "Attach to draft", or press Control+T. You go back to the draft.
+Both are also on the File manager menu. Press Alt to open it.
+
 7. DOCUMENT READER
 
 7.1 Open the Document reader menu
@@ -869,7 +878,7 @@ Companion waits up to 15 minutes. If you finish in Thunderbird later, say "Add a
 4. Speak the message in short parts. Listen back before you send.
 With the keyboard, type an address in the To box and press Enter. Then go on to the subject and the message.
 To speak an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com. Say "underscore" for _ and "dash" for -.
-Press Alt to open the email draft menu. It has Message, Fields, Format, and Contacts and help. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.
+Press Alt to open the email draft menu. It has Message, Fields, Format, Contacts and help, and Attachments. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.
 
 11.2 Change To, CC, BCC, or Subject
 A message has these parts:
@@ -915,6 +924,19 @@ Nothing is sent before the review and confirmation. If no account is connected, 
 When the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.
 If Companion says the result is uncertain, check your sent mail and ask the person before you try again.
 With Yahoo, Companion also puts a copy in your Sent folder. If it cannot, it tells you. The message was still sent.
+The review also names the files attached. If a file was moved or deleted after you attached it, nothing is sent. Companion tells you which file, and the draft is kept.
+
+11.6 Attach files
+You can attach files to a new message, a reply, a reply to all, or a forward.
+1. In the draft, say "Attach a file", or press Control+T. File manager opens.
+2. Move to the file. To attach several files from one folder, press Space on each one.
+3. Press Enter. Companion attaches the files and takes you back to the same place in the draft.
+- To hear what is attached, say "List attachments", or press Control+L. The Attachments list opens. Up Arrow and Down Arrow move through it.
+- To take a file off, say "Remove attachment", or press Delete in the Attachments list. You can also say "Remove attachment" followed by the file name, such as "Remove attachment report.pdf".
+- In the Attachments list, Control+T also attaches another file. Escape goes back to the draft.
+Folders cannot be attached. Escape in the File manager drive list goes back to the draft without attaching anything.
+Gmail and Yahoo take about 25 megabytes for each message. Email makes files about a third larger. Companion warns you when the files may be too large to send.
+A saved draft keeps its attached files. When you open it again, they are still there.
 
 12. READ AND ORGANIZE EMAIL
 
@@ -926,7 +948,7 @@ With Yahoo, Companion also puts a copy in your Sent folder. If it cannot, it tel
 To open a message by number, say "Read message" or "Open message", followed by its number, such as "Read message 1" or "Open message 1".
 To repeat the sender, subject, and date, say "Message details", or press I. For more of a long message, say "Continue reading", or press Down Arrow.
 To read it again from the top, say "Read from beginning". To go back to the message list, say "Back to folder" or "Go back", or press Escape.
-Press Alt to open the email menu. Its groups are Messages, Select, Go to folder, Folder actions, Drafts and contacts, Accounts, Pages, and Options and help. For example, press Alt, 3, then 2 to go to Sent. Press Alt, 8, then 1 for Email options.
+Press Alt to open the email menu. Its groups are Messages, Select, Go to folder, Folder actions, Drafts and contacts, Accounts, Pages, Options and help, and Attachments. For example, press Alt, 3, then 2 to go to Sent. Press Alt, 8, then 1 for Email options.
 The single-letter email keys are listed in part 12.6.
 
 12.2 Go to folders
@@ -958,7 +980,7 @@ Inside an open message, Control+A selects text to copy. It does not mark other m
 Open the message first. Then say "Reply", "Reply all", or "Forward". Or press R, A, or F.
 Reply all goes to the sender and everyone else on the message. Check the addresses before you send.
 For a forward, give the new address when asked. Speak your added text. Then review and send as in part 11.5.
-Yahoo forwarding does not include the original attachments in this version.
+A forward includes the original attachments. Companion says their names when the forward starts. To leave one out, open the Attachments list with Control+L, move to the file, and press Delete.
 To throw away the reply, say "Cancel" or "Back to inbox". Say "Save draft" first if you want to keep it.
 
 12.5 Create and manage folders
@@ -999,9 +1021,26 @@ Email letter keys work in the message list and in an open message:
 - P: to hear your contacts, say "List contacts", or press P.
 - S: to hear how many are marked, say "What is selected", or press S.
 - U: to remove all marks, say "Clear selection", or press U.
+- L: to hear the files sent with a message, say "List attachments", or press L.
 - Space marks a message. Delete deletes. F2 renames a folder. F5 checks for new mail.
 For email help, say "Help with email", or press F1.
 The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
+
+12.7 Open and save attachments
+When you open a message that has files, Companion first says how many there are, with their names and sizes. For example, "2 attachments: report.pdf, 1.2 megabytes; photo.jpg, 300 kilobytes."
+1. To open the Attachments list, say "List attachments", or press L.
+2. Use Up Arrow and Down Arrow to move through the files. Home and End go to the first and last file. You hear "Start of list" or "End of list" at the ends.
+3. Press Enter to open the file you are on. Documents open in Document reader, and sound and video in the media player. Other files open in their Windows app.
+4. Press Escape to go back to the message.
+- To save the file, say "Save attachment", or press Control+S. It goes in your Downloads folder.
+- To save every file, say "Save all attachments", or press Control+Shift+S.
+- To save in another folder, say "Save attachment to", followed by the folder, such as "Save attachment to Documents". You can also type a full folder path.
+- Companion says where it saved the file. It never replaces a file that is already there. A second copy of report.pdf is saved as report (1).pdf.
+- For help in the list, say "Help with attachments", or press F1.
+Press Alt to open the attachments menu. It has the same choices.
+A program or script asks first before it opens. Only open programs from people you trust.
+A large file can take a while. Companion says how far it has got. Press Escape to stop. Nothing half saved is left behind.
+If a file is damaged, Companion says it could not be saved.
 
 13. CONTACTS
 
@@ -1848,7 +1887,7 @@ Updating the guides does not remove your own files. The guides stay after you un
 - For a page, say "Refresh page", or press F5. If the layout is hard to explore, say "List links".
 - If letter keys type letters, press Escape to leave the text box. Use the Companion page window for its reading keys.
 - A site may ask you to prove you are human, or use a control Companion cannot read. Ask for help instead of guessing.
-- Some email folder changes and forwarded attachments are limited by the service or this version. Read the email chapters before you try again.
+- Some email folder changes are limited by the service. If an attachment will not send, it may be too large. Read the email chapters before you try again.
 
 29.4 A guide or update will not open
 - Close any open guide files. Then say "Open user guides", or press Control+G, again. This asks Companion to refresh its guide copies.

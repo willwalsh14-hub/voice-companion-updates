@@ -43,7 +43,9 @@ process.stdin.on('end', () => {
   for (const listener of disconnectListeners) listener();
   process.stderr.write(JSON.stringify({sent: state.sent.map(s => ({kind: s.kind, replyType: s.replyType, messageId: s.messageId,
     identityId: (s.details || {}).identityId, to: s.current.to, cc: s.current.cc, bcc: s.current.bcc, subject: s.current.subject,
-    body: s.current.body, plainTextBody: s.current.plainTextBody})), moved: state.moved, deleted: state.deleted}));
+    body: s.current.body, plainTextBody: s.current.plainTextBody,
+    attachments: (s.attachments || []).map(({file}) => ({name: file.name, size: file.size}))})),
+    moved: state.moved, deleted: state.deleted}));
   process.exit(0);
 });
 
@@ -56,7 +58,7 @@ api.runtime.connectNative = name => {
   };
 };
 
-const context = vm.createContext({console, setTimeout, clearTimeout, messenger: api, JSON});
+const context = vm.createContext({console, setTimeout, clearTimeout, messenger: api, JSON, File, Blob, btoa, atob});
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
 // Contacts and calendars (pim.js). FAKE_THUNDERBIRD_OLD_ADDON is a copy installed before they existed.
 if (!process.env.FAKE_THUNDERBIRD_OLD_ADDON) vm.runInContext(fs.readFileSync(path.join(__dirname, 'pim.js'), 'utf8'), context);

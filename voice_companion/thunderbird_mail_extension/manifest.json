@@ -24,6 +24,7 @@
     "messagesDelete",
     "messagesUpdate",
     "compose",
+    "compose.save",
     "compose.send",
     "addressBooks"
   ],

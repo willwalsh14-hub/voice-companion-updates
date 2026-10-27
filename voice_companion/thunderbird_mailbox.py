@@ -33,6 +33,12 @@ class SignInNeeded(Exception):
     def __init__(self, url):
         super().__init__(url)
         self.url = url
+# Said when the add-on in Thunderbird is older than attachments (it answers "Unsupported mail request.").
+UNSUPPORTED = 'Unsupported mail request.'
+NEEDS_NEWER_ADDON = ('Attachments need the newer Voice Companion connection in Thunderbird. Close Thunderbird, '
+                     'then try again. Voice Companion updates the connection when it starts Thunderbird.')
+UPLOAD_PIECE = 512 * 1024      # a file to send goes to Thunderbird in pieces this size (1 MB message limit)
+SAVE_PIECE = 1024 * 1024       # an attachment comes back in pieces this size
 NOT_CONNECTED = ('Thunderbird is not connected to Voice Companion. '
                  'Say add account and choose Thunderbird, and Voice Companion checks what is missing.')
 
@@ -162,8 +168,59 @@ class ThunderbirdMailbox:
             body = html_text(parts['html'])
             if parts.get('plain'):
                 body.plain = str(plain_body(parts['plain']))
-            return body
-        return plain_body(parts.get('plain', ''))
+        else:
+            body = plain_body(parts.get('plain', ''))
+        # None: an older add-on, or Thunderbird could not list them.
+        found = parts.get('attachments')
+        body.attachments = self._attachment_rows(found) if isinstance(found, list) else None
+        return body
+
+    @staticmethod
+    def _attachment_rows(items):
+        from mail_attachments import safe_filename
+        rows = []
+        for item in items or []:
+            if not isinstance(item, dict) or not isinstance(item.get('partName'), str) or not item['partName']:
+                continue
+            size = item.get('size')
+            rows.append({'id': item['partName'], 'name': safe_filename(item.get('name'), 'Attachment ' + item['partName']),
+                         'size': size if isinstance(size, int) and size >= 0 else None,
+                         'type': str(item.get('contentType') or '')})
+        return rows
+
+    def attachments(self, message_id, folder_id=None):
+        try:
+            return self._attachment_rows(call('attachments', messageId=self._message(message_id)))
+        except MailboxError as exc:
+            if str(exc) == UNSUPPORTED:
+                raise MailboxError(NEEDS_NEWER_ADDON, unchanged=True) from exc
+            raise
+
+    def attachment_chunks(self, message_id, attachment, folder_id=None):
+        """The bytes of one attachment, a piece at a time."""
+        import base64
+        import binascii
+        ident = self._message(message_id)
+        part = str(attachment.get('id', ''))
+        offset = 0
+        while True:
+            try:
+                piece = call('attachmentChunk', messageId=ident, partName=part, offset=offset, length=SAVE_PIECE)
+            except MailboxError as exc:
+                if str(exc) == UNSUPPORTED:
+                    raise MailboxError(NEEDS_NEWER_ADDON, unchanged=True) from exc
+                raise
+            try:
+                data = base64.b64decode(str(piece.get('data') or ''), validate=True)
+            except (binascii.Error, ValueError, AttributeError) as exc:
+                raise MailboxError('This attachment is damaged. It could not be saved.', unchanged=True) from exc
+            offset += len(data)
+            yield data
+            if piece.get('done') or not data:
+                return
+
+    def attachment_bytes(self, message_id, attachment, folder_id=None):
+        return b''.join(self.attachment_chunks(message_id, attachment, folder_id))
 
     def response_context(self, message_id, action, own_address, folder_id=None):
         if action not in ('reply', 'reply_all', 'forward'):
@@ -180,10 +237,17 @@ class ThunderbirdMailbox:
         if subject.casefold().startswith(prefix.casefold()): prefix = ''
         # Thunderbird quotes or includes the original itself, like Outlook, so
         # no "Forwarded message" block is added by Voice Companion.
-        return {'action': action, 'source_id': message_id, 'message_id': info.get('headerMessageId', ''),
-                'recipient': recipients[0] if action != 'forward' and recipients else '',
-                'cc': recipients[1:] if action == 'reply_all' else [],
-                'subject': prefix + subject, 'original_body': ''}
+        context = {'action': action, 'source_id': message_id, 'message_id': info.get('headerMessageId', ''),
+                   'recipient': recipients[0] if action != 'forward' and recipients else '',
+                   'cc': recipients[1:] if action == 'reply_all' else [],
+                   'subject': prefix + subject, 'original_body': ''}
+        if action == 'forward':
+            # The original files go with the forward. None: an older add-on that cannot add them.
+            try:
+                context['original_attachments'] = self.attachments(message_id)
+            except MailboxError:
+                context['original_attachments'] = None
+        return context
 
     def move(self, ids, source_id, destination_id):
         call('move', messageIds=[self._message(i) for i in ids], folderId=self._folder(destination_id))
@@ -219,13 +283,24 @@ def submit(draft, account):
                            'type': 'replyToAll' if context['action'] == 'reply_all' else 'replyToSender'}
     elif context.get('action') == 'forward' and context.get('source_id') is not None:
         params['forward'] = {'messageId': ThunderbirdMailbox._message(context['source_id'])}
+        if isinstance(context.get('original_attachments'), list):
+            # The original's files go along, less the ones the person took off.
+            params['forward']['drop'] = [str(name) for name in context.get('dropped_attachments', [])]
     from user_stop import Stopped
     import time
     say = PROGRESS
+    files = getattr(draft, 'attachments', None)
+    files = list(files) if isinstance(files, list) else []
+    from mail_attachments import missing, missing_message
+    gone = missing(files)
+    if gone:
+        raise DeliveryError(missing_message(gone), uncertain=False)
     try:
         bridge = relay()
     except MailboxError as exc:
         raise DeliveryError(str(exc), uncertain=False) from exc
+    if files:
+        params['attachments'] = upload_files(bridge, files, say)
     # Sending can need a sign-in Thunderbird did not need before (Microsoft asks again for
     # sending). Thunderbird would open it where the user cannot reach it, then time out, so
     # Voice Companion takes the page, as it does while an account is added.
@@ -277,3 +352,40 @@ def submit(draft, account):
         try: REMEMBER_IDENTITY(account, used, result.get('accountId') or account.get('account_id', ''))
         except Exception: pass
     return result.get('headerMessageId') or 'accepted by Thunderbird'
+
+
+def upload_files(bridge, files, say=None):
+    """Send each attached file to Thunderbird ahead of the message. Returns the upload ids.
+
+    Nothing is sent by this: a failure here means the email was certainly not sent."""
+    import base64
+    from email_delivery import DeliveryError
+    from mail_attachments import AttachmentError, SLOW_SIZE, read_local
+    from user_stop import Stopped
+    ids = []
+    try:
+        if say and sum(item.get('size') or 0 for item in files) > SLOW_SIZE:
+            say('Attaching the files. Please wait.')
+        for item in files:
+            data = read_local(item)
+            ident = bridge.request('uploadStart', {'name': item['name'], 'size': len(data)}, timeout=30)['uploadId']
+            ids.append(ident)
+            for offset in range(0, len(data), UPLOAD_PIECE):
+                bridge.request('uploadChunk', {'uploadId': ident, 'offset': offset,
+                                               'data': base64.b64encode(data[offset:offset + UPLOAD_PIECE]).decode('ascii')},
+                               timeout=60)
+        return ids
+    except AttachmentError as exc:
+        error = DeliveryError(str(exc), uncertain=False)
+    except ThunderbirdError as exc:
+        error = DeliveryError(NEEDS_NEWER_ADDON if str(exc) == UNSUPPORTED else
+                              str(exc) + ' The email was not sent.', uncertain=False)
+    except (ThunderbirdUnavailable, Stopped):
+        error = DeliveryError('Thunderbird stopped answering while the files were attached. The email was not sent. '
+                              'Try again.', uncertain=False)
+    except (KeyError, TypeError) as exc:
+        error = DeliveryError('Thunderbird did not take the files. The email was not sent. Try again.', uncertain=False)
+    for ident in ids:
+        try: bridge.request('uploadCancel', {'uploadId': ident}, timeout=5)
+        except Exception: pass
+    raise error

@@ -63,7 +63,7 @@ Use spare messages and empty test folders. Keep important mail out of these test
 Read a message and return to its folder. Try reply, reply all, and forward. Check all addresses before sending.
 Choose one message, then several messages. Move them to a test folder and check the result in your email service.
 Try making, renaming, and moving an empty folder. Delete it only after checking the name in the Yes or No question.
-Yahoo forwards do not include the original attachments in this version. Some email services also limit folder changes.
+Forwards include the original attachments. Try one forward with an attachment and check it arrived whole. Some email services also limit folder changes.
 Read chapters 8, 9, and 10 of the user guide for the full steps.
 
 7. Contacts

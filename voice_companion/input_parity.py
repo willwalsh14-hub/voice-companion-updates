@@ -10,13 +10,13 @@ SCREEN_KEYS = {
     'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
-                    'Ctrl+K': 'list contacts'},
+                    'Ctrl+K': 'list contacts', 'Ctrl+T': 'attach a file', 'Ctrl+L': 'list attachments'},
     # Email: one letter per action, no modifiers (Will, October 2026). Letters act in the
     # message list and in an open message; K and B stay for links and buttons in a message.
     'mailbox': {'N': 'new email', 'R': 'reply', 'A': 'reply all', 'F': 'forward', 'M': 'move',
                 'G': 'go to folder', 'W': 'which folder', 'I': 'message details',
                 'C': 'copy sender address', 'E': 'new email to sender', 'D': 'open email draft',
-                'P': 'list contacts', 'U': 'clear selection', 'S': 'what is selected',
+                'P': 'list contacts', 'U': 'clear selection', 'S': 'what is selected', 'L': 'list attachments',
                 'Next': 'next messages', 'Prior': 'previous messages',
                 'F1': 'help with email', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+R': 'read document', 'F1': 'help with document reader'},
@@ -33,6 +33,11 @@ SCREEN_KEYS = {
     'calendar': {'F1': 'help with calendar', 'Up': 'previous event', 'Down': 'next event', 'Left': 'previous day',
                  'Right': 'next day', 'Home': 'today', 'Prior': 'previous week', 'Next': 'next week',
                  'Ctrl+N': 'add event', 'Delete': 'delete event'},
+    # The Attachments list (attachment_screen.py). Up, Down, Home, End, Enter and Escape work as in every list.
+    'attachments': {'F1': 'help with attachments', 'Ctrl+S': 'save attachment', 'Ctrl+Shift+S': 'save all attachments',
+                    'Delete': 'remove attachment', 'Ctrl+T': 'attach a file'},
+    # File manager: email the chosen files, or add them to the email draft that is open.
+    'files': {'Ctrl+N': 'email this file', 'Ctrl+T': 'attach to draft'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
@@ -65,7 +70,7 @@ OLD_KEYS = {
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
               'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads',
-              'contacts', 'calendar'):
+              'contacts', 'calendar', 'attachments'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
