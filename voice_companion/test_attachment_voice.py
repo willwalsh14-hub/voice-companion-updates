@@ -151,6 +151,8 @@ class ListVoiceTests(PlacesTestCase):
 
     def test_save_by_voice_and_control_d(self):
         mode = self.list_mode()
+        app.handle('Save.', mode)
+        self.assertEqual(self.last(), 'Saved report.pdf in your Downloads folder.')
         app.handle('Save it to Documents.', mode)
         self.assertEqual(self.last(), 'Saved report.pdf in your Documents folder.')
         app.handle('save the photo to my desktop folder', mode)
@@ -341,6 +343,24 @@ class ForwardDuplicateTests(PlacesTestCase):
         self.assertEqual([a['id'] for a in draft.dropped_originals()], ['1.3'])
         again = VoiceEmail.open_existing(draft.folder, draft.title)
         self.assertEqual([a['id'] for a in again.original_attachments()], ['1.2', '1.4'])
+
+    def test_remove_a_forwarded_file_by_voice_as_the_guide_says(self):
+        mode = self.opened_message()
+        app.handle('forward', mode)
+        draft = app.email_draft
+        self.assertEqual(app.handle('Remove the photo.', 'email_draft'), 'email_draft')
+        self.assertEqual(self.last(), 'Removed photo.jpg. 2 attachments left.')
+        self.assertEqual([a['name'] for a in draft.original_attachments()], ['report.pdf', 'setup.exe'])
+        app.handle('How big are the attachments?', 'email_draft')
+        self.assertEqual(self.last(), '2 attachments: report.pdf, 10 kilobytes; setup.exe, 10 bytes. Together they are 10 kilobytes.')
+        # Two files fit: the list opens on the first, with the question.
+        draft.attach([self.files / 'photo.jpg'])
+        AttachmentMailbox.files['m1'].append(('1.6', 'photo.png', b'png'))
+        self.addCleanup(AttachmentMailbox.files['m1'].pop)
+        draft.response_context['original_attachments'].append({'id': '1.6', 'name': 'photo.png', 'size': 3})
+        self.assertEqual(app.handle('remove photo', 'email_draft'), 'attachments')
+        self.assertEqual(self.last(), 'Attachments, 4 files. 2 files match photo. Choose one, then press Delete. '
+                                      'photo.png, 3 bytes, 3 of 4.')
 
     def test_older_drafts_that_name_only_the_file_still_work(self):
         context = {'action': 'forward', 'original_attachments': [{'id': '1', 'name': 'a.pdf'}, {'id': '2', 'name': 'b.pdf'}],

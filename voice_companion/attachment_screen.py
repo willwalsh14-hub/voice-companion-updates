@@ -687,7 +687,7 @@ def command_here(m, raw, command):
         m.speak('Save ' + files_words.count_words(len(ITEMS)) + ' to a folder. Type or say a folder, such as Documents '
                 'or Desktop, or type its full path. Then press Enter. Escape cancels.')
         return MODE
-    if command in SAVE_ONE:
+    if command in SAVE_ONE + ('save', 'download', 'download it'):
         save(m, [item], default_folder(m))
         return MODE
     if command in SAVE_ALL:
