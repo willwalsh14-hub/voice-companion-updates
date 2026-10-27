@@ -180,10 +180,12 @@ class CompanionWindow:
             frames=sys._current_frames();frame=frames.get(self.thread.ident)
             if frame is not None:stack=''.join(traceback.format_stack(frame)[-12:])
             del frames,frame
-        return {'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
+        # Short facts first: a build annotation keeps only the start of this message.
+        return {'recent keys and focus':list(self.key_trace),'mode':self.context.get('mode'),
+                'command box active':self.command_entry_active,'commands':list(self.commands.queue)[-12:],
+                'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
                 'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
-                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()],
-                'recent keys':list(self.key_trace)}
+                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()]}
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
@@ -428,6 +430,11 @@ class CompanionWindow:
                     self.commands.put(typed.get().strip());typed.delete(0,'end')
                 self.commands.put(('keyboard','Alt'));return 'break'
             root.bind_all('<KeyRelease>',alt_release,add='+')
+            def trace_focus(event):
+                # Where keyboard focus went, so a test failure can say who took it.
+                try:self.key_trace.append(f'focus {event.widget} detail={event.detail} mode={self.context.get("mode")}')
+                except Exception:pass
+            root.bind_all('<FocusIn>',trace_focus,add='+')
             from time_date import PressCounter,clock_key,key_request
             clock_presses=PressCounter()
             def shortcut(event):

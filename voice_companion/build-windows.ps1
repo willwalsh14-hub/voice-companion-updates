@@ -29,7 +29,7 @@ function Invoke-UnitTests([string]$Title, [string[]]$Arguments) {
     foreach ($line in (Get-Content -LiteralPath $log)) {
       if ($line -match '^(FAIL|ERROR): (\S+)') { $current = $Matches[2]; continue }
       if ($current -and $line -match '^[A-Za-z_][\w.]*(Error|Exception|Exit|Failure)\b') {
-        $reason = if ($line.Length -gt 900) { $line.Substring(0, 900) + '...' } else { $line }
+        $reason = if ($line.Length -gt 2400) { $line.Substring(0, 2400) + '...' } else { $line }
         if ($reasons -lt 8) { Write-BuildAnnotation ($Title + ': ' + $current) $reason | Out-Host }
         $reasons += 1; $current = $null
       }
