@@ -275,6 +275,17 @@ class PlayerWindowTests(unittest.TestCase):
 
 
 class ChromeDangerTests(unittest.TestCase):
+    def test_a_file_chrome_flags_at_once_says_it_needs_an_answer(self):
+        folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        model = downloads.DownloadManager(folder, background=False)
+        model.attach('chrome', Mock())
+        model.report('chrome', 7, **downloads.chrome_report({'id': 7, 'new': True, 'state': 'in_progress', 'danger': 'file',
+                                                            'filename': 'C:\\Users\\Will\\Downloads\\tool.exe'}))
+        said = []
+        while not model.notices.empty(): said.append(model.notices.get_nowait())
+        self.assertEqual(said, ['Downloading tool.exe.', 'tool.exe needs your answer in Chrome. Chrome thinks it may be unsafe. Press Control+J in Chrome to keep or delete it.'])
+        self.assertEqual(model.labels(), ['tool.exe, waiting for your answer in Chrome'])
+
     def test_only_a_danger_that_needs_an_answer_waits_for_chrome(self):
         from downloads import chrome_report
         running = {'id': 1, 'state': 'in_progress', 'filename': 'C:\\Users\\Will\\Downloads\\a.pdf'}

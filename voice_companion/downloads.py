@@ -492,7 +492,9 @@ class DownloadManager:
                     except ValueError:
                         pass
                 else:
-                    record.state = state if state in ('downloading', 'paused', 'blocked') else 'downloading'
+                    # A file the browser flags at once starts as downloading, so the
+                    # change to blocked below says what to do.
+                    record.state = state if state in ('downloading', 'paused') else 'downloading'
                     if record.state == 'paused':
                         record.intent = 'paused'
             self.announce_start(record)
