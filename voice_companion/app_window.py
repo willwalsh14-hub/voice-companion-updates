@@ -788,6 +788,30 @@ class CompanionWindow:
                 if event.widget==root:
                     for label in (heading,startup_label,entry_label):label.configure(wraplength=max(1,event.width-36))
             root.bind('<Configure>',resize_labels,add='+')
+            def fit_layout(event=None):
+                """Large text on a small screen: the list area always keeps room for a few lines.
+
+                Without this the hint line and the button row took all the space at large text
+                sizes, the File manager list got none, and Windows then dropped its key presses.
+                The hint line, then the button row, give way first."""
+                if event is not None and event.widget is not root:return
+                height=root.winfo_height()
+                if height<=1:return
+                rows=fonts['body'].metrics('linespace')*4+24
+                if self.context.get('mode')=='files':rows+=file_toolbar.winfo_reqheight()+8
+                fixed=heading.winfo_reqheight()+14+message_view.winfo_reqheight()+8+entry_label.winfo_reqheight()+6+typed.winfo_reqheight()
+                # The command box always stays: the list takes what is left if the window is short.
+                rows=max(1,min(rows,height-fixed))
+                if int(content.cget('height'))!=rows:content.configure(height=rows)
+                room=height-fixed-rows
+                buttons=button_row.winfo_reqheight()+6
+                show_buttons=room>=buttons
+                show_hint=room>=buttons+startup_label.winfo_reqheight()+12
+                if show_buttons and not button_row.winfo_manager():button_row.pack(after=typed,fill='x',padx=18,pady=(6,0))
+                if not show_buttons and button_row.winfo_manager():button_row.pack_forget()
+                if show_hint and not startup_label.winfo_manager():startup_label.pack(after=button_row if show_buttons else typed,anchor='w',padx=18,pady=(2,10))
+                if not show_hint and startup_label.winfo_manager():startup_label.pack_forget()
+            root.bind('<Configure>',fit_layout,add='+')
             from visual_accessibility import readable_color,focus_style
             for widget in (typed,editor):focus_style(widget)
             editor.tag_configure('bold',font=fonts['bold'])
@@ -1037,6 +1061,7 @@ class CompanionWindow:
                 file_list.configure(activestyle='underline',selectbackground=palette['line'] or palette['select_bg'],selectforeground=palette['fg'] if palette['line'] else palette['select_fg'])
                 local['file_current']=None;local['display_shown']=None;local['editor_place']=None
                 for arrange in arrangers:root.after_idle(arrange)
+                root.after_idle(fit_layout)
                 if old is None or bool(old.get('display_full_screen'))!=bool(values['display_full_screen']):set_full_screen(values['display_full_screen'])
             def place_caret():
                 # Windows Magnifier, ZoomText and Fusion follow the system caret: put it on the
@@ -1143,10 +1168,11 @@ class CompanionWindow:
                                 typed.focus_force()
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
-                        if mode!='files':file_list.pack_forget();file_toolbar.pack_forget()
+                        if mode!='files':file_list.pack_forget();file_toolbar.pack_forget();fit_layout()
                         if mode=='files':
                             history.pack_forget();editor.pack_forget();display_view.pack_forget()
                             file_toolbar.pack(in_=content,side='bottom',fill='x',padx=18,pady=(0,8));file_list.pack(in_=content,fill='both',expand=True,padx=18)
+                            fit_layout()
                             values=field.get('file_items',[])
                             if tuple(file_list.get(0,'end'))!=tuple(values):
                                 file_list.delete(0,'end')

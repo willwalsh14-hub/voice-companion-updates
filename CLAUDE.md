@@ -125,6 +125,11 @@ back-and-forth, and failures fixed so they do not come back.
   `focus_force()` first; a child process may not be allowed to take focus.
 - **The window's update loop** (`poll` in `app_window.py`) must never stop: it
   records errors in `ui_errors` and always reschedules.
+- **Small screens and large text:** Windows test runners have small screens. A widget
+  that gets no room is unmapped, and Windows then drops key presses sent to it. Real
+  window tests can run on Linux, one test per process, with a Tk-enabled Python
+  (`uv python install 3.12`) under `xvfb-run -s "-screen 0 1024x768x24"`, after
+  replacing `real_window_tests.real_window` with a function that returns the class.
 - **Tests that patch `sys.modules`** (e.g. `patch.dict(sys.modules, ...)`)
   clear and refill it, which can disturb other threads. Patch `builtins.__import__`
   or the specific attribute instead.
