@@ -22,6 +22,7 @@ import mail_accounts
 import regular_browser
 import thunderbird_bridge
 import thunderbird_mailbox
+import thunderbird_pim
 from address_book import AddressBook
 from browser_bridge_host import read_message
 from field_selection import FieldSelection
@@ -242,7 +243,13 @@ class ContactsScreenTests(CompanionHarness):
         self.assertEqual(self.said(), 'Yes.')
         self.press('Enter', mode)
         self.assertEqual(self.said(), 'Deleted Plumber. Mary Jones, mary@example.com, 4 of 4.')
-        self.say('first contact', mode); self.press('Down', mode)
+        # From the details view: Delete contact is the last line; afterwards the list is back.
+        self.press('Letter:a', mode); self.press('Enter', mode); self.press('End', mode)
+        self.assertEqual(self.said(), 'Delete contact, 5 of 5.')
+        self.press('Enter', mode); self.press('Up', mode); self.press('Enter', mode)
+        self.assertEqual(self.said(), 'Deleted Ann Brown. Help Desk, help@work.example, 555-0111, 1 of 3.')
+        self.assertEqual(contacts_screen.VIEW, 'list')
+        self.say('first contact', mode)
         self.press('Delete', mode)
         self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be deleted.')
 
@@ -312,6 +319,21 @@ class ContactsScreenTests(CompanionHarness):
     def test_old_google_contacts_command_points_to_thunderbird(self):
         app.handle('connect google contacts', 'awake')
         self.assertIn('Google contacts now come from Thunderbird.', self.said())
+
+
+class NotStartedContactsTests(CompanionHarness):
+    thunderbird = False
+
+    def test_email_by_name_reads_thunderbird_contacts_when_thunderbird_is_not_running_yet(self):
+        # Thunderbird is the user's mail program but not started: its contacts are read, which starts it.
+        AddressBook(self.root).save('Zed Local', 'zed@example.com')     # contacts here too
+        john = {'id': 'c1', 'name': 'John Smith', 'emails': ['john@example.com'], 'phones': [], 'book': 'Google'}
+        with mock.patch.object(thunderbird_pim, 'connected', return_value=False), \
+                mock.patch.object(thunderbird_pim, 'has_thunderbird_account', return_value=True), \
+                mock.patch.object(thunderbird_pim, 'contacts', return_value={'books': [], 'contacts': [john]}) as read:
+            mode = app.handle('email John', 'awake')
+        self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+        read.assert_called_once()
 
 
 class OldAddonContactsTests(CompanionHarness):

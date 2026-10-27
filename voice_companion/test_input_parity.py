@@ -142,7 +142,7 @@ class ScreenKeyEffectTests(unittest.TestCase):
         expected={'media':'Listen To Radio','awake':None,'note':'Write A Note','email_draft':'Write An Email','mailbox':'Read And Organize Email',
                   'file_reader':'Document Reader','web':'Browse The Web','browser_menu':'Browse The Web',
                   'word_processor':'Write A Document','recent_documents':'Write A Document',
-                  'media_menu':'Media Player','local_media':'Media Player'}
+                  'media_menu':'Media Player','local_media':'Media Player','contacts':'Contacts','calendar':'Calendar'}
         from document_reader import open_document
         reader=self.root/'reader.txt';reader.write_text('Reader text.',encoding='utf-8')
         for mode,topic in expected.items():

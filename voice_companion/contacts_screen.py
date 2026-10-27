@@ -17,6 +17,7 @@ small hooks; `m` is the companion module.
 import re
 
 import contacts_book
+import thunderbird_pim
 from menu_navigation import announce_item, next_match
 
 MODE = 'contacts'
@@ -196,6 +197,7 @@ def command_here(m, raw, command):
             PENDING = None
             BOOK.delete(contact)
             name = contact.name
+            VIEW = 'list'       # the deleted contact's details are gone
             reload(m)
             m.speak('Deleted ' + name + '. ' + describe())
             return MODE
@@ -464,9 +466,14 @@ def email_by_name(m, command, mode):
     explicit = not command.startswith(('email ', 'e mail '))
     if name in RESERVED or name.startswith(('to ', 'list', 'draft', 'the sender')) or '@' in name or len(name.split()) > 5:
         return None     # a command word, an address, or a sentence ("write to the council about the road")
-    contacts = CONTACTS if mode == MODE and CONTACTS else book(m).cached()
-    if not contacts and mode != MODE:
-        contacts = book(m).load()
+    if mode == MODE and CONTACTS:
+        contacts = CONTACTS
+    else:
+        people = book(m)
+        contacts = people.cached()
+        # Thunderbird's contacts not read yet (Thunderbird not started): read them now, starting it.
+        if contacts_book.CACHE['at'] is None and thunderbird_pim.usable(m.APP):
+            contacts = people.load()
     matches = contacts_book.find(contacts, name)
     if not matches:
         if not explicit or len(name.split()) > 3:
