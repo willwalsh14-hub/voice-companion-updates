@@ -542,7 +542,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             RawInputStream=Mock(side_effect=OSError('no microphone')))
         window=Mock(commands=queue.Queue(),settings_results=queue.Queue(),key_feedback=queue.Queue(),closed=Mock(is_set=Mock(return_value=False)))
         for action in (('keyboard','Down'),('keyboard','Alt+F4'),'yes'):window.commands.put(action)
-        def ready():companion.speak(companion.startup_prompt());return 'sleep'
+        def ready():return 'sleep'   # no update offered; announce_startup() says the rest
         with (patch.object(companion, 'MODEL', self.root),
               patch.object(companion, 'PARAKEET_MODEL', self.root / 'missing'),
               patch.object(companion, 'Model', lambda path: object()),
@@ -557,7 +557,11 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertGreaterEqual(fake_audio.RawInputStream.call_count,2)
             notices=[str(call.args[0]) for call in spoken.call_args_list]
             self.assertTrue(any('is ready' in text for text in notices))
-            self.assertTrue(any('Voice commands are disabled' in text for text in notices))
+            # One startup message: the version, then the microphone that could not start, never "say wake up".
+            ready=[text for text in notices if 'is ready' in text]
+            self.assertEqual(len(ready),1,notices)
+            self.assertIn('voice commands are off for now',ready[0])
+            self.assertNotIn('wake up',ready[0].lower())
             self.assertEqual(companion.MAIN_MENU_INDEX,0)
             self.assertTrue(window.commands.empty())
 
@@ -571,7 +575,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             RawInputStream=Mock(return_value=Mock()))
         window=Mock(commands=queue.Queue(),settings_results=queue.Queue(),key_feedback=queue.Queue(),closed=Mock(is_set=Mock(return_value=False)))
         for action in (('keyboard','Down'),('keyboard','Alt+F4'),'yes'):window.commands.put(action)
-        def ready():companion.speak(companion.startup_prompt());return 'sleep'
+        def ready():return 'sleep'   # no update offered; announce_startup() says the rest
         with (patch.object(companion, 'MODEL', self.root),
               patch.object(companion, 'PARAKEET_MODEL', self.root / 'missing'),
               patch.object(companion, 'Model', lambda path: object()),
@@ -586,7 +590,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             fake_audio.RawInputStream.assert_called_once()
             notices=[str(call.args[0]) for call in spoken.call_args_list]
             self.assertTrue(any('is ready' in text for text in notices))
-            self.assertFalse(any('Voice commands are disabled' in text for text in notices))
+            self.assertFalse(any('voice commands are off' in text for text in notices))
             self.assertNotIn('device',fake_audio.RawInputStream.call_args.kwargs)
             fake_audio.RawInputStream.return_value.start.assert_called_once()
             fake_audio.RawInputStream.return_value.close.assert_called_once()

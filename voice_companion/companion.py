@@ -418,6 +418,9 @@ def handle_keyboard(text,mode):
 
 def _handle_keyboard(text,mode):
     global SLEEP_RETURN_MODE
+    if mode=='sleep' and (text=='@microphone' or normalized_command(text) in MICROPHONE_OFF_PHRASES+MICROPHONE_ON_PHRASES):
+        # F9 while asleep: still asleep, so say how to wake up, not "Voice commands are on".
+        return set_microphone(MICROPHONE_OFF if text=='@microphone' else normalized_command(text) in MICROPHONE_ON_PHRASES,'sleep')
     if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
         result=handle_keyboard(text,SLEEP_RETURN_MODE)
         # "go to sleep" typed while asleep returns 'sleep'; keep the place to wake up to.
@@ -507,17 +510,21 @@ def process_keyboard_batch(mode):
 SLEEP_RETURN_MODE = 'awake'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
+# Said together with the next main menu announcement, in one message: a second
+# message would stop the first one (the keyboard voice interrupts itself).
+MAIN_MENU_LEAD = ''
+
 def announce_main_menu():
-    global MAIN_MENU_INDEX
+    global MAIN_MENU_INDEX, MAIN_MENU_LEAD
     MAIN_MENU_INDEX = None
-    speak_prompt(MAIN_MENU_PROMPT)
+    lead, MAIN_MENU_LEAD = MAIN_MENU_LEAD, ''
+    if lead.strip():speak(lead.strip() + ' ' + prompt_text(MAIN_MENU_PROMPT, VERBOSITY))
+    else:speak_prompt(MAIN_MENU_PROMPT)
 
 def startup_prompt():
-    if MICROPHONE_OFF:
-        # No voice at all: say how to use the keys and how to turn the microphone on.
-        return ('Voice Companion ' + APP_VERSION + ' is ready. ' + MICROPHONE_STILL_OFF +
-                ' You are on the main menu. Use the Up and Down arrow keys and Enter.')
-    return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
+    """The startup announcement for the microphone as it is now (startup_speech.py)."""
+    import startup_speech
+    return startup_speech.announcement(APP_VERSION, microphone_state())
 
 MAIN_MENU_INDEX = None
 MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Document reader', 'document reader'), ('Notepad', 'notepad'), ('Email', 'email'), ('Contacts', 'contacts'), ('Calendar', 'calendar'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
@@ -1949,6 +1956,25 @@ THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it close
 MICROPHONE_OFF = False
 MICROPHONE_ANNOUNCED = False   # set_microphone already said it is on
 MICROPHONE_STILL_OFF = 'The microphone is off, as you left it. Press F9 to turn it on.'
+# The microphone could not open (none plugged in, or blocked in Windows privacy settings).
+# The main loop keeps trying; voice works by itself once it opens.
+MICROPHONE_FAILED = False
+
+
+def microphone_state():
+    """'off' (turned off with F9), 'failed' (could not open) or 'on'."""
+    return 'off' if MICROPHONE_OFF else 'failed' if MICROPHONE_FAILED else 'on'
+
+
+# One-time startup notices wait here and are said in the startup announcement
+# (startup_speech.py). None once startup has been announced: then they are said at once.
+STARTUP_NOTICES = None
+STARTUP_QUESTION = None
+
+
+def startup_notice(text):
+    if STARTUP_NOTICES is not None:STARTUP_NOTICES.append(text)
+    else:speak(text)
 MICROPHONE_OFF_PHRASES = ('turn off the microphone', 'turn off microphone', 'turn the microphone off', 'turn microphone off',
                           'microphone off', 'mic off', 'turn off the mic', 'turn the mic off', 'mute microphone', 'mute the microphone')
 MICROPHONE_ON_PHRASES = ('turn on the microphone', 'turn on microphone', 'turn the microphone on', 'turn microphone on',
@@ -2869,7 +2895,7 @@ def retire_old_mail_accounts():
             mail_session = None
         if pending_send is not None and pending_send[1] in mail_accounts.REMOVED_PROVIDERS:
             pending_send = None
-        speak(account_picker.retired_message(result))
+        startup_notice(account_picker.retired_message(result))
     except Exception:
         try:
             APP.mkdir(parents=True, exist_ok=True)
@@ -3251,27 +3277,23 @@ def _handle(text, mode, typed=False):
         return mode
     if mode == 'update_offer':
         if update_command in ('no', 'no thanks', 'not now', 'later', 'cancel'):
-            if not STARTUP_UPDATE_PENDING: speak('Okay. You can keep using this version.')
-            return return_from_update()
+            return return_from_update('' if STARTUP_UPDATE_PENDING else 'Okay. You can keep using this version.')
         if update_command in ('yes', 'yes please', 'install it', 'install update', 'okay', 'ok'):
             if not UPDATES.can_install():
-                speak('Automatic installation works in the installed app. Quick Test can check for updates but cannot replace an installation.')
-                return return_from_update()
+                return return_from_update('Automatic installation works in the installed app. Quick Test can check for updates but cannot replace an installation.')
             try:
                 if document is not None: document.save()
                 if email_draft is not None: email_draft.save()
                 flush_note(UPDATE_RETURN_MODE)
             except (OSError, ValueError):
-                speak('I could not save your work. The update will wait.')
-                return return_from_update()
+                return return_from_update('I could not save your work. The update will wait.')
             UPDATE_LAST_PERCENT = 0
             if UPDATES.download():
                 speak('Downloading the update. Say cancel update to stop.')
                 return 'update_download'
-            speak('The updater is busy. Please try again shortly.')
-            return return_from_update()
+            return return_from_update('The updater is busy. Please try again shortly.')
         if spoken_control(update_command) != 'exit':
-            speak('Say yes to install the update, or no to continue.')
+            speak('Say yes to install the update, or no to continue.' if microphone_state() == 'on' else 'Press Y to install the update, or N to continue.')
             return mode
     if mode == 'update_download' and spoken_control(update_command) != 'exit':
         if UPDATES.phase in ('preparing','installing'):
@@ -3279,8 +3301,7 @@ def _handle(text, mode, typed=False):
             return mode
         if update_command in ('cancel', 'cancel update', 'stop update', 'no'):
             UPDATES.canceled.set()
-            speak('Update canceled. You can keep using the app.')
-            return return_from_update()
+            return return_from_update('Update canceled. You can keep using the app.')
         else: pass  # The cancel reminder is announced once when downloading begins.
         return mode
     if normalized_command(text) in ('set up ai voice', 'setup ai voice', 'ai voice setup'):
@@ -3414,7 +3435,8 @@ def _handle(text, mode, typed=False):
         speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
         return mode
     if command in ('version', 'what version', 'about voice companion'):
-        speak('Voice Companion version ' + APP_VERSION + '. This is the self-voicing email and web test build.')
+        # The two things a person most needs if a key press stopped the startup announcement.
+        speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
         return mode
     if spoken_control(command) == 'exit':
         if mode in ('document','document_name','document_save') and document is not None:
@@ -4430,27 +4452,46 @@ UPDATE_LAST_PERCENT = 0
 STARTUP_UPDATE_PENDING = False
 
 
-def return_from_update():
-    global STARTUP_UPDATE_PENDING, SLEEP_RETURN_MODE
+def return_from_update(notice=''):
+    """Leave the update question or download. notice: what happened, said in the same message
+    as what comes next, so neither cuts the other off."""
+    global STARTUP_UPDATE_PENDING, SLEEP_RETURN_MODE, MAIN_MENU_LEAD
+    import startup_speech
+    notice = str(notice or '').strip()
     if STARTUP_UPDATE_PENDING:
         STARTUP_UPDATE_PENDING = False
-        if MICROPHONE_OFF:
-            # Nobody can say "wake up" with the microphone off: go to the main menu.
-            SLEEP_RETURN_MODE = 'awake'
-            speak(MICROPHONE_STILL_OFF)   # handle() then says Main menu.
-            return 'awake'
-        speak(startup_prompt())
-        return 'sleep'
+        state = microphone_state()
+        if state == 'on':
+            speak((notice + ' ' if notice else '') + startup_speech.followup('on'))
+            return 'sleep'
+        # Nobody can say "wake up" with the microphone off: go to the main menu.
+        SLEEP_RETURN_MODE = 'awake'
+        MAIN_MENU_LEAD = (notice + ' ' if notice else '') + startup_speech.microphone_text(state)
+        # handle() says Main menu when the screen changes; from the main loop, say it here.
+        if _HANDLE_DEPTH == 0:announce_main_menu()
+        return 'awake'
+    if notice:
+        if UPDATE_RETURN_MODE == 'awake':
+            MAIN_MENU_LEAD = notice
+            if _HANDLE_DEPTH == 0:announce_main_menu()
+        else:speak(notice)
     return UPDATE_RETURN_MODE
 
 
+def update_offer_question():
+    """The update question. "Say yes or no" only when the microphone can hear it."""
+    return ('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels.'
+            + (' You can also say yes or no.' if microphone_state() == 'on' else ''))
+
+
 def startup_update_mode():
-    """Check before readiness; the input stream is already open for yes/no."""
-    global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE, CONFIRM_CHOICE
+    """Check for an update before the startup announcement. Says nothing: an offer is kept in
+    STARTUP_QUESTION and asked at the end of the startup announcement."""
+    global STARTUP_UPDATE_PENDING, UPDATE_RETURN_MODE, CONFIRM_CHOICE, STARTUP_QUESTION
     STARTUP_UPDATE_PENDING = False
+    STARTUP_QUESTION = None
     if '--resume-after-update' in sys.argv or (APP/'update-result.json').is_file():
         UPDATE_RETURN_MODE='sleep'
-        speak(startup_prompt())
         return 'sleep'
     if PREFERENCES.get('check_updates',True) and UPDATES.check():
         try:
@@ -4462,10 +4503,62 @@ def startup_update_mode():
             STARTUP_UPDATE_PENDING = True
             UPDATE_RETURN_MODE = 'sleep'
             CONFIRM_CHOICE='yes'
-            speak('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
+            STARTUP_QUESTION = update_offer_question()
             return 'update_offer'
-    speak(startup_prompt())
     return 'sleep'
+
+
+def collect_speech(said):
+    """While a startup step runs, keep what it says (on this thread) for the startup announcement."""
+    import contextlib
+    @contextlib.contextmanager
+    def collecting():
+        module = sys.modules[__name__]
+        original = module.speak
+        owner = threading.get_ident()
+        def keep(text, *args, **kwargs):
+            if threading.get_ident() == owner:said.append(str(text))
+            else:original(text, *args, **kwargs)
+        module.speak = keep
+        try:yield said
+        finally:
+            if module.speak is keep:module.speak = original
+    return collecting()
+
+
+def announce_startup():
+    """Choose the first screen and say the ONE startup announcement (startup_speech.py).
+
+    Every startup path comes here: normal, microphone off or broken, after an update,
+    an update offered, Chrome setup asked for by the installer. Returns the first mode."""
+    global SLEEP_RETURN_MODE, STARTUP_NOTICES, STARTUP_QUESTION
+    import startup_speech
+    if STARTUP_NOTICES is None:STARTUP_NOTICES = []
+    mode = startup_update_mode()
+    question = STARTUP_QUESTION
+    if mode == 'sleep':
+        said = []
+        with collect_speech(said):
+            mode = __import__('chrome_setup').startup_request(sys.modules[__name__], mode)
+        if said:question = ' '.join(said)
+    if mode == 'sleep' and microphone_state() != 'on':
+        # Nobody can say "wake up" with the microphone off: start on the main menu.
+        mode = 'awake';SLEEP_RETURN_MODE = 'awake'
+    update_result = None
+    result_file = APP / 'update-result.json'
+    if result_file.exists():
+        try:update_result = startup_speech.update_result(json.loads(result_file.read_text(encoding='utf-8-sig')))
+        except (OSError, ValueError):update_result = None
+        try:result_file.unlink(missing_ok=True)
+        except OSError:pass
+    # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
+    retire_old_mail_accounts()
+    if PREFERENCES.get('speech_transcript', False):
+        STARTUP_NOTICES.append('The speech transcript is on. Say stop transcript to turn it off.')
+    notices, STARTUP_NOTICES = STARTUP_NOTICES, None
+    STARTUP_QUESTION = None
+    speak(startup_speech.announcement(APP_VERSION, microphone_state(), update_result, notices, question))
+    return mode
 
 
 _HANDLE_DEPTH = 0
@@ -4530,8 +4623,7 @@ def poll_app_updates(mode):
             speak('I could not check for updates. You can keep using the app and try later.')
         elif event in ('download_failed', 'canceled'):
             if mode == 'update_download':
-                speak('Update canceled.' if event == 'canceled' else 'The update could not be downloaded or verified. Your current app remains installed.')
-                mode = return_from_update()
+                mode = return_from_update('Update canceled.' if event == 'canceled' else 'The update could not be downloaded or verified. Your current app remains installed.')
         elif event == 'progress' and mode == 'update_download':
             percentage = min(100, payload // 5 * 5)
             if percentage > UPDATE_LAST_PERCENT:
@@ -4544,8 +4636,7 @@ def poll_app_updates(mode):
                 finish_mail_announcement()
                 if not UPDATES.begin_install(path, release):raise RuntimeError('Updater busy')
             except Exception:
-                speak('The update could not start. Your current app remains available.')
-                mode = return_from_update()
+                mode = return_from_update('The update could not start. Your current app remains available.')
         elif event == 'install_ready' and mode=='update_download':
             if web_session:
                 try:web_session.leave(False)
@@ -4555,21 +4646,20 @@ def poll_app_updates(mode):
                 except Exception:pass
             return 'exit'
         elif event == 'install_failed' and mode=='update_download':
-            speak('The update could not start. Your current app remains available.')
-            mode=return_from_update()
+            mode=return_from_update('The update could not start. Your current app remains available.')
     if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
         UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
         UPDATE_OFFER = False
         # The manual check has its answer; later automatic offers wait for the main screen.
         UPDATE_MANUAL = False
         CONFIRM_CHOICE='yes'
-        speak('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
+        speak(update_offer_question())
         return 'update_offer'
     return mode
 
 
 def main():
-    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF
+    global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF, STARTUP_NOTICES, MICROPHONE_FAILED
     if '--check-browser-bookmarks' in sys.argv:
         from packaged_browser_check import check
         return check(sys.modules[__name__])
@@ -4703,13 +4793,15 @@ def main():
             recognizer.recognize(b'\x00\x00' * 16000)
             print('Offline Parakeet model loaded and inference completed.', flush=True)
         return 0
+    # Notices from here on wait for the one startup announcement (announce_startup).
+    STARTUP_NOTICES = []
     try:
         from guide_files import publish_guides
         publish_guides(documents_folder(), expected_version=APP_VERSION)
     except (OSError, ValueError) as exc:
         APP.mkdir(parents=True, exist_ok=True)
         (APP/'user-guide-update-error.txt').write_text(str(exc), encoding='utf-8')
-        speak('The user guide files could not be copied to Documents. Onboard help is still available. Ask your helper to check the installation.')
+        startup_notice('The user guide files could not be copied to Documents. Onboard help is still available. Ask your helper to check the installation.')
 
     import sounddevice as sd
     sample_rate = 16000
@@ -4719,6 +4811,7 @@ def main():
     # F9 or "turn off the microphone" is remembered after Companion closes.
     MICROPHONE_OFF=bool(PREFERENCES.get('microphone_off',False))
     if not MICROPHONE_OFF:input_stream=open_microphone(sd)
+    MICROPHONE_FAILED=not MICROPHONE_OFF and input_stream is None
     recognizer = KaldiRecognizer(model, sample_rate)
     mode = 'sleep'
     media()  # Restore scheduled radio recordings after an app restart.
@@ -4731,38 +4824,23 @@ def main():
             print('Offline Parakeet dictation is ready.', flush=True)
         except Exception as exc:
             print('Parakeet initialization failed:', exc, file=sys.stderr)
-            speak('Parakeet could not start. Using basic offline speech.')
+            startup_notice('Parakeet could not start. Using basic offline speech.')
     utterance = bytearray()
     if PREFERENCES.get('dictation_type')=='ai-based' and parakeet is None:
-        speak('AI dictation is not available. Using basic offline speech. Reinstall the full app to restore the AI speech model.')
+        startup_notice('AI dictation is not available. Using basic offline speech. Reinstall the full app to restore the AI speech model.')
     last_focus_check = 0.0
     with contextlib.ExitStack() as input_lifetime:
         if input_stream:input_lifetime.callback(close_microphone,input_stream)
         from app_updates import AppUpdates
         UPDATES = AppUpdates(APP, APP_VERSION, Path(getattr(sys, '_MEIPASS', Path(__file__).parent)))
-        mode = startup_update_mode()
-        mode = __import__('chrome_setup').startup_request(sys.modules[__name__],mode)
-        if MICROPHONE_OFF and mode=='sleep':
-            # Nobody can say "wake up" with the microphone off: start on the main menu.
-            mode='awake';SLEEP_RETURN_MODE='awake'
+        # One announcement, in one order, on every startup path (startup_speech.py):
+        # version, update result, notices, microphone and how to use it, where you are.
+        mode = announce_startup()
         sync_app_context(mode,True)
         # Keys must reach this window at once (Thunderbird or the installer may have the foreground).
         if APP_WINDOW is not None and hasattr(APP_WINDOW,'reclaim_focus'):APP_WINDOW.reclaim_focus()
         start_freeze_watch()
-        # On the main menu the ready message already said so; a question asked first says it here.
-        if MICROPHONE_OFF and mode!='awake':speak(MICROPHONE_STILL_OFF)
-        elif input_stream is None:speak('The microphone could not open. Voice commands are disabled. Keyboard navigation is available. Check the Windows input device and microphone permissions, then restart Companion.')
         # Listen and process keys while the asynchronous startup speech plays.
-        result_file = APP / 'update-result.json'
-        if result_file.exists():
-            try:
-                result = json.loads(result_file.read_text(encoding='utf-8-sig'))
-                speak('The update needs a Windows restart to finish. Ask your trainer to restart when convenient.' if result.get('restart_required') else 'Voice Companion was updated successfully.' if result.get('succeeded') else 'The update did not finish. You can keep using the app or ask your trainer for help.')
-            except (OSError, ValueError): pass
-            try: result_file.unlink(missing_ok=True)
-            except OSError: pass
-        # Gmail and Microsoft accounts connected directly by older versions are removed, said once.
-        retire_old_mail_accounts()
         settings_quiet_until=0
         settings_audio_blocked=False
         web_refresh=RefreshPacer();startup_speaking=True;startup_quiet_until=time.monotonic()+.3
@@ -4778,6 +4856,7 @@ def main():
                 microphone_retry_at=time.monotonic()+2
                 input_stream=open_microphone(sd,attempts=1)
                 if input_stream:
+                    MICROPHONE_FAILED=False
                     input_lifetime.callback(close_microphone,input_stream)
                     recognizer.Reset();utterance.clear()
                     # F9 already said Microphone on; say it here only when the microphone came back by itself.

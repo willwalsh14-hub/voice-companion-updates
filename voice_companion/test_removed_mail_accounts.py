@@ -242,11 +242,13 @@ class StartupAnnouncementTests(CompanionTestCase):
 
     def test_main_runs_it_at_startup(self):
         import inspect
-        source = inspect.getsource(companion.main)
+        # main() says the one startup announcement through announce_startup().
+        self.assertIn('announce_startup()', inspect.getsource(companion.main))
+        source = inspect.getsource(companion.announce_startup)
         self.assertIn('retire_old_mail_accounts()', source)
         # After the update result, before the listening loop starts.
         self.assertLess(source.index("result_file = APP / 'update-result.json'"), source.index('retire_old_mail_accounts()'))
-        self.assertLess(source.index('retire_old_mail_accounts()'), source.index('while True:'))
+        self.assertLess(source.index('retire_old_mail_accounts()'), source.index('speak(startup_speech.announcement('))
 
 
 class OldDraftTests(CompanionTestCase):
