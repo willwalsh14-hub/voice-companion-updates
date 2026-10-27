@@ -403,7 +403,7 @@ def open_record(m, record):
     if suffix in SUPPORTED or suffix in DOCUMENT_TYPES:
         # A downloaded document is read in the Document reader, Word files too;
         # it is not opened for editing. Escape there comes back to this list.
-        from document_reader import open_document
+        from document_reader import open_document, DAMAGED
         from file_manager import FileManager
         nav.picker = None
         nav.reader_return, OPENED = MODE, path
@@ -418,7 +418,8 @@ def open_record(m, record):
                 FAILED_OPEN = path
                 if isinstance(exc, (ValueError, OSError)) and str(exc):
                     raise
-                raise ValueError(path.name + ' could not be opened. The file may be damaged.') from exc
+                # The same words the Document reader uses for a damaged file.
+                raise ValueError(DAMAGED) from exc
         m.speak(m.FILE_MANAGER.start_job(read, m.FILE_MANAGER.finish_open, 'Opening ' + path.name + '.'))
         return 'files'
     if suffix in downloads.PROGRAM_TYPES:
