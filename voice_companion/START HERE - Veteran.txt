@@ -630,7 +630,7 @@ You can open Options while you read. When you save Options, you return to the re
 The Word processor makes files that Microsoft Word can open. You do not need Word installed.
 Choose Word processor on the main menu to open its menu. It has these choices:
 - Create a document, or press Control+N. This starts a blank file.
-- Open a document, or press Control+O. This starts at the drive list.
+- Open a document, or press Control+O. This starts at the File manager start place. That is the drive list unless you changed it.
 - Recent documents, or press Control+R. This lists files you used in the app.
 - Options, or press Alt+O. This opens Word processor options.
 For help, say "Help with documents", or press F1 in the Word processor menu.
@@ -911,7 +911,7 @@ For help, say "Help with writing email", or press F1.
 - To hear your saved drafts, say "List email drafts".
 - To reopen a saved draft, say "Open email draft", or press D in the inbox. Use the arrows to choose a draft, then press Enter.
 - To open a draft by name, say "Open email draft", followed by its name, such as "Open email draft Untitled".
-- To save the draft and go to the main menu, say "Leave email".
+- To save the draft and close it, say "Leave email". You go back to your email, or to the main menu if email was not open.
 To leave an unsent draft and throw away its changes, say "Cancel", "Cancel draft", or "Back to inbox", or press Escape. This works in a new message, a reply, a reply to all, or a forward, from any part of the draft.
 Save the draft first if you want to keep it. Canceling cannot take back a message already sent. If you reopened a saved draft, canceling keeps its earlier saved copy.
 
