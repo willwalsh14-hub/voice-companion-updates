@@ -2,6 +2,7 @@
 the main menu, updates and the menus' names. Each test failed before its fix."""
 import queue
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import companion
@@ -136,6 +137,86 @@ class DialogWordTests(CompanionTestCase):
         source = inspect.getsource(native_settings.NativeSettings._run)
         self.assertIn("self.session.category_name()+' dialog. '", source)
         self.assertIn('last_focus[0]=focused_control()', source)
+
+
+class MainMenuWhereAmITests(CompanionTestCase):
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(MAIN_MENU_INDEX=None, MICROPHONE_OFF=False, MICROPHONE_FAILED=False).items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_where_am_i_names_the_main_menu_and_the_item(self):
+        # It used to give the general "I can write a note..." prompt.
+        self.assertEqual(companion.handle('Where am I?', 'awake'), 'awake')
+        self.assertEqual(self.said[-1], 'Main menu. The microphone is on.')
+        companion.handle('next', 'awake')
+        companion.MICROPHONE_OFF = True
+        companion.handle('where am i', 'awake')
+        self.assertEqual(self.said[-1], 'Main menu. File manager (F), 1 of 15. The microphone is off, as you left it. Press F9 to turn it on.')
+
+
+class UnknownWordsOnLaunchMenusTests(CompanionTestCase):
+    """A word the app does not understand used to throw you out to the main menu from
+    Word processor, Notepad, Document reader, Media and the Media player, with a long
+    unrelated prompt, and stopped a file playing in the player."""
+    SCREENS = (('word processor', 'word_processor', 'Word processor menu'),
+               ('notepad', 'notepad_menu', 'Notepad menu'),
+               ('document reader', 'reader_menu', 'Document reader menu'),
+               ('media', 'media_menu', 'Media menu'),
+               ('media player', 'local_media', 'Media player'))
+
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(TASK_NAV=None, NAMED_LIST=None, FILE_READER=None, FILE_MANAGER=None).items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_an_unknown_word_keeps_you_where_you_are(self):
+        for command, mode, name in self.SCREENS:
+            with self.subTest(screen=mode):
+                companion.TASK_NAV = None
+                self.assertEqual(companion.handle(command, 'awake'), mode)
+                self.said.clear()
+                self.assertEqual(companion.handle('banana bread', mode), mode)
+                self.assertEqual(self.said, ['I did not understand that. You are on the ' + name + '. Press F1 for help.'])
+
+    def test_main_menu_from_a_launch_menu_says_main_menu_once(self):
+        for command, mode, name in self.SCREENS:
+            with self.subTest(screen=mode):
+                companion.TASK_NAV = None
+                companion.handle(command, 'awake')
+                self.said.clear()
+                self.assertEqual(companion.handle('main menu', mode), 'awake')
+                self.assertEqual(self.said, [companion.MAIN_MENU_PROMPT])
+
+    def test_the_main_menu_still_explains_what_you_can_do(self):
+        companion.handle('banana bread', 'awake')
+        self.assertTrue(self.said[-1].startswith('I can write a note or document'), self.said)
+
+
+class UpdaterStateTests(unittest.TestCase):
+    def test_a_failed_download_or_handoff_leaves_the_updater_idle(self):
+        import tempfile, threading, time
+        from app_updates import AppUpdates
+        with tempfile.TemporaryDirectory() as folder:
+            updates = AppUpdates(folder, '0.2.170-test', folder)
+            updates.release = {'version': '9.9.9', 'installer_url': 'https://example.invalid/s.exe', 'sha256': '0' * 64, 'size': 10}
+            with mock.patch('app_updates.download_release', side_effect=OSError('offline')):
+                self.assertTrue(updates.download())
+                self.assertEqual(updates.events.get(timeout=5), ('download_failed', None))
+            self.assertEqual(updates.phase, 'idle')
+            with mock.patch.object(updates, 'launch', side_effect=RuntimeError('no handoff')):
+                self.assertTrue(updates.begin_install(Path(folder) / 'x.exe', updates.release))
+                self.assertEqual(updates.events.get(timeout=5), ('install_failed', None))
+            self.assertEqual(updates.phase, 'idle')
+            self.assertFalse(updates.busy)
+
+
+class UpdateWhileInstallingTests(CompanionTestCase):
+    def test_cancel_while_installing_does_not_promise_sleep_mode(self):
+        service = mock.Mock(phase='preparing', percent=100)
+        with mock.patch.object(companion, 'UPDATES', service):
+            companion.handle('cancel update', 'update_download')
+        self.assertEqual(self.said[-1], 'The update is being installed and cannot be canceled now. Voice Companion will close and reopen when it finishes.')
 
 
 if __name__ == '__main__':

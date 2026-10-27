@@ -4182,6 +4182,18 @@
 ],
 "screen_after": "help"
 },
+"awake | where am i": {
+"said": [
+"Main menu. The microphone is on."
+],
+"screen_after": "awake"
+},
+"awake | where am i now": {
+"said": [
+"Main menu. The microphone is on."
+],
+"screen_after": "awake"
+},
 "awake | where are my documents": {
 "said": [
 "Your Word documents are in Documents, Voice Companion. The full location is <DATA>/data/Documents."
@@ -10507,6 +10519,24 @@
 "screen_after": "help",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | where am i": {
+"said": [
+"Paragraph 1 of 1. Hello world. Second sentence."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | where am i now": {
+"said": [
+"where am i now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. where am i now"
 ]
 },
 "document | where are my documents": {
@@ -17080,6 +17110,24 @@
 "Hello world."
 ]
 },
+"email_draft | where am i": {
+"said": [
+"Paragraph 1 of 1. Hello world."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | where am i now": {
+"said": [
+"where am i now"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. where am i now"
+]
+},
 "email_draft | where are my documents": {
 "said": [
 "Your Word documents are in Documents, Voice Companion. The full location is <DATA>/data/Documents."
@@ -20327,6 +20375,14 @@
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
+"screen_after": "help"
+},
+"help | where am i": {
+"said": [],
+"screen_after": "help"
+},
+"help | where am i now": {
+"said": [],
 "screen_after": "help"
 },
 "help | where are my documents": {
@@ -25954,6 +26010,24 @@
 ],
 "screen_after": "help"
 },
+"mailbox | where am i": {
+"calls": [
+"call.process('where am i')"
+],
+"said": [
+"session handled: where am i"
+],
+"screen_after": "mailbox"
+},
+"mailbox | where am i now": {
+"calls": [
+"call.process('where am i now')"
+],
+"said": [
+"session handled: where am i now"
+],
+"screen_after": "mailbox"
+},
 "mailbox | where are my documents": {
 "said": [
 "Your Word documents are in Documents, Voice Companion. The full location is <DATA>/data/Documents."
@@ -30297,6 +30371,18 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"note | where am i": {
+"said": [
+"where am i"
+],
+"screen_after": "note"
+},
+"note | where am i now": {
+"said": [
+"where am i now"
+],
+"screen_after": "note"
 },
 "note | where are my documents": {
 "said": [
@@ -36503,6 +36589,26 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"web | where am i": {
+"calls": [
+"call.command('where am i')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: where am i"
+],
+"screen_after": "web"
+},
+"web | where am i now": {
+"calls": [
+"call.command('where am i now')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: where am i now"
+],
+"screen_after": "web"
 },
 "web | where are my documents": {
 "said": [

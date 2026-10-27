@@ -896,7 +896,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -3330,7 +3330,7 @@ def _handle(text, mode, typed=False):
             return mode
     if mode == 'update_download' and spoken_control(update_command) != 'exit':
         if UPDATES.phase in ('preparing','installing'):
-            speak('Preparing installation. Voice Companion will reopen in sleep mode.')
+            speak('The update is being installed and cannot be canceled now. Voice Companion will close and reopen when it finishes.')
             return mode
         if update_command in ('cancel', 'cancel update', 'stop update', 'no'):
             UPDATES.canceled.set()
@@ -3992,6 +3992,11 @@ def _handle(text, mode, typed=False):
                                  'write a message', 'compose a message', 'new message', 'send a message',
                                  'write a new message', 'compose a new message', 'write mail')
                      or bool(re.fullmatch(r'(?:write|compose|create|start|draft)(?:\s+(?:a|an|new|another|write))*\s+(?:e[ -]?mail|email|message)(?:\s+draft)?', command)))
+    if mode == 'awake' and command in ('where am i', 'where am i now'):
+        # The place, the item you are on, and whether anything is listening.
+        speak('Main menu. '+(announce_item(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(MAIN_MENU_CHOICES))+' ' if MAIN_MENU_INDEX is not None else '')
+              +__import__('startup_speech').MICROPHONE[microphone_state()])
+        return mode
     if mode == 'awake' and command in ('next', 'previous'):
         MAIN_MENU_INDEX = bounded_index(MAIN_MENU_INDEX,1 if command=='next' else -1,len(MAIN_MENU_CHOICES))
         speak(announce_item(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(MAIN_MENU_CHOICES)))
@@ -4473,6 +4478,12 @@ def _handle(text, mode, typed=False):
         SEARCH_RETURN_MODE='awake'
         speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
         return 'search'
+    if mode in ('word_processor','notepad_menu','reader_menu','media_menu','local_media','recent_documents','reader_recent'):
+        # Nothing above understood the words. A misheard word must not throw you out of
+        # this menu (or stop the file playing): stay, and say where you are.
+        if command in ('main menu','back to main menu','go to main menu'):return 'awake'   # handle() says Main menu
+        speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
+        return mode
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 

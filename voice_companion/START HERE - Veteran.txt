@@ -1841,7 +1841,7 @@ To stop the download, say "Cancel update".
 - You hear progress at each five percent step. "Status" works even while a progress message is read.
 The app checks the downloaded file before using it. Windows may still need your helper for a security question.
 During setup, a separate update window opens. Its microphone listens for "Status" or "Update status". You can also press Enter, or the Status button, to hear progress. If Windows cannot open the microphone, the window stays open and keeps trying.
-When setup finishes, you hear "Installation complete, restarting Voice Companion." The whole message plays before the app restarts. Companion opens asleep. Say "Wake up" or use the keyboard when you are ready.
+When setup finishes, you hear "Installation complete, restarting Voice Companion." The whole message plays before the app restarts. Companion then says its new version, that the update worked, and whether the microphone is on. Say "Wake up" or use the keyboard when you are ready. If the microphone is off, Companion opens on the main menu.
 Your accounts and documents stay in their usual folders. The installer also updates the guides.
 Companion does not force Windows to restart. It tells you if a restart is needed.
 
