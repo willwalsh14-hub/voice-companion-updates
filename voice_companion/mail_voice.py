@@ -56,6 +56,9 @@ class MailSession:
         self.folder_choice = None
         self.list_size = 10
         self.all_messages = False
+        # The open message's files ([] none, None unknown) and the (id, folder) they belong to.
+        self.attachments = None
+        self.attachments_for = None
         try:
             setting = (Path(folder) / 'email-list-size.txt').read_text(encoding='utf-8').strip()
             self.all_messages = setting == 'all'
@@ -410,6 +413,9 @@ class MailSession:
         body = self.client().read_message(row['id'], self.folder_id)
         self.current = number
         self.view = 'message'
+        found = getattr(body, 'attachments', None)
+        self.attachments = found if isinstance(found, list) else None
+        self.attachments_for = (row['id'], self.folder_id)
         self.body_content=body or ''
         self.body_format=None
         import json
@@ -418,7 +424,14 @@ class MailSession:
         self.set_format(format)
         self.body_offset = 0
         self.reading.set_text(self.body_text, reset=True)
-        return self._next_body()
+        return self._attachment_note() + self._next_body()
+
+    def _attachment_note(self):
+        """Said before the message: its files, with names and sizes."""
+        if not self.attachments:
+            return ''
+        from mail_attachments import summary
+        return summary(self.attachments) + ' Press L to list them. '
 
     def set_format(self,format):
         if getattr(self,'body_format',None)==format or not hasattr(self,'body_content'):return
@@ -554,7 +567,9 @@ class MailSession:
                 command += ' message'
             if command in ('message details','who is this from','read message details') and (self.view == 'message' or self.rows and self.current):
                 # In the list this repeats the summary of the message you are on.
-                return self._summary(self.current)
+                from mail_attachments import summary
+                files = ' ' + summary(self.attachments) if self.view == 'message' and self.attachments else ''
+                return self._summary(self.current) + files
             if self.view=='message' and command in ('next link','previous link','next button','previous button'):
                 direction,role=command.split();return self.message_element(role,-1 if direction=='previous' else 1)
             if self.view=='message' and command in ('activate current element','activate current link','activate current button','open current link','open current button'):

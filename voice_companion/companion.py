@@ -280,6 +280,7 @@ def app_context(mode):
         if not FILE_MANAGER.menu and not FILE_MANAGER.pending and not FILE_MANAGER.busy:context['file_selected_indices']=[i for i,item in enumerate(FILE_MANAGER.items) if item.path in FILE_MANAGER.selected]
         context['file_index']=(0 if CONFIRM_CHOICE=='yes' else 1) if context.get('confirmation') is not None else FILE_MANAGER.menu_index if FILE_MANAGER.menu else FILE_MANAGER.index
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
+    if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
         context['menu_letters']=not context['browser_name_input']
@@ -601,6 +602,7 @@ def menu_state(mode):
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
     if mode=='downloads':return __import__('download_screen').menu_state(sys.modules[__name__])
+    if mode=='attachments':return __import__('attachment_screen').menu_state(sys.modules[__name__])
     task_state=task_navigation().state(mode)
     if task_state is not None:return task_state
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
@@ -724,6 +726,7 @@ def _navigation_key(key,mode):
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if direct:return direct
     if mode=='downloads':return __import__('download_screen').navigation_key(sys.modules[__name__],key)
+    if mode=='attachments':return __import__('attachment_screen').navigation_key(sys.modules[__name__],key)
     if mode=='update_download':
         return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
@@ -871,7 +874,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -2425,8 +2428,7 @@ def handle_mailbox_screen(text, command, mode, typed):
                               if context['action'] == 'forward' else
                               'Recipient ' + email_draft.recipient +
                               ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
-            attachment_note = (' Original attachments are not included in this forward.'
-                               if context['action'] == 'forward' else '')
+            attachment_note = forward_attachment_note(context)
             speak('New ' + command + ' draft. ' + recipient_note +
                   'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
             focus_email_entry()
@@ -2451,6 +2453,20 @@ def handle_mailbox_screen(text, command, mode, typed):
         return 'awake'
     speak(mail_session.process(text))
     return 'mailbox'
+
+
+def forward_attachment_note(context):
+    """What a new forward says about the original's files."""
+    if context.get('action') != 'forward':
+        return ''
+    found = context.get('original_attachments')
+    if not isinstance(found, list):
+        return ' Voice Companion could not check the original attachments, so they may not be included.'
+    if not found:
+        return ''
+    from mail_attachments import count_words, names
+    return (' The original ' + count_words(len(found)) + ' go with it: ' + names(found) + '.' if len(found) > 1 else
+            ' The original attachment goes with it: ' + names(found) + '.')
 
 
 EMAIL_LINK_RECIPIENT = None
@@ -2967,6 +2983,9 @@ def _handle(text, mode, typed=False):
         # The Downloads screen, and "download manager" from the web (download_screen.py).
         download_result=__import__('download_screen').handle(sys.modules[__name__],text,mode,typed)
         if download_result is not None:return download_result
+        # Email attachments: the Attachments list, attaching, saving (attachment_screen.py).
+        attachment_result=__import__('attachment_screen').handle(sys.modules[__name__],text,mode,typed)
+        if attachment_result is not None:return attachment_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
     # A whole command only; in a document, email or note these words are text.
@@ -3430,9 +3449,18 @@ def _handle(text, mode, typed=False):
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)
+        if result.startswith('__attach__:'):
+            # Enter while picking a file to attach, or the menu's Email this file and Attach to draft.
+            screen=__import__('attachment_screen')
+            try:
+                if result=='__attach__:picked':return screen.picked(sys.modules[__name__])
+                return screen.files_command(sys.modules[__name__],result[len('__attach__:'):],mode) or mode
+            except (screen.AttachmentError,ValueError,OSError) as exc:
+                speak(str(exc));return mode
         if result=='__main__':
             picker=task_navigation().picker
             task_navigation().picker=None
+            if picker=='attach':return __import__('attachment_screen').picker_closed(sys.modules[__name__])
             # Escape from the drive list: Open a media file returns to the Media menu.
             if picker=='reader':return task_navigation().enter('reader_menu','Document reader')
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
@@ -3448,6 +3476,9 @@ def _handle(text, mode, typed=False):
             if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
+                if back:return back
+            if task_navigation().reader_return=='attachments':
+                back=__import__('attachment_screen').reader_back(sys.modules[__name__])
                 if back:return back
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
         if command in ('main menu','back to main menu'):
@@ -4023,12 +4054,22 @@ def _handle(text, mode, typed=False):
                 context = email_draft.response_context
                 source_note = ('. This ' + context['action'].replace('_', ' ') +
                                ' uses the original message in your mailbox' +
-                               ('. Original attachments are not included' if context['action'] == 'forward' else '')
+                               ('. Original attachments may not be included'
+                                if context['action'] == 'forward' and not isinstance(context.get('original_attachments'), list) else '')
                                if context else '')
+                from mail_attachments import count_words, limit_warning, missing, missing_message, names, total_size
+                files = email_draft.all_attachments()
+                gone = missing(files)
+                if gone:
+                    pending_send = None
+                    speak(missing_message(gone) + ' The draft is saved.')
+                    return mode
+                attached = ('. With ' + count_words(len(files)) + ': ' + names(files) if files else '')
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
-                      copied + '. Subject ' + (subject or 'no subject') + '. Message: ' + (body or 'no message body') + source_note +
-                      '. Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
+                      copied + '. Subject ' + (subject or 'no subject') + attached + '. Message: ' + (body or 'no message body') + source_note +
+                      '.' + limit_warning(total_size(files)) +
+                      ' Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
                 reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
                 speak(reason+' The draft is saved locally. It has not been sent.')

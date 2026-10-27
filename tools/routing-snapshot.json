@@ -310,6 +310,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | attach": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | attachments": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | audio tutorial": {
 "said": [
 "Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
@@ -1222,7 +1234,7 @@
 },
 "awake | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -4668,6 +4680,24 @@
 "Hello world. Second sentence. at"
 ]
 },
+"document | attach": {
+"said": [
+"attach"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. attach"
+]
+},
+"document | attachments": {
+"said": [
+"attachments"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. attachments"
+]
+},
 "document | audio tutorial": {
 "said": [
 "Say main menu first, then start tutorial. This protects what you are working on."
@@ -6025,7 +6055,7 @@
 },
 "document | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -10845,6 +10875,24 @@
 "Hello world. at"
 ]
 },
+"email_draft | attach": {
+"said": [
+"attach"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. attach"
+]
+},
+"email_draft | attachments": {
+"said": [
+"attachments"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. attachments"
+]
+},
 "email_draft | audio tutorial": {
 "said": [
 "Say main menu first, then start tutorial. This protects what you are working on."
@@ -12319,7 +12367,7 @@
 },
 "email_draft | email help": {
 "said": [
-"Write An Email. Start a new message (S), 1 of 5.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write An Email. Start a new message (S), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -16954,6 +17002,14 @@
 "said": [],
 "screen_after": "help"
 },
+"help | attach": {
+"said": [],
+"screen_after": "help"
+},
+"help | attachments": {
+"said": [],
+"screen_after": "help"
+},
 "help | audio tutorial": {
 "said": [
 "Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
@@ -20072,6 +20128,26 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | attach": {
+"calls": [
+"call.process('attach')"
+],
+"said": [
+"session handled: attach"
+],
+"screen_after": "mailbox"
+},
+"mailbox | attachments": {
+"calls": [
+"call.rows.__bool__()",
+"call.current.__bool__()",
+"call.current.__sub__(1)"
+],
+"said": [
+"The attachments of this message could not be listed. Try again."
+],
+"screen_after": "mailbox"
+},
 "mailbox | audio tutorial": {
 "said": [
 "Say main menu first, then start tutorial. This protects what you are working on."
@@ -21299,7 +21375,7 @@
 },
 "mailbox | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -25503,6 +25579,18 @@
 ],
 "screen_after": "note"
 },
+"note | attach": {
+"said": [
+"attach"
+],
+"screen_after": "note"
+},
+"note | attachments": {
+"said": [
+"attachments"
+],
+"screen_after": "note"
+},
 "note | audio tutorial": {
 "said": [
 "Say main menu first, then start tutorial. This protects what you are working on."
@@ -26412,7 +26500,7 @@
 },
 "note | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -29729,6 +29817,26 @@
 ],
 "screen_after": "web"
 },
+"web | attach": {
+"calls": [
+"call.command('attach')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: attach"
+],
+"screen_after": "web"
+},
+"web | attachments": {
+"calls": [
+"call.command('attachments')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: attachments"
+],
+"screen_after": "web"
+},
 "web | audio tutorial": {
 "said": [
 "Say main menu first, then start tutorial. This protects what you are working on."
@@ -31071,7 +31179,7 @@
 },
 "web | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },

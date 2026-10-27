@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 606
-- Already had both ways: 482
-- Gaps found: 124
-- Gaps fixed (Added): 116
+- Actions inventoried: 622
+- Already had both ways: 494
+- Gaps found: 128
+- Gaps fixed (Added): 120
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -231,6 +231,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Sort descending"
 - Keyboard: Alt+Z
+- Status: Both
+
+### Email this file
+
+- Voice: "Email this file"
+- Keyboard: Ctrl+N
+- Status: Both
+
+### Attach to open email draft
+
+- Voice: "Attach to draft"
+- Keyboard: Ctrl+T
 - Status: Both
 
 ### Main menu
@@ -2007,6 +2019,26 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 8, 4
 - Status: Added: Alt menu path
 
+## Alt menu, Email: Attachments
+
+### List attachments
+
+- Voice: "List attachments"
+- Keyboard: L
+- Status: Both
+
+### Save all attachments
+
+- Voice: "Save all attachments"
+- Keyboard: Alt, 9, 2
+- Status: Added: Alt menu path
+
+### Open attachment
+
+- Voice: "Open attachment"
+- Keyboard: Alt, 9, 3
+- Status: Added: Alt menu path
+
 ## Alt menu, Email draft: Message
 
 ### Send
@@ -2116,6 +2148,26 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Help with writing email"
 - Keyboard: F1
 - Status: Both
+
+## Alt menu, Email draft: Attachments
+
+### Attach a file
+
+- Voice: "Attach a file"
+- Keyboard: Ctrl+T
+- Status: Both
+
+### List attachments
+
+- Voice: "List attachments"
+- Keyboard: Ctrl+L
+- Status: Both
+
+### Remove an attachment
+
+- Voice: "Remove attachment"
+- Keyboard: Alt, 5, 3
+- Status: Added: Alt menu path
 
 ## Alt menu, Notepad: Notepad
 
@@ -2448,6 +2500,56 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Main menu"
 - Keyboard: Alt, 9
 - Status: Added: Alt menu path
+
+## Alt menu, Attachments: Attachment
+
+### Open
+
+- Voice: "Open attachment"
+- Keyboard: Enter
+- Status: Both
+
+### Save in Downloads
+
+- Voice: "Save attachment"
+- Keyboard: Ctrl+S
+- Status: Both
+
+### Save to a folder
+
+- Voice: "Save attachment to folder"
+- Keyboard: Alt, 3
+- Status: Added: Alt menu path
+
+### Save all
+
+- Voice: "Save all attachments"
+- Keyboard: Ctrl+Shift+S
+- Status: Both
+
+### Remove from this email
+
+- Voice: "Remove attachment"
+- Keyboard: Delete
+- Status: Both
+
+### Attach another file
+
+- Voice: "Attach a file"
+- Keyboard: Ctrl+T
+- Status: Both
+
+### Attachments help
+
+- Voice: "Help with attachments"
+- Keyboard: F1
+- Status: Both
+
+### Close the list
+
+- Voice: "Close attachments"
+- Keyboard: Escape
+- Status: Both
 
 ## Alt menu, Document reader: Read
 
