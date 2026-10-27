@@ -2,7 +2,7 @@
 import unittest
 from datetime import date, datetime, time
 
-from spoken_dates import number, parse_day, parse_when, spoken_day
+from spoken_dates import missing_date, number, only_day, parse_day, parse_when, spoken_day
 
 NOW = datetime(2026, 10, 26, 9, 15)     # a Monday morning
 TODAY = NOW.date()
@@ -25,6 +25,13 @@ class SpokenDayTests(unittest.TestCase):
             with self.subTest(words=words):
                 self.assertEqual(parse_day(words, TODAY), expected)
 
+    def test_last_and_previous_weekdays_go_back(self):
+        # "last Friday" was read as the coming Friday.
+        for words, expected in (('last Friday', date(2026, 10, 23)), ('previous Monday', date(2026, 10, 19)),
+                                ('last Sunday', date(2026, 10, 25)), ('this past Tuesday', date(2026, 10, 20))):
+            with self.subTest(words=words):
+                self.assertEqual(parse_day(words, TODAY), expected)
+
     def test_month_and_day_in_many_spoken_forms(self):
         for words in ('October 30', 'october 30th', 'Oct. 30', 'October thirtieth', 'the 30th of October', '30 October',
                       'thirtieth of October', 'the 30th', '10/30', '10/30/2026', 'Go to October 30.', "What's on October 30?"):
@@ -41,9 +48,30 @@ class SpokenDayTests(unittest.TestCase):
         self.assertEqual(parse_day('the 5th', TODAY), date(2026, 11, 5))
 
     def test_impossible_or_missing_dates(self):
-        for words in ('February 30', '13/40', 'hello there', '', 'the 45th', 'in 900 days'):
+        for words in ('February 30', '13/40', 'hello there', '', 'the 45th', 'in 900 days', '2026-02-30'):
             with self.subTest(words=words):
                 self.assertIsNone(parse_day(words, TODAY))
+
+    def test_a_typed_date_with_the_year_first_and_a_date_said_with_its_weekday(self):
+        # 2026-12-25 is how many programs write a date; "Friday, October 30" is how Companion says one.
+        self.assertEqual(parse_day('2026-12-25', TODAY), date(2026, 12, 25))
+        for words in ('Friday, October 30', 'Friday October 30th.', 'on Friday, October 30, 2026'):
+            with self.subTest(words=words):
+                self.assertEqual(only_day(words, TODAY), date(2026, 10, 30))
+        # Only a date counts: other words make it not a date.
+        for words in ('Friday lunch', 'October 30 dentist', 'banana', ''):
+            with self.subTest(words=words):
+                self.assertIsNone(only_day(words, TODAY))
+
+    def test_a_date_that_does_not_exist_is_named(self):
+        self.assertEqual(missing_date('February 30', TODAY), 'There is no February 30.')
+        self.assertEqual(missing_date('the 31st of November', TODAY), 'There is no November 31.')
+        self.assertEqual(missing_date('2/30/2027', TODAY), 'There is no February 30, 2027.')
+        self.assertEqual(missing_date('October 45', TODAY), 'There is no October 45.')
+        # February 29 exists only in a leap year: say which year has one.
+        self.assertEqual(missing_date('February 29', TODAY), 'February 29 is only in a leap year, such as 2028. Say the year too.')
+        for words in ('October 30', 'Friday', 'hello', ''):
+            self.assertEqual(missing_date(words, TODAY), '', words)
 
     def test_spoken_day_names_today_tomorrow_and_other_years(self):
         self.assertEqual(spoken_day(TODAY, TODAY), 'Today, Monday, October 26')

@@ -155,6 +155,83 @@
     return true;
   };
 
+  // Change a vCard's name (FN and N), first EMAIL or first TEL. Every other line is kept as it
+  // was, with its group and parameters (item1.EMAIL;TYPE=home). An empty email or phone removes
+  // that line. Undefined leaves it alone.
+  Bridge.editVcard = function (text, {name, email, phone}) {
+    const lines = String(text || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/).filter(line => line.trim());
+    const nameOf = line => {
+      const colon = line.indexOf(':');
+      if (colon < 1) return '';
+      const head = line.slice(0, colon).split(';')[0];
+      return head.slice(head.lastIndexOf('.') + 1).toUpperCase();
+    };
+    const head = line => line.slice(0, line.indexOf(':') + 1);
+    const endAt = () => {
+      const at = lines.findIndex(line => /^END:VCARD$/i.test(line.trim()));
+      return at < 0 ? lines.length : at;
+    };
+    // Replace the value of the first line with this name, add one before END:VCARD, or remove it.
+    const put = (property, value, fresh) => {
+      const at = lines.findIndex(line => nameOf(line) === property);
+      if (value === '') { if (at >= 0) lines.splice(at, 1); return; }
+      if (at >= 0) {
+        const kept = head(lines[at]);
+        lines[at] = kept + (property === 'TEL' && /;VALUE=uri/i.test(kept) ? 'tel:' : '') + escapeValue(value);
+      } else if (fresh) {
+        lines.splice(endAt(), 0, fresh + escapeValue(value));
+      }
+    };
+    if (!lines.length || !/^BEGIN:VCARD$/i.test(lines[0].trim())) lines.unshift('BEGIN:VCARD', 'VERSION:4.0');
+    if (!lines.some(line => /^END:VCARD$/i.test(line.trim()))) lines.push('END:VCARD');
+    if (typeof name === 'string') {
+      put('FN', name, 'FN:');
+      const at = lines.findIndex(line => nameOf(line) === 'N');
+      if (at >= 0) {
+        const parts = name.trim().split(/\s+/);
+        const family = parts.length > 1 ? parts.pop() : '';
+        lines[at] = head(lines[at]) + escapeValue(family) + ';' + escapeValue(parts.join(' ')) + ';;;';
+      }
+    }
+    if (typeof email === 'string') put('EMAIL', email, 'EMAIL;PREF=1:');
+    if (typeof phone === 'string') put('TEL', phone, 'TEL;VALUE=TEXT:');
+    return lines.join('\r\n') + '\r\n';
+  };
+
+  Bridge.prototype.updateContact = async function ({id, name, email, phone}) {
+    if (typeof id !== 'string' || !id) throw Bridge.fail('contact', 'That contact is not available.');
+    if (name !== undefined && (typeof name !== 'string' || !name.trim() || name.length > 100 || /[\r\n<>]/.test(name))) {
+      throw Bridge.fail('name', 'Use a shorter name without symbols.');
+    }
+    if (email !== undefined && (typeof email !== 'string' || email.length > 254 || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())))) {
+      throw Bridge.fail('address', 'That is not a complete email address.');
+    }
+    if (phone !== undefined && (typeof phone !== 'string' || phone.length > 40 || /[\r\n]/.test(phone))) {
+      throw Bridge.fail('phone', 'Use a shorter phone number.');
+    }
+    if (name === undefined && email === undefined && phone === undefined) throw Bridge.fail('contact', 'Nothing was changed.');
+    const {api, vcardOnly} = this.contactsApi();
+    let node = null;
+    try { node = await api.get(id); } catch (error) { node = null; }
+    if (!node) throw Bridge.fail('contact', 'That contact is no longer in Thunderbird.');
+    if (node.readOnly) throw Bridge.fail('contact', 'This address book cannot be changed, so the contact was not changed.');
+    const old = node.vCard || (node.properties || {}).vCard || '';
+    const changes = {name: name === undefined ? undefined : name.trim(), email: email === undefined ? undefined : email.trim(),
+      phone: phone === undefined ? undefined : phone.trim()};
+    let card;
+    if (old) {
+      card = Bridge.editVcard(old, changes);
+    } else {
+      // An old contact with no vCard: make one from what it has, with the changes.
+      const now = Bridge.contactFrom(node, null);
+      card = Bridge.vcard(changes.name !== undefined ? changes.name : now.name, changes.email !== undefined ? changes.email : (now.emails[0] || ''),
+        changes.phone !== undefined ? changes.phone : (now.phones[0] || ''), newUid());
+    }
+    if (vcardOnly) await api.update(id, card);
+    else await api.update(id, {vCard: card});
+    return true;
+  };
+
   // ---- Calendars (the voiceCompanionCalendar Experiment) ---------------------------
 
   Bridge.prototype.calendarApi = function () {
@@ -228,8 +305,67 @@
     return {all: Boolean(result.all)};
   };
 
+  // Change one event, one day of a repeating event (occurrence), or a whole repeating event (all).
+  // changes holds only what changes: title, location, notes; allDay with start and end (as for addEvent);
+  // calendarId to move it; or, for a whole repeating event, shift (minutes later or earlier, the same
+  // day) and length (minutes), so every day keeps its own date.
+  Bridge.prototype.modifyEvent = async function ({calendarId, id, occurrence = '', all = false, changes = {}}) {
+    if (typeof calendarId !== 'string' || !calendarId || typeof id !== 'string' || !id || typeof occurrence !== 'string' ||
+        !changes || typeof changes !== 'object') {
+      throw Bridge.fail('event', 'That event is not available.');
+    }
+    const clean = {};
+    if ('title' in changes) {
+      if (typeof changes.title !== 'string' || !changes.title.trim() || changes.title.length > 300) throw Bridge.fail('title', 'Give the event a shorter name.');
+      clean.title = changes.title.trim();
+    }
+    for (const [key, limit] of [['location', 300], ['notes', 4000]]) {
+      if (!(key in changes)) continue;
+      if (typeof changes[key] !== 'string' || changes[key].length > limit) throw Bridge.fail('details', 'The place or notes are too long.');
+      clean[key] = key === 'location' ? changes[key].trim() : changes[key];
+    }
+    if ('start' in changes || 'end' in changes || 'allDay' in changes) {
+      const {start, end} = changes;
+      const allDay = Boolean(changes.allDay);
+      if (allDay ? !(DAY.test(String(start)) && DAY.test(String(end)) && end > start)
+        : !(Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= MAX_RANGE_MS)) {
+        throw Bridge.fail('time', 'The event must end after it starts.');
+      }
+      Object.assign(clean, {allDay, start: String(start), end: String(end)});
+    }
+    if ('shift' in changes || 'length' in changes) {
+      if (!all) throw Bridge.fail('time', 'A new time for every day works only for a whole repeating event.');
+      const shift = 'shift' in changes ? changes.shift : 0;
+      const length = 'length' in changes ? changes.length : null;
+      if (!Number.isInteger(shift) || Math.abs(shift) >= 1440 || length !== null && !(Number.isInteger(length) && length > 0 && length <= 62 * 1440)) {
+        throw Bridge.fail('time', 'Every one of them must stay on the same day.');
+      }
+      if (shift) clean.shift = shift;
+      if (length !== null) clean.length = length;
+    }
+    if ('calendarId' in changes) {
+      if (typeof changes.calendarId !== 'string' || !changes.calendarId) throw Bridge.fail('calendar', 'Choose a calendar first.');
+      if (occurrence && !all) throw Bridge.fail('calendar', 'Only a whole repeating event can move to another calendar.');
+      if (changes.calendarId !== calendarId) clean.calendarId = changes.calendarId;
+    }
+    if (!Object.keys(clean).length) throw Bridge.fail('event', 'Nothing was changed.');
+    const calendar = this.calendarApi();
+    if (typeof calendar.modifyEvent !== 'function') {
+      throw Bridge.fail('calendar', 'The Thunderbird calendar is not available. Close Thunderbird, then try again.');
+    }
+    const result = await calendar.modifyEvent({calendarId, id, occurrence, all: Boolean(all), changes: clean});
+    if (!result || !result.modified) {
+      const reason = result && result.reason;
+      throw Bridge.fail('event', reason === 'missing' ? 'That event is no longer in the calendar.'
+        : reason === 'readonly' ? 'That calendar cannot be changed, so the event was not changed.'
+          : reason === 'series' ? 'Only a whole repeating event can move to another calendar.'
+            : 'Thunderbird could not save the change.');
+    }
+    return {id: String(result.id || id)};
+  };
+
   const reading = ['addressBooks', 'contacts', 'calendars', 'events'];
-  const changing = ['addContact', 'deleteContact', 'addEvent', 'deleteEvent'];
+  const changing = ['addContact', 'updateContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent'];
   for (const name of reading.concat(changing)) if (!Bridge.METHODS.includes(name)) Bridge.METHODS.push(name);
   // None of these change mail, so the kept message list stays valid.
   for (const name of reading.concat(changing)) if (!Bridge.READ_ONLY.includes(name)) Bridge.READ_ONLY.push(name);

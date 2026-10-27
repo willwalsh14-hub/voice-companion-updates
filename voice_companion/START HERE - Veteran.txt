@@ -97,14 +97,16 @@ Contents
   13.3 Email a contact
   13.4 Add a contact
   13.5 Find or delete a contact
-  13.6 Get your Google or Outlook contacts
+  13.6 Change a contact
+  13.7 Get your Google or Outlook contacts
 14 Calendar
   14.1 Open your calendar
   14.2 Move to another day
   14.3 Add an event
-  14.4 Delete an event
-  14.5 Ask what is on your calendar
-  14.6 Get your Google calendar
+  14.4 Change an event
+  14.5 Delete an event
+  14.6 Ask what is on your calendar
+  14.7 Get your Google calendar
 15 Browse The Web
   15.1 Open the web browser menu
   15.2 Search or open an address
@@ -1089,6 +1091,7 @@ Press Enter on a contact to open its details. If it has an email address, the fi
 - To go back to the list, press Escape.
 - To hear all the details at once, say "Read contact".
 - To hear only the phone numbers, say "Call details".
+- To change the contact, say "Edit contact", or press F2. See part 13.6.
 
 13.3 Email a contact
 - To email the contact you are on, say "Email contact", or press Control+E. A new email opens with the address filled in. Then Companion asks for the subject.
@@ -1105,6 +1108,7 @@ Press Enter on a contact to open its details. If it has an email address, the fi
 4. Type or say the phone number, then press Enter. To leave it out, press Enter.
 A contact needs an email address or a phone number. To stop, press Escape.
 When you use Thunderbird, the contact goes into Thunderbird. It goes into the address book for your email account, if Thunderbird has one. If not, it goes into Personal Address Book. Thunderbird then copies it to Google or Outlook. Without Thunderbird, the contact is saved on this computer.
+If a contact on this computer already has that name, Companion tells you and keeps it. To change that contact, see part 13.6.
 You can also say it all at once, such as "Add contact Bob as bob@example.com".
 
 13.5 Find or delete a contact
@@ -1112,7 +1116,17 @@ You can also say it all at once, such as "Add contact Bob as bob@example.com".
 - To delete the contact you are on, say "Delete contact", or press Delete. Companion asks first. No is chosen first. Press Up Arrow, then Enter, for Yes. You can also press Y or N.
 Some address books, such as a company list, cannot be changed. Companion tells you when a contact cannot be deleted.
 
-13.6 Get your Google or Outlook contacts
+13.6 Change a contact
+1. Move to the contact.
+2. Say "Edit contact", or press F2. You hear what you can change: the name, the email address, and the phone number.
+3. Use Up Arrow and Down Arrow, then press Enter. Or say what to change, such as "Phone".
+4. Type or say the new one, then press Enter. To remove an email address or phone number, press Enter with nothing typed, or say "None".
+5. Listen to the question. It names the change. Say "Yes" to save, or "No" to cancel. Yes is chosen first, so Enter saves.
+You can also say it all at once, such as "Rename contact to Bob Smith", "Change the email to bob at example dot com", or "Change the phone to 555 0100".
+If a contact has more than one email address or phone number, the first one changes. The others are kept. A contact needs an email address or a phone number, so Companion will not remove the last one.
+You can also press Enter on a contact, then choose Edit contact. Some address books, such as a company list, cannot be changed. Companion tells you when a contact cannot be edited.
+
+13.7 Get your Google or Outlook contacts
 Companion gets these contacts from Thunderbird. Thunderbird needs your account first. See part 10.4.
 When you add a Google account, Thunderbird offers to add its address book and calendar. Choose both.
 If your account is in Thunderbird but its contacts are missing, a helper can add them in Thunderbird:
@@ -1132,6 +1146,7 @@ Each event says its time, its name, and its calendar. For example: ten thirty AM
 - To hear the next event, say "Next event", or press Down Arrow.
 - To hear the previous event, say "Previous event", or press Up Arrow.
 - To hear the time, place, and notes, say "Read event", or press Enter.
+- To change the event, say "Edit event", or press F2. See part 14.4.
 - To go back to the main menu, say "Close calendar", or press Escape.
 A day with no events says No events. An event that goes past midnight is on both days.
 Press Alt to open the calendar menu. It lists every action with its key.
@@ -1143,7 +1158,9 @@ For help on this screen, say "Help with calendar", or press F1.
 - To go a week ahead, say "Next week", or press Page Down.
 - To go a week back, say "Previous week", or press Page Up.
 - To come back to today, say "Today", or press Home.
-- To go to any day, say "Go to", then the day. For example, say "Go to October 30" or "Go to Friday". You can also say "What's on Friday?" or "Tomorrow".
+- To go to any date, say "Go to date", or press Control+G. Then type or say the date, and press Enter. For example, "October 30", "Next Friday", "The 15th", "10/30", or "December 25, 2026".
+- You can also say it all at once, such as "Go to October 30" or "Go to Friday". You can also say "What's on Friday?" or "Tomorrow".
+If Companion cannot use the date, it says why and asks again. For example: There is no February 30. Press Escape to stop.
 
 14.3 Add an event
 1. Say "Add event", or press Control+N.
@@ -1156,18 +1173,36 @@ A time with no AM or PM means 7 to 11 in the morning, or 12 to 6 in the afternoo
 To use another calendar, say "Change calendar" before you say Yes. Companion remembers the calendar you used last.
 You can also say it all at once, from the main menu or the calendar. For example, say "Add appointment tomorrow at 3 PM called doctor".
 
-14.4 Delete an event
+14.4 Change an event
+1. Move to the event.
+2. Say "Edit event", or press F2. You hear what you can change: the name, the day and time, the length, all day, the place, the notes, and the calendar.
+3. Use Up Arrow and Down Arrow, then press Enter. Or say what to change, such as "Place".
+4. Type or say the new value, then press Enter.
+5. Listen to the question. It names the change. Say "Yes" to save, or "No" to cancel. Yes is chosen first, so Enter saves.
+You can also say it all at once. For example:
+- "Rename event to Dentist".
+- "Move event to Friday at 2". The event keeps its length.
+- "Change the time to 3 PM". The day stays the same.
+- "Change the date to Friday". The time stays the same.
+- "Change the place to VA clinic".
+- "Make it all day".
+For the length, say how long, such as "45 minutes". Or say when it ends, such as "Until 4 PM". For an all-day event, say a number of days.
+To remove the place or the notes, press Enter with nothing typed, or say "None".
+If the event repeats, Companion asks: this one, or all of them. Say "This one" to change only that day. Say "All" to change every one. When a repeating event moves to another day, only that one day moves. When it moves to another calendar, all of them move.
+Some calendars, such as a holiday calendar, cannot be changed. Companion tells you when an event cannot be edited.
+
+14.5 Delete an event
 1. Move to the event.
 2. Say "Delete event", or press Delete.
 3. Say "Yes" to delete it, or "No" to keep it. No is chosen first.
 If the event repeats, such as every week, Companion asks: this one, or all of them. Say "This one" to delete only that day. Say "All" to delete every one. Say "No" to keep it. You can also use the arrows and Enter.
 Some calendars, such as a holiday calendar, cannot be changed. Companion tells you when an event cannot be deleted.
 
-14.5 Ask what is on your calendar
+14.6 Ask what is on your calendar
 You can ask about a day from the main menu and most other screens. Your calendar does not need to be open. For example, say "What's on my calendar today?", "What's on my calendar tomorrow?", or "What do I have Friday?". You hear the day and each event.
 In a document, email, or note, these words are written as text.
 
-14.6 Get your Google calendar
+14.7 Get your Google calendar
 When you add a Google account, Thunderbird offers to add its calendar and address book. Choose both.
 If your account is in Thunderbird but its calendar is missing, a helper can add it in Thunderbird:
 1. Open the Calendar.

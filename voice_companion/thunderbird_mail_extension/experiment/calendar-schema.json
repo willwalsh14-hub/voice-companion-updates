@@ -1,7 +1,7 @@
 [
   {
     "namespace": "voiceCompanionCalendar",
-    "description": "Thunderbird's calendars for Voice Companion's Calendar screen: list calendars and events, add an event, delete an event. Times are milliseconds since 1970 (UTC); all-day dates are YYYY-MM-DD.",
+    "description": "Thunderbird's calendars for Voice Companion's Calendar screen: list calendars and events, add, change and delete events. Times are milliseconds since 1970 (UTC); all-day dates are YYYY-MM-DD.",
     "functions": [
       {
         "name": "listCalendars",
@@ -68,6 +68,38 @@
           {
             "name": "all",
             "type": "boolean"
+          }
+        ]
+      },
+      {
+        "name": "modifyEvent",
+        "type": "function",
+        "async": true,
+        "description": "Change an event, one day of a repeating event (occurrence), or all of them (all). changes holds only what changes; shift and length (minutes) are for a whole repeating event; calendarId moves the event. Resolves to {modified, id} or {modified: false, reason}.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "calendarId": {"type": "string"},
+              "id": {"type": "string"},
+              "occurrence": {"type": "string"},
+              "all": {"type": "boolean"},
+              "changes": {
+                "type": "object",
+                "properties": {
+                  "title": {"type": "string", "optional": true},
+                  "location": {"type": "string", "optional": true},
+                  "notes": {"type": "string", "optional": true},
+                  "allDay": {"type": "boolean", "optional": true},
+                  "start": {"type": "string", "optional": true},
+                  "end": {"type": "string", "optional": true},
+                  "shift": {"type": "integer", "optional": true},
+                  "length": {"type": "integer", "optional": true},
+                  "calendarId": {"type": "string", "optional": true}
+                }
+              }
+            }
           }
         ]
       }

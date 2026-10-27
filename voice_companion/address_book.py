@@ -48,6 +48,33 @@ class AddressBook:
         self._write(entries)
         return address
 
+    def replace(self, old_name, name, address, phone=''):
+        """Change a saved contact in one write, so a new name never leaves two copies or none.
+        Another contact's name is never taken over."""
+        name, phone, address = name.strip(), str(phone or '').strip(), str(address or '').strip()
+        if not name or len(name) > 80 or re.search(r'[\r\n<>]', name):
+            raise ValueError('Use a short contact name without symbols.')
+        if len(phone) > 40 or re.search(r'[\r\n]', phone):
+            raise ValueError('Use a shorter phone number.')
+        if not address and not phone:
+            raise ValueError('A contact needs an email address or a phone number.')
+        if address:
+            address = normalize_recipient(address)
+        entries = self.all()
+        old_key, new_key = old_name.strip().casefold(), name.casefold()
+        if old_key not in entries:
+            raise ValueError(old_name.strip() + ' is no longer in your contacts.')
+        if new_key != old_key and new_key in entries:
+            other = entries[new_key].get('name', name) if isinstance(entries[new_key], dict) else name
+            raise ValueError('There is already a contact named ' + str(other) + '.')
+        entry = {'name': name, 'address': address}
+        if phone:
+            entry['phone'] = phone
+        del entries[old_key]
+        entries[new_key] = entry
+        self._write(entries)
+        return address
+
     def delete(self, name):
         entries = self.all()
         if name.strip().casefold() not in entries: return False
