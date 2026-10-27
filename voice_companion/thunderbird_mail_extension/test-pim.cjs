@@ -315,6 +315,7 @@ function fakeCalendarManager() {
     },
     removeOccurrenceAt(rid) { cal.calls.push({removeOccurrenceAt: rid}); },
     modifyException(occurrence, owner) { cal.calls.push({modifyException: {item: occurrence, owner}}); },
+    onStartDateChange(newStart, oldStart) { cal.calls.push({onStartDateChange: [newStart.ms, oldStart.ms]}); },
     cloneFor(copy) { return recurrence(copy); },
   });
   const series = item({id: 'series', title: 'Walk', startDate: dateTime(Date.UTC(2026, 9, 26, 13)), endDate: dateTime(Date.UTC(2026, 9, 26, 14))});
@@ -451,6 +452,10 @@ async function experimentChecks() {
   await edit.modifyEvent({calendarId: 'g', id: 'series', occurrence: '', all: true, changes: {title: 'Walk', shift: 90, length: 45}});
   const whole = editing.cal.calls.at(-1).modifyItem[0];
   assert.deepEqual([whole.startDate.ms, whole.endDate.ms], [Date.UTC(2026, 9, 26, 14, 30), Date.UTC(2026, 9, 26, 15, 15)]);
+  // Days already deleted or changed move with the series, as when Thunderbird's own window changes the time;
+  // otherwise a deleted day would come back at the new time.
+  assert.deepEqual(editing.cal.calls.find(c => c.onStartDateChange).onStartDateChange,
+    [Date.UTC(2026, 9, 26, 14, 30), Date.UTC(2026, 9, 26, 13)]);
   // Moving a whole event to another calendar: added there first, then removed here, so it is never lost.
   editing.cal.calls.length = 0;
   assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'lunch', occurrence: '', all: false, changes: {calendarId: 'w'}})),

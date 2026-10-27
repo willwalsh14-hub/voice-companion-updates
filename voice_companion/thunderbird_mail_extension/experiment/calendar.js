@@ -182,8 +182,14 @@ function applyChanges(cal, item, changes) {
       : Math.round((millis(cal, item.endDate) - millis(cal, item.startDate)) / 60000);
     const end = start.clone();
     end.addDuration(duration(cal, minutes * 60, start.isDate));
+    const oldStart = item.startDate;
     item.startDate = start;
     item.endDate = end;
+    // Days already deleted or changed move too, as when Thunderbird's own window changes the time;
+    // otherwise a deleted day would come back at the new time.
+    if (changes.shift && item.recurrenceInfo && typeof item.recurrenceInfo.onStartDateChange === 'function') {
+      item.recurrenceInfo.onStartDateChange(start, oldStart);
+    }
   }
 }
 
