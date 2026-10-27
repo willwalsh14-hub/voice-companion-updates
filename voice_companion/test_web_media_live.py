@@ -168,5 +168,34 @@ class NestedListTests(LiveBrowser):
         self.assertNotIn('graphic', ' '.join(lines))
 
 
+ACCOUNT = """<title>Home</title><h1>Account</h1><p>Intro text.</p><button id="open" onclick="d.hidden=false;d.querySelector('button').focus()">Open settings</button><p>After button</p>
+<div id="d" role="dialog" aria-modal="true" aria-label="Settings" hidden><h2>Settings</h2><p>Choose things.</p>
+<button onclick="d.hidden=true;document.getElementById('open').focus()">Close</button></div>
+<script>const d=document.getElementById('d');d.addEventListener('keydown',e=>{if(e.key==='Escape'){d.hidden=true;document.getElementById('open').focus();}})</script>"""
+
+
+class DialogFocusTests(LiveBrowser):
+    def setUp(self):
+        self.context = self.browser.new_context(); self.addCleanup(self.context.close)
+        self.context.route('https://fixture.test/**', lambda route: route.fulfill(content_type='text/html', body=ACCOUNT))
+        self.page = self.context.new_page(); self.page.goto('https://fixture.test/', timeout=30000)
+        self.backend = BrowserBackend(tempfile.gettempdir()); self.backend.page = self.page; self.backend.context = self.context; self.backend.start = lambda: None
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, self.backend); self.session._refresh()
+
+    def test_a_dialog_says_it_opened_and_closing_it_returns_to_the_button_that_opened_it(self):
+        self.session.keyboard('Quick:b')
+        said = self.session.keyboard('Activate')
+        self.assertTrue(said.startswith('Dialog opened. Settings'), said)
+        self.assertNotIn('Page loaded', said)
+        # Escape closes it and the cursor is back on Open settings.
+        self.assertEqual(self.session.keyboard('Escape'), 'Dialog closed. Open settings, button.')
+        self.assertEqual(self.session.keyboard('Read:Down'), 'After button')
+        # The same when its Close button closes it.
+        self.session.keyboard('Read:Up'); self.session.keyboard('Activate')
+        self.session.keyboard('Quick:b')
+        self.assertEqual(self.session.keyboard('Activate'), 'Dialog closed. Open settings, button.')
+
+
 if __name__ == '__main__':
     unittest.main()

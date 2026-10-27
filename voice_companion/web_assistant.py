@@ -1677,7 +1677,7 @@ class WebSession:
                 if (self.snapshot or {}).get('modal_key'):
                     self.backend.page.keyboard.press('Escape')
                     result=self._refresh(read=False,wait=False)
-                    return ('Dialog remains open. Move to its Close button.' if self.snapshot.get('modal_key') else 'Dialog closed. '+result)
+                    return ('Dialog remains open. Move to its Close button.' if self.snapshot.get('modal_key') else result if 'Dialog closed.' in result else 'Dialog closed. '+result)
                 self.pending=None;self.submit_pending=None;return 'Leave website.'
             elif key in ('Activate','Space'):
                 if self.keyboard_field:return describe(self.keyboard_field)
@@ -1946,7 +1946,7 @@ class WebSession:
                 except Exception as exc:
                     if not navigation_interrupted(exc) or attempt==2:raise
                     if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
-        leaving=self.snapshot
+        leaving=self.snapshot;known_state=self.document_state or {}
         snapshot,captured_state = self._capture()
         if leaving and leaving.get('url')!=snapshot.get('url'):
             # Another page: keep the reading place here for Back and Forward.
@@ -2012,8 +2012,31 @@ class WebSession:
         if self.running_browser()=='webview2' and (urlsplit(url).hostname or '').lower()=='accounts.google.com':
             # Google blocks its own sign-in inside embedded browsers such as WebView2.
             dialog_notice=GOOGLE_SIGN_IN_NOTICE+'.'+(' '+dialog_notice if dialog_notice else '')
+        dialog=self._dialog_change(leaving,known_state,old_anchor,read)
+        if dialog:return (dialog_notice+' ' if dialog_notice else '')+dialog
         return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
+
+    def _dialog_change(self,leaving,known_state,old_anchor,read):
+        """What to say when a dialog on the same page opened or closed, or ''.
+
+        A dialog is not a new page. When it closes, the cursor goes back to the
+        control that opened it, as a screen reader returns focus there."""
+        if not leaving or leaving.get('url')!=self.snapshot.get('url') or known_state.get('epoch')!=(self.document_state or {}).get('epoch'):
+            self.dialog_opener=None;return ''
+        before,after=leaving.get('modal_key',''),self.snapshot.get('modal_key','')
+        if after and not before:
+            self.dialog_opener=old_anchor
+            text=self.reading.read(True) if (self.auto_read if read is None else read) else ''
+            return ('Dialog opened. '+text).strip()
+        if before and not after:
+            opener=getattr(self,'dialog_opener',None);self.dialog_opener=None
+            target=next((e for e in self.browse.elements if opener and e.get('key')==opener.get('key') and e.get('frame_index')==opener.get('frame_index')),None)
+            if target is None:return ''
+            self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0)
+            self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
+            return 'Dialog closed. '+describe(target,self.browse.elements)
+        return ''
 
     def refresh_changed(self):
         self.refresh_now=False

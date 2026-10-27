@@ -1609,7 +1609,7 @@ Then check the list again. Other plans and saved recordings stay in place.
 The podcast screen has an actions list and a results list. Tab and Shift+Tab move between them.
 - Use the arrows, Home, End, and first letters to choose.
 - Enter on a show opens its episodes. Enter on an episode or downloaded file plays it.
-- Escape goes from episodes to shows, then to actions, then to the main menu.
+- Escape goes from episodes to shows, then to actions, then to the Media menu.
 - Control+F searches. Control+Shift+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes your saved shows.
 - Alt moves you to the podcasts menu, which is the actions list. Press Alt again to go back to the results.
 - To move by voice, say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action".

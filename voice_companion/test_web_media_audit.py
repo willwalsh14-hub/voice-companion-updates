@@ -207,6 +207,24 @@ class MediaTests(unittest.TestCase):
             app.handle('search podcasts for news', 'media')
         self.assertTrue(said[-1].startswith('Found 1 podcasts. Podcast 1: Real show.'), said[-1])
 
+    def test_space_with_nothing_playing_says_so(self):
+        from media_navigation import MediaNavigation
+        for section in ('radio', 'podcast'):
+            nav = MediaNavigation(self.hub, section)
+            self.assertEqual(nav.keyboard('Space'), 'No audio is playing. Choose a station or episode first.')
+
+    def test_escape_from_podcast_episodes_steps_back_to_the_media_menu_as_the_guide_says(self):
+        app, said = self.companion('podcast')
+        self.hub.shows = [{'name': 'History', 'feed': 'https://pod.example/feed'}]; self.hub.show_index = 0
+        with patch.object(self.hub, '_feed_episodes', return_value=[{'title': 'One', 'url': 'https://pod.example/1.mp3', 'show': 'History', 'feed': 'https://pod.example/feed'}]):
+            app.handle('open podcast 1', 'media')
+        self.assertTrue(self.hub.browsing_episodes)
+        self.assertIsNone(app.navigation_key('Escape', 'media'))   # episodes to shows
+        self.assertIsNone(app.navigation_key('Escape', 'media'))   # shows to actions
+        self.assertEqual(app.navigation_key('Escape', 'media'), 'media menu')
+        guide = (Path(__file__).parent / 'START HERE - Veteran.txt').read_text(encoding='utf-8')
+        self.assertIn('Escape goes from episodes to shows, then to actions, then to the Media menu.', guide)
+
     def test_damaged_subscriptions_are_skipped_not_fatal(self):
         subs = ['text', {'feed': 'https://a.example/feed'}, {'name': 'Good show', 'feed': 'https://b.example/feed', 'episodes': []}]
         (self.folder / 'podcast-subscriptions.json').write_text(json.dumps(subs), encoding='utf-8')
