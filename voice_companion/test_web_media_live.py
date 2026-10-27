@@ -278,6 +278,10 @@ class SamePageButtonTests(LiveBrowser):
         # With no message, the button says its new state.
         self.assertEqual(self.session.keyboard('Activate'), 'Show details, button, expanded.')
         self.assertEqual(self.session.keyboard('Read:Down'), 'Made of wool.')
+        # A form that thanks you on the same page says the new words.
+        self.page.evaluate("()=>{const b=document.createElement('button');b.textContent='Send';b.onclick=()=>{const p=document.createElement('p');p.textContent='Thank you, your note was sent';document.body.append(p);};document.body.prepend(b);}")
+        self.session._refresh(read=False)
+        self.assertEqual(LiveDialogTests.at(self, 'Send'), 'Thank you, your note was sent.')
         # A link that only changes this page does the same.
         self.assertEqual(self.session.keyboard('Quick:k'), 'Link Save for later.')
         started = time.monotonic()

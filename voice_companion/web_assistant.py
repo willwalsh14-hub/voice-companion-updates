@@ -2066,14 +2066,23 @@ class WebSession:
         if not isinstance(action,dict) or action.get('validation') or action.get('unchanged') or action.get('download'):return None
         after=self._stamp()
         if not stamp or not after or getattr(self.backend,'page',None) is not page or any(stamp.get(k)!=after.get(k) for k in ('url','epoch')):return None
-        anchor=self.browse.current() if self.browse else None
+        anchor=dict(self.browse.current() or {}) if self.browse else {}
+        old_lines=set(self.reading.text.split('\n'))
         try:message=self._refresh(wait=False,read=False,preserve=True)
         except Exception:return None
         if 'Dialog opened.' in message or 'Dialog closed.' in message:return message
+        sentence=lambda t:t if t.endswith(('.','!','?')) else t+'.'
         news=self._live_news()
-        if news:return ' '.join(t if t.endswith(('.','!','?')) else t+'.' for t in news)
+        if news:return ' '.join(sentence(t) for t in news)
         current=self.browse.current() if self.browse else None
-        if current and anchor and current.get('key')==anchor.get('key'):return describe(current,self.browse.elements)
+        same=bool(current and anchor and current.get('key')==anchor.get('key'))
+        # The control itself changed: expanded, pressed, checked or renamed.
+        if same and any(current.get(k)!=anchor.get(k) for k in ('expanded','pressed','checked','selected','label')):
+            return describe(current,self.browse.elements)
+        # Otherwise the words that are new on the page, such as a thank-you line.
+        added=[line.strip() for line in self.reading.text.split('\n') if line.strip() and line not in old_lines][:3]
+        if added:return ' '.join(sentence(line[:300]) for line in added)
+        if same:return describe(current,self.browse.elements)
         return 'The page changed. '+(describe(current,self.browse.elements) if current else '')
 
     def _dialog_change(self,leaving,known_state,old_anchor,read):
