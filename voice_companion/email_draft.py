@@ -5,7 +5,7 @@ import json
 import os
 import re
 from dataclasses import asdict, dataclass, field, fields
-from email.message import EmailMessage
+from email.message import EmailMessage, MIMEPart
 from pathlib import Path
 
 from document_editor import Paragraph, TextRun, VoiceDocument
@@ -48,6 +48,34 @@ def normalize_recipient(spoken):
                    for part in address.rsplit('@', 1)[-1].split('.'))):
         raise ValueError('I could not understand one complete email address. Say it like friend at example dot com.')
     return address
+
+
+def original_split(context):
+    """(kept, dropped): the original message's files on a forward, and the ones taken off."""
+    context = context or {}
+    found = context.get('original_attachments') if context.get('action') == 'forward' else None
+    if not isinstance(found, list):
+        return [], []
+    parts = [str(part) for part in context.get('dropped_parts', [])]
+    names = list(context.get('dropped_attachments', []))
+    kept, dropped = [], []
+    # By part first: two files can share a name, and only the one chosen is taken off.
+    for item in found:
+        part = str(item.get('id', ''))
+        if part and part in parts:
+            parts.remove(part)
+            if item.get('name') in names:
+                names.remove(item['name'])
+            dropped.append(item)
+        else:
+            kept.append(item)
+    # Drafts saved before parts were kept name only the file.
+    for item in list(kept):
+        if item.get('name') in names:
+            names.remove(item['name'])
+            kept.remove(item)
+            dropped.append(item)
+    return kept, dropped
 
 
 @dataclass
@@ -131,10 +159,8 @@ class VoiceEmail(VoiceDocument):
                                   'Nothing was attached. Share large files another way, such as a cloud folder.')
         self.attachments.extend(found)
         self.save()
-        said = ('Attached ' + found[0]['name'] + ', ' + size_words(found[0]['size']) + '.' if len(found) == 1 else
-                'Attached ' + count_words(len(found)) + ': ' + ', '.join(item['name'] for item in found) + '.')
-        if len(self.attachments) > len(found):
-            said += ' This email has ' + count_words(len(self.attachments)) + '.'
+        from mail_attachments import joined
+        said = 'Attached ' + joined(item['name'] for item in found) + '. ' + count_words(len(self.all_attachments())) + '.'
         return said + limit_warning(total)
 
     def remove_attachment(self, index):
@@ -144,29 +170,26 @@ class VoiceEmail(VoiceDocument):
 
     def original_attachments(self):
         """The original message's files that go with this forward, less the ones taken off."""
-        context = self.response_context or {}
-        found = context.get('original_attachments') if context.get('action') == 'forward' else None
-        if not isinstance(found, list):
-            return []
-        dropped = list(context.get('dropped_attachments', []))
-        kept = []
-        for item in found:
-            if item.get('name') in dropped:
-                dropped.remove(item['name'])
-                continue
-            kept.append(item)
-        return kept
+        return original_split(self.response_context)[0]
+
+    def dropped_originals(self):
+        """The original message's files the person took off this forward."""
+        return original_split(self.response_context)[1]
 
     def all_attachments(self):
         """Every file this email will carry: the forwarded originals first, then files from this computer."""
         return [dict(item, original=True) for item in self.original_attachments()] + list(self.attachments)
 
-    def drop_original(self, name):
+    def drop_original(self, name, part=None):
         self.response_context.setdefault('dropped_attachments', []).append(name)
+        if part is not None and str(part):
+            self.response_context.setdefault('dropped_parts', []).append(str(part))
         self.save()
 
     def _attachment_part(self, item):
-        """The attachment as a ready MIME part, encoded once and kept while the file is unchanged."""
+        """The attachment as ready MIME bytes, encoded once and kept while the file is unchanged.
+
+        Encoding a large file takes seconds; a draft is saved after every sentence."""
         from mail_attachments import mime_type
         path = Path(item['path'])
         info = path.stat()
@@ -174,12 +197,12 @@ class VoiceEmail(VoiceDocument):
         cache = self.__dict__.setdefault('_attachment_parts', {})
         if key not in cache:
             maintype, subtype = mime_type(item['name'])
-            part = EmailMessage()
+            part = MIMEPart()
             part.set_content(path.read_bytes(), maintype=maintype, subtype=subtype, disposition='attachment',
                              filename=item['name'])
             for old in [k for k in cache if k[0] == key[0]]:
                 del cache[old]
-            cache[key] = part
+            cache[key] = part.as_bytes()
         return cache[key]
 
     def checkpoint(self):
@@ -254,12 +277,19 @@ class VoiceEmail(VoiceDocument):
             except OSError:
                 # Gone or locked: the draft keeps the file's place, and sending says what is wrong.
                 pass
+        data = msg.as_bytes()
         if parts:
+            # The files' ready bytes go in as they are, so a large file is not encoded again.
+            import uuid
+            boundary = self.__dict__.setdefault('_mixed_boundary', '===============' + uuid.uuid4().hex + '==')
             msg.make_mixed()
-            for part in parts:
-                msg.attach(part)
+            msg.set_boundary(boundary)
+            data = msg.as_bytes()
+            end = data.rindex(b'--' + boundary.encode('ascii') + b'--')
+            data = (data[:end] + b''.join(b'--' + boundary.encode('ascii') + b'\n' + part + b'\n' for part in parts)
+                    + b'--' + boundary.encode('ascii') + b'--\n')
         output = self.path.with_suffix('.writing.eml')
-        output.write_bytes(msg.as_bytes())
+        output.write_bytes(data)
         output.replace(self.path)
         return self.path
 

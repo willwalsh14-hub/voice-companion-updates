@@ -174,7 +174,7 @@ class SpokenWordsTests(unittest.TestCase):
         self.assertEqual(files.summary(found[:1]), '1 attachment: report.pdf, 1.2 megabytes.')
         many = [{'name': 'f%d.txt' % i, 'size': 10} for i in range(8)]
         self.assertTrue(files.summary(many).endswith('f4.txt, 10 bytes; and 3 more.'))
-        self.assertEqual(files.label(found[1], 1, 2), 'photo.jpg, 300 kilobytes. 2 of 2.')
+        self.assertEqual(files.label(found[1], 1, 2), 'photo.jpg, 300 kilobytes, 2 of 2.')
 
     def test_names_cannot_leave_the_folder_or_break_windows(self):
         self.assertEqual(files.safe_filename('..\\..\\Startup\\evil.exe'), 'evil.exe')
@@ -448,7 +448,7 @@ class DraftTests(unittest.TestCase):
         notes = self.folder / 'notes.txt'; notes.write_text('Notes', encoding='utf-8')
         draft = self.draft()
         said = draft.attach([photo, notes])
-        self.assertEqual(said, 'Attached 2 attachments: photo.jpg, notes.txt.')
+        self.assertEqual(said, 'Attached photo.jpg and notes.txt. 2 attachments.')
         saved = BytesParser(policy=policy.default).parsebytes(draft.path.read_bytes())
         found = {part.get_filename(): part.get_content() for part in saved.iter_attachments()}
         self.assertEqual(found['photo.jpg'], PHOTO)

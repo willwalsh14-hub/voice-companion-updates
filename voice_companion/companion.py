@@ -732,7 +732,7 @@ def _navigation_key(key,mode):
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if direct:return direct
     if mode=='downloads':return __import__('download_screen').navigation_key(sys.modules[__name__],key)
-    if mode=='attachments':return __import__('attachment_screen').navigation_key(sys.modules[__name__],key)
+    if mode=='attachments' and not NAMED_LIST:return __import__('attachment_screen').navigation_key(sys.modules[__name__],key)
     if mode=='update_download':
         return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
