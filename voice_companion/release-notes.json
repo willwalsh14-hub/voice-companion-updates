@@ -1,27 +1,39 @@
 {
-  "version": "0.2.169-test",
+  "version": "0.2.170-test",
   "status": "Testing build",
-  "date": "October 26, 2026",
-  "baseline": "0.2.168-test",
-  "scope": "Document reader has its own menu, File manager can start where you choose, downloaded songs play, and email works through Thunderbird or Yahoo.",
+  "date": "October 27, 2026",
+  "baseline": "0.2.169-test",
+  "scope": "Contacts, a calendar, and email attachments, all through Thunderbird.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Document reader menu",
+          "title": "Contacts",
           "details": [
-            "Document reader is now on the main menu.",
-            "Its menu lets you open a file, find one you read before, or change how it reads.",
-            "Control+O opens a document. Control+R lists the ones you read last.",
-            "In Document reader options, you can stop a file from being read aloud as soon as it opens."
+            "Contacts is on the main menu. It lists your Thunderbird contacts, such as Google contacts, with the ones saved here.",
+            "Up and Down read each name, email, and phone. Press Enter for details.",
+            "Control+E writes an email to the contact. You can also say email John from the main menu.",
+            "Control+N adds a contact. Delete removes one after a question."
           ]
         },
         {
-          "title": "Where File manager starts",
+          "title": "Calendar",
           "details": [
-            "In File manager options, choose where File manager starts.",
-            "Pick the drive list, C drive, Documents, Desktop, Downloads, or Music. Or type a folder."
+            "Calendar is on the main menu. It shows your Thunderbird calendars, such as Google Calendar.",
+            "It opens on today. Up and Down move through the events. Left and Right change the day.",
+            "Control+N adds an event. You can say add appointment tomorrow at 3 PM called doctor.",
+            "Say what is on my calendar today from any screen."
+          ]
+        },
+        {
+          "title": "Email attachments",
+          "details": [
+            "A message says how many files it has. Press L to list them. Enter opens one.",
+            "Control+S saves a file to your Downloads folder. You can also say save all attachments.",
+            "In an email you are writing, Control+T attaches a file. Control+L lists the files.",
+            "In File manager, Control+N sends the files you chose in a new email.",
+            "A forward now includes the files from the first email."
           ]
         }
       ]
@@ -30,19 +42,17 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Downloads",
+          "title": "Thunderbird connection",
           "details": [
-            "A song or video you downloaded now plays when you press Enter on it in Downloads.",
-            "Before, it would not play while a web page was open. This works in Chrome and in the built-in browser."
+            "The Voice Companion part in Thunderbird now works with your contacts, calendars, and files.",
+            "Thunderbird may ask you once to allow it. Choose Allow."
           ]
         },
         {
-          "title": "Email through Thunderbird or Yahoo",
+          "title": "Yahoo",
           "details": [
-            "Email now works through Thunderbird, or through a Yahoo account.",
-            "Gmail, Outlook, and Microsoft 365 work through Thunderbird.",
-            "If Voice Companion had its own Gmail or Outlook account, it is removed. You hear what to do next.",
-            "Your drafts and contacts are kept."
+            "A large Yahoo message is now read from its text, instead of being skipped.",
+            "Yahoo files can be saved and sent too."
           ]
         }
       ]
