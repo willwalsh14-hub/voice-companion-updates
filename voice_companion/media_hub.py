@@ -551,9 +551,13 @@ class MediaHub:
         term=term.strip()
         if not term: return 'What podcast would you like to find? Say its name.'
         url=APPLE_API+'?'+parse.urlencode({'media':'podcast','entity':'podcast','limit':20,'term':term})
-        results=self.fetch_json(url).get('results',[])
-        self.shows=[{'name':r.get('collectionName',''), 'feed':r.get('feedUrl',''),
-                     'genre':r.get('primaryGenreName','')} for r in results if _http_url(r.get('feedUrl',''))]
+        try: answer=self.fetch_json(url)
+        except (OSError,ValueError,TimeoutError):
+            return 'Podcast search is not available right now. Check the internet connection, then try again.'
+        results=answer.get('results',[]) if isinstance(answer,dict) else []
+        self.shows=[{'name':str(r.get('collectionName') or 'Untitled podcast'), 'feed':r['feedUrl'],
+                     'genre':str(r.get('primaryGenreName') or '')} for r in (results if isinstance(results,list) else [])
+                    if isinstance(r,dict) and isinstance(r.get('feedUrl'),str) and _http_url(r['feedUrl'])]
         self.show_index=0 if self.shows else None
         self.browsing_episodes=False
         self.episode_index=None
@@ -575,7 +579,7 @@ class MediaHub:
                     element.tag=element.tag[len(default):]
         episodes=[]
         for item in root.findall('.//channel/item'):
-            title=item.findtext('title') or 'Untitled episode'
+            title=(item.findtext('title') or '').strip() or 'Untitled episode'
             enclosure=item.find('enclosure')
             url=enclosure.get('url','') if enclosure is not None else ''
             if not _http_url(url): continue
@@ -600,8 +604,8 @@ class MediaHub:
         if feed is None: self.show_index=index
         try: episodes=self._feed_episodes(show)
         except (OSError,ValueError,ET.ParseError,TimeoutError):
-            cached=next((s.get('episodes',[]) for s in self._load('podcast-subscriptions.json',[])
-                         if s.get('feed')==show['feed']),[])
+            cached=next((s.get('episodes',[]) for s in self.saved_subscriptions()
+                         if s['feed']==show['feed']),[])
             if not cached: return 'The podcast feed is unavailable. Try again later.'
             episodes=cached
         self.episodes=episodes
@@ -622,15 +626,22 @@ class MediaHub:
         self.current_feed=show['feed']
         with self._lock:
             subs=self._load('podcast-subscriptions.json',[])
-            if not any(s['feed']==show['feed'] for s in subs):
+            if not any(isinstance(s,dict) and s.get('feed')==show['feed'] for s in subs):
                 subs.append({**show,'download_limit':'manual','episodes':[]})
                 self._save('podcast-subscriptions.json',subs)
         self.start_podcast_refresh()
         return ('Subscribed to '+show['name']+'. The feed refreshes automatically while Companion runs. '
                 'Downloads are manual until you choose an auto download limit.')
 
+    def saved_subscriptions(self):
+        """Subscriptions with a name and a feed address. A damaged entry stays in
+        the file for a helper, but is never listed, refreshed or played."""
+        saved=self._load('podcast-subscriptions.json',[])
+        return [s for s in (saved if isinstance(saved,list) else []) if isinstance(s,dict)
+                and isinstance(s.get('name'),str) and s['name'].strip() and isinstance(s.get('feed'),str) and _http_url(s['feed'])]
+
     def subscriptions(self):
-        subs=self._load('podcast-subscriptions.json',[])
+        subs=self.saved_subscriptions()
         self.shows=subs
         self.show_index=0 if subs else None
         self.browsing_episodes=False
@@ -644,12 +655,13 @@ class MediaHub:
         if policy is None: return 'Choose manual, all, or a number from 1 to 10,000.'
         with self._lock:
             subs=self._load('podcast-subscriptions.json',[])
+            if not isinstance(subs,list): subs=[]
             if number is not None:
                 i=int(number)-1
                 if not 0<=i<len(self.shows): return 'That podcast number is unavailable. Say list subscriptions first.'
                 feed=self.shows[i]['feed']
             else: feed=self.current_feed
-            show=next((s for s in subs if s.get('feed')==feed),None)
+            show=next((s for s in subs if isinstance(s,dict) and s.get('feed')==feed and isinstance(s.get('name'),str)),None)
             if show is None: return 'Open and subscribe to the show first, or say list subscriptions and give its number.'
             show['download_limit']=policy
             self._save('podcast-subscriptions.json',subs)
@@ -675,7 +687,7 @@ class MediaHub:
         return True
 
     def refresh_subscriptions(self):
-        saved=self._load('podcast-subscriptions.json',[])
+        saved=self.saved_subscriptions()
         failures=0
         pending=[]
         for show in saved:
@@ -685,7 +697,7 @@ class MediaHub:
                 continue  # Keep the last known list and retry at the next refresh.
             with self._lock:
                 current=self._load('podcast-subscriptions.json',[])
-                entry=next((s for s in current if s.get('feed')==show['feed']),None)
+                entry=next((s for s in (current if isinstance(current,list) else []) if isinstance(s,dict) and s.get('feed')==show['feed']),None)
                 if entry is None: continue
                 old={e.get('url') for e in entry.get('episodes',[])}
                 new=sum(e['url'] not in old for e in episodes) if old else 0
@@ -710,8 +722,8 @@ class MediaHub:
             url=episode['url']
             with self._lock:
                 current=self._load('podcast-subscriptions.json',[])
-                selected=next((s.get('download_limit','manual') for s in current
-                               if s.get('feed')==feed),'manual')
+                selected=next((s.get('download_limit','manual') for s in (current if isinstance(current,list) else [])
+                               if isinstance(s,dict) and s.get('feed')==feed),'manual')
                 if selected!=policy: return
                 manifest=self._load('podcast-auto-files.json',{})
                 existing=manifest.get(feed,{})

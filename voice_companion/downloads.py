@@ -44,6 +44,10 @@ REASONS = {
     'closed': 'Voice Companion or the browser closed before it finished.',
     'unknown': 'The download stopped.',
 }
+# chrome.downloads danger values that need no answer: the file is safe, the user
+# kept it, a policy or a deep scan allowed it, or Chrome is still checking it.
+NO_ANSWER_NEEDED = ('safe', 'accepted', 'allowlistedByPolicy', 'deepScannedSafe', 'deepScannedOpenedDangerous',
+                    'asyncScanning', 'asyncLocalPasswordScanning')
 DOWNLOADS_FOLDER_ID = '{374DE290-123F-4565-9164-39C4925E467B}'
 KNOWN_FOLDERS = {'desktop': '{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}', 'documents': '{FDD39AD0-238F-46AF-ADB4-6C85480369C7}',
                  'downloads': DOWNLOADS_FOLDER_ID}
@@ -488,7 +492,9 @@ class DownloadManager:
                     except ValueError:
                         pass
                 else:
-                    record.state = state if state in ('downloading', 'paused', 'blocked') else 'downloading'
+                    # A file the browser flags at once starts as downloading, so the
+                    # change to blocked below says what to do.
+                    record.state = state if state in ('downloading', 'paused') else 'downloading'
                     if record.state == 'paused':
                         record.intent = 'paused'
             self.announce_start(record)
@@ -545,7 +551,7 @@ class DownloadManager:
             self.settle(record)
         elif new == 'failed':
             self.say(name + ' did not finish downloading. ' + REASONS[record.reason] + ' '
-                     + ('Press Control+D for downloads, then Space to try again.' if record.can_resume else 'Go back to the web page and choose the link again.'))
+                     + ('To try again, open Downloads and press Space.' if record.can_resume else 'Go back to the web page and choose the link again.'))
         elif new == 'cancelled' and record.intent != 'cancel':
             self.say(name + ' was cancelled in the browser.')
         elif new == 'blocked':
@@ -627,6 +633,18 @@ class DownloadManager:
                 text += ' From ' + host.removeprefix('www.') + '.'
         text += ' ' + BROWSER_NAMES.get(record.source, 'Browser') + '.'
         return text
+
+    def next_step(self, record):
+        """What the user can do with a download that is not finished, said after its details."""
+        if record.state in ('downloading', 'paused', 'queued'):
+            return 'Space pauses or resumes it.'
+        if record.state == 'failed' and record.can_resume and record.live:
+            return 'Space tries again.'
+        if record.state == 'blocked':
+            return 'In Chrome, press Control+J, then keep or delete the file.'
+        if record.state in ('failed', 'cancelled'):
+            return 'To get it, go back to the web page and choose the link again.'
+        return ''
 
     def toggle(self, record):
         """Space: pause or resume. Returns what to say."""
@@ -757,7 +775,7 @@ def chrome_report(item):
                                 else 'blocked' if error in ('FILE_VIRUS_INFECTED', 'FILE_BLOCKED', 'FILE_SECURITY_CHECK_FAILED')
                                 else 'network' if error.startswith('NETWORK') else 'server' if error.startswith('SERVER')
                                 else 'file' if error.startswith('FILE') else 'unknown')
-    elif str(item.get('danger') or 'safe') not in ('safe', 'accepted'):
+    elif str(item.get('danger') or 'safe') not in NO_ANSWER_NEEDED:
         values['state'] = 'blocked'
     elif item.get('paused'):
         values['state'] = 'paused'

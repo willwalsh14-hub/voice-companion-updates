@@ -1294,8 +1294,8 @@ You can also move by voice. Say "Next heading", "Previous link", or "Next form c
 These keys move through the page. They do not type letters until you go into a text box.
 
 15.5 Open links and use lists
-To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter.
-To find words on the page, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. Listen to the choice before you use it.
+To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter. If it only changes the page you are on, you hear what changed, such as "Added to cart", and you stay where you were. A page dialog says "Dialog opened". When it closes, you are back on the button that opened it.
+To find words on the page, say "Find", followed by the words, such as "Find login". Or press Control+F, type the words, and press Enter. If a link or button has those words, Companion offers it first. Listen to the choice before you use it. Otherwise it moves to the words in the page text and reads that line. Say the same Find again for the next place.
 To see a list of items on the page:
 - For links, say "List links", or press F7 or Insert+F7. Links are listed in Tab order.
 - For headings, say "List headings", or press F6 or Insert+F6. Each heading says its level.
@@ -1452,7 +1452,7 @@ To download a file, choose a download link on a web page, the same as any link.
 - When the file is ready, you hear its name and "finished downloading".
 - If a download stops, Companion tells you why and what to do next.
 - Up to three files download at once. Others wait in line and start by themselves.
-Files go to your Downloads folder unless you choose another folder. This works the same in embedded Edge and in your own Chrome.
+Files go to your Downloads folder unless you choose another folder. This works the same in embedded Edge and in your own Chrome. Guided Chrome, the separate Chrome that Companion opens, cannot save downloads. Companion tells you to use embedded Edge for those files.
 If you type the address of a file, Companion says the address is a file and downloads it. The page you were on stays open.
 If you leave the page while embedded Edge is still downloading, its window stays open until the downloads end.
 
@@ -1679,7 +1679,7 @@ Then check the list again. Other plans and saved recordings stay in place.
 The podcast screen has an actions list and a results list. Tab and Shift+Tab move between them.
 - Use the arrows, Home, End, and first letters to choose.
 - Enter on a show opens its episodes. Enter on an episode or downloaded file plays it.
-- Escape goes from episodes to shows, then to actions, then to the main menu.
+- Escape goes from episodes to shows, then to actions, then to the Media menu.
 - Control+F searches. Control+Shift+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes your saved shows.
 - Alt moves you to the podcasts menu, which is the actions list. Press Alt again to go back to the results.
 - To move by voice, say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action".
