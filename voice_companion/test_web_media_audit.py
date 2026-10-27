@@ -326,5 +326,16 @@ class FavoriteNameTests(unittest.TestCase):
         self.assertEqual([item['name'] for item in session.favorites.all().values()], ['VA news'])
 
 
+class InsecureFormTests(unittest.TestCase):
+    def test_a_form_on_a_page_without_https_says_why_it_is_not_sent_by_voice(self):
+        from web_assistant import WebSession
+        folder = tempfile.mkdtemp(); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        page = {'url': 'http://shop.example/order', 'title': 'Order', 'text': 'Name', 'controls': [], 'elements': []}
+        backend = Mock(); backend.snapshot.return_value = page
+        session = WebSession(folder, backend); session.snapshot = dict(page)
+        self.assertEqual(session.prepare_submit(), 'This page is not secure, because its address does not start with https. '
+                         'Forms here are not sent by voice. Ask your helper to check it in the browser.')
+
+
 if __name__ == '__main__':
     unittest.main()

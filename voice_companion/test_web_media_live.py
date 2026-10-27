@@ -217,7 +217,7 @@ class FindTextTests(LiveBrowser):
         self.assertEqual(self.session.command('find eligibility'), 'Found from the top of the page: Your eligibility depends on your service dates.')
         # A link or button with the words is still offered first.
         self.assertTrue(self.session.command('find apply').startswith('I found Apply now'))
-        self.assertTrue(self.session.command('find zebra').startswith('I could not find zebra on this page.'))
+        self.assertTrue(self.session.command('find zebra').startswith('I could not identify a matching link or button, or find zebra in the page text.'))
 
 
 FILES = '<title>Files</title><h1>Files</h1><a href="/file.zip">Get the file</a>'

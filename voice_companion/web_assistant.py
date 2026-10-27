@@ -2317,7 +2317,7 @@ class WebSession:
                 self.choices = match_choices(controls, request)
                 if self.choices: break
         if not self.choices:
-            return (('I could not find ' + words + ' on this page. ' if words else 'I could not identify a matching link or button. ') +
+            return ('I could not identify a matching link or button' + (', or find ' + words + ' in the page text' if words else '') + '. ' +
                     'The site may have changed or hidden its controls. '
                     'Say list links to hear what I can find, or ask your helper to inspect the page.')
         self.suggestion_index = 0
@@ -2726,8 +2726,11 @@ class WebSession:
             return 'Finish the remaining fields or say cancel form before reviewing submission.'
         try: current = self.backend.snapshot()
         except Exception: return 'I could not recheck this form. Do not submit it by voice.'
-        if current['url'] != self.snapshot['url'] or urlsplit(current['url']).scheme != 'https':
+        if current['url'] != self.snapshot['url']:
             return 'The page changed. Say read page before trying to submit.'
+        if urlsplit(current['url']).scheme != 'https':
+            return ('This page is not secure, because its address does not start with https. '
+                    'Forms here are not sent by voice. Ask your helper to check it in the browser.')
         if self.form_page and current['url'] != self.form_page:
             return 'The form moved to a different page. Say read page before trying again.'
         controls = current.get('controls', [])
