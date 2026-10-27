@@ -16,9 +16,11 @@ import re
 import ssl
 import time
 from email import policy
+from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import getaddresses
 
+import imap_structure
 from mailbox_access import MailboxError, html_text, message_date, part_text
 
 HOST, PORT = 'imap.mail.yahoo.com', 993
@@ -31,6 +33,8 @@ SIGN_IN_FAILED = ('Yahoo did not accept the saved app password. It may have been
 NO_ANSWER = 'Yahoo Mail did not answer. Check the internet connection, then try again.'
 UNCERTAIN = 'Yahoo Mail stopped answering partway through. Say list messages and check before trying again.'
 BUSY = 'Yahoo Mail could not do that right now. Wait a minute, then try again.'
+DAMAGED = 'This attachment is damaged. It could not be saved.'
+DAMAGED_LIST = 'Yahoo could not list the attachments of this message. Try again in a minute.'
 
 # Special-use flags (RFC 6154), and the names Yahoo gives its own folders.
 ROLE_FLAGS = {'\\sent': 'sent', '\\drafts': 'drafts', '\\trash': 'trash', '\\junk': 'spam', '\\archive': 'archive'}
@@ -386,9 +390,7 @@ class YahooMailbox:
             return rows, following
         return self._with(operation)
 
-    def _message(self, conn, message_id, folder_id, too_large):
-        self._select(conn, folder_id)
-        uid = self._uid(message_id)
+    def _size(self, conn, uid):
         status, data = conn.uid('FETCH', uid, '(RFC822.SIZE)')
         self._check(status)
         records = self._fetch_records(data)
@@ -396,26 +398,110 @@ class YahooMailbox:
             raise MailboxError('That message is no longer available. Say list messages to refresh.')
         details = b' '.join(record[0] for record in records.values())
         found = re.search(rb'RFC822\.SIZE (\d+)', details)
-        if found and int(found.group(1)) > MAX_MESSAGE:
+        return int(found.group(1)) if found else None
+
+    def _structure(self, conn, uid):
+        """The message's parts as the server describes them, or None if it cannot say."""
+        try:
+            status, data = conn.uid('FETCH', uid, '(BODYSTRUCTURE)')
+            if status != 'OK':
+                return None
+            return imap_structure.find_structure(data)
+        except imap_structure.StructureError:
+            return None
+
+    def _section(self, conn, uid, number):
+        status, data = conn.uid('FETCH', uid, '(BODY.PEEK[' + number + '])')
+        self._check(status)
+        return next((record[1] for record in self._fetch_records(data).values() if record[1]), b'')
+
+    def _light(self, conn, uid, structure, too_large):
+        """A large message without its attachments: the headers and the text parts only."""
+        try:
+            plain, html = imap_structure.text_parts(structure)
+        except imap_structure.StructureError as exc:
+            raise MailboxError(too_large) from exc
+        head = self._section(conn, uid, 'HEADER')
+        original = BytesParser(policy=policy.compat32).parsebytes(head, headersonly=True)
+        msg = EmailMessage()
+        for name, value in original.items():
+            if name.lower() in ('content-type', 'content-transfer-encoding', 'mime-version'):
+                continue
+            try:
+                msg[name] = _text(value)
+            except (ValueError, TypeError, IndexError):
+                pass
+        texts = {}
+        for part in (plain, html):
+            if part is None or part.octets > MAX_MESSAGE:
+                continue
+            try:
+                data = imap_structure.decode(self._section(conn, uid, part.number), part.encoding)
+            except imap_structure.StructureError:
+                continue
+            charset = part.params.get('charset') or 'utf-8'
+            try:
+                texts[part.subtype] = data.decode(charset, 'replace')
+            except LookupError:
+                texts[part.subtype] = data.decode('utf-8', 'replace')
+        if not texts:
             raise MailboxError(too_large)
+        if 'plain' in texts:
+            msg.set_content(texts['plain'])
+            if 'html' in texts:
+                msg.add_alternative(texts['html'], subtype='html')
+        else:
+            msg.set_content(texts['html'], subtype='html')
+        return msg
+
+    def _readable(self, conn, message_id, folder_id, too_large):
+        """(message, attachments). A message too large to download whole is read from
+        its text parts, so a big photo never stops the words from being read.
+        attachments is None when the server could not list them."""
+        self._select(conn, folder_id)
+        uid = self._uid(message_id)
+        size = self._size(conn, uid)
+        structure = self._structure(conn, uid)
+        found = None
+        if structure is not None:
+            try:
+                found = imap_structure.attachments(structure)
+            except imap_structure.StructureError:
+                structure = None
+        if size is not None and size > MAX_MESSAGE:
+            if structure is None:
+                raise MailboxError(too_large)
+            return self._light(conn, uid, structure, too_large), found
         status, data = conn.uid('FETCH', uid, '(BODY.PEEK[])')
         self._check(status)
         raw = next((record[1] for record in self._fetch_records(data).values() if record[1]), b'')
         if not raw:
             raise MailboxError('That message is no longer available. Say list messages to refresh.')
         if len(raw) > MAX_MESSAGE:
-            raise MailboxError(too_large)
-        return BytesParser(policy=policy.default).parsebytes(raw)
+            if structure is None:
+                raise MailboxError(too_large)
+            return self._light(conn, uid, structure, too_large), found
+        return BytesParser(policy=policy.default).parsebytes(raw), found
+
+    def _message(self, conn, message_id, folder_id, too_large):
+        return self._readable(conn, message_id, folder_id, too_large)[0]
 
     def read_message(self, message_id, folder_id='INBOX'):
-        return self._with(lambda conn: message_body(
-            self._message(conn, message_id, folder_id, 'This message is too large to read aloud.')))
+        def operation(conn):
+            msg, found = self._readable(conn, message_id, folder_id, 'This message is too large to read aloud.')
+            body = message_body(msg)
+            if not hasattr(body, 'plain'):
+                from email_reader import plain_body
+                body = plain_body(body or '')
+            body.attachments = found
+            return body
+        return self._with(operation)
 
     def response_context(self, message_id, action, own_address, folder_id='INBOX'):
         if action not in ('reply', 'reply_all', 'forward'):
             raise MailboxError('Unknown email response.')
         def operation(conn):
-            msg = self._message(conn, message_id, folder_id, 'This message is too large to reply to.')
+            msg, found = self._readable(conn, message_id, folder_id, 'This message is too large to reply to.')
             sender = getaddresses([_header(msg, 'Reply-To') or _header(msg, 'From')])
             others = getaddresses([_header(msg, 'To'), _header(msg, 'Cc')]) if action == 'reply_all' else []
             recipients = []
@@ -425,13 +511,89 @@ class YahooMailbox:
             subject = _header(msg, 'Subject', '(no subject)')
             prefix = 'Fwd: ' if action == 'forward' else 'Re: '
             if subject.casefold().startswith(prefix.casefold()): prefix = ''
-            return {'action': action, 'source_id': str(message_id), 'message_id': _header(msg, 'Message-ID'),
-                    'references': _header(msg, 'References'),
-                    'recipient': recipients[0] if action != 'forward' and recipients else '',
-                    'cc': recipients[1:] if action == 'reply_all' else [], 'subject': prefix + subject,
-                    'original_from': _header(msg, 'From'), 'original_subject': subject,
-                    'original_body': message_body(msg) if action == 'forward' else ''}
+            context = {'action': action, 'source_id': str(message_id), 'message_id': _header(msg, 'Message-ID'),
+                       'references': _header(msg, 'References'),
+                       'recipient': recipients[0] if action != 'forward' and recipients else '',
+                       'cc': recipients[1:] if action == 'reply_all' else [], 'subject': prefix + subject,
+                       'original_from': _header(msg, 'From'), 'original_subject': subject,
+                       'original_body': message_body(msg) if action == 'forward' else ''}
+            if action == 'forward':
+                # The original files go with a forward. None: Yahoo could not list them.
+                context['source_folder'] = folder_id or 'INBOX'
+                context['original_attachments'] = found
+            return context
         return self._with(operation)
+
+    # Attachments ---------------------------------------------------------
+
+    def attachments(self, message_id, folder_id='INBOX'):
+        """The files attached to a message: [{'id', 'name', 'size', 'type', 'encoding'}]."""
+        def operation(conn):
+            self._select(conn, folder_id)
+            uid = self._uid(message_id)
+            self._size(conn, uid)
+            structure = self._structure(conn, uid)
+            if structure is None:
+                raise MailboxError(DAMAGED_LIST)
+            try:
+                return imap_structure.attachments(structure)
+            except imap_structure.StructureError as exc:
+                raise MailboxError(DAMAGED_LIST) from exc
+        return self._with(operation)
+
+    def attachment_chunks(self, message_id, attachment, folder_id='INBOX', step=1024 * 1024):
+        """The bytes of one attachment, a piece at a time, over one read-only connection."""
+        uid = self._uid(message_id)
+        number = str(attachment.get('id', ''))
+        if not re.fullmatch(r'[1-9]\d*(?:\.[1-9]\d*)*', number):
+            raise MailboxError('That attachment is not available. Open the message again.')
+        encoding = str(attachment.get('encoding') or '').lower()
+        try:
+            conn = self._connection()
+        except _Unchanged as exc:
+            raise MailboxError(NO_ANSWER, unchanged=True) from exc.__cause__
+        finished = False
+        try:
+            self._select(conn, folder_id)
+            stream = imap_structure.Base64Stream() if encoding == 'base64' else None
+            held = []
+            offset = 0
+            while True:
+                status, data = conn.uid('FETCH', uid, '(BODY.PEEK[' + number + ']<' + str(offset) + '.' + str(step) + '>)')
+                self._check(status)
+                records = self._fetch_records(data)
+                if not records and offset == 0:
+                    raise MailboxError('That message is no longer available. Say list messages to refresh.')
+                piece = next((record[1] for record in records.values() if record[1]), b'')
+                offset += len(piece)
+                if stream is not None:
+                    yield stream.feed(piece)
+                elif encoding == 'quoted-printable':
+                    held.append(piece)
+                else:
+                    yield piece
+                if len(piece) < step:
+                    break
+            if stream is not None:
+                yield stream.finish()
+            elif held:
+                yield imap_structure.decode(b''.join(held), encoding)
+            finished = True
+        except imap_structure.StructureError as exc:
+            raise MailboxError(DAMAGED, unchanged=True) from exc
+        except (OSError, imaplib.IMAP4.abort) as exc:
+            raise MailboxError(NO_ANSWER, unchanged=True) from exc
+        except imaplib.IMAP4.error as exc:
+            raise MailboxError(BUSY, unchanged=True) from exc
+        finally:
+            if finished:
+                try: conn.logout()
+                except Exception: self._drop(conn)
+            else:
+                self._drop(conn)
+
+    def attachment_bytes(self, message_id, attachment, folder_id='INBOX'):
+        return b''.join(self.attachment_chunks(message_id, attachment, folder_id))
 
     @staticmethod
     def _same(first, second):

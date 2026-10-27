@@ -43,3 +43,11 @@ def begin_command():
     stopped, _stopped_a_wait = _stopped_a_wait, False
     requested.clear()
     return stopped
+
+
+def check():
+    """Between steps of a long job on the command thread: raise Stopped if Escape was pressed."""
+    global _stopped_a_wait
+    if requested.is_set():
+        _stopped_a_wait = True
+        raise Stopped()
