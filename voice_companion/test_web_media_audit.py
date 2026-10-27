@@ -185,5 +185,16 @@ class PlayerWindowTests(unittest.TestCase):
         self.assertIsNone(player.kind)
 
 
+class ChromeDangerTests(unittest.TestCase):
+    def test_only_a_danger_that_needs_an_answer_waits_for_chrome(self):
+        from downloads import chrome_report
+        running = {'id': 1, 'state': 'in_progress', 'filename': 'C:\\Users\\Will\\Downloads\\a.pdf'}
+        # Chrome is still checking the file, or a policy or a deep scan found it safe.
+        for danger in ('safe', 'accepted', 'asyncScanning', 'asyncLocalPasswordScanning', 'allowlistedByPolicy', 'deepScannedSafe'):
+            self.assertEqual(chrome_report({**running, 'danger': danger})['state'], 'downloading', danger)
+        for danger in ('file', 'url', 'content', 'uncommon', 'host', 'unwanted', 'promptForScanning'):
+            self.assertEqual(chrome_report({**running, 'danger': danger})['state'], 'blocked', danger)
+
+
 if __name__ == '__main__':
     unittest.main()

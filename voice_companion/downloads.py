@@ -44,6 +44,10 @@ REASONS = {
     'closed': 'Voice Companion or the browser closed before it finished.',
     'unknown': 'The download stopped.',
 }
+# chrome.downloads danger values that need no answer: the file is safe, the user
+# kept it, a policy or a deep scan allowed it, or Chrome is still checking it.
+NO_ANSWER_NEEDED = ('safe', 'accepted', 'allowlistedByPolicy', 'deepScannedSafe', 'deepScannedOpenedDangerous',
+                    'asyncScanning', 'asyncLocalPasswordScanning')
 DOWNLOADS_FOLDER_ID = '{374DE290-123F-4565-9164-39C4925E467B}'
 KNOWN_FOLDERS = {'desktop': '{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}', 'documents': '{FDD39AD0-238F-46AF-ADB4-6C85480369C7}',
                  'downloads': DOWNLOADS_FOLDER_ID}
@@ -757,7 +761,7 @@ def chrome_report(item):
                                 else 'blocked' if error in ('FILE_VIRUS_INFECTED', 'FILE_BLOCKED', 'FILE_SECURITY_CHECK_FAILED')
                                 else 'network' if error.startswith('NETWORK') else 'server' if error.startswith('SERVER')
                                 else 'file' if error.startswith('FILE') else 'unknown')
-    elif str(item.get('danger') or 'safe') not in ('safe', 'accepted'):
+    elif str(item.get('danger') or 'safe') not in NO_ANSWER_NEEDED:
         values['state'] = 'blocked'
     elif item.get('paused'):
         values['state'] = 'paused'
