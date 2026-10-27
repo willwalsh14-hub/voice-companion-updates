@@ -6,7 +6,7 @@ calendar Experiment. The clock is fixed at Monday, October 26, 2026, 9:15 AM,
 and the local time zone at five hours behind UTC, so every line is predictable.
 """
 import unittest
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone, tzinfo
 from unittest import mock
 
 import calendar_events
@@ -465,6 +465,66 @@ class EditEventTests(CalendarHarness):
     def test_edit_and_go_to_keys_are_on_the_menu(self):
         from screen_menus import items
         self.assertIn(('Event', 'Edit event', 'F2', 'edit event'), items('calendar'))
+
+
+class Eastern2026(tzinfo):
+    """US Eastern time in 2026, with daylight saving (March 8 to November 1), without tzdata (Windows has none)."""
+    START, END = datetime(2026, 3, 8, 7), datetime(2026, 11, 1, 6)       # the changes, in UTC
+
+    def utcoffset(self, dt):
+        naive = dt.replace(tzinfo=None)
+        summer = datetime(2026, 3, 8, 2) <= naive < datetime(2026, 11, 1, 1) or \
+            datetime(2026, 11, 1, 1) <= naive < datetime(2026, 11, 1, 2) and not dt.fold
+        return timedelta(hours=-4 if summer else -5)
+
+    def dst(self, dt):
+        return timedelta(hours=1) if self.utcoffset(dt) == timedelta(hours=-4) else timedelta(0)
+
+    def fromutc(self, dt):
+        utc = dt.replace(tzinfo=None)
+        summer = self.START <= utc < self.END
+        local = utc + timedelta(hours=-4 if summer else -5)
+        repeated = not summer and datetime(2026, 11, 1, 1) <= local < datetime(2026, 11, 1, 2)
+        return local.replace(tzinfo=self, fold=1 if repeated else 0)
+
+
+class DaylightSavingTests(CalendarHarness):
+    """November 1, 2026: clocks go back an hour at 2 AM, so the day has 25 hours."""
+
+    def setUp(self):
+        super().setUp()
+        self.stack.enter_context(mock.patch.object(calendar_events, 'LOCAL_ZONE', Eastern2026()))
+
+    def at(self, *utc):
+        return int(datetime(*utc, tzinfo=timezone.utc).timestamp() * 1000)
+
+    def test_the_long_day_and_the_repeated_hour(self):
+        items = [{'id': str(n), 'calendarId': 'c', 'calendar': 'Home', 'title': title, 'allDay': False, 'start': start, 'end': start + 1800000}
+                 for n, (title, start) in enumerate((('First', self.at(2026, 11, 1, 5, 30)), ('Second', self.at(2026, 11, 1, 6, 30)),
+                                                      ('Late', self.at(2026, 11, 2, 4, 30))))]
+        start, end = calendar_events.day_range(date(2026, 11, 1))
+        self.assertEqual(end - start, 25 * 3600000)
+        lines = [e.line(date(2026, 11, 1)) for e in calendar_events.for_day(items, date(2026, 11, 1))]
+        # First is 1:30 summer time to 1:00 winter time: half an hour, though the clock goes back.
+        self.assertEqual(lines, ['One thirty AM to one AM, First, Home', 'One thirty AM to two AM, Second, Home',
+                                 'Eleven thirty PM to twelve AM, Late, Home'])
+        self.assertEqual(calendar_events.for_day(items, date(2026, 11, 2)), [])
+        first = calendar_events.for_day(items, date(2026, 11, 1))[0]
+        self.assertEqual(first.length, timedelta(minutes=30))
+        self.assertEqual(calendar_screen.length_words(False, first.start, first.start + first.length), '30 minutes')
+
+    def test_moving_an_event_across_the_change_keeps_its_clock_time(self):
+        mode = self.open()
+        app.handle('move event to November 2 at 10:30', mode)
+        app.handle('yes', mode)
+        event = next(e for e in self.relay_events() if e['id'] == 'e1')
+        # 10:30 AM in winter time is 3:30 PM UTC (it was 2:30 PM UTC in summer time).
+        self.assertEqual(event['start'], self.at(2026, 11, 2, 15, 30))
+        self.assertEqual(self.said(), 'Saved Doctor appointment. Monday, November 2. Ten thirty AM to eleven AM, Doctor appointment, '
+                                      'me@gmail.com, 1 of 1.')
+
+    def relay_events(self):
+        return thunderbird_pim.events(self.at(2026, 11, 1), self.at(2026, 11, 4))['events']
 
 
 class OnlyHomeCalendarTests(CalendarHarness):

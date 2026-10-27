@@ -722,7 +722,7 @@ def field_label(field, event):
     if field == 'time':
         return 'Day and time: ' + when_words(None, event.all_day, event.start, event.end, EDIT.get('today') or event.start.date())
     if field == 'length':
-        return 'Length: ' + length_words(event.all_day, event.start, event.end)
+        return 'Length: ' + length_words(event.all_day, event.start, event.start + event.length)
     if field == 'all day':
         return 'Give it a time' if event.all_day else 'Make it all day'
     if field == 'place':
@@ -744,7 +744,7 @@ def start_editing(m, field=None, value=None):
         m.speak('The ' + event.calendar + ' calendar cannot be changed, so ' + event.name + ' cannot be edited.')
         return MODE
     EDIT.clear()
-    EDIT.update(event=event, all_day=event.all_day, start=event.start, end=event.end, today=today(m))
+    EDIT.update(zip(('all_day', 'start', 'end'), event_timing(event)), event=event, today=today(m))
     if field is None:
         PENDING, CHOICES = ('edit-field', event), fields_for(event)
         CHOICE = CHOICES[0]
@@ -878,9 +878,14 @@ def edit_step(m, step, value):
     return confirm_edit(m)
 
 
+def event_timing(event):
+    """(all day, start, end) with the end at start plus the real length, so the night the clocks go
+    back does not shorten an event that is edited."""
+    return event.all_day, event.start, event.start + event.length
+
+
 def timing_changed():
-    event = EDIT['event']
-    return (EDIT['all_day'], EDIT['start'], EDIT['end']) != (event.all_day, event.start, event.end)
+    return (EDIT['all_day'], EDIT['start'], EDIT['end']) != event_timing(EDIT['event'])
 
 
 def edit_changes():

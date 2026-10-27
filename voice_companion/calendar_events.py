@@ -56,6 +56,11 @@ class Event:
     notes: str = ''
     recurring: bool = False
     occurrence: str = ''
+    duration: timedelta = None   # the real length; local clock times can go back an hour in the fall
+
+    @property
+    def length(self):
+        return self.duration if self.duration is not None else self.end - self.start
 
     @property
     def name(self):
@@ -79,7 +84,7 @@ class Event:
             return 'All day'
         if not starts_today:
             return 'Until ' + spoken_time(self.end)
-        if self.end <= self.start:
+        if self.length <= timedelta(0):
             return spoken_time(self.start)
         end = spoken_time(self.end) + ('' if ends_today else ' tomorrow' if self.end.date() == day + timedelta(days=1) else
                                        ' on ' + later_day(self.end.date(), day))
@@ -113,15 +118,17 @@ def from_thunderbird(item):
             end = datetime.combine(date.fromisoformat(str(item['end'])), time())
             if end <= start:
                 end = start + timedelta(days=1)
+            duration = end - start
         else:
             start, end = local(float(item['start'])), local(float(item['end']))
-            if end < start:
+            duration = timedelta(milliseconds=max(0.0, float(item['end']) - float(item['start'])))
+            if not duration:
                 end = start
         return Event(id=str(item.get('id') or ''), calendar_id=str(item.get('calendarId') or ''),
                      calendar=str(item.get('calendar') or ''), title=' '.join(str(item.get('title') or '').split()),
                      all_day=bool(item.get('allDay')), start=start, end=end,
                      location=' '.join(str(item.get('location') or '').split()), notes=str(item.get('notes') or ''),
-                     recurring=bool(item.get('recurring')), occurrence=str(item.get('occurrence') or ''))
+                     recurring=bool(item.get('recurring')), occurrence=str(item.get('occurrence') or ''), duration=duration)
     except (KeyError, TypeError, ValueError, OverflowError, OSError):
         return None
 
