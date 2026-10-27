@@ -2797,7 +2797,13 @@ def switch_mail_account(provider, address, mode):
             and email_draft.provider not in REMOVED_MAIL_PROVIDERS):
         speak('This reply or forward belongs to its original mailbox. Save it and start a new email to use another account.')
         return mode
-    provider, address = ProtectedStore(APP).select(provider, address)
+    try:
+        provider, address = ProtectedStore(APP).select(provider, address)
+    except (AccountError, OSError) as exc:
+        # A removed account, or its file locked by another program: say so, nothing changes.
+        speak(str(exc) if isinstance(exc, AccountError) and str(exc) else
+              'The account could not be chosen. Nothing was changed. Try again.')
+        return mode
     pending_send = None
     if mode == 'email_draft' and email_draft:
         if email_draft.provider in REMOVED_MAIL_PROVIDERS:

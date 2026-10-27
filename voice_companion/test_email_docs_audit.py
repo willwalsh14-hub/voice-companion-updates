@@ -63,6 +63,32 @@ class ThunderbirdAddressTests(unittest.TestCase):
         self.assertEqual(box.response_context(7, 'reply', ME)['recipient'], 'help@example.com')
 
 
+class ThunderbirdRestartTests(unittest.TestCase):
+    @unittest.skipIf(__import__('os').name == 'nt', 'uses a Unix socket in place of the Windows pipe')
+    def test_the_old_connection_ending_does_not_fail_requests_on_the_new_one(self):
+        # When Thunderbird restarted, the old connection ending woke every waiting request,
+        # so a message sent on the new one was reported as "stopped answering while sending".
+        import threading
+        import thunderbird_bridge
+        folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        relay = thunderbird_bridge.MailRelay(folder, str(folder / 'mail.sock'), 'AF_UNIX')
+        self.addCleanup(relay.close)
+        class Ended:
+            def recv_bytes(self, limit): raise EOFError
+            def close(self): pass
+        old, new = Ended(), Ended()
+        relay.pipe = new
+        waiter = {'event': threading.Event(), 'answer': None, 'pipe': new}
+        relay.pending[7] = waiter
+        relay._read(old)
+        self.assertFalse(waiter['event'].is_set())
+        self.assertIs(relay.pipe, new)
+        stale = {'event': threading.Event(), 'answer': None, 'pipe': old}
+        relay.pending[8] = stale
+        relay._read(old)
+        self.assertTrue(stale['event'].is_set())
+
+
 class YahooReplyTests(yahoo_tests.YahooTestCase):
     def test_reply_to_a_message_you_sent_goes_to_the_people_you_wrote_to(self):
         raw = yahoo_tests.message(sender='Vet <' + yahoo_tests.ADDRESS + '>', to='Sam Lee <sam@example.com>',
@@ -177,6 +203,12 @@ class CompanionEmailTests(unittest.TestCase):
         self.assertNotIn('Recipient .', self.said[-1])
         self.assertIn('no address to reply to. Say email to', self.said[-1])
         self.assertEqual(self.app.email_draft.compose_step, 'recipient')
+
+    def test_switching_accounts_when_the_choice_cannot_be_saved(self):
+        # The saved choice is locked by another program: the error stopped the app.
+        with mock.patch.object(self.app.ProtectedStore, 'select', side_effect=PermissionError(13, 'denied')):
+            self.assertEqual(self.app.switch_mail_account('yahoo', 'vet@yahoo.com', 'mailbox'), 'mailbox')
+        self.assertEqual(self.said[-1], 'The account could not be chosen. Nothing was changed. Try again.')
 
     def test_sending_with_no_recipient_says_so(self):
         from email_delivery import message_parts
