@@ -47,6 +47,77 @@ class DownloadScreenTests(unittest.TestCase):
         self.assertIn(('movie.mp4', 'cancel'), self.edge.sent)
 
 
+    def test_enter_on_every_kind_of_unfinished_download_says_what_to_do_next(self):
+        self.add('slow.iso', received=100, total=1000)
+        self.add('lost.zip', 'Interrupted', 'NetworkFailed', received=100)
+        self.add('gone.pdf', 'Interrupted', 'ServerBadContent', received=100)
+        self.model.find('edge', 'gone.pdf').can_resume = False
+        self.add('stopped.mp3', 'Interrupted', 'UserCanceled')
+        self.model.report('chrome', 'risky', new=True, state='blocked', path=str(self.root / 'risky.exe'))
+        while not self.model.notices.empty(): self.model.notices.get_nowait()
+        mode = self.app.handle('download manager', 'web')
+        heard = {}
+        for _ in range(5):
+            self.press('Enter', mode)
+            heard[self.model.display(self.screen.current(self.app))] = self.said[-1]
+            self.press('Down', mode)
+        self.assertTrue(heard['slow.iso'].endswith('Space pauses or resumes it.'), heard)
+        self.assertTrue(heard['lost.zip'].endswith('Space tries again.'), heard)
+        self.assertTrue(heard['gone.pdf'].endswith('To get it, go back to the web page and choose the link again.'), heard)
+        self.assertTrue(heard['stopped.mp3'].endswith('To get it, go back to the web page and choose the link again.'), heard)
+        self.assertTrue(heard['risky.exe'].endswith('In Chrome, press Control+J, then keep or delete the file.'), heard)
+
+    def test_a_failure_heard_away_from_the_web_names_a_way_back_that_works_there(self):
+        self.model.report('edge', 'a', **edge_report(test_downloads.edge('a', new=True)))
+        self.model.report('edge', 'a', **edge_report(test_downloads.edge('a', 'Interrupted', 'NetworkFailed', received=5)))
+        self.screen.poll(self.app, 'document')
+        self.assertTrue(self.said[-1].endswith('To try again, open Downloads and press Space.'), self.said[-1])
+        # "Downloads" opens the list from the main menu, where the user hears this.
+        self.assertEqual(self.app.handle('downloads', 'awake'), 'downloads')
+
+
+    def test_a_downloaded_word_file_opens_in_the_document_reader_and_escape_returns(self):
+        import time, zipfile
+        path = self.root / 'letter.docx'
+        with zipfile.ZipFile(path, 'w') as archive:
+            archive.writestr('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                             '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                             '<Default Extension="xml" ContentType="application/xml"/>'
+                             '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+            archive.writestr('_rels/.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                             '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
+            archive.writestr('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                             '<w:body><w:p><w:r><w:t>Dear Will, your claim is approved.</w:t></w:r></w:p></w:body></w:document>')
+        self.model.report('edge', 'letter', **edge_report(test_downloads.edge('letter', 'InProgress', new=True, path=str(path))))
+        self.model.report('edge', 'letter', **edge_report(test_downloads.edge('letter', 'Completed', received=1000, path=str(path))))
+        mode = self.app.handle('download manager', 'web')
+        mode = self.press('Enter', mode)
+        if mode == 'files':
+            until = time.monotonic() + 5
+            while self.app.FILE_MANAGER.events.empty() and time.monotonic() < until: time.sleep(.01)
+            mode = self.app.poll_file_manager(mode)
+        # The guide promises the Document reader: a download is read, not edited.
+        self.assertEqual(mode, 'file_reader')
+        self.assertIn('your claim is approved', ' '.join(self.said))
+        self.assertEqual(self.press('Escape', mode), 'downloads')
+
+
+    def test_a_damaged_download_says_so_and_stays_on_the_list(self):
+        import time
+        path = self.root / 'bad.pdf'; path.write_bytes(b'not a pdf at all')
+        self.model.report('edge', 'bad', **edge_report(test_downloads.edge('bad', 'InProgress', new=True, path=str(path))))
+        self.model.report('edge', 'bad', **edge_report(test_downloads.edge('bad', 'Completed', received=1000, path=str(path))))
+        mode = self.press('Enter', self.app.handle('download manager', 'web'))
+        until = time.monotonic() + 5
+        while self.app.FILE_MANAGER.events.empty() and time.monotonic() < until: time.sleep(.01)
+        mode = self.app.poll_file_manager(mode)
+        mode = self.screen.poll(self.app, mode)
+        self.assertEqual(mode, 'downloads')
+        self.assertIn('bad.pdf could not be opened. The file may be damaged.', self.said)
+        self.assertEqual(self.said[-1], 'Downloads. bad.pdf, finished, 1 of 1.')
+        self.assertNotIn('Windows could not complete that file action', ' '.join(self.said))
+
+
 class FileAddressTests(unittest.TestCase):
     def test_an_address_that_downloads_keeps_the_same_browser_and_its_download(self):
         from web_assistant import WebSession, BrowserBackend

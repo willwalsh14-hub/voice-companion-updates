@@ -46,6 +46,7 @@ INDEX = 0
 SELECTED = None     # the id of the download you are on, so new arrivals at the top do not move you
 PENDING = None      # ('cancel', record) or ('run', record): a Yes or No question
 OPENED = None       # the file Enter opened in the document reader
+FAILED_OPEN = None  # a file Enter could not open; the list comes back once that is said
 CHOICE = 'no'
 LAST_REVISION = None
 LAST_FOLDER_CHECK = 0.0
@@ -151,6 +152,11 @@ def open_manager(m, mode):
     return MODE
 
 
+def clear_failed():
+    global FAILED_OPEN, OPENED
+    FAILED_OPEN = OPENED = None
+
+
 def back_to_list(m):
     """Return from a file opened from this list (reader or player)."""
     global PENDING
@@ -212,6 +218,15 @@ def poll(m, mode):
             web.backend.close()
         except Exception:
             pass
+    manager_ = getattr(m, 'FILE_MANAGER', None)
+    if FAILED_OPEN is not None and (logical != 'files' or manager_ is None or not manager_.busy and manager_.events.empty()):
+        # The file could not be read; its reason has been said. Back to the list, not an empty File manager.
+        back = logical == 'files'
+        clear_failed()
+        if back and mode == 'sleep':
+            m.SLEEP_RETURN_MODE = MODE
+        elif back:
+            return back_to_list(m)
     if logical == MODE and model.revision != LAST_REVISION:
         LAST_REVISION = model.revision
         m.sync_app_context(mode)
@@ -369,7 +384,7 @@ def open_record(m, record):
     global PENDING, CHOICE, OPENED
     model = manager(m)
     if record.state != 'finished':
-        m.speak(model.details(record) + (' Space pauses or resumes it.' if record.state in ('downloading', 'paused', 'queued') else ''))
+        m.speak((model.details(record) + ' ' + model.next_step(record)).strip())
         return MODE
     path = Path(record.path) if record.path else None
     if path is None or not path.is_file():
@@ -386,9 +401,26 @@ def open_record(m, record):
         nav.player_files, nav.player_picker, nav.player_return = None, None, MODE
         return result
     if suffix in SUPPORTED or suffix in DOCUMENT_TYPES:
+        # A downloaded document is read in the Document reader, Word files too;
+        # it is not opened for editing. Escape there comes back to this list.
+        from document_reader import open_document
+        from file_manager import FileManager
         nav.picker = None
         nav.reader_return, OPENED = MODE, path
-        return nav.open_document(path)
+        if m.FILE_MANAGER is None:
+            m.FILE_MANAGER = FileManager()
+
+        def read():
+            global FAILED_OPEN
+            try:
+                return open_document(path)
+            except Exception as exc:
+                FAILED_OPEN = path
+                if isinstance(exc, (ValueError, OSError)) and str(exc):
+                    raise
+                raise ValueError(path.name + ' could not be opened. The file may be damaged.') from exc
+        m.speak(m.FILE_MANAGER.start_job(read, m.FILE_MANAGER.finish_open, 'Opening ' + path.name + '.'))
+        return 'files'
     if suffix in downloads.PROGRAM_TYPES:
         PENDING, CHOICE = ('run', record), 'no'
         m.speak(question('run', record))

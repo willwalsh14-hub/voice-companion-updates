@@ -549,7 +549,7 @@ class DownloadManager:
             self.settle(record)
         elif new == 'failed':
             self.say(name + ' did not finish downloading. ' + REASONS[record.reason] + ' '
-                     + ('Press Control+D for downloads, then Space to try again.' if record.can_resume else 'Go back to the web page and choose the link again.'))
+                     + ('To try again, open Downloads and press Space.' if record.can_resume else 'Go back to the web page and choose the link again.'))
         elif new == 'cancelled' and record.intent != 'cancel':
             self.say(name + ' was cancelled in the browser.')
         elif new == 'blocked':
@@ -631,6 +631,18 @@ class DownloadManager:
                 text += ' From ' + host.removeprefix('www.') + '.'
         text += ' ' + BROWSER_NAMES.get(record.source, 'Browser') + '.'
         return text
+
+    def next_step(self, record):
+        """What the user can do with a download that is not finished, said after its details."""
+        if record.state in ('downloading', 'paused', 'queued'):
+            return 'Space pauses or resumes it.'
+        if record.state == 'failed' and record.can_resume and record.live:
+            return 'Space tries again.'
+        if record.state == 'blocked':
+            return 'In Chrome, press Control+J, then keep or delete the file.'
+        if record.state in ('failed', 'cancelled'):
+            return 'To get it, go back to the web page and choose the link again.'
+        return ''
 
     def toggle(self, record):
         """Space: pause or resume. Returns what to say."""
