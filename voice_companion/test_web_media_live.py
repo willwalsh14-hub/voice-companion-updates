@@ -21,7 +21,8 @@ FORM = '''<title>Form</title><h1>Application</h1><a href="https://fixture.test/n
 addEventListener('beforeunload',e=>{if(window.dirty){e.preventDefault();e.returnValue='';}});</script>'''
 
 
-class LiveDialogTests(unittest.TestCase):
+class LiveBrowser(unittest.TestCase):
+    """One headless Chromium for the class. It has no tests of its own."""
     @classmethod
     def setUpClass(cls):
         cls.driver = sync_playwright().start()
@@ -33,6 +34,9 @@ class LiveDialogTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls): cls.browser.close(); cls.driver.stop()
+
+
+class LiveDialogTests(LiveBrowser):
 
     def setUp(self):
         self.context = self.browser.new_context(); self.addCleanup(self.context.close)
@@ -88,7 +92,7 @@ class LiveDialogTests(unittest.TestCase):
         self.assertIn('Next', self.session.keyboard('Forward'))
 
 
-class SlowSiteTests(unittest.TestCase):
+class SlowSiteTests(LiveBrowser):
     """A real local web server that takes longer than the click wait to answer."""
     DELAY = 12
 
@@ -109,11 +113,11 @@ class SlowSiteTests(unittest.TestCase):
                 self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers(); self.wfile.write(body)
         cls.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
-        LiveDialogTests.setUpClass.__func__(cls)
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        cls.browser.close(); cls.driver.stop(); cls.server.shutdown(); cls.server.server_close()
+        super().tearDownClass(); cls.server.shutdown(); cls.server.server_close()
 
     def setUp(self):
         self.context = self.browser.new_context(); self.addCleanup(self.context.close)
@@ -133,6 +137,35 @@ class SlowSiteTests(unittest.TestCase):
     def test_a_slow_form_button_opens_its_page(self):
         said = self.at('Find')
         self.assertTrue(said.startswith('Page loaded: Slow.'), said)
+
+
+SHOP = """<title>Shop</title><h1>Shop</h1><ul>
+<li><a href="/blue"><img src="/blue.png" alt="Blue hat"></a></li>
+<li><a href="/red"><img src="/images/red.png"></a></li>
+<li>Shoes<ul><li><a href="/size">Size guide</a></li></ul></li>
+<li></li></ul>"""
+
+
+class NestedListTests(LiveBrowser):
+    def setUp(self):
+        self.context = self.browser.new_context(); self.addCleanup(self.context.close)
+        self.context.route('https://fixture.test/**', lambda route: route.fulfill(status=404) if route.request.url.endswith('.png')
+                           else route.fulfill(content_type='text/html', body=SHOP))
+        self.page = self.context.new_page(); self.page.goto('https://fixture.test/', timeout=30000)
+        self.backend = BrowserBackend(tempfile.gettempdir()); self.backend.page = self.page; self.backend.context = self.context; self.backend.start = lambda: None
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, self.backend); self.session._refresh()
+
+    def test_list_items_holding_only_a_link_or_image_are_named_by_it(self):
+        items = [self.session.keyboard('Quick:i') for _ in range(5)]
+        self.assertEqual(items, ['Blue hat, list item 1 of 4.', 'Unlabeled link on fixture.test, list item 2 of 4.',
+                                 'Shoes, list item 3 of 4.', 'Size guide, list item 1 of 1.', 'Empty list item, list item 4 of 4.'])
+
+    def test_a_link_with_an_unnamed_image_reads_as_a_link_everywhere(self):
+        self.session.keyboard('PageTop')
+        lines = [self.session.keyboard('Read:Down') for _ in range(3)]
+        self.assertEqual(lines[1], 'Link Unlabeled link on fixture.test')
+        self.assertNotIn('graphic', ' '.join(lines))
 
 
 if __name__ == '__main__':

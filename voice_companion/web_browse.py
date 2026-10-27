@@ -247,6 +247,8 @@ SEMANTICS = r'''
               // An image whose alt text is "Placeholder", "image" or a file name tells a
               // listener nothing: treat it as decoration, as screen readers should.
               else if(tag==='img'&&accessibleLabel.junkAlt(e)){role='';}
+              // An image with no name inside a link: the link is what is read and followed.
+              else if(tag==='img'&&!e.hasAttribute('alt')&&!e.hasAttribute('aria-label')&&!e.hasAttribute('aria-labelledby')&&!e.hasAttribute('title')&&e.closest('a[href]')){role='';}
               else if(['img','graphics-document','graphics-symbol','graphics-object'].includes(role)||tag==='svg'&&(e.hasAttribute('aria-label')||e.hasAttribute('aria-labelledby')||e.querySelector('title')))role='graphic';
               else if(['input','textarea','select'].includes(tag)||editable)role=role||'field';
               else if(tag==='p'&&!role)role='paragraph';
@@ -275,7 +277,7 @@ SEMANTICS = r'''
             const listItems=role==='list'?itemsFor(e):[];
             const parentList=role==='listitem'?ownList(e):null;
             const siblings=parentList?itemsFor(parentList):[];
-            if(role==='listitem'){const pieces=[];const own=n=>{if(n.nodeType===3){pieces.push(n.textContent);return;}if(n.nodeType!==1||n!==e&&n.matches('ul,ol,menu,[role~="list"]')||!visible(n)||n.closest('[aria-hidden="true"],[inert]'))return;for(const c of (n.shadowRoot?n.shadowRoot.childNodes:n.tagName==='SLOT'&&n.assignedNodes({flatten:true}).length?n.assignedNodes({flatten:true}):n.childNodes))own(c);};own(e);label=pieces.join(' ').trim().replace(/\s+/g,' ')||'Empty list item';}
+            if(role==='listitem'){const pieces=[];const own=n=>{if(n.nodeType===3){pieces.push(n.textContent);return;}if(n.nodeType!==1||n!==e&&n.matches('ul,ol,menu,[role~="list"]')||!visible(n)||n.closest('[aria-hidden="true"],[inert]'))return;for(const c of (n.shadowRoot?n.shadowRoot.childNodes:n.tagName==='SLOT'&&n.assignedNodes({flatten:true}).length?n.assignedNodes({flatten:true}):n.childNodes))own(c);};own(e);label=pieces.join(' ').trim().replace(/\s+/g,' ');}
             if(role==='list'&&!label)label='List';
             if(role==='landmark'&&!label)label='Unnamed';
             if(['list','listitem','frame','landmark'].includes(role))newline();
@@ -298,7 +300,9 @@ SEMANTICS = r'''
             else if(role==='graphic'||role==='frame')append((role==='frame'?'Frame ':'')+label);
             else if(tag==='img'){}
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.tagName==='SLOT'&&e.assignedNodes({flatten:true}).length?e.assignedNodes({flatten:true}):e.childNodes))walk(child);
-            if(item){if(size()===item.start && label)append(label);item.end=size();if(!item.label)item.label=output.slice(item.start,item.end).trim().slice(0,180);if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}
+            if(item){if(size()===item.start && label)append(label);item.end=size();if(!item.label)item.label=(item.role==='listitem'?output.slice(item.start,item.end).trim().split('\n')[0]:output.slice(item.start,item.end)).trim().slice(0,180);
+              // A list item holding only a link or image is named by what it shows; one with nothing is empty.
+              if(item.role==='listitem'&&!item.label)item.label='Empty list item';if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}
             if(bookmark)bookmark.end=size();
             if(['input','select','textarea','a','button'].includes(tag)||controlRoles.includes(role)||editable)newline();if(['TD','TH'].includes(e.tagName))append(' ');if(block.has(e.tagName)||['list','listitem','frame','landmark'].includes(role))newline();
           };
