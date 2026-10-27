@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 648
-- Already had both ways: 513
+- Actions inventoried: 655
+- Already had both ways: 520
 - Gaps found: 135
 - Gaps fixed (Added): 127
 - Not applicable (N/A, with reason): 8
@@ -1205,6 +1205,50 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Set Remove saved AI key to ..."
 - Keyboard: Alt+O, arrows to Synthesizer options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+## Display options
+
+### Color scheme
+
+- Voice: "Set Color scheme to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Text size
+
+- Voice: "Set Text size to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Screen font
+
+- Voice: "Set Screen font to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Bold text
+
+- Voice: "Set Bold text to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Highlight color
+
+- Voice: "Set Highlight color to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Line spacing on screen
+
+- Voice: "Set Line spacing on screen to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Show the window full screen
+
+- Voice: "Set Show the window full screen to ..."
+- Keyboard: Alt+O, arrows to Display options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
 ## Input options

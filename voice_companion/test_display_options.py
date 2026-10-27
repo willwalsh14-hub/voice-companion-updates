@@ -57,7 +57,8 @@ class SettingsTests(unittest.TestCase):
         values = options.settings({'display_text_size': '300 percent'})
         self.assertEqual(options.scaled(12, values), 36)
         family, size, weight, slant = options.font(values, 'title')
-        self.assertEqual((family, size, weight), ('Verdana', 60, 'bold'))
+        self.assertEqual((family, weight), ('Verdana', 'bold'))
+        self.assertEqual(size, options.BASE_SIZES['title'] * 3)
         self.assertEqual(options.font(values, 'body')[2], 'normal')
         self.assertEqual(options.font(dict(values, display_bold=True), 'body')[2], 'bold')
 
