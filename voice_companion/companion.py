@@ -348,6 +348,12 @@ def sync_app_context(mode,focus=False):
     global UI_CONTEXT_CACHE
     if APP_WINDOW is None:return
     context=app_context(mode)
+    # What the window shows for low-vision users: screen name, list, selected item (display_screen.py).
+    try:context.update(__import__('display_screen').context(sys.modules[__name__],mode,context))
+    except Exception as exc:
+        # The visual display must never stop speech or keys; keep the colors and text size at least.
+        print('Voice Companion display error:',repr(exc),file=sys.stderr,flush=True)
+        context['display']=__import__('display_options').settings(PREFERENCES)
     if UI_CONTEXT_CACHE and context.get('source')!=UI_CONTEXT_CACHE.get('source'):DICTATION_ECHO.clear()
     if KEYBOARD_SPEECH and not TEXT_MODE:
         KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
@@ -668,6 +674,18 @@ def commit_email_field_tab(payload,mode):
     if payload.get('key'):return navigation_key(payload['key'],mode)
     return 'send email' if payload.get('send') else navigation_key('ShiftTab' if payload['backward'] else 'Tab',mode)
 
+def change_display(request,mode):
+    """Change the text size, colors or full screen, save it, say it, and show it at once."""
+    import display_options
+    values,words=display_options.apply_request(PREFERENCES,request)
+    if request[0]!='status':
+        PREFERENCES.update(values)
+        try:__import__('app_settings').save_preferences(sys.modules[__name__])
+        except OSError:words+=' This change could not be saved. It lasts until Companion closes.'
+    speak(words)
+    sync_app_context(mode)
+
+
 # The PC's clock. Tests replace it with a fixed moment.
 CLOCK = datetime.now
 
@@ -702,6 +720,15 @@ def navigation_key(key,mode):
     if key=='Ctrl+F1':
         # Control+F1 goes back to the main menu from every screen.
         return '@main_menu'
+    if key.startswith('Display:'):
+        # Control+Plus, Control+Minus, Control+0, Control+9 and F11 change the screen on every screen.
+        previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+        try:
+            interrupt_speech()
+            request=__import__('display_options').KEY_REQUESTS.get(key)
+            if request:change_display(request,mode)
+        finally:KEYBOARD_NAVIGATION=previous
+        return None
     if ACCOUNT_ENTRY is not None and key!='Control':
         # Setup owns the keyboard: keys must not reach the menu behind the text box.
         if key=='Escape':return 'cancel account setup'
@@ -2967,6 +2994,11 @@ def _handle(text, mode, typed=False):
     clock=time_date.clock_request(text,clock_text_entry(mode,typed))
     if clock:
         speak_clock(clock);return mode
+    # "Bigger text", "Change colors", "Full screen": the screen for low vision, from every screen
+    # where words are commands. In a document, email, note or text box they are text.
+    display=__import__('display_options').voice_request(text) if mode!='settings' and not clock_text_entry(mode,typed) else None
+    if display:
+        change_display(display,mode);return mode
     if ACCOUNT_PICKER is not None and not text.startswith('@sm:'):
         picked = account_picker_step(text, command, mode)
         if picked is not None:
