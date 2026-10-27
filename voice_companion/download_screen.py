@@ -31,8 +31,12 @@ OPEN_ANYWHERE = ('download manager', 'open download manager', 'open the download
                  'show downloads', 'show my downloads', 'web downloads', 'browser downloads')
 OPEN_ON_MENUS = ('downloads', 'open downloads', 'my downloads')
 NOT_HERE = ('media', 'podcast', 'settings', 'task_input', 'document_name', 'search', 'chrome_setup')
-YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'enter', 'yes cancel it', 'cancel it', 'run it')
-NO = ('no', 'no thanks', 'escape', 'go back', 'back', 'keep it', 'keep downloading', 'do not cancel')
+YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'enter')
+NO = ('no', 'no thanks', 'escape', 'go back', 'back', 'do not cancel')
+# Words that answer only one of the two questions. "Cancel it" means Yes to
+# "Cancel this download?" but No to "Run this program?".
+ANSWERS = {'cancel': (('yes cancel it', 'cancel it', 'cancel download'), ('keep it', 'keep downloading', 'do not cancel it')),
+           'run': (('run it', 'yes run it', 'open it'), ('cancel it', 'do not run it', 'cancel'))}
 PASS_THROUGH = ('help', 'options', 'open options', 'main menu', 'back to main menu', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio')
@@ -240,14 +244,15 @@ def command_here(m, raw, command):
     model = manager(m)
     if PENDING is not None:
         action, record = PENDING
-        if command in YES:
+        yes, no = ANSWERS[action]
+        if command in YES + yes:
             PENDING = None
             if action == 'cancel':
                 m.speak(model.cancel(record))
             else:
                 m.speak(launch(record))
             return MODE
-        if command in NO or command in ('cancel', 'close downloads'):
+        if command in NO + no or command in ('cancel', 'close downloads'):
             PENDING = None
             m.speak(('Not cancelled. ' if action == 'cancel' else 'Not opened. ') + describe(m))
             return MODE

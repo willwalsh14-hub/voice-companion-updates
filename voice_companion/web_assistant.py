@@ -27,6 +27,10 @@ class WebError(Exception):
     pass
 
 
+class FileDownloading(WebError):
+    """The address is a file: the browser downloads it and the page stays as it was."""
+
+
 def _plain(text):
     return re.sub(r'\s+', ' ', str(text or '')).strip()
 
@@ -296,7 +300,7 @@ class BrowserBackend:
             # The address is a file, not a page: the browser downloads it instead
             # (downloads.py announces it). The current page stays as it was.
             if 'download is starting' in str(exc).casefold():
-                raise WebError('This address is a file, so it is downloading. Press Control+D to see your downloads.') from exc
+                raise FileDownloading('This address is a file, so it is downloading. Press Control+D to see your downloads.') from exc
             raise
 
     def back(self):
@@ -2126,7 +2130,8 @@ class WebSession:
             self.backend.goto(url)
             return ''
         except WebError as failure:
-            if self.injected_backend or getattr(self.backend,'regular',False):raise
+            # A file address is downloading in this browser. Closing it would stop the download.
+            if isinstance(failure,FileDownloading) or self.injected_backend or getattr(self.backend,'regular',False):raise
             # The other guided browser: Chrome when embedded Edge cannot start,
             # embedded Edge when Chrome cannot start (Chrome is not installed).
             failed=self.backend.browser
