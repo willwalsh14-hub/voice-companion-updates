@@ -324,6 +324,13 @@ class FavoriteNameTests(unittest.TestCase):
         session._sync_browser_tab = lambda: None
         self.assertEqual(session.command('Save favorite as VA news.'), 'Saved favorite VA news.')
         self.assertEqual([item['name'] for item in session.favorites.all().values()], ['VA news'])
+        # The same through New favorite and Rename favorite in the web browser menu.
+        menu = session.menu
+        menu.process('new favorite', session, False)
+        self.assertEqual(menu.process('Weather.', session, False)[0], 'Saved favorite Weather. Web browser menu.')
+        menu.process('rename favorite', session, False); menu.process('weather', session, False)
+        self.assertEqual(menu.process('Local weather!', session, False)[0], 'Renamed favorite to Local weather. Web browser menu.')
+        self.assertEqual(sorted(item['name'] for item in session.favorites.all().values()), ['Local weather', 'VA news'])
 
 
 class InsecureFormTests(unittest.TestCase):
