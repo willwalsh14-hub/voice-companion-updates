@@ -219,5 +219,73 @@ class UpdateWhileInstallingTests(CompanionTestCase):
         self.assertEqual(self.said[-1], 'The update is being installed and cannot be canceled now. Voice Companion will close and reopen when it finishes.')
 
 
+class HelpAndTutorialReturnTests(CompanionTestCase):
+    """Leaving Help or the tutorial names where you are, in one message."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(TASK_NAV=None, NAMED_LIST=None, tutorial_session=None, MAIN_MENU_LEAD='').items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def key(self, key, mode):
+        request = companion.navigation_key(key, mode)
+        return mode if request is None else companion.handle(request, mode, typed=True)
+
+    def test_closing_help_names_the_menu_you_return_to(self):
+        mode = companion.handle('word processor', 'awake')
+        mode = self.key('F1', mode)
+        self.assertEqual(mode, 'help')
+        self.assertNotIn('..', self.said[-1])
+        mode = self.key('Escape', self.key('Escape', mode))
+        self.assertEqual(mode, 'word_processor')
+        self.assertEqual(self.said[-1], 'Help closed. Back to Word processor menu.')
+
+    def test_closing_help_on_the_main_menu_is_one_message(self):
+        mode = self.key('F1', 'awake')
+        self.said.clear()
+        self.assertEqual(self.key('Escape', mode), 'awake')
+        self.assertEqual(self.said, ['Help closed. ' + companion.MAIN_MENU_PROMPT])
+
+    def test_closing_the_tutorial_is_one_message(self):
+        mode = companion.handle('start tutorial', 'awake')
+        self.said.clear()
+        self.assertEqual(self.key('Escape', mode), 'awake')
+        self.assertEqual(self.said, ['Tutorial closed. ' + companion.MAIN_MENU_PROMPT])
+
+
+class ExitKeepsWorkTests(CompanionTestCase):
+    """Never lose user data: exit used to go ahead when the note could not be saved,
+    and a draft that could not be saved stopped the app with an error."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(web_session=None, OPEN_NOTE=None, MEDIA_HUB=None, KEYBOARD_DIRTY={}).items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+        p = mock.patch.object(companion, 'note_buffer', ['Buy milk.']); p.start(); self.addCleanup(p.stop)
+        p = mock.patch.object(companion, 'wait_for_speech', return_value=True); p.start(); self.addCleanup(p.stop)
+
+    def test_exit_stays_open_when_the_note_cannot_be_saved(self):
+        with mock.patch('notepad.add', side_effect=PermissionError('locked')):
+            self.assertEqual(companion.finish_exit('note'), 'note')
+        self.assertEqual(companion.note_buffer, ['Buy milk.'])
+        self.assertIn('could not be saved', self.said[-1])
+
+    def test_exit_stays_open_when_the_draft_cannot_be_saved(self):
+        draft = self.draft()
+        with mock.patch.object(draft, 'save', side_effect=PermissionError('locked')):
+            self.assertEqual(companion.finish_exit('email_draft'), 'email_draft')
+        self.assertEqual(self.said[-1], 'Your email draft could not be saved, so Voice Companion is still open. Close any program using your drafts folder, then try again.')
+
+    def test_closing_the_window_saves_the_note_and_never_stops_with_an_error(self):
+        with mock.patch('notepad.add') as add:
+            companion.close_from_window('note')
+        add.assert_called_once_with(self.folder, 'Buy milk.')
+        self.assertEqual(self.said[-1], 'Voice Companion closed. Goodbye.')
+        companion.note_buffer[:] = ['Second note.']
+        editor = mock.Mock(); editor.save.side_effect = PermissionError('locked')
+        companion.KEYBOARD_DIRTY[1] = (editor, 0)
+        with mock.patch('notepad.add', side_effect=PermissionError('locked')):
+            companion.close_from_window('note')     # no exception
+        self.assertEqual(self.said[-1], 'Voice Companion closed. Some of your work could not be saved.')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -989,7 +989,7 @@
 },
 "awake | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -1336,7 +1336,7 @@
 },
 "awake | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -1390,7 +1390,7 @@
 },
 "awake | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -2862,7 +2862,7 @@
 },
 "awake | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -3006,7 +3006,7 @@
 },
 "awake | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -4046,7 +4046,7 @@
 },
 "awake | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -5849,7 +5849,7 @@
 },
 "document | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -6367,7 +6367,7 @@
 },
 "document | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -6448,7 +6448,7 @@
 },
 "document | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -8605,7 +8605,7 @@
 },
 "document | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -8821,7 +8821,7 @@
 },
 "document | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -10343,7 +10343,7 @@
 },
 "document | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -12374,7 +12374,7 @@
 },
 "email_draft | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -12922,7 +12922,7 @@
 },
 "email_draft | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -13003,7 +13003,7 @@
 },
 "email_draft | email help": {
 "said": [
-"Write An Email. Start a new message (S), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write An Email. Start a new message (S), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -15189,7 +15189,7 @@
 },
 "email_draft | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -15405,7 +15405,7 @@
 },
 "email_draft | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -16932,7 +16932,7 @@
 },
 "email_draft | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -17792,8 +17792,7 @@
 },
 "help | back": {
 "said": [
-"Help closed. Back where you were.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -18588,8 +18587,7 @@
 },
 "help | go back": {
 "said": [
-"Help closed. Back where you were.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -21840,7 +21838,7 @@
 },
 "mailbox | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -22285,7 +22283,7 @@
 },
 "mailbox | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -22360,7 +22358,7 @@
 },
 "mailbox | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -24320,7 +24318,7 @@
 },
 "mailbox | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -24512,7 +24510,7 @@
 },
 "mailbox | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -25859,7 +25857,7 @@
 },
 "mailbox | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27251,7 +27249,7 @@
 },
 "note | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27598,7 +27596,7 @@
 },
 "note | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27653,7 +27651,7 @@
 },
 "note | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -29094,7 +29092,7 @@
 },
 "note | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -29238,7 +29236,7 @@
 },
 "note | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -30254,7 +30252,7 @@
 },
 "note | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -32033,7 +32031,7 @@
 },
 "web | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -32504,7 +32502,7 @@
 },
 "web | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -32586,7 +32584,7 @@
 },
 "web | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -34768,7 +34766,7 @@
 },
 "web | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -34984,7 +34982,7 @@
 },
 "web | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -36432,7 +36430,7 @@
 },
 "web | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },

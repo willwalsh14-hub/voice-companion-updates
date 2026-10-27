@@ -1834,9 +1834,14 @@ def podcast_search(topic):
 def finish_exit(mode):
     global help_session, account_setup, pending_send, mail_session, KEYBOARD_BATCH_TEXT
     KEYBOARD_BATCH_TEXT=None
-    if email_draft is not None:email_draft.save()
+    # Never lose work: if the draft or the note cannot be saved, stay open and say so.
+    if email_draft is not None:
+        try:email_draft.save()
+        except OSError:
+            speak('Your email draft could not be saved, so Voice Companion is still open. Close any program using your drafts folder, then try again.')
+            return mode
+    if flush_note(mode) is False:return mode   # save_note said why; the words are kept
     help_session=None;account_setup=False;pending_send=None;mail_session=None
-    flush_note(mode)
     if MEDIA_HUB is not None:
         try:MEDIA_HUB.player.close()
         except Exception:pass
@@ -1848,6 +1853,19 @@ def finish_exit(mode):
     speak_status('Shutting down. Goodbye.')
     wait_for_speech(30000)
     return 'exit'
+
+
+def close_from_window(mode):
+    """The window was closed some other way than Exit. Save what can be saved, say so, and
+    never stop with an error: the app is closing either way."""
+    saved=True
+    try:flush_keyboard_edits(True)
+    except OSError:saved=False
+    if email_draft is not None:
+        try:email_draft.save()
+        except OSError:saved=False
+    if flush_note(SLEEP_RETURN_MODE if mode=='sleep' else mode) is False:saved=False
+    speak('Voice Companion closed. Goodbye.' if saved else 'Voice Companion closed. Some of your work could not be saved.')
 
 
 def thunderbird_connect_ready(setup):
@@ -2996,7 +3014,7 @@ def _handle(text, mode, typed=False):
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global OPEN_NOTE, ACCOUNT_ENTRY, THUNDERBIRD_SETUP
-    global SEARCH_RETURN_MODE,NAMED_LIST,EMAIL_LINK_RECIPIENT
+    global SEARCH_RETURN_MODE,NAMED_LIST,EMAIL_LINK_RECIPIENT,MAIN_MENU_LEAD
     # Phrases that list saved notes. On the Notepad screen only the clear commands
     # count; a sentence such as "My notes are on the desk" is text.
     NOTE_LIST_COMMANDS = ('list notes', 'list my notes', 'list saved notes', 'list the notes', 'open notes', 'open my notes',
@@ -3098,10 +3116,11 @@ def _handle(text, mode, typed=False):
             navigation_key('End' if command in ('end of list','last item') else 'Home',mode);return mode
         interrupt_speech()
         result,closed=tutorial_session.process(text)
-        speak(result)
         if closed:
-            tutorial_session=None
+            # Said with Main menu in one message (handle() says it); two would cut each other off.
+            tutorial_session=None;MAIN_MENU_LEAD='Tutorial closed.'
             return 'awake'
+        speak(result)
         return mode
     if mode=='browser_menu' and command not in ('help','options','open options','main menu','back to main menu','exit companion','go to sleep') and not command.startswith(('help with ', 'help for ')) and (command=='resume' or not speech_control(command)) and speech_setting_request(text) is None and command not in VOICE_LIST_COMMANDS and command not in ('use sapi','use sapi voice','use windows voice','use ai voice','use espeak','document help','email help','web help','radio help','podcast help','commands help') and not spoken_control(command):
         return handle_browser_menu(text)
@@ -3423,10 +3442,13 @@ def _handle(text, mode, typed=False):
             return help_return_mode
         result = help_session.process('back to topics' if command in (
             'help', 'user guide', 'open user guide', 'manual', 'open manual') else text)
-        if result is not None:speak(result)
         if help_session.closed:
+            # Name the screen you return to. The main menu is said by handle(), so say it with that.
             help_session = None
+            if help_return_mode == 'awake':MAIN_MENU_LEAD = 'Help closed.'
+            else:speak('Help closed. ' + options_return_notice(help_return_mode))
             return help_return_mode
+        if result is not None:speak(result)
         return 'help'
     global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME, PUNCTUATION_LEVEL
     if command in ('check voices', 'voice check', 'voice diagnostics'):
@@ -4934,8 +4956,7 @@ def main():
                 mode = __import__('chrome_setup').poll(sys.modules[__name__],mode)
             update_audio_ducking()
             if APP_WINDOW is not None and APP_WINDOW.closed.is_set():
-                flush_keyboard_edits(True)
-                speak('Voice Companion closed. Goodbye.')
+                close_from_window(mode)
                 return 0
             while True:
                 try: media_notice = MEDIA_NOTICES.get_nowait()

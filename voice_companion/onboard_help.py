@@ -59,7 +59,7 @@ class HelpSession:
         subs = self._subtopics()
         from menu_navigation import announce_item
         return (announce_item(subs[self.subtopic_index][0],self.subtopic_index,len(subs))+
-                '. Say next or previous, then that one to read it. Say back to topics for all chapters.')
+                ' Say next or previous, then that one to read it. Say back to topics for all chapters.')
 
     def start(self):
         return 'User guide. ' + self._item()
