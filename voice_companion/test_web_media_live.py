@@ -253,5 +253,38 @@ class DownloadLinkTests(LiveBrowser):
         self.assertEqual(session.open('https://fixture.test/file.zip'), notice)
 
 
+CART = """<title>Shop</title><h1>Shop</h1><p>Lots of text here about the product.</p>
+<button onclick="document.getElementById('s').textContent='Added to cart. 1 item.'">Add to cart</button>
+<button aria-expanded="false" onclick="this.setAttribute('aria-expanded','true');document.getElementById('more').hidden=false">Show details</button>
+<p id="more" hidden>Made of wool.</p><a href="#" onclick="event.preventDefault();document.getElementById('s').textContent='Saved for later.'">Save for later</a>
+<p>Reviews follow.</p><div role="status" id="s"></div>"""
+
+
+class SamePageButtonTests(LiveBrowser):
+    def setUp(self):
+        self.context = self.browser.new_context(); self.addCleanup(self.context.close)
+        self.context.route('https://fixture.test/**', lambda route: route.fulfill(content_type='text/html', body=CART))
+        self.page = self.context.new_page(); self.page.goto('https://fixture.test/', timeout=30000)
+        self.backend = BrowserBackend(tempfile.gettempdir()); self.backend.page = self.page; self.backend.context = self.context; self.backend.start = lambda: None
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, self.backend); self.session._refresh()
+
+    def test_a_button_that_changes_this_page_says_what_changed_and_keeps_your_place(self):
+        self.session.keyboard('Quick:b')
+        # The page's own status message, not the whole page again.
+        self.assertEqual(self.session.keyboard('Activate'), 'Added to cart. 1 item.')
+        self.assertEqual(self.session.browse.current()['label'], 'Add to cart')
+        self.assertEqual(self.session.keyboard('Read:Down'), 'Show details, button')
+        # With no message, the button says its new state.
+        self.assertEqual(self.session.keyboard('Activate'), 'Show details, button, expanded.')
+        self.assertEqual(self.session.keyboard('Read:Down'), 'Made of wool.')
+        # A link that only changes this page does the same.
+        self.assertEqual(self.session.keyboard('Quick:k'), 'Link Save for later.')
+        started = time.monotonic()
+        self.assertEqual(self.session.keyboard('Activate'), 'Saved for later.')
+        # Its address is this page with #, so no new page is waited for.
+        self.assertLess(time.monotonic() - started, 4)
+
+
 if __name__ == '__main__':
     unittest.main()

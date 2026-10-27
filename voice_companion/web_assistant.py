@@ -885,7 +885,9 @@ class BrowserBackend:
                     navigation_changed=frame.url!=before_url or any(now.get(k)!=before.get(k) for k in ('url','epoch','frames','frame_identity'))
                     # A link may open a dialog or update content through
                     # JavaScript without changing its URL.
-                    needs_navigation=kind(item)=='link' and item.get('href')!=before_url
+                    # A link to this same page (href="#", or a script link) changes it in place.
+                    href=str(item.get('href') or '')
+                    needs_navigation=kind(item)=='link' and href!=before_url and not href.lower().startswith('javascript:') and urlsplit(href)._replace(fragment='')!=urlsplit(before_url)._replace(fragment='')
                     dom_changed=any(now.get(k)!=before.get(k) for k in ('revision','frame_states'))
                     modal_ready=needs_navigation and dom_changed and frame.evaluate('()=>[...document.querySelectorAll(\'[role="dialog"][aria-modal="true"],dialog[open]\')].some(e=>!e.hidden&&getComputedStyle(e).display!=="none"&&getComputedStyle(e).visibility!=="hidden")')
                     content_changed=dom_changed and (frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text or frame.evaluate(controls_signature)!=before_controls)
@@ -1723,7 +1725,10 @@ class WebSession:
                 if role=='button' and skip_ad_button({'url':self.snapshot.get('url',''),'elements':[item]}):return self.skip_ad()
                 if role in ('button','menuitem','menuitemradio','menuitemcheckbox'):
                     self.progress('Loading page.')
+                    before=self._before_action()
                     action=self.backend.activate(item)
+                    same=self._same_page_result(before,action)
+                    if same:return same
                     message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
                     return (action.get('validation') or action.get('notice') or message) if isinstance(action,dict) else message
                 if role in ('link','button'):
@@ -2037,6 +2042,39 @@ class WebSession:
         if dialog:return (dialog_notice+' ' if dialog_notice else '')+dialog
         return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
+
+    def _live_news(self):
+        """Messages the page put in its status or alert areas since the last look."""
+        reader=getattr(self.backend,'page_key_state',None)
+        if not callable(reader):return []
+        try:state=reader(drain=True)
+        except Exception:return []
+        return list(dict.fromkeys(t for t in (state or {}).get('live') or [] if isinstance(t,str) and t.strip()))
+
+    def _before_action(self):
+        """The page as it is before a button or link is used, and its messages so far cleared."""
+        self._live_news()
+        return self._stamp(),getattr(self.backend,'page',None)
+
+    def _same_page_result(self,before,action):
+        """After a button or link changed only this page: what to say, keeping the reading place.
+
+        A screen reader stays on the button and says the page's message. Reading
+        the whole page again from the top lost the user's place. Returns None
+        when another page opened, so the usual page reading follows."""
+        stamp,page=before
+        if not isinstance(action,dict) or action.get('validation') or action.get('unchanged') or action.get('download'):return None
+        after=self._stamp()
+        if not stamp or not after or getattr(self.backend,'page',None) is not page or any(stamp.get(k)!=after.get(k) for k in ('url','epoch')):return None
+        anchor=self.browse.current() if self.browse else None
+        try:message=self._refresh(wait=False,read=False,preserve=True)
+        except Exception:return None
+        if 'Dialog opened.' in message or 'Dialog closed.' in message:return message
+        news=self._live_news()
+        if news:return ' '.join(t if t.endswith(('.','!','?')) else t+'.' for t in news)
+        current=self.browse.current() if self.browse else None
+        if current and anchor and current.get('key')==anchor.get('key'):return describe(current,self.browse.elements)
+        return 'The page changed. '+(describe(current,self.browse.elements) if current else '')
 
     def _dialog_change(self,leaving,known_state,old_anchor,read):
         """What to say when a dialog on the same page opened or closed, or ''.
@@ -2529,9 +2567,12 @@ class WebSession:
             return 'This action may submit information or move money. Ask your helper to review and complete it in the browser.'
         try:
             self.progress('Loading page.')
+            before=self._before_action()
             navigation=self.backend.activate(item)
             if isinstance(navigation,dict) and navigation.get('download'):return navigation['notice']
             fragment=navigation.get('fragment') if isinstance(navigation,dict) else None
+            same=None if fragment else self._same_page_result(before,navigation)
+            if same:return same
             message=self._refresh(read=False if fragment else None)
             if fragment:
                 target=next((e for e in self.browse.elements+self.snapshot.get('anchors',[]) if e.get('id')==fragment and e.get('frame_index')==navigation.get('frame_index')),None)
