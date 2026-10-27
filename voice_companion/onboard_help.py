@@ -87,12 +87,20 @@ class HelpSession:
             'downloads':'download files', 'download manager':'download files', 'download':'download files', 'download folder':'download files',
             'attachments':'read and organize email', 'attachment':'read and organize email', 'email attachments':'read and organize email',
         }
+        # Help on these screens opens their own part of a chapter, not its first part.
+        part = {'attachments': 'open and save attachments', 'attachment': 'open and save attachments',
+                'email attachments': 'open and save attachments'}.get(wanted)
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)
                    if topic['name'].casefold() == wanted or topic['name'].casefold().startswith(wanted)]
         if len(matches) != 1:
             return 'I could not identify one help topic. Say back to topics to browse the list.'
         self.topic_index = matches[0]
+        subs = self._subtopics()
+        found = [i for i, (name, _) in enumerate(subs) if part and name.casefold() == part]
+        if found:
+            self.subtopic_index = found[0]
+            return self._open_article(subs[found[0]][1], subs[found[0]][0])
         return self._open_topic()
 
     def _open_topic(self):

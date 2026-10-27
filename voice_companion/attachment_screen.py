@@ -475,7 +475,7 @@ def mailbox_command(m, raw, command, mode):
         save(m, found, spoken_folder(folder_text) if folder_text else default_folder(m), named=bool(folder_text))
         return mode
     # "Open report", "open the PDF" in an open message: its file, when the name fits only that file.
-    opened = re.fullmatch(r'(?:open|play) (?P<what>.+)', command)
+    opened = re.fullmatch(r'open (?P<what>.+)', command)    # not "play": "play the news" may be the radio
     if opened and mail.view == 'message' and isinstance(getattr(mail, 'attachments', None), list) and mail.attachments:
         index = named_file(mail, mail.attachments, opened['what'])
         if index is not None:

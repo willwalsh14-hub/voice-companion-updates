@@ -928,13 +928,21 @@ The review also names the files attached. If a file was moved or deleted after y
 
 11.6 Attach files
 You can attach files to a new message, a reply, a reply to all, or a forward.
+To attach a file by its name, say "Attach", the name, "from", and the folder. For example, say "Attach my resume from Documents".
+- The folder can be Documents, Desktop, Downloads, Pictures, Music, or Videos. Companion also looks in the folders inside it.
+- If one file fits, Companion attaches it. You hear, for example, "Attached resume.docx. 1 attachment."
+- If several files fit, you hear a short list, newest first. Use Up Arrow and Down Arrow, then press Enter on the file you want. Escape closes the list.
+- To attach the file you downloaded last, say "Attach the last download".
+To choose the file in File manager:
 1. In the draft, say "Attach a file", or press Control+T. File manager opens.
 2. Move to the file. To attach several files from one folder, press Space on each one.
 3. Press Enter. Companion attaches the files and takes you back to the same place in the draft.
-- To hear what is attached, say "List attachments", or press Control+L. The Attachments list opens. Up Arrow and Down Arrow move through it.
-- To take a file off, say "Remove attachment", or press Delete in the Attachments list. You can also say "Remove attachment" followed by the file name, such as "Remove attachment report.pdf".
-- In the Attachments list, Control+T also attaches another file. Escape goes back to the draft.
 Folders cannot be attached. Escape in the File manager drive list goes back to the draft without attaching anything.
+To check what is attached:
+- To hear what is attached, say "Attachments", "What's attached", or "List attachments", or press Control+L. The Attachments list opens. Part 12.7 tells how to use it.
+- To hear how big the files are, say "How big are the attachments".
+- To take a file off, say "Remove" and its name, such as "Remove report" or "Remove the photo". You can also say "Remove attachment report.pdf". Or press Delete in the Attachments list.
+These commands work only as whole commands. A sentence such as "Remove the photo from the album" is written into your message.
 Gmail and Yahoo take about 25 megabytes for each message. Email makes files about a third larger. Companion warns you when the files may be too large to send.
 A saved draft keeps its attached files. When you open it again, they are still there.
 
@@ -980,7 +988,7 @@ Inside an open message, Control+A selects text to copy. It does not mark other m
 Open the message first. Then say "Reply", "Reply all", or "Forward". Or press R, A, or F.
 Reply all goes to the sender and everyone else on the message. Check the addresses before you send.
 For a forward, give the new address when asked. Speak your added text. Then review and send as in part 11.5.
-A forward includes the original attachments. Companion says their names when the forward starts. To leave one out, open the Attachments list with Control+L, move to the file, and press Delete.
+A forward includes the original attachments. Companion says their names when the forward starts. To leave one out, say "Remove" and its name, such as "Remove the photo". Or open the Attachments list with Control+L, move to the file, and press Delete.
 To throw away the reply, say "Cancel" or "Back to inbox". Say "Save draft" first if you want to keep it.
 
 12.5 Create and manage folders
@@ -1021,23 +1029,39 @@ Email letter keys work in the message list and in an open message:
 - P: to hear your contacts, say "List contacts", or press P.
 - S: to hear how many are marked, say "What is selected", or press S.
 - U: to remove all marks, say "Clear selection", or press U.
-- L: to hear the files sent with a message, say "List attachments", or press L.
+- L: to hear the files sent with a message, say "What's attached" or "List attachments", or press L.
 - Space marks a message. Delete deletes. F2 renames a folder. F5 checks for new mail.
 For email help, say "Help with email", or press F1.
 The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.
 
 12.7 Open and save attachments
 When you open a message that has files, Companion first says how many there are, with their names and sizes. For example, "2 attachments: report.pdf, 1.2 megabytes; photo.jpg, 300 kilobytes."
-1. To open the Attachments list, say "List attachments", or press L.
-2. Use Up Arrow and Down Arrow to move through the files. Home and End go to the first and last file. You hear "Start of list" or "End of list" at the ends.
+The Attachments list works the same for a message you got and for an email you are writing.
+1. To open the Attachments list, say "Attachments" or "What's attached", or press L. In an email you are writing, press Control+L. You hear, for example, "Attachments, 2 files. report.pdf, 1.2 megabytes, 1 of 2."
+2. Use Up Arrow and Down Arrow to move through the files. Or say "Next attachment" and "Previous attachment". Home and End go to the first and last file. A letter goes to the next file that starts with it.
 3. Press Enter to open the file you are on. Documents open in Document reader, and sound and video in the media player. Other files open in their Windows app.
-4. Press Escape to go back to the message.
-- To save the file, say "Save attachment", or press Control+S. It goes in your Downloads folder.
-- To save every file, say "Save all attachments", or press Control+Shift+S.
-- To save in another folder, say "Save attachment to", followed by the folder, such as "Save attachment to Documents". You can also type a full folder path.
-- Companion says where it saved the file. It never replaces a file that is already there. A second copy of report.pdf is saved as report (1).pdf.
-- For help in the list, say "Help with attachments", or press F1.
+4. Press Escape to go back to the message or the draft.
+Keys and voice commands in the Attachments list:
+- Enter: to open the file, say "Open attachment", or press Enter.
+- Control+S: to save the file in your Downloads folder, say "Save attachment", or press Control+S.
+- Control+D: to save it in another folder, say "Save attachment to folder", or press Control+D. Then say or type the folder.
+- Control+Shift+S: to save every file, say "Save all attachments", or press Control+Shift+S.
+- Control+I: to hear what kind of file it is, its size, and where it is, say "Read attachment details", or press Control+I.
+- Delete: in an email you are writing, to take the file off, say "Remove attachment", or press Delete.
+- Control+T: in an email you are writing, to attach another file, say "Attach a file", or press Control+T.
+- F1: for help in the list, say "Help with attachments", or press F1.
 Press Alt to open the attachments menu. It has the same choices.
+You can say a file's name the way you would say it:
+- To open a file, say "Open" and its name, such as "Open report" or "Open the PDF".
+- To save it in a folder, say "Save it to" and the folder, such as "Save it to Documents". You can name the file too, such as "Save report to Desktop".
+- To save every file in a folder, say "Save all to" and the folder, such as "Save all to Desktop".
+- The folder can be Documents, Desktop, Downloads, Pictures, Music, or Videos. You can also type a full folder path.
+- To hear the size of the file you are on, say "How big is it". For all the files, say "How big are they".
+- "Report dot PDF", "report", and "the report" all find report.pdf. You can also say the kind of file, such as "the PDF", "the photo", or "the spreadsheet". Or say a number, such as "Open the second one".
+- If two files fit what you said, Companion names them. Then say more of the name.
+In an open message, you can say these without opening the list. For example, say "Open the photo", "Save report to Documents", or "Save all to Desktop".
+- Companion says where it saved the file. It never replaces a file that is already there. A second copy of report.pdf is saved as report (1).pdf.
+- If a folder cannot be used, Companion says so. Choose another folder, such as Desktop.
 A program or script asks first before it opens. Only open programs from people you trust.
 A large file can take a while. Companion says how far it has got. Press Escape to stop. Nothing half saved is left behind.
 If a file is damaged, Companion says it could not be saved.
