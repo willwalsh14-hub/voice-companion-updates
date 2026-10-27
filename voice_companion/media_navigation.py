@@ -46,7 +46,11 @@ class MediaNavigation:
         if self.view=='downloads':return [{'title':p.stem} for p in h.downloads()]
         if self.view=='recordings':
             return [{'title':p.stem} for p in h.recordings()]
-        if self.view=='scheduled':return [{**j,'name':j['station']['name']+' at '+j['when']} for j in h._load('radio-schedule.json',[])]
+        if self.view=='scheduled':
+            jobs=h._load('radio-schedule.json',[])
+            # A damaged entry is listed so it can be removed; it never stops the app.
+            return [{'job':j,'name':(name+' at '+j['when']) if (name:=h._scheduled_name(j)) else 'A damaged schedule entry'}
+                    for j in (jobs if isinstance(jobs,list) else [])]
         return []
     def state(self):
         if self.pending:return None
@@ -198,7 +202,7 @@ class MediaNavigation:
                     if _episode_count(v[0]) is None:return 'Choose manual, all, or a number from 1 to 10,000.'
                     if h.shows and h.show_index is not None:command+=' for podcast '+str(h.show_index+1)
                     else:return 'Select a subscribed podcast first.'
-                    if not any(x['feed']==h.shows[h.show_index]['feed'] for x in h._load('podcast-subscriptions.json',[])):return 'Subscribe to this podcast first.'
+                    if not any(x['feed']==h.shows[h.show_index].get('feed') for x in h.saved_subscriptions()):return 'Subscribe to this podcast first.'
                 result=self.run(command)
         except (OSError,ValueError,IndexError) as exc:return 'Could not complete this request. '+str(exc)
         self.form=None;self.revision+=1;return result
@@ -208,11 +212,11 @@ class MediaNavigation:
         if cmd in ('cancel selected scheduled recording','remove selected subscription'):
             if cmd.startswith('cancel'):
                 if self.view!='scheduled' or not self.items():return 'List scheduled recordings and select one first.'
-                item=self.items()[self.item_index];self.pending=('schedule',item['id']);label=item['station']['name']
+                item=self.items()[min(self.item_index,len(self.items())-1)];self.pending=('schedule',item['job']);label=item['name']
             else:
                 if not h.shows or h.show_index is None:return 'Select a subscribed podcast first.'
                 item=h.shows[h.show_index]
-                if not any(s['feed']==item['feed'] for s in h._load('podcast-subscriptions.json',[])):return 'This podcast is not subscribed.'
+                if not any(s['feed']==item.get('feed') for s in h.saved_subscriptions()):return 'This podcast is not subscribed.'
                 self.pending=('subscription',item['feed']);label=item['name']
             self.confirm_choice='no';return 'Remove '+label+'? Yes or no.'
         if cmd=='delete preset':self.select_item(self.item_index) if self.view=='presets' else None
@@ -244,9 +248,17 @@ class MediaNavigation:
             if cmd in ('yes','yes please','ok','okay','confirm'):
                 self.pending=None
                 if kind=='preset':return self.hub.command('yes',section='radio')
-                filename='radio-schedule.json' if kind=='schedule' else 'podcast-subscriptions.json';field='id' if kind=='schedule' else 'feed'
+                filename='radio-schedule.json' if kind=='schedule' else 'podcast-subscriptions.json'
                 with self.hub._lock:
-                    items=self.hub._load(filename,[]);self.hub._save(filename,[x for x in items if x.get(field)!=key])
+                    items=self.hub._load(filename,[])
+                    if not isinstance(items,list):items=[]
+                    if kind=='schedule':
+                        # Remove only the chosen entry, damaged or not.
+                        index=next((i for i,x in enumerate(items) if x==key),None)
+                        if index is None:return 'That recording is no longer scheduled.'
+                        items.pop(index)
+                    else:items=[x for x in items if not (isinstance(x,dict) and x.get('feed')==key)]
+                    self.hub._save(filename,items)
                 if kind=='subscription':self.hub.subscriptions();self.view='shows'
                 self.item_index=0;return 'Removed.'
             return 'Yes or no?'
