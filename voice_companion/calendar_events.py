@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
 from spoken_dates import spoken_day
-from time_date import spoken_time
+from time_date import DAYS, MONTHS, spoken_time
 
 # Tests set a fixed zone; None means this computer's own time zone (with its daylight saving).
 LOCAL_ZONE = None
@@ -32,6 +32,15 @@ def day_range(day):
     """The UTC moments that cover one local day, midnight to midnight."""
     start = datetime.combine(day, time())
     return utc_ms(start), utc_ms(start + timedelta(days=1))
+
+
+def later_day(later, day):
+    """'Sunday' for a day in the coming week; 'Sunday, November 15' when it is further away,
+    so the weekday alone cannot be mistaken for this week's."""
+    name = DAYS[later.weekday()]
+    if (later - day).days > 6:
+        name += ', ' + MONTHS[later.month - 1] + ' ' + str(later.day)
+    return name
 
 
 @dataclass
@@ -63,7 +72,7 @@ class Event:
         if self.all_day:
             last = (self.end - timedelta(days=1)).date()
             if last > day:
-                return 'All day, until ' + last.strftime('%A')
+                return 'All day, until ' + later_day(last, day)
             return 'All day'
         starts_today, ends_today = self.start.date() == day, self.end.date() == day or self.end == datetime.combine(day + timedelta(days=1), time())
         if not starts_today and not ends_today:
@@ -73,7 +82,7 @@ class Event:
         if self.end <= self.start:
             return spoken_time(self.start)
         end = spoken_time(self.end) + ('' if ends_today else ' tomorrow' if self.end.date() == day + timedelta(days=1) else
-                                       ' on ' + self.end.strftime('%A'))
+                                       ' on ' + later_day(self.end.date(), day))
         return spoken_time(self.start) + ' to ' + end
 
     def line(self, day):

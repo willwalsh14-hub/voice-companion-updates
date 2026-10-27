@@ -173,6 +173,7 @@ MENUS = {
             ('Next event', 'Down', 'next event'),
             ('Previous event', 'Up', 'previous event'),
             ('Add event', 'Ctrl+N', 'add event'),
+            ('Edit event', 'F2', 'edit event'),
             ('Delete event', 'Delete', 'delete event')]),
         ('Day', [
             ('Today', 'Home', 'today'),
@@ -180,7 +181,7 @@ MENUS = {
             ('Previous day', 'Left', 'previous day'),
             ('Next week', 'Page Down', 'next week'),
             ('Previous week', 'Page Up', 'previous week'),
-            ('Go to a day', '', 'go to {value}')]),
+            ('Go to a date', 'Ctrl+G', 'go to date')]),
         ('Calendar', [
             ('Refresh calendar', '', 'refresh calendar'),
             ('Calendar help', 'F1', 'help with calendar'),

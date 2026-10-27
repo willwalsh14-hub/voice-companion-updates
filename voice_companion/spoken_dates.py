@@ -126,6 +126,8 @@ DAY_PATTERNS = (
     ('in', r'\bin\s(?P<n>' + NUM + r'|a|an)\s(?P<unit>days?|weeks?)\b'),
     ('monthday', r'\b(?:on\s)?(?P<month>' + MONTH + r')\s(?:the\s)?(?P<day>' + NUM + r')(?:\s?,?\s(?P<year>\d{4}))?\b'),
     ('daymonth', r'\b(?:on\s)?(?:the\s)?(?P<day>' + NUM + r')\s(?:of\s)?(?P<month>' + MONTH + r')(?:\s?,?\s(?P<year>\d{4}))?\b'),
+    # 2026-12-25, as many programs write a date. (Never 10-30: that is a time range.)
+    ('iso', r'\b(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})\b'),
     ('numeric', r'\b(?P<month>\d{1,2})/(?P<day>\d{1,2})(?:/(?P<year>\d{2}|\d{4}))?\b'),
     ('weekday', r'\b(?:on\s)?(?P<which>this\s|next\s|coming\s|this\scoming\s)?(?P<weekday>' + WEEKDAY + r')\b'),
     ('ordinal', r'\b(?:on\s)?the\s(?P<day>\d{1,2}(?:st|nd|rd|th)|' + '|'.join(re.escape(w) for w in _ORDINALS[1:] + ['twentieth', 'thirtieth']
@@ -167,7 +169,7 @@ def _day_from(kind, match, today, future):
         if (match['which'] or '').strip() == 'next' and ahead == 0:
             ahead = 7
         return today + timedelta(days=ahead)
-    month = MONTH_NAMES.get(str(match.groupdict().get('month') or '').rstrip('.')) if kind != 'numeric' else int(match['month'])
+    month = _month(kind, match)
     day = number(match['day'])
     if kind == 'ordinal':
         month = today.month
@@ -187,6 +189,53 @@ def _day_from(kind, match, today, future):
             found = _full_date(following.year, following.month, day)
         return found
     return _closest_year(month, day, today, future)
+
+
+def _month(kind, match):
+    if kind in ('numeric', 'iso'):
+        return int(match['month'])
+    return MONTH_NAMES.get(str(match.groupdict().get('month') or '').rstrip('.'))
+
+
+LEADING_WEEKDAY = r'^(?:on\s+)?' + WEEKDAY + r'\s*,?\s+(?=\S)'
+
+
+def only_day(text, today, future=False):
+    """The day when the words are only a date, else None: "Friday", "the 15th", "10/30",
+    or "Friday, October 30, 2026" the way Companion says a date. "Friday lunch" is not a date."""
+    words = str(text).strip().strip(' .,!?;:')
+    found, span = find_day(words, today, future)
+    if found is not None and span == (0, len(words)):
+        return found
+    # A weekday before a full date: the date says which day it is.
+    weekday = re.match(LEADING_WEEKDAY, prepare(words))
+    if weekday:
+        rest = words[weekday.end():]
+        found, span = find_day(rest, today, future)
+        if found is not None and span == (0, len(rest)):
+            return found
+    return None
+
+
+def missing_date(text, today):
+    """A plain sentence when the words name a month and day that do not exist ("There is no
+    February 30."), else ''."""
+    import calendar
+    low = prepare(text)
+    for kind, pattern in DAY_PATTERNS:
+        if kind not in ('monthday', 'daymonth', 'numeric', 'iso'):
+            continue
+        for match in re.finditer(pattern, low):
+            month, day = _month(kind, match), number(match['day'])
+            if not month or not 1 <= month <= 12 or not day or _day_from(kind, match, today, False) is not None:
+                continue
+            year = match.groupdict().get('year')
+            if month == 2 and day == 29 and not year:
+                leap = next(y for y in range(today.year, today.year + 8) if calendar.isleap(y))
+                return 'February 29 is only in a leap year, such as ' + str(leap) + '. Say the year too.'
+            year = int(year) + (2000 if year and int(year) < 100 else 0) if year else None
+            return 'There is no ' + MONTHS[month - 1] + ' ' + str(day) + (', ' + str(year) if year else '') + '.'
+    return ''
 
 
 def parse_day(text, today):

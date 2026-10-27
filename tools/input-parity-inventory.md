@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 648
-- Already had both ways: 513
-- Gaps found: 135
-- Gaps fixed (Added): 127
+- Actions inventoried: 649
+- Already had both ways: 515
+- Gaps found: 134
+- Gaps fixed (Added): 126
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -2503,6 +2503,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+N
 - Status: Both
 
+### Edit event
+
+- Voice: "Edit event"
+- Keyboard: F2
+- Status: Both
+
 ### Delete event
 
 - Voice: "Delete event"
@@ -2541,11 +2547,11 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Page Up
 - Status: Both
 
-### Go to a day
+### Go to a date
 
-- Voice: "Go to ..."
-- Keyboard: Alt, 2, 6
-- Status: Added: Alt menu path
+- Voice: "Go to date"
+- Keyboard: Ctrl+G
+- Status: Both
 
 ## Alt menu, Calendar: Calendar
 

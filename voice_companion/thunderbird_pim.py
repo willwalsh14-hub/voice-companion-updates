@@ -87,3 +87,10 @@ def add_event(calendar_id, title, start, end, all_day=False, location='', notes=
 
 def delete_event(calendar_id, event_id, occurrence='', all_of_them=False):
     return call('deleteEvent', calendarId=calendar_id, id=event_id, occurrence=occurrence, all=bool(all_of_them))
+
+
+def modify_event(calendar_id, event_id, changes, occurrence='', all_of_them=False):
+    """Change an event. changes holds only what changes (see modifyEvent in pim.js): title, location,
+    notes; allDay with start and end; calendarId to move it; shift and length for a whole repeating event."""
+    return call('modifyEvent', calendarId=calendar_id, id=event_id, occurrence=occurrence, all=bool(all_of_them),
+                changes=dict(changes))
