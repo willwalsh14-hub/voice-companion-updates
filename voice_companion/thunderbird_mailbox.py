@@ -6,7 +6,7 @@ to the Voice Companion Mail Connection add-on through thunderbird_bridge.
 """
 from email.utils import getaddresses
 
-from mailbox_access import MailboxError, html_text, message_date
+from mailbox_access import MailboxError, html_text, message_date, reply_addresses
 from thunderbird_bridge import ThunderbirdError, ThunderbirdUnavailable, current
 
 INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
@@ -53,6 +53,21 @@ MAIL_CHECK_NOTICES = {
     'slow': ('Thunderbird is still getting your mail, so the newest messages may not be here yet. '
              'A new account can take several minutes. Press F5 or say refresh messages to check again.'),
 }
+
+
+def person(text):
+    """(name, address) from one sender or recipient as Thunderbird gives it.
+
+    Thunderbird decodes the header first, so a name with a comma is not quoted:
+    "Smith, John <john@example.com>". Read as a list, that is two people, and
+    "Smith" is not an address. The address is empty when there is none."""
+    import re
+    text = ' '.join(str(text or '').split())
+    found = re.fullmatch(r'(.*?)\s*<([^<>\s]+@[^<>\s]+)>', text)
+    if found:
+        return found[1].strip().strip('"').strip(), found[2]
+    pairs = [(name, address) for name, address in getaddresses([text]) if '@' in address]
+    return pairs[0] if pairs else ('', '')
 
 
 def connected():
@@ -145,7 +160,7 @@ class ThunderbirdMailbox:
     def _rows(page):
         rows = []
         for item in page.get('rows', []):
-            (name, sender), = getaddresses([item.get('from', '')]) or [('', '')]
+            name, sender = person(item.get('from', ''))
             rows.append({'id': item['id'], 'from': sender or item.get('from') or 'Unknown sender',
                          'sender_name': name, 'subject': item.get('subject') or '(no subject)',
                          'date': message_date(item.get('date')),
@@ -226,11 +241,14 @@ class ThunderbirdMailbox:
         if action not in ('reply', 'reply_all', 'forward'):
             raise MailboxError('Unknown email response.')
         info = call('context', messageId=self._message(message_id))
-        sender = getaddresses([info.get('replyTo') or info.get('author', '')])
-        others = getaddresses(list(info.get('recipients', [])) + list(info.get('ccList', []))) if action == 'reply_all' else []
+        # Reply-To is the raw header, so it is read as a list; the others come decoded.
+        sender = ([found for _, found in getaddresses([info['replyTo']])] if info.get('replyTo') else
+                  [person(info.get('author', ''))[1]])
+        to = [person(item)[1] for item in info.get('recipients', []) or []]
+        copied = [person(item)[1] for item in info.get('ccList', []) or []]
         recipients = []
-        for _, found in sender + others:
-            if found and found.casefold() != own_address.casefold() and found.casefold() not in [a.casefold() for a in recipients]:
+        for found in reply_addresses(action, sender, to, copied, own_address):
+            if found.casefold() not in [a.casefold() for a in recipients]:
                 recipients.append(found)
         subject = info.get('subject') or '(no subject)'
         prefix = 'Fwd: ' if action == 'forward' else 'Re: '

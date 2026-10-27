@@ -21,7 +21,7 @@ from email.parser import BytesParser
 from email.utils import getaddresses
 
 import imap_structure
-from mailbox_access import MailboxError, html_text, message_date, part_text
+from mailbox_access import MailboxError, html_text, message_date, part_text, reply_addresses
 
 HOST, PORT = 'imap.mail.yahoo.com', 993
 TIMEOUT = 30
@@ -502,11 +502,12 @@ class YahooMailbox:
             raise MailboxError('Unknown email response.')
         def operation(conn):
             msg, found = self._readable(conn, message_id, folder_id, 'This message is too large to reply to.')
-            sender = getaddresses([_header(msg, 'Reply-To') or _header(msg, 'From')])
-            others = getaddresses([_header(msg, 'To'), _header(msg, 'Cc')]) if action == 'reply_all' else []
+            def addresses(*names):
+                return [address for _, address in getaddresses([_header(msg, name) for name in names]) if address]
             recipients = []
-            for _, address in sender + others:
-                if address and address.casefold() != own_address.casefold() and address.casefold() not in [a.casefold() for a in recipients]:
+            for address in reply_addresses(action, addresses('Reply-To') or addresses('From'), addresses('To'),
+                                           addresses('Cc'), own_address):
+                if address.casefold() not in [a.casefold() for a in recipients]:
                     recipients.append(address)
             subject = _header(msg, 'Subject', '(no subject)')
             prefix = 'Fwd: ' if action == 'forward' else 'Re: '
