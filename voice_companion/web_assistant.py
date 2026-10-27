@@ -45,6 +45,12 @@ class FileDownloading(WebError):
     """The address is a file: the browser downloads it and the page stays as it was."""
 
 
+LINK_DOWNLOADING='This link is a file, so it is downloading. Press Control+D to see your downloads.'
+ADDRESS_DOWNLOADING='This address is a file, so it is downloading. Press Control+D to see your downloads.'
+# Guided Chrome is started by the driver, which does not keep its downloads.
+GUIDED_CHROME_NO_DOWNLOADS='Guided Chrome cannot save downloads. To get this file, say use embedded Edge, then choose it again.'
+
+
 def _plain(text):
     return re.sub(r'\s+', ' ', str(text or '')).strip()
 
@@ -314,8 +320,13 @@ class BrowserBackend:
             # The address is a file, not a page: the browser downloads it instead
             # (downloads.py announces it). The current page stays as it was.
             if 'download is starting' in str(exc).casefold():
-                raise FileDownloading('This address is a file, so it is downloading. Press Control+D to see your downloads.') from exc
+                raise FileDownloading(self.download_notice(ADDRESS_DOWNLOADING)) from exc
             raise
+
+    def download_notice(self,notice):
+        """What to say when a link or address is a file."""
+        guided_chrome=getattr(self,'browser','')=='chrome' and not getattr(self,'regular',False) and not getattr(self,'_embedded',None)
+        return GUIDED_CHROME_NO_DOWNLOADS if guided_chrome else notice
 
     def back(self):
         if not self.history_step(-1):raise WebError('There is no previous page.')
@@ -808,6 +819,11 @@ class BrowserBackend:
         opened=[]
         request_errors=[]
         pending_requests=set()
+        # A link or button that starts a download: the page stays, and saying so
+        # at once beats waiting and then reporting that nothing opened.
+        import downloads as download_list
+        files=[];model=download_list.current();serial=model.serial if model is not None else None
+        def file_started(download):files.append(download)
         def new_page(page):opened.append(page)
         def started_request(request):
             try:
@@ -827,6 +843,7 @@ class BrowserBackend:
         if self.context:self.context.on('page',new_page)
         before_page.on('request',started_request);before_page.on('requestfinished',finished_request)
         before_page.on('requestfailed',failed_request);before_page.on('response',failed_response)
+        before_page.on('download',file_started)
         try:
             self.last_action_started=True
             if key and focused:self.page.keyboard.press(key)
@@ -852,6 +869,8 @@ class BrowserBackend:
                 except Exception:return False
             while time.monotonic()<deadline or loading():
                 if getattr(self,'dialog_notice','')==LEAVE_NOTICE:break
+                if files or model is not None and model.serial!=serial:
+                    return {'unchanged':True,'download':True,'notice':self.download_notice(LINK_DOWNLOADING)}
                 candidates=[p for p in opened if not p.is_closed()]
                 if self.context:
                     candidates.extend(p for p in self.context.pages if p not in before_pages and p not in candidates and not p.is_closed())
@@ -917,6 +936,8 @@ class BrowserBackend:
             if self.context:self.context.remove_listener('page',new_page)
             before_page.remove_listener('request',started_request);before_page.remove_listener('requestfinished',finished_request)
             before_page.remove_listener('requestfailed',failed_request);before_page.remove_listener('response',failed_response)
+            try:before_page.remove_listener('download',file_started)
+            except Exception:pass
 
     def focus(self,item):
         if editable_combo(item):self._text_element(item).focus();return
@@ -2509,6 +2530,7 @@ class WebSession:
         try:
             self.progress('Loading page.')
             navigation=self.backend.activate(item)
+            if isinstance(navigation,dict) and navigation.get('download'):return navigation['notice']
             fragment=navigation.get('fragment') if isinstance(navigation,dict) else None
             message=self._refresh(read=False if fragment else None)
             if fragment:

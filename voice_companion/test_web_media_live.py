@@ -220,5 +220,38 @@ class FindTextTests(LiveBrowser):
         self.assertTrue(self.session.command('find zebra').startswith('I could not find zebra on this page.'))
 
 
+FILES = '<title>Files</title><h1>Files</h1><a href="/file.zip">Get the file</a>'
+
+
+class DownloadLinkTests(LiveBrowser):
+    def open(self, accept):
+        context = self.browser.new_context(accept_downloads=accept); self.addCleanup(context.close)
+        def route(route):
+            if route.request.url.endswith('.zip'):
+                return route.fulfill(body=b'PK' * 1000, headers={'Content-Type': 'application/zip', 'Content-Disposition': 'attachment; filename="file.zip"'})
+            route.fulfill(content_type='text/html', body=FILES)
+        context.route('https://fixture.test/**', route)
+        page = context.new_page(); page.goto('https://fixture.test/', timeout=30000)
+        backend = BrowserBackend(tempfile.gettempdir()); backend.page = page; backend.context = context; backend.start = lambda: None
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        session = WebSession(temp.name, backend); session._refresh()
+        return session, backend
+
+    def test_a_download_link_says_it_is_downloading_at_once(self):
+        session, backend = self.open(True)
+        backend.browser = 'webview2'   # a browser that saves downloads, as embedded Edge does
+        session.keyboard('Quick:k')
+        started = time.monotonic()
+        self.assertEqual(session.keyboard('Activate'), 'This link is a file, so it is downloading. Press Control+D to see your downloads.')
+        self.assertLess(time.monotonic() - started, 4)
+
+    def test_guided_chrome_says_it_cannot_save_downloads(self):
+        session, backend = self.open(False)
+        notice = 'Guided Chrome cannot save downloads. To get this file, say use embedded Edge, then choose it again.'
+        session.keyboard('Quick:k')
+        self.assertEqual(session.keyboard('Activate'), notice)
+        self.assertEqual(session.open('https://fixture.test/file.zip'), notice)
+
+
 if __name__ == '__main__':
     unittest.main()
