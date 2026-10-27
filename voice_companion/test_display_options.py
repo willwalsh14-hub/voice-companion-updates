@@ -214,6 +214,26 @@ class WindowHelperTests(unittest.TestCase):
         self.assertEqual((len(shown), index, offset), (200, None, 0))
 
 
+class GuideTests(unittest.TestCase):
+    def test_help_topic_and_guide_explain_the_keys_and_commands(self):
+        import re
+        from onboard_help import HelpSession
+        guide = Path(app.__file__).with_name('START HERE - Veteran.txt')
+        for said in ('low vision', 'display', 'text size', 'high contrast', 'magnifier', 'large text and colors'):
+            self.assertTrue(HelpSession(guide).topic(said).startswith('Large Text And Colors.'), said)
+        text = guide.read_text(encoding='utf-8')
+        page = re.sub(r'</?kbd>', '', guide.with_suffix('.html').read_text(encoding='utf-8')).replace('&quot;', '"')
+        for words in ('Control+Plus', 'Control+Minus', 'Control+0', 'Control+9', 'F11', '"Bigger text"', '"Smaller text"',
+                      '"Normal text size"', '"High contrast"', '"Change colors"', '"Full screen"', '25.10 Display options',
+                      '30.4 Use full screen and a magnifier'):
+            self.assertIn(words, text)
+            self.assertIn(words, page)
+        # Every voice command the guide gives really works.
+        for said in ('Bigger text', 'Smaller text', 'Normal text size', 'High contrast', 'Change colors', 'Full screen',
+                     'Text size 300 percent', 'Black on white', 'What text size?'):
+            self.assertIsNotNone(options.voice_request(said), said)
+
+
 class FakeMail:
     def __init__(self, *args): pass
     def folders(self): return [('Inbox', 'inbox')]

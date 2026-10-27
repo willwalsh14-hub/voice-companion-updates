@@ -86,6 +86,11 @@ class HelpSession:
             'notepad':'write a note', 'notes':'write a note', 'updates':'check for updates', 'tutorial':'using help and lessons',
             'downloads':'download files', 'download manager':'download files', 'download':'download files', 'download folder':'download files',
             'attachments':'read and organize email', 'attachment':'read and organize email', 'email attachments':'read and organize email',
+            'display':'large text and colors', 'display options':'large text and colors', 'large text':'large text and colors',
+            'text size':'large text and colors', 'colors':'large text and colors', 'colours':'large text and colors',
+            'color scheme':'large text and colors', 'contrast':'large text and colors', 'high contrast':'large text and colors',
+            'magnifier':'large text and colors', 'magnification':'large text and colors', 'zoom':'large text and colors',
+            'low vision':'large text and colors', 'screen':'large text and colors', 'full screen':'large text and colors',
         }
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)

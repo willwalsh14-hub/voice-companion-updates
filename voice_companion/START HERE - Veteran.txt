@@ -169,6 +169,7 @@ Contents
   25.7 Web browser options
   25.8 Radio and Podcasts options
   25.9 Auto-update and Startup and exit options
+  25.10 Display options
 26 Sleep, Exit, And Computer Power
   26.1 Put the microphone to sleep
   26.2 Close Companion
@@ -186,6 +187,11 @@ Contents
   29.3 Email or a website will not work
   29.4 A guide or update will not open
   29.5 Understand privacy and online services
+30 Large Text And Colors
+  30.1 What the screen shows
+  30.2 Change the text size
+  30.3 Change the colors
+  30.4 Use full screen and a magnifier
 
 1. GETTING STARTED
 
@@ -251,6 +257,7 @@ These keys work on every screen in Companion. Learn these first.
 - To hear the time, say "What time is it?", or press F12. Press F12 twice quickly for the date.
 - To pause voice commands, say "Go to sleep", or press Control+F12. Press Control+F12 again to wake up.
 - To turn the microphone fully off or on, press F9.
+- To make the text on the screen bigger or smaller, press Control+Plus or Control+Minus. See chapter 30.
 - To close Companion, say "Exit Companion", or press Alt+F4.
 Keys for lists and menus:
 - Up Arrow and Down Arrow move through the items.
@@ -1787,6 +1794,17 @@ In Startup and exit options:
 - Ask before exiting Voice Companion, Ask before shutting down the computer, and Ask before restarting the computer are on at first. Each one controls its own Yes or No question.
 Even with the exit question turned off, you are still asked to save an open document.
 
+25.10 Display options
+Display options change how the Companion window looks. They help if you have low vision. They also help a helper who is with you.
+- Color scheme: yellow on black, white on black, black on white, black on yellow, or Windows colors. Yellow on black is the default. Windows colors follows your Windows theme, including Windows high contrast.
+- Text size: from 100 to 400 percent. The default is 200 percent. It changes all the text in the window.
+- Screen font: Verdana is the default. You can also choose Arial, Segoe UI, or Tahoma. APHont and Atkinson Hyperlegible are in the list when they are on your computer.
+- Bold text: makes all the text bold. It is off at first.
+- Highlight color: the color of the selected item and the caret. Automatic swaps the text and background colors. It is the strongest choice.
+- Line spacing on screen: single, one and a half, or double.
+- Show the window full screen: the window fills the screen. It is on at first.
+Changes show as soon as you choose OK. They are kept after you close the app. To change the size or colors without Options, see chapter 30.
+
 26. SLEEP, EXIT, AND COMPUTER POWER
 
 26.1 Put the microphone to sleep
@@ -1905,3 +1923,39 @@ Online services need your permission:
 The app keeps the documents, drafts, contacts, favorites, and history you use. Account sign-ins and AI keys are protected for your Windows user account. Documents and drafts are ordinary files, so protect your computer and your Windows account.
 Email, websites, audio streams, contact sync, and update checks use the internet when you use them. Each service has its own data rules. The app has no user tracking or advertising.
 The app skips history entries with private sign-in data. It also removes sign-in codes from older saved addresses. If a favorite needs you to sign in again, open the site and save its main page.
+
+30. LARGE TEXT AND COLORS
+
+30.1 What the screen shows
+The Companion window shows what you hear. This helps if you have some sight, or if a helper is with you.
+- The name of the screen is at the top, in large letters. For example, Main menu, Email: Inbox, or Calendar: Today, Monday, October 26. In a list, your place comes next, such as 3 of 15.
+- The last thing Companion said is under the name.
+- The list or menu you are in fills the middle. The selected item has an arrow in front of it. It is also bold and highlighted, so you can find it without seeing colors.
+- In a document, email, note, help topic, or web page, the text fills the middle. The line with the caret has its own background. The caret is wide and does not blink.
+- The window follows you as you move. It never takes your keys or adds speech.
+
+30.2 Change the text size
+Text is 200 percent of normal size at first. You can choose from 100 to 400 percent.
+- To make the text bigger, press Control+Plus, or say "Bigger text". Control+Equals works too.
+- To make the text smaller, press Control+Minus, or say "Smaller text".
+- To go back to 200 percent, press Control+0, or say "Normal text size".
+- To choose a size, say "Text size" and a number, such as "Text size 300 percent".
+You hear the new size, such as Text size 250 percent. It is saved at once.
+These keys work on every screen, as they do in a web browser. They never type into a document or a web page.
+
+30.3 Change the colors
+Yellow on black is the color scheme at first. It is a high contrast scheme.
+- To try the next color scheme, press Control+9, or say "Change colors". You hear its name, such as White on black.
+- The schemes are yellow on black, white on black, black on white, black on yellow, and Windows colors.
+- To go back to yellow on black, say "High contrast".
+- To choose a scheme, say its name, such as "Black on white".
+- Windows colors uses the colors of your Windows theme. If you turn on a Windows high contrast theme, Companion follows it.
+To hear the text size, colors, and font, say "What text size?".
+
+30.4 Use full screen and a magnifier
+The window fills the screen at first.
+- To turn full screen on or off, press F11, or say "Full screen".
+- When full screen is off, the window still covers most of the screen.
+Companion works with Windows Magnifier, ZoomText, and Fusion. Set your magnifier to follow the text cursor. It then follows the selected item in a list and the caret in your text.
+Companion also follows the Windows display scale, so text stays sharp.
+In a document, email, or note, spoken words such as "Bigger text" are typed as text. Use the keys there.
