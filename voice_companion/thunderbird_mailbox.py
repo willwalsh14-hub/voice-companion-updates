@@ -115,6 +115,34 @@ def accounts():
     return call('accounts')
 
 
+READ_LIMIT = 5 * 1024 * 1024   # characters read aloud from one message, as for Yahoo
+LONG_MESSAGE = 'This message is very long. Only the first part is read here. Open it in Thunderbird for the rest.'
+
+
+def readable_parts(parts):
+    """A huge message, made small enough to read: (parts, cut).
+
+    Pictures written into the HTML (data: addresses) are never read aloud, so they go
+    first. Then the plain text is used, and only if that is still too long is the
+    text cut. Reading many megabytes of HTML stopped Voice Companion for minutes."""
+    import re
+    html, plain = str(parts.get('html') or ''), str(parts.get('plain') or '')
+    if len(html) <= READ_LIMIT and len(plain) <= READ_LIMIT:
+        return parts, False
+    parts = dict(parts)
+    if len(html) > READ_LIMIT:
+        html = re.sub(r'''(\bsrc\s*=\s*["']?)data:[^"'\s>]*''', r'\1', html, flags=re.I)
+    if len(html) > READ_LIMIT and plain:
+        html = ''
+    cut = False
+    if len(html) > READ_LIMIT:
+        html, cut = html[:READ_LIMIT], True
+    if len(plain) > READ_LIMIT:
+        plain, cut = plain[:READ_LIMIT], True
+    parts.update(html=html, plain=plain)
+    return parts, cut
+
+
 class ThunderbirdMailbox:
     def __init__(self, address, account):
         self.address = address
@@ -179,12 +207,15 @@ class ThunderbirdMailbox:
     def read_message(self, message_id, folder_id=None):
         parts = call('read', messageId=self._message(message_id))
         from email_reader import plain_body
+        parts, cut = readable_parts(parts)
         if parts.get('html'):
             body = html_text(parts['html'])
             if parts.get('plain'):
                 body.plain = str(plain_body(parts['plain']))
         else:
             body = plain_body(parts.get('plain', ''))
+        if cut:
+            body = plain_body(str(body) + '\n\n' + LONG_MESSAGE)
         # None: an older add-on, or Thunderbird could not list them.
         found = parts.get('attachments')
         body.attachments = self._attachment_rows(found) if isinstance(found, list) else None

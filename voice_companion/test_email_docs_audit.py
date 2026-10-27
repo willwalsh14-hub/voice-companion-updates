@@ -89,6 +89,44 @@ class ThunderbirdRestartTests(unittest.TestCase):
         self.assertTrue(stale['event'].is_set())
 
 
+class HugeThunderbirdMessageTests(unittest.TestCase):
+    @unittest.skipIf(__import__('os').name == 'nt', 'uses a Unix socket in place of the Windows pipe')
+    def test_a_big_answer_does_not_end_the_connection(self):
+        # A 9 MB message ended the whole Thunderbird connection (the limit was 8 MB).
+        import threading
+        from multiprocessing.connection import Client
+        import thunderbird_bridge
+        folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, folder, True)
+        endpoint = str(folder / 'mail.sock')
+        relay = thunderbird_bridge.MailRelay(folder, endpoint, 'AF_UNIX')
+        self.addCleanup(relay.close)
+        host = Client(endpoint, family='AF_UNIX', authkey=relay.key)
+        self.addCleanup(host.close)
+        host.send_bytes(thunderbird_bridge.encode({'protocol': thunderbird_bridge.PROTOCOL, 'command': 'mail'}))
+        self.assertTrue(relay.connected.wait(5))
+        big = 'x' * (9 * 1024 * 1024)
+        def answer():
+            ask = thunderbird_bridge.decode(host.recv_bytes())
+            host.send_bytes(thunderbird_bridge.encode({'id': ask['id'], 'result': {'plain': big}}))
+        threading.Thread(target=answer, daemon=True).start()
+        self.assertEqual(len(relay.request('read', {'messageId': 1}, timeout=10)['plain']), len(big))
+        self.assertTrue(relay.connected.is_set())
+
+    def test_a_huge_message_is_made_small_enough_to_read(self):
+        picture = '<img src="data:image/png;base64,' + 'A' * (6 * 1024 * 1024) + '">'
+        parts, cut = thunderbird_mailbox.readable_parts({'html': '<p>Hello there.</p>' + picture, 'plain': 'Hello there.'})
+        self.assertFalse(cut)
+        self.assertEqual(parts['html'], '<p>Hello there.</p><img src="">')
+        parts, cut = thunderbird_mailbox.readable_parts({'html': '<p>' + 'word ' * 2000000 + '</p>', 'plain': 'Short.'})
+        self.assertEqual((parts['html'], parts['plain'], cut), ('', 'Short.', False))
+        box, patcher = thunderbird()
+        self.addCleanup(patcher.stop)
+        with mock.patch.object(thunderbird_mailbox, 'call', return_value={'plain': 'word ' * 2000000}):
+            body = box.read_message(7)
+        self.assertLess(len(str(body)), 5 * 1024 * 1024 + 200)
+        self.assertTrue(str(body).endswith(thunderbird_mailbox.LONG_MESSAGE))
+
+
 class YahooReplyTests(yahoo_tests.YahooTestCase):
     def test_reply_to_a_message_you_sent_goes_to_the_people_you_wrote_to(self):
         raw = yahoo_tests.message(sender='Vet <' + yahoo_tests.ADDRESS + '>', to='Sam Lee <sam@example.com>',

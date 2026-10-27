@@ -18,7 +18,9 @@ from regular_browser import address
 HOST_NAME = 'com.voicecompanion.mail'
 ADDON_ID = 'voice-companion-mail@willwalsh14-hub'
 PROTOCOL = 3
-MAX_FRAME = 8 * 1024 * 1024
+# One request or answer. A message is sent whole, and a message bigger than this
+# ended the connection to Thunderbird (8 MB was too small for some newsletters).
+MAX_FRAME = 64 * 1024 * 1024
 KEY_FILE = 'mail-bridge.key'
 
 
