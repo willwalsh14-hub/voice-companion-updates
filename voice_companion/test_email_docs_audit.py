@@ -333,7 +333,8 @@ class ReaderTests(unittest.TestCase):
             said = []
             app = types.SimpleNamespace(speak=said.append, PREFERENCES={}, APP=self.folder, FILE_READER=None)
             self.assertEqual(TaskNavigation(app).read_file(self.folder / name), 'reader_menu', name)
-            self.assertEqual(said[0], 'This file is damaged or empty, so it could not be opened.', name)
+            # Said as one message with where you are next (one message, so nothing is cut off).
+            self.assertTrue(said[0].startswith('This file is damaged or empty, so it could not be opened.'), (name, said))
 
     def test_a_locked_file_is_named_in_plain_words(self):
         import document_reader
