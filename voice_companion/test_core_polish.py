@@ -338,5 +338,62 @@ class SpokenKeyNamesTests(CompanionTestCase):
         self.assertEqual(bad, [])
 
 
+class OptionsLeavingTests(CompanionTestCase):
+    def setUp(self):
+        super().setUp()
+        self.panel = mock.Mock(); self.panel.closed.is_set.return_value = False
+        for name, value in dict(SETTINGS_PANEL=self.panel, SETTINGS_RETURN_MODE='word_processor', MAIN_MENU_LEAD='').items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_main_menu_in_options_closes_it_and_goes_to_the_main_menu(self):
+        # It used to be passed to the dialog, which said "Setting not recognized."
+        for request in ('main menu', 'Main menu.', '@main_menu'):
+            self.panel.reset_mock(); self.said.clear()
+            self.assertEqual(companion.handle(request, 'settings', typed=True), 'awake')
+            self.panel.cancel.assert_called_once()
+            self.panel.command.assert_not_called()
+            self.assertEqual(self.said, ['Options closed. ' + companion.MAIN_MENU_PROMPT])
+
+    def test_canceling_options_says_where_you_are(self):
+        self.assertEqual(companion.options_closed('settings'), 'word_processor')
+        self.assertEqual(self.said[-1], 'Options closed. Back to Word processor menu.')
+
+    def test_the_options_window_passes_main_menu_and_microphone_keys_to_the_app(self):
+        import inspect, native_settings
+        source = inspect.getsource(native_settings.NativeSettings._run)
+        self.assertIn("self.keyboard('Ctrl+F1')", source)
+        self.assertIn("self.keyboard('F9')", source)
+
+
+class MicrophoneRetryTests(CompanionTestCase):
+    """The main loop retries a closed microphone every two seconds. A microphone that
+    could not start after F9, or that was unplugged, used to fail silently."""
+    def setUp(self):
+        super().setUp()
+        for name, value in dict(MICROPHONE_OFF=False, MICROPHONE_FAILED=False, MICROPHONE_ANNOUNCED=False).items():
+            p = mock.patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_a_failed_open_is_said_once_and_recovery_is_said(self):
+        companion.MICROPHONE_ANNOUNCED = True        # F9 just said "Microphone on."
+        companion.microphone_retried(False, 'awake')
+        self.assertEqual(self.said[-1], 'The microphone could not start, so voice commands are off for now. Use the keys. Voice commands start again by themselves when the microphone works.')
+        companion.microphone_retried(False, 'awake')  # every two seconds: said only once
+        self.assertEqual(len(self.said), 1)
+        self.assertEqual(companion.microphone_state(), 'failed')
+        companion.microphone_retried(True, 'awake')
+        self.assertEqual(self.said[-1], 'The microphone is on.')
+        self.assertEqual(companion.microphone_state(), 'on')
+
+    def test_a_microphone_that_failed_at_startup_is_not_announced_again(self):
+        companion.MICROPHONE_FAILED = True            # the startup announcement said so
+        companion.microphone_retried(False, 'awake')
+        self.assertEqual(self.said, [])
+
+    def test_f9_on_then_open_is_not_said_twice(self):
+        companion.MICROPHONE_ANNOUNCED = True
+        companion.microphone_retried(True, 'awake')
+        self.assertEqual(self.said, [])
+
+
 if __name__ == '__main__':
     unittest.main()

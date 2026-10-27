@@ -292,6 +292,10 @@ class NativeSettings:
             if message.message==0x104 and message.wParam==0x73:
                 self.action_callback('exit_app');close();continue
             if message.message==0x100 and message.wParam==0x11:self.interrupt();continue
+            # Keys that work on every screen: F9 turns the microphone off or on; Control+F1
+            # goes to the main menu (the app closes Options first).
+            if message.message==0x100 and message.wParam==0x78 and self.keyboard:self.keyboard('F9');continue
+            if message.message==0x100 and message.wParam==0x70 and u.GetKeyState(0x11)&0x8000 and self.keyboard:self.keyboard('Ctrl+F1');continue
             if message.message==0x100 and message.wParam==0x7B and self.keyboard and not (u.GetKeyState(0x11)&0x8000 or u.GetKeyState(0x10)&0x8000):
                 from time_date import key_request
                 self.keyboard(key_request(self.clock_presses.press()));continue

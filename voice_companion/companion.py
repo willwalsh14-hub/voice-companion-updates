@@ -925,6 +925,14 @@ def poll_file_manager(mode):
         if notice:sync_app_context(mode,True)
     return mode
 
+def options_closed(mode):
+    """Options closed without saving (Escape, Cancel, Close): say where you are now."""
+    __import__('app_settings').stop_preview(sys.modules[__name__])
+    mode=SETTINGS_RETURN_MODE
+    sync_app_context(mode,True)
+    speak('Options closed. '+options_return_notice(mode))
+    return mode
+
 def save_options(values,mode):
     """Return to the previous task only after settings were saved successfully."""
     global SLEEP_RETURN_MODE
@@ -2028,6 +2036,19 @@ MICROPHONE_OFF_PHRASES = ('turn off the microphone', 'turn off microphone', 'tur
                           'microphone off', 'mic off', 'turn off the mic', 'turn the mic off', 'mute microphone', 'mute the microphone')
 MICROPHONE_ON_PHRASES = ('turn on the microphone', 'turn on microphone', 'turn the microphone on', 'turn microphone on',
                          'microphone on', 'mic on', 'turn on the mic', 'turn the mic on', 'unmute microphone', 'unmute the microphone')
+
+
+def microphone_retried(opened, mode):
+    """The main loop tried to open the microphone again. Say when voice stops or comes back,
+    once each: after F9, when the microphone was unplugged, or when Windows lets it go."""
+    global MICROPHONE_FAILED, MICROPHONE_ANNOUNCED
+    if opened:
+        # F9 already said Microphone on; say it here only when it came back by itself.
+        if mode!='sleep' and not MICROPHONE_ANNOUNCED:speak('The microphone is on.')
+        MICROPHONE_FAILED=MICROPHONE_ANNOUNCED=False
+    elif not MICROPHONE_FAILED:
+        MICROPHONE_FAILED=True;MICROPHONE_ANNOUNCED=False
+        speak('The microphone could not start, so voice commands are off for now. Use the keys. Voice commands start again by themselves when the microphone works.')
 
 
 def set_microphone(on, mode):
@@ -3217,6 +3238,11 @@ def _handle(text, mode, typed=False):
         control=speech_control(text)
         if control:
             control_speech(control);return mode
+        if command in ('main menu','back to main menu','go to main menu'):
+            # Control+F1 or "Main menu" in Options: close it (changes not saved) and go there.
+            SETTINGS_PANEL.cancel();__import__('app_settings').stop_preview(sys.modules[__name__])
+            MAIN_MENU_LEAD='Options closed.'   # handle() says it with Main menu, in one message
+            return 'awake'
         if spoken_control(text) in ('exit','sleep'):
             SETTINGS_PANEL.cancel()
             return handle(text,SETTINGS_RETURN_MODE,typed)
@@ -4923,13 +4949,10 @@ def main():
             if input_stream is None and not MICROPHONE_OFF and time.monotonic()>=microphone_retry_at:
                 microphone_retry_at=time.monotonic()+2
                 input_stream=open_microphone(sd,attempts=1)
+                microphone_retried(input_stream is not None,mode)
                 if input_stream:
-                    MICROPHONE_FAILED=False
                     input_lifetime.callback(close_microphone,input_stream)
                     recognizer.Reset();utterance.clear()
-                    # F9 already said Microphone on; say it here only when the microphone came back by itself.
-                    if mode!='sleep' and not MICROPHONE_ANNOUNCED:speak('The microphone is on.')
-                    MICROPHONE_ANNOUNCED=False
             if APP_WINDOW is not None and not APP_WINDOW.commands.empty():
                 mode=process_keyboard_batch(mode)
                 if mode=='exit':return 0
@@ -4984,9 +5007,7 @@ def main():
                     SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
                     sync_app_context(mode,True)
                 if SETTINGS_PANEL is not None and SETTINGS_PANEL.closed.is_set() and mode=='settings':
-                    __import__('app_settings').stop_preview(sys.modules[__name__])
-                    mode=SETTINGS_RETURN_MODE
-                    sync_app_context(mode,True)
+                    mode=options_closed(mode)
                 settings_notices=[]
                 while not APP_WINDOW.settings_notices.empty():settings_notices.append(APP_WINDOW.settings_notices.get_nowait())
                 if settings_notices:
