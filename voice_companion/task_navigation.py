@@ -194,6 +194,10 @@ class TaskNavigation:
             except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
                 # An empty "New Microsoft Word Document" or a damaged file must not stop the app.
                 raise ValueError('This document is empty or damaged, so it could not be opened.') from error
+            except OSError as error:
+                # Open in Word, or on a network drive that dropped: say so, not "[Errno 13]".
+                from document_reader import unreadable
+                raise ValueError(unreadable(path, error)) from error
             except ValueError as error:
                 if 'cannot preserve' not in str(error):raise
                 from document_reader import open_document
@@ -513,7 +517,8 @@ class TaskNavigation:
             old = self.indices.get(mode, 0)
             index = 0 if command=='home' else len(items)-1 if command=='end' else max(0,min(len(items)-1,old+(1 if command=='next' else -1)))
             self.indices[mode] = index
-            m.speak(('Start of list. ' if index==old==0 else 'End of list. ' if index==old else '')+self.describe(items[index], index, len(items))); return mode
+            forward = command in ('next', 'end')
+            m.speak((('End of list. ' if forward else 'Start of list. ') if index==old else '')+self.describe(items[index], index, len(items))); return mode
         if command.startswith('letter:'):
             index = next_match([i[0] for i in items], self.indices.get(mode, 0), command[-1])
             if index is not None: self.indices[mode] = index; m.speak(self.describe(items[index], index, len(items)))

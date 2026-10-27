@@ -171,5 +171,125 @@ class CompanionEmailTests(unittest.TestCase):
             message_parts(draft)
 
 
+class DocumentTests(unittest.TestCase):
+    def setUp(self):
+        self.folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, self.folder, True)
+
+    def document(self, *paragraphs):
+        from document_editor import VoiceDocument
+        document = VoiceDocument(self.folder, title='Letter')
+        document.paragraphs = list(paragraphs)
+        return document
+
+    def test_a_file_locked_by_word_does_not_stop_the_app(self):
+        # Saving after each change failed while Word had the file open; the error stopped Companion.
+        import companion
+        from document_editor import Paragraph, VoiceDocument
+        document = self.document(Paragraph('Hello.'))
+        document.dictating = True
+        said = []
+        with mock.patch.object(companion, 'document', document), \
+             mock.patch.object(companion, 'speak', side_effect=lambda text, *a, **k: said.append(text)), \
+             mock.patch.object(companion, 'dictation_feedback', side_effect=said.append), \
+             mock.patch.object(VoiceDocument, 'save', side_effect=PermissionError(13, 'Permission denied')):
+            self.assertEqual(companion.handle('More words here', 'document'), 'document')
+        self.assertIn('could not be saved. It may be open in another program', said[-1])
+        self.assertIn('More words here', document.paragraphs[0].text)
+
+    def test_heading_list_names_the_level_not_the_paragraph_number_as_a_level(self):
+        from document_editor import Paragraph
+        document = self.document(Paragraph('Title', kind='Heading 1'), Paragraph('Text'), Paragraph('Plans', kind='Heading 2'))
+        self.assertEqual(document.process('list headings'),
+                         'Title, heading level 1, paragraph 1. Plans, heading level 2, paragraph 3.')
+
+    def test_moving_past_the_first_or_last_paragraph_says_so(self):
+        from document_editor import Paragraph
+        document = self.document(Paragraph('One.'), Paragraph('Two.'))
+        self.assertEqual(document.process('next paragraph'), 'Two.')
+        self.assertEqual(document.process('next paragraph'), 'End of document. Two.')
+        self.assertEqual(document.process('previous paragraph'), 'One.')
+        self.assertEqual(document.process('previous paragraph'), 'Beginning of document. One.')
+
+
+class ReaderTests(unittest.TestCase):
+    def setUp(self):
+        self.folder = Path(tempfile.mkdtemp()); self.addCleanup(__import__('shutil').rmtree, self.folder, True)
+
+    def test_damaged_files_are_reported_never_stop_the_app(self):
+        # From Recent documents in Document reader, a damaged DOCX stopped Companion (BadZipFile).
+        import types
+        from task_navigation import TaskNavigation
+        for name, data in (('report.docx', b'not a zip'), ('book.epub', b''), ('notes.odt', b'PK\x03\x04broken')):
+            (self.folder / name).write_bytes(data)
+            said = []
+            app = types.SimpleNamespace(speak=said.append, PREFERENCES={}, APP=self.folder, FILE_READER=None)
+            self.assertEqual(TaskNavigation(app).read_file(self.folder / name), 'reader_menu', name)
+            self.assertEqual(said[0], 'This file is damaged or empty, so it could not be opened.', name)
+
+    def test_a_locked_file_is_named_in_plain_words(self):
+        import document_reader
+        path = self.folder / 'notes.txt'
+        path.write_text('Words')
+        with mock.patch.object(Path, 'read_bytes', side_effect=PermissionError(13, 'Permission denied')):
+            with self.assertRaises(ValueError) as caught:
+                document_reader.open_document(path)
+        self.assertEqual(str(caught.exception), 'notes.txt is open in another program, or Windows did not let '
+                                                'Voice Companion read it. Close it there, then try again.')
+
+    def test_a_word_document_open_elsewhere_is_explained(self):
+        import types
+        import zipfile
+        from task_navigation import TaskNavigation
+        path = self.folder / 'Letter.docx'
+        path.write_bytes(b'x')
+        app = types.SimpleNamespace(speak=lambda text: None, PREFERENCES={}, APP=self.folder, document=None)
+        with mock.patch.object(zipfile, 'ZipFile', side_effect=PermissionError(13, 'Permission denied')):
+            with self.assertRaisesRegex(ValueError, '^Letter.docx is open in another program'):
+                TaskNavigation(app).open_document(path)
+
+
+class FileManagerTests(unittest.TestCase):
+    def manager(self, names):
+        import time
+        from file_manager import FileManager, Item
+        class Files:
+            def roots(self): return [Item('Data', '\\\\server\\data', True, True)]
+            def list(self, path): return [Item(name, path + '\\' + name) for name in names]
+        manager = FileManager(Files())
+        manager.refresh('\\\\server\\data')
+        until = time.monotonic() + 5
+        while manager.busy and time.monotonic() < until:
+            said = manager.poll() or ''
+            time.sleep(.005)
+        return manager, said
+
+    def test_a_network_share_has_a_name(self):
+        from file_manager import location_name
+        self.assertEqual(location_name('\\\\server\\data'), 'data on server')
+        manager, said = self.manager(['a.txt'])
+        self.assertTrue(said.startswith('data on server. a.txt, file. 1 of 1.'), said)
+
+    def test_the_end_of_a_one_item_list_is_the_end(self):
+        manager, _ = self.manager(['a.txt'])
+        self.assertTrue(manager.command('next').startswith('End of list.'))
+        self.assertTrue(manager.command('previous').startswith('Start of list.'))
+
+    def test_an_empty_folder_says_only_that_it_is_empty(self):
+        manager, said = self.manager([])
+        self.assertEqual(manager.command('next'), 'This folder is empty.')
+        self.assertEqual(manager.command('end'), 'This folder is empty.')
+
+    def test_menus_say_the_end_of_a_one_item_list(self):
+        import types
+        from task_navigation import TaskNavigation
+        said = []
+        nav = TaskNavigation(types.SimpleNamespace(speak=said.append, normalized_command=lambda text: text,
+                                                   spoken_control=lambda text: False,
+                                                   NAMED_LIST=None, document=None, email_draft=None))
+        nav.reader_recent = [str(Path('docs') / 'report.txt')]
+        nav.handle('next', 'reader_recent')
+        self.assertTrue(said[-1].startswith('End of list. report.txt'), said[-1])
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -71,8 +71,40 @@ def decode(data):
     try:return data.decode('utf-8-sig')
     except UnicodeDecodeError:return data.decode('cp1252',errors='replace')
 
+DAMAGED='This file is damaged or empty, so it could not be opened.'
+
+
+def unreadable(path,error):
+    """What to say when a file cannot be read: plain words, never "[Errno 13]"."""
+    name=Path(path).name
+    if isinstance(error,PermissionError):
+        return name+' is open in another program, or Windows did not let Voice Companion read it. Close it there, then try again.'
+    if isinstance(error,FileNotFoundError):
+        return name+' is no longer there. It may have been moved or deleted.'
+    return name+' could not be read. If it is on a network or cloud drive, check the connection, then try again.'
+
+
 def open_document(path):
+    """Read a file for Document reader. Every problem is a ValueError a user can act on:
+    a damaged, locked or missing file must never stop the app."""
     path=Path(path)
+    try:
+        return _open_document(path)
+    except OSError as error:
+        if error.errno is None and str(error):raise   # already in plain words (offline OCR)
+        raise ValueError(unreadable(path,error)) from error
+    except UnicodeError as error:
+        raise ValueError(DAMAGED) from error
+    except (ValueError,ImportError):
+        raise
+    except (MemoryError,RecursionError) as error:
+        raise ValueError('This file is too complex for the reader.') from error
+    except Exception as error:
+        # A damaged ZIP, XML or PDF (BadZipFile, KeyError, ParseError, PdfReadError and others).
+        raise ValueError(DAMAGED) from error
+
+
+def _open_document(path):
     if path.suffix.casefold() not in SUPPORTED:raise ValueError('This file type is not supported in Companion yet. Supported types include Word DOCX, text, HTML, PDF, ODT, and EPUB. The file was not launched in another app.')
     if path.stat().st_size>MAX_BYTES:raise ValueError('This file is over the 50 MB reading limit.')
     extension=path.suffix.casefold()

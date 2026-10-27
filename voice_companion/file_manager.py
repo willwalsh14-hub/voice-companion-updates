@@ -70,7 +70,11 @@ def location_name(path):
     if path is None:return 'Drive list'
     clean=str(path).rstrip('\\/')
     drive,tail=ntpath.splitdrive(clean)
-    if drive and not tail:return drive.rstrip(':')+' drive' if len(drive)==2 else ntpath.basename(drive)
+    if drive and not tail:
+        if len(drive)==2:return drive.rstrip(':')+' drive'
+        # A network share, \\server\share: its own name was empty ("").
+        server,_,share=drive.strip('\\/').replace('/','\\').partition('\\')
+        return share+' on '+server if share and server else drive
     return ntpath.basename(clean) or 'Root folder'
 
 def valid_name(name):
@@ -309,7 +313,9 @@ class FileManager:
         if cmd in ('next','previous','up','down','home','end','first','last'):
             attr='menu_index' if self.menu else 'index';old=getattr(self,attr);length=len(self.menu_items()) if self.menu else len(self.items)
             new=0 if cmd in ('home','first') else max(0,length-1) if cmd in ('end','last') else max(0,min(max(0,length-1),old+(-1 if cmd in ('previous','up') else 1)))
-            setattr(self,attr,new);return ('Start of list. ' if old==new==0 else 'End of list. ' if old==new and length else '')+self.say_current()
+            # At an end, say which end by the way you moved (a one-item list has both).
+            forward=cmd in ('next','down','end','last')
+            setattr(self,attr,new);return (('End of list. ' if forward else 'Start of list. ') if old==new and length else '')+self.say_current()
         from file_explorer import command as view_command
         result=view_command(self,text)
         if result is not None:return result

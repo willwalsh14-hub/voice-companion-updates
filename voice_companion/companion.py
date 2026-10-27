@@ -1816,6 +1816,12 @@ def podcast_search(topic):
     return 'awake'
 
 
+UNSAVED_DOCUMENT = ('Your change is in the document, but the file could not be saved. It may be open in another program, '
+                    'such as Word. Close it there, then say save document.')
+UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
+                 'then say save draft.')
+
+
 def finish_exit(mode):
     global help_session, account_setup, pending_send, mail_session, KEYBOARD_BATCH_TEXT
     KEYBOARD_BATCH_TEXT=None
@@ -4161,23 +4167,36 @@ def _handle(text, mode, typed=False):
             return mode
         if command in ('leave email', 'close email', 'back to main menu',
                        'go back', 'back', 'exit', 'exit email', 'main menu'):
-            email_draft.save()
+            try:
+                email_draft.save()
+            except OSError:
+                speak(UNSAVED_DRAFT)
+                return mode
             if mail_session is not None and command not in ('back to main menu', 'main menu'):
                 speak('Email draft saved. ' + mail_session.process('back to folder'))
                 return 'mailbox'
             speak('Email draft saved locally. Check whether it was sent before sending it again.')
             return 'awake'
-        dictation_feedback(email_draft.process(text))
+        try:
+            dictation_feedback(email_draft.process(text))
+        except OSError:
+            # The change is made; only the save failed (a full disk, or the file in use).
+            speak(UNSAVED_DRAFT)
         focus_email_entry()
         return 'email_draft'
     if mode == 'document':
         if INPUT_MODE == 'commands' and command in ('start dictation', 'dictate', 'continue writing'):
             speak_prompt('Commands only is on. Say normal mode or dictation mode to write.')
             return mode
-        result = document.process(text)
-        if INPUT_MODE == 'mixed' and result.startswith('I did not recognize that document request.'):
-            document.dictating = True
-            result = document.append_text(text)
+        try:
+            result = document.process(text)
+            if INPUT_MODE == 'mixed' and result.startswith('I did not recognize that document request.'):
+                document.dictating = True
+                result = document.append_text(text)
+        except OSError:
+            # The words are in the document; only the save failed. Word may have the file open.
+            speak(UNSAVED_DOCUMENT)
+            return 'document'
         if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
         dictation_feedback(result)
         return 'document'
@@ -4240,6 +4259,10 @@ def _handle(text, mode, typed=False):
             checkpoint_document()
         except FileNotFoundError:
             speak_prompt('I could not find that document. Say list documents to hear the names.')
+            return mode
+        except PermissionError as error:
+            from document_reader import unreadable
+            speak(unreadable(title, error))
             return mode
         except (ValueError, OSError, KeyError, zipfile.BadZipFile, ET.ParseError):
             speak('I could not safely open that document in this test editor.')
