@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const {createFakeMessenger} = require('./fake-messenger.cjs');
 
 function load(api) {
-  const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api});
+  const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api, File, Blob, btoa, atob});
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
   return new (vm.runInContext('MailBridge', context))(api);
 }
@@ -48,7 +48,7 @@ function load(api) {
   await assert.rejects(call('list', {folderId: inbox.id, offset: 0, limit: 7}), /Invalid message page/);
 
   // Reading prefers both HTML and plain text when present.
-  assert.deepEqual(await call('read', {messageId: 25}), {html: state.messages[24].html, plain: 'Plain text of message 25'});
+  assert.deepEqual(await call('read', {messageId: 25}), {html: state.messages[24].html, plain: 'Plain text of message 25', attachments: []});
   const listParts = api.messages.listInlineTextParts;
   delete api.messages.listInlineTextParts;
   assert.equal((await call('read', {messageId: 3})).plain, 'Plain text of message 3');
@@ -203,8 +203,137 @@ function load(api) {
   await quitChecks();
   await identityChecks();
   await outgoingServerChecks();
+  await attachmentChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+
+// ---- Attachments: listed, saved in pieces, attached to new mail, replies and forwards ----
+
+async function attachmentChecks() {
+  const {api, state} = createFakeMessenger();
+  const bridge = load(api);
+  const call = async (method, params) => {
+    const answer = await bridge.handle({id: 21, method, params});
+    if (answer.error) throw Object.assign(new Error(answer.error.message), {answer});
+    return JSON.parse(JSON.stringify(answer.result));
+  };
+  // Only real files are listed: not the unnamed inline picture, not the deleted attachment.
+  const listed = await call('attachments', {messageId: 24});
+  assert.deepEqual(listed.map(a => [a.partName, a.name, a.contentType]),
+    [['1.2', 'report.pdf', 'application/pdf'], ['1.4', 'photo.jpg', 'image/jpeg']]);
+  assert.equal(listed[0].size, state.messages[23].attachments[0].data.length);
+  // Reading a message says its files too.
+  assert.deepEqual((await call('read', {messageId: 24})).attachments.map(a => a.name), ['report.pdf', 'photo.jpg']);
+  await assert.rejects(call('attachments', {messageId: '24'}), /not available/);
+
+  // Saving: the file comes in pieces no bigger than CHUNK, read from Thunderbird once.
+  const original = Buffer.from(state.messages[23].attachments[0].data);
+  assert.ok(original.length > 1024 * 1024, 'the test file is larger than one piece');
+  state.attachmentReads = 0;
+  const pieces = [];
+  for (let offset = 0, done = false; !done;) {
+    const piece = await call('attachmentChunk', {messageId: 24, partName: '1.2', offset, length: 1024 * 1024});
+    const data = Buffer.from(piece.data, 'base64');
+    assert.ok(data.length <= 1024 * 1024);
+    assert.equal(piece.size, original.length);
+    pieces.push(data); offset += data.length; done = piece.done;
+  }
+  assert.ok(Buffer.concat(pieces).equals(original), 'the saved bytes are the attachment');
+  assert.equal(state.attachmentReads, 1, 'Thunderbird reads the file once for all its pieces');
+  await assert.rejects(call('attachmentChunk', {messageId: 24, partName: '1.2', offset: 0, length: 2 * 1024 * 1024}), /Invalid attachment piece/);
+  state.messages[23].attachments[2].damaged = true;
+  await assert.rejects(call('attachmentChunk', {messageId: 24, partName: '1.4'}), /could not read this attachment\. It may be damaged/);
+  state.messages[23].attachments[2].damaged = false;
+  // An empty attachment saves as an empty file.
+  state.messages[23].attachments[2].data = new Uint8Array(0);
+  assert.deepEqual(await call('attachmentChunk', {messageId: 24, partName: '1.4'}), {data: '', size: 0, done: true});
+
+  // Sending a file: it arrives in pieces, then goes with the message.
+  const upload = async (name, buffer, piece = 300000) => {
+    const {uploadId} = await call('uploadStart', {name, size: buffer.length});
+    for (let offset = 0; offset < buffer.length; offset += piece) {
+      await call('uploadChunk', {uploadId, offset, data: buffer.subarray(offset, offset + piece).toString('base64')});
+    }
+    return uploadId;
+  };
+  const letter = Buffer.from('Dear Sam,\n'.repeat(50000));
+  const id = await upload('letter.txt', letter);
+  await call('send', {identityId: 'id1', to: ['sam@example.com'], subject: 'Letter', html: '<p>Attached</p>', plain: 'Attached', attachments: [id]});
+  const sent = state.sent.at(-1);
+  assert.deepEqual(sent.attachments.map(a => a.file.name), ['letter.txt']);
+  assert.ok(Buffer.from(await sent.attachments[0].file.arrayBuffer()).equals(letter), 'Thunderbird sends the same bytes');
+  assert.equal(bridge.uploads.size, 0, 'the sent file is not kept');
+  // A reply with a file.
+  const second = await upload('notes.txt', Buffer.from('notes'));
+  await call('send', {identityId: 'id1', to: ['a@example.com'], subject: 'Re: Message 25', html: '<p>Here</p>', plain: 'Here',
+    reply: {messageId: 25, type: 'replyToSender'}, attachments: [second]});
+  assert.equal(state.sent.at(-1).kind, 'reply');
+  assert.deepEqual(state.sent.at(-1).attachments.map(a => a.file.name), ['notes.txt']);
+  // A piece out of order, a broken piece, or a file that never finished: refused, nothing sent.
+  const {uploadId: partial} = await call('uploadStart', {name: 'big.bin', size: 10});
+  await assert.rejects(call('uploadChunk', {uploadId: partial, offset: 5, data: 'AAAA'}), /did not reach Thunderbird whole/);
+  await assert.rejects(call('uploadChunk', {uploadId: partial, offset: 0, data: '%%%'}), /did not reach Thunderbird whole/);
+  const before = state.sent.length;
+  await assert.rejects(call('send', {identityId: 'id1', to: ['a@example.com'], subject: 'x', html: '', plain: 'x', attachments: [partial]}),
+    /Nothing was sent/);
+  assert.equal(state.sent.length, before);
+  await assert.rejects(call('uploadStart', {name: '..\\evil.exe', size: 3}), /cannot be attached/);
+  await assert.rejects(call('uploadStart', {name: 'huge.bin', size: 61 * 1024 * 1024}), /too large/);
+
+  // Forward: the original's files go too, less the one the person took off.
+  state.messages[23].attachments[2].data = new Uint8Array(Buffer.from('JPEGDATA'));
+  await call('send', {identityId: 'id1', to: ['x@example.com'], subject: 'Fwd: Message 24', html: '<p>FYI</p>', plain: 'FYI',
+    forward: {messageId: 24, drop: []}});
+  let forwarded = state.sent.at(-1);
+  assert.equal(forwarded.kind, 'forward');
+  assert.deepEqual(forwarded.attachments.map(a => a.file.name).sort(), ['Part 1.3', 'photo.jpg', 'report.pdf']);
+  await call('send', {identityId: 'id1', to: ['x@example.com'], subject: 'Fwd: Message 24', html: '<p>FYI</p>', plain: 'FYI',
+    forward: {messageId: 24, drop: ['report.pdf']}});
+  assert.deepEqual(state.sent.at(-1).attachments.map(a => a.file.name).sort(), ['Part 1.3', 'photo.jpg']);
+  // A Thunderbird that leaves the files off a forward: the add-on adds them itself.
+  state.forwardWithoutFiles = true;
+  const extra = await upload('mine.txt', Buffer.from('mine'));
+  await call('send', {identityId: 'id1', to: ['x@example.com'], subject: 'Fwd: Message 24', html: '<p>FYI</p>', plain: 'FYI',
+    forward: {messageId: 24, drop: []}, attachments: [extra]});
+  forwarded = state.sent.at(-1);
+  assert.deepEqual(forwarded.attachments.map(a => a.file.name), ['report.pdf', 'photo.jpg', 'mine.txt']);
+  assert.ok(Buffer.from(await forwarded.attachments[0].file.arrayBuffer()).equals(original));
+  state.forwardWithoutFiles = false;
+
+  // Thunderbird refuses a file: nothing is sent, the message is kept in Drafts, the window closes.
+  state.failAttach = true;
+  const refused = await upload('refused.txt', Buffer.from('x'));
+  const sentBefore = state.sent.length;
+  const failed = await bridge.handle({id: 22, method: 'send', params: {identityId: 'id1', to: ['a@example.com'], subject: 'Files',
+    html: '', plain: 'x', attachments: [refused]}});
+  assert.equal(failed.error.message, 'Thunderbird could not attach the files, so nothing was sent. Your message is saved in Drafts in Thunderbird.');
+  assert.equal(state.sent.length, sentBefore);
+  assert.deepEqual(state.openCompose, []);
+  state.failAttach = false;
+  // A file Thunderbird says it attached but did not: caught before sending.
+  const realAdd = api.compose.addAttachment;
+  api.compose.addAttachment = async () => ({id: 999, name: 'ghost'});
+  const ghost = await upload('ghost.txt', Buffer.from('x'));
+  const missing = await bridge.handle({id: 23, method: 'send', params: {identityId: 'id1', to: ['a@example.com'], subject: 'Files',
+    html: '', plain: 'x', attachments: [ghost]}});
+  assert.match(missing.error.message, /^Thunderbird did not add every attachment, so nothing was sent\./);
+  assert.equal(state.sent.length, sentBefore);
+  api.compose.addAttachment = realAdd;
+
+  // An older Thunderbird without the attachment calls: reading still works, listing says why.
+  delete api.messages.listAttachments;
+  assert.equal((await call('read', {messageId: 24})).attachments, null);
+  await assert.rejects(call('attachments', {messageId: 24}), /cannot list attachments/);
+
+  // Unfinished uploads are dropped after a while.
+  let now = 1000;
+  const timed = load(createFakeMessenger().api);
+  timed.clock = () => now;
+  timed.uploadStart({name: 'old.txt', size: 5});
+  now += 11 * 60 * 1000;
+  timed.uploadStart({name: 'new.txt', size: 5});
+  assert.deepEqual([...timed.uploads.values()].map(u => u.name), ['new.txt']);
+}
 
 // ---- The newest mail comes first, and Thunderbird checks the server before listing ----
 
@@ -774,3 +903,6 @@ async function experimentChecks() {
   // 1.2.0 checks for new mail before listing; a higher version replaces installed 1.1 copies.
   assert.ok(major > 1 || minor >= 2, 'the add-on version was raised so installed copies are replaced');
 }
+
+// Contacts and calendars (pim.js, experiment/calendar.js) have their own file.
+require('./test-pim.cjs');

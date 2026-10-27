@@ -142,7 +142,7 @@ class ScreenKeyEffectTests(unittest.TestCase):
         expected={'media':'Listen To Radio','awake':None,'note':'Write A Note','email_draft':'Write An Email','mailbox':'Read And Organize Email',
                   'file_reader':'Document Reader','web':'Browse The Web','browser_menu':'Browse The Web',
                   'word_processor':'Write A Document','recent_documents':'Write A Document',
-                  'media_menu':'Media Player','local_media':'Media Player'}
+                  'media_menu':'Media Player','local_media':'Media Player','contacts':'Contacts','calendar':'Calendar'}
         from document_reader import open_document
         reader=self.root/'reader.txt';reader.write_text('Reader text.',encoding='utf-8')
         for mode,topic in expected.items():
@@ -459,7 +459,9 @@ class NewKeyEffectTests(ScreenKeyEffectTests):
         self.assertNotIn('google_contacts', ACTIONS)
         with patch.object(app,'speak') as speech:
             app.handle('connect google contacts','mailbox')
-        self.assertIn('Your contacts here are kept', speech.call_args.args[0])
+        # Google contacts come through Thunderbird now (Contacts screen, October 2026).
+        self.assertIn('Google contacts now come from Thunderbird.', speech.call_args.args[0])
+        self.assertIn('Your contacts saved here are kept', speech.call_args.args[0])
 
 
 class CatalogParityTests(unittest.TestCase):

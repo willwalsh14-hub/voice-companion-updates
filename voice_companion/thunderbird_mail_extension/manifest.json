@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Voice Companion Mail Connection",
-  "version": "1.2.2",
-  "description": "Lets Voice Companion read, organize and send your Thunderbird email by voice. Thunderbird keeps your sign-in; nothing leaves this computer except the email you choose to send.",
+  "version": "1.3.0",
+  "description": "Lets Voice Companion read, organize and send your Thunderbird email, and use its contacts and calendars, by voice. Thunderbird keeps your sign-in. Only the email, contacts and events you choose are sent, by Thunderbird.",
   "browser_specific_settings": {
     "gecko": {
       "id": "voice-companion-mail@willwalsh14-hub",
@@ -11,7 +11,8 @@
   },
   "background": {
     "scripts": [
-      "background.js"
+      "background.js",
+      "pim.js"
     ]
   },
   "permissions": [
@@ -23,7 +24,9 @@
     "messagesDelete",
     "messagesUpdate",
     "compose",
-    "compose.send"
+    "compose.save",
+    "compose.send",
+    "addressBooks"
   ],
   "experiment_apis": {
     "voiceCompanionSetup": {
@@ -38,6 +41,20 @@
           ]
         ],
         "script": "experiment/implementation.js"
+      }
+    },
+    "voiceCompanionCalendar": {
+      "schema": "experiment/calendar-schema.json",
+      "parent": {
+        "scopes": [
+          "addon_parent"
+        ],
+        "paths": [
+          [
+            "voiceCompanionCalendar"
+          ]
+        ],
+        "script": "experiment/calendar.js"
       }
     }
   }

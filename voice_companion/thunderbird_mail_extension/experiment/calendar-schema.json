@@ -1,0 +1,76 @@
+[
+  {
+    "namespace": "voiceCompanionCalendar",
+    "description": "Thunderbird's calendars for Voice Companion's Calendar screen: list calendars and events, add an event, delete an event. Times are milliseconds since 1970 (UTC); all-day dates are YYYY-MM-DD.",
+    "functions": [
+      {
+        "name": "listCalendars",
+        "type": "function",
+        "async": true,
+        "description": "The calendars that are turned on. Resolves to [{id, name, type, readOnly}], or null when the calendar is not available.",
+        "parameters": []
+      },
+      {
+        "name": "listEvents",
+        "type": "function",
+        "async": true,
+        "description": "Events from startMs to endMs in every calendar that is turned on, repeating events expanded. Resolves to {events, failed}, or null.",
+        "parameters": [
+          {
+            "name": "startMs",
+            "type": "number"
+          },
+          {
+            "name": "endMs",
+            "type": "number"
+          }
+        ]
+      },
+      {
+        "name": "createEvent",
+        "type": "function",
+        "async": true,
+        "description": "Add one event. Resolves to {created, id} or {created: false, reason}.",
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "calendarId": {"type": "string"},
+              "title": {"type": "string"},
+              "allDay": {"type": "boolean"},
+              "start": {"type": "string"},
+              "end": {"type": "string"},
+              "location": {"type": "string", "optional": true},
+              "notes": {"type": "string", "optional": true}
+            }
+          }
+        ]
+      },
+      {
+        "name": "deleteEvent",
+        "type": "function",
+        "async": true,
+        "description": "Delete an event, or one day of a repeating event (occurrence) unless all is true. Resolves to {deleted, all} or {deleted: false, reason}.",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "occurrence",
+            "type": "string"
+          },
+          {
+            "name": "all",
+            "type": "boolean"
+          }
+        ]
+      }
+    ]
+  }
+]

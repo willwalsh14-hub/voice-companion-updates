@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.169-test'
+APP_VERSION = '0.2.170-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -280,6 +280,9 @@ def app_context(mode):
         if not FILE_MANAGER.menu and not FILE_MANAGER.pending and not FILE_MANAGER.busy:context['file_selected_indices']=[i for i,item in enumerate(FILE_MANAGER.items) if item.path in FILE_MANAGER.selected]
         context['file_index']=(0 if CONFIRM_CHOICE=='yes' else 1) if context.get('confirmation') is not None else FILE_MANAGER.menu_index if FILE_MANAGER.menu else FILE_MANAGER.index
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
+    if logical=='contacts':__import__('contacts_screen').context(sys.modules[__name__],context)
+    if logical=='calendar':__import__('calendar_screen').context(sys.modules[__name__],context)
+    if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
         context['menu_letters']=not context['browser_name_input']
@@ -517,7 +520,7 @@ def startup_prompt():
     return 'Voice Companion ' + APP_VERSION + ' is ready. Say wake up to control the app by voice, or use your Up and Down arrow keys, Enter and Escape to move through the menus. Say start tutorial for spoken lessons that wait for you. Help is available.'
 
 MAIN_MENU_INDEX = None
-MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Document reader', 'document reader'), ('Notepad', 'notepad'), ('Email', 'email'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
+MAIN_MENU_CHOICES = (('File manager', 'file manager'), ('Word processor', 'word processor'), ('Document reader', 'document reader'), ('Notepad', 'notepad'), ('Email', 'email'), ('Contacts', 'contacts'), ('Calendar', 'calendar'), ('Web browser', 'web browser'), ('Media', 'media menu'), ('Options', 'options'), ('Check for updates', 'check for updates'), ('Help', 'help'), ('Shut down the computer', 'shut down computer'), ('Restart the computer', 'restart computer'), ('Exit Voice Companion', 'exit companion'))
 
 
 def resume_from_sleep():
@@ -601,6 +604,8 @@ def menu_state(mode):
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
     if mode=='downloads':return __import__('download_screen').menu_state(sys.modules[__name__])
+    if mode=='contacts':return __import__('contacts_screen').menu_state(sys.modules[__name__])
+    if mode=='attachments':return __import__('attachment_screen').menu_state(sys.modules[__name__])
     task_state=task_navigation().state(mode)
     if task_state is not None:return task_state
     if mode=='awake':return state([x[0] for x in MAIN_MENU_CHOICES],module,'MAIN_MENU_INDEX')
@@ -719,11 +724,15 @@ def _navigation_key(key,mode):
         if request!='':return request
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    if mode=='calendar' and __import__('calendar_screen').PENDING is not None:
+        # A question on the Calendar owns the arrows and Enter (this one, all, or no).
+        return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
     from input_parity import screen_command
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if direct:return direct
     if mode=='downloads':return __import__('download_screen').navigation_key(sys.modules[__name__],key)
+    if mode=='attachments':return __import__('attachment_screen').navigation_key(sys.modules[__name__],key)
     if mode=='update_download':
         return {'F5':'update status','Alt+S':'update status','Escape':'cancel update','Alt+C':'cancel update'}.get(key)
     if mode=='files':
@@ -745,6 +754,9 @@ def _navigation_key(key,mode):
     if mode=='web' and web_session and web_session.list_focus in ('links','headings') and key in ('Up','Down','Left','Right','Home','End','Enter','Escape'):
         web_session.list_prefix='';web_session.list_prefix_time=0
     if NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape'):return {'Up':'previous','Left':'previous','Down':'next','Right':'next','Enter':'okay','Escape':'close list'}[key]
+    # The Contacts screen (contacts_screen.py); a list opened over it keeps its own keys.
+    if mode=='contacts' and not NAMED_LIST:return __import__('contacts_screen').navigation_key(sys.modules[__name__],key)
+    if mode=='calendar' and not NAMED_LIST:return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
@@ -871,7 +883,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to Notepad.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -2425,8 +2437,7 @@ def handle_mailbox_screen(text, command, mode, typed):
                               if context['action'] == 'forward' else
                               'Recipient ' + email_draft.recipient +
                               ('. Also copying ' + ', '.join(email_draft.cc) if email_draft.cc else '') + '. ')
-            attachment_note = (' Original attachments are not included in this forward.'
-                               if context['action'] == 'forward' else '')
+            attachment_note = forward_attachment_note(context)
             speak('New ' + command + ' draft. ' + recipient_note +
                   'Speak your message naturally. Say send it to hear the review, then confirm before it sends.' + attachment_note)
             focus_email_entry()
@@ -2451,6 +2462,20 @@ def handle_mailbox_screen(text, command, mode, typed):
         return 'awake'
     speak(mail_session.process(text))
     return 'mailbox'
+
+
+def forward_attachment_note(context):
+    """What a new forward says about the original's files."""
+    if context.get('action') != 'forward':
+        return ''
+    found = context.get('original_attachments')
+    if not isinstance(found, list):
+        return ' Voice Companion could not check the original attachments, so they may not be included.'
+    if not found:
+        return ''
+    from mail_attachments import count_words, names
+    return (' The original ' + count_words(len(found)) + ' go with it: ' + names(found) + '.' if len(found) > 1 else
+            ' The original attachment goes with it: ' + names(found) + '.')
 
 
 EMAIL_LINK_RECIPIENT = None
@@ -2967,6 +2992,15 @@ def _handle(text, mode, typed=False):
         # The Downloads screen, and "download manager" from the web (download_screen.py).
         download_result=__import__('download_screen').handle(sys.modules[__name__],text,mode,typed)
         if download_result is not None:return download_result
+        # The Contacts screen, and "email John" or "open contacts" from the main menu (contacts_screen.py).
+        contacts_result=__import__('contacts_screen').handle(sys.modules[__name__],text,mode,typed)
+        if contacts_result is not None:return contacts_result
+        # The Calendar screen, and "what's on my calendar today?" from other screens (calendar_screen.py).
+        calendar_result=__import__('calendar_screen').handle(sys.modules[__name__],text,mode,typed)
+        if calendar_result is not None:return calendar_result
+        # Email attachments: the Attachments list, attaching, saving (attachment_screen.py).
+        attachment_result=__import__('attachment_screen').handle(sys.modules[__name__],text,mode,typed)
+        if attachment_result is not None:return attachment_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
     # A whole command only; in a document, email or note these words are text.
@@ -3430,9 +3464,18 @@ def _handle(text, mode, typed=False):
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)
+        if result.startswith('__attach__:'):
+            # Enter while picking a file to attach, or the menu's Email this file and Attach to draft.
+            screen=__import__('attachment_screen')
+            try:
+                if result=='__attach__:picked':return screen.picked(sys.modules[__name__])
+                return screen.files_command(sys.modules[__name__],result[len('__attach__:'):],mode) or mode
+            except (screen.AttachmentError,ValueError,OSError) as exc:
+                speak(str(exc));return mode
         if result=='__main__':
             picker=task_navigation().picker
             task_navigation().picker=None
+            if picker=='attach':return __import__('attachment_screen').picker_closed(sys.modules[__name__])
             # Escape from the drive list: Open a media file returns to the Media menu.
             if picker=='reader':return task_navigation().enter('reader_menu','Document reader')
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
@@ -3448,6 +3491,9 @@ def _handle(text, mode, typed=False):
             if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
+                if back:return back
+            if task_navigation().reader_return=='attachments':
+                back=__import__('attachment_screen').reader_back(sys.modules[__name__])
                 if back:return back
             speak('Back to file manager. '+FILE_MANAGER.say_current());return 'files'
         if command in ('main menu','back to main menu'):
@@ -3798,32 +3844,35 @@ def _handle(text, mode, typed=False):
     if command in ACCOUNT_SWITCH_COMMANDS + ACCOUNT_REMOVE_COMMANDS and not writing_dictation(mode, typed):
         return open_account_picker('remove' if command in ACCOUNT_REMOVE_COMMANDS else 'inbox', mode)
     contact_account = store.selected()
-    contacts = AddressBook(APP, contact_account[1] if contact_account else '')
+    # Thunderbird's address books and the contacts saved here, merged (contacts_book.py).
+    from contacts_book import ContactBook, find as find_contacts
+    contacts = ContactBook(APP, contact_account[1] if contact_account else '')
     contact = re.fullmatch(r'(?:add|save|create|update) contact (.+?) (?:as|at|email is) (.+)', text, re.I)
     if contact and writing_dictation(mode, typed):
         try: normalize_recipient(contact[2])
         except ValueError: contact = None
     if contact:
         try:
-            address = contacts.save(contact[1], contact[2])
-            speak('Saved contact ' + contact[1] + ' at ' + address + '.')
+            where = contacts.add(contact[1], contact[2])
+            address = normalize_recipient(contact[2])
+            speak('Saved contact ' + contact[1] + ' at ' + address + (' in Thunderbird.' if where.startswith('in Thunderbird') else '.'))
         except (ValueError, OSError) as exc:
             speak(str(exc))
         return mode
     if command in ('list contacts','list address book','read address book'):
-        entries = list(contacts.all().values())
-        speak(open_named_list('Contacts',[(e['name'],'find contact '+e['name']) for e in entries]) if entries else
+        entries = contacts.load()
+        speak(open_named_list('Contacts',[(e.label(),'find contact '+e.name) for e in entries]) if entries else
               'Your address book is empty. Type add contact Bob as bob@example.com, then press Enter.')
         return mode
     contact = re.fullmatch(r'(?:find|read|look up) contact (.+)', text, re.I)
     if contact:
-        entry = contacts.get(contact[1])
-        speak(entry['name'] + ', ' + entry['address'] if entry else 'No contact with that name. Say list contacts.')
+        found = find_contacts(contacts.cached(), contact[1])
+        speak(found[0].label() if found else 'No contact with that name. Say list contacts.')
         return mode
     if command in ('connect google contacts','sync google contacts','refresh google contacts') and not writing_dictation(mode, typed):
-        # Google Contacts needed the direct Gmail sign-in, which is removed. Contacts stay here.
-        speak('Google Contacts no longer connects to Voice Companion. Your contacts here are kept. '
-              'Say list contacts to hear them, or add contact to add one.')
+        # Google contacts come through Thunderbird now, which syncs them itself.
+        speak('Google contacts now come from Thunderbird. Add your Google account to Thunderbird, '
+              'then say open contacts. Your contacts saved here are kept.')
         return mode
     match_account = re.fullmatch(r'(?:switch to|use|select) (.+)', command)
     if match_account and not ('@' in match_account[1] or ' at ' in match_account[1] or match_account[1] in
@@ -4023,12 +4072,22 @@ def _handle(text, mode, typed=False):
                 context = email_draft.response_context
                 source_note = ('. This ' + context['action'].replace('_', ' ') +
                                ' uses the original message in your mailbox' +
-                               ('. Original attachments are not included' if context['action'] == 'forward' else '')
+                               ('. Original attachments may not be included'
+                                if context['action'] == 'forward' and not isinstance(context.get('original_attachments'), list) else '')
                                if context else '')
+                from mail_attachments import count_words, limit_warning, missing, missing_message, names, total_size
+                files = email_draft.all_attachments()
+                gone = missing(files)
+                if gone:
+                    pending_send = None
+                    speak(missing_message(gone) + ' The draft is saved.')
+                    return mode
+                attached = ('. With ' + count_words(len(files)) + ': ' + names(files) if files else '')
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
-                      copied + '. Subject ' + (subject or 'no subject') + '. Message: ' + (body or 'no message body') + source_note +
-                      '. Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
+                      copied + '. Subject ' + (subject or 'no subject') + attached + '. Message: ' + (body or 'no message body') + source_note +
+                      '.' + limit_warning(total_size(files)) +
+                      ' Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
                 reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
                 speak(reason+' The draft is saved locally. It has not been sent.')

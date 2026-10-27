@@ -1,0 +1,381 @@
+"""The Contacts screen, end to end.
+
+The real add-on (background.js and pim.js) runs in Node against the simulated
+Thunderbird (fake-messenger.cjs), through the real host code and relay, and
+Companion's real command routing and keys drive the screen.
+"""
+import io
+import os
+import shutil
+import subprocess
+import tempfile
+import threading
+import unittest
+from contextlib import ExitStack, redirect_stdout
+from pathlib import Path
+from unittest import mock
+
+import companion as app
+import contacts_book
+import contacts_screen
+import mail_accounts
+import regular_browser
+import thunderbird_bridge
+import thunderbird_mailbox
+import thunderbird_pim
+from address_book import AddressBook
+from browser_bridge_host import read_message
+from field_selection import FieldSelection
+from reading_navigation import ReadingCursor
+from test_thunderbird_mail import plain_store
+
+HERE = Path(__file__).parent
+
+
+class CompanionHarness(unittest.TestCase):
+    """Companion's state, patched like the other screen tests, with speech recorded."""
+    thunderbird = True        # start the simulated Thunderbird
+    old_addon = False         # a copy of the add-on from before contacts and calendars
+    thunderbird_env = {}      # other switches for fake-thunderbird.cjs
+
+    def setUp(self):
+        self.stack = ExitStack(); self.addCleanup(self.stack.close)
+        self.root = Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
+        self.stack.enter_context(redirect_stdout(io.StringIO()))
+        defaults = {'APP': self.root, 'TEXT_MODE': True, 'APP_WINDOW': None, 'INPUT_MODE': 'mixed', 'document': None,
+                    'email_draft': None, 'mail_session': None, 'web_session': None, 'pending_website': None,
+                    'pending_send': None, 'NAMED_LIST': None, 'account_setup': False, 'MAIN_MENU_INDEX': None,
+                    'SYNTH_PICK_INDEX': None, 'VOICE_PICK_INDEX': None, 'VOICE_PICK_ORIGINAL': None,
+                    'help_session': None, 'tutorial_session': None, 'MEDIA_HUB': None, 'note_buffer': [],
+                    'note_selection': FieldSelection(), 'note_reading': ReadingCursor(), 'OPEN_NOTE': None,
+                    'KEYBOARD_DIRTY': {}, 'EDIT_ACK': {}, 'PREFERENCES': dict(app.PREFERENCES), 'TASK_NAV': None,
+                    'SCREEN_MENU': None, 'SLEEP_RETURN_MODE': 'awake', 'SEARCH_RETURN_MODE': 'awake',
+                    'FILE_READER': None, 'EMAIL_LINK_RECIPIENT': None, 'THUNDERBIRD_SETUP': None, 'ACCOUNT_ENTRY': None,
+                    'ACCOUNT_PICKER': None}
+        for name, value in defaults.items():
+            self.stack.enter_context(mock.patch.object(app, name, value, create=(name == 'OPEN_NOTE')))
+        self.speech = self.stack.enter_context(mock.patch.object(app, 'speak'))
+        self.stack.enter_context(mock.patch.object(app, 'speak_prompt', side_effect=lambda text, *a, **k: app.speak(text)))
+        self.stack.enter_context(mock.patch.object(app, 'sync_app_context'))
+        self.stack.enter_context(mock.patch.object(app, 'focus_email_entry', create=True))
+        for patcher in plain_store():
+            self.stack.enter_context(patcher)
+        # Never start a real Thunderbird.
+        self.stack.enter_context(mock.patch.object(thunderbird_mailbox, 'STARTER', None))
+        self.stack.enter_context(mock.patch.dict(contacts_book.CACHE, {'at': None, 'contacts': [], 'books': []}))
+        contacts_screen.reset()
+        self.addCleanup(contacts_screen.reset)
+        self.relay = None
+        if self.thunderbird:
+            self.start_thunderbird()
+            mail_accounts.connect('thunderbird', self.root)
+        else:
+            self.stack.enter_context(mock.patch.object(thunderbird_bridge, '_RELAY', None))
+
+    def start_thunderbird(self):
+        if not shutil.which('node'):
+            self.skipTest('Node.js runs the simulated Thunderbird')
+        if os.name == 'nt':
+            endpoint, family = None, 'AF_PIPE'
+        else:
+            endpoint, family = str(self.root / 'mail.sock'), 'AF_UNIX'
+        self.relay = thunderbird_bridge.MailRelay(self.root, endpoint, family)
+        self.addCleanup(self.relay.close)
+        self.stack.enter_context(mock.patch.object(thunderbird_bridge, '_RELAY', self.relay))
+        self.stack.enter_context(mock.patch.object(regular_browser, 'data_folder', lambda: self.root))
+        env = dict(os.environ)
+        if self.old_addon:
+            env['FAKE_THUNDERBIRD_OLD_ADDON'] = '1'
+        env.update(self.thunderbird_env)
+        process = subprocess.Popen(['node', str(HERE / 'thunderbird_mail_extension' / 'fake-thunderbird.cjs')],
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        def stop():
+            if process.poll() is None:
+                process.kill()
+            process.communicate()
+        self.addCleanup(stop)
+        first = read_message(process.stdout)
+        threading.Thread(target=thunderbird_bridge.native_stream,
+                         args=(first, process.stdout, process.stdin, endpoint, family), daemon=True).start()
+        self.assertTrue(self.relay.connected.wait(10), 'Thunderbird did not connect')
+
+    def said(self):
+        return str(self.speech.call_args.args[0])
+
+    def everything_said(self):
+        return ' '.join(str(call.args[0]) for call in self.speech.call_args_list)
+
+    def say(self, text, mode):
+        return app.handle(text, mode)
+
+    def press(self, key, mode):
+        request = app.navigation_key(key, mode)
+        return app.handle_keyboard(request, mode) if request else mode
+
+
+class ContactsScreenTests(CompanionHarness):
+    def open(self):
+        mode = self.say('Contacts', 'awake')
+        self.assertEqual(mode, 'contacts')
+        return mode
+
+    def test_main_menu_has_contacts_and_calendar_after_email(self):
+        names = [name for name, _ in app.MAIN_MENU_CHOICES]
+        self.assertEqual(names[names.index('Email') + 1:names.index('Email') + 3], ['Contacts', 'Calendar'])
+        self.assertEqual(len(names), 15)
+
+    def test_opens_on_a_sorted_merged_list(self):
+        # A contact saved here and in Thunderbird is said once; one only here is added.
+        AddressBook(self.root, 'me@gmail.com').save('Johnny', 'JOHN@example.com')
+        AddressBook(self.root, 'me@gmail.com').save('Zed Local', 'zed@example.com', '555-0177')
+        self.open()
+        self.assertEqual(self.said(), 'Contacts. 6 contacts. Ann Brown, ann@example.com, 1 of 6.')
+        self.assertEqual([c.name for c in contacts_screen.CONTACTS],
+                         ['Ann Brown', 'Help Desk', 'John Smith', 'Mary Jones', 'Plumber', 'Zed Local'])
+        self.assertEqual(contacts_screen.CONTACTS[-1].source, 'local')
+
+    def test_arrows_letters_home_and_end_with_list_edges(self):
+        mode = self.open()
+        self.press('Up', mode)
+        self.assertEqual(self.said(), 'Start of list. Ann Brown, ann@example.com, 1 of 5.')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'Help Desk, help@work.example, 555-0111, 2 of 5.')
+        self.press('Letter:m', mode)
+        self.assertEqual(self.said(), 'Mary Jones, mary@example.com, 3 of 5.'.replace('3 of 5', '4 of 5'))
+        self.press('Letter:q', mode)
+        self.assertEqual(self.said(), 'No contact starts with Q.')
+        self.press('End', mode)
+        self.assertEqual(self.said(), 'Plumber, 555-0199, 5 of 5.')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'End of list. Plumber, 555-0199, 5 of 5.')
+        self.press('Home', mode)
+        self.assertEqual(self.said(), 'Ann Brown, ann@example.com, 1 of 5.')
+        # The same by voice, with recognizer punctuation.
+        self.say('Next contact.', mode)
+        self.assertEqual(self.said(), 'Help Desk, help@work.example, 555-0111, 2 of 5.')
+        self.say('Last contact', mode)
+        self.assertEqual(contacts_screen.current().name, 'Plumber')
+
+    def test_enter_offers_email_this_person_first_then_the_details(self):
+        mode = self.open()
+        self.press('Letter:j', mode)
+        self.press('Enter', mode)
+        self.assertEqual(self.said(), 'John Smith. Email this person, 1 of 6. Escape goes back to the list.')
+        labels = [label for label, _ in contacts_screen.DETAILS]
+        self.assertEqual(labels, ['Email this person', 'Name: John Smith', 'Email: john@example.com', 'Phone: 555-0100',
+                                  'Saved in: Thunderbird address book me@gmail.com', 'Delete contact'])
+        self.press('Down', mode); self.press('Down', mode); self.press('Down', mode)
+        self.assertEqual(self.said(), 'Phone: 555-0100, 4 of 6.')
+        self.press('Escape', mode)
+        self.assertEqual(self.said(), 'Contacts. John Smith, john@example.com, 555-0100, 3 of 5.')
+        self.press('Enter', mode)
+        mode = self.press('Enter', mode)
+        self.assertEqual(mode, 'email_draft')
+        self.assertEqual((app.email_draft.recipient, app.email_draft.compose_step), ('john@example.com', 'subject'))
+        self.assertIn('Email to John Smith, john@example.com.', self.everything_said())
+
+    def test_control_e_emails_at_once_and_asks_which_address_when_there_are_several(self):
+        mode = self.open()
+        self.press('Letter:m', mode)
+        self.assertEqual(app.navigation_key('Ctrl+E', mode), 'email contact')
+        self.press('Ctrl+E', mode)
+        self.assertIn('Which email address for Mary Jones?', self.said())
+        self.assertEqual([label for label, _ in app.NAMED_LIST['items']], ['mary@example.com', 'mary.work@example.org'])
+        self.press('Down', mode)
+        mode = self.press('Enter', mode)
+        self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'mary.work@example.org'))
+
+    def test_a_contact_with_no_email_says_so_plainly(self):
+        mode = self.open()
+        self.press('Letter:p', mode)
+        self.press('Ctrl+E', mode)
+        self.assertEqual(self.said(), 'Plumber has no email address saved.')
+        self.say('call details', mode)
+        self.assertEqual(self.said(), 'Plumber, phone 555-0199.')
+        self.press('Enter', mode)
+        self.assertEqual([label for label, _ in contacts_screen.DETAILS][:2], ['Name: Plumber', 'No email address'])
+        self.say('read contact', mode)
+        self.assertEqual(self.said(), 'Plumber. No email address. Phone 555-0199. Thunderbird address book Personal Address Book.')
+
+    def test_control_n_adds_into_thunderbird_with_simple_prompts(self):
+        mode = self.open()
+        self.assertEqual(app.navigation_key('Ctrl+N', mode), 'add contact')
+        mode = self.press('Ctrl+N', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'New contact. Type or say the name, then press Enter. Escape cancels.'))
+        mode = app.handle('Pat Doe.', mode)
+        self.assertEqual(mode, 'task_input')
+        self.assertIn('Email address for Pat Doe?', self.said())
+        mode = app.handle('pat at example dot com.', mode)
+        self.assertIn('Phone number?', self.said())
+        # Enter with nothing typed leaves the phone out.
+        self.assertEqual(app.navigation_key('Enter', mode), '@task:skip')
+        mode = self.press('Enter', mode)
+        self.assertEqual(mode, 'contacts')
+        self.assertEqual(self.said(), 'Saved Pat Doe in Thunderbird, me@gmail.com. Pat Doe, pat@example.com, 5 of 6.')
+        # The address book Thunderbird links to the selected account (named for its address) gets it.
+        pat = contacts_screen.current()
+        self.assertEqual((pat.source, pat.emails, pat.book), ('thunderbird', ['pat@example.com'], 'me@gmail.com'))
+
+    def test_adding_needs_a_name_and_an_email_or_phone_and_escape_cancels(self):
+        mode = self.press('Ctrl+N', self.open())
+        mode = app.handle('Sam', mode)
+        mode = app.handle('not an address', mode)
+        self.assertIn('I could not understand one complete email address.', self.said())
+        self.assertEqual(mode, 'task_input')
+        mode = app.handle('skip', mode)
+        mode = app.handle('skip', mode)
+        self.assertEqual(mode, 'task_input')
+        self.assertIn('A contact needs an email address or a phone number.', self.said())
+        mode = self.press('Escape', mode)
+        self.assertEqual((mode, self.said()), ('contacts', 'Canceled. Back to contacts.'))
+        self.assertNotIn('Sam', [c.name for c in contacts_screen.CONTACTS])
+
+    def test_delete_asks_first_and_read_only_books_are_protected(self):
+        mode = self.open()
+        self.press('Letter:p', mode)
+        self.press('Delete', mode)
+        self.assertEqual(self.said(), 'Delete Plumber from your contacts? It is also removed from Thunderbird. Say Yes or No. Escape keeps it.')
+        self.assertEqual(app.app_context(mode)['confirmation'], 'no')
+        self.press('Escape', mode)
+        self.assertTrue(self.said().startswith('Not deleted.'))
+        self.press('Delete', mode)
+        self.press('Up', mode)
+        self.assertEqual(self.said(), 'Yes.')
+        self.press('Enter', mode)
+        self.assertEqual(self.said(), 'Deleted Plumber. Mary Jones, mary@example.com, 4 of 4.')
+        # From the details view: Delete contact is the last line; afterwards the list is back.
+        self.press('Letter:a', mode); self.press('Enter', mode); self.press('End', mode)
+        self.assertEqual(self.said(), 'Delete contact, 5 of 5.')
+        self.press('Enter', mode); self.press('Up', mode); self.press('Enter', mode)
+        self.assertEqual(self.said(), 'Deleted Ann Brown. Help Desk, help@work.example, 555-0111, 1 of 3.')
+        self.assertEqual(contacts_screen.VIEW, 'list')
+        self.say('first contact', mode)
+        self.press('Delete', mode)
+        self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be deleted.')
+
+    def test_find_by_control_f_and_by_voice(self):
+        mode = self.open()
+        self.assertEqual(app.navigation_key('Ctrl+F', mode), '@prompt:find contact {value}')
+        mode = self.press('Ctrl+F', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'Find contact. Type or say a name, then press Enter. Escape cancels.'))
+        mode = app.handle('mary', mode)
+        self.assertEqual((mode, contacts_screen.current().name), ('contacts', 'Mary Jones'))
+        self.say('Find John.', mode)
+        self.assertEqual(contacts_screen.current().name, 'John Smith')
+        self.say('find nobody', mode)
+        self.assertTrue(self.said().startswith('No contact named nobody.'))
+
+    def test_escape_goes_to_the_main_menu(self):
+        mode = self.open()
+        self.assertEqual(self.press('Escape', mode), 'awake')
+
+    def test_email_a_contact_by_name_from_the_main_menu(self):
+        mode = app.handle('Email John.', 'awake')
+        self.assertEqual((mode, app.email_draft.recipient, app.email_draft.compose_step), ('email_draft', 'john@example.com', 'subject'))
+        app.email_draft = None
+        mode = app.handle('Send an email to John Smith', 'awake')
+        self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+        app.email_draft = None
+        mode = app.handle('write to Mary', 'awake')
+        self.assertEqual(mode, 'awake')
+        self.assertIn('Which email address for Mary Jones?', self.said())
+        mode = app.handle('send an email to Bob', 'awake')
+        self.assertEqual(self.said(), 'No contact named bob. Say open contacts to hear your contacts, or add contact to save one.')
+        # A sentence is not a name.
+        app.handle('Write to the council about the road.', 'awake')
+        self.assertNotIn('No contact named', self.said())
+        mode = app.handle('email the plumber', 'awake')
+        self.assertNotEqual(mode, 'email_draft')
+        app.handle('email plumber', 'awake')
+        self.assertEqual(self.said(), 'Plumber has no email address saved. Open Contacts to add one.')
+
+    def test_two_contacts_with_the_same_first_name_ask_which_one(self):
+        AddressBook(self.root, 'me@gmail.com').save('John Brown', 'jb@example.com')
+        mode = app.handle('email john', 'awake')
+        self.assertEqual(mode, 'awake')
+        self.assertTrue(self.said().startswith('Which john? Contacts list. John Brown, jb@example.com'))
+        self.press('Down', mode)
+        mode = self.press('Enter', mode)
+        self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+
+    def test_email_commands_on_the_contacts_screen(self):
+        mode = self.open()
+        mode = app.handle('email John', mode)
+        self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+
+    def test_a_contact_name_in_an_email_draft_comes_from_thunderbird(self):
+        self.open()
+        mode = app.handle('new email', 'awake')
+        self.assertEqual(mode, 'email_draft')
+        app.handle('email to John Smith', mode)
+        self.assertEqual(app.email_draft.recipient, 'john@example.com')
+
+    def test_writing_comes_first_in_writing_fields(self):
+        self.open()
+        mode = app.handle('write a note', 'awake')
+        self.assertEqual(app.handle('Email John about the trip.', mode), 'note')
+        self.assertEqual(app.email_draft, None)
+
+    def test_old_google_contacts_command_points_to_thunderbird(self):
+        app.handle('connect google contacts', 'awake')
+        self.assertIn('Google contacts now come from Thunderbird.', self.said())
+
+
+class NotStartedContactsTests(CompanionHarness):
+    thunderbird = False
+
+    def test_email_by_name_reads_thunderbird_contacts_when_thunderbird_is_not_running_yet(self):
+        # Thunderbird is the user's mail program but not started: its contacts are read, which starts it.
+        AddressBook(self.root).save('Zed Local', 'zed@example.com')     # contacts here too
+        john = {'id': 'c1', 'name': 'John Smith', 'emails': ['john@example.com'], 'phones': [], 'book': 'Google'}
+        with mock.patch.object(thunderbird_pim, 'connected', return_value=False), \
+                mock.patch.object(thunderbird_pim, 'has_thunderbird_account', return_value=True), \
+                mock.patch.object(thunderbird_pim, 'contacts', return_value={'books': [], 'contacts': [john]}) as read:
+            mode = app.handle('email John', 'awake')
+        self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+        read.assert_called_once()
+
+
+class OldAddonContactsTests(CompanionHarness):
+    old_addon = True
+
+    def test_an_old_add_on_copy_asks_for_an_update_and_keeps_local_contacts(self):
+        AddressBook(self.root, 'me@gmail.com').save('Zed Local', 'zed@example.com')
+        self.assertEqual(app.handle('contacts', 'awake'), 'contacts')
+        self.assertEqual(self.said(), 'Contacts. 1 contact. Zed Local, zed@example.com, 1 of 1. '
+                         'The Voice Companion connection in Thunderbird must be updated first. Close Thunderbird, '
+                         'then try again. Voice Companion updates the connection and starts Thunderbird again.')
+
+
+class NoThunderbirdContactsTests(CompanionHarness):
+    thunderbird = False
+
+    def test_without_thunderbird_contacts_are_kept_on_this_computer(self):
+        mode = app.handle('open contacts', 'awake')
+        self.assertEqual(self.said(), 'Contacts. No contacts yet. Press Control+N to add one, or say add contact. '
+                         'Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account.')
+        mode = app.handle('add contact', mode)
+        mode = app.handle('Lee', mode)
+        mode = app.handle('lee@example.com', mode)
+        mode = app.handle('skip', mode)
+        self.assertEqual(self.said(), 'Saved Lee on this computer. Lee, lee@example.com, 1 of 1.')
+        self.assertEqual(AddressBook(self.root).get('lee')['address'], 'lee@example.com')
+        # A phone number alone is enough.
+        mode = app.handle('add contact', mode)
+        for answer in ('Plumber', '', '555 0199'):
+            mode = app.handle(answer, mode) if answer else self.press('Enter', mode)
+        self.assertEqual(AddressBook(self.root).get('plumber'), {'name': 'Plumber', 'address': '', 'phone': '555 0199'})
+        self.press('Letter:p', mode)
+        mode = self.press('Delete', mode)
+        self.press('Up', mode); self.press('Enter', mode)
+        self.assertIsNone(AddressBook(self.root).get('plumber'))
+
+    def test_add_contact_as_address_still_works_everywhere(self):
+        app.handle('add contact Bob as bob at example dot com', 'awake')
+        self.assertEqual(self.said(), 'Saved contact Bob at bob@example.com.')
+        app.handle('find contact bob', 'awake')
+        self.assertEqual(self.said(), 'Bob, bob@example.com')
+
+
+if __name__ == '__main__':
+    unittest.main()

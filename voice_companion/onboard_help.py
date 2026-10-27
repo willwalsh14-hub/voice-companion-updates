@@ -78,12 +78,14 @@ class HelpSession:
             'voice':'speech and voices', 'speech':'speech and voices', 'ai voice':'speech and voices', 'ai':'speech and voices',
             'ai voice setup':'speech and voices', 'voice setup':'speech and voices',
             'reading':'reading and editing text', 'commands':'using voice commands', 'input modes':'using voice commands',
-            'contacts':'set up email', 'accounts':'set up email', 'folders':'read and organize email',
+            'contacts':'contacts', 'address book':'contacts', 'contact list':'contacts', 'accounts':'set up email', 'folders':'read and organize email',
+            'calendar':'calendar', 'events':'calendar', 'appointments':'calendar', 'schedule':'calendar',
             'presets':'saved radio stations', 'radio presets':'saved radio stations',
             'settings':'change your options', 'options':'change your options', 'verbosity':'change your options',
             'keyboard':'using voice commands', 'email lists':'read and organize email', 'station database':'listen to radio',
             'notepad':'write a note', 'notes':'write a note', 'updates':'check for updates', 'tutorial':'using help and lessons',
             'downloads':'download files', 'download manager':'download files', 'download':'download files', 'download folder':'download files',
+            'attachments':'read and organize email', 'attachment':'read and organize email', 'email attachments':'read and organize email',
         }
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)

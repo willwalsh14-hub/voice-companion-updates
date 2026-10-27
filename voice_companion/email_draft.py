@@ -2,6 +2,7 @@
 import html
 import hashlib
 import json
+import os
 import re
 from dataclasses import asdict, dataclass, field, fields
 from email.message import EmailMessage
@@ -63,6 +64,8 @@ class VoiceEmail(VoiceDocument):
     compose_step: str = ''
     after_copy_step: str = ''
     response_context: dict = field(default_factory=dict)
+    # Files from this computer: [{'path', 'name', 'size'}]. Read again when the email is sent.
+    attachments: list = field(default_factory=list)
 
     def __post_init__(self):
         super().__post_init__()
@@ -101,7 +104,83 @@ class VoiceEmail(VoiceDocument):
     def send_hash(self):
         content = [self.provider, self.recipient, self.subject,
                    self.cc, self.bcc, self.response_context, [asdict(p) for p in self.paragraphs]]
+        if self.attachments:
+            # Only when there are files, so drafts saved before attachments keep their fingerprint.
+            content.append([[item.get('path'), item.get('name'), item.get('size')] for item in self.attachments])
         return hashlib.sha256(json.dumps(content, ensure_ascii=False).encode('utf-8')).hexdigest()
+
+    # Attachments ----------------------------------------------------------
+
+    def attach(self, paths):
+        """Attach files from this computer. Returns what to say. Folders and missing files are refused."""
+        from mail_attachments import AttachmentError, MAX_DRAFT_TOTAL, count_words, limit_warning, local_attachment, size_words, total_size
+        found = []
+        for path in paths:
+            item = local_attachment(path)
+            if any(os.path.normcase(str(Path(old['path']))) == os.path.normcase(str(Path(item['path'])))
+                   for old in self.attachments + found):
+                continue
+            found.append(item)
+        if not found:
+            if paths:
+                raise AttachmentError(Path(paths[0]).name + ' is already attached.')
+            raise AttachmentError('Choose a file to attach.')
+        total = total_size(self.attachments + found)
+        if total > MAX_DRAFT_TOTAL:
+            raise AttachmentError('That would make this email ' + size_words(total) + '. That is more than email can carry. '
+                                  'Nothing was attached. Share large files another way, such as a cloud folder.')
+        self.attachments.extend(found)
+        self.save()
+        said = ('Attached ' + found[0]['name'] + ', ' + size_words(found[0]['size']) + '.' if len(found) == 1 else
+                'Attached ' + count_words(len(found)) + ': ' + ', '.join(item['name'] for item in found) + '.')
+        if len(self.attachments) > len(found):
+            said += ' This email has ' + count_words(len(self.attachments)) + '.'
+        return said + limit_warning(total)
+
+    def remove_attachment(self, index):
+        item = self.attachments.pop(index)
+        self.save()
+        return item
+
+    def original_attachments(self):
+        """The original message's files that go with this forward, less the ones taken off."""
+        context = self.response_context or {}
+        found = context.get('original_attachments') if context.get('action') == 'forward' else None
+        if not isinstance(found, list):
+            return []
+        dropped = list(context.get('dropped_attachments', []))
+        kept = []
+        for item in found:
+            if item.get('name') in dropped:
+                dropped.remove(item['name'])
+                continue
+            kept.append(item)
+        return kept
+
+    def all_attachments(self):
+        """Every file this email will carry: the forwarded originals first, then files from this computer."""
+        return [dict(item, original=True) for item in self.original_attachments()] + list(self.attachments)
+
+    def drop_original(self, name):
+        self.response_context.setdefault('dropped_attachments', []).append(name)
+        self.save()
+
+    def _attachment_part(self, item):
+        """The attachment as a ready MIME part, encoded once and kept while the file is unchanged."""
+        from mail_attachments import mime_type
+        path = Path(item['path'])
+        info = path.stat()
+        key = (str(path), info.st_size, info.st_mtime_ns, item['name'])
+        cache = self.__dict__.setdefault('_attachment_parts', {})
+        if key not in cache:
+            maintype, subtype = mime_type(item['name'])
+            part = EmailMessage()
+            part.set_content(path.read_bytes(), maintype=maintype, subtype=subtype, disposition='attachment',
+                             filename=item['name'])
+            for old in [k for k in cache if k[0] == key[0]]:
+                del cache[old]
+            cache[key] = part
+        return cache[key]
 
     def checkpoint(self):
         super().checkpoint()
@@ -143,6 +222,7 @@ class VoiceEmail(VoiceDocument):
             'provider': self.provider, 'last_accepted_hash': self.last_accepted_hash,
             'last_attempt_hash': self.last_attempt_hash,
             'cc': self.cc, 'bcc': self.bcc, 'response_context': self.response_context,
+            'attachments': self.attachments,
             'paragraphs': [asdict(p) for p in self.paragraphs],
         }
         temporary = self.state_path.with_suffix('.writing.json')
@@ -167,6 +247,17 @@ class VoiceEmail(VoiceDocument):
         msg.set_content(body)
         from email_formatting import formatted_body
         msg.add_alternative(formatted_body(self), subtype='html')
+        parts = []
+        for item in self.attachments:
+            try:
+                parts.append(self._attachment_part(item))
+            except OSError:
+                # Gone or locked: the draft keeps the file's place, and sending says what is wrong.
+                pass
+        if parts:
+            msg.make_mixed()
+            for part in parts:
+                msg.attach(part)
         output = self.path.with_suffix('.writing.eml')
         output.write_bytes(msg.as_bytes())
         output.replace(self.path)
@@ -190,6 +281,11 @@ class VoiceEmail(VoiceDocument):
             raise ValueError('This email draft has invalid CC or BCC data.')
         if not isinstance(data.get('response_context', {}), dict):
             raise ValueError('This email draft has invalid response data.')
+        attached = data.get('attachments', [])
+        if not isinstance(attached, list) or any(
+                not isinstance(item, dict) or not isinstance(item.get('path'), str) or not isinstance(item.get('name'), str)
+                or not isinstance(item.get('size'), int) or set(item) - {'path', 'name', 'size'} for item in attached):
+            raise ValueError('This email draft has invalid attachment data.')
         paragraphs = data.get('paragraphs', [])
         if any(not isinstance(p, dict) or not isinstance(p.get('text'), str)
                or p.get('kind', 'Normal') not in ('Normal', 'Bulleted list', 'Numbered list',
@@ -209,6 +305,7 @@ class VoiceEmail(VoiceDocument):
         draft.bcc = data.get('bcc', [])
         draft.compose_step = 'recipient' if not draft.recipient else 'subject' if not draft.subject else 'body'
         draft.response_context = data.get('response_context', {})
+        draft.attachments = [dict(item) for item in attached]
         names = {f.name for f in fields(Paragraph)}
         for p in paragraphs:
             if set(p) - names or not isinstance(p.get('runs', []), list) or any(
@@ -266,8 +363,9 @@ class VoiceEmail(VoiceDocument):
             from mail_accounts import ProtectedStore
             selected = ProtectedStore(self.folder.parent).selected()
             account = selected[1] if selected and selected[0] == self.provider else ''
-            entry = AddressBook(self.folder.parent, account).get(value.strip().rstrip('.!?,;').strip())
-            return entry['address'] if entry else value
+            # The contacts saved here, then Thunderbird's address books (contacts_book.py).
+            from contacts_book import address_for
+            return address_for(self.folder.parent, account, value) or value
         def parses(value):
             try: normalize_recipient(contact_address(value)); return True
             except ValueError: return False

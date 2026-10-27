@@ -1,4 +1,8 @@
-"""Small local address book for spoken names and typed email addresses."""
+"""Small local address book for spoken names and typed email addresses.
+
+Contacts in Thunderbird's address books are read through contacts_book.py; this
+file keeps the contacts saved on this computer only (before Thunderbird was set
+up, or while it is not connected)."""
 import json
 import re
 import hashlib
@@ -25,25 +29,35 @@ class AddressBook:
         entry = self.all().get(name.strip().casefold())
         return entry if isinstance(entry, dict) else None
 
-    def save(self, name, address):
+    def save(self, name, address, phone=''):
+        """Save a contact. It needs an email address or a phone number; the address is checked."""
         name = name.strip()
         if not name or len(name) > 80 or re.search(r'[\r\n<>]', name):
             raise ValueError('Use a short contact name without symbols.')
-        address = normalize_recipient(address)
+        phone = str(phone or '').strip()
+        if len(phone) > 40 or re.search(r'[\r\n]', phone):
+            raise ValueError('Use a shorter phone number.')
+        if address or not phone:
+            address = normalize_recipient(address)
         entries = self.all()
         # Contacts once brought in from Google Contacts are ordinary local contacts now.
-        entries[name.casefold()] = {'name': name, 'address': address}
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix('.writing.json')
-        temporary.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
+        entry = {'name': name, 'address': address or ''}
+        if phone:
+            entry['phone'] = phone
+        entries[name.casefold()] = entry
+        self._write(entries)
         return address
 
     def delete(self, name):
         entries = self.all()
         if name.strip().casefold() not in entries: return False
         del entries[name.strip().casefold()]
+        self._write(entries)
+        return True
+
+    def _write(self, entries):
+        # Atomic: a temporary file, then replace, so a crash never leaves half an address book.
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix('.writing.json')
         temporary.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding='utf-8')
         temporary.replace(self.path)
-        return True

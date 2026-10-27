@@ -54,9 +54,44 @@ YAHOO_SIGN_IN_FAILED = ('Yahoo did not accept the saved app password. Ask your h
                         'Yahoo app password, then say add account.')
 
 
-def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL, sent_folder=None):
+TOO_LARGE = ('Yahoo refused this email because it is too large. Remove an attachment with Control+L and Delete, '
+             'then review the draft again.')
+
+
+def add_attachments(msg, draft, originals=None):
+    """Add the draft's files to a message being built: first the original's files on a
+    forward (originals(item) gives their bytes), then files from this computer.
+    Raises DeliveryError (certainly not sent) when a file is gone or cannot be read."""
+    from mail_attachments import AttachmentError, mime_type, missing, missing_message, read_local
+    files = getattr(draft, 'attachments', None)
+    files = list(files) if isinstance(files, list) else []
+    gone = missing(files)
+    if gone:
+        raise DeliveryError(missing_message(gone), uncertain=False)
+    kept = draft.original_attachments() if callable(getattr(type(draft), 'original_attachments', None)) else []
+    for item in kept:
+        if originals is None:
+            raise DeliveryError('The original attachments could not be read, so the email was not sent. Try again.', uncertain=False)
+        try:
+            data = originals(item)
+        except Exception as exc:
+            raise DeliveryError('The original attachments could not be read from Yahoo, so the email was not sent. '
+                                'Check the internet connection, then review the draft again.', uncertain=False) from exc
+        maintype, subtype = mime_type(item['name'])
+        msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=item['name'])
+    for item in files:
+        try:
+            data = read_local(item)
+        except AttachmentError as exc:
+            raise DeliveryError(str(exc), uncertain=False) from exc
+        maintype, subtype = mime_type(item['name'])
+        msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=item['name'])
+
+
+def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL, sent_folder=None, originals=None):
     """Send through smtp.mail.yahoo.com, then keep a copy in Yahoo's Sent folder
     when sent_folder (a function taking the raw message and its Message-ID) is given.
+    originals(item), on a forward, gives the bytes of one of the original's files.
 
     Only a failure after the message data started can leave the result
     uncertain; a refused sign-in, address or message was certainly not sent."""
@@ -79,6 +114,7 @@ def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL, se
         msg['References'] = (context.get('references', '') + ' ' + context['message_id']).strip()
     msg.set_content(outgoing_body(draft, body))
     msg.add_alternative(formatted_body(draft), subtype='html')
+    add_attachments(msg, draft, originals)
     stage, smtp = 'connect', None
     try:
         smtp = smtp_factory('smtp.mail.yahoo.com', 465, context=ssl.create_default_context(), timeout=30)
@@ -92,9 +128,13 @@ def yahoo_submit(draft, address, app_password, smtp_factory=smtplib.SMTP_SSL, se
         raise DeliveryError('Yahoo would not send to ' + ', '.join(exc.recipients) +
                             '. Check the address, then review the draft again.', uncertain=False) from exc
     except smtplib.SMTPSenderRefused as exc:
+        if exc.smtp_code == 552:
+            raise DeliveryError(TOO_LARGE, uncertain=False) from exc
         raise DeliveryError('Yahoo would not send from this account right now. Wait a few minutes, '
                             'then review the draft again.', uncertain=False) from exc
     except smtplib.SMTPDataError as exc:
+        if exc.smtp_code == 552:
+            raise DeliveryError(TOO_LARGE, uncertain=False) from exc
         raise DeliveryError('Yahoo refused this message. Wait a few minutes, then review the draft again. '
                             'If it happens again, ask your helper.', uncertain=False) from exc
     except (smtplib.SMTPException, OSError, TimeoutError) as exc:
@@ -129,10 +169,19 @@ def yahoo_sent_folder(address, app_password):
     return YahooMailbox(address, app_password).save_sent_copy
 
 
+def yahoo_originals(draft, address, app_password):
+    """On a forward, a function giving the bytes of one of the original message's files."""
+    from yahoo_mailbox import YahooMailbox
+    context = draft.response_context or {}
+    mailbox = YahooMailbox(address, app_password)
+    return lambda item: mailbox.attachment_bytes(context['source_id'], item, context.get('source_folder') or 'INBOX')
+
+
 def submit(provider, draft, access_token, sender=''):
     """One attempt only. Return provider acceptance; never assert final delivery."""
     if provider == 'yahoo':
-        return yahoo_submit(draft, sender, access_token, sent_folder=yahoo_sent_folder(sender, access_token))
+        return yahoo_submit(draft, sender, access_token, sent_folder=yahoo_sent_folder(sender, access_token),
+                            originals=yahoo_originals(draft, sender, access_token))
     if provider == 'thunderbird':
         from thunderbird_mailbox import submit as thunderbird_submit
         return thunderbird_submit(draft, access_token)

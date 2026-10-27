@@ -209,7 +209,9 @@ class ShellFiles:
 
 MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+D','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Say Main menu','main menu'))
 SORT_MENU=(('Name','Alt+N','sort by name'),('Date created','Alt+C','sort by date created'),('Date modified','Alt+M','sort by date modified'),('Date added (first seen here)','Alt+D','sort by date added'),('Ascending','Alt+A','sort ascending'),('Descending','Alt+Z','sort descending'))
-MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Main menu','Alt+Home','main menu'))
+MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Email this file','Ctrl+N','email this file'),('Attach to open email draft','Ctrl+T','attach to draft'),('Main menu','Alt+Home','main menu'))
+# Email this file and Attach to draft need the app (attachment_screen.py); File manager hands them over.
+ATTACH_COMMANDS=('email this file','attach to draft')
 
 HELP='File manager. Up and Down move through items. Home and End reach the list boundaries. Enter opens. Escape goes up one folder, then back to the drive list. Say an item name, or open followed by its name. Space toggles selection. Say select, unselect, mark, unmark, check, or uncheck, with an item name if needed. Ctrl A selects all; Ctrl Shift A clears selections. F2 renames. Delete asks you to confirm removal. Ctrl C copies; Ctrl X cuts; Ctrl V pastes in the current folder. F5 refreshes. Alt opens the file manager menu with all keyboard and voice commands. Ctrl D returns to drives. Type the first few letters of an item to jump to it. Repeated letters cycle matches. Backspace removes a letter. Ctrl F searches names in this list; Ctrl Shift F searches subfolders. Ctrl Shift X clears search. Alt S opens Sort. Ctrl Shift 1 through 4 sorts by name, date created, date modified, or date added. Ctrl Shift Up and Down choose ascending and descending. Date added means first seen here. Tab and Shift Tab reach Search, Sort, Clear search and Drives buttons. Alt Home returns to the main menu. Say Main menu to leave File manager.'
 
@@ -299,7 +301,9 @@ class FileManager:
         if self.menu:
             if cmd in ('escape','go back','cancel'):self.menu=False;return self.say_current()
             if cmd in ('enter','okay','ok','open','activate','confirm'):
-                command=self.menu_items()[self.menu_index][2];self.menu=False;return self.command(command)
+                command=self.menu_items()[self.menu_index][2];self.menu=False
+                if command in ATTACH_COMMANDS:return '__attach__:'+command
+                return self.command(command)
             if cmd not in ('next','previous','up','down','home','end','first','last','file backspace') and not cmd.startswith('file letters '):
                 self.menu=False;return self.command(text)
         if cmd in ('next','previous','up','down','home','end','first','last'):
@@ -362,6 +366,8 @@ class FileManager:
             if not item:return 'This folder is empty.'
             if item.folder:return self.refresh(item.path,push=True)
             if not item.filesystem:raise ValueError('Windows has not exposed this file for reading.')
+            # Choosing a file to attach to an email: the app attaches it (attachment_screen.py).
+            if getattr(self,'pick_label',None)=='attach':return '__attach__:picked'
             if getattr(self,'pick_extensions',None):
                 if Path(item.path).suffix.lower() not in self.pick_extensions:raise ValueError('Choose a supported '+getattr(self,'pick_label','document')+' file.')
                 if getattr(self,'pick_label',None)=='document' and Path(item.path).suffix.lower()!='.docx':

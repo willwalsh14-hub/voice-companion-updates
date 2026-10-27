@@ -17,6 +17,9 @@ if (process.env.FAKE_THUNDERBIRD_SERVER_MAIL) {
     html: '', plain: 'Plain text of message 26', replyTo: ''});
 }
 state.mailCheck = process.env.FAKE_THUNDERBIRD_MAIL_CHECK || 'ok';
+// Calendars: only Thunderbird's own Home calendar (no Google calendar added), or answers that cannot be read.
+if (process.env.FAKE_THUNDERBIRD_ONLY_HOME_CALENDAR) { state.calendars = state.calendars.filter(c => c.type === 'storage'); state.events = []; }
+if (process.env.FAKE_THUNDERBIRD_CALENDAR_BROKEN) state.calendarBroken = true;
 const messageListeners = [], disconnectListeners = [];
 
 function write(message) {
@@ -40,7 +43,9 @@ process.stdin.on('end', () => {
   for (const listener of disconnectListeners) listener();
   process.stderr.write(JSON.stringify({sent: state.sent.map(s => ({kind: s.kind, replyType: s.replyType, messageId: s.messageId,
     identityId: (s.details || {}).identityId, to: s.current.to, cc: s.current.cc, bcc: s.current.bcc, subject: s.current.subject,
-    body: s.current.body, plainTextBody: s.current.plainTextBody})), moved: state.moved, deleted: state.deleted}));
+    body: s.current.body, plainTextBody: s.current.plainTextBody,
+    attachments: (s.attachments || []).map(({file}) => ({name: file.name, size: file.size}))})),
+    moved: state.moved, deleted: state.deleted}));
   process.exit(0);
 });
 
@@ -53,8 +58,10 @@ api.runtime.connectNative = name => {
   };
 };
 
-const context = vm.createContext({console, setTimeout, clearTimeout, messenger: api, JSON});
+const context = vm.createContext({console, setTimeout, clearTimeout, messenger: api, JSON, File, Blob, btoa, atob});
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
+// Contacts and calendars (pim.js). FAKE_THUNDERBIRD_OLD_ADDON is a copy installed before they existed.
+if (!process.env.FAKE_THUNDERBIRD_OLD_ADDON) vm.runInContext(fs.readFileSync(path.join(__dirname, 'pim.js'), 'utf8'), context);
 // A short wait for the mail check, so a check that never ends does not slow the tests.
 if (process.env.FAKE_THUNDERBIRD_CHECK_MS) {
   vm.runInContext('MailBridge.MAIL_CHECK_MS = ' + Number(process.env.FAKE_THUNDERBIRD_CHECK_MS), context);
