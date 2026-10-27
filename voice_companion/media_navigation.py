@@ -146,7 +146,9 @@ class MediaNavigation:
                     if h.preset_browsing:return self.run('play preset')
                     if h.stations and h.station_index is not None:return self.run('play station '+str(h.station_index+1))
                     if selected:
-                        h.player.open(selected['url'],selected['name'],'radio');return 'Playing '+selected['name']+'.'
+                        try:h.player.open(selected['url'],selected['name'],'radio')
+                        except Exception:return selected['name']+' could not start in the audio player. Choose another station.'
+                        return 'Playing '+selected['name']+'.'
             return self.open_form(action.form) if action.form else self.run(action.command)
         if not self.items():return self.announce()
         self.item_index=max(0,min(self.item_index,len(self.items())-1));self.select_item(self.item_index)

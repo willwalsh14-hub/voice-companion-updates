@@ -207,6 +207,14 @@ class MediaTests(unittest.TestCase):
             app.handle('search podcasts for news', 'media')
         self.assertTrue(said[-1].startswith('Found 1 podcasts. Podcast 1: Real show.'), said[-1])
 
+    def test_play_on_a_station_whose_stream_fails_says_so_plainly(self):
+        from media_navigation import MediaNavigation
+        self.hub.player = Player(fail=True)
+        self.hub.current_station = {'name': 'WGN', 'url': 'https://wgn.example/live'}
+        nav = MediaNavigation(self.hub, 'radio'); nav.set_keyboard_mode(True)
+        nav.focus = 'actions'; nav.index = [a.label for a in nav.actions].index('Play')
+        self.assertEqual(nav.activate(), 'WGN could not start in the audio player. Choose another station.')
+
     def test_space_with_nothing_playing_says_so(self):
         from media_navigation import MediaNavigation
         for section in ('radio', 'podcast'):
