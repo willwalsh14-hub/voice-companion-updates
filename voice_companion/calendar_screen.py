@@ -521,18 +521,23 @@ def save_draft(m):
     when, calendar, title = DRAFT['when'], DRAFT['calendar'], DRAFT['title']
     if when.all_day:
         start, end = when.day.isoformat(), (when.day + timedelta(days=1)).isoformat()
+        first = datetime.combine(when.day, time())
     else:
         first, last = when.start_end()
         start, end = calendar_events.utc_ms(first), calendar_events.utc_ms(last)
     DRAFT = {}
     try:
-        thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
+        added = thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
     except thunderbird_pim.PimError as exc:
         m.speak(str(exc) + ' The event was not saved.')
         return MODE
     LAST_CALENDAR = calendar['id']
     words = show(m, when.day)
-    place = next((i for i, e in enumerate(EVENTS) if e.title == title), None)
+    # The new event: by the id Thunderbird gave it, else by its name and start (another event may share the name).
+    new_id = str(added.get('id') or '') if isinstance(added, dict) else ''
+    place = next((i for i, e in enumerate(EVENTS) if new_id and e.id == new_id), None)
+    if place is None:
+        place = next((i for i, e in enumerate(EVENTS) if e.title == title and e.start == first), None)
     if place is not None:
         INDEX = place
         words = spoken_day(when.day, today(m)) + '. ' + describe()

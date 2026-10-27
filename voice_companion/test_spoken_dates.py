@@ -25,6 +25,13 @@ class SpokenDayTests(unittest.TestCase):
             with self.subTest(words=words):
                 self.assertEqual(parse_day(words, TODAY), expected)
 
+    def test_last_and_previous_weekdays_go_back(self):
+        # "last Friday" was read as the coming Friday.
+        for words, expected in (('last Friday', date(2026, 10, 23)), ('previous Monday', date(2026, 10, 19)),
+                                ('last Sunday', date(2026, 10, 25)), ('this past Tuesday', date(2026, 10, 20))):
+            with self.subTest(words=words):
+                self.assertEqual(parse_day(words, TODAY), expected)
+
     def test_month_and_day_in_many_spoken_forms(self):
         for words in ('October 30', 'october 30th', 'Oct. 30', 'October thirtieth', 'the 30th of October', '30 October',
                       'thirtieth of October', 'the 30th', '10/30', '10/30/2026', 'Go to October 30.', "What's on October 30?"):

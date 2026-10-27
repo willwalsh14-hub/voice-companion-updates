@@ -142,6 +142,13 @@ class CalendarScreenTests(CalendarHarness):
         mode = self.press('Escape', mode)
         self.assertEqual((mode, self.said()), ('calendar', 'Canceled. Back to calendar.'))
 
+    def test_after_adding_the_new_event_is_selected_even_when_another_has_its_name(self):
+        mode = self.press('Ctrl+N', self.open())
+        mode = app.handle('today at 3 PM called Doctor appointment', mode)
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'Saved Doctor appointment in the me@gmail.com calendar. Today, Monday, October 26. '
+                                      'Three PM to four PM, Doctor appointment, me@gmail.com, 2 of 2.')
+
     def test_a_past_time_is_said_before_saving(self):
         mode = self.press('Ctrl+N', self.open())
         app.handle('today at 8 AM called Walk', mode)
@@ -182,6 +189,15 @@ class CalendarScreenTests(CalendarHarness):
 
     def test_escape_goes_to_the_main_menu(self):
         self.assertEqual(self.press('Escape', self.open()), 'awake')
+
+    def test_an_unknown_command_names_what_to_say_including_edit(self):
+        mode = self.open()
+        app.handle('zebra quantum lantern', mode)
+        self.assertEqual(self.said(), 'Calendar. Say next event, next day, today, read event, add event, edit event, or delete event. '
+                                      'Press F1 for help, or Escape for the main menu.')
+        # F1 works while a question is open, as everywhere else.
+        self.press('F2', mode)
+        self.assertEqual(app.navigation_key('F1', mode), 'help with calendar')
 
     def test_whats_on_my_calendar_from_other_screens(self):
         self.assertEqual(app.handle("What's on my calendar today?", 'awake'), 'awake')
@@ -227,7 +243,7 @@ class GoToDateTests(CalendarHarness):
                            ('Go to December 25, 2026.', date(2026, 12, 25)), ('go to the 15th', date(2026, 11, 15)),
                            ('go to next Friday', date(2026, 10, 30)), ('Go to Friday, October 30.', date(2026, 10, 30)),
                            ('go to 2027-01-04', date(2027, 1, 4)), ('go to date November 11', date(2026, 11, 11)),
-                           ('Tuesday, November 3', date(2026, 11, 3))):
+                           ('Tuesday, November 3', date(2026, 11, 3)), ('go to last Friday', date(2026, 10, 23))):
             with self.subTest(words=words):
                 app.handle('today', mode)
                 self.assertEqual(app.handle(words, mode), 'calendar')

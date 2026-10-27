@@ -129,7 +129,7 @@ DAY_PATTERNS = (
     # 2026-12-25, as many programs write a date. (Never 10-30: that is a time range.)
     ('iso', r'\b(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})\b'),
     ('numeric', r'\b(?P<month>\d{1,2})/(?P<day>\d{1,2})(?:/(?P<year>\d{2}|\d{4}))?\b'),
-    ('weekday', r'\b(?:on\s)?(?P<which>this\s|next\s|coming\s|this\scoming\s)?(?P<weekday>' + WEEKDAY + r')\b'),
+    ('weekday', r'\b(?:on\s)?(?P<which>this\scoming\s|this\spast\s|this\s|next\s|coming\s|last\s|previous\s|past\s)?(?P<weekday>' + WEEKDAY + r')\b'),
     ('ordinal', r'\b(?:on\s)?the\s(?P<day>\d{1,2}(?:st|nd|rd|th)|' + '|'.join(re.escape(w) for w in _ORDINALS[1:] + ['twentieth', 'thirtieth']
                                                                           + [t + s + o for t in ('twenty', 'thirty') for s in (' ', '-') for o in _ORDINALS[1:10]]) + r')\b'),
 )
@@ -165,6 +165,8 @@ def _day_from(kind, match, today, future):
         return today + timedelta(days=count * (7 if match['unit'].startswith('week') else 1))
     if kind == 'weekday':
         wanted = WEEKDAYS.index(match['weekday'])
+        if (match['which'] or '').strip() in ('last', 'previous', 'past', 'this past'):
+            return today - timedelta(days=(today.weekday() - wanted) % 7 or 7)     # "last Friday": the one before today
         ahead = (wanted - today.weekday()) % 7
         if (match['which'] or '').strip() == 'next' and ahead == 0:
             ahead = 7

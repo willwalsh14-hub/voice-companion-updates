@@ -338,7 +338,7 @@ def command_here(m, raw, command):
         select(CONTACTS.index(matches[0]))
         m.speak(describe())
         return MODE
-    m.speak('Contacts. Say next contact, find and a name, email contact, add contact, or delete contact. '
+    m.speak('Contacts. Say next contact, find and a name, email contact, add contact, edit contact, or delete contact. '
             'Press F1 for help, or Escape for the main menu.')
     return MODE
 

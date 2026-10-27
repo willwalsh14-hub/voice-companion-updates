@@ -333,6 +333,12 @@ class ContactsScreenTests(CompanionHarness):
         self.say('find nobody', mode)
         self.assertTrue(self.said().startswith('No contact named nobody.'))
 
+    def test_an_unknown_command_names_what_to_say_including_edit(self):
+        mode = self.open()
+        app.handle('zebra quantum lantern', mode)
+        self.assertEqual(self.said(), 'Contacts. Say next contact, find and a name, email contact, add contact, edit contact, '
+                                      'or delete contact. Press F1 for help, or Escape for the main menu.')
+
     def test_escape_goes_to_the_main_menu(self):
         mode = self.open()
         self.assertEqual(self.press('Escape', mode), 'awake')
