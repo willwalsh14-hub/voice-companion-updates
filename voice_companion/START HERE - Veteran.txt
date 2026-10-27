@@ -611,7 +611,7 @@ Old DOC files and other types are not opened in another app.
 - To follow a link, press Enter on it.
 - To select and copy text, use the usual text keys.
 For reader help, say "Help with document reader", or press F1.
-Press Alt to open the document reader menu. It has Read, Move by, and Leave and help.
+Press Alt to open the document menu. It has Read, Move by, and Leave and help.
 
 7.4 Return to your files
 To close the reader, say "Back to files", or press Escape. You return to where you opened the file: the same folder and file in File manager, or the Document reader menu.
@@ -769,7 +769,7 @@ To write a note:
 To save the note and go back to the Notepad menu, say "Go back", or press Escape. Escape on the Notepad menu goes to the main menu.
 To save the note and go straight to the main menu, say "Main menu", or press Control+F1. Going to sleep also saves your text.
 For Notepad help, say "Help with notepad", or press F1.
-Press Alt to open the notepad menu. It has Save and close note, Read note, Saved notes, New line, Notepad options, Notepad help, and Main menu. Words you typed are added to the note first.
+Press Alt to open the note menu. It has Save and close note, Read note, Saved notes, New line, Notepad options, Notepad help, and Main menu. Words you typed are added to the note first.
 
 9.2 Review or change a note
 - To review, say "Next word", "Previous word", "Next line", or "Previous line".

@@ -265,11 +265,15 @@ class TaskNavigation:
         path = Path(path)
         self.picker = None
         if not path.is_file():
-            m.speak(path.name+' is no longer there. It may have been moved or deleted.'); return self.enter('reader_menu', 'Document reader')
+            # One message: the reason, then the menu (a second message would stop the first).
+            return self.enter('reader_menu', path.name+' is no longer there. It may have been moved or deleted. Document reader menu')
         try:
             m.FILE_READER = open_document(path)
         except (ValueError, OSError) as error:
-            m.speak(str(error)); return self.enter('reader_menu', 'Document reader')
+            return self.enter('reader_menu', str(error).rstrip('. ')+'. Document reader menu')
+        except Exception:
+            # A damaged file (not a real zip, broken XML, a missing part) must never stop the app.
+            return self.enter('reader_menu', path.name+' could not be opened. It may be damaged. Document reader menu')
         self.remember_read(path); self.reader_return = 'reader_menu'
         if m.PREFERENCES.get('reader_auto_read', True):
             m.speak('Opened '+path.name+'. '+m.FILE_READER.reading.read(True))
@@ -307,7 +311,7 @@ class TaskNavigation:
             if result == 'settings': m.SETTINGS_PANEL.command('Word processor')
             return result
         if command == '@player_menu':
-            return self.enter('local_media', 'Player menu')
+            return self.enter('local_media', 'Media player menu')
         if command == '@player_close':
             self.player_menu = False
             player = m.media().player
@@ -388,7 +392,8 @@ class TaskNavigation:
             optional = len(prompt) > 2 and prompt[2]
             if command in ('cancel','escape','go back'):
                 self.prompt=None
-                m.speak('Canceled. Back to '+{'file_reader':'document reader','mailbox':'email','web':'the web page'}.get(target,target.replace('_',' '))+'.'); return target
+                # The same name the screen has everywhere else ("Back to Word processor menu.").
+                m.speak('Canceled. '+m.options_return_notice(target)); return target
             if text == '@task:skip' and optional: text = ''
             if not text.strip() and not optional:m.speak('Enter a value, or press Escape to cancel.');return mode
             result=self.handle(template.format(value=text.strip()), target) if target == 'local_media' else m.handle(template.format(value=text.strip()), target, typed=True)
@@ -424,11 +429,11 @@ class TaskNavigation:
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')
         if command in ('document reader','open document reader','document reader menu') and mode not in ('document','email_draft','note'):
-            return self.enter('reader_menu', 'Document reader')
+            return self.enter('reader_menu', 'Document reader menu')
         if mode == 'reader_menu' and command in ('open a document','open document','recent documents','recent','options','open options','help'):
             return self.action({'open a document':'@reader_open','open document':'@reader_open','recent documents':'@reader_recent','recent':'@reader_recent'}.get(command,'@options:Document reader' if 'options' in command else 'help with document reader'), mode)
         if command in ('notepad','open notepad','notepad menu') and mode not in ('document','email_draft','note'):
-            return self.enter('notepad_menu', 'Notepad')
+            return self.enter('notepad_menu', 'Notepad menu')
         if mode == 'notepad_menu' and command in ('create a note','new note','open a note','open notes','options','open options','notepad options'):
             return self.action({'create a note':'write a note','new note':'write a note','open a note':'list notes','open notes':'list notes'}.get(command,'@options:Notepad'), mode)
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
@@ -485,7 +490,7 @@ class TaskNavigation:
                 if self.group: self.group = None; return self.enter(mode, 'Document menu')
                 m.speak('Back to document.'); return 'document'
             if mode == 'recent_documents': return self.enter('word_processor', 'Word processor menu')
-            if mode == 'reader_recent': return self.enter('reader_menu', 'Document reader')
+            if mode == 'reader_recent': return self.enter('reader_menu', 'Document reader menu')
             if mode == 'local_media':
                 if not m.PREFERENCES.get('keep_audio_playing',False) and m.MEDIA_HUB and m.MEDIA_HUB.player.kind=='local':m.MEDIA_HUB.player.control('stop')
                 files, self.player_files = self.player_files, None

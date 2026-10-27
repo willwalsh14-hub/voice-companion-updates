@@ -93,7 +93,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
         for key in ('Enter','Tab','Home','End','Letter:p','Down','Up'):
             mode=self.key(key,mode)
             self.assertEqual(mode,'local_media')
-            self.assertFalse(any(text.startswith('Player menu.') for text in self.said),(key,self.said[-1]))
+            self.assertFalse(any(text.startswith(('Player menu.','Media player menu.')) for text in self.said),(key,self.said[-1]))
         self.assertFalse(app.task_navigation().player_menu)
         self.assertIsNone(app.menu_state('local_media'))
         self.assertTrue(self.player.paused)              # Enter paused it
@@ -112,7 +112,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
                 mode=self.open_from_file_manager()
                 mode=self.key(opener,mode)
                 self.assertEqual(mode,'local_media')
-                self.assertEqual(self.said[-1],'Player menu. Open a media file (O), 1 of 10. Ctrl+O.')
+                self.assertEqual(self.said[-1],'Media player menu. Open a media file (O), 1 of 10. Ctrl+O.')
                 self.assertFalse(self.player.paused)
                 self.assertNotIn(('stop',15,None),self.player.calls)
                 # Arrows now move through the menu instead of changing the volume.
@@ -152,7 +152,7 @@ class MediaPlayerMenuTests(unittest.TestCase):
     def test_voice_can_open_and_close_the_player_menu(self):
         mode=self.open_from_file_manager()
         self.assertEqual(app.handle('Player menu.',mode),'local_media')
-        self.assertTrue(self.said[-1].startswith('Player menu. Open a media file'))
+        self.assertTrue(self.said[-1].startswith('Media player menu. Open a media file'))
         self.assertEqual(app.handle('close menu',mode),'local_media')
         self.assertTrue(self.said[-1].startswith('Menu closed.'))
 

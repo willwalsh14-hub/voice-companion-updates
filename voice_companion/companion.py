@@ -3532,7 +3532,7 @@ def _handle(text, mode, typed=False):
             task_navigation().picker=None
             if picker=='attach':return __import__('attachment_screen').picker_closed(sys.modules[__name__])
             # Escape from the drive list: Open a media file returns to the Media menu.
-            if picker=='reader':return task_navigation().enter('reader_menu','Document reader')
+            if picker=='reader':return task_navigation().enter('reader_menu','Document reader menu')
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
             return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
@@ -3543,7 +3543,7 @@ def _handle(text, mode, typed=False):
     if mode=='file_reader' and not (command in ('help','user guide','open user guide','manual','open manual') or command.startswith(('help with ','help for '))):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
-            if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader')
+            if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader menu')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
                 if back:return back
@@ -4255,7 +4255,7 @@ def _handle(text, mode, typed=False):
             if command in ('main menu', 'back to main menu'):
                 speak('Note saved.');return 'awake'
             # Escape and Go back return to the Notepad menu, as a document returns to Word processor.
-            return task_navigation().enter('notepad_menu', 'Note saved. Notepad')
+            return task_navigation().enter('notepad_menu', 'Note saved. Notepad menu')
         if command in ('save note', 'finish note', 'done dictating'):
             if note_buffer:
                 if save_note(' '.join(note_buffer)) is False:return mode

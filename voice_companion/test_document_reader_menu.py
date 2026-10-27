@@ -24,7 +24,7 @@ class DocumentReaderMenuTests(CompanionTestCase):
     def test_main_menu_has_document_reader_and_it_opens_its_menu(self):
         self.assertEqual(dict(companion.MAIN_MENU_CHOICES)['Document reader'], 'document reader')
         self.assertEqual(companion.handle('document reader', 'awake'), 'reader_menu')
-        self.assertTrue(self.said[-1].startswith('Document reader. Open a document'), self.said[-1])
+        self.assertTrue(self.said[-1].startswith('Document reader menu. Open a document'), self.said[-1])
         names = [name for name, _, _ in companion.task_navigation().items('reader_menu')]
         self.assertEqual(names, ['Open a document', 'Recent documents', 'Options', 'Help', 'Main menu'])
 

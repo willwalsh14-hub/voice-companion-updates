@@ -2187,7 +2187,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 5, 3
 - Status: Added: Alt menu path
 
-## Alt menu, Notepad: Notepad
+## Alt menu, Note: Notepad
 
 ### Save and close note
 
@@ -2723,7 +2723,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Escape
 - Status: Both
 
-## Alt menu, Document reader: Read
+## Alt menu, Document: Read
 
 ### Read document
 
@@ -2761,7 +2761,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Insert+Shift+Down
 - Status: Both
 
-## Alt menu, Document reader: Move by
+## Alt menu, Document: Move by
 
 ### Next heading
 
@@ -2811,7 +2811,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: N
 - Status: Both
 
-## Alt menu, Document reader: Leave and help
+## Alt menu, Document: Leave and help
 
 ### Back to files
 
