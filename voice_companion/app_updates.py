@@ -197,6 +197,7 @@ class AppUpdates:
                 shutil.rmtree(folder,ignore_errors=True);event=('canceled',None)
             except Exception:
                 shutil.rmtree(folder,ignore_errors=True);event=('download_failed',None)
+            if event[0]!='downloaded':self.phase='idle'   # nothing is downloading any more
             self.busy=False
             self.events.put(event)
         threading.Thread(target=work,daemon=True).start()
@@ -213,7 +214,7 @@ class AppUpdates:
             try:
                 self.launch(path,release)
                 event=('install_ready',None)
-            except Exception:event=('install_failed',None)
+            except Exception:event=('install_failed',None);self.phase='idle'
             self.busy=False
             self.events.put(event)
         threading.Thread(target=work,daemon=True).start()

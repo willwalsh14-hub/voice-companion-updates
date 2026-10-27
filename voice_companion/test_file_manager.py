@@ -55,7 +55,7 @@ class FileManagerTests(unittest.TestCase):
         self.fm.command('rename');self.fm.command('renamed.txt');settle(self.fm)
         self.assertEqual(self.backend.actions[-1][0],'rename');self.assertEqual(self.backend.actions[-1][3],'renamed.txt')
     def test_menu_exposes_keys_and_voice_and_does_not_execute_on_arrows(self):
-        self.fm.command('file manager menu');self.assertIn('Ctrl+C',str(self.fm.labels()))
+        self.fm.command('file manager menu');self.assertIn('Control+C',str(self.fm.labels()))
         self.fm.command('next');self.fm.command('end');self.assertEqual(self.backend.actions,[])
         self.assertIn('End of list',self.fm.command('next'))
         self.fm.command('escape');self.assertFalse(self.fm.menu)

@@ -17,6 +17,20 @@ def next_match(names, current, letter):
     return matches[0]
 
 
+# Key ids (as the window sends them) and the words the guide uses for them. Menus speak
+# and show keys in the guide's words: "Control+O", "Up Arrow", "Page Down".
+KEY_WORDS = {'Ctrl': 'Control', 'Esc': 'Escape', 'PgUp': 'Page Up', 'PgDn': 'Page Down', 'Prior': 'Page Up',
+             'Next': 'Page Down', 'PageUp': 'Page Up', 'PageDown': 'Page Down', 'Del': 'Delete', 'Ins': 'Insert',
+             'ShiftTab': 'Shift+Tab', 'BackSpace': 'Backspace', 'Return': 'Enter', 'Up': 'Up Arrow',
+             'Down': 'Down Arrow', 'Left': 'Left Arrow', 'Right': 'Right Arrow'}
+
+
+def spoken_key(key):
+    """A key id in the guide's words: 'Ctrl+Shift+S' is 'Control+Shift+S', 'Up' is 'Up Arrow'.
+    Only whole key names between + signs change; menu paths such as 'Alt, 3, 2' stay."""
+    return '+'.join(KEY_WORDS.get(part, part) for part in str(key or '').split('+'))
+
+
 def announce_item(name, index, count, hotkey=True):
     return f'{menu_label(name) if hotkey else name}, {index + 1} of {count}.'
 

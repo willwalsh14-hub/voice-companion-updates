@@ -64,8 +64,8 @@ COURSES = (
 
 COURSES += (('files','File manager',('file manager','files','file manager lesson'), (
  ('Start with drives', 'Say "File manager" from the main menu. The drive list comes first. Use Up and Down to hear names. Enter opens an item. Home and End reach the list ends. You hear when a boundary is reached. Windows provides the drives and cloud roots. A disconnected location may not open.'),
- ('Open folders and return', 'Say a name, or move to it and say "Open". Escape goes up one folder. From Documents and then Voice Companion, Escape returns to Documents. Ctrl D returns to the drive list. Say Main menu to leave File manager. The same actions are in the Alt menu.'),
- ('Mark and move files', 'Press Space to mark each item. Say "Select notes.txt" to mark it by name. Ctrl C copies. Ctrl X cuts. Open the target folder and press Ctrl V. Copy and cut use the File Explorer clipboard. A duplicate name is not replaced. Delete asks you to confirm first.'),
+ ('Open folders and return', 'Say a name, or move to it and say "Open". Escape goes up one folder. From Documents and then Voice Companion, Escape returns to Documents. Control+D returns to the drive list. Say Main menu to leave File manager. The same actions are in the Alt menu.'),
+ ('Mark and move files', 'Press Space to mark each item. Say "Select notes.txt" to mark it by name. Control+C copies. Control+X cuts. Open the target folder and press Control+V. Copy and cut use the File Explorer clipboard. A duplicate name is not replaced. Delete asks you to confirm first.'),
  ('Read documents', 'Enter on a supported file opens the reader. Use arrows or say "Read document". Say "Next paragraph" or "Find" followed by words. Escape returns to the file list. The reader does not edit the source file. PDF images need OCR, which is not included.'),
  ),('FILE MANAGER','DOCUMENT READER')),)
 

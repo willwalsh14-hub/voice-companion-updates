@@ -58,7 +58,7 @@ class UpdateRecoveryTests(unittest.TestCase):
             self.assertFalse(app.web_feedback_control('thirty seven percent','update_download'))
             app.handle('status','update_download');stop.assert_called_once();say.assert_called_with('37 percent.')
             service.phase='preparing';app.handle('status','update_download');say.assert_called_with('37 percent.')
-            app.handle('cancel update','update_download');say.assert_called_with('Preparing installation. Voice Companion will reopen in sleep mode.')
+            app.handle('cancel update','update_download');say.assert_called_with('The update is being installed and cannot be canceled now. Voice Companion will close and reopen when it finishes.')
 
     def test_update_restart_stays_asleep_without_another_update_offer(self):
         service=Mock()

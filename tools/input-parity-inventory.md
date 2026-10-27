@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 660
-- Already had both ways: 525
+- Actions inventoried: 661
+- Already had both ways: 526
 - Gaps found: 135
 - Gaps fixed (Added): 127
 - Not applicable (N/A, with reason): 8
@@ -1489,6 +1489,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Keep a transcript of everything Voice Companion says
+
+- Voice: "Set Keep a transcript of everything Voice Companion says to ..."
+- Keyboard: Alt+O, arrows to Startup and exit options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ## Radio
 
 ### Search stations
@@ -2237,7 +2243,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 5, 4
 - Status: Added: Alt menu path
 
-## Alt menu, Notepad: Notepad
+## Alt menu, Note: Notepad
 
 ### Save and close note
 
@@ -2791,7 +2797,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Escape
 - Status: Both
 
-## Alt menu, Document reader: Read
+## Alt menu, Document: Read
 
 ### Read document
 
@@ -2829,7 +2835,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Insert+Shift+Down
 - Status: Both
 
-## Alt menu, Document reader: Move by
+## Alt menu, Document: Move by
 
 ### Next heading
 
@@ -2879,7 +2885,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: N
 - Status: Both
 
-## Alt menu, Document reader: Leave and help
+## Alt menu, Document: Leave and help
 
 ### Back to files
 

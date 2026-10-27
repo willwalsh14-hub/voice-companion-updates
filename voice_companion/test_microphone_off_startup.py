@@ -22,7 +22,7 @@ class MicrophoneOffStartupTests(CompanionTestCase):
         prompt = companion.startup_prompt()
         self.assertNotIn('Say wake up', prompt)
         self.assertIn('Press F9 to turn it on', prompt)
-        self.assertIn('arrow keys and Enter', prompt)
+        self.assertIn('arrow keys, Enter and Escape', prompt)
         companion.MICROPHONE_OFF = False
         self.assertIn('Say wake up', companion.startup_prompt())
 
@@ -33,7 +33,9 @@ class MicrophoneOffStartupTests(CompanionTestCase):
             self.assertEqual(companion.startup_update_mode(), 'update_offer')
             self.assertEqual(companion.handle('no', 'update_offer'), 'awake')
         self.assertEqual(companion.SLEEP_RETURN_MODE, 'awake')
-        self.assertEqual(self.said[-2:], [companion.MICROPHONE_STILL_OFF, companion.MAIN_MENU_PROMPT])
+        # One message: a second one would stop the first (test_startup_announcement.py).
+        self.assertTrue(self.said[-1].startswith(companion.MICROPHONE_STILL_OFF), self.said)
+        self.assertTrue(self.said[-1].endswith(companion.MAIN_MENU_PROMPT), self.said)
 
     def test_a_stalled_main_loop_writes_a_freeze_report_once(self):
         with mock.patch.dict(companion.FREEZE_WATCH, {'beat': time.monotonic() - 100, 'reported': False}):

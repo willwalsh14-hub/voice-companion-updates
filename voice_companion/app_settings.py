@@ -50,6 +50,7 @@ def stop_preview(m):
 def preview_settings(m,values,text):
     """Play staged voice settings without changing or saving preferences."""
     stop_preview(m);m.interrupt_speech()
+    if hasattr(m,'TRANSCRIPT'):m.TRANSCRIPT.said(text)
     if m.TEXT_MODE:return
     engine=str(values['engine']).lower();engine='windows' if engine=='sapi' else engine
     rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
@@ -125,6 +126,7 @@ def apply_settings(m,values):
     for key in DEFAULTS:m.PREFERENCES[key]=values[key]
     m.PREFERENCES['ai_consent']=bool(values.get('ai_consent'))
     save_preferences(m);m.save_speech_settings()
+    if hasattr(m,'apply_transcript'):m.apply_transcript()   # Startup and exit options: the speech transcript
     m.APP.mkdir(parents=True,exist_ok=True)
     from storage import write_text_atomic
     write_text_atomic(m.APP/'email-list-size.txt',values['email_list_size'])

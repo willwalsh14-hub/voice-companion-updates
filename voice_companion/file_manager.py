@@ -6,6 +6,7 @@ import ntpath
 import queue
 import re
 import threading
+from menu_navigation import spoken_key
 
 @dataclass(frozen=True)
 class Item:
@@ -246,7 +247,7 @@ class FileManager:
     def labels(self):
         if self.busy:return ['File manager is working']
         if self.pending:return ['Yes','No'] if self.pending[0]=='delete' else []
-        if self.menu:return [name+'. '+key+'. Say '+voice+'.' for name,key,voice in self.menu_items()]
+        if self.menu:return [name+'. '+spoken_key(key)+'. Say '+voice+'.' for name,key,voice in self.menu_items()]
         return [i.label()+(', selected' if i.path in self.selected else '') for i in self.items]
     def current(self):return self.items[self.index] if self.items and 0<=self.index<len(self.items) else None
     def say_current(self):
