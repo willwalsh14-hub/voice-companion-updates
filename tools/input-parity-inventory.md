@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 648
-- Already had both ways: 513
-- Gaps found: 135
-- Gaps fixed (Added): 127
+- Actions inventoried: 651
+- Already had both ways: 515
+- Gaps found: 136
+- Gaps fixed (Added): 128
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -2051,6 +2051,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 9, 3
 - Status: Added: Alt menu path
 
+### Attachment sizes
+
+- Voice: "How big are the attachments"
+- Keyboard: Alt, 9, 4
+- Status: Added: Alt menu path
+
 ## Alt menu, Email draft: Message
 
 ### Send
@@ -2169,6 +2175,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+T
 - Status: Both
 
+### Attach the last download
+
+- Voice: "Attach the last download"
+- Keyboard: Alt, 5, 2
+- Status: Added: Alt menu path
+
 ### List attachments
 
 - Voice: "List attachments"
@@ -2178,7 +2190,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Remove an attachment
 
 - Voice: "Remove attachment"
-- Keyboard: Alt, 5, 3
+- Keyboard: Alt, 5, 4
 - Status: Added: Alt menu path
 
 ## Alt menu, Notepad: Notepad
@@ -2684,13 +2696,19 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Save to a folder
 
 - Voice: "Save attachment to folder"
-- Keyboard: Alt, 3
-- Status: Added: Alt menu path
+- Keyboard: Ctrl+D
+- Status: Both
 
 ### Save all
 
 - Voice: "Save all attachments"
 - Keyboard: Ctrl+Shift+S
+- Status: Both
+
+### Details
+
+- Voice: "Read attachment details"
+- Keyboard: Ctrl+I
 - Status: Both
 
 ### Remove from this email

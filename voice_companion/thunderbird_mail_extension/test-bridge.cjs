@@ -299,6 +299,31 @@ async function attachmentChecks() {
   assert.deepEqual(forwarded.attachments.map(a => a.file.name), ['report.pdf', 'photo.jpg', 'mine.txt']);
   assert.ok(Buffer.from(await forwarded.attachments[0].file.arrayBuffer()).equals(original));
   state.forwardWithoutFiles = false;
+  const bytes = (text, repeat = 1) => new Uint8Array(Buffer.from(text.repeat(repeat), 'utf8'));
+  // Taken off by part: two files called scan.pdf, and the second one (the one chosen) is left out.
+  // A name Voice Companion made safe for Windows ("a:b.pdf" became "a_b.pdf") is found by its part too.
+  state.messages[23].attachments.push(
+    {partName: '1.6', name: 'scan.pdf', contentType: 'application/pdf', data: bytes('first scan', 3)},
+    {partName: '1.7', name: 'scan.pdf', contentType: 'application/pdf', data: bytes('second scan', 5)},
+    {partName: '1.8', name: 'a:b.pdf', contentType: 'application/pdf', data: bytes('colon', 2)});
+  await call('send', {identityId: 'id1', to: ['x@example.com'], subject: 'Fwd: Message 24', html: '<p>FYI</p>', plain: 'FYI',
+    forward: {messageId: 24, drop: ['scan.pdf', 'a_b.pdf'], dropParts: ['1.7', '1.8']}});
+  forwarded = state.sent.at(-1);
+  assert.deepEqual(forwarded.attachments.map(a => a.file.name).sort(), ['Part 1.3', 'photo.jpg', 'report.pdf', 'scan.pdf']);
+  const kept = forwarded.attachments.find(a => a.file.name === 'scan.pdf');
+  assert.equal(Buffer.from(await kept.file.arrayBuffer()).toString(), 'first scan'.repeat(3), 'the first scan stays; the second was taken off');
+  // A file taken off that Thunderbird cannot find: nothing is sent, rather than sending it anyway.
+  const beforeGone = state.sent.length;
+  const realRemove = api.compose.listAttachments;
+  api.compose.listAttachments = async tabId => (await realRemove(tabId)).filter(item => item.name !== 'a:b.pdf');
+  state.forwardWithoutFiles = true;
+  const refusedDrop = await bridge.handle({id: 24, method: 'send', params: {identityId: 'id1', to: ['x@example.com'],
+    subject: 'Fwd', html: '', plain: 'FYI', forward: {messageId: 24, dropParts: ['1.8']}}});
+  assert.match(refusedDrop.error.message, /could not take a:b\.pdf off the forward, so nothing was sent/);
+  assert.equal(state.sent.length, beforeGone);
+  api.compose.listAttachments = realRemove;
+  state.forwardWithoutFiles = false;
+  state.messages[23].attachments.splice(5, 3);
 
   // Thunderbird refuses a file: nothing is sent, the message is kept in Drafts, the window closes.
   state.failAttach = true;

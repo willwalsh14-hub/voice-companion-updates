@@ -34,7 +34,9 @@ SCREEN_KEYS = {
                  'Right': 'next day', 'Home': 'today', 'Prior': 'previous week', 'Next': 'next week',
                  'Ctrl+N': 'add event', 'Delete': 'delete event'},
     # The Attachments list (attachment_screen.py). Up, Down, Home, End, Enter and Escape work as in every list.
+    # Letters move to the next name that starts with them, as in Contacts, so actions use Control.
     'attachments': {'F1': 'help with attachments', 'Ctrl+S': 'save attachment', 'Ctrl+Shift+S': 'save all attachments',
+                    'Ctrl+D': 'save attachment to folder', 'Ctrl+I': 'read attachment details',
                     'Delete': 'remove attachment', 'Ctrl+T': 'attach a file'},
     # File manager: email the chosen files, or add them to the email draft that is open.
     'files': {'Ctrl+N': 'email this file', 'Ctrl+T': 'attach to draft'},

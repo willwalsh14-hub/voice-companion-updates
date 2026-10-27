@@ -334,7 +334,12 @@ def submit(draft, account):
         params['forward'] = {'messageId': ThunderbirdMailbox._message(context['source_id'])}
         if isinstance(context.get('original_attachments'), list):
             # The original's files go along, less the ones the person took off.
-            params['forward']['drop'] = [str(name) for name in context.get('dropped_attachments', [])]
+            # By part, so the right one of two files with the same name is left out (add-on 1.3.1);
+            # older add-ons use the names.
+            from email_draft import original_split
+            dropped = original_split(context)[1]
+            params['forward']['drop'] = [str(item.get('name', '')) for item in dropped]
+            params['forward']['dropParts'] = [str(item['id']) for item in dropped if item.get('id')]
     from user_stop import Stopped
     import time
     say = PROGRESS

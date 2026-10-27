@@ -74,7 +74,8 @@ MENUS = {
         ('Attachments', [
             ('List attachments', 'L', 'list attachments'),
             ('Save all attachments', '', 'save all attachments'),
-            ('Open attachment', '', 'open attachment')]),
+            ('Open attachment', '', 'open attachment'),
+            ('Attachment sizes', '', 'how big are the attachments')]),
     ]),
     'email_draft': ('Email draft menu', [
         ('Message', [
@@ -100,6 +101,7 @@ MENUS = {
             ('Writing email help', 'F1', 'help with writing email')]),
         ('Attachments', [
             ('Attach a file', 'Ctrl+T', 'attach a file'),
+            ('Attach the last download', '', 'attach the last download'),
             ('List attachments', 'Ctrl+L', 'list attachments'),
             ('Remove an attachment', '', 'remove attachment')]),
     ]),
@@ -212,8 +214,9 @@ MENUS = {
         ('Attachment', [
             ('Open', 'Enter', 'open attachment'),
             ('Save in Downloads', 'Ctrl+S', 'save attachment'),
-            ('Save to a folder', '', 'save attachment to folder'),
+            ('Save to a folder', 'Ctrl+D', 'save attachment to folder'),
             ('Save all', 'Ctrl+Shift+S', 'save all attachments'),
+            ('Details', 'Ctrl+I', 'read attachment details'),
             ('Remove from this email', 'Delete', 'remove attachment'),
             ('Attach another file', 'Ctrl+T', 'attach a file'),
             ('Attachments help', 'F1', 'help with attachments'),

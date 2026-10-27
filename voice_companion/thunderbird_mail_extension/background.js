@@ -390,11 +390,23 @@ class MailBridge {
         await compose.addAttachment(tab.id, {file, name: original.name});
       }
       let kept = originals.length;
-      for (const name of drop) {
-        if (!originals.some(original => original.name === name)) continue;
+      // dropParts names each file taken off by its part, so two files with the same name, or
+      // a name Voice Companion had to make safe for Windows, still take off the right one.
+      const parts = Array.isArray(forward.dropParts) ? forward.dropParts.map(String) : null;
+      const unwanted = parts ? originals.filter(original => parts.includes(original.partName))
+        : drop.map(name => originals.find(original => original.name === name)).filter(Boolean);
+      const removed = new Set();
+      for (const original of unwanted) {
         const listed = compose.listAttachments ? await compose.listAttachments(tab.id) : [];
-        const found = listed.find(item => item.name === name);
-        if (found) { await compose.removeAttachment(tab.id, found.id); kept--; }
+        const free = listed.filter(item => item.name === original.name && !removed.has(item.id));
+        const found = free.find(item => original.size !== null && item.size === original.size) || free[0];
+        if (!found) {
+          // Never send a file the person took off.
+          throw MailBridge.fail('attach', 'Thunderbird could not take ' + original.name + ' off the forward, so nothing was sent.');
+        }
+        await compose.removeAttachment(tab.id, found.id);
+        removed.add(found.id);
+        kept--;
       }
       expected += kept;
     }

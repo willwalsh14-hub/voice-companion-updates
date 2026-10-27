@@ -11492,11 +11492,11 @@
 },
 "email_draft | attachments": {
 "said": [
-"attachments"
+"This email has no attachments. Say attach a file, or press Control+T."
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world. attachments"
+"Hello world."
 ]
 },
 "email_draft | audio tutorial": {
