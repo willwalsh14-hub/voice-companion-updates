@@ -429,7 +429,9 @@ async function quitChecks() {
   // Nothing open: Thunderbird is asked to close the normal way (it may still ask about unsent mail).
   app.composing = 0;
   assert.deepEqual(plain(await api.quitThunderbird()), {quit: true});
-  await new Promise(r => setTimeout(r, 5));
+  // Wait for the dispatched quit itself, not a fixed 5 ms: Windows timers are coarse
+  // (about 15 ms), and the fixed wait made this check fail once on a Windows build.
+  for (let waited = 0; !app.quits.length && waited < 2000; waited += 5) await new Promise(r => setTimeout(r, 5));
   assert.deepEqual(app.quits, [2]);
   // The add-on asks through the Experiment; without it, it says so.
   const {api: messenger} = createFakeMessenger();

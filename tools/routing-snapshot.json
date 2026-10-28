@@ -564,9 +564,9 @@
 },
 "awake | beginning of document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | beginning of list": {
 "said": [
@@ -942,9 +942,9 @@
 },
 "awake | close document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | close email": {
 "said": [
@@ -1444,9 +1444,9 @@
 },
 "awake | end of document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | end of list": {
 "said": [
@@ -1492,15 +1492,15 @@
 },
 "awake | exit document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | exit document mode": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | exit email": {
 "said": [
@@ -1706,9 +1706,9 @@
 },
 "awake | go to beginning of document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | go to bookmark": {
 "said": [
@@ -1724,9 +1724,9 @@
 },
 "awake | go to end of document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | go to favorite": {
 "said": [
@@ -1946,9 +1946,9 @@
 },
 "awake | leave document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | leave email": {
 "said": [
@@ -2307,9 +2307,9 @@
 },
 "awake | name document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | never mind": {
 "said": [
@@ -3317,9 +3317,9 @@
 },
 "awake | rename document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | rename favorite": {
 "said": [
@@ -3435,9 +3435,9 @@
 },
 "awake | save document as": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | save favorite": {
 "said": [
@@ -3453,9 +3453,9 @@
 },
 "awake | save my document as": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | save note": {
 "said": [
@@ -3477,15 +3477,15 @@
 },
 "awake | save the document as": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | save this document as": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | saved notes": {
 "said": [
@@ -4043,9 +4043,9 @@
 },
 "awake | top of document": {
 "said": [
-"Please say or type the name for your document, then press Enter or say confirm."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document_name"
+"screen_after": "awake"
 },
 "awake | turn off auto downloads": {
 "said": [

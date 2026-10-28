@@ -4692,6 +4692,11 @@ def _handle(text, mode, typed=False):
         speak('Continuing email draft ' + email_draft.title + '. Say read paragraph to hear the body.')
         return 'email_draft'
     if re.search(r'\b(document|word file|word document)\b', command):
+        # Only asking for a document makes a new one. "Close document" or "Beginning of
+        # document" with no document open used to ask for a new document's name.
+        if re.search(r'\b(close|leave|exit|quit|beginning|end|top|bottom|save|rename|name|read|delete|print)\b', command):
+            speak_prompt('No document is open. Say create a document, or say open a document.')
+            return 'awake'
         return start_new_document(mode)
     if re.search(r'\b(note|dictate)\b', command):
         note_buffer.clear()
