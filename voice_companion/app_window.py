@@ -155,7 +155,7 @@ class CompanionWindow:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
             self.root=self.typed=self.editor=self.current=self.file_list=None
-            self.file_toolbar=None;self.file_buttons=[];self.update_buttons=[]
+            self.file_toolbar=self.hint_label=None;self.file_buttons=[];self.update_buttons=[]
             import gc
             gc.collect()
 
