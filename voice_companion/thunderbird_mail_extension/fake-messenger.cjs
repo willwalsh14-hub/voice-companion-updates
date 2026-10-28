@@ -261,6 +261,8 @@ function addContactsAndCalendars(api, state) {
     contact('c5', 'book-ro', 'Help Desk', ['help@work.example'], ['555-0111']),
     contact('c6', 'book-ldap', 'Remote Person', ['remote@example.com'], []),
   ];
+  // The email account of each book, as the calendar Experiment's describeAddressBooks gives it.
+  state.bookAccounts = {'book-google': 'me@gmail.com'};
   state.contactCalls = [];
   state.failBook = null;
   let nextContact = 100;
@@ -299,9 +301,9 @@ function addContactsAndCalendars(api, state) {
   // Times are milliseconds (UTC) for timed events, YYYY-MM-DD for all-day ones.
   const at = (y, m, d, h, min = 0) => Date.UTC(y, m - 1, d, h, min);
   state.calendars = [
-    {id: 'cal-home', name: 'Home', type: 'storage', readOnly: false},
-    {id: 'cal-google', name: 'me@gmail.com', type: 'caldav', readOnly: false},
-    {id: 'cal-holidays', name: 'Holidays', type: 'ics', readOnly: true},
+    {id: 'cal-home', name: 'Home', type: 'storage', readOnly: false, account: ''},
+    {id: 'cal-google', name: 'me@gmail.com', type: 'caldav', readOnly: false, account: 'me@gmail.com'},
+    {id: 'cal-holidays', name: 'Holidays', type: 'ics', readOnly: true, account: ''},
   ];
   state.events = [
     {id: 'e1', calendarId: 'cal-google', calendarName: 'me@gmail.com', title: 'Doctor appointment', location: 'VA clinic',
@@ -322,6 +324,7 @@ function addContactsAndCalendars(api, state) {
   };
   api.voiceCompanionCalendar = {
     listCalendars: async () => (state.calendarBroken ? null : state.calendars.map(c => ({...c}))),
+    describeAddressBooks: async () => state.addressBooks.map(b => ({id: b.id, account: state.bookAccounts[b.id] || ''})),
     listEvents: async (startMs, endMs) => {
       state.calendarCalls.push({list: [startMs, endMs]});
       if (state.calendarBroken) return null;
@@ -386,4 +389,29 @@ function addContactsAndCalendars(api, state) {
   };
 }
 
-module.exports = {createFakeMessenger};
+// A second email account (Outlook) beside Gmail, as when both are added to Thunderbird: its own
+// calendar and address book, both called by Thunderbird's plain names. Gmail gets a second calendar.
+function addSecondAccount(state) {
+  const at = (y, m, d, h, min = 0) => Date.UTC(y, m - 1, d, h, min);
+  state.calendars.push({id: 'cal-outlook', name: 'Calendar', type: 'caldav', readOnly: false, account: 'vet@outlook.com'},
+    {id: 'cal-family', name: 'Family', type: 'caldav', readOnly: false, account: 'me@gmail.com'});
+  state.events.push(
+    {id: 'o1', calendarId: 'cal-outlook', calendarName: 'Calendar', title: 'Team call', location: '', notes: '',
+     allDay: false, start: at(2026, 10, 26, 19), end: at(2026, 10, 26, 20), recurring: false, occurrence: ''},
+    {id: 'f1', calendarId: 'cal-family', calendarName: 'Family', title: 'Soccer practice', location: '', notes: '',
+     allDay: false, start: at(2026, 10, 26, 22), end: at(2026, 10, 26, 23), recurring: false, occurrence: ''});
+  state.addressBooks.splice(3, 0, {id: 'book-outlook', type: 'addressBook', name: 'Contacts', readOnly: false, remote: false});
+  state.bookAccounts['book-outlook'] = 'vet@outlook.com';
+  const card = (name, email) => 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:' + name + '\r\nEMAIL:' + email + '\r\nEND:VCARD';
+  // John Smith is in both accounts; Sam is only in Outlook.
+  state.contacts.push({id: 'o1', parentId: 'book-outlook', type: 'contact', readOnly: false, properties: {vCard: card('Sam Rivera', 'sam@example.com')}},
+    {id: 'o2', parentId: 'book-outlook', type: 'contact', readOnly: false, properties: {vCard: card('John Smith', 'john@example.com')}});
+}
+
+// The calendar Experiment from add-on 1.4 and older: no accounts.
+function withoutAccounts(state, api) {
+  for (const calendar of state.calendars) delete calendar.account;
+  delete api.voiceCompanionCalendar.describeAddressBooks;
+}
+
+module.exports = {createFakeMessenger, addSecondAccount, withoutAccounts};

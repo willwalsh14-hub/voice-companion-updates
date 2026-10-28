@@ -34,9 +34,14 @@ async function contactChecks() {
   assert.deepEqual((await call('addressBooks')).map(b => b.name),
     ['Personal Address Book', 'Collected Addresses', 'me@gmail.com', 'Company directory']);
 
+  // Each book's email account comes from the calendar Experiment; books on this computer have none.
+  assert.deepEqual((await call('addressBooks')).map(b => [b.id, b.account]),
+    [['book-personal', ''], ['book-collected', ''], ['book-google', 'me@gmail.com'], ['book-ro', '']]);
+
   // Every contact from every book, read from the vCard: several emails, a phone, no email, an N line only.
-  const {contacts, books, failed} = await call('contacts');
+  const {contacts, books, failed, failedBooks} = await call('contacts');
   assert.equal(failed, 0);
+  assert.deepEqual(failedBooks, []);
   assert.equal(books.length, 4);
   const byName = Object.fromEntries(contacts.map(c => [c.name, c]));
   assert.deepEqual(Object.keys(byName).sort(), ['Ann Brown', 'Help Desk', 'John Smith', 'Mary Jones', 'Plumber']);
@@ -51,6 +56,7 @@ async function contactChecks() {
   state.failBook = 'book-personal';
   const partial = await call('contacts');
   assert.equal(partial.failed, 1);
+  assert.deepEqual(partial.failedBooks, ['book-personal'], 'the book that could not be read is named');
   assert.ok(!partial.contacts.some(c => c.name === 'Plumber'));
   assert.ok(partial.contacts.some(c => c.name === 'John Smith'));
   state.failBook = null;
@@ -157,6 +163,17 @@ async function contactChecks() {
   const refused = plain(await loadBridge(without.api).handle({id: 8, method: 'contacts'}));
   assert.match(refused.error.message, /did not let Voice Companion read its address books/);
 
+  // An Experiment from before accounts (add-on 1.4): books have no account at all, so Voice Companion shows them all.
+  const older = createFakeMessenger();
+  delete older.api.voiceCompanionCalendar.describeAddressBooks;
+  const olderBooks = plain(await loadBridge(older.api).handle({id: 6, method: 'addressBooks'})).result;
+  assert.ok(olderBooks.length === 4 && olderBooks.every(b => !('account' in b)));
+  // An Experiment that cannot answer is the same; contacts still come.
+  const failing = createFakeMessenger();
+  failing.api.voiceCompanionCalendar.describeAddressBooks = async () => { throw new Error('gone'); };
+  const failingAnswer = plain(await loadBridge(failing.api).handle({id: 7, method: 'contacts'})).result;
+  assert.ok(failingAnswer.contacts.length > 0 && failingAnswer.books.every(b => !('account' in b)));
+
   // An add-on without pim.js answers "unsupported", which Voice Companion turns into update advice.
   const old = plain(await loadBridge(createFakeMessenger().api, false).handle({id: 9, method: 'contacts'}));
   assert.equal(old.error.code, 'invalid');
@@ -170,8 +187,13 @@ async function calendarChecks() {
     if (answer.error) throw Object.assign(new Error(answer.error.message), {answer});
     return answer.result;
   };
-  assert.deepEqual((await call('calendars')).map(c => [c.name, c.type, c.readOnly]),
-    [['Home', 'storage', false], ['me@gmail.com', 'caldav', false], ['Holidays', 'ics', true]]);
+  assert.deepEqual((await call('calendars')).map(c => [c.name, c.type, c.readOnly, c.account]),
+    [['Home', 'storage', false, ''], ['me@gmail.com', 'caldav', false, 'me@gmail.com'], ['Holidays', 'ics', true, '']]);
+  // An Experiment from before accounts gives none, and none is made up.
+  const olderCalendars = createFakeMessenger();
+  for (const calendar of olderCalendars.state.calendars) delete calendar.account;
+  const olderList = plain(await loadBridge(olderCalendars.api).handle({id: 8, method: 'calendars'})).result;
+  assert.ok(olderList.length === 3 && olderList.every(c => !('account' in c)));
 
   const day = (y, m, d) => Date.UTC(y, m - 1, d);
   const {events} = await call('events', {start: day(2026, 10, 26), end: day(2026, 10, 28)});
@@ -326,9 +348,9 @@ function fakeCalendarManager() {
     recurrenceId: dateTime(Date.UTC(2026, 9, 27, 13)), parentItem: series});
   const allDay = item({id: 'trip', title: 'Trip', startDate: dateTime(Date.UTC(2026, 9, 27), true), endDate: dateTime(Date.UTC(2026, 9, 29), true),
     properties: {LOCATION: 'Austin', DESCRIPTION: 'Pack light'}});
-  const makeCalendar = (id, name, type, readOnly, items, disabled = false) => ({
-    id, name, type, readOnly, superCalendar: {id}, items,
-    getProperty(key) { return key === 'disabled' ? disabled : null; },
+  const makeCalendar = (id, name, type, readOnly, items, disabled = false, properties = {}, uri = '') => ({
+    id, name, type, readOnly, superCalendar: {id}, items, uri: uri ? {spec: uri} : null,
+    getProperty(key) { return key === 'disabled' ? disabled : key in properties ? properties[key] : null; },
     async getItemsAsArray(filter, limit, start, end) {
       cal.calls.push({getItemsAsArray: {filter, limit, start: start.ms, end: end.ms}});
       if (this.broken) throw new Error('offline');
@@ -339,10 +361,14 @@ function fakeCalendarManager() {
     async deleteItem(event) { cal.calls.push({deleteItem: event.id}); },
     async modifyItem(changed, old) { cal.calls.push({modifyItem: [changed, old]}); return changed; },
   });
-  const google = makeCalendar('g', 'Google', 'caldav', false, [occurrence, allDay, series, single]);
-  const work = makeCalendar('w', 'Work', 'caldav', false, []);
+  // The account: Thunderbird's user name for the calendar, else its email identity, else the server address.
+  const google = makeCalendar('g', 'Google', 'caldav', false, [occurrence, allDay, series, single], false, {username: 'Me@Gmail.com'});
+  const work = makeCalendar('w', 'Work', 'caldav', false, [], false, {'imip.identity': {email: 'vet@outlook.com'}},
+    'https://apidata.googleusercontent.com/caldav/v2/abc123%40group.calendar.google.com/events');
   const off = makeCalendar('o', 'Turned off', 'storage', false, [allDay], true);
-  const holidays = makeCalendar('h', 'Holidays', 'ics', true, []);
+  // A holiday list from Google is named by an address, but it is no one's account.
+  const holidays = makeCalendar('h', 'Holidays', 'ics', true, [], false, {},
+    'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics');
   const calendars = [google, work, off, holidays];
   cal.manager = {getCalendars: () => calendars, getCalendarById: id => calendars.find(c => c.id === id) || null};
   class CalEvent {
@@ -354,7 +380,7 @@ function fakeCalendarManager() {
 
 function loadCalendarExperiment(fake) {
   const modules = url => (url.includes('calUtils') ? {cal: fake.cal} : url.includes('CalEvent') ? {CalEvent: fake.CalEvent}
-    : {ExtensionCommon: {ExtensionAPI: class {}}});
+    : url.includes('MailServices') ? {MailServices: fake.MailServices} : {ExtensionCommon: {ExtensionAPI: class {}}});
   const context = vm.createContext({
     ChromeUtils: {importESModule: modules},
     Ci: {calICalendar: {ITEM_FILTER_TYPE_EVENT: 8, ITEM_FILTER_CLASS_OCCURRENCES: 16, ITEM_FILTER_COMPLETED_ALL: 3}},
@@ -370,8 +396,34 @@ async function experimentChecks() {
   const api = loadCalendarExperiment(fake);
   // Calendars that are turned on only.
   assert.deepEqual(plain(await api.listCalendars()), [
-    {id: 'g', name: 'Google', type: 'caldav', readOnly: false}, {id: 'w', name: 'Work', type: 'caldav', readOnly: false},
-    {id: 'h', name: 'Holidays', type: 'ics', readOnly: true}]);
+    {id: 'g', name: 'Google', type: 'caldav', readOnly: false, account: 'me@gmail.com'},
+    {id: 'w', name: 'Work', type: 'caldav', readOnly: false, account: 'vet@outlook.com'},
+    {id: 'h', name: 'Holidays', type: 'ics', readOnly: true, account: ''}]);
+  // From the server address alone; a Google shared calendar's address is not an account; this computer's has none.
+  const fromAddress = fakeCalendarManager();
+  const calendarsThere = fromAddress.cal.manager.getCalendars();
+  calendarsThere.push(
+    Object.assign(fakeCalendarManager().work, {id: 'a', type: 'caldav', getProperty: () => null,
+      uri: {spec: 'https://apidata.googleusercontent.com/caldav/v2/vet%40example.org/events/'}}),
+    Object.assign(fakeCalendarManager().work, {id: 'b', type: 'caldav', getProperty: () => null,
+      uri: {spec: 'https://apidata.googleusercontent.com/caldav/v2/xyz%40group.calendar.google.com/events/'}}),
+    Object.assign(fakeCalendarManager().work, {id: 'c', type: 'storage', getProperty: () => null,
+      uri: {spec: 'moz-storage-calendar://'}}),
+    Object.assign(fakeCalendarManager().work, {id: 'd', type: 'caldav', getProperty: key => { if (key === 'username') throw new Error('x'); return null; },
+      uri: null}));
+  assert.deepEqual(plain(await loadCalendarExperiment(fromAddress).listCalendars()).filter(c => 'abcd'.includes(c.id)).map(c => [c.id, c.account]),
+    [['a', 'vet@example.org'], ['b', ''], ['c', ''], ['d', '']]);
+
+  // Address books: an online (CardDAV) book's account from its user name or its address; books on this computer have none.
+  fake.MailServices = {ab: {directories: [
+    {UID: 'pab', dirType: 101, getStringValue: (key, fallback) => fallback},
+    {UID: 'google', dirType: 102, getStringValue: (key, fallback) => (key === 'carddav.url'
+      ? 'https://www.googleapis.com/carddav/v1/principals/me@gmail.com/lists/default/' : fallback)},
+    {UID: 'outlook', dirType: 102, getStringValue: (key, fallback) => (key === 'carddav.username' ? 'Vet@Outlook.com' : fallback)},
+    {UID: 'odd', dirType: 102, getStringValue: () => { throw new Error('no such value'); }},
+  ]}};
+  assert.deepEqual(plain(await api.describeAddressBooks()), [{id: 'pab', account: ''}, {id: 'google', account: 'me@gmail.com'},
+    {id: 'outlook', account: 'vet@outlook.com'}, {id: 'odd', account: ''}]);
 
   // Events: the range goes to Thunderbird as UTC; occurrences are asked for (expanded repeating events).
   const start = Date.UTC(2026, 9, 26, 5), end = Date.UTC(2026, 9, 28, 5);
@@ -481,6 +533,7 @@ async function experimentChecks() {
   // Thunderbird without its calendar modules: plain answers, never an exception.
   const broken = loadCalendarExperiment({cal: null, CalEvent: null});
   assert.equal(await broken.listCalendars(), null);
+  assert.equal(await broken.describeAddressBooks(), null);
   assert.equal(await broken.listEvents(start, end), null);
   assert.deepEqual(plain(await broken.createEvent({calendarId: 'g', title: 'x', allDay: true, start: '2026-10-30', end: '2026-10-31'})),
     {created: false, reason: 'failed'});
@@ -496,8 +549,9 @@ async function experimentChecks() {
   assert.deepEqual(schema[0].functions.map(f => f.name).sort(), Object.keys(api).sort());
   assert.ok(schema[0].functions.every(f => f.async === true && f.type === 'function'));
   const [major, minor] = manifest.version.split('.').map(Number);
-  // 1.3.0 added contacts and calendars; 1.4.0 adds changing events and contacts. A higher version replaces installed copies.
-  assert.ok(major > 1 || minor >= 4, 'the add-on version was raised so installed copies are replaced');
+  // 1.3.0 added contacts and calendars; 1.4.0 adds changing events and contacts; 1.5.0 gives each calendar's and
+  // address book's account. A higher version replaces installed copies.
+  assert.ok(major > 1 || minor >= 5, 'the add-on version was raised so installed copies are replaced');
   // Every file the add-on needs is packaged.
   const packaged = fs.readFileSync(path.join(__dirname, '..', 'build_thunderbird_addon.py'), 'utf8');
   for (const file of ['pim.js', 'experiment/calendar.js', 'experiment/calendar-schema.json']) assert.ok(packaged.includes("'" + file + "'"), file);

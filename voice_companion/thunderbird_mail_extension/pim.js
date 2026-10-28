@@ -100,8 +100,25 @@
       throw Bridge.fail('contacts', 'Thunderbird did not let Voice Companion read its address books. Close Thunderbird, then try again.');
     }
     const books = await this.api.addressBooks.list(false);
+    // The email account of each book comes from the calendar Experiment (the add-on interface
+    // does not give it). Without it, books have no account and Voice Companion shows them all.
+    let accounts = null;
+    const experiment = this.api.voiceCompanionCalendar;
+    if (experiment && typeof experiment.describeAddressBooks === 'function') {
+      try {
+        const described = await experiment.describeAddressBooks();
+        if (Array.isArray(described)) {
+          accounts = {};
+          for (const item of described) if (item && item.id) accounts[String(item.id)] = String(item.account || '').slice(0, 254);
+        }
+      } catch (error) { accounts = null; }
+    }
     // Remote books (LDAP directories) are searched, not listed; leave them out.
-    return books.filter(book => !book.remote).map(book => ({id: String(book.id), name: String(book.name || ''), readOnly: Boolean(book.readOnly)}));
+    return books.filter(book => !book.remote).map(book => {
+      const found = {id: String(book.id), name: String(book.name || ''), readOnly: Boolean(book.readOnly)};
+      if (accounts) found.account = accounts[found.id] || '';
+      return found;
+    });
   };
 
   Bridge.prototype.contacts = async function () {
@@ -109,12 +126,14 @@
     const {api} = this.contactsApi();
     const found = [];
     let failed = 0;
+    const failedBooks = [];
     for (const book of books) {
       let nodes;
       try {
         nodes = await api.list(book.id);
       } catch (error) {
         failed++;     // one broken book must not hide the others
+        failedBooks.push(book.id);
         continue;
       }
       for (const node of nodes || []) {
@@ -122,7 +141,7 @@
         try { found.push(Bridge.contactFrom(node, book)); } catch (error) { /* a damaged card is left out */ }
       }
     }
-    return {books, contacts: found, failed};
+    return {books, contacts: found, failed, failedBooks};
   };
 
   Bridge.prototype.addContact = async function ({bookId = '', name = '', email = '', phone = ''}) {
@@ -245,7 +264,11 @@
   Bridge.prototype.calendars = async function () {
     const list = await this.calendarApi().listCalendars();
     if (!Array.isArray(list)) throw Bridge.fail('calendar', 'Thunderbird could not list its calendars.');
-    return list.map(c => ({id: String(c.id), name: String(c.name || ''), type: String(c.type || ''), readOnly: Boolean(c.readOnly)}));
+    return list.map(c => {
+      const found = {id: String(c.id), name: String(c.name || ''), type: String(c.type || ''), readOnly: Boolean(c.readOnly)};
+      if (typeof c.account === 'string') found.account = c.account.slice(0, 254);   // an older Experiment has none
+      return found;
+    });
   };
 
   Bridge.cleanEvent = function (event) {

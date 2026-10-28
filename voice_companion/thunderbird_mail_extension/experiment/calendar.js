@@ -5,7 +5,10 @@
  * official calendar Experiment does (github.com/thunderbird/webext-experiments,
  * calendar/experiments/calendar/parent/ext-calendar-items.js):
  *
- *  - listCalendars: the calendars that are turned on (Home, Google, other CalDAV).
+ *  - listCalendars: the calendars that are turned on (Home, Google, other CalDAV),
+ *    each with the email account it belongs to, when Thunderbird knows it.
+ *  - describeAddressBooks: the email account each address book belongs to. The
+ *    add-on interface lists address books but not their accounts.
  *  - listEvents: the events between two moments, with repeating events expanded
  *    into one entry per day they happen.
  *  - createEvent: add one event (all-day or timed) to one calendar.
@@ -49,6 +52,43 @@ function millis(cal, dt) {
 // An all-day date -> "2026-10-26". calIDateTime months count from 0.
 function dayText(dt) {
   return pad(dt.year, 4) + '-' + pad(dt.month + 1) + '-' + pad(dt.day);
+}
+
+// The first email address in a text (a user name, a server address), or ''. Google names shared
+// and holiday calendars by an address ending in calendar.google.com; that is not an account.
+const EMAIL = /[^\s@\/:?#=&;,<>"']+@[^\s@\/:?#=&;,<>"']+\.[a-z]{2,}/i;
+function emailIn(text) {
+  let value = String(text || '');
+  try { value = decodeURIComponent(value); } catch (error) { /* keep it as it is */ }
+  const found = EMAIL.exec(value.replace(/^mailto:/i, ''));
+  const address = found ? found[0].toLowerCase() : '';
+  return /calendar\.google\.com$/.test(address) ? '' : address;
+}
+
+// The email account a calendar belongs to, so two calendars both called "Calendar" can be told
+// apart. Thunderbird's own calendars (storage) belong to this computer: ''.
+function calendarAccount(calendar) {
+  if (String(calendar.type || '') === 'storage') return '';
+  const property = key => { try { return calendar.getProperty(key); } catch (error) { return null; } };
+  const identity = property('imip.identity');
+  let address = '';
+  try { address = calendar.uri ? String(calendar.uri.spec || '') : ''; } catch (error) { address = ''; }
+  return emailIn(property('username')) || emailIn(identity && identity.email) || emailIn(property('organizerId')) ||
+    (String(calendar.type || '') === 'ics' ? '' : emailIn(address));
+}
+
+// The email account of each address book: an online (CardDAV) book has a user name or an address
+// with the account in it. Books kept on this computer have none.
+function describeAddressBooks() {
+  const { MailServices } = ChromeUtils.importESModule('resource:///modules/MailServices.sys.mjs');
+  const carddav = (typeof Ci !== 'undefined' && Ci.nsIAbManager && Ci.nsIAbManager.CARDDAV_DIRECTORY_TYPE) || 102;
+  const books = [];
+  for (const book of MailServices.ab.directories) {
+    const value = key => { try { return String(book.getStringValue(key, '') || ''); } catch (error) { return ''; } };
+    const online = book.dirType === carddav;
+    books.push({ id: String(book.UID), account: online ? (emailIn(value('carddav.username')) || emailIn(value('carddav.url'))) : '' });
+  }
+  return books;
 }
 
 function enabled(cal) {
@@ -240,10 +280,13 @@ var voiceCompanionCalendar = class extends ExtensionCommon.ExtensionAPI {
           try {
             const { cal } = modules();
             return enabled(cal).map(calendar => ({ id: String(calendar.id), name: String(calendar.name || ''),
-              type: String(calendar.type || ''), readOnly: Boolean(calendar.readOnly) }));
+              type: String(calendar.type || ''), readOnly: Boolean(calendar.readOnly), account: calendarAccount(calendar) }));
           } catch (error) {
             return null;
           }
+        },
+        async describeAddressBooks() {
+          try { return describeAddressBooks(); } catch (error) { return null; }
         },
         async listEvents(startMs, endMs) {
           try { return await listEvents(startMs, endMs); } catch (error) { return null; }
