@@ -928,8 +928,9 @@ class BrowserBackend:
                 if dialog_notice:self.dialog_notice=''
                 if dialog_notice==LEAVE_NOTICE:raise WebError(LEAVE_NOTICE)
                 if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
-                # A page's own message ("Item added to cart") says what happened.
-                if dialog_notice and not request_errors:return {'unchanged':True,'notice':dialog_notice}
+                # A page's own message ("Item added to cart") says what happened. A question
+                # Companion canceled still says the website did not move on.
+                if dialog_notice.startswith(('Page message:','The page showed a message')) and not request_errors:return {'unchanged':True,'notice':dialog_notice}
                 return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
