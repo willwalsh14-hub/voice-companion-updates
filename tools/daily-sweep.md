@@ -1,8 +1,18 @@
 # Daily bug sweep (agreed with Will, October 28, 2026)
 
 Will asked for a daily fine-comb check of the whole app, with many helpers. It
-runs every day for at least a week. This is the playbook. Follow CLAUDE.md first;
-it overrides anything here.
+runs every night, with no end date, until Will says to stop. This is the playbook.
+Follow CLAUDE.md first; it overrides anything here.
+
+## Work quietly (Will, October 28, 2026)
+- Do not message Will when a sweep finishes or a release goes out. He does not want
+  to be interrupted while sleeping or busy.
+- Message him (SendUserMessage) only for:
+  - a design question that needs his decision
+  - a critical stop that needs him: his permission, his computer, an account, a
+    secret, or a failure you cannot fix yourself
+- Everything else goes in the release notes and in `tools/sweep-log.md`, so he can
+  read it or ask for it later.
 
 ## Tools in this folder
 - `tools/helper-rules.md`: the rules every helper follows. Give each helper its path.
@@ -41,13 +51,18 @@ it overrides anything here.
 8. Open the pull request and run `tools/ship.sh`. Will has given standing approval to
    publish when all checks pass. If a check fails, read the annotations, find the
    cause, fix it and ship again. A test that passes on rerun is still a bug.
-9. When it is live, message Will (SendUserMessage) with:
-   - the installer link, labelled
-   - the bug fixes by area, in plain bullets
-   - design questions that need his answer
-   Follow "How to present information to Will" in CLAUDE.md: headings, labelled links,
-   bullets, no tables.
-10. If a day finds nothing worth releasing, do not publish. Tell Will briefly.
+9. Record every bug fix, not only the highlights:
+   - in release-notes.json, under "What works better", one topic per area, in plain
+     words at 8th-grade level
+   - in `tools/sweep-log.md`, under the date and version: each fix as a short bullet,
+     plus any design questions and whether Will has answered them
+   Commit the log to main in a tools-only pull request (no release), after the
+   release is live.
+10. Do not message Will when the release is live. Message him only for design
+    questions or critical stops (see "Work quietly"). Follow "How to present
+    information to Will" in CLAUDE.md: headings, labelled links, bullets, no tables.
+11. If a day finds nothing worth releasing, do not publish. Add a line to the log and
+    do not message Will.
 
 ## The six areas
 1. Startup, main menu, sleep and wake, microphone and input modes, Options and
