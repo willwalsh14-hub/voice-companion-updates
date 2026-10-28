@@ -212,8 +212,8 @@ class PageWordsTests(unittest.TestCase):
                 self.assertEqual(cursor.move(key,backward=True),'Start of list. No previous '+name+'.')
 
 
-class LivePageTests(unittest.TestCase):
-    """In a real Chromium page, as a customer uses it."""
+class LiveBase(unittest.TestCase):
+    """A real Chromium page, as a customer uses it."""
     @classmethod
     def setUpClass(cls):
         import test_web_live
@@ -228,6 +228,8 @@ class LivePageTests(unittest.TestCase):
         self.page.set_content('<title>VA.gov Home</title><h1>VA.gov Home</h1><p>Welcome.</p><label for="loc">City</label><input id="loc"><h2>News</h2><button>Sign in</button>')
         self.session._refresh()
 
+
+class LivePageTests(LiveBase):
     def test_where_am_i_names_the_page_and_the_place_on_it(self):
         """In page view, "Where am I?" said "No readable field has keyboard focus." wherever you were."""
         self.session.command('next button')
@@ -242,3 +244,64 @@ class LivePageTests(unittest.TestCase):
         self.assertIn('Text entered',self.session.command('type Houston'))
         self.session.keyboard('Done')
         self.assertEqual(self.page.locator('#loc').input_value(),'Houston')
+
+
+class LiveFieldDictationTests(LiveBase):
+    """Dictating into web fields through the app, as with a microphone."""
+    def setUp(self):
+        super().setUp()
+        self.page.set_content('<title>Contact us</title><h1>Contact us</h1><form><label for="n">Full name</label><input id="n"><label for="m">Message</label><textarea id="m"></textarea><button type="button">Send message</button></form>')
+        self.session._refresh()
+        self.stack=ExitStack();self.addCleanup(self.stack.close)
+        self.stack.enter_context(redirect_stdout(io.StringIO()))
+        for name,value in {'web_session':self.session,'APP_WINDOW':None,'INPUT_MODE':'mixed','pending_website':None,'help_session':None,'PREFERENCES':dict(app.PREFERENCES),'TEXT_MODE':True}.items():
+            self.stack.enter_context(patch.object(app,name,value))
+        self.spoken=[]
+        self.stack.enter_context(patch.object(app,'speak',side_effect=lambda text,*a,**k:self.spoken.append(str(text))))
+
+    def say(self,text):
+        self.spoken.clear();return app.handle(text,'web')
+
+    def value(self,field):return self.page.locator(field).input_value()
+
+    def test_dictation_new_line_and_more_dictation_keep_every_word(self):
+        """After "new line", leaving the box replaced the whole message with one line break."""
+        self.say('next edit field');self.say('next edit field')
+        self.say('I need help with my claim.');self.say('new line');self.say('Thank you.')
+        self.say('next button')
+        self.assertEqual(self.value('#m'),'I need help with my claim.\nThank you.')
+
+    def test_dictated_phrases_are_spaced_like_sentences(self):
+        """"claim." and "Thank you." ran together as "claim.Thank you."."""
+        self.say('next edit field');self.say('next edit field')
+        self.say('I need help with my claim.');self.say('Thank you.')
+        self.say('next button')
+        self.assertEqual(self.value('#m'),'I need help with my claim. Thank you.')
+
+    def test_a_name_does_not_keep_the_recognizers_closing_period(self):
+        self.say('next edit field');self.say('John Smith.');self.say('next button')
+        self.assertEqual(self.value('#n'),'John Smith')
+
+    def test_sentences_that_start_like_commands_are_written_in_a_text_box(self):
+        """"I need help." read the page help, and "Help with the dishes tonight." opened the user guide."""
+        self.say('next edit field');self.say('next edit field')
+        for sentence in ('I need help.','Help with the dishes tonight.','Tell me about your day.','Find a way to call Bob.','What a nice day.'):
+            with self.subTest(sentence=sentence):
+                self.assertEqual(self.say(sentence),'web')
+        self.say('next button')
+        self.assertEqual(self.value('#m'),'I need help. Help with the dishes tonight. Tell me about your day. Find a way to call Bob. What a nice day.')
+
+    def test_select_all_in_a_box_does_not_talk_about_a_document(self):
+        """It said "Selected all text in the document. 1 paragraphs."."""
+        self.say('next edit field');self.say('next edit field');self.say('One. Two.')
+        self.assertEqual(self.say('select all'),'web')
+        self.assertEqual(self.spoken,['Selected all text.'])
+
+
+class SelectAllCountTests(unittest.TestCase):
+    def test_one_paragraph_is_singular(self):
+        from document_editor import VoiceDocument
+        with tempfile.TemporaryDirectory() as folder:
+            document=VoiceDocument(Path(folder),_opening=True)
+            document.append_text('Hello there.')
+            self.assertEqual(document.process('select all'),'Selected all text in the document. 1 paragraph.')

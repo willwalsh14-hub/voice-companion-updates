@@ -46,6 +46,8 @@ class FieldSelection:
             self.text = None
             return 'Deleted selected text.', (a,a)
         result = self.editor.process(normalized)
+        if result.startswith('Selected all text in the document.'):
+            result = 'Selected all text.'  # A field or note is not a document, and has no paragraph count to hear.
         selected = self.editor.selection
         if selected is None: return result, None
         def absolute(index, offset):

@@ -81,7 +81,8 @@ def _voice_value(item,spoken,literal=False):
     # Names, codes and account identifiers are not prose.
     identity = ' '.join(str(item.get(k) or '') for k in ('label','name','autocomplete','placeholder'))
     if re.search(r'(?i)\b(?:name|address|user|username|login|code|pin|account|zip|postal)\b',identity):
-        return clean_dictation(spoken)
+        # "John Smith." The recognizer's closing period is not part of a name or code.
+        return re.sub(r'(?<![.])[.!]$','',clean_dictation(spoken)).rstrip()
     return prepare_dictation(spoken)
 
 
@@ -1805,6 +1806,15 @@ class WebSession:
         try: return self.backend.select_focused(spoken)
         except Exception: return 'I could not select text. Focus the browser field and try again.'
 
+    def _spaced(self,value,literal=False):
+        """A space before dictated words that follow other words, as in a document:
+        "claim." then "Thank you." is "claim. Thank you.", not "claim.Thank you."."""
+        field=self.keyboard_field
+        if literal or not value or not value[0].isalnum() or field.get('type') in ('email','url','password','number','tel'):return value
+        text=field.get('value','');caret=max(0,min(len(text),getattr(self,'web_edit_caret',len(text))))
+        start=(getattr(self,'selection',None) or (caret,caret))[0]
+        return (' ' if start>0 and not text[start-1].isspace() else '')+value
+
     def _insert_field_text(self,text):
         value=self.keyboard_field.get('value','')
         caret=max(0,min(len(value),getattr(self,'web_edit_caret',len(value))))
@@ -1812,6 +1822,13 @@ class WebSession:
         start=max(0,min(len(value),start));end=max(start,min(len(value),end))
         self.keyboard_field['value']=value[:start]+text+value[end:]
         self.web_edit_caret=start+len(text);self.selection=None
+
+    def writing_field(self):
+        """True while a text box for writing is being edited: dictation comes first there,
+        and a sentence that only starts like a command is text (CLAUDE.md)."""
+        field=self.keyboard_field
+        return (isinstance(field,dict) and self.input_mode=='mixed' and text_field(field) and not editable_combo(field)
+                and not choice_field(field) and field.get('type')!='password' and not field.get('readonly'))
 
     def dictate_to_focus(self, spoken, literal=False):
         self.last_dictated_text=None
@@ -1825,6 +1842,7 @@ class WebSession:
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             try:value=_voice_value(self.keyboard_field,spoken,literal)
             except ValueError as exc:return str(exc)
+            value=self._spaced(value,literal)
             self._insert_field_text(value)
             self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value
             if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
@@ -3025,7 +3043,7 @@ class WebSession:
             return self.handoff()
         if command in ('review form','read form back','review my answers'):
             return self.review_form()
-        if command in ('help','help me','what can i do','what can i do here','i need help'):
+        if command in ('help','help me','what can i do','what can i do here','i need help') and not (self.writing_field() and command in ('what can i do','what can i do here','i need help')):
             return self._ask_field() if self.form_index is not None else self.help_here()
         if self.form_index is not None and command not in ('read page','read this page','refresh page'):
             if self.input_mode == 'commands' and command not in ('skip','skip field','repeat','repeat question',
@@ -3122,6 +3140,10 @@ class WebSession:
             self.pending = None
             self.suggestion_index = None
             return 'Canceled. The web action was not opened.'
+        if self.writing_field() and self.form_index is None:
+            # In a text box, words that only start like a request ("Tell me about your day.",
+            # "Find a way to call Bob.") are what you are writing.
+            return self.dictate_to_focus(spoken)
         match = re.match(r'^(?:what does (?:this |the )?page say about|tell me about)\s+(.+)', spoken, re.I)
         if match: return self.answer_from_page(match[1])
         match = re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)', spoken, re.I)

@@ -1054,8 +1054,17 @@ def writing_dictation(mode, typed=False):
     "help with ...", "use ... at ..."). In a writing field, a sentence that only starts that
     way and does not complete the command is dictation, not an error."""
     editor_open = (mode == 'document' and document is not None or
-                   mode == 'email_draft' and email_draft is not None or mode == 'note')
+                   mode == 'email_draft' and email_draft is not None or mode == 'note' or
+                   mode == 'web' and web_writing_field())
     return not typed and INPUT_MODE != 'commands' and editor_open
+
+
+def web_writing_field():
+    """True while a web text box you write in (a message or comment box) is being edited.
+    A site's search box with suggestions and a password box are not writing."""
+    session = web_session
+    writing = getattr(session, 'writing_field', None) if session is not None else None
+    return bool(callable(writing) and writing() is True)
 
 
 def speech_control(value):
