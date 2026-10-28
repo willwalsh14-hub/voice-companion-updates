@@ -657,6 +657,7 @@ def process_keyboard_batch(mode):
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
+MAIN_MENU_NOT_UNDERSTOOD = 'I did not understand that. You are on the main menu. Press F1 for help.'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
 # Said together with the next main menu announcement, in one message: a second
@@ -3757,6 +3758,10 @@ def _handle(text, mode, typed=False):
             else:speak('Help closed. ' + options_return_notice(help_return_mode))
             return help_return_mode
         if result is not None:speak(result)
+        elif typed or not speech_busy():
+            # Words Help does not know get a short answer (Will, October 2026). While Help
+            # is reading aloud they are ignored, so talk in the room never cuts a topic off.
+            speak(help_session.not_understood())
         return 'help'
     global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME, PUNCTUATION_LEVEL
     if command in ('check voices', 'voice check', 'voice diagnostics'):
@@ -4842,6 +4847,10 @@ def _handle(text, mode, typed=False):
         speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
         return mode
     if mode == 'awake' and spoken_website(text):return 'awake'
+    if mode == 'awake':
+        # Said like every other menu: what happened, where you are, and where help is.
+        speak(MAIN_MENU_NOT_UNDERSTOOD)
+        return 'awake'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 

@@ -18,7 +18,7 @@ GUIDE = Path(__file__).with_name('START HERE - Veteran.txt')
 GUIDE_HTML = Path(__file__).with_name('START HERE - Veteran.html')
 NONSENSE = 'zebra quantum lantern'
 # Generic answers that mean a screen did not know the command.
-FALLBACKS = ('I can write a note or document', 'Say go to folder to choose from a list',
+FALLBACKS = ('I can write a note or document', 'I did not understand that. You are on the main menu', 'Say go to folder to choose from a list',
              'Document reader. Use arrows to read', 'I could not complete that mail request',
              'Email could not complete that request', 'Choose a number from')
 

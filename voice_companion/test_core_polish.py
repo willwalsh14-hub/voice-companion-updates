@@ -188,9 +188,10 @@ class UnknownWordsOnLaunchMenusTests(CompanionTestCase):
                 self.assertEqual(companion.handle('main menu', mode), 'awake')
                 self.assertEqual(self.said, [companion.MAIN_MENU_PROMPT])
 
-    def test_the_main_menu_still_explains_what_you_can_do(self):
+    def test_the_main_menu_says_where_you_are_like_other_menus(self):
+        # Will, October 2026: the same short answer as the other menus, with F1 for help.
         companion.handle('banana bread', 'awake')
-        self.assertTrue(self.said[-1].startswith('I can write a note or document'), self.said)
+        self.assertEqual(self.said[-1], 'I did not understand that. You are on the main menu. Press F1 for help.')
 
 
 class UpdaterStateTests(unittest.TestCase):

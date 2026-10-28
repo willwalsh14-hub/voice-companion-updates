@@ -122,14 +122,32 @@ class OnboardHelpTests(unittest.TestCase):
                 backwards=[session.process('previous paragraph') for _ in paragraphs[1:]]
                 self.assertEqual(backwards,list(reversed(paragraphs[:-1])),name)
 
-    def test_unrecognized_speech_does_not_interrupt_or_replace_help(self):
+    def test_unrecognized_speech_while_reading_does_not_interrupt_or_replace_help(self):
         import companion as app
         session=HelpSession(GUIDE);session.topic('documents');session.process('that one')
         position=(session.reading.position,session.reading.continuation)
-        with patch.object(app,'help_session',session),patch.object(app,'speak') as say,patch.object(app,'interrupt_speech') as stop,patch.object(app,'sync_app_context'):
+        with patch.object(app,'help_session',session),patch.object(app,'speak') as say,patch.object(app,'interrupt_speech') as stop,patch.object(app,'sync_app_context'),patch.object(app,'speech_busy',return_value=True):
             self.assertEqual(app.handle('unrelated background conversation','help'),'help')
             stop.assert_not_called();say.assert_not_called()
             self.assertEqual((session.reading.position,session.reading.continuation),position)
+
+    def test_unrecognized_words_get_a_short_answer_when_help_is_quiet(self):
+        # Will, October 2026: silence sounded like Help had stopped working.
+        import companion as app
+        session=HelpSession(GUIDE)
+        with patch.object(app,'help_session',session),patch.object(app,'speak') as say,patch.object(app,'interrupt_speech') as stop,patch.object(app,'sync_app_context'),patch.object(app,'speech_busy',return_value=False):
+            self.assertEqual(app.handle('banana bread','help'),'help')
+            say.assert_called_once_with('I did not understand that. Say next to hear a topic, or press Escape to leave Help.')
+            session.topic('documents');session.process('that one')
+            position=(session.reading.position,session.reading.continuation)
+            app.handle('banana bread','help')
+            self.assertIn('Say next to keep reading, or press Escape to go back.',say.call_args.args[0])
+            stop.assert_not_called()
+            self.assertEqual((session.reading.position,session.reading.continuation),position)
+        # Typed words always get the answer, even while Help reads.
+        with patch.object(app,'help_session',session),patch.object(app,'speak') as say,patch.object(app,'sync_app_context'),patch.object(app,'speech_busy',return_value=True):
+            app.handle('banana bread','help',typed=True)
+            self.assertTrue(say.call_args.args[0].startswith('I did not understand that.'))
 
     def test_keyboard_arrows_and_voice_share_complete_blocks_and_boundaries(self):
         import companion as app
