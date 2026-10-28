@@ -82,6 +82,8 @@ PROCESSES = [
     process(903, 902, r'C:\Users\Will\AppData\Local\Temp\is-ABC.tmp\VoiceCompanion-Setup.tmp', 22),
     process(904, 903, POWERSHELL, 23),
     process(905, 900, r'C:\Windows\System32\conhost.exe', 20),
+    # A Voice Companion program started under the update still runs from the install folder.
+    process(906, 902, inside('VoiceCompanion-Diagnostics.exe'), 24),
 ]
 
 
@@ -106,7 +108,7 @@ class ProcessSelectionTests(unittest.TestCase):
         # The app, a second copy, Playwright's driver and browser, WebView2 and its
         # Edge engine, eSpeak, the console window, and every browser host
         # (Chrome's and Thunderbird's, both processes of each).
-        self.assertEqual(sorted(chosen), [100, 101, 102, 103, 104, 109, 110, 201, 202, 203, 204, 500, 701])
+        self.assertEqual(sorted(chosen), [100, 101, 102, 103, 104, 109, 110, 201, 202, 203, 204, 500, 701, 906])
 
     def test_never_closes_the_users_programs(self):
         chosen = set(self.select(PROCESSES, 900))

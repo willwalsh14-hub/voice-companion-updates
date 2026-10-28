@@ -117,7 +117,8 @@ function Select-CompanionProcesses($Processes, [string]$InstallFolder, [int]$Sel
   while ($pending.Count) {
     $item = $pending.Dequeue()
     foreach ($child in @($children[$item.ProcessId])) {
-      if ($child -and -not $protected.ContainsKey($child.ProcessId)) { $protected[$child.ProcessId] = $true; $pending.Enqueue($child) }
+      # What the update started (its voice, Setup) stays; a program from the install folder does not.
+      if ($child -and -not $protected.ContainsKey($child.ProcessId) -and -not (Test-InsideFolder $child.Path $InstallFolder)) { $protected[$child.ProcessId] = $true; $pending.Enqueue($child) }
     }
   }
   $selected = @{}
