@@ -1,34 +1,33 @@
 {
-  "version": "0.2.172-test",
+  "version": "0.2.173-test",
   "status": "Testing build",
   "date": "October 28, 2026",
-  "baseline": "0.2.171-test",
-  "scope": "Choose a calendar or address book, Save As, safer updates, and over 40 fixes found by testing like a customer.",
+  "baseline": "0.2.172-test",
+  "scope": "Your answers to the design questions: What's playing, Undo and Redo, message details, safer email, and more.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Choose a calendar or address book",
+          "title": "What's playing",
           "details": [
-            "With two email accounts in Thunderbird, you can choose one calendar or address book, or all of them.",
-            "Press Control+L in Calendar or Contacts. You can also say show Gmail calendar, or show all contacts.",
-            "Say which calendar am I in, or which address book am I in.",
-            "With one account, nothing changes."
+            "Press F3, or say what's playing, to hear the station, episode or file.",
+            "If a radio station stops, you hear it once, with what to do next.",
+            "Say play WGN from almost any screen to play a station."
           ]
         },
         {
-          "title": "Save As",
+          "title": "Undo and Redo",
           "details": [
-            "In a document, press F12 to save a copy with a new name or in a new folder.",
-            "Insert+F12 or Caps Lock+F12 still say the time in a document. F12 still says the time on other screens.",
-            "You can also say save as, or use the File menu."
+            "Control+Z and Control+Y undo and redo up to 100 steps in documents and email.",
+            "You can also say undo or redo. Each one says what changed."
           ]
         },
         {
-          "title": "New key to attach a file",
+          "title": "Message details",
           "details": [
-            "Control+O now attaches a file to an email. Control+T still works for now."
+            "Alt+1 says who a message is from. Alt+2 is To, Alt+3 is CC, Alt+4 is the subject, Alt+5 is the date, and Alt+6 is the number of files.",
+            "You can also say who sent this, or when was it sent."
           ]
         }
       ]
@@ -37,38 +36,36 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Updates",
+          "title": "Email",
           "details": [
-            "Updates now close Voice Companion's own programs first, so they no longer fail.",
-            "Your own programs are never closed. If one is in the way, you hear which one to close."
+            "Leaving an email you wrote now asks if you want to save it, throw it away, or keep writing.",
+            "Opening a message now says Message opened."
           ]
         },
         {
-          "title": "Documents",
+          "title": "Help and the main menu",
           "details": [
-            "A new document asks for its name first.",
-            "New documents always go in the same folder."
+            "Help now tells you when it did not understand you.",
+            "On the main menu, words it does not know get a reply that says where you are and to press F1."
           ]
         },
         {
-          "title": "Safer answers",
+          "title": "Saving and favorites",
           "details": [
-            "Saying that one at Exit or Shut down no longer means yes. No is still chosen first."
+            "Say save to save your document or email.",
+            "Deleting a web favorite asks first. After you save a favorite, you go back to the page."
           ]
         },
         {
-          "title": "Websites",
+          "title": "The hint line",
           "details": [
-            "Saying yes now opens a website you asked for from the main menu.",
-            "Text you say into a web box is no longer lost after new line."
+            "The line at the bottom of the window now fits the screen you are on."
           ]
         },
         {
-          "title": "Many smaller fixes",
+          "title": "Radio",
           "details": [
-            "Large text no longer hides the main menu on small screens.",
-            "Messages are no longer cut off when you leave a note or a website.",
-            "Radio times now sound like you would say them."
+            "After a station that would not play, the next station now plays."
           ]
         }
       ]
