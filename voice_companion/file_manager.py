@@ -369,7 +369,7 @@ class FileManager:
             targets=self.targets()
             if len(targets)!=1:raise ValueError('Select one item to rename.')
             if match[1]:return self.mutate('rename',[targets[0].path],name=valid_name(match[1]))
-            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, including the extension, then press Enter.'
+            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, '+('' if targets[0].folder else 'including the extension, ')+'then press Enter.'
         if cmd in ('status','where am i','current item','read current item'):return location_name(self.location)+'. '+self.say_current()
         if cmd in ('open','enter','okay','ok','activate','confirm','that one'):
             item=self.current()
@@ -392,7 +392,7 @@ class FileManager:
         name=re.sub(r'^open(?: file| folder| drive)?\s+','',text,flags=re.I);self.choose(name)
         return self.command('open')
     def mutate(self,action,paths,**kwargs):
-        return self.start_job(lambda:self.backend.operate(action,paths,**kwargs),lambda _:self.after_change('File action complete.'),'Working on '+str(len(paths))+' items.',mutating=True)
+        return self.start_job(lambda:self.backend.operate(action,paths,**kwargs),lambda _:self.after_change('File action complete.'),'Working on '+str(len(paths))+(' item.' if len(paths)==1 else ' items.'),mutating=True)
     def after_change(self,message):
         self.selected.clear();self.refresh_here();return message+' Refreshing folder.'
     def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+(' '.join(reader.warnings[:3])+'. ' if reader.warnings else '')+reader.reading.read(True)

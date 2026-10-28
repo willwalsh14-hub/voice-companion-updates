@@ -200,5 +200,35 @@ class SlowDriveTests(CompanionTestCase):
         self.assertTrue(self.said[-1].startswith('Opening canceled.'), self.said[-1])
 
 
+class FileActionWordsTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from file_manager import FileManager
+        from test_file_manager import FakeFiles, settle
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        root = Path(temp.name); (root / 'Photos').mkdir(); (root / 'a.txt').write_text('A'); (root / 'b.txt').write_text('B')
+        self.manager = FileManager(FakeFiles(root)); self.settle = settle
+        self.manager.refresh(str(root)); settle(self.manager)
+
+    def test_one_item_is_singular(self):
+        # Heard: "Working on 1 items."
+        self.manager.index = 1
+        self.manager.command('rename')
+        self.assertEqual(self.manager.command('Notes.txt'), 'Working on 1 item.')
+        self.settle(self.manager)
+        self.manager.command('select all')
+        self.assertEqual(self.manager.command('delete').split('?')[0], 'Delete Photos, a.txt, b.txt')
+        self.assertEqual(self.manager.command('yes'), 'Working on 3 items.')
+
+    def test_renaming_a_folder_does_not_ask_for_an_extension(self):
+        # A folder has no extension; asking for one confuses a new user.
+        self.manager.index = 0
+        self.assertEqual(self.manager.command('rename'), 'Rename Photos. Type or say the new name, then press Enter.')
+        self.manager.command('cancel'); self.manager.index = 1
+        self.assertEqual(self.manager.command('rename'),
+                         'Rename a.txt. Type or say the new name, including the extension, then press Enter.')
+
+
 if __name__ == '__main__':
     unittest.main()
