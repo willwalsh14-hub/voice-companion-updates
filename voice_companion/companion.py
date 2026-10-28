@@ -2202,13 +2202,14 @@ def start_thunderbird_quietly():
     return thread
 
 
-def start_thunderbird_add(mode):
-    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address."""
+def start_thunderbird_add(mode, lead=''):
+    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address.
+    lead ("Gmail works through Thunderbird.") is said with the first step, in one message."""
     global THUNDERBIRD_SETUP
     try:
         flow = new_thunderbird_setup(adding=True)
         THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
-        return thunderbird_setup_step(flow.start(), mode)
+        return thunderbird_setup_step(flow.start(), mode, lead)
     except Exception:
         THUNDERBIRD_SETUP = None
         speak('Thunderbird setup stopped because of a problem. Nothing was changed. Say add Thunderbird account to try again.')
@@ -3039,17 +3040,18 @@ THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok'
 THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
 
 
-def thunderbird_setup_step(step, mode):
+def thunderbird_setup_step(step, mode, lead=''):
     """Speak one setup result; keep its yes or no question waiting."""
     global THUNDERBIRD_SETUP, CONFIRM_CHOICE
     flow = THUNDERBIRD_SETUP['flow'] if THUNDERBIRD_SETUP else None
     THUNDERBIRD_SETUP = None
+    said = (lead + ' ' + step.message).strip() if lead else step.message
     if step.question == 'address':
-        return ask_thunderbird_address(step.message, mode)
+        return ask_thunderbird_address(said, mode)
     if step.question:
         THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
         CONFIRM_CHOICE = 'yes'
-    speak(step.message)
+    speak(said)
     sync_app_context(mode, True)
     return mode
 
@@ -3784,7 +3786,8 @@ def _handle(text, mode, typed=False):
         if mail_session is not None:
             speak(mail_session.process('open inbox'))
             return 'mailbox'
-        speak('No email account is connected.')
+        # Said with Main menu, in one message: a second message would cut this one off.
+        MAIN_MENU_LEAD = 'No email account is set up yet.'
         return 'awake'
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
@@ -3954,8 +3957,7 @@ def _handle(text, mode, typed=False):
     if direct_connection and direct_connection[1] in THROUGH_THUNDERBIRD:
         # "Add Gmail account": Gmail and Microsoft mail are added in Thunderbird.
         account_setup = False
-        speak(THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
-        return start_thunderbird_add(mode)
+        return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
     if direct_connection:
         account_setup = True
         command = direct_connection[1]
@@ -3970,8 +3972,7 @@ def _handle(text, mode, typed=False):
             return mode
         if command in THROUGH_THUNDERBIRD:
             account_setup = False
-            speak(THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
-            return start_thunderbird_add(mode)
+            return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
         provider = ('yahoo' if command in ('yahoo','yahoo mail') else
                     'thunderbird' if command in ('thunderbird','thunderbird mail','mozilla thunderbird') else None)
         if not provider:
@@ -4083,7 +4084,8 @@ def _handle(text, mode, typed=False):
             'check my mail', 'read email', 'read mail', 'read my mail', 'open mail', 'open my mail'):
         selected = store.selected()
         if not selected:
-            speak_prompt('No email account is selected. Say add account, or list email accounts.')
+            speak_prompt('No email account is selected. Say add account, or list email accounts.' if connected_accounts(store) else
+                         'No email account is set up yet. Say add account to set one up.')
             return mode
         mail_session = MailSession(selected[0], APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
@@ -4452,7 +4454,8 @@ def _handle(text, mode, typed=False):
         if command in ('check email', 'read my email'):
             selected = store.selected()
             if not selected:
-                speak_prompt('No email account is selected. Say add account, or list email accounts.')
+                speak_prompt('No email account is selected. Say add account, or list email accounts.' if connected_accounts(store) else
+                         'No email account is set up yet. Say add account to set one up.')
                 return mode
             provider = selected[0]
         else:

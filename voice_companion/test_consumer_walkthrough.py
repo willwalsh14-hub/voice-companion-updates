@@ -425,5 +425,49 @@ class TutorialQuestionsTests(unittest.TestCase):
         self.assertTrue(said.startswith('No explanation found for Zebra Crossing.'), said)
 
 
+class FirstTimeEmailTests(CompanionTestCase):
+    def test_email_with_no_account_points_only_to_add_account(self):
+        # Heard: "No email account is selected. Say add account, or list email accounts."
+        # With no account at all, list email accounts only says there are none.
+        store = Mock(); store.selected.return_value = None; store.accounts.return_value = []
+        with patch.object(companion, 'ProtectedStore', Mock(return_value=store)):
+            for phrase in ('Email.', 'check email', 'Open the inbox.'):
+                with self.subTest(phrase=phrase):
+                    self.assertEqual(companion.handle(phrase, 'awake'), 'awake')
+                    self.assertEqual(self.said[-1], 'No email account is set up yet. Say add account to set one up.')
+            store.accounts.return_value = [('yahoo', 'vet@yahoo.com'), ('thunderbird', 'me@gmail.com')]
+            companion.handle('Email.', 'awake')
+            self.assertEqual(self.said[-1], 'No email account is selected. Say add account, or list email accounts.')
+
+
+    def test_canceling_a_draft_with_no_account_is_two_messages_not_three(self):
+        store = Mock(); store.selected.return_value = None; store.accounts.return_value = []
+        with patch.object(companion, 'ProtectedStore', Mock(return_value=store)), \
+                patch.object(companion, 'finish_mail_announcement'), patch.object(companion, 'MAIN_MENU_LEAD', ''):
+            self.assertEqual(companion.handle('Write an email.', 'awake'), 'email_draft')
+            self.said.clear()
+            self.assertEqual(companion.handle('cancel', 'email_draft'), 'awake')
+        self.assertEqual(len(self.said), 2, self.said)
+        self.assertEqual(self.said[0], 'Draft canceled without saving.')
+        self.assertTrue(self.said[1].startswith('No email account is set up yet. Main menu.'), self.said)
+
+
+    def test_gmail_through_thunderbird_is_one_message(self):
+        # Heard: "Gmail works through Thunderbird." then the next question at once, cutting it off.
+        step = Mock(question='install_program', message='Install Thunderbird? Say yes or no.')
+        flow = Mock(); flow.start.return_value = step
+        with patch.object(companion, 'new_thunderbird_setup', Mock(return_value=flow)), \
+                patch.object(companion, 'THUNDERBIRD_SETUP', None), patch.object(companion, 'account_setup', False), \
+                patch.object(companion, 'sync_app_context'):
+            for phrase in ('Add my Gmail account.', 'add account|Gmail.'):
+                with self.subTest(phrase=phrase):
+                    self.said.clear(); companion.THUNDERBIRD_SETUP = None
+                    for part in phrase.split('|'):companion.handle(part, 'awake')
+                    self.assertEqual(self.said[-1], 'Gmail works through Thunderbird. Install Thunderbird? Say yes or no.')
+                    self.assertNotIn('Gmail works through Thunderbird.', self.said[:-1])
+                    # Repeat says the question alone.
+                    self.assertEqual(companion.THUNDERBIRD_SETUP['message'], 'Install Thunderbird? Say yes or no.')
+
+
 if __name__ == '__main__':
     unittest.main()
