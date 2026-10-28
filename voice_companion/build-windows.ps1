@@ -454,14 +454,26 @@ if ($Unattended) {
   Write-Output 'BUILD STAGE: Testing the updater helper with a silent installation.'
   $updateCheck = Join-Path $PSScriptRoot '.update-helper-check'
   New-Item -ItemType Directory -Path $updateCheck -Force | Out-Null
+  # Will's 0.2.171 update stopped because Setup could not close the browser hosts
+  # (Chrome and Thunderbird start them). Two run here, as on his computer.
+  $runningHosts = @(1..2 | ForEach-Object { Start-Process -FilePath (Join-Path $installedFolder 'VoiceCompanion-BrowserHost.exe') -WindowStyle Hidden -PassThru })
   try {
     & (Join-Path $PSScriptRoot 'apply-update.ps1') -InstallerPath $portableSetup -AppPath $installedApp -PreviousProcessId -1 -ExpectedHash (Get-FileHash $portableSetup -Algorithm SHA256).Hash -DataFolder $updateCheck -ReadyFile (Join-Path $updateCheck 'ready.json') -NoSpeech -NoRestart
     $updateResult = Get-Content (Join-Path $updateCheck 'update-result.json') -Raw | ConvertFrom-Json
-    if (-not $updateResult.succeeded) { throw 'The updater helper did not install successfully.' }
+    $updateLog = Get-Content -LiteralPath (Join-Path $updateCheck 'update-install-log.txt') -Raw -ErrorAction SilentlyContinue
+    if (-not $updateResult.succeeded) {
+      throw ('The updater helper did not install successfully: ' + $updateResult.error + "`n" + [string]$updateLog)
+    }
+    foreach ($runningHost in $runningHosts) { $runningHost.Refresh(); if (-not $runningHost.HasExited) { throw ('The update left a browser host running.' + "`n" + [string]$updateLog) } }
+    $leftOver = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($installedFolder + '\', [StringComparison]::OrdinalIgnoreCase) })
+    if ($leftOver.Count) { throw ('The update left Voice Companion programs running: ' + (($leftOver | ForEach-Object { $_.Name }) -join ', ')) }
+    if ($updateLog -notmatch 'Closing VoiceCompanion-BrowserHost.exe' -or $updateLog -notmatch '----- Setup log -----') { throw ('The update log does not show each step.' + "`n" + [string]$updateLog) }
+    if (-not (Test-Path (Join-Path $installedFolder 'browser-native-host.json')) -or (Test-Path (Join-Path $installedFolder 'browser-native-host.json.update-paused'))) { throw 'The browser connection was not registered again after the update.' }
     $installPercent = Get-Content (Join-Path $PSScriptRoot 'install-percent.txt') -Raw
     if ([int]$installPercent -lt 1) { throw 'Setup did not report installation progress.' }
     Write-Output 'Updater helper silent installation and progress checks passed.'
   } finally {
+    foreach ($runningHost in $runningHosts) { try { if (-not $runningHost.HasExited) { $runningHost.Kill() } } catch {} }
     Remove-Item $updateCheck -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $PSScriptRoot 'install-percent.txt') -Force -ErrorAction SilentlyContinue
   }
