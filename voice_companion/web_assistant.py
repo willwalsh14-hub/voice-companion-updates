@@ -67,8 +67,27 @@ def _label(item):
     return _plain(item.get('label') or item.get('text') or item.get('placeholder') or item.get('name'))
 
 
+DIGIT_WORDS={'zero':'0','oh':'0','o':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6','seven':'7','eight':'8','nine':'9'}
+
+
+def spoken_digits(spoken):
+    """'five five five, one two three four.' is '5551234'; None if it is not only digits.
+    Phone numbers, ZIP codes and PINs are said a digit at a time."""
+    words=re.findall(r"[a-z]+|\d+|[^\sa-z\d]",str(spoken).casefold())
+    digits=[]
+    for word in words:
+        if word.isdigit():digits.append(word)
+        elif word in DIGIT_WORDS:digits.append(DIGIT_WORDS[word])
+        elif word in ('dash','hyphen') or word in ',.-()':continue
+        else:return None
+    return ''.join(digits) or None
+
+
 def _voice_value(item,spoken,literal=False):
     if literal or item.get('type')=='password':return spoken
+    if item.get('type') in ('tel','number') or re.search(r'(?i)\b(?:phone|zip|postal|pin|code)\b',' '.join(str(item.get(k) or '') for k in ('label','name','autocomplete'))):
+        digits=spoken_digits(spoken)
+        if digits:return digits
     if editable_combo(item):
         # Searches and suggestions: a recognizer's closing period is not part of the query.
         return re.sub(r'(?<![.])[.!]$','',clean_dictation(spoken)).rstrip()
@@ -909,6 +928,8 @@ class BrowserBackend:
                 if dialog_notice:self.dialog_notice=''
                 if dialog_notice==LEAVE_NOTICE:raise WebError(LEAVE_NOTICE)
                 if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
+                # A page's own message ("Item added to cart") says what happened.
+                if dialog_notice and not request_errors:return {'unchanged':True,'notice':dialog_notice}
                 return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
@@ -1730,7 +1751,9 @@ class WebSession:
                     action=self.backend.activate(item)
                     same=self._same_page_result(before,action)
                     if same:return same
-                    message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
+                    unchanged=isinstance(action,dict) and action.get('unchanged') and not action.get('download')
+                    # Nothing moved: stay on the button, as a screen reader does.
+                    message=self._refresh(wait=False,read=False if isinstance(action,dict) and (action.get('validation') or unchanged) else None,preserve=bool(unchanged))
                     return (action.get('validation') or action.get('notice') or message) if isinstance(action,dict) else message
                 if role in ('link','button'):
                     if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
@@ -1844,7 +1867,7 @@ class WebSession:
             except ValueError as exc:return str(exc)
             value=self._spaced(value,literal)
             self._insert_field_text(value)
-            self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value
+            self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value.strip()
             if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
@@ -2044,6 +2067,9 @@ class WebSession:
                 self.engine_index=0;self.list_focus='search_engines'
                 return 'This search engine requires human verification. Choose another engine for the same search. '+self.engine_notice()+' Use arrows and Enter, or say Try Bing, Try Brave Search, or Try DuckDuckGo. Escape returns to the page. Your default stays unchanged.'
             return 'This site is asking for human verification. Use Tab and Shift Tab to reach its controls. Enter or Space activates the chosen control. Use the site’s accessibility challenge option when available. The website decides whether verification passes.'
+        if url.startswith(('chrome-error:','edge-error:')):
+            # The browser's own error page: the site could not be reached.
+            return 'This page could not open. Check your internet connection, then try again. Say go back to return to the last page.'
         if not self.address_allowed(url):
             return 'Use an HTTP or HTTPS page address.'
         if not str(self.snapshot.get('text', '')).strip():
@@ -2562,8 +2588,13 @@ class WebSession:
         if kind == 'password': state = 'Password field. Dictation or keyboard entry is available; its value is masked.'
         elif kind in ('checkbox','radio'): state = 'Checked.' if item.get('checked') else 'Not checked.'
         elif item.get('tag') == 'select': state = 'Selected ' + _plain(item.get('selected')) + '.'
-        elif item.get('tag') in ('input','textarea'): state = 'Current value ' + (_plain(item.get('value')) or 'blank') + '.'
+        elif item.get('tag') in ('input','textarea'):
+            value = _plain(item.get('value')) or 'blank'
+            state = 'Current value ' + value + ('' if value[-1] in '.!?' else '.')
         else: state = ''
+        # The words page reading uses, not code words such as textarea or tel.
+        if item.get('tag') == 'textarea' or item.get('tag') == 'input' and kind in ('text','search','email','tel','url','number','input'):
+            kind = 'edit field'
         return 'Focused ' + _plain(item.get('label')) + ', ' + kind + '. ' + state
 
     def handoff(self):
@@ -3015,6 +3046,9 @@ class WebSession:
         if command=='where am i' and not self.keyboard_field and self.snapshot and self.browse and self.browse.current():
             # In page view, the page and the place on it, as a screen reader says.
             return 'Page: '+_plain(self.snapshot.get('title') or self._host())+'. '+describe(self.browse.current(),self.browse.elements)
+        if command in ('where am i','read current field','what field am i on') and self.keyboard_field and text_field(self.keyboard_field):
+            # The box you are typing in, with what you have written so far (not yet on the page).
+            return self._describe_focus(dict(self.keyboard_field))
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None

@@ -246,7 +246,7 @@ class LivePageTests(LiveBase):
         self.assertEqual(self.page.locator('#loc').input_value(),'Houston')
 
 
-class LiveFieldDictationTests(LiveBase):
+class LiveFieldBase(LiveBase):
     """Dictating into web fields through the app, as with a microphone."""
     def setUp(self):
         super().setUp()
@@ -263,6 +263,9 @@ class LiveFieldDictationTests(LiveBase):
         self.spoken.clear();return app.handle(text,'web')
 
     def value(self,field):return self.page.locator(field).input_value()
+
+
+class LiveFieldDictationTests(LiveFieldBase):
 
     def test_dictation_new_line_and_more_dictation_keep_every_word(self):
         """After "new line", leaving the box replaced the whole message with one line break."""
@@ -305,3 +308,44 @@ class SelectAllCountTests(unittest.TestCase):
             document=VoiceDocument(Path(folder),_opening=True)
             document.append_text('Hello there.')
             self.assertEqual(document.process('select all'),'Selected all text in the document. 1 paragraph.')
+
+
+class LiveFieldReadingTests(LiveFieldBase):
+    def test_read_current_field_reads_what_you_dictated(self):
+        """It said "Current value blank." until the box was left, and called it a textarea."""
+        self.say('next edit field');self.say('next edit field')
+        self.say('I need help.');self.say('Thank you.')
+        self.say('read current field')
+        self.assertEqual(self.spoken,['Focused Message, edit field. Current value I need help. Thank you.'])
+
+    def test_phone_numbers_are_said_a_digit_at_a_time(self):
+        """A phone box said "That field needs private or precise keyboard entry."."""
+        self.page.set_content('<title>Call back</title><label for="p">Phone</label><input id="p" type="tel"><label for="z">ZIP code</label><input id="z"><button type="button">Done</button>')
+        self.session._refresh()
+        self.say('next edit field');self.say('five five five, one two three four.')
+        self.say('next edit field');self.say('Seven eight seven oh one.')
+        self.say('next button')
+        self.assertEqual(self.page.locator('#p').input_value(),'5551234');self.assertEqual(self.page.locator('#z').input_value(),'78701')
+
+
+class LiveActionTests(LiveBase):
+    def setUp(self):
+        super().setUp()
+        self.context.route('https://down.example/**',lambda route:route.abort('internetdisconnected'))
+        shop='<title>Shop</title><h1>Shop</h1><button onclick="alert(\'Item added to cart\')">Add to cart</button><button onclick="document.title=\'Done\'">Delete account</button><a href="https://down.example/">Broken site</a><a href="https://fixture.test/next">Next page</a>'
+        self.context.route('https://shop.test/**',lambda route:route.fulfill(content_type='text/html',body=shop))
+        self.page.goto('https://shop.test/');self.session._refresh()
+
+    def test_a_button_that_shows_a_message_keeps_your_place(self):
+        """After "Item added to cart", Next button went back to the first button on the page."""
+        self.session.command('next button')
+        self.assertEqual(self.session.command('activate current element'),'Page message: Item added to cart.')
+        self.assertEqual(self.session.command('next button'),'Delete account, button.')
+
+    def test_a_link_that_cannot_open_says_why_and_go_back_returns(self):
+        """With no internet, a link said "Use an HTTP or HTTPS page address." and lost the page."""
+        self.session.command('next link')
+        notice=self.session.command('activate current link')
+        self.assertEqual(notice,'This page could not open. Check your internet connection, then try again. Say go back to return to the last page.')
+        self.assertIn('Shop',self.session.command('go back'))
+        self.assertEqual(self.session.command('next link'),'Link Next page.')
