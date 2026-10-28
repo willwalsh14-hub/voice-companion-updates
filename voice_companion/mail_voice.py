@@ -447,7 +447,7 @@ class MailSession:
         if not self.attachments:
             return ''
         from mail_attachments import summary
-        return summary(self.attachments) + ' Press L to list them. '
+        return summary(self.attachments) + (' Press L to list it. ' if len(self.attachments) == 1 else ' Press L to list them. ')
 
     def set_format(self,format):
         if getattr(self,'body_format',None)==format or not hasattr(self,'body_content'):return

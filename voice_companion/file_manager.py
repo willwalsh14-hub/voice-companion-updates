@@ -284,7 +284,10 @@ class FileManager:
         if cmd in ('file manager help','help with file manager','help for file manager','help','commands'):return HELP
         if self.busy:
             if cmd in ('escape','go back','cancel') and not self.mutating:
-                self.view.cancel.set();self.job_id+=1;self.busy=False;return 'Opening canceled. '+self.say_current()
+                self.view.cancel.set();self.job_id+=1;self.busy=False
+                # Nothing has loaded yet: there is no folder to call empty.
+                if self.location is None and not self.items:return 'Opening canceled. Press F5 to load the drive list again, or Escape to leave File manager.'
+                return 'Opening canceled. '+self.say_current()
             return 'File manager is working. Please wait.'
         if self.pending:
             action,paths=self.pending

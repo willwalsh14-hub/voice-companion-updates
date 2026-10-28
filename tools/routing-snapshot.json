@@ -832,9 +832,27 @@
 ],
 "screen_after": "awake"
 },
+"awake | check mail": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
 "awake | check microsoft email": {
 "said": [
 "No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | check my email": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
+"awake | check my mail": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
 ],
 "screen_after": "awake"
 },
@@ -1692,6 +1710,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | go to email": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
 "awake | go to end of document": {
 "said": [
 "New Word document. Speak to write. Say name document followed by a title, or ask for document help."
@@ -1712,13 +1736,25 @@
 },
 "awake | go to inbox": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"No email account is selected. Say add account, or list email accounts."
 ],
 "screen_after": "awake"
 },
 "awake | go to main menu": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | go to my email": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
+"awake | go to my inbox": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
 ],
 "screen_after": "awake"
 },
@@ -1733,6 +1769,12 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"awake | go to the inbox": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
 },
 "awake | go to website": {
 "said": [
@@ -1808,7 +1850,7 @@
 },
 "awake | inbox": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"No email account is selected. Say add account, or list email accounts."
 ],
 "screen_after": "awake"
 },
@@ -2221,6 +2263,12 @@
 ],
 "screen_after": "web"
 },
+"awake | my inbox": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
 "awake | my notes": {
 "said": [
 "You have no saved notes yet. Say Write a note to start one."
@@ -2577,7 +2625,7 @@
 },
 "awake | open inbox": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"No email account is selected. Say add account, or list email accounts."
 ],
 "screen_after": "awake"
 },
@@ -2587,11 +2635,35 @@
 ],
 "screen_after": "awake"
 },
+"awake | open mail": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
 "awake | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"awake | open my email": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
+"awake | open my inbox": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
+"awake | open my mail": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
 },
 "awake | open my notes": {
 "said": [
@@ -2691,6 +2763,12 @@
 "awake | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "awake"
+},
+"awake | open the inbox": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
 ],
 "screen_after": "awake"
 },
@@ -3040,15 +3118,57 @@
 ],
 "screen_after": "awake"
 },
+"awake | read email": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
 "awake | read gmail": {
 "said": [
 "No Gmail address is connected. Gmail works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
+"awake | read mail": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
 "awake | read my email": {
 "said": [
 "No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
+"awake | read my mail": {
+"said": [
+"No email account is selected. Say add account, or list email accounts."
+],
+"screen_after": "awake"
+},
+"awake | read my note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | read my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | read note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | read notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -3061,6 +3181,12 @@
 "awake | read paragraph": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | read saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -5622,6 +5748,15 @@
 "Hello world. Second sentence. check gmail"
 ]
 },
+"document | check mail": {
+"said": [
+"check mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check mail"
+]
+},
 "document | check microsoft email": {
 "said": [
 "check microsoft email"
@@ -5629,6 +5764,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. check microsoft email"
+]
+},
+"document | check my email": {
+"said": [
+"check my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check my email"
+]
+},
+"document | check my mail": {
+"said": [
+"check my mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check my mail"
 ]
 },
 "document | check outlook": {
@@ -6887,6 +7040,15 @@
 "Hello world. Second sentence. go to bookmark"
 ]
 },
+"document | go to email": {
+"said": [
+"go to email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to email"
+]
+},
 "document | go to end of document": {
 "said": [
 "End of document. Hello world. Second sentence."
@@ -6932,6 +7094,24 @@
 "Hello world. Second sentence. go to main menu"
 ]
 },
+"document | go to my email": {
+"said": [
+"go to my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to my email"
+]
+},
+"document | go to my inbox": {
+"said": [
+"go to my inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to my inbox"
+]
+},
 "document | go to options": {
 "said": [
 "go to options"
@@ -6948,6 +7128,15 @@
 "screen_after": "sleep",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | go to the inbox": {
+"said": [
+"go to the inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to the inbox"
 ]
 },
 "document | go to website": {
@@ -7661,6 +7850,15 @@
 "Hello world. Second sentence. my favorites"
 ]
 },
+"document | my inbox": {
+"said": [
+"my inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. my inbox"
+]
+},
 "document | my notes": {
 "said": [
 "my notes"
@@ -8211,6 +8409,15 @@
 "Hello world. Second sentence. open link"
 ]
 },
+"document | open mail": {
+"said": [
+"open mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open mail"
+]
+},
 "document | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
@@ -8218,6 +8425,33 @@
 "screen_after": "help",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | open my email": {
+"said": [
+"open my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my email"
+]
+},
+"document | open my inbox": {
+"said": [
+"open my inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my inbox"
+]
+},
+"document | open my mail": {
+"said": [
+"open my mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my mail"
 ]
 },
 "document | open my notes": {
@@ -8367,6 +8601,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | open the inbox": {
+"said": [
+"open the inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open the inbox"
 ]
 },
 "document | open tutorial": {
@@ -8873,6 +9116,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | read email": {
+"said": [
+"read email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read email"
+]
+},
 "document | read gmail": {
 "said": [
 "read gmail"
@@ -8882,6 +9134,15 @@
 "Hello world. Second sentence. read gmail"
 ]
 },
+"document | read mail": {
+"said": [
+"read mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read mail"
+]
+},
 "document | read my email": {
 "said": [
 "read my email"
@@ -8889,6 +9150,51 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. read my email"
+]
+},
+"document | read my mail": {
+"said": [
+"read my mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read my mail"
+]
+},
+"document | read my note": {
+"said": [
+"read my note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read my note"
+]
+},
+"document | read my notes": {
+"said": [
+"read my notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read my notes"
+]
+},
+"document | read note": {
+"said": [
+"read note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read note"
+]
+},
+"document | read notes": {
+"said": [
+"read notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read notes"
 ]
 },
 "document | read outlook": {
@@ -8907,6 +9213,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | read saved notes": {
+"said": [
+"read saved notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read saved notes"
 ]
 },
 "document | read selection": {
@@ -12146,6 +12461,15 @@
 "Hello world. check gmail"
 ]
 },
+"email_draft | check mail": {
+"said": [
+"check mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check mail"
+]
+},
 "email_draft | check microsoft email": {
 "said": [
 "check microsoft email"
@@ -12153,6 +12477,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. check microsoft email"
+]
+},
+"email_draft | check my email": {
+"said": [
+"check my email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check my email"
+]
+},
+"email_draft | check my mail": {
+"said": [
+"check my mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check my mail"
 ]
 },
 "email_draft | check outlook": {
@@ -13449,6 +13791,15 @@
 "Hello world. go to bookmark"
 ]
 },
+"email_draft | go to email": {
+"said": [
+"go to email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go to email"
+]
+},
 "email_draft | go to end of document": {
 "said": [
 "End of document. Hello world."
@@ -13499,6 +13850,29 @@
 "Hello world. go to main menu"
 ]
 },
+"email_draft | go to my email": {
+"said": [
+"go to my email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go to my email"
+]
+},
+"email_draft | go to my inbox": {
+"calls": [
+"call.process('open inbox')",
+"call.pending.__bool__()"
+],
+"said": [
+"Draft canceled without saving.",
+"session handled: open inbox"
+],
+"screen_after": "mailbox",
+"text": [
+"Hello world."
+]
+},
 "email_draft | go to options": {
 "said": [
 "go to options"
@@ -13513,6 +13887,20 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep",
+"text": [
+"Hello world."
+]
+},
+"email_draft | go to the inbox": {
+"calls": [
+"call.process('open inbox')",
+"call.pending.__bool__()"
+],
+"said": [
+"Draft canceled without saving.",
+"session handled: open inbox"
+],
+"screen_after": "mailbox",
 "text": [
 "Hello world."
 ]
@@ -14235,6 +14623,15 @@
 "Hello world. my favorites"
 ]
 },
+"email_draft | my inbox": {
+"said": [
+"my inbox"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. my inbox"
+]
+},
 "email_draft | my notes": {
 "said": [
 "my notes"
@@ -14795,6 +15192,15 @@
 "Hello world. open link"
 ]
 },
+"email_draft | open mail": {
+"said": [
+"open mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open mail"
+]
+},
 "email_draft | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
@@ -14802,6 +15208,33 @@
 "screen_after": "help",
 "text": [
 "Hello world."
+]
+},
+"email_draft | open my email": {
+"said": [
+"open my email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my email"
+]
+},
+"email_draft | open my inbox": {
+"said": [
+"open my inbox"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my inbox"
+]
+},
+"email_draft | open my mail": {
+"said": [
+"open my mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my mail"
 ]
 },
 "email_draft | open my notes": {
@@ -14951,6 +15384,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | open the inbox": {
+"said": [
+"open the inbox"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open the inbox"
 ]
 },
 "email_draft | open tutorial": {
@@ -15457,6 +15899,15 @@
 "Hello world."
 ]
 },
+"email_draft | read email": {
+"said": [
+"read email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read email"
+]
+},
 "email_draft | read gmail": {
 "said": [
 "read gmail"
@@ -15466,6 +15917,15 @@
 "Hello world. read gmail"
 ]
 },
+"email_draft | read mail": {
+"said": [
+"read mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read mail"
+]
+},
 "email_draft | read my email": {
 "said": [
 "read my email"
@@ -15473,6 +15933,51 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. read my email"
+]
+},
+"email_draft | read my mail": {
+"said": [
+"read my mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read my mail"
+]
+},
+"email_draft | read my note": {
+"said": [
+"read my note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read my note"
+]
+},
+"email_draft | read my notes": {
+"said": [
+"read my notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read my notes"
+]
+},
+"email_draft | read note": {
+"said": [
+"read note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read note"
+]
+},
+"email_draft | read notes": {
+"said": [
+"read notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read notes"
 ]
 },
 "email_draft | read outlook": {
@@ -15491,6 +15996,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | read saved notes": {
+"said": [
+"read saved notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read saved notes"
 ]
 },
 "email_draft | read selection": {
@@ -18018,7 +18532,19 @@
 "said": [],
 "screen_after": "help"
 },
+"help | check mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | check microsoft email": {
+"said": [],
+"screen_after": "help"
+},
+"help | check my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | check my mail": {
 "said": [],
 "screen_after": "help"
 },
@@ -18607,6 +19133,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | go to email": {
+"said": [],
+"screen_after": "help"
+},
 "help | go to end of document": {
 "said": [],
 "screen_after": "help"
@@ -18627,6 +19157,14 @@
 "said": [],
 "screen_after": "help"
 },
+"help | go to my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | go to my inbox": {
+"said": [],
+"screen_after": "help"
+},
 "help | go to options": {
 "said": [],
 "screen_after": "help"
@@ -18636,6 +19174,10 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"help | go to the inbox": {
+"said": [],
+"screen_after": "help"
 },
 "help | go to website": {
 "said": [],
@@ -18977,6 +19519,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | my inbox": {
+"said": [],
+"screen_after": "help"
+},
 "help | my notes": {
 "said": [],
 "screen_after": "help"
@@ -19236,10 +19782,26 @@
 "said": [],
 "screen_after": "help"
 },
+"help | open mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | open manual": {
 "said": [
 "About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
+"screen_after": "help"
+},
+"help | open my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | open my inbox": {
+"said": [],
+"screen_after": "help"
+},
+"help | open my mail": {
+"said": [],
 "screen_after": "help"
 },
 "help | open my notes": {
@@ -19321,6 +19883,10 @@
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
 ],
+"screen_after": "help"
+},
+"help | open the inbox": {
+"said": [],
 "screen_after": "help"
 },
 "help | open tutorial": {
@@ -19572,11 +20138,39 @@
 "said": [],
 "screen_after": "help"
 },
+"help | read email": {
+"said": [],
+"screen_after": "help"
+},
 "help | read gmail": {
 "said": [],
 "screen_after": "help"
 },
+"help | read mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | read my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | read my mail": {
+"said": [],
+"screen_after": "help"
+},
+"help | read my note": {
+"said": [],
+"screen_after": "help"
+},
+"help | read my notes": {
+"said": [],
+"screen_after": "help"
+},
+"help | read note": {
+"said": [],
+"screen_after": "help"
+},
+"help | read notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -19585,6 +20179,10 @@
 "screen_after": "help"
 },
 "help | read paragraph": {
+"said": [],
+"screen_after": "help"
+},
+"help | read saved notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -21641,12 +22239,39 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | check mail": {
+"calls": [
+"call.process('check mail')"
+],
+"said": [
+"session handled: check mail"
+],
+"screen_after": "mailbox"
+},
 "mailbox | check microsoft email": {
 "calls": [
 "call.process('check microsoft email')"
 ],
 "said": [
 "session handled: check microsoft email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | check my email": {
+"calls": [
+"call.process('check my email')"
+],
+"said": [
+"session handled: check my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | check my mail": {
+"calls": [
+"call.process('check my mail')"
+],
+"said": [
+"session handled: check my mail"
 ],
 "screen_after": "mailbox"
 },
@@ -22781,6 +23406,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | go to email": {
+"calls": [
+"call.process('go to email')"
+],
+"said": [
+"session handled: go to email"
+],
+"screen_after": "mailbox"
+},
 "mailbox | go to end of document": {
 "calls": [
 "call.process('go to end of document')"
@@ -22823,6 +23457,24 @@
 ],
 "screen_after": "awake"
 },
+"mailbox | go to my email": {
+"calls": [
+"call.process('go to my email')"
+],
+"said": [
+"session handled: go to my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | go to my inbox": {
+"calls": [
+"call.process('go to my inbox')"
+],
+"said": [
+"session handled: go to my inbox"
+],
+"screen_after": "mailbox"
+},
 "mailbox | go to options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
@@ -22834,6 +23486,15 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"mailbox | go to the inbox": {
+"calls": [
+"call.process('go to the inbox')"
+],
+"said": [
+"session handled: go to the inbox"
+],
+"screen_after": "mailbox"
 },
 "mailbox | go to website": {
 "calls": [
@@ -23463,6 +24124,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | my inbox": {
+"calls": [
+"call.process('my inbox')"
+],
+"said": [
+"session handled: my inbox"
+],
+"screen_after": "mailbox"
+},
 "mailbox | my notes": {
 "calls": [
 "call.process('my notes')"
@@ -23966,11 +24636,47 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | open mail": {
+"calls": [
+"call.process('open mail')"
+],
+"said": [
+"session handled: open mail"
+],
+"screen_after": "mailbox"
+},
 "mailbox | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"mailbox | open my email": {
+"calls": [
+"call.process('open my email')"
+],
+"said": [
+"session handled: open my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open my inbox": {
+"calls": [
+"call.process('open my inbox')"
+],
+"said": [
+"session handled: open my inbox"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open my mail": {
+"calls": [
+"call.process('open my mail')"
+],
+"said": [
+"session handled: open my mail"
+],
+"screen_after": "mailbox"
 },
 "mailbox | open my notes": {
 "calls": [
@@ -24097,6 +24803,15 @@
 "mailbox | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "mailbox"
+},
+"mailbox | open the inbox": {
+"calls": [
+"call.process('open the inbox')"
+],
+"said": [
+"session handled: open the inbox"
 ],
 "screen_after": "mailbox"
 },
@@ -24547,6 +25262,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | read email": {
+"calls": [
+"call.process('read email')"
+],
+"said": [
+"session handled: read email"
+],
+"screen_after": "mailbox"
+},
 "mailbox | read gmail": {
 "calls": [
 "call.process('read gmail')"
@@ -24556,12 +25280,66 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | read mail": {
+"calls": [
+"call.process('read mail')"
+],
+"said": [
+"session handled: read mail"
+],
+"screen_after": "mailbox"
+},
 "mailbox | read my email": {
 "calls": [
 "call.process('read my email')"
 ],
 "said": [
 "session handled: read my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read my mail": {
+"calls": [
+"call.process('read my mail')"
+],
+"said": [
+"session handled: read my mail"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read my note": {
+"calls": [
+"call.process('read my note')"
+],
+"said": [
+"session handled: read my note"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read my notes": {
+"calls": [
+"call.process('read my notes')"
+],
+"said": [
+"session handled: read my notes"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read note": {
+"calls": [
+"call.process('read note')"
+],
+"said": [
+"session handled: read note"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read notes": {
+"calls": [
+"call.process('read notes')"
+],
+"said": [
+"session handled: read notes"
 ],
 "screen_after": "mailbox"
 },
@@ -24580,6 +25358,15 @@
 ],
 "said": [
 "session handled: read paragraph"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read saved notes": {
+"calls": [
+"call.process('read saved notes')"
+],
+"said": [
+"session handled: read saved notes"
 ],
 "screen_after": "mailbox"
 },
@@ -26774,7 +27561,7 @@
 },
 "note | back": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -26810,8 +27597,7 @@
 },
 "note | back to main menu": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"The note was empty, so nothing was saved. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -27097,9 +27883,27 @@
 ],
 "screen_after": "note"
 },
+"note | check mail": {
+"said": [
+"check mail"
+],
+"screen_after": "note"
+},
 "note | check microsoft email": {
 "said": [
 "check microsoft email"
+],
+"screen_after": "note"
+},
+"note | check my email": {
+"said": [
+"check my email"
+],
+"screen_after": "note"
+},
+"note | check my mail": {
+"said": [
+"check my mail"
 ],
 "screen_after": "note"
 },
@@ -27711,7 +28515,7 @@
 },
 "note | exit": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27747,7 +28551,7 @@
 },
 "note | exit note": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27916,7 +28720,7 @@
 },
 "note | go back": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27941,6 +28745,12 @@
 "note | go to bookmark": {
 "said": [
 "go to bookmark"
+],
+"screen_after": "note"
+},
+"note | go to email": {
+"said": [
+"go to email"
 ],
 "screen_after": "note"
 },
@@ -27974,6 +28784,18 @@
 ],
 "screen_after": "note"
 },
+"note | go to my email": {
+"said": [
+"go to my email"
+],
+"screen_after": "note"
+},
+"note | go to my inbox": {
+"said": [
+"go to my inbox"
+],
+"screen_after": "note"
+},
 "note | go to options": {
 "said": [
 "go to options"
@@ -27985,6 +28807,12 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"note | go to the inbox": {
+"said": [
+"go to the inbox"
+],
+"screen_after": "note"
 },
 "note | go to website": {
 "said": [
@@ -28354,8 +29182,7 @@
 },
 "note | main menu": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"The note was empty, so nothing was saved. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -28458,6 +29285,12 @@
 "note | my favorites": {
 "said": [
 "my favorites"
+],
+"screen_after": "note"
+},
+"note | my inbox": {
+"said": [
+"my inbox"
 ],
 "screen_after": "note"
 },
@@ -28827,11 +29660,35 @@
 ],
 "screen_after": "note"
 },
+"note | open mail": {
+"said": [
+"open mail"
+],
+"screen_after": "note"
+},
 "note | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"note | open my email": {
+"said": [
+"open my email"
+],
+"screen_after": "note"
+},
+"note | open my inbox": {
+"said": [
+"open my inbox"
+],
+"screen_after": "note"
+},
+"note | open my mail": {
+"said": [
+"open my mail"
+],
+"screen_after": "note"
 },
 "note | open my notes": {
 "said": [
@@ -28931,6 +29788,12 @@
 "note | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "note"
+},
+"note | open the inbox": {
+"said": [
+"open the inbox"
 ],
 "screen_after": "note"
 },
@@ -29270,15 +30133,57 @@
 ],
 "screen_after": "note"
 },
+"note | read email": {
+"said": [
+"read email"
+],
+"screen_after": "note"
+},
 "note | read gmail": {
 "said": [
 "read gmail"
 ],
 "screen_after": "note"
 },
+"note | read mail": {
+"said": [
+"read mail"
+],
+"screen_after": "note"
+},
 "note | read my email": {
 "said": [
 "read my email"
+],
+"screen_after": "note"
+},
+"note | read my mail": {
+"said": [
+"read my mail"
+],
+"screen_after": "note"
+},
+"note | read my note": {
+"said": [
+"read my note"
+],
+"screen_after": "note"
+},
+"note | read my notes": {
+"said": [
+"read my notes"
+],
+"screen_after": "note"
+},
+"note | read note": {
+"said": [
+"read note"
+],
+"screen_after": "note"
+},
+"note | read notes": {
+"said": [
+"read notes"
 ],
 "screen_after": "note"
 },
@@ -29291,6 +30196,12 @@
 "note | read paragraph": {
 "said": [
 "There is no text to read."
+],
+"screen_after": "note"
+},
+"note | read saved notes": {
+"said": [
+"read saved notes"
 ],
 "screen_after": "note"
 },
@@ -31813,6 +32724,16 @@
 ],
 "screen_after": "web"
 },
+"web | check mail": {
+"calls": [
+"call.command('check mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: check mail"
+],
+"screen_after": "web"
+},
 "web | check microsoft email": {
 "calls": [
 "call.command('check microsoft email')",
@@ -31820,6 +32741,26 @@
 ],
 "said": [
 "session handled: check microsoft email"
+],
+"screen_after": "web"
+},
+"web | check my email": {
+"calls": [
+"call.command('check my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: check my email"
+],
+"screen_after": "web"
+},
+"web | check my mail": {
+"calls": [
+"call.command('check my mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: check my mail"
 ],
 "screen_after": "web"
 },
@@ -33058,6 +33999,16 @@
 ],
 "screen_after": "browser_menu"
 },
+"web | go to email": {
+"calls": [
+"call.command('go to email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to email"
+],
+"screen_after": "web"
+},
 "web | go to end of document": {
 "calls": [
 "call.command('go to end of document')",
@@ -33108,6 +34059,26 @@
 ],
 "screen_after": "web"
 },
+"web | go to my email": {
+"calls": [
+"call.command('go to my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to my email"
+],
+"screen_after": "web"
+},
+"web | go to my inbox": {
+"calls": [
+"call.command('go to my inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to my inbox"
+],
+"screen_after": "web"
+},
 "web | go to options": {
 "calls": [
 "call.command('go to options')",
@@ -33123,6 +34094,16 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"web | go to the inbox": {
+"calls": [
+"call.command('go to the inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to the inbox"
+],
+"screen_after": "web"
 },
 "web | go to website": {
 "calls": [
@@ -33831,6 +34812,16 @@
 ],
 "screen_after": "web"
 },
+"web | my inbox": {
+"calls": [
+"call.command('my inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: my inbox"
+],
+"screen_after": "web"
+},
 "web | my notes": {
 "calls": [
 "call.command('my notes')",
@@ -34385,11 +35376,51 @@
 ],
 "screen_after": "web"
 },
+"web | open mail": {
+"calls": [
+"call.command('open mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open mail"
+],
+"screen_after": "web"
+},
 "web | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"web | open my email": {
+"calls": [
+"call.command('open my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my email"
+],
+"screen_after": "web"
+},
+"web | open my inbox": {
+"calls": [
+"call.command('open my inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my inbox"
+],
+"screen_after": "web"
+},
+"web | open my mail": {
+"calls": [
+"call.command('open my mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my mail"
+],
+"screen_after": "web"
 },
 "web | open my notes": {
 "calls": [
@@ -34529,6 +35560,16 @@
 "web | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "web"
+},
+"web | open the inbox": {
+"calls": [
+"call.command('open the inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open the inbox"
 ],
 "screen_after": "web"
 },
@@ -35024,6 +36065,16 @@
 ],
 "screen_after": "web"
 },
+"web | read email": {
+"calls": [
+"call.command('read email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read email"
+],
+"screen_after": "web"
+},
 "web | read gmail": {
 "calls": [
 "call.command('read gmail')",
@@ -35034,6 +36085,16 @@
 ],
 "screen_after": "web"
 },
+"web | read mail": {
+"calls": [
+"call.command('read mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read mail"
+],
+"screen_after": "web"
+},
 "web | read my email": {
 "calls": [
 "call.command('read my email')",
@@ -35041,6 +36102,56 @@
 ],
 "said": [
 "session handled: read my email"
+],
+"screen_after": "web"
+},
+"web | read my mail": {
+"calls": [
+"call.command('read my mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read my mail"
+],
+"screen_after": "web"
+},
+"web | read my note": {
+"calls": [
+"call.command('read my note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read my note"
+],
+"screen_after": "web"
+},
+"web | read my notes": {
+"calls": [
+"call.command('read my notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read my notes"
+],
+"screen_after": "web"
+},
+"web | read note": {
+"calls": [
+"call.command('read note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read note"
+],
+"screen_after": "web"
+},
+"web | read notes": {
+"calls": [
+"call.command('read notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read notes"
 ],
 "screen_after": "web"
 },
@@ -35061,6 +36172,16 @@
 ],
 "said": [
 "session handled: read paragraph"
+],
+"screen_after": "web"
+},
+"web | read saved notes": {
+"calls": [
+"call.command('read saved notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read saved notes"
 ],
 "screen_after": "web"
 },

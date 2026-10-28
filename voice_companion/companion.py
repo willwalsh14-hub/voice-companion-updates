@@ -619,7 +619,8 @@ def menu_state(mode):
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
     if VOICE_PICK_INDEX is not None:
         return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
-    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending:
+    # While a folder loads, the arrows say Please wait (FileManager.command), not End of list.
+    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending and not FILE_MANAGER.busy:
         names=FILE_MANAGER.labels()
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
@@ -1770,32 +1771,33 @@ def recover_audio_overflow(recognizer, utterance):
     return True
 
 
-def save_note(text):
+def save_note(text, say=None):
     """Save the note being written. Returns False, keeping the text, if it could not be saved."""
     global OPEN_NOTE
+    say = say or speak
     opened = OPEN_NOTE
     try:
         if opened is not None and not text.strip():
             OPEN_NOTE = None
-            speak('The note is empty, so your saved note was not changed.')
+            say('The note is empty, so your saved note was not changed.')
             return True
         if opened is not None and notepad.replace(APP, opened, text):
             OPEN_NOTE = None
-            speak('Saved your note.')
+            say('Saved your note.')
             return True
         notepad.add(APP, text)
     except OSError:
-        speak('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
+        say('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
         return False
     OPEN_NOTE = None
-    speak('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
+    say('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
     return True
 
 
-def flush_note(mode):
+def flush_note(mode, say=None):
     """Save a note in progress. Returns False if it could not be saved."""
     if mode == 'note' and note_buffer:
-        if save_note(' '.join(note_buffer)) is False:
+        if (save_note(' '.join(note_buffer), say) if say else save_note(' '.join(note_buffer))) is False:
             return False
         note_buffer.clear()
         note_selection.text = None
@@ -3084,7 +3086,8 @@ def _handle(text, mode, typed=False):
     NOTE_LIST_COMMANDS = ('list notes', 'list my notes', 'list saved notes', 'list the notes', 'open notes', 'open my notes',
                           'open a note', 'open note', 'open saved notes', 'open a saved note', 'open saved note',
                           'show notes', 'show my notes', 'show saved notes')
-    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have')
+    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have',
+                                              'read note', 'read notes', 'read my note', 'read my notes', 'read saved notes')
     command=normalized_command(text)
     if text=='@microphone':
         return set_microphone(MICROPHONE_OFF, mode)
@@ -4063,7 +4066,13 @@ def _handle(text, mode, typed=False):
                   'That account is not connected. Say add account or list email accounts.')
             return mode
         return switch_mail_account(*matches[0], mode)
-    if command in ('email', 'my email', 'open email'):
+    # Everyday words for the inbox, as a new user says them ("Open the inbox.", "Check my mail.").
+    # In a document, email or note they are text you are writing. In the inbox and on a web
+    # page they keep going to the mailbox or the page (a webmail page has its own Inbox).
+    if command in ('email', 'my email', 'open email') or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
+            'open my email', 'go to email', 'go to my email', 'inbox', 'my inbox', 'open inbox', 'open the inbox',
+            'open my inbox', 'go to inbox', 'go to the inbox', 'go to my inbox', 'check my email', 'check mail',
+            'check my mail', 'read email', 'read mail', 'read my mail', 'open mail', 'open my mail'):
         selected = store.selected()
         if not selected:
             speak_prompt('No email account is selected. Say add account, or list email accounts.')
@@ -4370,12 +4379,19 @@ def _handle(text, mode, typed=False):
             OPEN_NOTE = None
             return open_saved_note(number[1], mode)
         if command in ('go back', 'back', 'exit', 'exit note', 'main menu', 'back to main menu'):
-            if not flush_note(mode):return mode
+            # One message: what happened to the note, then where you are. A second
+            # message would cut off the first; an empty note was never "saved".
+            said = []
+            had_words = bool(note_buffer)
+            if not flush_note(mode, said.append):
+                speak(' '.join(said));return mode
+            lead = (' '.join(said) or 'Note saved.') if had_words else ('The note was empty, so nothing was saved.' if OPEN_NOTE is None else
+                                                    'The note is empty, so your saved note was not changed.')
             OPEN_NOTE = None
             if command in ('main menu', 'back to main menu'):
-                speak('Note saved.');return 'awake'
+                MAIN_MENU_LEAD = lead;return 'awake'
             # Escape and Go back return to the Notepad menu, as a document returns to Word processor.
-            return task_navigation().enter('notepad_menu', 'Note saved. Notepad menu')
+            return task_navigation().enter('notepad_menu', lead + ' Notepad menu')
         if command in ('save note', 'finish note', 'done dictating'):
             if note_buffer:
                 if save_note(' '.join(note_buffer)) is False:return mode
