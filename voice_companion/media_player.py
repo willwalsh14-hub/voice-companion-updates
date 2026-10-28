@@ -120,7 +120,10 @@ class MediaPlayer:
             // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
             window.voiceCompanionDucked=ducked;
             let a=document.getElementById('audio');
-            if(a.tagName!==(video?'VIDEO':'AUDIO')){
+            // After a stream that failed, its element can keep aborting the next fetch (Firefox:
+            // "The fetching process for the media resource was aborted"), so the next station failed
+            // too. A fresh element is used after any failed start, and when the kind changes.
+            if(a.tagName!==(video?'VIDEO':'AUDIO')||window.voiceCompanionFailedStart){
                 const replacement=document.createElement(video?'video':'audio');
                 replacement.id='audio';replacement.controls=true;replacement.preload='none';
                 a.pause();a.replaceWith(replacement);audio=replacement;a=replacement;
@@ -142,11 +145,14 @@ class MediaPlayer:
                         try{await a.play();return true;}
                         catch(error){window.voiceCompanionStartError=(error&&error.name||'Error')+': '+(error&&error.message||'');
                             if(!error||error.name!=='AbortError')return false;
-                            await new Promise(resolve=>setTimeout(resolve,150));}
+                            await new Promise(resolve=>setTimeout(resolve,150));
+                            // Start the fetch again before the next try.
+                            a.src=url;a.load();}
                     }
                     return false;
                 };
                 const started=await Promise.race([attempt(),new Promise(resolve=>{timer=setTimeout(()=>{window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
+                window.voiceCompanionFailedStart=!started;
                 if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
                 return started;
             } finally {clearTimeout(timer);}
