@@ -92,6 +92,10 @@ def _confirmation(m, mode, value):
     if mode == 'calendar':
         import calendar_screen
         choices = tuple(calendar_screen.CHOICES)
+    if mode == 'draft_leave':
+        import draft_leave
+        if choice in draft_leave.CHOICES:
+            return [draft_leave.NAMES[c] for c in draft_leave.CHOICES], draft_leave.CHOICES.index(choice)
     if choice not in choices:
         return None
     names = {'this one': 'This one only', 'all': 'All of them'}

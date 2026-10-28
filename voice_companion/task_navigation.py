@@ -427,7 +427,7 @@ class TaskNavigation:
         if text.startswith('@prompt:'):
             # A direct key for a command that needs a value, such as Ctrl+F in Document reader.
             return self.action(text[len('@prompt:'):], mode)
-        if mode in ('document_name','document_save','document_replace','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
+        if mode in ('document_name','document_save','document_replace','draft_leave','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
         if mode=='files' and m.FILE_MANAGER and m.FILE_MANAGER.pending:return None
         if m.NAMED_LIST:return None
         if mode=='browser_menu' and m.web_session and m.web_session.menu.level=='name':return None
