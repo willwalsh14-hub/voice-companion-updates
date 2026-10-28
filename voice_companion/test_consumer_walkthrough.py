@@ -388,5 +388,20 @@ class ContactPhoneTests(__import__('test_contacts_screen').CompanionHarness):
         self.assertTrue(self.said().startswith('That does not look like a phone number.'), self.said())
 
 
+class AddEventFromMainMenuTests(__import__('test_calendar_screen').CalendarHarness):
+    def test_add_an_event_from_the_main_menu_is_one_message(self):
+        # Heard: the whole Calendar announcement, then "New event. When is it?" at once,
+        # so the first was cut off by the second.
+        self.speech.reset_mock()
+        self.assertEqual(companion.handle('Add an event.', 'awake'), 'task_input')
+        self.assertEqual([str(c.args[0]) for c in self.speech.call_args_list],
+                         ['New event. When is it? For example, say tomorrow at 3 PM, or Friday all day. Escape cancels.'])
+
+    def test_everything_at_once_is_one_message_too(self):
+        self.speech.reset_mock()
+        self.assertEqual(companion.handle('Add appointment tomorrow at 3 PM called doctor.', 'awake'), 'calendar')
+        self.assertEqual(len(self.speech.call_args_list), 1, self.speech.call_args_list)
+
+
 if __name__ == '__main__':
     unittest.main()

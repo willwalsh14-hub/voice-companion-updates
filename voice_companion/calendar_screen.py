@@ -125,12 +125,16 @@ def current():
     return EVENTS[INDEX] if EVENTS and 0 <= INDEX < len(EVENTS) else None
 
 
-def open_screen(m, mode=None, day=None):
+def open_screen(m, mode=None, day=None, quiet=False):
+    """quiet: open on the day without saying it, when the next question is said at once
+    ("Add an event." from the main menu); a second message would cut off the first."""
     reset()
     if not thunderbird_pim.usable(m.APP):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode or 'awake'
-    m.speak('Calendar. ' + show(m, day or today(m), opening=True))
+    words = show(m, day or today(m), opening=True)
+    if not quiet:
+        m.speak('Calendar. ' + words)
     return MODE
 
 
@@ -198,7 +202,7 @@ def handle(m, text, mode, typed=False):
             return open_screen(m, mode)
         if mode == 'awake' and (ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule')
                                 and command not in ('add', 'new', 'create', 'schedule') or ADD_START.match(command)):
-            opened = open_screen(m, mode)
+            opened = open_screen(m, mode, quiet=True)
             if opened != MODE:
                 return opened
             return start_adding(m, raw)
