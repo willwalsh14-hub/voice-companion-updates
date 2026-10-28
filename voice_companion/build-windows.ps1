@@ -183,7 +183,7 @@ if ($releaseTests.ExitCode -ne 0) {
   throw "The document, email, or browser release checks failed. See $releaseErrors"
 }
 Remove-Item Env:VOICE_COMPANION_WINDOW_TESTS_APART
-foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests','test_alt_keys_window.AltKeyWindowTests','test_save_as_window.SaveAsKeyWindowTests')) {
+foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests','test_alt_keys_window.AltKeyWindowTests','test_save_as_window.SaveAsKeyWindowTests','test_now_playing_window.WindowNowPlayingKeyTests')) {
   if ((Invoke-UnitTests ('Window key tests ' + $windowTests) @('-v', $windowTests)) -ne 0) { throw ('The real window key tests failed: ' + $windowTests + '. See the annotation.') }
 }
 & $python prepare_espeak.py (Join-Path $PSScriptRoot 'espeak')
@@ -218,7 +218,7 @@ $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
 if ($LASTEXITCODE -ne 0) { throw 'The Firefox engine for the audio player could not be installed.' }
 $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-$audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audio')
+$audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audio','test_radio_stream_live')
 if ($audioResult -ne 0) { throw 'The audio player checks failed.' }
 # Page checks run in Playwright's Chromium (prepared above for the extension checks).
 $env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
