@@ -274,7 +274,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Save as
 
 - Voice: "Save as"
-- Keyboard: Ctrl+Shift+S
+- Keyboard: F12
 - Status: Both
 
 ### Rename

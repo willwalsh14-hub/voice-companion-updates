@@ -564,9 +564,9 @@
 },
 "awake | beginning of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | beginning of list": {
 "said": [
@@ -924,9 +924,9 @@
 },
 "awake | close document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | close email": {
 "said": [
@@ -1132,15 +1132,15 @@
 },
 "awake | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | create email": {
 "said": [
@@ -1322,6 +1322,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | do not replace": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | do not send": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1330,9 +1336,9 @@
 },
 "awake | document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | document help": {
 "said": [
@@ -1420,9 +1426,9 @@
 },
 "awake | end of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | end of list": {
 "said": [
@@ -1468,15 +1474,15 @@
 },
 "awake | exit document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | exit document mode": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | exit email": {
 "said": [
@@ -1682,9 +1688,9 @@
 },
 "awake | go to beginning of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | go to bookmark": {
 "said": [
@@ -1694,9 +1700,9 @@
 },
 "awake | go to end of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | go to favorite": {
 "said": [
@@ -1878,6 +1884,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | keep it": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | last item": {
 "said": [
 "Exit Voice Companion (E), 15 of 15."
@@ -1892,9 +1904,9 @@
 },
 "awake | leave document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | leave email": {
 "said": [
@@ -2247,9 +2259,9 @@
 },
 "awake | name document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | never mind": {
 "said": [
@@ -2271,9 +2283,9 @@
 },
 "awake | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | new email": {
 "said": [
@@ -3179,9 +3191,9 @@
 },
 "awake | rename document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | rename favorite": {
 "said": [
@@ -3196,6 +3208,18 @@
 "screen_after": "awake"
 },
 "awake | repeat that": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | replace": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | replace it": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -3285,9 +3309,9 @@
 },
 "awake | save document as": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | save favorite": {
 "said": [
@@ -3300,6 +3324,12 @@
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
+},
+"awake | save my document as": {
+"said": [
+"Please say or type the name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name"
 },
 "awake | save note": {
 "said": [
@@ -3318,6 +3348,18 @@
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
+},
+"awake | save the document as": {
+"said": [
+"Please say or type the name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name"
+},
+"awake | save this document as": {
+"said": [
+"Please say or type the name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name"
 },
 "awake | saved notes": {
 "said": [
@@ -3875,9 +3917,9 @@
 },
 "awake | top of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | turn off auto downloads": {
 "said": [
@@ -4265,9 +4307,9 @@
 },
 "awake | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | write a message": {
 "said": [
@@ -4368,6 +4410,12 @@
 "awake | yes please": {
 "said": [
 "Say next or previous to choose an option."
+],
+"screen_after": "awake"
+},
+"awake | yes replace it": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -6061,18 +6109,18 @@
 },
 "document | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
 },
 "document | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
@@ -6345,6 +6393,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. do it"
+]
+},
+"document | do not replace": {
+"said": [
+"do not replace"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. do not replace"
 ]
 },
 "document | do not send": {
@@ -7166,6 +7223,15 @@
 "Hello world. Second sentence. items"
 ]
 },
+"document | keep it": {
+"said": [
+"keep it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. keep it"
+]
+},
 "document | last item": {
 "said": [
 "last item"
@@ -7735,9 +7801,9 @@
 },
 "document | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
@@ -9112,6 +9178,24 @@
 "Hello world. Second sentence. repeat that"
 ]
 },
+"document | replace": {
+"said": [
+"replace"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. replace"
+]
+},
+"document | replace it": {
+"said": [
+"replace it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. replace it"
+]
+},
 "document | replace paragraph with New text": {
 "said": [
 "Replaced the paragraph with: New text"
@@ -9229,7 +9313,7 @@
 },
 "document | save as": {
 "said": [
-"Name this document. Say or type its name, then press Enter."
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
 ],
 "screen_after": "document_name",
 "text": [
@@ -9238,7 +9322,7 @@
 },
 "document | save document as": {
 "said": [
-"Name this document. Say or type its name, then press Enter."
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
 ],
 "screen_after": "document_name",
 "text": [
@@ -9261,6 +9345,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. save favorite as"
+]
+},
+"document | save my document as": {
+"said": [
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | save note": {
@@ -9288,6 +9381,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. save preset as"
+]
+},
+"document | save the document as": {
+"said": [
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | save this document as": {
+"said": [
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | saved notes": {
@@ -10640,9 +10751,9 @@
 },
 "document | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
@@ -10798,6 +10909,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. yes please"
+]
+},
+"document | yes replace it": {
+"said": [
+"yes replace it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. yes replace it"
 ]
 },
 "document | yes send email": {
@@ -11522,7 +11642,7 @@
 },
 "email_draft | attachments": {
 "said": [
-"This email has no attachments. Say attach a file, or press Control+T."
+"This email has no attachments. Say attach a file, or press Control+O."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -12586,18 +12706,18 @@
 },
 "email_draft | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
 },
 "email_draft | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
@@ -12900,6 +13020,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. do it"
+]
+},
+"email_draft | do not replace": {
+"said": [
+"do not replace"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. do not replace"
 ]
 },
 "email_draft | do not send": {
@@ -13738,6 +13867,15 @@
 "Hello world. items"
 ]
 },
+"email_draft | keep it": {
+"said": [
+"keep it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. keep it"
+]
+},
 "email_draft | last item": {
 "said": [
 "last item"
@@ -14319,9 +14457,9 @@
 },
 "email_draft | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
@@ -15696,6 +15834,24 @@
 "Hello world. repeat that"
 ]
 },
+"email_draft | replace": {
+"said": [
+"replace"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. replace"
+]
+},
+"email_draft | replace it": {
+"said": [
+"replace it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. replace it"
+]
+},
 "email_draft | replace paragraph with New text": {
 "said": [
 "Replaced the paragraph with: New text"
@@ -15852,6 +16008,15 @@
 "Hello world. save favorite as"
 ]
 },
+"email_draft | save my document as": {
+"said": [
+"Please say a document name after the naming command."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | save note": {
 "said": [
 "save note"
@@ -15877,6 +16042,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. save preset as"
+]
+},
+"email_draft | save the document as": {
+"said": [
+"Please say a document name after the naming command."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | save this document as": {
+"said": [
+"Please say a document name after the naming command."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | saved notes": {
@@ -17229,9 +17412,9 @@
 },
 "email_draft | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
@@ -17387,6 +17570,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | yes replace it": {
+"said": [
+"yes replace it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. yes replace it"
 ]
 },
 "email_draft | yes send email": {
@@ -18357,6 +18549,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | do not replace": {
+"said": [],
+"screen_after": "help"
+},
 "help | do not send": {
 "said": [],
 "screen_after": "help"
@@ -18742,6 +18938,10 @@
 "screen_after": "help"
 },
 "help | items": {
+"said": [],
+"screen_after": "help"
+},
+"help | keep it": {
 "said": [],
 "screen_after": "help"
 },
@@ -19685,6 +19885,14 @@
 "said": [],
 "screen_after": "help"
 },
+"help | replace": {
+"said": [],
+"screen_after": "help"
+},
+"help | replace it": {
+"said": [],
+"screen_after": "help"
+},
 "help | replace paragraph with New text": {
 "said": [],
 "screen_after": "help"
@@ -19757,6 +19965,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | save my document as": {
+"said": [],
+"screen_after": "help"
+},
 "help | save note": {
 "said": [],
 "screen_after": "help"
@@ -19766,6 +19978,14 @@
 "screen_after": "help"
 },
 "help | save preset as": {
+"said": [],
+"screen_after": "help"
+},
+"help | save the document as": {
+"said": [],
+"screen_after": "help"
+},
+"help | save this document as": {
 "said": [],
 "screen_after": "help"
 },
@@ -20502,6 +20722,10 @@
 "screen_after": "help"
 },
 "help | yes please": {
+"said": [],
+"screen_after": "help"
+},
+"help | yes replace it": {
 "said": [],
 "screen_after": "help"
 },
@@ -22028,15 +22252,15 @@
 },
 "mailbox | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | create email": {
 "said": [
@@ -22260,6 +22484,15 @@
 ],
 "said": [
 "session handled: do it"
+],
+"screen_after": "mailbox"
+},
+"mailbox | do not replace": {
+"calls": [
+"call.process('do not replace')"
+],
+"said": [
+"session handled: do not replace"
 ],
 "screen_after": "mailbox"
 },
@@ -23031,6 +23264,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | keep it": {
+"calls": [
+"call.process('keep it')"
+],
+"said": [
+"session handled: keep it"
+],
+"screen_after": "mailbox"
+},
 "mailbox | last item": {
 "calls": [
 "call.process('last item')"
@@ -23531,9 +23773,9 @@
 },
 "mailbox | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | new email": {
 "said": [
@@ -24759,6 +25001,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | replace": {
+"calls": [
+"call.process('replace')"
+],
+"said": [
+"session handled: replace"
+],
+"screen_after": "mailbox"
+},
+"mailbox | replace it": {
+"calls": [
+"call.process('replace it')"
+],
+"said": [
+"session handled: replace it"
+],
+"screen_after": "mailbox"
+},
 "mailbox | replace paragraph with New text": {
 "calls": [
 "call.process('replace paragraph with New text')"
@@ -24906,6 +25166,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | save my document as": {
+"calls": [
+"call.process('save my document as')"
+],
+"said": [
+"session handled: save my document as"
+],
+"screen_after": "mailbox"
+},
 "mailbox | save note": {
 "calls": [
 "call.process('save note')"
@@ -24927,6 +25196,24 @@
 ],
 "said": [
 "session handled: save preset as"
+],
+"screen_after": "mailbox"
+},
+"mailbox | save the document as": {
+"calls": [
+"call.process('save the document as')"
+],
+"said": [
+"session handled: save the document as"
+],
+"screen_after": "mailbox"
+},
+"mailbox | save this document as": {
+"calls": [
+"call.process('save this document as')"
+],
+"said": [
+"session handled: save this document as"
 ],
 "screen_after": "mailbox"
 },
@@ -26106,9 +26393,9 @@
 },
 "mailbox | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | write a message": {
 "said": [
@@ -26244,6 +26531,15 @@
 ],
 "said": [
 "session handled: yes please"
+],
+"screen_after": "mailbox"
+},
+"mailbox | yes replace it": {
+"calls": [
+"call.process('yes replace it')"
+],
+"said": [
+"session handled: yes replace it"
 ],
 "screen_after": "mailbox"
 },
@@ -27392,15 +27688,15 @@
 },
 "note | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | create email": {
 "said": [
@@ -27579,6 +27875,12 @@
 "note | do it": {
 "said": [
 "do it"
+],
+"screen_after": "note"
+},
+"note | do not replace": {
+"said": [
+"do not replace"
 ],
 "screen_after": "note"
 },
@@ -28130,6 +28432,12 @@
 ],
 "screen_after": "note"
 },
+"note | keep it": {
+"said": [
+"keep it"
+],
+"screen_after": "note"
+},
 "note | last item": {
 "said": [
 "last item"
@@ -28511,9 +28819,9 @@
 },
 "note | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | new email": {
 "said": [
@@ -29431,6 +29739,18 @@
 ],
 "screen_after": "note"
 },
+"note | replace": {
+"said": [
+"replace"
+],
+"screen_after": "note"
+},
+"note | replace it": {
+"said": [
+"replace it"
+],
+"screen_after": "note"
+},
 "note | replace paragraph with New text": {
 "said": [
 "replace paragraph with New text"
@@ -29531,6 +29851,12 @@
 ],
 "screen_after": "note"
 },
+"note | save my document as": {
+"said": [
+"save my document as"
+],
+"screen_after": "note"
+},
 "note | save note": {
 "said": [
 "The note was empty.",
@@ -29547,6 +29873,18 @@
 "note | save preset as": {
 "said": [
 "save preset as"
+],
+"screen_after": "note"
+},
+"note | save the document as": {
+"said": [
+"save the document as"
+],
+"screen_after": "note"
+},
+"note | save this document as": {
+"said": [
+"save this document as"
 ],
 "screen_after": "note"
 },
@@ -30450,9 +30788,9 @@
 },
 "note | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | write a message": {
 "said": [
@@ -30553,6 +30891,12 @@
 "note | yes please": {
 "said": [
 "yes please"
+],
+"screen_after": "note"
+},
+"note | yes replace it": {
+"said": [
+"yes replace it"
 ],
 "screen_after": "note"
 },
@@ -32226,15 +32570,15 @@
 },
 "web | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | create email": {
 "said": [
@@ -32477,6 +32821,16 @@
 ],
 "said": [
 "session handled: do it"
+],
+"screen_after": "web"
+},
+"web | do not replace": {
+"calls": [
+"call.command('do not replace')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: do not replace"
 ],
 "screen_after": "web"
 },
@@ -33336,6 +33690,16 @@
 ],
 "screen_after": "web"
 },
+"web | keep it": {
+"calls": [
+"call.command('keep it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: keep it"
+],
+"screen_after": "web"
+},
 "web | last item": {
 "calls": [
 "call.command('last item')",
@@ -33909,9 +34273,9 @@
 },
 "web | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | new email": {
 "said": [
@@ -35257,6 +35621,26 @@
 ],
 "screen_after": "web"
 },
+"web | replace": {
+"calls": [
+"call.command('replace')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: replace"
+],
+"screen_after": "web"
+},
+"web | replace it": {
+"calls": [
+"call.command('replace it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: replace it"
+],
+"screen_after": "web"
+},
 "web | replace paragraph with New text": {
 "calls": [
 "call.command('replace paragraph with New text')",
@@ -35413,6 +35797,16 @@
 ],
 "screen_after": "web"
 },
+"web | save my document as": {
+"calls": [
+"call.command('save my document as')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: save my document as"
+],
+"screen_after": "web"
+},
 "web | save note": {
 "calls": [
 "call.command('save note')",
@@ -35440,6 +35834,26 @@
 ],
 "said": [
 "session handled: save preset as"
+],
+"screen_after": "web"
+},
+"web | save the document as": {
+"calls": [
+"call.command('save the document as')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: save the document as"
+],
+"screen_after": "web"
+},
+"web | save this document as": {
+"calls": [
+"call.command('save this document as')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: save this document as"
 ],
 "screen_after": "web"
 },
@@ -36692,9 +37106,9 @@
 },
 "web | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | write a message": {
 "said": [
@@ -36839,6 +37253,16 @@
 ],
 "said": [
 "session handled: yes please"
+],
+"screen_after": "web"
+},
+"web | yes replace it": {
+"calls": [
+"call.command('yes replace it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: yes replace it"
 ],
 "screen_after": "web"
 },

@@ -9,7 +9,7 @@ MEDIA_TYPES = {'.mp3', '.wav', '.ogg', '.oga', '.opus', '.flac', '.m4a', '.aac',
 # Every menu action uses the existing voice command path, including its prompts,
 # save confirmations, undo history and validation. A value opens a text prompt.
 DOCUMENT_ACTIONS = {
-    'File': [('Save', 'Ctrl+S', 'save document'), ('Save as', 'Ctrl+Shift+S', 'save as'),
+    'File': [('Save', 'Ctrl+S', 'save document'), ('Save as', 'F12', 'save as'),
              ('Rename', 'F2', 'name document'), ('Open', 'Ctrl+O', '@open'),
              ('New', 'Ctrl+N', 'create a document'), ('Close', 'Ctrl+W', 'leave document')],
     'Edit': [('Undo', 'Ctrl+Z', 'undo'), 
@@ -61,7 +61,9 @@ DOCUMENT_ACTIONS['Edit'].extend([(label, '', command) for label,command in (
     ('Delete current line','delete current line'),('Delete current sentence','delete sentence'),('Delete current paragraph','delete current paragraph'))])
 TABLE_KEYS={'next cell':'Tab','previous cell':'Shift+Tab','next row':'Alt+Down','previous row':'Alt+Up','next column':'Alt+Right','previous column':'Alt+Left'}
 DOCUMENT_ACTIONS['Table']=[(name,TABLE_KEYS.get(command,''),command) for name,_,command in DOCUMENT_ACTIONS['Table']]
-SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, command in items if key and key not in ('Enter', 'Alt+T','Tab','Shift+Tab')}
+SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, command in items if key and key not in ('Enter', 'Alt+T','Tab','Shift+Tab','F12')}
+# Control+Shift+S, the Save As key before F12, still works.
+SHORTCUTS['Ctrl+Shift+S'] = 'save as'
 SHORTCUTS.update({'Ctrl+Alt+'+str(level):'heading '+str(level) for level in range(1,7)})
 SHORTCUTS.update({'CapsLock+F':'what formatting','CapsLock+Down':'what is selected',
                  'Ctrl+Shift+L':'bulleted list','Ctrl+Shift+7':'numbered list','Ctrl+Alt+T':'create table with {value}',
@@ -377,6 +379,7 @@ class TaskNavigation:
         if mode == 'document':
             if key in ('Doc:NextCell','Doc:PreviousCell'):return 'next cell' if key=='Doc:NextCell' else 'previous cell'
             if key == 'Alt': self.group = None; return 'document menu'
+            if key == 'Doc:SaveAs': return 'save as'   # F12 (see time_date.save_as_key)
             return SHORTCUTS.get(key)
         if mode == 'local_media':
             common = {'Space':'play or pause','Ctrl+O':'@media_open','Ctrl+S':'stop media','Ctrl+I':'media status'}
@@ -421,7 +424,7 @@ class TaskNavigation:
         if text.startswith('@prompt:'):
             # A direct key for a command that needs a value, such as Ctrl+F in Document reader.
             return self.action(text[len('@prompt:'):], mode)
-        if mode in ('document_name','document_save','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
+        if mode in ('document_name','document_save','document_replace','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
         if mode=='files' and m.FILE_MANAGER and m.FILE_MANAGER.pending:return None
         if m.NAMED_LIST:return None
         if mode=='browser_menu' and m.web_session and m.web_session.menu.level=='name':return None
