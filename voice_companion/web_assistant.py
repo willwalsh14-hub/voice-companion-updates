@@ -2071,6 +2071,11 @@ class WebSession:
         try:message=self._refresh(wait=False,read=False,preserve=True)
         except Exception:return None
         if 'Dialog opened.' in message:
+            # Focus moves into a dialog when it opens: read it from its top, as a screen
+            # reader does. The page's reading place does not belong to the dialog, and keeping
+            # it sent E to the dialog's last field instead of its first.
+            self.browse.set_position(0);self.reading.position=self.reading.continuation=self.browse.position
+            self.preferred_column=None;self.cursor_changed(True)
             # A dialog's contents are read as a new page's are, when automatic reading is on.
             return (message+' '+self.reading.read(True)).strip() if self.auto_read and not self.app_mode else message
         if 'Dialog closed.' in message:return message

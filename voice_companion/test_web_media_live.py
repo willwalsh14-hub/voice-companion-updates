@@ -197,6 +197,33 @@ class DialogFocusTests(LiveBrowser):
         self.assertEqual(self.session.keyboard('Activate'), 'Dialog closed. Open settings, button.')
 
 
+CONTACT = """<title>Home</title><h1>Welcome</h1><p>Intro text for the page.</p><p>Line one of the page.</p><p>Line two of the page.</p>
+<button id="open" onclick="d.hidden=false;d.querySelector('input').focus()">Contact us</button><p>The end.</p>
+<div id="d" role="dialog" aria-modal="true" aria-label="Contact" hidden><h2>Contact</h2><label>Full name <input id="name"></label>
+<label>Email <input id="email"></label><p>We answer every message within two working days, so please be patient with us.</p><button>Send</button></div>
+<script>const d=document.getElementById('d');</script>"""
+
+
+class DialogStartTests(LiveBrowser):
+    def setUp(self):
+        self.context = self.browser.new_context(); self.addCleanup(self.context.close)
+        self.context.route('https://fixture.test/**', lambda route: route.fulfill(content_type='text/html', body=CONTACT))
+        self.page = self.context.new_page(); self.page.goto('https://fixture.test/', timeout=30000)
+        self.backend = BrowserBackend(tempfile.gettempdir()); self.backend.page = self.page; self.backend.context = self.context; self.backend.start = lambda: None
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.session = WebSession(self.temp.name, self.backend); self.session._refresh()
+
+    def test_reading_starts_at_the_top_of_a_dialog_wherever_the_page_was_read_to(self):
+        # The user had read part way down the page, then opened the dialog by voice.
+        for _ in range(4):self.session.keyboard('Read:Down')
+        self.assertGreater(self.session.reading.position, 30)
+        self.session.find('Contact us'); self.session.choose(1)
+        said = self.session.command('yes')
+        self.assertTrue(said.startswith('Dialog opened.'), said)
+        # As with a screen reader, the dialog is read from its top: E goes to its first field.
+        self.assertTrue(self.session.keyboard('Quick:e').startswith('Full name'), self.session.keyboard_field)
+
+
 ARTICLE = """<title>Benefits</title><h1>Benefits</h1><p>Read this first.</p><p>Your eligibility depends on your service dates.</p>
 <p>More text.</p><p>Eligibility also needs a form.</p><a href="/apply">Apply now</a>"""
 
