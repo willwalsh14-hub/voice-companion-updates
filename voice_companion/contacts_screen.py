@@ -534,6 +534,23 @@ def email_by_name(m, command, mode):
 
 # ---- Adding ----------------------------------------------------------------------
 
+DIGIT_WORDS = {'zero': '0', 'oh': '0', 'o': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+               'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
+NOT_A_PHONE = ('That does not look like a phone number. Type or say the digits, then press Enter. '
+               'To leave it out, press Enter or say skip.')
+
+
+def phone_value(value):
+    """A phone number as typed, or spoken digits as numbers ("five five five, oh one" is "555 01").
+    None when it has fewer than three digits: a name typed in the wrong box is not a phone number."""
+    text = str(value).strip().rstrip('.!?').strip()
+    groups = [g.split() for g in re.split(r'\s*[,;]\s*', text) if g.strip()]
+    words = [t.casefold() for g in groups for t in g]
+    if any(w in DIGIT_WORDS for w in words) and all(w in DIGIT_WORDS or w.isdigit() for w in words):
+        text = ' '.join(''.join(DIGIT_WORDS.get(t.casefold(), t) for t in g) for g in groups)
+    return text if sum(c.isdigit() for c in text) >= 3 else None
+
+
 def start_adding(m):
     """Control+N: ask for the name, then the email address, then the phone number."""
     global ADDING
@@ -572,7 +589,9 @@ def add_step(m, step, value):
             except ValueError as exc:
                 return prompt(m, 'email', str(exc) + ' Type it again, or press Enter to leave it out.')
         return prompt(m, 'phone', 'Phone number? Type or say it, then press Enter. To leave it out, press Enter or say skip.')
-    phone = '' if m.normalized_command(value) in SKIP else value
+    phone = '' if m.normalized_command(value) in SKIP else phone_value(value)
+    if phone is None:
+        return prompt(m, 'phone', NOT_A_PHONE)
     if not ADDING.get('email') and not phone:
         return prompt(m, 'phone', 'A contact needs an email address or a phone number. Type a phone number, '
                                   'or press Escape to cancel.')
@@ -706,7 +725,9 @@ def edit_step(m, field, value):
             except ValueError as exc:
                 return ask(m, 'edit-email', str(exc) + ' Type it again, or press Escape to cancel.', optional=True)
     else:
-        new = '' if removing else value.rstrip('.!?').strip()
+        new = '' if removing else phone_value(value)
+        if new is None:
+            return ask(m, 'edit-phone', NOT_A_PHONE.replace('To leave it out, press Enter or say skip.', 'Escape cancels.'), optional=True)
         if len(new) > 40 or re.search(r'[\r\n]', new):
             return ask(m, 'edit-phone', 'Use a shorter phone number. Type it again, or press Escape to cancel.', optional=True)
     others = contact.phones if field == 'email' else contact.emails

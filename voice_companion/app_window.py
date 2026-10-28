@@ -803,11 +803,22 @@ class CompanionWindow:
                 if event is not None and event.widget is not root:return
                 height=root.winfo_height()
                 if height<=1:return
-                rows=fonts['body'].metrics('linespace')*4+24
-                if self.context.get('mode')=='files':rows+=file_toolbar.winfo_reqheight()+8
-                fixed=heading.winfo_reqheight()+14+message_view.winfo_reqheight()+8+entry_label.winfo_reqheight()+6+typed.winfo_reqheight()
-                # The command box always stays: the list takes what is left if the window is short.
-                rows=max(1,min(rows,height-fixed))
+                line=fonts['body'].metrics('linespace')
+                toolbar=file_toolbar.winfo_reqheight()+8 if self.context.get('mode')=='files' else 0
+                # At very large text the title and last message alone could fill a short window;
+                # then the message, then the "Type a command" label, give way (display_options.fit_plan).
+                shown=int(message_view.cget('height'))
+                per_line=message_view.winfo_reqheight()/max(1,shown)
+                wanted=local.get('message_lines',shown)
+                lines,show_label,rows=display_options.fit_plan(height,heading.winfo_reqheight(),typed.winfo_reqheight(),
+                                                              entry_label.winfo_reqheight(),per_line,wanted,
+                                                              least=line+24+toolbar,wanted=line*4+24+toolbar)
+                if lines and shown!=lines:message_view.configure(height=lines)
+                if lines and not message_view.winfo_manager():message_view.pack(after=heading,fill='x',padx=18,pady=(0,8))
+                if not lines and message_view.winfo_manager():message_view.pack_forget()
+                if show_label and not entry_label.winfo_manager():entry_label.pack(before=typed,anchor='w',padx=18,pady=(6,0))
+                if not show_label and entry_label.winfo_manager():entry_label.pack_forget()
+                fixed=heading.winfo_reqheight()+14+typed.winfo_reqheight()+(per_line*lines+8 if lines else 0)+(entry_label.winfo_reqheight()+6 if show_label else 0)
                 if int(content.cget('height'))!=rows:content.configure(height=rows)
                 room=height-fixed-rows
                 buttons=button_row.winfo_reqheight()+6
@@ -1134,7 +1145,9 @@ class CompanionWindow:
                 message_view.configure(state='disabled')
                 try:lines=int(root.tk.call(message_view,'count','-update','-displaylines','1.0','end'))
                 except (tk.TclError,ValueError):lines=2
-                message_view.configure(height=max(1,min(3,lines)))
+                local['message_lines']=max(1,min(3,lines))
+                message_view.configure(height=local['message_lines'])
+                fit_layout()
             def show_body(view):
                 for other in (history,display_view):
                     if other is not view:other.pack_forget()

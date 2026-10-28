@@ -383,3 +383,19 @@ def visible_window(items, index, size=200):
         return items[:size], index if index is not None and 0 <= index < size else None, 0
     start = max(0, min(len(items) - size, index - size // 2))
     return items[start:start + size], index - start, start
+
+
+def fit_plan(height, heading, entry, label, message_line, message_lines, least, wanted):
+    """How the window shares its height at large text sizes: (message lines, show the
+    "Type a command" label, list height).
+
+    The command box always stays: it has the keyboard on many screens, and Windows drops
+    key presses sent to a widget with no room. The list keeps room for at least one line.
+    The last message gives way first (it is also spoken): fewer lines, then hidden.
+    Then the label above the command box."""
+    base = heading + 14 + entry
+    for lines, show_label in ((message_lines, True), (1, True), (0, True), (0, False)):
+        lines = min(lines, message_lines)
+        fixed = base + (message_line * lines + 8 if lines else 0) + (label + 6 if show_label else 0)
+        if height - fixed >= least or (lines, show_label) == (0, False):
+            return lines, show_label, max(1, min(wanted, height - fixed))

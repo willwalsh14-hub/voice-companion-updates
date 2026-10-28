@@ -755,7 +755,8 @@ def menu_state(mode):
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
     if VOICE_PICK_INDEX is not None:
         return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
-    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending:
+    # While a folder loads, the arrows say Please wait (FileManager.command), not End of list.
+    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending and not FILE_MANAGER.busy:
         names=FILE_MANAGER.labels()
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
@@ -1084,6 +1085,11 @@ def poll_file_manager(mode):
             FILE_READER=FILE_MANAGER.opened;FILE_MANAGER.opened=None
             if task_navigation().picker=='document':
                 task_navigation().remember(FILE_READER.path);task_navigation().picker=None
+            elif task_navigation().picker=='reader':
+                # Document reader, Open a document: a text file or PDF is remembered and Escape
+                # goes back to the Document reader menu, the same as a Word file (read_file).
+                task_navigation().remember_read(FILE_READER.path);task_navigation().picker=None
+                task_navigation().reader_return='reader_menu'
             notice=notice or 'Opened '+FILE_READER.title+'. Read-only document. '+FILE_READER.reading.read(True)
             if mode=='sleep':SLEEP_RETURN_MODE='file_reader'
             else:mode='file_reader'
@@ -1471,7 +1477,12 @@ def change_speech_setting(command, writing=False):
         if not TEXT_MODE: voice.Volume = value
     save_speech_settings()
     if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
-    speak('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')
+    # Asked to go past a limit: say so, as "Bigger text." says "Largest text size."
+    limit=''
+    if operation=='delta' and value==current and amount:
+        limit={('volume',1):'Loudest volume. ',('volume',-1):'Quietest volume. ',('rate',1):'Fastest rate. ',('rate',-1):'Slowest rate. ',
+               ('pitch',1):'Highest pitch. ',('pitch',-1):'Lowest pitch. '}.get((kind,1 if amount>0 else -1),'')
+    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.'))
     return True
 
 def voice_choices(engine=None):
@@ -1908,32 +1919,33 @@ def recover_audio_overflow(recognizer, utterance):
     return True
 
 
-def save_note(text):
+def save_note(text, say=None):
     """Save the note being written. Returns False, keeping the text, if it could not be saved."""
     global OPEN_NOTE
+    say = say or speak
     opened = OPEN_NOTE
     try:
         if opened is not None and not text.strip():
             OPEN_NOTE = None
-            speak('The note is empty, so your saved note was not changed.')
+            say('The note is empty, so your saved note was not changed.')
             return True
         if opened is not None and notepad.replace(APP, opened, text):
             OPEN_NOTE = None
-            speak('Saved your note.')
+            say('Saved your note.')
             return True
         notepad.add(APP, text)
     except OSError:
-        speak('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
+        say('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
         return False
     OPEN_NOTE = None
-    speak('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
+    say('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
     return True
 
 
-def flush_note(mode):
+def flush_note(mode, say=None):
     """Save a note in progress. Returns False if it could not be saved."""
     if mode == 'note' and note_buffer:
-        if save_note(' '.join(note_buffer)) is False:
+        if (save_note(' '.join(note_buffer), say) if say else save_note(' '.join(note_buffer))) is False:
             return False
         note_buffer.clear()
         note_selection.text = None
@@ -2333,13 +2345,14 @@ def start_thunderbird_quietly():
     return thread
 
 
-def start_thunderbird_add(mode):
-    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address."""
+def start_thunderbird_add(mode, lead=''):
+    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address.
+    lead ("Gmail works through Thunderbird.") is said with the first step, in one message."""
     global THUNDERBIRD_SETUP
     try:
         flow = new_thunderbird_setup(adding=True)
         THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
-        return thunderbird_setup_step(flow.start(), mode)
+        return thunderbird_setup_step(flow.start(), mode, lead)
     except Exception:
         THUNDERBIRD_SETUP = None
         speak('Thunderbird setup stopped because of a problem. Nothing was changed. Say add Thunderbird account to try again.')
@@ -3170,17 +3183,18 @@ THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok'
 THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
 
 
-def thunderbird_setup_step(step, mode):
+def thunderbird_setup_step(step, mode, lead=''):
     """Speak one setup result; keep its yes or no question waiting."""
     global THUNDERBIRD_SETUP, CONFIRM_CHOICE
     flow = THUNDERBIRD_SETUP['flow'] if THUNDERBIRD_SETUP else None
     THUNDERBIRD_SETUP = None
+    said = (lead + ' ' + step.message).strip() if lead else step.message
     if step.question == 'address':
-        return ask_thunderbird_address(step.message, mode)
+        return ask_thunderbird_address(said, mode)
     if step.question:
         THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
         CONFIRM_CHOICE = 'yes'
-    speak(step.message)
+    speak(said)
     sync_app_context(mode, True)
     return mode
 
@@ -3222,7 +3236,8 @@ def _handle(text, mode, typed=False):
     NOTE_LIST_COMMANDS = ('list notes', 'list my notes', 'list saved notes', 'list the notes', 'open notes', 'open my notes',
                           'open a note', 'open note', 'open saved notes', 'open a saved note', 'open saved note',
                           'show notes', 'show my notes', 'show saved notes')
-    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have')
+    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have',
+                                              'read note', 'read notes', 'read my note', 'read my notes', 'read saved notes')
     command=normalized_command(text)
     if text=='@microphone':
         return set_microphone(MICROPHONE_OFF, mode)
@@ -3354,6 +3369,9 @@ def _handle(text, mode, typed=False):
             if result=='email_draft':focus_email_entry()
             return result
         NAMED_LIST=None
+    # "That one" picks the highlighted choice, as Enter does. Exit and Shut down start on No.
+    if command in ('that one','confirm that') and mode in ('exit_confirm','power_confirm','document_save'):
+        command=CONFIRM_CHOICE
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
             speak('Canceled.');return EXIT_RETURN_MODE
@@ -3903,7 +3921,8 @@ def _handle(text, mode, typed=False):
         if mail_session is not None:
             speak(mail_session.process('open inbox'))
             return 'mailbox'
-        speak('No email account is connected.')
+        # Said with Main menu, in one message: a second message would cut this one off.
+        MAIN_MENU_LEAD = 'No email account is set up yet.'
         return 'awake'
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
@@ -4079,8 +4098,7 @@ def _handle(text, mode, typed=False):
     if direct_connection and direct_connection[1] in THROUGH_THUNDERBIRD:
         # "Add Gmail account": Gmail and Microsoft mail are added in Thunderbird.
         account_setup = False
-        speak(THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
-        return start_thunderbird_add(mode)
+        return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
     if direct_connection:
         account_setup = True
         command = direct_connection[1]
@@ -4095,8 +4113,7 @@ def _handle(text, mode, typed=False):
             return mode
         if command in THROUGH_THUNDERBIRD:
             account_setup = False
-            speak(THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
-            return start_thunderbird_add(mode)
+            return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
         provider = ('yahoo' if command in ('yahoo','yahoo mail') else
                     'thunderbird' if command in ('thunderbird','thunderbird mail','mozilla thunderbird') else None)
         if not provider:
@@ -4199,10 +4216,17 @@ def _handle(text, mode, typed=False):
                   'That account is not connected. Say add account or list email accounts.')
             return mode
         return switch_mail_account(*matches[0], mode)
-    if command in ('email', 'my email', 'open email'):
+    # Everyday words for the inbox, as a new user says them ("Open the inbox.", "Check my mail.").
+    # In a document, email or note they are text you are writing. In the inbox and on a web
+    # page they keep going to the mailbox or the page (a webmail page has its own Inbox).
+    if command in ('email', 'my email', 'open email') or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
+            'open my email', 'go to email', 'go to my email', 'inbox', 'my inbox', 'open inbox', 'open the inbox',
+            'open my inbox', 'go to inbox', 'go to the inbox', 'go to my inbox', 'check my email', 'check mail',
+            'check my mail', 'read email', 'read mail', 'read my mail', 'open mail', 'open my mail'):
         selected = store.selected()
         if not selected:
-            speak_prompt('No email account is selected. Say add account, or list email accounts.')
+            speak_prompt('No email account is selected. Say add account, or list email accounts.' if connected_accounts(store) else
+                         'No email account is set up yet. Say add account to set one up.')
             return mode
         mail_session = MailSession(selected[0], APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
@@ -4357,9 +4381,12 @@ def _handle(text, mode, typed=False):
                 copied = (('. CC ' + ', '.join(email_draft.cc) if email_draft.cc else '') +
                           ('. BCC ' + ', '.join(email_draft.bcc) if email_draft.bcc else ''))
                 context = email_draft.response_context
-                source_note = ('. This ' + context['action'].replace('_', ' ') +
-                               ' uses the original message in your mailbox' +
-                               ('. Original attachments may not be included'
+                # One period after each part, never two: a subject or message that ends in
+                # its own period, question mark or exclamation keeps it ("Sounds good." not "Sounds good..").
+                sentence = lambda text: text if text.rstrip().endswith(('.', '?', '!')) else text.rstrip() + '.'
+                source_note = (' This ' + context['action'].replace('_', ' ') +
+                               ' uses the original message in your mailbox.' +
+                               (' Original attachments may not be included.'
                                 if context['action'] == 'forward' and not isinstance(context.get('original_attachments'), list) else '')
                                if context else '')
                 from mail_attachments import count_words, limit_warning, missing, missing_message, names, total_size
@@ -4369,11 +4396,12 @@ def _handle(text, mode, typed=False):
                     pending_send = None
                     speak(missing_message(gone) + ' The draft is saved.')
                     return mode
-                attached = ('. With ' + count_words(len(files)) + ': ' + names(files) if files else '')
+                attached = (' With ' + count_words(len(files)) + ': ' + names(files) + '.' if files else '')
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
-                      copied + '. Subject ' + (subject or 'no subject') + attached + '. Message: ' + (body or 'no message body') + source_note +
-                      '.' + limit_warning(total_size(files)) +
+                      copied + '. ' + sentence('Subject ' + (subject or 'no subject')) + attached + ' ' +
+                      sentence('Message: ' + (body or 'no message body')) + source_note +
+                      limit_warning(total_size(files)) +
                       ' Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
                 reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
@@ -4497,12 +4525,19 @@ def _handle(text, mode, typed=False):
             OPEN_NOTE = None
             return open_saved_note(number[1], mode)
         if command in ('go back', 'back', 'exit', 'exit note', 'main menu', 'back to main menu'):
-            if not flush_note(mode):return mode
+            # One message: what happened to the note, then where you are. A second
+            # message would cut off the first; an empty note was never "saved".
+            said = []
+            had_words = bool(note_buffer)
+            if not flush_note(mode, said.append):
+                speak(' '.join(said));return mode
+            lead = (' '.join(said) or 'Note saved.') if had_words else ('The note was empty, so nothing was saved.' if OPEN_NOTE is None else
+                                                    'The note is empty, so your saved note was not changed.')
             OPEN_NOTE = None
             if command in ('main menu', 'back to main menu'):
-                speak('Note saved.');return 'awake'
+                MAIN_MENU_LEAD = lead;return 'awake'
             # Escape and Go back return to the Notepad menu, as a document returns to Word processor.
-            return task_navigation().enter('notepad_menu', 'Note saved. Notepad menu')
+            return task_navigation().enter('notepad_menu', lead + ' Notepad menu')
         if command in ('save note', 'finish note', 'done dictating'):
             if note_buffer:
                 if save_note(' '.join(note_buffer)) is False:return mode
@@ -4555,7 +4590,8 @@ def _handle(text, mode, typed=False):
         if command in ('check email', 'read my email'):
             selected = store.selected()
             if not selected:
-                speak_prompt('No email account is selected. Say add account, or list email accounts.')
+                speak_prompt('No email account is selected. Say add account, or list email accounts.' if connected_accounts(store) else
+                         'No email account is set up yet. Say add account to set one up.')
                 return mode
             provider = selected[0]
         else:

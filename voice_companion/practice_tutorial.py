@@ -3,6 +3,9 @@ import re
 from tutorial_curriculum import COURSES, build_courses, split_instruction
 
 
+WHAT_CAN_I_SAY=('what can i say','what can i do','what do i say','what do i do','what are my choices','what are my options')
+
+
 class PracticeTutorial:
     CHOICES=tuple((name,aliases[0]) for _,name,aliases,_,_ in COURSES)
 
@@ -63,7 +66,8 @@ class PracticeTutorial:
         return self.say('How to use this command: '+entry['title']+'. '+self.article[0]+(' Say continue reading for the rest of this explanation.' if len(self.article)>1 else '')+' This is a lesson. The command did not change your work.')
 
     def _find(self,query,commands=False):
-        wanted=query.casefold().strip().rstrip('.!?')
+        query=query.strip().rstrip('.!?')
+        wanted=query.casefold()
         if not wanted:return self.say('Give a topic after find lesson or a command after explain command.')
         ordered=[self.course()]+[c for c in self.courses if c is not self.course()]
         if commands:
@@ -102,7 +106,13 @@ class PracticeTutorial:
             if self.lesson is None:return self.say('Choose a course first to hear its command list.'),False
             self.level='commands';self.index=0
             return self.say(self.course()['name']+' command reference. '+self._item()),False
-        match=re.match(r'^(?:find lesson|find topic|search lessons|find command|explain command)\s+(.+)$',command)
+        # The words as spoken, for messages ("No explanation found for Zebra Crossing.").
+        original=re.sub(r'[.!?]+$','',spoken.strip())
+        if command in WHAT_CAN_I_SAY:
+            return self.say('Use Up and Down to choose, and Enter to open. Say next lesson, previous lesson, repeat, lesson list, '
+                            'list commands, find lesson followed by a topic, or explain command followed by its words. '
+                            'Main menu leaves the tutorial.'),False
+        match=re.match(r'^(?:find lesson|find topic|search lessons|find command|explain command)\s+(.+)$',original,re.I)
         if match:return self._find(match[1],commands=command.startswith(('find command','explain command'))),False
         if command in ('go back','back','escape'):
             if self.level=='courses':return self.say('Tutorial closed. Back at the main menu.'),True
@@ -141,4 +151,4 @@ class PracticeTutorial:
                 if getattr(self,'search_commands',False):return self._reference(entry),False
                 return self._read_lesson(course['lessons'].index(entry)),False
         # Exact phrases get their documented explanation instead of a fake result.
-        return self._find(command,commands=True),False
+        return self._find(original,commands=True),False
