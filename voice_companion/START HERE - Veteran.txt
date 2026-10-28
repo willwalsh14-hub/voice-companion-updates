@@ -143,9 +143,11 @@ Contents
   19.3 Use the player menu
 20 Listen To Radio
   20.1 Find and play a station
-  20.2 Use the radio menus and keys
-  20.3 Control audio
-  20.4 Choose a station list
+  20.2 Play a station from any screen
+  20.3 Use the radio menus and keys
+  20.4 Control audio
+  20.5 If a station stops
+  20.6 Choose a station list
 21 Saved Radio Stations
   21.1 Save a preset
   21.2 Play saved stations
@@ -261,6 +263,7 @@ These keys work on every screen in Companion. Learn these first.
 - To type a command instead of saying it, press Alt+T.
 - To open Options, say "Options", or press Alt+O.
 - To pause or resume radio or a podcast, say "Pause audio", or press Control+P.
+- To hear what is playing, say "What's playing?", or press F3.
 - To hear the time, say "What time is it?", or press F12. Press F12 twice quickly for the date.
 - To pause voice commands, say "Go to sleep", or press Control+F12. Press Control+F12 again to wake up.
 - To turn the microphone fully off or on, press F9.
@@ -1591,7 +1594,7 @@ While a file plays, these keys control it:
 - To go back to the start of the file, press Home.
 - To move back or forward 15 seconds, say "Back 15 seconds" or "Forward 15 seconds", or press Left Arrow or Right Arrow.
 - To change the volume, say "Volume up" or "Volume down", or press Up Arrow or Down Arrow.
-- To hear the file name and where you are, press Control+I.
+- To hear the file name and where you are, press Control+I. F3 also tells you, on any screen.
 To move a different amount, say "Back" or "Forward", followed by the time, such as "Forward 2 minutes".
 When you move, you hear how far you moved and where you are, such as 1 minute 23 seconds of 4 minutes 5 seconds. At the start or end of the file, you hear that instead.
 To change the speed, say "Playback speed", or choose it in the player menu. Then type a number from 0.5 to 3 and press Enter.
@@ -1623,10 +1626,18 @@ Audio stops when you leave, unless Keep audio playing in the background is on.
 - To play a result by number, say "Play station", followed by the number, such as "Play station 1".
 - To play a result by name, say "Play", followed by the station name, such as "Play WJLB".
 If a name matches more than one station, say the number you want when asked. You do not need to say Play again.
-If a station fails, try another result. A stream may not work even when its name is listed.
+On the radio screen, "Play" and a name chooses from the results you have. With no results yet, it searches for the name.
+If a station will not start, try another result. A stream may not work even when its name is listed.
 "Main menu" goes back to the main menu.
 
-20.2 Use the radio menus and keys
+20.2 Play a station from any screen
+You can play a station from the main menu and most other screens. Say "Play", then the station name, such as "Play WGN". "Play station WGN" and "Play WGN radio" also work.
+- If one station has that name, it starts to play. You stay where you are.
+- If several stations match, you hear a short list of up to five. Say "Next" or "Previous", or use the arrows. Then say "That one", or press Enter.
+- If no station matches, Companion says so. Check the name, or say "Radio" to search.
+In a document, email, note, or web text box, these words are typed as text. On a web page, "Play" is left for the page.
+
+20.3 Use the radio menus and keys
 The radio screen has two lists: an actions list and a results list. Tab or Shift+Tab moves between them.
 - Use the arrows, Home, End, and first letters to choose an item. Enter opens an action or plays a station.
 - Escape from the station results says "Station actions." The next Escape says "Radio menu." Escape again goes to the Media menu.
@@ -1637,8 +1648,9 @@ The radio screen has two lists: an actions list and a results list. Tab or Shift
 When a station is selected, its actions include saving it, recording it, scheduling a recording, and playing or pausing.
 For radio help, say "Help with radio", or press F1.
 
-20.3 Control audio
+20.4 Control audio
 - Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
+- To hear what is playing, say "What's playing?", "What station is this?", or "What episode is this?". Or press F3 on any screen. You hear the station, or the show and episode, or the file name. You also hear if it is paused, and the place and length when they are known.
 - Say "Pause radio" or "Stop podcast" to make clear which audio you mean. "Stop talking" silences the app's speech instead.
 - Control+P pauses or resumes radio and podcasts from any screen in Companion, even Options.
 - In Radio or Podcasts, Space pauses or resumes. Control+R resumes. Control+S stops.
@@ -1646,7 +1658,14 @@ For radio help, say "Help with radio", or press F1.
 Going back to the main menu stops audio at first. To keep listening, turn on Keep audio playing in the background in Radio or Podcasts options. The same setting is used for both. You can also say "Keep audio playing in the background on" or "Keep audio playing in the background off".
 Companion can lower the sound of media while it speaks. See part 25.4, Audio ducking.
 
-20.4 Choose a station list
+20.5 If a station stops
+Sometimes a station stops by itself after it starts. The station or your internet may be down. Companion tells you once, for example "WGN stopped playing".
+- To try again, say "Play", or press Control+P.
+- Or choose another station.
+Companion waits to tell you until it is not speaking and you have not pressed a key for a few seconds. It does not talk over you.
+A pause or stop that you choose is not a problem, so you hear nothing. Short gaps while a stream loads are not reported either.
+
+20.6 Choose a station list
 The Station database setting chooses which lists to search. All is the default. It searches every list the app can use.
 - To hear the current choice, say "Station database". With the keyboard, choose Station database in the radio actions list.
 - To choose a list, say "Choose station database", then its name: "Choose station database Radio Browser", "Choose station database IPRD", "Choose station database RadioSure", or "Choose station database All".
@@ -1737,6 +1756,7 @@ For podcast help, say "Help with podcasts", or press F1.
 23.3 Pause, seek, or move by chapter
 - Say "Pause audio", "Resume audio", "Play", or "Stop audio" to control playback.
 - Control+P pauses or resumes audio from any screen in Companion.
+- To hear the show, the episode, and where you are, say "What's playing?", or press F3 on any screen.
 - In Podcasts, Space pauses or resumes. Control+Left Arrow and Control+Right Arrow move back or forward where the episode allows.
 - To move by an amount of time, say "Back", "Fast forward", or "Forward", followed by the time. For example, say "Back 15 seconds", "Fast forward 30 minutes", or "Forward one hour and 20 minutes". Some live streams and episodes cannot move this way.
 - When the episode has chapter marks, say "Next chapter" or "Previous chapter", or choose that action in the actions list.
@@ -1928,6 +1948,7 @@ Sleep pauses voice commands but keeps your place.
 - If an email was waiting for your Yes to send, that is canceled. Review the message again before you send it.
 To turn the microphone fully off, press F9. Companion then hears nothing, not even "Wake up". Press F9 again to turn it back on. You can also say "Turn off the microphone".
 - F9 works on every screen.
+- In a document, email, note, or web text box, "Turn off the microphone" and "Microphone off" are typed as text. Press F9 there instead. With Commands only on, the words turn the microphone off.
 - Companion remembers your choice. If you close it with the microphone off, it starts with the microphone off. It starts on the main menu, so the arrow keys work right away, and it tells you to press F9 to turn the microphone on.
 Sleep is not the same as closing the app or putting Windows to sleep.
 
