@@ -816,7 +816,7 @@
 },
 "awake | check email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -834,7 +834,7 @@
 },
 "awake | check mail": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -846,13 +846,13 @@
 },
 "awake | check my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | check my mail": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1402,7 +1402,7 @@
 },
 "awake | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1712,7 +1712,7 @@
 },
 "awake | go to email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1736,7 +1736,7 @@
 },
 "awake | go to inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1748,13 +1748,13 @@
 },
 "awake | go to my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | go to my inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1772,7 +1772,7 @@
 },
 "awake | go to the inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1850,7 +1850,7 @@
 },
 "awake | inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2237,7 +2237,7 @@
 },
 "awake | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2265,7 +2265,7 @@
 },
 "awake | my inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2565,7 +2565,7 @@
 },
 "awake | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2625,7 +2625,7 @@
 },
 "awake | open inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2637,7 +2637,7 @@
 },
 "awake | open mail": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2649,19 +2649,19 @@
 },
 "awake | open my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | open my inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | open my mail": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2768,7 +2768,7 @@
 },
 "awake | open the inbox": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -3120,7 +3120,7 @@
 },
 "awake | read email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -3132,19 +3132,19 @@
 },
 "awake | read mail": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | read my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | read my mail": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -6592,7 +6592,7 @@
 },
 "document | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "document",
 "text": [
@@ -7816,7 +7816,7 @@
 },
 "document | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "document",
 "text": [
@@ -8303,7 +8303,7 @@
 },
 "document | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "document",
 "text": [
@@ -13336,7 +13336,7 @@
 },
 "email_draft | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -14589,7 +14589,7 @@
 },
 "email_draft | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -15086,7 +15086,7 @@
 },
 "email_draft | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -22977,7 +22977,7 @@
 },
 "mailbox | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "mailbox"
 },
@@ -24099,7 +24099,7 @@
 },
 "mailbox | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "mailbox"
 },
@@ -24545,7 +24545,7 @@
 },
 "mailbox | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "mailbox"
 },
@@ -28449,7 +28449,7 @@
 },
 "note | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "note"
 },
@@ -29266,7 +29266,7 @@
 },
 "note | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "note"
 },
@@ -29590,7 +29590,7 @@
 },
 "note | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "note"
 },
@@ -33519,7 +33519,7 @@
 },
 "web | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "web"
 },
@@ -34782,7 +34782,7 @@
 },
 "web | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "web"
 },
@@ -35274,7 +35274,7 @@
 },
 "web | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "web"
 },
