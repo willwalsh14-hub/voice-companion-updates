@@ -350,5 +350,43 @@ class ReaderPickerTests(CompanionTestCase):
         self.assertEqual([__import__('pathlib').Path(p).name for p in companion.task_navigation().reader_list()], ['notes.txt'])
 
 
+class ContactPhoneTests(__import__('test_contacts_screen').CompanionHarness):
+    """Heard: a name typed into the phone step was saved as the phone ("John Smith, John Smith").
+    Spoken digits arrive as words from the recognizer ("five five five one two three four")."""
+    thunderbird = False
+
+    def add(self, phone):
+        mode = companion.handle('open contacts', 'awake')
+        mode = companion.handle('add contact', mode)
+        mode = companion.handle('John Smith', mode)
+        mode = companion.handle('skip', mode)
+        return companion.handle(phone, mode)
+
+    def phone(self):
+        from address_book import AddressBook
+        return AddressBook(self.root).get('john smith')['phone']
+
+    def test_words_that_are_not_a_phone_number_are_asked_again(self):
+        self.assertEqual(self.add('John Smith'), 'task_input')
+        self.assertEqual(self.said(), 'That does not look like a phone number. Type or say the digits, '
+                                      'then press Enter. To leave it out, press Enter or say skip.')
+        self.assertEqual(companion.handle('555 0100', 'task_input'), 'contacts')
+        self.assertEqual(self.phone(), '555 0100')
+
+    def test_spoken_digit_words_are_saved_as_digits(self):
+        self.assertEqual(self.add('Five five five, oh one two three.'), 'contacts')
+        self.assertEqual(self.phone(), '555 0123')
+
+    def test_typed_numbers_are_kept_as_typed(self):
+        self.add('(555) 010-0199')
+        self.assertEqual(self.phone(), '(555) 010-0199')
+
+    def test_editing_the_phone_checks_it_too(self):
+        self.add('555 0100')
+        mode = companion.handle('change the phone to Main Street', 'contacts')
+        self.assertEqual(mode, 'task_input')
+        self.assertTrue(self.said().startswith('That does not look like a phone number.'), self.said())
+
+
 if __name__ == '__main__':
     unittest.main()
