@@ -314,6 +314,7 @@ class CompanionWindow:
             # The hint line; display_screen.hint replaces it to fit each screen once the app sends its state.
             startup_label=tk.Label(root, text='Say Wake up, or press Control+F12.',
                      font=fonts['hint'], wraplength=600, justify='left')
+            self.hint_label=startup_label
             entry_label = tk.Label(root, text='Type a command or email address, then press Enter:',
                                    font=fonts['hint'],wraplength=600,justify='left')
             typed = tk.Entry(root, font=fonts['body'])
