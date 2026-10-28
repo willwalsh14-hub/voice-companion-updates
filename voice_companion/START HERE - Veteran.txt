@@ -329,8 +329,9 @@ When Companion asks a question, listen to the item name and the action first.
 - Insert+F12 does the same thing as F12. Press it once for the time, or twice for the date.
 - You can also say "Time", "What's the time?", "Date", "Today's date", "What date is it?", or "What day is it?".
 - F12 works on every screen, in menus, and while the microphone is asleep. Your place does not change.
+- In a document, F12 is Save As. To hear the time there, press Insert+F12 or Caps Lock+F12, or ask "What time is it?"
 - In a document, email, or note, the single word "Time" or "Date" is written as text. Ask a full question there, such as "What time is it?"
-- A screen reader may answer Insert+F12 itself. F12 alone always reaches Companion.
+- A screen reader may answer Insert+F12 itself. F12 alone always reaches Companion, except in a document.
 
 3. USING HELP AND LESSONS
 
@@ -588,7 +589,7 @@ Tab and Shift+Tab move between the list and these buttons: Search, Search subfol
 6.12 Email a file
 Choose a file in File manager. To send more than one, press Space on each file first. Folders cannot be sent.
 - To start a new email with the files attached, say "Email this file", or press Control+N. Then give the address, as in part 11.1.
-- To add the files to the email you are writing, say "Attach to draft", or press Control+T. You go back to the draft.
+- To add the files to the email you are writing, say "Attach to draft", or press Control+O. You go back to the draft.
 Both are also on the File manager menu. Press Alt to open it.
 
 7. DOCUMENT READER
@@ -642,16 +643,19 @@ You can open Options while you read. When you save Options, you return to the re
 8.1 Create and name a document
 The Word processor makes files that Microsoft Word can open. You do not need Word installed.
 Choose Word processor on the main menu to open its menu. It has these choices:
-- Create a document, or press Control+N. This starts a blank file.
+- Create a document, or press Control+N. Companion asks for a name, then starts a blank file.
 - Open a document, or press Control+O. This starts at the File manager start place. That is the drive list unless you changed it.
 - Recent documents, or press Control+R. This lists files you used in the app.
 - Options, or press Alt+O. This opens Word processor options.
 For help, say "Help with documents", or press F1 in the Word processor menu.
 To start a document:
 1. Say "Create a document". Or choose Word processor, then press Control+N.
-2. Say "Name document", followed by the file name, such as "Name document My Letter". Or press F2, type the name, and press Enter.
-3. Speak a short sentence or type into the document.
-4. To check what you wrote, say "Read paragraph", or press Alt, 5, then B.
+2. Companion says, "Please say or type the name for your document, then press Enter or say confirm."
+3. Type the name, such as My Letter, and press Enter. Or say the name. Companion says it back. Then say "Confirm", or press Enter.
+4. Speak a short sentence or type into the document.
+5. To check what you wrote, say "Read paragraph", or press Alt, 5, then B.
+To stop without making a document, press Escape or say "Cancel" while Companion asks for the name.
+To change the name later, say "Name document", followed by the new name. Or press F2, type the name, and press Enter.
 The file name and a title in your letter are separate. Naming the file does not add a title to the page.
 
 8.2 Write and move through the document
@@ -727,12 +731,21 @@ The editor makes simple tables with straight rows and columns. It may not open m
 8.8 Save, copy, close, or reopen a document
 Companion saves as you write.
 - To save under the current name, say "Save document", or press Control+S.
-- To keep a second copy, say "Save as", followed by the new name, such as "Save as My Letter Copy". Or press Control+Shift+S and type the name. The first file stays as it was.
+- To save a copy with a new name or in another folder, use Save As. See the steps below.
 - To rename the file, say "Name document", followed by the new name, such as "Name document My Letter". Say "Undo" right after a rename to get the old name back.
 To close the document:
 1. Say "Leave document" or "Go back", or press Control+W or Escape.
 2. Companion asks whether to save. Listen to the file name it reads.
 3. Say "Yes" to keep the current name, or to name an untitled file. Say "No" to throw away the changes since you last opened, saved, or named the file. Press Escape to keep editing.
+To save a copy with Save As:
+1. Say "Save as", or press F12. Control+Shift+S also works. It is also on the File menu: press Alt, then 1.
+2. Say or type the new name. Then press Enter or say "Confirm".
+3. Choose the folder. To use Documents, in the Voice Companion folder, press Enter or say "Confirm". Or say a folder, such as "Desktop" or "Downloads". You can also type a full folder path.
+4. For a file you opened from another folder, you can say "Same folder" to save the copy next to it.
+5. If a file with that name is already in the folder, Companion asks whether to replace it. Say "Yes" to replace it. Say "No" to choose another name.
+After Save As, you are working in the new file. The first file stays as it was.
+You can also say the name with the command, such as "Save as My Letter Copy". Then choose the folder.
+New documents always go in Documents, in the Voice Companion folder. Saving or opening a file in another folder does not change that.
 To return to the document while Companion is still open, say "Resume document".
 To reopen a document later:
 - Say "List documents", then choose a file.
@@ -746,7 +759,7 @@ In a document, press Alt for the document menu. Its groups are File, Edit, Forma
 Use the arrows and Enter, or press a group number. Type a letter to find an item. Escape goes back a level, then back to the document.
 Each item works the same as its voice command. If an item needs a value, type or say it and press Enter. Escape cancels.
 Document keys:
-- Control+S saves. Control+Shift+S saves as. F2 names the document.
+- Control+S saves. F12 saves as. Control+Shift+S also saves as. F2 names the document.
 - Control+N creates a document. Control+O opens one. Control+W closes it after a save question.
 - Control+Z undoes. Control+A selects all.
 - Control+C copies. Control+X cuts. Control+V pastes.
@@ -947,7 +960,7 @@ To attach a file by its name, say "Attach", the name, "from", and the folder. Fo
 - If several files fit, you hear a short list, newest first. Use Up Arrow and Down Arrow, then press Enter on the file you want. Escape closes the list.
 - To attach the file you downloaded last, say "Attach the last download".
 To choose the file in File manager:
-1. In the draft, say "Attach a file", or press Control+T. File manager opens.
+1. In the draft, say "Attach a file", or press Control+O. File manager opens.
 2. Move to the file. To attach several files from one folder, press Space on each one.
 3. Press Enter. Companion attaches the files and takes you back to the same place in the draft.
 Folders cannot be attached. Escape in the File manager drive list goes back to the draft without attaching anything.
@@ -1061,7 +1074,7 @@ Keys and voice commands in the Attachments list:
 - Control+Shift+S: to save every file, say "Save all attachments", or press Control+Shift+S.
 - Control+I: to hear what kind of file it is, its size, and where it is, say "Read attachment details", or press Control+I.
 - Delete: in an email you are writing, to take the file off, say "Remove attachment", or press Delete.
-- Control+T: in an email you are writing, to attach another file, say "Attach a file", or press Control+T.
+- Control+O: in an email you are writing, to attach another file, say "Attach a file", or press Control+O.
 - F1: for help in the list, say "Help with attachments", or press F1.
 Press Alt to open the attachments menu. It has the same choices.
 You can say a file's name the way you would say it:

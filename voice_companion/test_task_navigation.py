@@ -43,7 +43,10 @@ class TaskMenuTests(unittest.TestCase):
         self.assertEqual(app.handle('word processor','awake'),'word_processor')
         self.assertIsNone(app.document)
         self.assertEqual(app.menu_state('word_processor')[0],['Create a document','Open a document','Recent documents','Options'])
-        self.assertEqual(app.handle('enter','word_processor'),'document')
+        # Enter asks for the name first; the document exists once it has one.
+        self.assertEqual(app.handle('enter','word_processor'),'document_name')
+        self.assertIsNone(app.document)
+        self.assertEqual(app.handle('Menu letter','document_name',typed=True),'document')
         self.assertIsNotNone(app.document)
 
     def test_keyboard_open_and_number_letter_menu_accelerators_dispatch_end_to_end(self):
@@ -51,7 +54,7 @@ class TaskMenuTests(unittest.TestCase):
         with patch('file_manager.FileManager',return_value=manager):
             self.assertEqual(app.handle(app.navigation_key('Ctrl+O','word_processor'),'word_processor'),'files')
         settle(manager);self.assertIsNone(manager.location)
-        app.handle('create a document','awake')
+        app.handle('Menu test',app.handle('create a document','awake'),typed=True)
         app.document.append_text('Keep this text.')
         mode=app.handle(app.navigation_key('Alt','document'),'document')
         self.assertEqual(mode,'document_menu')
@@ -182,7 +185,8 @@ class TaskMenuTests(unittest.TestCase):
         app.document=VoiceDocument(self.root,title='Original');app.document.append_text('Keep both files.')
         original=app.document.path;before=original.read_bytes()
         self.assertEqual(app.handle(app.navigation_key('Ctrl+Shift+S','document'),'document'),'document_name')
-        self.assertEqual(app.handle('New copy','document_name',typed=True),'document')
+        self.assertEqual(app.handle('New copy','document_name',typed=True),'document_name')   # then the folder
+        self.assertEqual(app.handle(str(self.root),'document_name',typed=True),'document')
         self.assertEqual(original.read_bytes(),before)
         self.assertEqual(app.document.path.name,'New copy.docx')
         self.assertTrue(app.document.path.exists())

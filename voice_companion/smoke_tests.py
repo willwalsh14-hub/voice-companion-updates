@@ -33,7 +33,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertFalse(companion.fast_offline_silence(Recognizer('stop'),bytearray(b'audio')))
 
     def test_custom_spacing_confirmation_reaches_document_not_voice_picker(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('A line of text', mode)
         companion.handle('custom spacing', mode)
         companion.handle('one point seven five', mode)
@@ -201,7 +201,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         companion.VOICE_PICK_CONFIRM = self.old_voice_confirm
 
     def test_document_formatting_commands_work_in_dictation_only(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('A paragraph', mode)
         companion.handle('dictation only', mode)
         for level in range(1, 7):
@@ -222,7 +222,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertIn('Documents', speech.call_args.args[0])
 
     def test_new_line_is_not_dictation_and_survives_word_round_trip(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('First line', mode)
         companion.handle('dictation only', mode)
         companion.handle('new line', mode)
@@ -235,7 +235,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         self.assertEqual(len(companion.document.paragraphs), 2)
 
     def test_document_reading_units_and_top(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('Alpha beta. Another sentence.', mode)
         companion.handle('new paragraph', mode)
         companion.handle('Third line.', mode)
@@ -285,7 +285,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertEqual(saved.call_count, 2)
 
     def test_app_wide_input_modes_and_automatic_document_speech(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('This is the first sentence.', mode)
         self.assertIn('first sentence', companion.document.paragraphs[0].text)
         companion.handle('commands only', mode)
@@ -407,9 +407,10 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         return output.getvalue()
 
     def test_document_survives_restart_and_edit(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('create a document', 'awake')  # asks for the name first
+        self.assertEqual(mode, 'document_name')
+        mode = companion.handle('Letter', mode, typed=True)
         self.assertEqual(mode, 'document')
-        companion.handle('name document Letter', mode)
         companion.handle('start dictation', mode)
         companion.handle('Dear friend. See you soon.', mode)
         self.assertEqual(companion.handle('The instructions say go to sleep tomorrow.', mode), 'document')
@@ -439,12 +440,12 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         self.assertEqual(saved.paragraphs[0].text, 'This is a draft.')
 
     def test_direct_task_switch_saves_writing(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('start dictation', mode)
         companion.handle('Remember this sentence.', mode)
         mode = companion.handle('Write an email.', mode)
         self.assertEqual(mode, 'email_draft')
-        saved = VoiceDocument.open_existing(self.root / 'Documents', 'Untitled')
+        saved = VoiceDocument.open_existing(self.root / 'Documents', 'Test document')
         self.assertIn('Remember this sentence.', saved.process('read document'))
         companion.handle('start dictation', mode)
         companion.handle('Email body.', mode)
@@ -454,7 +455,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
         self.assertIn('Email body.', draft.process('read document'))
         companion.handle('Another reminder.', mode)
         mode = companion.handle('Create a document.', mode)
-        self.assertEqual(mode, 'document')
+        self.assertEqual(mode, 'document_name')
         self.assertIn('Another reminder.', (self.root / 'notes.txt').read_text())
 
     def test_go_back_works_in_note_search_and_podcast(self):
@@ -468,12 +469,15 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
 
     def test_go_back_saves_document_and_allows_email(self):
         mode = companion.handle('Create a document.', 'awake')
+        self.assertEqual(mode, 'document_name')
+        mode = companion.handle('Keyboard report.', mode)       # a spoken name waits for confirm
+        self.assertEqual(mode, 'document_name')
+        mode = companion.handle('Confirm.', mode)
         self.assertEqual(mode, 'document')
         mode = companion.handle('Start dictation.', mode)
         mode = companion.handle('A saved sentence.', mode)
         self.assertEqual(companion.handle('Go back.', mode), 'document_save')
-        self.assertEqual(companion.handle('yes', 'document_save'), 'document_name')
-        self.assertEqual(companion.handle('Keyboard report', 'document_name', typed=True), 'word_processor')
+        self.assertEqual(companion.handle('yes', 'document_save'), 'word_processor')
         self.assertIn('A saved sentence.', VoiceDocument.open_existing(
             self.root / 'Documents', 'Keyboard report').process('read document'))
         mode = companion.handle('Write an email.', 'awake')
@@ -499,11 +503,11 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             self.assertIsNone(companion.email_draft)
 
     def test_dictated_file_commands_stay_in_current_document_and_email(self):
-        mode = companion.handle('create a document', 'awake')
+        mode = companion.handle('Test document', companion.handle('create a document', 'awake'), typed=True)
         companion.handle('start dictation', mode)
         self.assertEqual(companion.handle('Open document Another Letter', mode), mode)
         self.assertIn('Open document Another Letter', companion.document.paragraphs[0].text)
-        self.assertEqual(companion.document.title, 'Untitled')
+        self.assertEqual(companion.document.title, 'Test document')
         self.assertFalse((self.root / 'Documents' / 'Another Letter.docx').exists())
         companion.handle('leave document', mode)
         mode = companion.handle('write an email', 'awake')

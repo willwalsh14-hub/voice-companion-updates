@@ -214,7 +214,7 @@ class ShellFiles:
 
 MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+D','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Say Main menu','main menu'))
 SORT_MENU=(('Name','Alt+N','sort by name'),('Date created','Alt+C','sort by date created'),('Date modified','Alt+M','sort by date modified'),('Date added (first seen here)','Alt+D','sort by date added'),('Ascending','Alt+A','sort ascending'),('Descending','Alt+Z','sort descending'))
-MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Email this file','Ctrl+N','email this file'),('Attach to open email draft','Ctrl+T','attach to draft'),('Main menu','Alt+Home','main menu'))
+MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Email this file','Ctrl+N','email this file'),('Attach to open email draft','Ctrl+O','attach to draft'),('Main menu','Alt+Home','main menu'))
 # Email this file and Attach to draft need the app (attachment_screen.py); File manager hands them over.
 ATTACH_COMMANDS=('email this file','attach to draft')
 

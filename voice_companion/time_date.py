@@ -139,6 +139,14 @@ def clock_key(keysym, state, insert_held=False):
     return keysym == 'F12' and not state & (1 | 4)
 
 
+def save_as_key(mode, prefix_held, command_entry):
+    """True when F12 is Save As: in an open document, without Insert or Caps Lock held.
+
+    Insert+F12 and Caps Lock+F12 still say the time in a document, and F12 says the
+    time on every other screen (Will, October 2026)."""
+    return mode == 'document' and not prefix_held and not command_entry
+
+
 def key_request(count):
     """The keyboard request for the first or second quick press."""
     return 'Double:F12' if count == 2 else 'F12'

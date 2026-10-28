@@ -447,8 +447,14 @@ class CompanionWindow:
                 if clock_key(key,event.state):
                     # F12 or Insert+F12 says the time; twice quickly, the date. It works on every
                     # screen, in menus, lists and questions, and never reaches a web page.
+                    # In an open document F12 alone is Save As; Insert+F12 and Caps Lock+F12 say the time.
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     cancel_phonetic()
+                    from time_date import save_as_key
+                    if save_as_key(mode,bool(document_modifiers&{'Insert','Caps_Lock'}),self.command_entry_active):
+                        flush_pending_edit();send_text_position()
+                        self.commands.put(('keyboard','Doc:SaveAs'));return 'break'
+                    if mode=='document' and 'Caps_Lock' in document_modifiers:caps_modifier['used']=True
                     self.commands.put(('keyboard',key_request(clock_presses.press())));return 'break'
                 if key=='F9' and not event.state&(1|4) and not alt_held(event.state):
                     # F9 turns the microphone fully off or on, on every screen.
@@ -745,7 +751,7 @@ class CompanionWindow:
                 if self.context.get('file_name_input') and not typed.get().strip():
                     self.feedback('Enter a new file name, including the extension.');return 'break'
                 if self.context.get('mode')=='document_name':
-                    if not typed.get().strip():self.feedback('Enter a document name.');return 'break'
+                    if not typed.get().strip():self.feedback('Enter a folder, or a full folder path.' if self.context.get('naming_label') else 'Enter a document name.');return 'break'
                     return submit_typed(event)
                 if self.email_field or typed.get() or self.context.get('media_input'): return submit_typed(event)
                 return navigation(event)
@@ -1238,7 +1244,7 @@ class CompanionWindow:
                                 typed.delete(0,'end');typed.insert(0,request[1]);typed.icursor('end');self.last_name_request=request
                             if field.get('file_name_input') and old.get('mode')!='settings' and field.get('file_rename_value')!=old.get('file_rename_value'):
                                 typed.delete(0,'end');typed.insert(0,field['file_rename_value']);typed.selection_range(0,'end')
-                            if mode!='email_draft' and not field.get('web_private') and not field.get('account_entry') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else field.get('file_input_label','New file name, including extension')+'; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
+                            if mode!='email_draft' and not field.get('web_private') and not field.get('account_entry') and not field.get('media_form'):entry_label.configure(text='Web address or search; type, then press Enter. Escape cancels:' if mode=='search' else field.get('naming_label') or 'Document name; press Enter to save:' if mode=='document_name' else 'Favorite name; press Enter. Escape cancels:' if field.get('browser_name_input') else field.get('file_input_label','New file name, including extension')+'; press Enter. Escape cancels:' if field.get('file_name_input') else 'Type a command, then press Enter:')
                             if transition:
                                 if mode in ('media','podcast'):
                                     root.deiconify();root.lift()
