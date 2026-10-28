@@ -67,7 +67,14 @@ public static class Launcher {
   $outcome = Invoke-CompanionClose $folder @() $PID 2 5 4
   Assert ($outcome.Code -eq 2) ('The held file must stop the update with code 2, not ' + $outcome.Code + ': ' + ($outcome.Names -join ', '))
   Assert (@($outcome.Names).Count -ge 1 -and -not (($outcome.Names -join ' ') -match 'Voice Companion')) ('The blocker must be named: ' + ($outcome.Names -join ', '))
-  foreach ($process in @($host1, $host2, $browser, $app)) { $process.Refresh(); Assert $process.HasExited ('Voice Companion stand-in ' + $process.Id + ' must be closed.') }
+  foreach ($process in @($host1, $host2, $browser, $app)) {
+    $process.Refresh()
+    if (-not $process.HasExited) {
+      $listed = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $process.Id)
+      throw ('Voice Companion stand-in ' + $process.Id + ' must be closed. Folder: ' + $folder + '. Listed as: ' + $listed.ExecutablePath +
+             '. Close log: ' + $(if (Test-Path $script:CloseLogFile) { Get-Content -LiteralPath $script:CloseLogFile -Raw }))
+    }
+  }
   $holder.Refresh(); Assert (-not $holder.HasExited) 'The user''s program must never be closed.'
   $other.Refresh(); Assert (-not $other.HasExited) 'A program in a similar folder must never be closed.'
   Assert ([bool](Get-Process -Id $userChild.ProcessId -ErrorAction SilentlyContinue)) 'A program Voice Companion opened from outside its folder must never be closed.'

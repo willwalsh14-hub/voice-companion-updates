@@ -45,10 +45,30 @@ function ConvertTo-CompanionPath([string]$path) {
   return $path
 }
 
+$script:LongFolders = @{}
+function Get-LongFolderPath([string]$folder) {
+  # Windows can name a folder by its short 8.3 name (C:\Users\RUNNER~1\...), while
+  # running programs are listed by the long one. Directory listings give long names.
+  if ($script:LongFolders.ContainsKey($folder)) { return $script:LongFolders[$folder] }
+  $long = $folder
+  try {
+    $item = New-Object IO.DirectoryInfo $folder
+    if ($item.Exists -and $item.Parent) {
+      $parent = Get-LongFolderPath $item.Parent.FullName.TrimEnd('\')
+      $match = @((New-Object IO.DirectoryInfo $item.Parent.FullName).GetDirectories($item.Name))
+      if ($match.Count -eq 1) { $long = $parent.TrimEnd('\') + '\' + $match[0].Name }
+    }
+  } catch {}
+  $script:LongFolders[$folder] = $long
+  return $long
+}
+
 function Test-InsideFolder([string]$path, [string]$folder) {
   $path = ConvertTo-CompanionPath $path; $folder = (ConvertTo-CompanionPath $folder).TrimEnd('\')
   if (-not $path -or -not $folder) { return $false }
-  return $path.StartsWith($folder + '\', [StringComparison]::OrdinalIgnoreCase)
+  if ($path.StartsWith($folder + '\', [StringComparison]::OrdinalIgnoreCase)) { return $true }
+  $long = Get-LongFolderPath $folder
+  return ($long -ne $folder -and $path.StartsWith($long.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase))
 }
 
 function Get-CompanionProcessList {
