@@ -22,6 +22,14 @@ pull requests. Update this file as items are finished.
       build tools (the build guide's "Before giving it to the veteran" steps),
       with NVDA and with JAWS running, to check that speech does not clash.
 
+- [ ] **Will or a tester (update close step, 0.2.172):** with Chrome, Edge
+      and Thunderbird open and the user guide open in Word, accept an update.
+      Check that you hear that Word is using a Voice Companion file, that
+      Chrome, Edge and Thunderbird stay open, and that the update installs
+      and Voice Companion starts again once Word is closed. The 0.2.171 update
+      failed on Will's PC because Setup could not close VoiceCompanion.exe and
+      four browser host processes; `close-companion.ps1` now closes them first.
+
 ### Accounts and store reviews (Will)
 - [x] **Gmail and Outlook verification:** no longer needed. Will decided on
       October 26, 2026 that email works only through Thunderbird and Yahoo.
