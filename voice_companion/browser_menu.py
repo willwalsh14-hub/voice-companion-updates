@@ -16,6 +16,8 @@ class BrowserMenu:
         self.prefix = ''
         self.last_letter = 0
         self.target = None
+        # True while a favorite is named from a web page: saving it goes back to the page.
+        self.return_to_page = False
         self.history()
 
     def history(self):
@@ -51,11 +53,11 @@ class BrowserMenu:
         return items
 
     def start(self,resume=False):
-        self.level = 'menu'; self.index = None; self.prefix = ''; self.target = None
+        self.level = 'menu'; self.index = None; self.prefix = ''; self.target = None; self.return_to_page = False
         return 'Web browser menu. '+('Resume where you left off, ' if resume else '')+'Search or enter address, Go to favorite, New favorite, Delete favorite, Rename favorite, Go back, Go forward, Web history, Downloads, or Set up Chrome. Use arrows and Enter, or say an option. Escape returns to the main menu.'
 
     def menu(self, session, keep_open):
-        if self.level == 'name':
+        if self.level in ('name', 'confirm'):
             return None
         names = [x[0] for x in self.choices(session, keep_open)] if self.level == 'menu' else [x['name'] for x in self.items]
         if names and self.index is not None:self.index=max(0,min(self.index,len(names)-1))
@@ -79,7 +81,13 @@ class BrowserMenu:
         from web_assistant import WebError
         command = text.strip().casefold().rstrip('.!?')
         if command=='browser menu':command='web browser menu'
+        if self.level == 'confirm':
+            return self.answer_delete(command, session)
         if command in ('escape', 'cancel', 'close list', 'web browser menu'):
+            if self.level == 'name' and self.return_to_page and command != 'web browser menu':
+                # Naming began on the page: Escape goes back there.
+                self.start()
+                return 'Not saved.', 'page'
             if self.level == 'menu' and command != 'web browser menu':
                 return 'Main menu.', 'main'
             return self.start(resume=keep_open and bool(session.snapshot)), None
@@ -97,7 +105,10 @@ class BrowserMenu:
             except (ValueError, OSError, KeyError, WebError) as exc:
                 return str(exc), None
             result = ('Renamed favorite to ' if self.action == 'rename' else 'Saved favorite ') + name + '.'
+            to_page = self.return_to_page and self.action == 'new'
             self.start(resume=keep_open and bool(session.snapshot))
+            if to_page:
+                return result, 'page'   # back to the page and your place on it (Will, October 2026)
             return result + ' Web browser menu.', None
         if command.startswith('go to ') and command not in ('go to favorite','go to bookmark'):
             name=text.strip()[6:]
@@ -148,11 +159,28 @@ class BrowserMenu:
                 self.start(resume=keep_open and bool(session.snapshot))
                 return '', ('open', item['url'])
             if self.action == 'delete':
-                try:session.favorites.delete(item['name'])
-                except (ValueError,OSError) as exc:return str(exc),None
-                self.items.pop(self.index)
-                self.index = min(self.index, len(self.items)-1) if self.items else None
-                return 'Deleted favorite ' + item['name'] + '.' + (' ' + self.notice([x['name'] for x in self.items]) if self.items else ' The list is empty.'), None
+                # Ask first, with No chosen, as when cancelling a download (Will, October 2026).
+                self.target = item['name']; self.level = 'confirm'
+                return self.delete_question(), 'confirm'
             self.target = item['name']; self.level = 'name'
             return 'Rename favorite ' + self.target + '. Say or type the new name, then press Enter. Escape cancels.', None
         return 'The list is empty. Escape returns to the web browser menu.', None
+
+    def delete_question(self):
+        return 'Delete favorite ' + self.target + '? Say Yes or No. Escape keeps it.'
+
+    def answer_delete(self, command, session):
+        """The Yes or No answer to "Delete favorite ...?". Anything else asks again."""
+        command = ' '.join(command.replace(',', ' ').split())
+        names = [x['name'] for x in self.items]
+        if command in ('yes', 'yes please', 'okay', 'ok', 'confirm', 'yes delete it', 'delete it'):
+            self.level = 'list'
+            try:session.favorites.delete(self.target)
+            except (ValueError, OSError) as exc:return str(exc) + ' ' + self.notice(names), None
+            self.items = [x for x in self.items if x['name'] != self.target]
+            self.index = min(self.index or 0, len(self.items)-1) if self.items else None
+            return 'Deleted favorite ' + self.target + '.' + (' ' + self.notice([x['name'] for x in self.items]) if self.items else ' The list is empty.'), None
+        if command in ('no', 'no thanks', 'escape', 'cancel', 'go back', 'back', 'keep it', 'do not delete', 'do not delete it', 'close list'):
+            self.level = 'list'
+            return 'Not deleted. ' + self.notice(names), None
+        return self.delete_question(), 'confirm'

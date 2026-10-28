@@ -89,5 +89,109 @@ class MicrophoneOffWhileWritingTests(CompanionTestCase):
                 self.assertTrue(companion.MICROPHONE_OFF)
 
 
+class WebFavoriteTests(unittest.TestCase):
+    """Deleting asks Yes or No first, with No chosen, like cancelling a download.
+    Saving from a page goes back to the page and your place on it."""
+
+    def setUp(self):
+        import tempfile
+        from test_web_assistant import FakeBackend
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        self.session = WebSession(temp.name, FakeBackend())
+        self.session.auto_read = False
+        self.said = []
+        for name, value in (('web_session', self.session), ('APP_WINDOW', None), ('pending_website', None),
+                            ('PREFERENCES', {'web_keep_open': False}), ('CONFIRM_CHOICE', 'yes'), ('NAMED_LIST', None),
+                            ('MAIN_MENU_LEAD', ''), ('TEXT_MODE', True), ('INPUT_MODE', 'mixed')):
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+        for name in ('speak', 'speak_prompt', 'speak_status'):
+            p = patch.object(companion, name, lambda text, *a, **k: self.said.append(str(text))); p.start(); self.addCleanup(p.stop)
+        self.session.favorites.add('News', 'https://example.com/news')
+        self.session.favorites.add('Weather', 'https://example.com/weather')
+
+    def key(self, key, mode):
+        """Press a key the way the window sends it, and handle what it asks for."""
+        request = companion.navigation_key(key, mode)
+        return companion.handle(request, mode, typed=True) if request else mode
+
+    def ask_to_delete_news(self):
+        mode = companion.handle('Delete favorite.', 'browser_menu')
+        self.assertEqual(mode, 'browser_menu')
+        self.said.clear()
+        return companion.handle('News.', mode)
+
+    def test_delete_asks_first_and_no_is_chosen(self):
+        mode = self.ask_to_delete_news()
+        self.assertEqual(self.said[-1], 'Delete favorite News? Say Yes or No. Escape keeps it.')
+        self.assertEqual(companion.CONFIRM_CHOICE, 'no')
+        self.assertEqual(companion.app_context(mode)['confirmation'], 'no')
+        self.assertIsNotNone(self.session.favorites.get('News'))
+        # Enter answers with the chosen No; the favorite stays.
+        self.assertEqual(self.key('Enter', mode), 'browser_menu')
+        self.assertTrue(self.said[-1].startswith('Not deleted. News'), self.said[-1])
+        self.assertIsNotNone(self.session.favorites.get('News'))
+
+    def test_up_arrow_then_enter_deletes(self):
+        mode = self.ask_to_delete_news()
+        self.key('Up', mode)
+        self.assertEqual(self.said[-1], 'Yes.')
+        self.key('Enter', mode)
+        self.assertTrue(self.said[-1].startswith('Deleted favorite News. Weather'), self.said[-1])
+        self.assertIsNone(self.session.favorites.get('News'))
+
+    def test_spoken_and_typed_answers(self):
+        for answer, kept in (('Yes, please.', False), ('No.', True), ('Escape', True)):
+            with self.subTest(answer=answer):
+                self.session.favorites.add('News', 'https://example.com/news') if self.session.favorites.get('News') is None else None
+                mode = self.ask_to_delete_news()
+                companion.handle(answer, mode)
+                self.assertEqual(self.session.favorites.get('News') is not None, kept)
+        for key, kept in (('Escape', True), ('Letter:n', True), ('Letter:y', False)):
+            with self.subTest(key=key):
+                self.session.favorites.add('News', 'https://example.com/news') if self.session.favorites.get('News') is None else None
+                mode = self.ask_to_delete_news()
+                self.key(key, mode)
+                self.assertEqual(self.session.favorites.get('News') is not None, kept)
+
+    def test_other_words_ask_again(self):
+        mode = self.ask_to_delete_news()
+        companion.handle('Weather', mode)
+        self.assertEqual(self.said[-1], 'Delete favorite News? Say Yes or No. Escape keeps it.')
+        self.assertIsNotNone(self.session.favorites.get('News'))
+        self.assertIsNotNone(self.session.favorites.get('Weather'))
+
+    def test_new_favorite_from_a_page_returns_to_the_page_and_place(self):
+        self.session.open('https://example.com/story')
+        self.session.reading.position = 42
+        mode = companion.handle('New favorite.', 'web')
+        self.assertEqual(mode, 'browser_menu')
+        self.assertEqual(self.said[-1], 'New favorite. Say or type the favorite name, then press Enter. Escape cancels.')
+        self.assertEqual(companion.handle('Story.', mode), 'web')
+        self.assertEqual(self.said[-1], 'Saved favorite Story. Back to web page.')
+        self.assertEqual(self.session.favorites.get('Story')['url'], 'https://example.com/story')
+        self.assertEqual(self.session.reading.position, 42)
+        # The Alt menu's Add favorite does the same.
+        self.assertEqual(companion.handle('add favorite', 'web'), 'browser_menu')
+        self.assertEqual(companion.handle('Story two', 'browser_menu'), 'web')
+
+    def test_escape_while_naming_from_a_page_goes_back_to_the_page(self):
+        self.session.open('https://example.com/story')
+        mode = companion.handle('New favorite', 'web')
+        self.assertEqual(self.key('Escape', mode), 'web')
+        self.assertEqual(self.said[-1], 'Not saved. Back to web page.')
+        self.assertIsNone(self.session.favorites.get('Story'))
+
+    def test_new_favorite_from_the_browser_menu_stays_there(self):
+        self.session.open('https://example.com/story')
+        self.assertEqual(companion.handle('New favorite', 'browser_menu'), 'browser_menu')
+        self.assertEqual(companion.handle('Story', 'browser_menu'), 'browser_menu')
+        self.assertEqual(self.said[-1], 'Saved favorite Story. Web browser menu.')
+
+    def test_save_favorite_as_on_a_page_stays_on_the_page(self):
+        self.session.open('https://example.com/story')
+        self.assertEqual(companion.handle('Save favorite as Story.', 'web'), 'web')
+        self.assertEqual(self.said[-1], 'Saved favorite Story.')
+
+
 if __name__ == '__main__':
     unittest.main()

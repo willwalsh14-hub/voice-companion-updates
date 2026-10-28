@@ -419,7 +419,8 @@ def app_context(mode):
     if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
-        context['menu_letters']=not context['browser_name_input']
+        context['menu_letters']=not context['browser_name_input'] and web_session.menu.level!='confirm'
+        if web_session.menu.level=='confirm':context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and web_session.list_focus in ('links','headings','fields'):context['menu_letters']=False
     if logical=='web' and web_session and web_session.list_focus in ('links','headings'):context['web_name_list']=web_session.list_focus
     if NAMED_LIST:context['named_list']=True;context['mode']='list';return context
@@ -943,9 +944,9 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
-        if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
+        if key.lower() in ('y','n','alt+y','alt+n','letter:y','letter:n'):return 'yes' if key.lower() in ('y','alt+y','letter:y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             choice='yes' if key in ('Up','Left','ShiftTab') else 'no'
             if choice==CONFIRM_CHOICE:speak('Start of list.' if choice=='yes' else 'End of list.');return None
@@ -1865,9 +1866,19 @@ def open_browser_menu(regular=False):
     return 'browser_menu'
 
 def handle_browser_menu(text):
-    global SEARCH_RETURN_MODE
+    global SEARCH_RETURN_MODE,CONFIRM_CHOICE
+    asking=web_session.menu.level=='confirm'
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
     if action=='main':return 'awake'  # handle() says the main menu; "Main menu." first said it twice.
+    if action=='confirm':
+        # "Delete favorite ...?" starts on No; arrows choose, Enter answers, Escape keeps it.
+        if not asking:CONFIRM_CHOICE='no'
+        speak(notice);return 'browser_menu'
+    if action=='page':
+        # A favorite named from a page: back to the page and your place on it.
+        if web_session.snapshot:
+            speak(notice+' '+options_return_notice('web'));return 'web'
+        notice+=' The page is no longer open. '+web_session.menu.start()
     if notice:speak(notice)
     if action=='downloads':return __import__('download_screen').open_manager(sys.modules[__name__],'browser_menu')
     if action=='chrome':
@@ -4345,6 +4356,8 @@ def _handle(text, mode, typed=False):
     if mode == 'web':
         if command in ('new favorite','add favorite','go to favorite','delete favorite','rename favorite','new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
             web_session.menu.start()
+            # A favorite named here comes back to this page once it is saved (Will, October 2026).
+            web_session.menu.return_to_page=command in ('new favorite','add favorite','new bookmark','add bookmark')
             return handle_browser_menu(text)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')

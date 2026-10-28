@@ -1453,6 +1453,7 @@ A favorite saves a page address so you can open it again later. Older website fa
 2. Say "New favorite", or choose New favorite in the web browser menu.
 3. Say a short name, or type the name and press Enter.
 4. Listen for the saved name.
+If you started on the page, you go back to the page, at the same place. Escape also takes you back to the page, and nothing is saved.
 A name can have up to 60 characters. If the name is already used, choose a new one.
 To save with a name in one command, say "Save favorite as", followed by the name, such as "Save favorite as News".
 
@@ -1470,7 +1471,8 @@ If a page cannot open, you stay in the web browser menu. Check your internet acc
 16.3 Rename or delete a favorite
 1. Say "Rename favorite" or "Delete favorite", or choose it in the web browser menu.
 2. Choose a name with the arrows and Enter. You can also type letters to find it, as when you open a favorite.
-3. To rename, say the new name, or type it and press Enter. To delete, choosing the name removes the favorite.
+3. To rename, say the new name, or type it and press Enter.
+4. To delete, Companion asks "Delete favorite", then the name. No is chosen first. Say "Yes" or "No". Or use the arrows to choose, then press Enter. Y and N also answer. Escape keeps the favorite.
 Deleting a favorite does not delete the website. Escape cancels naming or closes the list.
 
 16.4 Open a page from history
