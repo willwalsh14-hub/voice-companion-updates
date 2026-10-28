@@ -576,7 +576,7 @@
 },
 "awake | bing": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -1545,7 +1545,7 @@
 },
 "awake | find": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -1748,7 +1748,7 @@
 },
 "awake | google": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -2319,7 +2319,7 @@
 },
 "awake | new search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -3351,7 +3351,7 @@
 },
 "awake | search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -3380,7 +3380,7 @@
 },
 "awake | search the web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -3987,6 +3987,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | visit": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -4007,7 +4013,7 @@
 },
 "awake | web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -10276,6 +10282,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | visit": {
+"said": [
+"visit"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. visit"
 ]
 },
 "document | voice check": {
@@ -16867,6 +16882,15 @@
 "Hello world."
 ]
 },
+"email_draft | visit": {
+"said": [
+"visit"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. visit"
+]
+},
 "email_draft | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -20254,6 +20278,10 @@
 "screen_after": "help"
 },
 "help | version": {
+"said": [],
+"screen_after": "help"
+},
+"help | visit": {
 "said": [],
 "screen_after": "help"
 },
@@ -25801,6 +25829,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | visit": {
+"calls": [
+"call.process('visit')"
+],
+"said": [
+"session handled: visit"
+],
+"screen_after": "mailbox"
+},
 "mailbox | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -30208,6 +30245,12 @@
 ],
 "screen_after": "note"
 },
+"note | visit": {
+"said": [
+"visit"
+],
+"screen_after": "note"
+},
 "note | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -31353,7 +31396,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -31930,9 +31972,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -31991,9 +32031,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -32002,7 +32040,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -32693,9 +32730,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -32750,9 +32785,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -33411,7 +33444,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -33680,7 +33712,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -33973,7 +34004,7 @@
 },
 "web | new search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -34558,7 +34589,7 @@
 },
 "web | open web browser": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -35495,7 +35526,7 @@
 },
 "web | search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -35531,13 +35562,13 @@
 },
 "web | search the web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
 "web | search web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -36373,6 +36404,16 @@
 ],
 "screen_after": "web"
 },
+"web | visit": {
+"calls": [
+"call.command('visit')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: visit"
+],
+"screen_after": "web"
+},
 "web | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -36403,7 +36444,7 @@
 },
 "web | web browser": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -36456,7 +36497,7 @@
 },
 "web | web search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },

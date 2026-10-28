@@ -1059,12 +1059,26 @@ def writing_dictation(mode, typed=False):
     return not typed and INPUT_MODE != 'commands' and editor_open
 
 
+def spoken_website(text):
+    """"Go to VA dot gov." or "VA dot gov." said outside a text box: ask to open the site,
+    as "Open website" does, instead of a dead end. Returns True when it asked."""
+    global pending_website
+    from browser_navigation import spoken_address_request
+    address = spoken_address_request(text)
+    if not address:
+        return False
+    pending_website = prepare_address(address)
+    speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
+    return True
+
+
 def web_writing_field():
     """True while a web text box you write in (a message or comment box) is being edited.
     A site's search box with suggestions and a password box are not writing."""
     session = web_session
-    writing = getattr(session, 'writing_field', None) if session is not None else None
-    return bool(callable(writing) and writing() is True)
+    # Looked up on the class, so a stand-in session is never asked.
+    writing = getattr(type(session), 'writing_field', None) if session is not None else None
+    return bool(callable(writing) and writing(session) is True)
 
 
 def speech_control(value):
@@ -4179,7 +4193,7 @@ def _handle(text, mode, typed=False):
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
             SEARCH_RETURN_MODE='web'
-            speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
+            speak('Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels.')
             return 'search'
         revision=getattr(web_session,'page_revision',0)
         if text.startswith('web key '):
@@ -4197,6 +4211,9 @@ def _handle(text, mode, typed=False):
                 speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
             except ValueError as exc:
                 speak(str(exc))
+            return 'web'
+        if (command.startswith(('go to ', 'open ', 'visit ')) and not web_writing_field() and __import__('browser_navigation').spoken_address_request(text)
+                and not (command.startswith('go to ') and web_session.favorites.get(text.strip()[6:])) and spoken_website(text)):
             return 'web'
         speak_web_result(web_session.command(text),revision)
         return 'web'
@@ -4605,7 +4622,7 @@ def _handle(text, mode, typed=False):
             speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'bing' if command.startswith('bing ') else None),revision)
             return 'web' if web_session.snapshot else 'awake'
         SEARCH_RETURN_MODE='awake'
-        speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
+        speak('Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels.')
         return 'search'
     if mode in ('word_processor','notepad_menu','reader_menu','media_menu','local_media','recent_documents','reader_recent'):
         # Nothing above understood the words. A misheard word must not throw you out of
@@ -4613,6 +4630,7 @@ def _handle(text, mode, typed=False):
         if command in ('main menu','back to main menu','go to main menu'):return 'awake'   # handle() says Main menu
         speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
         return mode
+    if mode == 'awake' and spoken_website(text):return 'awake'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 

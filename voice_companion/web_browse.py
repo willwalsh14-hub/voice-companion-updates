@@ -304,6 +304,8 @@ SEMANTICS = r'''
             else if(role==='graphic'||role==='frame')append((role==='frame'?'Frame ':'')+label);
             else if(tag==='img'){}
             else for(const child of (e.shadowRoot?e.shadowRoot.childNodes:e.tagName==='SLOT'&&e.assignedNodes({flatten:true}).length?e.assignedNodes({flatten:true}):e.childNodes))walk(child);
+            // An empty message area (role status, alert or log) waits for a message; screen readers say nothing for it.
+            if(item&&size()===item.start&&/^Unlabeled (?:status|alert|log|marquee|timer|note|tooltip|group)$/.test(label)){if(elements[elements.length-1]===item)elements.pop();item=null;}
             if(item){if(size()===item.start && label)append(label);item.end=size();if(!item.label)item.label=(item.role==='listitem'?output.slice(item.start,item.end).trim().split('\n')[0]:output.slice(item.start,item.end)).trim().slice(0,180);
               // A list item holding only a link or image is named by what it shows; one with nothing is empty.
               if(item.role==='listitem'&&!item.label)item.label='Empty list item';if(['heading','link'].includes(item.role)&&item.label&&!urlOnly(item.label)){const range=output.slice(item.start,item.end);const offset=range.indexOf(item.label);if(offset>=0){item.start+=offset;if(item.role==='heading')item.end=item.start+item.label.length;}}}

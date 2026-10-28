@@ -637,7 +637,7 @@ class MediaHub:
         self.episode_index=0 if episodes else None
         self.chapters=[]
         if not episodes: return 'No playable episodes were found in this podcast feed.'
-        return (show['name']+'. Found '+str(len(episodes))+' episodes. Episode 1: '+episodes[0]['title']+
+        return (show['name']+'. Found '+_counted(len(episodes),'episode')+'. Episode 1: '+episodes[0]['title']+
                 '. Say next or previous to browse, that one to play, or download this episode.')
 
     def subscribe(self, number):
@@ -1003,7 +1003,9 @@ class MediaHub:
                 return 'Say podcasts to switch to podcasts.'
         if section == 'podcast':
             if self.browsing_episodes:
-                if cmd in ('next','next episode','go forward','forward','previous','previous episode','go back','back'):
+                if cmd in ('next','next episode','go forward','forward','previous','previous episode','go back','back') and not (
+                        cmd in ('next episode','previous episode') and self.current_episode_index is not None and getattr(self.player,'kind',None)=='podcast'):
+                    # While an episode plays, "Next episode" plays the next one, as its action says.
                     if not self.episodes: return 'This feed has no playable episodes.'
                     step=-1 if cmd.startswith(('previous','go back','back')) else 1
                     index=(self.episode_index if self.episode_index is not None else 0)+step

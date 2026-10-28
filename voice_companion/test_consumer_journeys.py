@@ -164,6 +164,21 @@ class RadioJourneyTests(Journey):
         self.assertEqual(self.spoken[-1],'Media menu. Radio (R), 1 of 3.')
 
 
+    def test_next_episode_plays_the_next_episode_while_one_plays(self):
+        """"Play next episode" only moved the list; at the end it said "That is the last episode"."""
+        hub=self.hub()
+        episodes=[{'title':'The dollar','url':'https://audio.test/1','show':'Planet Money'},{'title':'Gold','url':'https://audio.test/2','show':'Planet Money'}]
+        with patch.object(hub,'_feed_episodes',return_value=episodes):
+            mode=self.say('podcasts','awake');self.say('search Planet',mode)
+            self.assertEqual(self.spoken,['Found 1 podcast. Podcast 1: Planet Money. Say next or previous to browse. Say that one to open episodes, or subscribe to save this feed.'])
+            self.say('that one',mode);self.assertTrue(self.spoken[0].startswith('Planet Money. Found 2 episodes.'))
+            self.say('next',mode);self.say('that one',mode)
+            self.assertEqual(self.spoken,['Playing Gold. Say pause, back 15 seconds, or next episode.'])
+            self.say('Previous episode.',mode)
+            self.assertEqual(self.spoken,['Playing The dollar. Say pause, back 15 seconds, or next episode.'])
+            self.assertEqual(hub.player.calls[-1][1],'https://audio.test/1')
+
+
 class SpokenAddressTests(Journey):
     web=WebsiteByVoiceTests.web
 
@@ -244,6 +259,15 @@ class LivePageTests(LiveBase):
         self.assertIn('Text entered',self.session.command('type Houston'))
         self.session.keyboard('Done')
         self.assertEqual(self.page.locator('#loc').input_value(),'Houston')
+
+
+    def test_an_empty_message_area_is_not_read(self):
+        """Every page with an empty status area read "Unlabeled status"."""
+        self.page.set_content('<title>Form</title><h1>Form</h1><div role="status" id="s"></div><div role="alert"></div><p>End.</p>')
+        self.session._refresh()
+        self.assertNotIn('Unlabeled',self.session.reading.text)
+        self.page.locator('#s').evaluate("e=>e.textContent='Saved.'");self.session._refresh()
+        self.assertIn('Saved.',self.session.reading.text)
 
 
 class LiveFieldBase(LiveBase):
@@ -349,3 +373,25 @@ class LiveActionTests(LiveBase):
         self.assertEqual(notice,'This page could not open. Check your internet connection, then try again. Say go back to return to the last page.')
         self.assertIn('Shop',self.session.command('go back'))
         self.assertEqual(self.session.command('next link'),'Link Next page.')
+
+
+class GoToAddressTests(Journey):
+    web=WebsiteByVoiceTests.web
+
+    def test_go_to_an_address_from_the_main_menu_asks_to_open_it(self):
+        """"Go to VA dot gov." and "VA dot gov." gave the general help message."""
+        for spoken in ('Go to VA dot gov.','VA dot gov.','visit weather dot com'):
+            with self.subTest(spoken=spoken):
+                session=self.web()
+                self.assertEqual(self.say(spoken,'awake'),'awake')
+                self.assertTrue(self.spoken[0].startswith('I heard website '),self.spoken)
+                self.assertEqual(self.say('yes','awake'),'web');session.open.assert_called_once()
+        self.say('Go to sleep later.','awake')
+        self.assertFalse(any(text.startswith('I heard website') for text in self.spoken))
+
+    def test_go_to_an_address_on_a_page_asks_to_open_it(self):
+        session=self.web();session.snapshot={'url':'https://example.com/','title':'Example','text':'Example'}
+        session.favorites.get.return_value=None
+        self.assertEqual(self.say('go to youtube dot com forward slash','web'),'web')
+        self.assertEqual(self.spoken,['I heard website youtube.com. Is that right? Say yes or no.'])
+        self.say('Yes, please.','web');session.open.assert_called_once_with('https://youtube.com/')

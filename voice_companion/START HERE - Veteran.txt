@@ -1250,6 +1250,7 @@ On this menu, Alt reads the menu again.
 4. Use the page reading commands to explore the result.
 To open a website, type its address, such as example.com. You do not need to type www or https.
 By voice, say "Open website", followed by the address. Say "dot" for a period and "slash" for /. For example, say "Open website example dot com". Companion asks you to check the address before it opens the site.
+You can also say "Go to", followed by the address, such as "Go to VA dot gov". In Search or enter address, just say the address.
 Escape cancels the entry.
 Google is the default search engine. You can also choose Bing, Brave Search, or DuckDuckGo.
 - To change the default, say "Search engine" or "Default search engine", followed by the name. For example, say "Search engine Brave Search" or "Default search engine Google".
@@ -1266,6 +1267,7 @@ Companion reads the page in its own window. Use the page view in the Companion w
 - To reach the ends of the current line, say "Go to start of line" or "Go to end of line", or press Home or End.
 - To move a longer way, say "Page down" or "Page up", or press Page Down or Page Up.
 - To read from the top, say "Read page". For the next part, say "Continue reading", or press Down Arrow.
+- To hear the page name and the item you are on, say "Where am I".
 Buttons and form fields say their names and types. A picture used as a button is read as a button. Checkboxes say whether they are checked. Password values are never read.
 Reading follows the place you choose. After you move to a heading, the arrows go on from that heading.
 When a website changes a form without a new page, the page view updates. For example, after an email step, you can move through the new password step. An old hidden field no longer works.
