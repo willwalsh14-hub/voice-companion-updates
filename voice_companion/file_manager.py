@@ -274,9 +274,10 @@ class FileManager:
         if self.location is None or any(i.drive or not i.filesystem for i in targets):raise ValueError('Choose files or folders inside a drive. Drives and virtual locations cannot be renamed, deleted, copied, or cut.')
         return targets
     def choose(self,name):
-        name=name.strip().casefold()
+        # A recognizer ends "Photos." with a period; Windows names never end in one.
+        heard=name.strip().rstrip('.!?');name=heard.casefold()
         matches=[(n,i) for n,i in enumerate(self.items) if i.name.casefold()==name or i.path.casefold()==name or Path(i.name).stem.casefold()==name or (i.drive and name in (ntpath.splitdrive(i.path)[0].rstrip(':').casefold()+' drive','drive '+ntpath.splitdrive(i.path)[0].rstrip(':').casefold()))]
-        if len(matches)!=1:raise ValueError('More than one item matches. Use arrows or say its full path.' if matches else 'No item has that name in this list.')
+        if len(matches)!=1:raise ValueError('More than one item matches. Use arrows or say its full path.' if matches else 'No item is named '+heard+'. Say an item name, or press F1 for help.')
         self.index=matches[0][0]
     def command(self,text):
         text=text.strip();cmd=text.casefold().rstrip('.!?')

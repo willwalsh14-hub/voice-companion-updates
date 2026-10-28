@@ -230,5 +230,21 @@ class FileActionWordsTests(unittest.TestCase):
                          'Rename a.txt. Type or say the new name, including the extension, then press Enter.')
 
 
+class FileManagerUnknownWordsTests(FileActionWordsTests):
+    def test_unknown_words_say_what_was_heard_and_where_help_is(self):
+        # Heard: "Read document." -> "No item has that name in this list." It did not say
+        # what it heard, or that F1 lists the commands.
+        with self.assertRaises(ValueError) as caught:
+            self.manager.command('Read document.')
+        self.assertEqual(str(caught.exception), 'No item is named Read document. Say an item name, or press F1 for help.')
+        self.assertEqual(self.manager.command('a.txt'), 'Opening a.txt.')
+
+    def test_a_spoken_name_with_a_recognizer_period_still_matches(self):
+        # Recognizers add a period: "Photos." or "Open b." must find the item.
+        self.assertEqual(self.manager.command('Photos.'), 'Opening folder.')
+        self.settle(self.manager); self.manager.command('go back'); self.settle(self.manager)
+        self.assertEqual(self.manager.command('Open b.'), 'Opening b.txt.')
+
+
 if __name__ == '__main__':
     unittest.main()
