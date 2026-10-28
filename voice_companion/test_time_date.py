@@ -274,7 +274,7 @@ class ClockScreenTests(unittest.TestCase):
         with patch.object(app,'run_web_search',return_value='search') as search:
             app.web_session=Mock()
             app.handle('Date','search')
-        search.assert_called_once_with('Date')
+        search.assert_called_once();self.assertEqual(search.call_args.args[0],'Date')
         self.assertNotIn('Thursday, October 22, 2026.',self.said())
         self.speech.reset_mock()
         self.assertEqual(app.handle('What time is it?','search'),'search')

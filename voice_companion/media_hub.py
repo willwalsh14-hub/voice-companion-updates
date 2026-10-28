@@ -21,6 +21,7 @@ from urllib import request, parse
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from media_player import MediaPlayer, seek_message
+from time_date import DAYS, MONTHS, spoken_time
 
 RADIO_API = 'https://de1.api.radio-browser.info/json/stations/search'
 RADIO_ROOTS = ('https://all.api.radio-browser.info','https://de1.api.radio-browser.info',
@@ -44,6 +45,16 @@ def _http(url, limit=4_000_000):
 
 
 def _json(url): return json.loads(_http(url, 30_000_000 if url==IPRD_CATALOG else 4_000_000))
+
+
+def _counted(count, word):
+    """'1 station', '2 stations'."""
+    return str(count) + ' ' + word + ('' if count == 1 else 's')
+
+
+def _spoken_when(when):
+    """'Tuesday, October 13 at eight PM', as people say it; never 08:00 PM or an ISO date."""
+    return DAYS[when.weekday()] + ', ' + MONTHS[when.month-1] + ' ' + str(when.day) + ' at ' + spoken_time(when)
 
 
 def _http_url(url): return urlsplit(url).scheme in ('http','https') and bool(urlsplit(url).hostname)
@@ -385,7 +396,7 @@ class MediaHub:
             if len(self.stations)>=30: break
         if not self.stations: return online_error + 'No matching stations. Try another name or genre.'
         self.station_index = 0
-        return (online_error + 'Found '+str(len(self.stations))+' stations. Station 1: '+self.stations[0]['name']+'. '
+        return (online_error + 'Found '+_counted(len(self.stations),'station')+'. Station 1: '+self.stations[0]['name']+'. '
                 'Say next or previous to browse, that one to play, or play followed by a number.')
 
     def station(self, number):
@@ -473,8 +484,19 @@ class MediaHub:
                      'repeat':repeat,'id':str(time.time_ns())})
         self._save('radio-schedule.json',jobs)
         self.start_scheduler()
-        return ('Scheduled ' + station['name'] + ' for ' + when.strftime('%A %B %d at %I:%M %p') +
-                f' for {minutes} minutes. Keep Voice Companion running and the computer awake.')
+        return ('Scheduled ' + station['name'] + ' for ' + _spoken_when(when) +
+                f' for {minutes} minutes' + (', every day' if repeat else '') + '. Keep Voice Companion running and the computer awake.')
+
+    @staticmethod
+    def _scheduled_when(job):
+        """When a schedule entry records, in words, and whether it repeats."""
+        try: when=_spoken_when(datetime.fromisoformat(job['when']))
+        except (TypeError,ValueError): when='at a time that could not be read'
+        return when+(', every day' if job.get('repeat') else '')
+
+    def has_scheduled_recordings(self):
+        jobs=self._load('radio-schedule.json',[])
+        return isinstance(jobs,list) and bool(jobs)
 
     @staticmethod
     def _scheduled_name(job):
@@ -564,7 +586,7 @@ class MediaHub:
         self.episodes=[]
         self.current_feed=None
         if not self.shows: return 'No podcast feeds found. Try another name or category.'
-        return ('Found '+str(len(self.shows))+' podcasts. Podcast 1: '+self.shows[0]['name']+'. '
+        return ('Found '+_counted(len(self.shows),'podcast')+'. Podcast 1: '+self.shows[0]['name']+'. '
                 'Say next or previous to browse. Say that one to open episodes, or subscribe to save this feed.')
 
     def _feed_episodes(self, show):
@@ -646,7 +668,7 @@ class MediaHub:
         self.show_index=0 if subs else None
         self.browsing_episodes=False
         self.episode_index=None
-        return ('Found '+str(len(subs))+' subscriptions. Subscription 1: '+subs[0]['name']+
+        return ('Found '+_counted(len(subs),'subscription')+'. Subscription 1: '+subs[0]['name']+
                 ', automatic downloads '+str(subs[0].get('download_limit','manual'))+
                 '. Say next or previous, that one to open episodes, or subscribe.' if subs else 'No podcast subscriptions yet.')
 
@@ -1093,7 +1115,7 @@ class MediaHub:
             jobs=self._load('radio-schedule.json',[])
             if not isinstance(jobs,list):
                 return 'The radio schedule is damaged. Ask your helper to check it.'
-            return 'Scheduled: '+ '; '.join(f'{i}. '+(f'{name} at {j["when"]}' if (name:=self._scheduled_name(j)) else 'A damaged schedule entry')
+            return 'Scheduled: '+ ' '.join(f'{i}. '+(name+', '+self._scheduled_when(j) if (name:=self._scheduled_name(j)) else 'A damaged schedule entry')+'.'
                                            for i,j in enumerate(jobs,1)) if jobs else 'No recordings are scheduled.'
         match=re.fullmatch(r'cancel scheduled recording (\d+)',cmd)
         if match:

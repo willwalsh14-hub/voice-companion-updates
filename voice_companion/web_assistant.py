@@ -2620,7 +2620,7 @@ class WebSession:
         self.list_focus='fields'
         self.field_list_index=0
         self.pending=None
-        return ('Found '+str(len(self.choices))+' fields. '+announce_item(_label(self.choices[0]),0,len(self.choices),hotkey=False)+
+        return ('Found '+str(len(self.choices))+(' field. ' if len(self.choices)==1 else ' fields. ')+announce_item(_label(self.choices[0]),0,len(self.choices),hotkey=False)+
                 ' Say next or previous, then that one to answer it.')
 
     def _ask_field(self):
@@ -3090,7 +3090,7 @@ class WebSession:
             self.favorite_index=0
             self.list_focus='favorites'
             self.pending=None
-            return ('Found '+str(len(self.favorite_items))+' favorites. '+announce_item(self.favorite_items[0][1]['name'],0,len(self.favorite_items))+
+            return ('Found '+str(len(self.favorite_items))+(' favorite. ' if len(self.favorite_items)==1 else ' favorites. ')+announce_item(self.favorite_items[0][1]['name'],0,len(self.favorite_items))+
                     ' Say next or previous, then that one to open it.' if self.favorite_items else 'No favorites saved yet.')
         if command.startswith('go to '):
             item=self.favorites.get(spoken.strip()[6:])

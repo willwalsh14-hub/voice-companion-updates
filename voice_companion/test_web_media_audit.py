@@ -205,7 +205,7 @@ class MediaTests(unittest.TestCase):
         for answer in (['not', 'a', 'dict'], {'results': ['text', None, {'collectionName': 'Real show', 'feedUrl': 'https://pod.example/feed'}]}):
             self.hub.fetch_json.return_value = answer
             app.handle('search podcasts for news', 'media')
-        self.assertTrue(said[-1].startswith('Found 1 podcasts. Podcast 1: Real show.'), said[-1])
+        self.assertTrue(said[-1].startswith('Found 1 podcast. Podcast 1: Real show.'), said[-1])
 
     def test_play_on_a_station_whose_stream_fails_says_so_plainly(self):
         from media_navigation import MediaNavigation
@@ -238,7 +238,7 @@ class MediaTests(unittest.TestCase):
         (self.folder / 'podcast-subscriptions.json').write_text(json.dumps(subs), encoding='utf-8')
         app, said = self.companion('podcast')
         app.handle('list subscriptions', 'media')
-        self.assertTrue(said[-1].startswith('Found 1 subscriptions. Subscription 1: Good show'), said[-1])
+        self.assertTrue(said[-1].startswith('Found 1 subscription. Subscription 1: Good show'), said[-1])
         with patch('media_hub._http', return_value=b'<rss><channel><item><title>   </title><enclosure url="https://b.example/1.mp3"/></item></channel></rss>'):
             self.assertIn('Checked 1 of 1', self.hub.refresh_subscriptions())
             said_open = self.hub.open_podcast(1)
