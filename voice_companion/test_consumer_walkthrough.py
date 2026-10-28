@@ -311,5 +311,44 @@ class ReaderOpeningWordsTests(FileActionWordsTests):
         self.settle(self.manager)
 
 
+class ReaderPickerTests(CompanionTestCase):
+    """Document reader, Open a document, then a text file or PDF.
+
+    Before: it was not added to Recent documents, and Escape went to File manager
+    (three more Escapes to get back). A Word file went straight back to the menu."""
+
+    def setUp(self):
+        super().setUp()
+        import file_manager, regular_browser
+        from test_file_manager import FakeFiles, settle
+        drive = self.folder / 'drive'; drive.mkdir(); (drive / 'notes.txt').write_text('Buy milk.')
+        self.settle = settle
+        for target, name, value in ((file_manager, 'ShellFiles', lambda: FakeFiles(drive)),
+                                    (regular_browser, 'data_folder', lambda: self.folder),
+                                    (companion, 'FILE_MANAGER', None), (companion, 'FILE_READER', None),
+                                    (companion, 'sync_app_context', Mock())):
+            p = patch.object(target, name, value); p.start(); self.addCleanup(p.stop)
+        import task_navigation
+        nav = task_navigation.TaskNavigation(companion)
+        p = patch.object(companion, 'task_navigation', lambda: nav); p.start(); self.addCleanup(p.stop)
+
+    def step(self, key, mode):
+        request = companion.navigation_key(key, mode)
+        mode = companion.handle_keyboard(request, mode) if request else mode
+        self.settle(companion.FILE_MANAGER)
+        return companion.poll_file_manager(mode)
+
+    def test_a_text_file_returns_to_the_reader_menu_and_is_recent(self):
+        mode = companion.handle('document reader', 'awake')
+        mode = self.step('Enter', mode)              # Open a document: drive list
+        mode = self.step('Enter', mode)              # the drive
+        mode = self.step('Enter', mode)              # notes.txt
+        self.assertEqual(mode, 'file_reader')
+        self.assertIn('Buy milk.', self.said[-1])
+        self.assertEqual(self.step('Escape', mode), 'reader_menu')
+        self.assertTrue(self.said[-1].startswith('Document reader menu.'), self.said[-1])
+        self.assertEqual([__import__('pathlib').Path(p).name for p in companion.task_navigation().reader_list()], ['notes.txt'])
+
+
 if __name__ == '__main__':
     unittest.main()

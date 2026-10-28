@@ -947,6 +947,11 @@ def poll_file_manager(mode):
             FILE_READER=FILE_MANAGER.opened;FILE_MANAGER.opened=None
             if task_navigation().picker=='document':
                 task_navigation().remember(FILE_READER.path);task_navigation().picker=None
+            elif task_navigation().picker=='reader':
+                # Document reader, Open a document: a text file or PDF is remembered and Escape
+                # goes back to the Document reader menu, the same as a Word file (read_file).
+                task_navigation().remember_read(FILE_READER.path);task_navigation().picker=None
+                task_navigation().reader_return='reader_menu'
             notice=notice or 'Opened '+FILE_READER.title+'. Read-only document. '+FILE_READER.reading.read(True)
             if mode=='sleep':SLEEP_RETURN_MODE='file_reader'
             else:mode='file_reader'
