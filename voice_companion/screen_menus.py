@@ -70,12 +70,18 @@ MENUS = {
             ('Messages per page', '', 'email list size'),
             ('Email help', 'F1', 'help with email'),
             ('Main menu', '', 'main menu')]),
-        # Last, so the Alt paths people learned for the groups above stay the same.
-        ('Attachments', [
+        # Last, so the Alt paths people learned for the groups above stay the same. A menu has
+        # at most 9 groups, so the header lines (Alt+1 to Alt+6) join the attachments here.
+        ('Header and attachments', [
             ('List attachments', 'L', 'list attachments'),
             ('Save all attachments', '', 'save all attachments'),
             ('Open attachment', '', 'open attachment'),
-            ('Attachment sizes', '', 'how big are the attachments')]),
+            ('Attachment sizes', '', 'how big are the attachments'),
+            ('From', 'Alt+1', 'who is it from'),
+            ('To', 'Alt+2', 'who is it to'),
+            ('CC', 'Alt+3', 'read the cc'),
+            ('Subject', 'Alt+4', 'what is the subject'),
+            ('Date sent', 'Alt+5', 'when was it sent')]),
     ]),
     'email_draft': ('Email draft menu', [
         ('Message', [
@@ -104,6 +110,10 @@ MENUS = {
             ('Attach the last download', '', 'attach the last download'),
             ('List attachments', 'Ctrl+L', 'list attachments'),
             ('Remove an attachment', '', 'remove attachment')]),
+        # Last, so the Alt paths of the groups above stay the same.
+        ('Undo and redo', [
+            ('Undo', 'Ctrl+Z', 'undo'),
+            ('Redo', 'Ctrl+Y', 'redo')]),
     ]),
     # Named after what is open, so it is not confused with the Notepad menu you start from.
     'note': ('Note menu', [

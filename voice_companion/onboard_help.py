@@ -183,6 +183,14 @@ class HelpSession:
             return self._open_article(paragraphs, name)
         return None
 
+    def not_understood(self):
+        """The short answer to words Help does not know: what to say, and how Escape leaves."""
+        if self.level == 'topics':
+            return 'I did not understand that. Say next to hear a topic, or press Escape to leave Help.'
+        if self.level == 'article':
+            return 'I did not understand that. Say next to keep reading, or press Escape to go back.'
+        return 'I did not understand that. Say next to hear a part, or press Escape to go back.'
+
     @staticmethod
     def accepts(text):
         command=text.casefold().strip().rstrip('.!?')

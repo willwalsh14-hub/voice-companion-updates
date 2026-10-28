@@ -33,6 +33,35 @@ EMPTY_LIST_COMMANDS = ('next', 'previous', 'next message', 'previous message', '
                        'move message to folder')
 
 
+# Spoken questions for one line of the message's header (Will, October 2026). Alt+1 to Alt+6
+# ask the same in the message list and in an open message (input_parity.MAIL_HEADER_KEYS).
+HEADER_REQUESTS = {
+    'from': ('who is it from', 'who sent this', 'who sent it', 'who sent the message', 'who sent this message',
+             'read from', 'read the from line', 'read sender', 'read the sender', 'read who it is from'),
+    'to': ('who is it to', 'who is it for', 'who was it sent to', 'read to', 'read the to line',
+           'read recipients', 'read the recipients'),
+    'cc': ('read the cc', 'read cc', 'read the cc line', 'who was copied', 'who is copied', 'who got a copy'),
+    'subject': ('what is the subject', "what's the subject", 'read the subject', 'read subject', 'what is it about'),
+    'date': ('when was it sent', 'when was this sent', 'read the date', 'read date', 'read the date sent',
+             'date sent', 'when did it come'),
+    'attachments': ('how many attachments', 'are there attachments', 'any attachments', 'read the attachments count',
+                    'attachment count'),
+}
+HEADER_COMMANDS = {phrase: name for name, phrases in HEADER_REQUESTS.items() for phrase in phrases}
+
+
+def header_request(text):
+    """'from', 'to', 'cc', 'subject', 'date', 'attachments', or None for other words."""
+    command = ' '.join(re.sub(r"[^a-z' ]", ' ', str(text).casefold()).split())
+    return HEADER_COMMANDS.get(command)
+
+
+def spoken_people(people):
+    """'Jane Smith and Bob Jones': names, or the address when a person has no name."""
+    from mail_attachments import joined
+    return joined((name or address) for name, address in people)
+
+
 def sender_address(row):
     from email.utils import getaddresses
     candidates=getaddresses([row.get('sender_address') or row.get('from','')])
@@ -440,7 +469,46 @@ class MailSession:
         self.set_format(format)
         self.body_offset = 0
         self.reading.set_text(self.body_text, reset=True)
-        return self._attachment_note() + self._next_body()
+        # Only "Message opened." before the words (Will, October 2026). From, To, CC, Subject
+        # and Date have their own keys and questions (header()); the files are still named first.
+        return 'Message opened. ' + self._attachment_note() + self._next_body()
+
+    def header(self, name):
+        """One line of the message's header, said on its own: From, To, CC, Subject, Date sent, or the files."""
+        if not self.rows or not self.current:
+            return 'Open a message first.' if self.rows else 'Empty list. No messages on this page.'
+        row = self.rows[self.current - 1]
+        if name == 'from':
+            address = sender_address(row)
+            who = sender_name(row)
+            if who in ('Unknown sender', 'Sender name unavailable') and address:
+                return 'From: ' + address + '.'
+            return 'From: ' + who + (', ' + address if address and address.casefold() != who.casefold() else '') + '.'
+        if name == 'subject':
+            subject = ' '.join(str(row.get('subject') or '').split())
+            return 'No subject.' if subject in ('', '(no subject)') else 'Subject: ' + subject.rstrip('.') + '.'
+        if name == 'date':
+            when = row.get('date')
+            return ('Sent ' + when + '.') if when and when != 'unavailable' else 'The date it was sent is not known.'
+        if name == 'attachments':
+            from mail_attachments import count_words
+            same = self.view == 'message' and getattr(self, 'attachments_for', None) == (row['id'], self.folder_id)
+            found = self.attachments if same else self.client().attachments(row['id'], self.folder_id)
+            if found is None:
+                return 'I could not check this message for attachments.'
+            return count_words(len(found)) + '.' if found else 'No attachments.'
+        key = (row['id'], self.folder_id)
+        cache = self.__dict__.setdefault('_recipients', {})
+        if key not in cache:
+            reader = getattr(self.client(), 'message_headers', None)
+            if reader is None:
+                return 'This email account cannot read the To and CC lines.'
+            cache.clear()
+            cache[key] = reader(row['id'], self.folder_id)
+        people = cache[key].get(name) or []
+        if not people:
+            return 'No CC.' if name == 'cc' else 'No To address.'
+        return ('To: ' if name == 'to' else 'CC: ') + spoken_people(people) + '.'
 
     def _attachment_note(self):
         """Said before the message: its files, with names and sizes."""
@@ -591,6 +659,9 @@ class MailSession:
                 from mail_attachments import summary
                 files = ' ' + summary(self.attachments) if self.view == 'message' and self.attachments else ''
                 return self._summary(self.current) + files
+            asked = header_request(command)
+            if asked:
+                return self.header(asked)
             if self.view=='message' and command in ('next link','previous link','next button','previous button'):
                 direction,role=command.split();return self.message_element(role,-1 if direction=='previous' else 1)
             if self.view=='message' and command in ('activate current element','activate current link','activate current button','open current link','open current button'):

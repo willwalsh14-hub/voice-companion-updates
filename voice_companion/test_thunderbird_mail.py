@@ -122,6 +122,28 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         self.assertIn('Message 25', spoken)
         self.assertIn('Sender 25', spoken)
 
+    def test_opening_says_message_opened_and_each_header_has_its_question(self):
+        # Will, October 2026: opening says only "Message opened."; Alt+1 to Alt+6 or a question
+        # says each header line on its own.
+        mail_accounts.connect('thunderbird', self.folder)
+        session = MailSession('thunderbird', self.folder)
+        session.list_messages()
+        self.assertEqual(session.process('who is it from'), 'From: Sender 25, sender25@example.com.')
+        opened = session.process('open current message')
+        self.assertTrue(opened.startswith('Message opened. '), opened)
+        self.assertIn('Latest news', opened)
+        self.assertNotIn('Sender 25', opened)
+        self.assertEqual(session.process('Who sent this?'), 'From: Sender 25, sender25@example.com.')
+        self.assertEqual(session.process('who is it to'), 'To: me@gmail.com.')
+        self.assertEqual(session.process('Read the CC.'), 'CC: other@example.com.')
+        self.assertEqual(session.process('What is the subject?'), 'Subject: Message 25.')
+        self.assertEqual(session.process('When was it sent?'), 'Sent October 25, 2026.')
+        self.assertEqual(session.process('read the date'), 'Sent October 25, 2026.')
+        self.assertIn('attachment', session.process('how many attachments').casefold())
+        session.process('back to folder')
+        session.process('next message')
+        self.assertEqual(session.process('read the cc'), 'No CC.')
+
     @simulated(FAKE_THUNDERBIRD_SERVER_MAIL=1)
     def test_list_shows_mail_that_just_reached_the_server(self):
         # Will, October 23, 2026: Thunderbird with Gmail did not show the latest messages, while

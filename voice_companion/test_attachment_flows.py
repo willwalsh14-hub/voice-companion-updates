@@ -131,7 +131,7 @@ class MessageAttachmentTests(FlowTestCase):
     def test_reading_says_the_files_and_l_lists_them(self):
         mode = self.inbox()
         self.assertEqual(self.press('Enter', mode), 'mailbox')
-        self.assertTrue(self.last().startswith('3 attachments: report.pdf, 10 kilobytes; photo.jpg, 14 bytes; setup.exe, 10 bytes. '
+        self.assertTrue(self.last().startswith('Message opened. 3 attachments: report.pdf, 10 kilobytes; photo.jpg, 14 bytes; setup.exe, 10 bytes. '
                                                'Press L to list them. Hello from Sam.'), self.last())
         mode = self.press('L', mode)
         self.assertEqual(mode, 'attachments')

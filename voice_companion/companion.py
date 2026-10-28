@@ -81,7 +81,7 @@ def documents_folder():
 def document_format_command(command):
     if structural_selection_request(command) or document_control_request(command):
         return True
-    if command in ('normal text', 'make this normal text', 'make this a normal paragraph', 'make this a bulleted list', 'make this a bullet', 'make this a numbered list', 'remove table', 'delete cell contents', 'where in table', 'what cell', 'move right a cell', 'move left a cell', 'row down', 'row up', 'column right', 'column left', 'list headings', 'what are the headings', 'next heading', 'go to next heading', 'new line', 'insert new line', 'line break', 'new paragraph', 'undo', 'undo that', 'remove list', 'end list', 'leave table', 'after table', 'read table', 'review table', 'delete table', 'clear cell', 'read cell', 'next cell', 'previous cell'):
+    if command in ('normal text', 'make this normal text', 'make this a normal paragraph', 'make this a bulleted list', 'make this a bullet', 'make this a numbered list', 'remove table', 'delete cell contents', 'where in table', 'what cell', 'move right a cell', 'move left a cell', 'row down', 'row up', 'column right', 'column left', 'list headings', 'what are the headings', 'next heading', 'go to next heading', 'new line', 'insert new line', 'line break', 'new paragraph', 'undo', 'undo that', 'redo', 'redo that', 'save', 'save it', 'remove list', 'end list', 'leave table', 'after table', 'read table', 'review table', 'delete table', 'clear cell', 'read cell', 'next cell', 'previous cell'):
         return True
     return bool(re.match(r'^(?:apply heading(?: level)? |heading (?:level )?|make this (?:a heading|bold|italic|underlined)|'
                          r'(?:set|change|use) (?:word )?(?:font|size) |(?:bold|italic|italicize|underline) (?:word|this|paragraph)|'
@@ -416,6 +416,7 @@ def app_context(mode):
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
     if logical=='contacts':__import__('contacts_screen').context(sys.modules[__name__],context)
     if logical=='calendar':__import__('calendar_screen').context(sys.modules[__name__],context)
+    if logical=='draft_leave':__import__('draft_leave').context(sys.modules[__name__],context)
     if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
@@ -656,6 +657,7 @@ def process_keyboard_batch(mode):
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
+MAIN_MENU_NOT_UNDERSTOOD = 'I did not understand that. You are on the main menu. Press F1 for help.'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
 # Said together with the next main menu announcement, in one message: a second
@@ -746,7 +748,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','document_replace','draft_leave','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
         return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
@@ -905,10 +907,14 @@ def _navigation_key(key,mode):
         if request!='':return request
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    if mode=='draft_leave':
+        # Leaving a written email: save it, throw it away, or keep writing (draft_leave.py).
+        return __import__('draft_leave').navigation_key(sys.modules[__name__],key)
     if mode=='calendar' and __import__('calendar_screen').PENDING is not None:
         # A question on the Calendar owns the arrows and Enter (this one, all, or no).
         return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
-    from input_parity import screen_command
+    from input_parity import screen_command,MAIL_HEADER_KEYS
+    if mode=='mailbox' and key in MAIL_HEADER_KEYS:return MAIL_HEADER_KEYS[key]
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
@@ -1066,7 +1072,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.','draft_leave':'Back to the question about your email.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -2778,6 +2784,39 @@ def handle_mailbox_screen(text, command, mode, typed):
     return 'mailbox'
 
 
+def close_email_draft(mode, discard, notice=None):
+    """Close the email draft and go back to the inbox. discard: remove what was not saved."""
+    global email_draft, mail_session, pending_send, MAIN_MENU_LEAD
+    pending_send = None
+    discarded = True
+    if discard:
+        try:
+            discarded = email_draft.discard()
+        except OSError:
+            speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
+            return 'email_draft'
+    provider = email_draft.provider
+    email_draft = None
+    if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
+    if notice is None:
+        notice = 'Draft canceled without saving.'
+    speak(notice if discarded else
+          'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
+    finish_mail_announcement()
+    if mail_session is None and provider in REMOVED_MAIL_PROVIDERS:
+        # A draft from a removed Gmail or Microsoft connection: back to the chosen account.
+        chosen = connected_selection()
+        provider = chosen[0] if chosen else provider
+    if mail_session is None and provider in MAIL_PROVIDERS:
+        mail_session = MailSession(provider, APP, progress=mail_progress)
+    if mail_session is not None:
+        speak(mail_session.process('open inbox'))
+        return 'mailbox'
+    # Said with Main menu, in one message: a second message would cut this one off.
+    MAIN_MENU_LEAD = 'No email account is set up yet.'
+    return 'awake'
+
+
 def forward_attachment_note(context):
     """What a new forward says about the original's files."""
     if context.get('action') != 'forward':
@@ -3422,6 +3461,25 @@ def _handle(text, mode, typed=False):
             speak('Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.')
             POWER_ACTION=None;return 'exit'
         speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
+    if mode == 'draft_leave' and not spoken_control(command):
+        import draft_leave
+        choice = draft_leave.answer(text)
+        if email_draft is None:
+            speak('The email is already closed.');return 'awake'
+        if choice == 'keep':
+            speak('Keep writing. ' + options_return_notice('email_draft'))
+            focus_email_entry()
+            return 'email_draft'
+        if choice == 'save':
+            try:
+                saved = email_draft.process('save draft')
+            except OSError:
+                speak(UNSAVED_DRAFT + ' ' + draft_leave.SHORT_QUESTION);return mode
+            return close_email_draft(mode, discard=False, notice=saved)
+        if choice == 'discard':
+            return close_email_draft(mode, discard=True, notice='Email thrown away.')
+        speak('Leave this email? ' + draft_leave.SHORT_QUESTION)
+        return mode
     if mode=='document_save' and not spoken_control(command) and command not in ('options','open options','settings','open settings'):
         if command in ('cancel','go back','back'):
             speak('Your document is still open.');return 'document'
@@ -3701,6 +3759,10 @@ def _handle(text, mode, typed=False):
             else:speak('Help closed. ' + options_return_notice(help_return_mode))
             return help_return_mode
         if result is not None:speak(result)
+        elif typed or not speech_busy():
+            # Words Help does not know get a short answer (Will, October 2026). While Help
+            # is reading aloud they are ignored, so talk in the room never cuts a topic off.
+            speak(help_session.not_understood())
         return 'help'
     global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME, PUNCTUATION_LEVEL
     if command in ('check voices', 'voice check', 'voice diagnostics'):
@@ -3931,29 +3993,11 @@ def _handle(text, mode, typed=False):
                         'cancel reply draft', 'cancel forward draft', 'cancel forwarding') or
             re.fullmatch(r'(?:go|go back|back|return|take me)(?: to)? (?:the |my )?inbox', command)):
         pending_send = None
-        try:
-            discarded = email_draft.discard()
-        except OSError:
-            speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
-            return mode
-        provider = email_draft.provider
-        email_draft = None
-        if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
-        speak('Draft canceled without saving.' if discarded else
-              'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
-        finish_mail_announcement()
-        if mail_session is None and provider in REMOVED_MAIL_PROVIDERS:
-            # A draft from a removed Gmail or Microsoft connection: back to the chosen account.
-            chosen = connected_selection()
-            provider = chosen[0] if chosen else provider
-        if mail_session is None and provider in MAIL_PROVIDERS:
-            mail_session = MailSession(provider, APP, progress=mail_progress)
-        if mail_session is not None:
-            speak(mail_session.process('open inbox'))
-            return 'mailbox'
-        # Said with Main menu, in one message: a second message would cut this one off.
-        MAIN_MENU_LEAD = 'No email account is set up yet.'
-        return 'awake'
+        import draft_leave
+        if draft_leave.unsaved(email_draft, any(item is email_draft for item, _ in KEYBOARD_DIRTY.values())):
+            # Ask first (Will, October 2026): save it, throw it away, or keep writing.
+            return draft_leave.ask(sys.modules[__name__])
+        return close_email_draft(mode, discard=True)
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
         dictation_feedback(email_draft.process(text))
@@ -4046,6 +4090,12 @@ def _handle(text, mode, typed=False):
         return 'document_save'
     if mode=='document' and command in ('save as','save document as','save the document as','save this document as','save my document as'):
         return start_save_as()
+    if (mode=='document' and document is not None and command in ('save','save it','save document','save my document')
+            and re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I)):
+        # "Save." on a document with no name yet asks for its name first, then saves.
+        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+        DOCUMENT_NAMING_ACTION='name document'
+        speak('This document has no name yet. Say or type its name, then press Enter.');return 'document_name'
     if mode=='document' and command in ('name document','rename document'):
         DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
         DOCUMENT_NAMING_ACTION='name document'
@@ -4798,6 +4848,10 @@ def _handle(text, mode, typed=False):
         speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
         return mode
     if mode == 'awake' and spoken_website(text):return 'awake'
+    if mode == 'awake':
+        # Said like every other menu: what happened, where you are, and where help is.
+        speak(MAIN_MENU_NOT_UNDERSTOOD)
+        return 'awake'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 
