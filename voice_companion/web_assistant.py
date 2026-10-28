@@ -2936,6 +2936,13 @@ class WebSession:
             self.keyboard_field['value']=value;self.web_edit_caret=len(value);self.selection=None
             if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
             return 'Text entered. Say save field, next control, or cancel field editing.'
+        if not self.keyboard_field and command.startswith(('type ', 'enter text ')) and self.snapshot:
+            # Not in a text box: say so, rather than searching the page for "type hello".
+            try:focused=self.backend.focused_control()
+            except Exception:focused=None
+            if focused and text_field(focused) and not focused.get('readonly'):
+                return self.backend.dictate_focused(spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1])
+            return 'Move to a text box first. Say next text box, then type followed by your words.'
         # In a site's own search box, "search for" searches that site.
         search=re.match(r'^\s*search(?: for)?\s+(?!the web\b)(.+)',spoken,re.I|re.S)
         combo=self.keyboard_field if self.keyboard_field else self.browse.current() if self.browse and self.form_index is None and not self.list_focus else None
@@ -2987,6 +2994,9 @@ class WebSession:
             return ('Guided websites use ' + browser_name(self.browser) + '.' +
                     (' This page is open in ' + browser_name(running) + ' because ' + browser_name(self.browser) + ' could not start.' if running != self.browser else '') +
                     ' Say use Chrome or use embedded Edge to change it.')
+        if command=='where am i' and not self.keyboard_field and self.snapshot and self.browse and self.browse.current():
+            # In page view, the page and the place on it, as a screen reader says.
+            return 'Page: '+_plain(self.snapshot.get('title') or self._host())+'. '+describe(self.browse.current(),self.browse.elements)
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None

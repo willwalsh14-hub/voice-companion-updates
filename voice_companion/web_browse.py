@@ -2,6 +2,10 @@
 ACTIONABLE={'link','button','checkbox','radio','combobox','listbox','edit','switch','slider','menuitem','menuitemradio','menuitemcheckbox'}
 QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','m':'frame','p':'paragraph','s':'listbox'}
 
+# What each kind is called aloud, as in the user guide ("E: next text box").
+SPOKEN_NAMES={'edit':'text box','combobox':'choice box','graphic':'picture','form':'form control','radio':'radio button',
+              'listitem':'list item','listbox':'list box','tab':'control'}
+
 def voice_browse_key(command):
     """Translate spoken browsing actions to the same actions used by keys."""
     import re
@@ -166,7 +170,7 @@ class BrowseCursor:
         else:
             candidates=range(self.index-1,-1,-1) if backward else range(self.index+1,len(self.elements))
             index=next((i for i in candidates if match(self.elements[i])),None)
-        if index is None:return ('Start of list. ' if backward else 'End of list. ')+'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else wanted)+'.'
+        if index is None:return ('Start of list. ' if backward else 'End of list. ')+'No '+('previous ' if backward else 'next ')+('heading level '+str(level) if level else SPOKEN_NAMES.get(wanted,wanted))+'.'
         self.index=index;item=self.current();self.position=item.get('start',0)
         if kind(item)=='table':self.table=item['key'];self.row=self.column=0
         elif kind(item)=='cell':self.table=item.get('table');self.row=item.get('row',0);self.column=item.get('column',0)

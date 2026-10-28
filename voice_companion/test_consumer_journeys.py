@@ -183,3 +183,47 @@ class SpokenAddressTests(Journey):
         session=WebSession(self.root,FakeBackend());session.open('https://example.com/')
         session.command('save favorite as My bank')
         self.assertTrue(session.command('list favorites').startswith('Found 1 favorite. '))
+
+
+class PageWordsTests(unittest.TestCase):
+    def test_no_next_item_uses_the_names_in_the_guide(self):
+        """"No next edit.", "No next combobox." and "No next graphic." used code words."""
+        from web_browse import BrowseCursor
+        cursor=BrowseCursor({'elements':[{'role':'text','label':'Only text','start':0,'end':9}],'text':'Only text'})
+        expected={'e':'text box','c':'choice box','g':'picture','f':'form control','r':'radio button','i':'list item','s':'list box','x':'checkbox','k':'link','h':'heading','d':'landmark','m':'frame'}
+        for key,name in expected.items():
+            with self.subTest(key=key):
+                self.assertEqual(cursor.move(key),'End of list. No next '+name+'.')
+                self.assertEqual(cursor.move(key,backward=True),'Start of list. No previous '+name+'.')
+
+
+class LivePageTests(unittest.TestCase):
+    """In a real Chromium page, as a customer uses it."""
+    @classmethod
+    def setUpClass(cls):
+        import test_web_live
+        test_web_live.LiveWebTests.setUpClass.__func__(cls)
+    @classmethod
+    def tearDownClass(cls):
+        import test_web_live
+        test_web_live.LiveWebTests.tearDownClass.__func__(cls)
+    def setUp(self):
+        import test_web_live
+        test_web_live.LiveWebTests.setUp(self)
+        self.page.set_content('<title>VA.gov Home</title><h1>VA.gov Home</h1><p>Welcome.</p><label for="loc">City</label><input id="loc"><h2>News</h2><button>Sign in</button>')
+        self.session._refresh()
+
+    def test_where_am_i_names_the_page_and_the_place_on_it(self):
+        """In page view, "Where am I?" said "No readable field has keyboard focus." wherever you were."""
+        self.session.command('next button')
+        self.assertEqual(self.session.command('Where am I?'),'Page: VA.gov Home. Sign in, button.')
+
+    def test_type_away_from_a_text_box_says_what_to_do(self):
+        """"Type hello" on a button searched the page for "type hello"."""
+        self.session.command('next button')
+        self.assertEqual(self.session.command('type hello'),'Move to a text box first. Say next text box, then type followed by your words.')
+        self.assertEqual(self.page.locator('#loc').input_value(),'')
+        self.session.keyboard('PageTop');self.session.command('next text field')
+        self.assertIn('Text entered',self.session.command('type Houston'))
+        self.session.keyboard('Done')
+        self.assertEqual(self.page.locator('#loc').input_value(),'Houston')
