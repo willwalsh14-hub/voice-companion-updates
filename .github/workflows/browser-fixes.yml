@@ -29,7 +29,16 @@ jobs:
         shell: pwsh
         run: |
           python -m unittest test_app_updates test_update_close test_text_selection test_document_controls test_document_formatting test_dictation_echo test_settings test_file_manager.FileManagerTests -v 2>&1 | Tee-Object -FilePath fixes-test-results.txt
-          if ($LASTEXITCODE) { throw 'Fix regression checks failed.' }
+          if ($LASTEXITCODE) {
+            # Name the failed tests and their output in an annotation: the logs cannot always be read.
+            $text = Get-Content -LiteralPath fixes-test-results.txt -Raw
+            $start = $text.IndexOf('======')
+            $failed = $(if ($start -ge 0) { $text.Substring($start) } else { $text })
+            $clean = $failed -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+            if ($clean.Length -gt 3500) { $clean = $clean.Substring(0, 1200) + '%0A...%0A' + $clean.Substring($clean.Length - 2300) }
+            Write-Output ('::error title=Fix regression checks failed::' + $clean)
+            throw 'Fix regression checks failed.'
+          }
       - name: Test live Chromium controls and semantics
         working-directory: voice_companion
         shell: pwsh
