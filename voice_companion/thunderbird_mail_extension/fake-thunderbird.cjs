@@ -5,7 +5,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const {createFakeMessenger} = require('./fake-messenger.cjs');
+const {createFakeMessenger, addSecondAccount, withoutAccounts} = require('./fake-messenger.cjs');
 
 const {api, state} = createFakeMessenger();
 // Like a person finishing Thunderbird's add account page shortly after it opens.
@@ -20,6 +20,12 @@ state.mailCheck = process.env.FAKE_THUNDERBIRD_MAIL_CHECK || 'ok';
 // Calendars: only Thunderbird's own Home calendar (no Google calendar added), or answers that cannot be read.
 if (process.env.FAKE_THUNDERBIRD_ONLY_HOME_CALENDAR) { state.calendars = state.calendars.filter(c => c.type === 'storage'); state.events = []; }
 if (process.env.FAKE_THUNDERBIRD_CALENDAR_BROKEN) state.calendarBroken = true;
+// Contacts and calendars from two email accounts (Gmail and Outlook), or an add-on from before accounts were given.
+if (process.env.FAKE_THUNDERBIRD_TWO_ACCOUNTS) addSecondAccount(state);
+if (process.env.FAKE_THUNDERBIRD_NO_ACCOUNTS) withoutAccounts(state, api);
+// A calendar Thunderbird cannot read now (by name, as the Experiment reports it), or an address book (by id).
+if (process.env.FAKE_THUNDERBIRD_FAILED_CALENDAR) state.failedCalendars = [process.env.FAKE_THUNDERBIRD_FAILED_CALENDAR];
+if (process.env.FAKE_THUNDERBIRD_FAILED_BOOK) state.failBook = process.env.FAKE_THUNDERBIRD_FAILED_BOOK;
 const messageListeners = [], disconnectListeners = [];
 
 function write(message) {

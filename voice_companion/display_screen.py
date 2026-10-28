@@ -83,6 +83,12 @@ def title(m, mode, value):
 def _confirmation(m, mode, value):
     choice = value.get('confirmation')
     choices = ('yes', 'no')
+    if mode in ('calendar', 'contacts'):
+        # Choosing which calendars or address books to show: their names.
+        screen = __import__(mode + '_screen')
+        names = _safe(screen.choice_names, None)
+        if names and choice in screen.CHOICES:
+            return list(names), list(screen.CHOICES).index(choice)
     if mode == 'calendar':
         import calendar_screen
         choices = tuple(calendar_screen.CHOICES)

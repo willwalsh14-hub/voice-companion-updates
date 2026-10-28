@@ -99,6 +99,7 @@ Contents
   13.5 Find or delete a contact
   13.6 Change a contact
   13.7 Get your Google or Outlook contacts
+  13.8 Choose which address book you see
 14 Calendar
   14.1 Open your calendar
   14.2 Move to another day
@@ -107,6 +108,7 @@ Contents
   14.5 Delete an event
   14.6 Ask what is on your calendar
   14.7 Get your Google calendar
+  14.8 Choose which calendar you see
 15 Browse The Web
   15.1 Open the web browser menu
   15.2 Search or open an address
@@ -1132,6 +1134,7 @@ Press Enter on a contact to open its details. If it has an email address, the fi
 4. Type or say the phone number, then press Enter. To leave it out, press Enter.
 A contact needs an email address or a phone number. To stop, press Escape.
 When you use Thunderbird, the contact goes into Thunderbird. It goes into the address book for your email account, if Thunderbird has one. If not, it goes into Personal Address Book. Thunderbird then copies it to Google or Outlook. Without Thunderbird, the contact is saved on this computer.
+If you chose to see one address book, the contact goes there. See part 13.8.
 If a contact on this computer already has that name, Companion tells you and keeps it. To change that contact, see part 13.6.
 You can also say it all at once, such as "Add contact Bob as bob@example.com".
 
@@ -1160,6 +1163,19 @@ If your account is in Thunderbird but its contacts are missing, a helper can add
 4. Sign in if asked. Choose the address books to add.
 Then say "Refresh contacts" in Companion.
 If you hear that the Voice Companion connection must be updated, close Thunderbird. Then open Contacts again.
+
+13.8 Choose which address book you see
+This part is for people with two or more email accounts in Thunderbird, such as Gmail and Outlook. With one account, you always see all your contacts, and this choice is not offered.
+You can see all your contacts. Or you can see only one account, or only one address book.
+1. Press Control+L, or say "Choose address book". It is also the last item on the Alt menu.
+2. Use Up Arrow and Down Arrow. You hear All address books, then each account, then each address book.
+3. Press Enter to choose. Or press Escape to keep what you see.
+Each address book is named with its account, such as Contacts, Outlook, vet@outlook.com. So two address books with the same name are easy to tell apart.
+- To choose by voice, say "Show", then the name. For example, say "Show Gmail contacts", "Show Outlook contacts", or "Show all contacts". This works from the main menu too.
+- To hear what you see, say "Which address book am I in?" or "Where am I?". Companion also tells you when Contacts opens.
+- Companion remembers your choice for next time. If that address book is gone from Thunderbird, you see all of them. Companion tells you once.
+- A new contact goes into the address book you see. If you see all of them, or one that cannot be changed, it goes to the usual place. Companion tells you where it went.
+- A person saved in two accounts is in the list for each one.
 
 14. CALENDAR
 
@@ -1195,6 +1211,7 @@ If Companion cannot use the date, it says why and asks again. For example: There
 An event is one hour long unless you say more, such as "for 2 hours" or "from 2 to 4".
 A time with no AM or PM means 7 to 11 in the morning, or 12 to 6 in the afternoon. Say "AM" or "PM" to be sure. Words such as "tonight" and "morning" help too.
 To use another calendar, say "Change calendar" before you say Yes. Companion remembers the calendar you used last.
+If you chose to see one calendar, the event goes there. See part 14.8.
 You can also say it all at once, from the main menu or the calendar. For example, say "Add appointment tomorrow at 3 PM called doctor".
 
 14.4 Change an event
@@ -1224,6 +1241,7 @@ Some calendars, such as a holiday calendar, cannot be changed. Companion tells y
 
 14.6 Ask what is on your calendar
 You can ask about a day from the main menu and most other screens. Your calendar does not need to be open. For example, say "What's on my calendar today?", "What's on my calendar tomorrow?", or "What do I have Friday?". You hear the day and each event.
+This always uses all your calendars.
 In a document, email, or note, these words are written as text.
 
 14.7 Get your Google calendar
@@ -1237,6 +1255,19 @@ If your account is in Thunderbird but its calendar is missing, a helper can add 
 Then say "Refresh calendar" in Companion.
 If only Thunderbird's own Home calendar is there, Companion tells you how to add one when you open the calendar.
 Thunderbird keeps a copy of your calendar. Without internet access, you hear the events Thunderbird already has.
+
+14.8 Choose which calendar you see
+This part is for people with two or more email accounts in Thunderbird, such as Gmail and Outlook. With one account, you always see all your calendars, and this choice is not offered.
+You can see all your calendars. Or you can see only one account, or only one calendar.
+1. Press Control+L, or say "Choose calendar". It is also the last item on the Alt menu.
+2. Use Up Arrow and Down Arrow. You hear All calendars, then each account, then each calendar.
+3. Press Enter to choose. Or press Escape to keep what you see.
+Each calendar is named with its account, such as Calendar, Outlook, vet@outlook.com. So two calendars with the same name are easy to tell apart.
+- To choose by voice, say "Show", then the name. For example, say "Show Gmail calendar", "Show the Family calendar", or "Show all calendars". This works from the main menu too.
+- To hear what you see, say "Which calendar am I in?" or "Where am I?". Companion also tells you when Calendar opens.
+- Companion remembers your choice for next time. If that calendar is gone from Thunderbird, you see all of them. Companion tells you once.
+- A new event goes into the calendar you see. If you see all of them, or one that cannot be changed, such as a holiday calendar, Companion picks one. The question before you save names it.
+- If a calendar cannot be read, Companion names it. The other calendars still work.
 
 15. BROWSE THE WEB
 

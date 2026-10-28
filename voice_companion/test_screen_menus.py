@@ -190,6 +190,12 @@ class ScreenMenuTests(unittest.TestCase):
             for group, label, key, command in items(mode):
                 with self.subTest(mode=mode, item=label):
                     self.screen(mode)
+                    if mode in ('calendar', 'contacts') and command in __import__(mode + '_screen').hidden_commands():
+                        # Choosing a calendar or address book, with one email account: not in the menu
+                        # (test_calendar_screen and test_contacts_screen check it with two). It is last in
+                        # its group, so leaving it out moves no other item.
+                        self.assertEqual(dict(MENUS[mode][1])[group][-1][2], command)
+                        continue
                     before = self.state(mode)
                     result = self.press('Alt', mode)
                     path = menu_path(mode, [g for g, _ in MENUS[mode][1]].index(group),
