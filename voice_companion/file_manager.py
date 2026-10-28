@@ -383,7 +383,7 @@ class FileManager:
                 if Path(item.path).suffix.lower() not in self.pick_extensions:raise ValueError('Choose a supported '+getattr(self,'pick_label','document')+' file.')
                 if getattr(self,'pick_label',None)=='document' and Path(item.path).suffix.lower()!='.docx':
                     from document_reader import open_document
-                    return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+'. Scanned pages are read with offline OCR.')
+                    return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+('. Scanned pages are read with offline OCR.' if Path(item.path).suffix.lower()=='.pdf' else '.'))
                 return self.start_job(lambda:Path(item.path),self.finish_pick,'Opening '+item.name+'.')
             from task_navigation import MEDIA_TYPES
             if Path(item.path).suffix.lower() in MEDIA_TYPES:

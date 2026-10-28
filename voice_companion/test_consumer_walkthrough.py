@@ -295,5 +295,21 @@ class ThatOneMeansTheHighlightedChoiceTests(CompanionTestCase):
         discard.assert_called_once(); save.assert_not_called()
 
 
+class ReaderOpeningWordsTests(FileActionWordsTests):
+    def test_ocr_is_mentioned_only_for_a_pdf(self):
+        # Heard: "Opening blank.txt. Scanned pages are read with offline OCR." OCR is jargon,
+        # and only PDF pages can be scanned.
+        root = __import__('pathlib').Path(self.manager.location)
+        (root / 'scan.pdf').write_bytes(b'%PDF-1.4')
+        self.manager.refresh(str(root)); self.settle(self.manager)
+        self.manager.pick_extensions = ('.txt', '.pdf'); self.manager.pick_label = 'document'
+        self.manager.choose('a.txt')
+        self.assertEqual(self.manager.command('open'), 'Opening a.txt.')
+        self.settle(self.manager)
+        self.manager.choose('scan.pdf')
+        self.assertEqual(self.manager.command('open'), 'Opening scan.pdf. Scanned pages are read with offline OCR.')
+        self.settle(self.manager)
+
+
 if __name__ == '__main__':
     unittest.main()
