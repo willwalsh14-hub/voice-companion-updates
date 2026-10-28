@@ -92,7 +92,8 @@ class ProcessSelectionTests(unittest.TestCase):
             fixture = Path(folder) / 'processes.json'
             fixture.write_text(json.dumps(processes), encoding='utf-8')
             command = ("$ErrorActionPreference='Stop'; . $env:VC_SCRIPT; "
-                       "$items = @(Get-Content -Raw -LiteralPath $env:VC_FIXTURE | ConvertFrom-Json); "
+                       # Windows PowerShell 5.1 passes a JSON array on as ONE object: unroll it.
+                       "$items = @(Get-Content -Raw -LiteralPath $env:VC_FIXTURE | ConvertFrom-Json | ForEach-Object { $_ }); "
                        "foreach ($item in $items) { $item.Created = [datetime]$item.Created }; "
                        "$chosen = @(Select-CompanionProcesses $items $env:VC_FOLDER ([int]$env:VC_SELF)); "
                        "ConvertTo-Json -Compress @(@($chosen | ForEach-Object { [int]$_.ProcessId }))")

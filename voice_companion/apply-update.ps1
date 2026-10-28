@@ -12,7 +12,11 @@ $progressFile = Join-Path $updateFolder 'install-percent.txt'
 $voice = $null; $listener = $null; $setup = $null
 function Write-UpdateError($failure) { try { ((Get-Date).ToString('HH:mm:ss') + ' ' + $failure.ToString()) | Add-Content -LiteralPath $log -Encoding UTF8 } catch {} }
 function Write-UpdateLog([string]$message) { Write-UpdateError $message }
-try { ((Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + ' Update helper started for ' + $InstallerPath) | Set-Content -LiteralPath $log -Encoding UTF8 } catch {}
+function Start-UpdateLog {
+  # A new log for each update; Setup's own log is added at the end.
+  try { ((Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + ' Update helper started for ' + $InstallerPath) | Set-Content -LiteralPath $log -Encoding UTF8 } catch {}
+}
+Start-UpdateLog
 # The close step (close-companion.ps1) is copied next to this helper.
 $closeScript = Join-Path $PSScriptRoot 'close-companion.ps1'
 if (Test-Path -LiteralPath $closeScript) { . $closeScript; $script:CloseLogFile = $log }
