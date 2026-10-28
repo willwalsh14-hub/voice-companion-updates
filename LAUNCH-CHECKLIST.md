@@ -145,3 +145,8 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.172: Thunderbird add-on check failed once, then passed (found October 28, 2026)
 - quitChecks waited a fixed 5 ms for the dispatched quit. Windows timers are about 15 ms, so the wait could end first.
 - The test now waits for the quit itself, up to 2 seconds.
+
+## 0.2.172: next station after a broken one failed to start on Windows (October 28, 2026)
+- test_consumer_audio: after a station that failed, the next one said it could not start.
+- Likely cause: the failed stream's emptying load() interrupts the next play() with an AbortError.
+- The player now tries an interrupted start again, and records why a start failed (last_start_error), so a failure names its reason.

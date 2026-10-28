@@ -134,7 +134,9 @@ class ConsumerAudioTests(unittest.TestCase):
         self.hub.stations=[{'name':'Broken','url':'https://audio.consumer.test/broken'},{'name':'Working','url':'https://audio.consumer.test/valid'}];self.hub.station_index=0
         nav=MediaNavigation(self.hub,'radio')
         self.assertIn('could not start',nav.keyboard('Enter'))
-        nav.keyboard('Down');self.assertIn('Playing',nav.keyboard('Enter'))
+        nav.keyboard('Down');said=nav.keyboard('Enter')
+        # On failure, say why the player refused, so one Windows run names the cause.
+        self.assertIn('Playing',said,getattr(self.player,'last_start_error',''))
         self.assertEqual(self.player.kind,'radio');self.assertIn('Working',self.page.locator('#title').inner_text())
 
     def test_stalled_start_and_resume_return_control_instead_of_hanging(self):
