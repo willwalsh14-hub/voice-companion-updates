@@ -60,6 +60,17 @@ class SpokenRequestTests(unittest.TestCase):
                        'what day is today','what day is it today'):
             with self.subTest(phrase=phrase):self.assertEqual(time_date.clock_request(phrase),'date')
 
+    def test_questions_about_one_part_of_the_date_say_the_date(self):
+        """Older users ask "What year is it?" or "What day of the week is it?"; these
+        fell through to the general help message before."""
+        for phrase in ('What year is it?','what month is it','What day of the week is it?',"What's the day today?",
+                       'what is the year','Which day is it?','what year is this'):
+            with self.subTest(phrase=phrase):
+                self.assertEqual(time_date.clock_request(phrase),'date')
+                self.assertEqual(time_date.clock_request(phrase,writing=True),'date')
+        for phrase in ('What year is it in China?','The year is 1990.','What month is best for travel?','what day of the week is Christmas'):
+            with self.subTest(phrase=phrase):self.assertIsNone(time_date.clock_request(phrase))
+
     def test_both_together(self):
         for phrase in ('date and time','What is the date and time?','time and date',"what's the time and date"):
             with self.subTest(phrase=phrase):self.assertEqual(time_date.clock_request(phrase),'both')
