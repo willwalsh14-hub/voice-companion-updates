@@ -649,7 +649,11 @@ class CompanionWindow:
                     request='Help:'+('Ctrl+' if control and key in ('Left','Right') else '')+key
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
-                    if self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not alt_held(event.state) and key.lower() in ('k','b'):
+                    from input_parity import mail_header_key
+                    if mail_header_key(key,event.state) and not (event.widget==typed and self.command_entry_active):
+                        # Alt+1 to Alt+6: From, To, CC, Subject, Date sent, attachments.
+                        request=mail_header_key(key,event.state)
+                    elif self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not alt_held(event.state) and key.lower() in ('k','b'):
                         request='Email:'+('previous ' if shift else 'next ')+('link' if key.lower()=='k' else 'button')
                     elif shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
                     elif key=='F2':request='F2'

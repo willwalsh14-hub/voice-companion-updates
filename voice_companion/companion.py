@@ -913,7 +913,8 @@ def _navigation_key(key,mode):
     if mode=='calendar' and __import__('calendar_screen').PENDING is not None:
         # A question on the Calendar owns the arrows and Enter (this one, all, or no).
         return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
-    from input_parity import screen_command
+    from input_parity import screen_command,MAIL_HEADER_KEYS
+    if mode=='mailbox' and key in MAIL_HEADER_KEYS:return MAIL_HEADER_KEYS[key]
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:

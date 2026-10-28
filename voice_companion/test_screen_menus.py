@@ -252,7 +252,7 @@ class ScreenMenuTests(unittest.TestCase):
         self.press('Up', mode)
         self.assertEqual(self.said[-1], 'Start of list. Messages (M), 1 of 9.')
         self.press('End', mode)
-        self.assertEqual(self.said[-1], 'Attachments (A), 9 of 9.')
+        self.assertEqual(self.said[-1], 'Header and attachments (H), 9 of 9.')
         self.press('Up', mode)
         self.assertEqual(self.said[-1], 'Options and help (O), 8 of 9.')
         self.press('Letter:a', mode)

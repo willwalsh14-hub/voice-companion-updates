@@ -567,6 +567,35 @@ class YahooMessagesTests(YahooTestCase):
         self.assertEqual(len(self.server.commands('FETCH')), 3)
         self.assertTrue(all(c[1] == 'EXAMINE' for c in self.server.log if c[1] in ('SELECT', 'EXAMINE')))
 
+    def test_each_header_line_is_said_on_its_own(self):
+        # Will, October 2026: Alt+1 to Alt+6, or a question, says one header line.
+        from test_email_attachments import StructureServer   # answers BODYSTRUCTURE, as Yahoo does
+        server = StructureServer(); self.addCleanup(server.close)
+        plans = EmailMessage()
+        for name, value in (('From', 'Sam Lee <sam@example.com>'), ('To', 'Me <' + ADDRESS + '>, Pat Kim <pat@example.com>'),
+                            ('Cc', 'Lee <lee@example.com>'), ('Subject', 'Plans'), ('Date', 'Mon, 05 Oct 2026 10:00:00 +0000')):
+            plans[name] = value
+        plans.set_content('Hi there.')
+        plans.add_attachment(b'%PDF-1.4 test', maintype='application', subtype='pdf', filename='map.pdf')
+        server.add('Inbox', plans.as_bytes(), date='05-Oct-2026 10:00:00 +0000')
+        server.add('Inbox', message(subject='Quiet'), date='06-Oct-2026 10:00:00 +0000')
+        import tempfile
+        factory = lambda *args: YahooMailbox(ADDRESS, APP_PASSWORD, server.factory)
+        with patch('mail_voice.account_token', return_value=(ADDRESS, APP_PASSWORD)), patch('mail_voice.YahooMailbox', factory):
+            session = MailSession('yahoo', tempfile.mkdtemp(), factory)
+            session.process('open inbox')
+            self.assertTrue(session.process('read message 2').startswith('Message opened. 1 attachment: map.pdf'))
+            self.assertEqual(session.process('who is it from'), 'From: Sam Lee, sam@example.com.')
+            self.assertEqual(session.process('who is it to'), 'To: Me and Pat Kim.')
+            self.assertEqual(session.process('read the cc'), 'CC: Lee.')
+            self.assertEqual(session.process('what is the subject'), 'Subject: Plans.')
+            self.assertEqual(session.process('when was it sent'), 'Sent October 5, 2026.')
+            self.assertEqual(session.process('how many attachments'), '1 attachment.')
+            self.assertEqual(session.process('open message 1'), 'Message opened. Hi there. End of message.')
+            self.assertEqual(session.process('how many attachments'), 'No attachments.')
+            self.assertEqual(session.process('Read the CC.'), 'No CC.')
+            self.assertEqual(session.process('who is it to'), 'To: ' + ADDRESS + '.')
+
     def test_empty_folder_and_unread_flags(self):
         box = self.mailbox()
         self.assertEqual(box.list_messages('Archive'), ([], None))
