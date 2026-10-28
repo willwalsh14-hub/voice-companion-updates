@@ -279,7 +279,9 @@ function Get-BlockedMessage([string[]]$names) {
 
 function Wait-CompanionFilesFree([string]$InstallFolder, [string[]]$GuideFolder, [int]$SelfId = $PID, [int]$BlockedSeconds = 120,
                                  [int]$GentleSeconds = 10, [int]$ForceSeconds = 10) {
-  # Returns $null when every file is free, or the names of the programs that still hold files.
+  # Returns $null when every file is free. Otherwise Code 2 and the names of the
+  # programs that hold files, or Code 1 when Voice Companion's own programs kept
+  # starting again.
   $deadline = (Get-Date).AddSeconds($BlockedSeconds)
   $lastSaid = $null; $lastMessage = ''
   while ($true) {
@@ -305,12 +307,16 @@ function Wait-CompanionFilesFree([string]$InstallFolder, [string[]]$GuideFolder,
       [void](Close-CompanionProcesses $InstallFolder $SelfId $GentleSeconds $ForceSeconds)
     }
     if (-not $outside.Count -and -not $ours) { $outside = @('Another program') }
-    if ((Get-Date) -gt $deadline) { return @($outside | Sort-Object -Unique) }
     if ($outside.Count) {
+      # Said at once, again when the programs change, and every 30 seconds.
       $message = Get-BlockedMessage $outside
       if ($message -ne $lastMessage -or -not $lastSaid -or ((Get-Date) - $lastSaid).TotalSeconds -ge 30) {
         Say-CloseMessage $message; $lastSaid = Get-Date; $lastMessage = $message
       }
+    }
+    if ((Get-Date) -ge $deadline) {
+      if ($outside.Count) { return [pscustomobject]@{ Code = 2; Names = @($outside | Sort-Object -Unique) } }
+      return [pscustomobject]@{ Code = 1; Names = @('Voice Companion') }
     }
     Start-Sleep -Seconds 2
   }
@@ -354,7 +360,7 @@ function Invoke-CompanionClose([string]$InstallFolder, [string[]]$GuideFolder, [
   }
   if ($left.Count) { return [pscustomobject]@{ Code = 1; Names = $left } }
   $blocked = Wait-CompanionFilesFree $InstallFolder $GuideFolder $SelfId $BlockedSeconds $GentleSeconds $ForceSeconds
-  if ($blocked) { return [pscustomobject]@{ Code = 2; Names = @($blocked) } }
+  if ($blocked) { return $blocked }
   return [pscustomobject]@{ Code = 0; Names = @() }
 }
 
