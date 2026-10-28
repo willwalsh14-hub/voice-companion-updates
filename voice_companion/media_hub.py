@@ -108,7 +108,7 @@ NOTHING_PLAYING = ('Nothing is playing. To start, say Play and a station name, s
 # "What's playing?" in the words people use. Ambiguous ones ("What is this?") count only
 # while something is loaded; the app decides that.
 NOW_PLAYING_PHRASES = ('what s playing', 'whats playing', 'what is playing', 'what s playing now', 'whats playing now',
-                       'what is playing now', 'what s on', 'what am i listening to', 'what station is this',
+                       'what is playing now', 'what am i listening to', 'what station is this',
                        'what station is playing', 'what station am i listening to', 'which station is this',
                        'what episode is this', 'what episode is playing', 'which episode is this',
                        'what podcast is this', 'what podcast is playing', 'what file is playing', 'what song is this')
