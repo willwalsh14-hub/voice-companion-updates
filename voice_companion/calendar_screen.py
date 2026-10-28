@@ -5,8 +5,13 @@ Keys (each also has a voice command, see input_parity.SCREEN_KEYS and the guide)
 - Up and Down move through the day's events: "Ten thirty AM to eleven AM, Doctor, Google".
 - Left and Right go to the previous or next day. Page Up and Page Down go a week.
   Home goes back to today. Enter reads the time, place and notes.
+- Control+G goes to a date that you type or say ("October 30", "next Friday", "10/30").
 - Control+N adds an event: when, then its name, then a Yes or No question.
-  Delete removes one after a Yes or No question; for a repeating event it asks
+- F2 edits the event: choose what to change (name, day and time, length, all day,
+  place, notes, calendar), say the new value, then answer a Yes or No question.
+  "Rename event to Dentist", "move event to Friday at 2" and "change the time to
+  3 PM" do it in one step. A repeating event asks "this one or all".
+- Delete removes one after a Yes or No question; for a repeating event it asks
   "this one or all". F1 is help, Escape goes to the main menu, Alt opens the menu.
 
 "What's on my calendar today?" (or tomorrow, or a day) works from any screen
@@ -20,7 +25,7 @@ from datetime import datetime, time, timedelta
 import calendar_events
 import thunderbird_pim
 from menu_navigation import announce_item
-from spoken_dates import find_day, parse_day, parse_when, spoken_day
+from spoken_dates import MONTH_NAMES, WEEKDAYS, find_day, missing_date, only_day, parse_day, parse_when, spoken_day
 
 MODE = 'calendar'
 YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'save', 'save it', 'yes save it', 'enter', 'do it')
@@ -44,11 +49,12 @@ EVENTS = []
 INDEX = 0
 NOTICE = ''            # why events may be missing
 CALENDARS = []         # [{'id', 'name', 'type', 'readOnly'}]
-PENDING = None         # ('add', draft) or ('delete', event): a question
+PENDING = None         # ('add', draft), ('delete', event), ('edit-field', event) or ('edit', EDIT): a question
 CHOICE = 'no'
 CHOICES = ('yes', 'no')
 DRAFT = {}             # the new event while its time and name are asked
 LAST_CALENDAR = None   # the calendar the last event was added to
+EDIT = {}              # the event being changed and its new values (see start_editing)
 
 
 def today(m):
@@ -58,6 +64,7 @@ def today(m):
 def reset():
     global DAY, EVENTS, INDEX, NOTICE, CALENDARS, PENDING, DRAFT, CHOICE, CHOICES
     DAY, EVENTS, INDEX, NOTICE, CALENDARS, PENDING, DRAFT, CHOICE, CHOICES = None, [], 0, '', [], None, {}, 'no', ('yes', 'no')
+    EDIT.clear()
 
 
 # ---- Reading Thunderbird -----------------------------------------------------------
@@ -153,11 +160,20 @@ def navigation_key(m, key):
                 m.speak('Start of list.' if wanted <= 0 and key in ('Up', 'Left', 'ShiftTab', 'Home') else 'End of list.')
             else:
                 CHOICE = CHOICES[wanted]
-                m.speak({'this one': 'This one only.', 'all': 'All of them.'}.get(CHOICE, CHOICE.capitalize() + '.'))
+                m.speak(choice_words())
                 m.sync_app_context(MODE)
             return None
-        return {'Enter': CHOICE, 'Escape': 'no'}.get(key)
+        if key in ('Enter', 'Space') and PENDING[0] == 'edit-field':
+            return '@calendar:field ' + CHOICE      # "time" alone would say the clock time
+        return {'Enter': CHOICE, 'Space': CHOICE, 'Escape': 'no', 'F1': 'help with calendar'}.get(key)
     return {'Up': 'previous event', 'Down': 'next event', 'Enter': 'read event', 'Escape': 'close calendar'}.get(key)
+
+
+def choice_words():
+    """What the arrows say on a question: "Yes.", "This one only.", or "Place: VA clinic, 5 of 7."."""
+    if PENDING and PENDING[0] == 'edit-field':
+        return announce_item(field_label(CHOICE, PENDING[1]), CHOICES.index(CHOICE), len(CHOICES), hotkey=False)
+    return {'this one': 'This one only.', 'all': 'All of them.'}.get(CHOICE, CHOICE.capitalize() + '.')
 
 
 # ---- Commands -------------------------------------------------------------------
@@ -259,6 +275,13 @@ def command_here(m, raw, command):
         event = current()
         m.speak(event.details(today(m)) if event else 'No events on this day.')
         return MODE
+    if command in GO_TO_WORDS:
+        return ask(m, 'go-to', GO_TO_PROMPT)
+    if command in EDIT_START:
+        return start_editing(m)
+    phrase = edit_phrase(raw)
+    if phrase is not None:
+        return start_editing(m, *phrase)
     if command in ('delete event', 'remove event', 'delete this event', 'delete appointment', 'cancel event',
                    'cancel appointment', 'delete', 'remove'):
         event = current()
@@ -269,11 +292,15 @@ def command_here(m, raw, command):
     if ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule', 'make', 'book', 'put', 'set') \
             or ADD_START.match(command):
         return start_adding(m, raw)
-    day = day_command(m, command)
+    day = day_command(m, command, raw)
     if day is not None:
         m.speak(show(m, day))
         return MODE
-    m.speak('Calendar. Say next event, next day, today, read event, add event, or delete event. '
+    asked_for = re.fullmatch(r'(?:go to|jump to|move to|show|show me|open|read) (?:the )?(?:date |day )?(.+)', command)
+    if asked_for and looks_like_date(asked_for[1]):
+        # "go to February 30": a date was meant. Say why, and ask again.
+        return ask(m, 'go-to', date_problem(m, raw))
+    m.speak('Calendar. Say next event, next day, today, read event, add event, edit event, or delete event. '
             'Press F1 for help, or Escape for the main menu.')
     return MODE
 
@@ -286,8 +313,9 @@ def whole_day(words, m):
     return found if found is not None and span == (0, len(words)) else None
 
 
-def day_command(m, command):
-    """The day for "go to October 30", "what's on Friday", or a day said alone ("Friday", "the 30th")."""
+def day_command(m, command, raw=''):
+    """The day for "go to October 30", "what's on Friday", or a day said alone ("Friday", "the 30th",
+    "Friday, October 30"). The raw words keep "10/30" and "2026-12-25", which the command form loses."""
     asked = ASK.fullmatch(command)
     if asked:
         return whole_day(asked['day'] or 'today', m)
@@ -296,13 +324,56 @@ def day_command(m, command):
     found, span = find_day(words, today(m))
     if found is not None and span == (0, len(words)) or found is not None and moved:
         return found
-    return None
+    return date_from(m, raw) if raw else None
+
+
+GO_TO_WORDS = ('go to date', 'go to a date', 'go to day', 'go to a day', 'go to', 'jump to date', 'jump to a date',
+               'choose a date', 'pick a date', 'choose date', 'enter a date', 'find a date', 'find date')
+GO_TO_PROMPT = 'Go to a date. Type or say a date, such as October 30 or next Friday, then press Enter. Escape cancels.'
+DATE_WORDS = re.compile(r'\d|\b(?:' + '|'.join(sorted(MONTH_NAMES, key=len, reverse=True) + list(WEEKDAYS) + [
+    'today', 'tomorrow', 'yesterday', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth',
+    'tenth', 'eleventh', 'twelfth', r'\w+teenth', r'\w+tieth']) + r')\b')
+
+
+def looks_like_date(words):
+    """True when the words were meant as a date (a number, a month or a weekday), so a bad one is worth a reason."""
+    return bool(DATE_WORDS.search(words))
+
+
+def date_from(m, words):
+    """The day typed or said as a date alone ("go to" and "date" may come first), or None."""
+    words = re.sub(r'^\s*(?:(?:go|jump|move) to|show(?: me)?|open|read)\s+', '', str(words), flags=re.I)
+    words = re.sub(r'^\s*(?:the\s+)?(?:date|day)\s+(?=\S)', '', words, flags=re.I)
+    return only_day(words, today(m))
+
+
+def go_to_step(m, value):
+    """The answer to Control+G: go to that day, or say why not and ask again."""
+    day = date_from(m, value)
+    if day is None:
+        return ask(m, 'go-to', date_problem(m, value))
+    m.speak(show(m, day))
+    return MODE
+
+
+def date_problem(m, words):
+    """Why the words are not a date, and what to say instead."""
+    problem = missing_date(words, today(m))
+    if problem.startswith('There is no'):
+        problem += ' Say another date.'
+    return (problem or 'I did not catch a date. Say a date such as October 30 or next Friday.') + ' Escape cancels.'
 
 
 def internal(m, raw, mode):
     action, _, value = raw[len('@calendar:'):].partition(' ')
     if action in ('add-when', 'add-time', 'add-title'):
         return add_step(m, action[4:], value.strip())
+    if action == 'go-to':
+        return go_to_step(m, value)
+    if action.startswith('edit-'):
+        return edit_step(m, action[5:], value)
+    if action == 'field' and PENDING is not None and PENDING[0] == 'edit-field':
+        return answer(m, value.strip())
     return mode
 
 
@@ -331,7 +402,12 @@ def default_calendar(m):
 
 
 def prompt(m, step, words):
-    m.task_navigation().prompt = ('@calendar:add-' + step + ' {value}', MODE)
+    return ask(m, 'add-' + step, words)
+
+
+def ask(m, action, words, optional=False):
+    """A text box for one answer; Escape cancels. With optional, Enter with nothing typed is an answer too."""
+    m.task_navigation().prompt = ('@calendar:' + action + ' {value}', MODE) + ((True,) if optional else ())
     m.speak(words)
     return 'task_input'
 
@@ -445,18 +521,23 @@ def save_draft(m):
     when, calendar, title = DRAFT['when'], DRAFT['calendar'], DRAFT['title']
     if when.all_day:
         start, end = when.day.isoformat(), (when.day + timedelta(days=1)).isoformat()
+        first = datetime.combine(when.day, time())
     else:
         first, last = when.start_end()
         start, end = calendar_events.utc_ms(first), calendar_events.utc_ms(last)
     DRAFT = {}
     try:
-        thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
+        added = thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
     except thunderbird_pim.PimError as exc:
         m.speak(str(exc) + ' The event was not saved.')
         return MODE
     LAST_CALENDAR = calendar['id']
     words = show(m, when.day)
-    place = next((i for i, e in enumerate(EVENTS) if e.title == title), None)
+    # The new event: by the id Thunderbird gave it, else by its name and start (another event may share the name).
+    new_id = str(added.get('id') or '') if isinstance(added, dict) else ''
+    place = next((i for i, e in enumerate(EVENTS) if new_id and e.id == new_id), None)
+    if place is None:
+        place = next((i for i, e in enumerate(EVENTS) if e.title == title and e.start == first), None)
     if place is not None:
         INDEX = place
         words = spoken_day(when.day, today(m)) + '. ' + describe()
@@ -489,11 +570,13 @@ def delete_question(m, event):
 
 
 def answer(m, command):
-    """An answer to the add or delete question."""
+    """An answer to the add, delete or edit question."""
     global PENDING, CHOICE
     action, subject = PENDING
     if command in ('help', 'what mode', 'toggle audio') or command.startswith(('help with ', 'help for ')):
         return None
+    if action in ('edit-field', 'edit'):
+        return edit_answer(m, action, command)
     if action == 'add':
         if command in ('change calendar', 'another calendar', 'other calendar', 'switch calendar', 'next calendar'):
             choices = writable()
@@ -533,4 +616,426 @@ def answer(m, command):
         m.speak('Not deleted. ' + describe())
         return MODE
     m.speak(delete_question(m, event))
+    return MODE
+
+
+# ---- Editing ---------------------------------------------------------------------
+#
+# F2 or "edit event": a short list of what to change, then one text box, then a Yes or No
+# question that names the result. "Rename event to Dentist", "move event to Friday at 2",
+# "change the time to 3 PM", "change the place to Room 4" and "make it all day" skip the list.
+# EDIT holds the event and, once chosen, the new values: title, location, notes, calendar,
+# and the timing (all_day, start, end, as local times like calendar_events.Event).
+
+FIELDS = ('name', 'time', 'length', 'all day', 'place', 'notes', 'calendar')
+FIELD_WORDS = {
+    'name': ('name', 'title', 'the name', 'the title', 'rename', 'rename it', 'change the name', 'change name'),
+    'time': ('time', 'day and time', 'date and time', 'day', 'date', 'the day', 'the date', 'the time', 'when', 'move', 'move it',
+             'start time', 'change the time', 'change the day', 'change the date'),
+    'length': ('length', 'how long', 'end', 'end time', 'the length', 'the end time', 'duration', 'change the length'),
+    'all day': ('all day', 'make it all day', 'give it a time', 'not all day', 'add a time'),
+    'place': ('place', 'location', 'where', 'the place', 'the location', 'address', 'change the place'),
+    'notes': ('notes', 'note', 'the notes', 'description', 'change the notes'),
+    'calendar': ('calendar', 'the calendar', 'change calendar', 'another calendar', 'other calendar', 'move to another calendar'),
+}
+EDIT_START = ('edit event', 'edit', 'change event', 'edit this event', 'change this event', 'edit the event', 'change the event',
+              'modify event', 'edit appointment', 'change appointment', 'edit it', 'change it', 'edit this appointment')
+_OF_EVENT = r'(?: (?:of|for) (?:the |this )?(?:event|appointment))?'
+EDIT_PHRASES = (
+    ('calendar', r'change (?:the |its )?calendar' + _OF_EVENT + r'|move (?:it |this |the )?(?:event |appointment )?to '
+                 r'(?:another|a different|the other) calendar'),
+    ('name', r'(?:rename|retitle)(?: the| this)?(?: event| appointment| it)?(?: (?:to|as) (?P<to>.+)| (?P<value>.+))?'),
+    ('name', r'change (?:the |its )?(?:name|title)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
+    # "Move to Friday" alone goes to Friday (see day_command); moving the event names it.
+    ('time', r'move(?: the| this)? (?:event|appointment|it)(?: to (?P<value>.+))?'),
+    ('time', r'reschedule(?: the| this)?(?: event| appointment| it)?(?: (?:to|for) (?P<to>.+))?'),
+    ('time', r'change (?:the |its )?(?:day and time|date and time|time|date|day|start time)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
+    ('length', r'change (?:the |its )?(?:length|end time|end)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
+    ('make all day', r'make (?:it|this|the event|this event) (?:an )?all day(?: event)?'),
+    ('place', r'change (?:the |its )?(?:place|location)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
+    ('notes', r'change (?:the |its )?(?:notes?|description)' + _OF_EVENT + r'(?: to (?P<value>.+))?'),
+)
+NONE_WORDS = ('', 'none', 'no', 'nothing', 'remove', 'remove it', 'clear', 'clear it', 'delete', 'delete it', 'skip', 'blank',
+              'no place', 'no location', 'no notes', 'remove the place', 'remove the notes', 'leave it blank')
+ONE = ('this one', 'only this one', 'just this one', 'this one only', 'one', 'only this')
+EVERY = ('all', 'all of them', 'every one', 'all events', 'the whole series', 'the series', 'change all')
+
+
+def edit_phrase(raw):
+    """(field, value) for a one-step edit such as "move event to Friday at 2", else None. The value
+    keeps what was said ("3:30", capitals); it is None when only the field was named."""
+    words = ' '.join(str(raw).replace('’', "'").split()).strip(' .!?,')
+    for field, pattern in EDIT_PHRASES:
+        found = re.fullmatch(pattern, words, re.I)
+        if found:
+            groups = found.groupdict()
+            value = groups.get('to') or groups.get('value')
+            return field, (value.strip(' .!?,') if value else None)
+    return None
+
+
+def field_for(command):
+    return next((field for field, words in FIELD_WORDS.items() if command in words), None)
+
+
+def read_only(event):
+    return any(c.get('id') == event.calendar_id and c.get('readOnly') for c in CALENDARS)
+
+
+def other_calendars(event):
+    return [c for c in writable() if c.get('id') != event.calendar_id]
+
+
+def fields_for(event):
+    return tuple(f for f in FIELDS if f != 'calendar' or other_calendars(event))
+
+
+def length_words(all_day, start, end):
+    if all_day:
+        days = max(1, (end - start).days)
+        return str(days) + (' day' if days == 1 else ' days')
+    minutes = max(0, int((end - start).total_seconds() // 60))
+    hours, rest = divmod(minutes, 60)
+    parts = ([str(hours) + (' hour' if hours == 1 else ' hours')] if hours else []) + \
+            ([str(rest) + (' minute' if rest == 1 else ' minutes')] if rest or not hours else [])
+    return ' '.join(parts)
+
+
+def when_words(m, all_day, start, end, now_day=None):
+    """'Friday, October 30, two PM to three PM', or 'Today, Monday, October 26, all day, until Wednesday, October 28'."""
+    from time_date import spoken_time
+    day, now_day = start.date(), now_day or today(m)
+    words = spoken_day(day, now_day)
+    if all_day:
+        last = (end - timedelta(days=1)).date()
+        return words + ', all day' + (', until ' + spoken_day(last, now_day) if last > day else '')
+    finish = spoken_time(end)
+    if end.date() == day + timedelta(days=1) and end.time() != time():
+        finish += ' the next day'
+    elif end.date() > day + timedelta(days=1):
+        finish += ' on ' + spoken_day(end.date(), now_day)
+    return words + ', ' + spoken_time(start) + ' to ' + finish
+
+
+def field_label(field, event):
+    """What the arrows say for each thing that can be changed, with what it is now."""
+    if field == 'name':
+        return 'Name: ' + event.name
+    if field == 'time':
+        return 'Day and time: ' + when_words(None, event.all_day, event.start, event.end, EDIT.get('today') or event.start.date())
+    if field == 'length':
+        return 'Length: ' + length_words(event.all_day, event.start, event.start + event.length)
+    if field == 'all day':
+        return 'Give it a time' if event.all_day else 'Make it all day'
+    if field == 'place':
+        return 'Place: ' + (event.location or 'none')
+    if field == 'notes':
+        notes = ' '.join(event.notes.split())
+        return 'Notes: ' + ((notes[:100].rsplit(' ', 1)[0] + ' and more') if len(notes) > 100 else notes or 'none')
+    return 'Calendar: ' + (event.calendar or 'none')
+
+
+def start_editing(m, field=None, value=None):
+    """F2 or "edit event" (no field): ask what to change. With a field, go straight to it."""
+    global PENDING, CHOICE, CHOICES
+    event = current()
+    if event is None:
+        m.speak('No events on this day.')
+        return MODE
+    if read_only(event):
+        m.speak('The ' + event.calendar + ' calendar cannot be changed, so ' + event.name + ' cannot be edited.')
+        return MODE
+    EDIT.clear()
+    EDIT.update(zip(('all_day', 'start', 'end'), event_timing(event)), event=event, today=today(m))
+    if field is None:
+        PENDING, CHOICES = ('edit-field', event), fields_for(event)
+        CHOICE = CHOICES[0]
+        m.speak('Edit ' + event.name + '. What do you want to change? ' + choice_words() +
+                ' Use the arrows and Enter, or say what to change. Escape cancels.')
+        return MODE
+    return choose_field(m, field, value)
+
+
+def choose_field(m, field, value=None):
+    event = EDIT['event']
+    name = event.name
+    if field == 'make all day':
+        if event.all_day:
+            EDIT.clear()
+            m.speak(name + ' is already all day. ' + describe())
+            return MODE
+        field = 'all day'
+    EDIT['field'] = field
+    if field == 'calendar':
+        others = other_calendars(event)
+        if not others:
+            m.speak('There is no other calendar that can be changed. ' + describe())
+            EDIT.clear()
+            return MODE
+        EDIT['calendar'] = others[0]
+        return confirm_edit(m)
+    if field == 'all day':
+        if not event.all_day:
+            first = datetime.combine(event.start.date(), time())
+            last = (event.end - timedelta(microseconds=1)).date() if event.end > event.start else event.start.date()
+            EDIT.update(all_day=True, start=first, end=datetime.combine(last + timedelta(days=1), time()))
+            return confirm_edit(m)
+        return ask(m, 'edit-start', 'What time does ' + name + ' start? Say a time like 3 PM. Escape cancels.')
+    if value:
+        return edit_step(m, {'name': 'name', 'time': 'when', 'length': 'length', 'place': 'place', 'notes': 'notes'}[field], value)
+    if field == 'name':
+        return ask(m, 'edit-name', 'New name for ' + name + '? Type or say it, then press Enter. Escape cancels.')
+    if field == 'time':
+        return ask(m, 'edit-when', TIME_PROMPT.format(name=name))
+    if field == 'length':
+        if event.all_day:
+            return ask(m, 'edit-length', 'How many days is ' + name + '? Say a number of days, such as 2 days. Escape cancels.')
+        return ask(m, 'edit-length', 'How long is ' + name + '? ' + LENGTH_HINT)
+    if field == 'place':
+        return ask(m, 'edit-place', 'New place for ' + name + '? Type or say it, then press Enter. '
+                                    'To remove the place, press Enter or say none. Escape cancels.', optional=True)
+    return ask(m, 'edit-notes', 'New notes for ' + name + '? Type or say them, then press Enter. '
+                                'To remove the notes, press Enter or say none. Escape cancels.', optional=True)
+
+
+TIME_PROMPT = 'New day and time for {name}? For example, say Friday at 2 PM, or 3 PM. Escape cancels.'
+LENGTH_HINT = 'Say a length, such as 45 minutes or 2 hours, or an end time, such as until 4 PM. Escape cancels.'
+
+
+def edit_step(m, step, value):
+    """One answer in the edit flow: check it, keep it, then ask the Yes or No question."""
+    if not EDIT.get('event'):
+        return MODE
+    event, now = EDIT['event'], m.CLOCK()
+    value = str(value).strip()
+    length = EDIT['end'] - EDIT['start']
+    if step == 'name':
+        title = ' '.join(value.split()).strip(' .,!?')
+        if not title:
+            return ask(m, 'edit-name', 'Type or say a new name, then press Enter. Escape cancels.')
+        if len(title) > 200:
+            return ask(m, 'edit-name', 'That name is too long. Say a shorter name. Escape cancels.')
+        EDIT['title'] = title
+    elif step == 'when':
+        found = parse_when(value, now, future=True, base=event.start.date())
+        if found.day is None and not re.match(r'\s*(?:at|from|between)\b', value, re.I):
+            found = parse_when('at ' + value, now, future=True, base=event.start.date())     # "3", "10:30"
+        if found.day is None:
+            return ask(m, 'edit-when', 'I did not catch a day or time. Say something like Friday at 2 PM, or 3 PM. Escape cancels.')
+        if found.all_day:
+            days = max(1, length.days) if event.all_day else 1
+            start = datetime.combine(found.day, time())
+            EDIT.update(all_day=True, start=start, end=start + timedelta(days=days))
+        elif found.start is None:
+            # A day alone keeps the time (and all day stays all day).
+            start = datetime.combine(found.day, EDIT['start'].time())
+            EDIT.update(start=start, end=start + length)
+        else:
+            start, end = found.start_end()
+            if found.end is None and not found.minutes:
+                end = start + (length if not event.all_day and length > timedelta(0) else timedelta(hours=1))
+            EDIT.update(all_day=False, start=start, end=end)
+    elif step == 'length':
+        start = EDIT['start']
+        if EDIT['all_day']:
+            days = re.fullmatch(r'(?:for )?(.+?)(?: whole)?(?: days?)?(?: long)?', m.normalized_command(value))
+            from spoken_dates import number
+            count = number(days[1]) if days else None
+            if not count or count > 62:
+                return ask(m, 'edit-length', 'I did not catch a number of days. Say a number, such as 2 days. Escape cancels.')
+            EDIT['end'] = start + timedelta(days=count)
+        else:
+            until = re.match(r'\s*(?:until|till|til|to|ends? at|ending at|it ends at|end time)\s+(.+)', value, re.I)
+            if until:
+                said = until[1] if re.match(r'\s*(?:at|by)\b', until[1], re.I) else 'at ' + until[1]
+                found = parse_when(said, now, future=True, base=start.date())
+                if found.start is None:
+                    return ask(m, 'edit-length', 'I did not catch an end time. ' + LENGTH_HINT)
+                end = datetime.combine(start.date(), found.start)
+                EDIT['end'] = end if end > start else end + timedelta(days=1)
+            else:
+                found = parse_when(value if re.match(r'\s*for\b', value, re.I) else 'for ' + value, now, future=True, base=start.date())
+                if not found.minutes:
+                    return ask(m, 'edit-length', 'I did not catch a length. Say a length, such as 45 minutes, '
+                                                 'or an end time, such as until 4 PM. Escape cancels.')
+                EDIT['end'] = start + timedelta(minutes=found.minutes)
+    elif step == 'start':
+        said = value if re.match(r'\s*(?:at|from|between)\b', value, re.I) else 'at ' + value
+        found = parse_when(said, now, future=True, base=event.start.date())
+        if found.start is None:
+            return ask(m, 'edit-start', 'I did not catch a time. Say a time like 3 PM. Escape cancels.')
+        EDIT.update(all_day=False, start=found.start_end()[0], end=found.start_end()[1])
+    elif step in ('place', 'notes'):
+        text = '' if m.normalized_command(value) in NONE_WORDS else value
+        if step == 'place':
+            text = ' '.join(text.split()).strip(' .,!?')
+            if len(text) > 300:
+                return ask(m, 'edit-place', 'That place is too long. Say a shorter one. Escape cancels.', optional=True)
+            EDIT['location'] = text
+        else:
+            text = ' '.join(text.split())
+            if len(text) > 4000:
+                return ask(m, 'edit-notes', 'Those notes are too long. Say shorter notes. Escape cancels.', optional=True)
+            EDIT['notes'] = text
+    return confirm_edit(m)
+
+
+def event_timing(event):
+    """(all day, start, end) with the end at start plus the real length, so the night the clocks go
+    back does not shorten an event that is edited."""
+    return event.all_day, event.start, event.start + event.length
+
+
+def timing_changed():
+    return (EDIT['all_day'], EDIT['start'], EDIT['end']) != event_timing(EDIT['event'])
+
+
+def edit_changes():
+    """What is different from the event now, as the add-on's changes (start and end still local)."""
+    event, changes = EDIT['event'], {}
+    if 'title' in EDIT and EDIT['title'] != event.title:
+        changes['title'] = EDIT['title']
+    if 'location' in EDIT and EDIT['location'] != event.location:
+        changes['location'] = EDIT['location']
+    if 'notes' in EDIT and EDIT['notes'] != ' '.join(event.notes.split()):
+        changes['notes'] = EDIT['notes']
+    if 'calendar' in EDIT and EDIT['calendar']['id'] != event.calendar_id:
+        changes['calendarId'] = EDIT['calendar']['id']
+    if timing_changed():
+        changes['timing'] = True
+    return changes
+
+
+def edit_question(m):
+    event, field = EDIT['event'], EDIT['field']
+    name = event.name
+    if field == 'name':
+        return 'Rename ' + name + ' to ' + EDIT['title'] + '?'
+    if field == 'place':
+        return ('Change the place for ' + name + ' to ' + EDIT['location'] + '?') if EDIT['location'] else \
+            'Remove the place from ' + name + '?'
+    if field == 'notes':
+        return ('Change the notes for ' + name + ' to: ' + EDIT['notes'].rstrip('.!?') + '?') if EDIT['notes'] else \
+            'Remove the notes from ' + name + '?'
+    if field == 'calendar':
+        return 'Move ' + name + ' to the ' + EDIT['calendar']['name'] + ' calendar?'
+    return 'Change ' + name + ' to ' + when_words(m, EDIT['all_day'], EDIT['start'], EDIT['end']) + '?'
+
+
+def confirm_edit(m):
+    """The Yes or No question that names the result. A repeating event asks this one or all."""
+    global PENDING, CHOICE, CHOICES
+    event = EDIT['event']
+    if not edit_changes():
+        PENDING = None
+        EDIT.clear()
+        m.speak('That is the same as before, so nothing was changed. ' + describe())
+        return MODE
+    passed = ''
+    if timing_changed() and (EDIT['start'] < m.CLOCK() if not EDIT['all_day'] else EDIT['start'].date() < today(m)):
+        passed = ' That time has already passed.'
+    name = event.name
+    if not event.recurring:
+        CHOICES = ('yes', 'no')
+        tail = ' Say Yes to save or No to cancel.'
+        if EDIT['field'] == 'calendar' and len(other_calendars(event)) > 1:
+            tail += ' To use another calendar, say change calendar.'
+    elif 'calendarId' in edit_changes():
+        CHOICES = ('yes', 'no')
+        tail = ' ' + name + ' repeats. All of them will move. Say Yes to save or No to cancel.'
+    elif timing_changed() and (EDIT['start'].date() != event.start.date() or EDIT['all_day'] != event.all_day):
+        CHOICES = ('this one', 'no')
+        tail = (' ' + name + ' repeats. Only this one can ' +
+                ('move to another day.' if EDIT['start'].date() != event.start.date() else 'be changed that way.') +
+                ' Say this one, or no. Escape cancels.')
+    else:
+        CHOICES = ('this one', 'all', 'no')
+        tail = (' ' + name + ' repeats. Change only this one, on ' + spoken_day(event.start.date(), today(m)) +
+                ', or all of them? Say this one, all, or no. Escape cancels.')
+    PENDING, CHOICE = ('edit', EDIT), CHOICES[0]
+    m.speak(edit_question(m) + passed + tail)
+    return MODE
+
+
+def edit_answer(m, action, command):
+    global PENDING, CHOICE
+    event = EDIT.get('event')
+    if event is None:
+        PENDING = None
+        return MODE
+    if action == 'edit-field':
+        field = field_for(command)
+        if field in CHOICES:
+            PENDING = None
+            return choose_field(m, field)
+        if command in NO:
+            PENDING = None
+            EDIT.clear()
+            m.speak('Not changed. ' + describe())
+            return MODE
+        m.speak('What do you want to change in ' + event.name + '? ' + choice_words() +
+                ' Use the arrows and Enter, or say what to change. Escape cancels.')
+        return MODE
+    if EDIT.get('field') == 'calendar' and command in ('change calendar', 'another calendar', 'other calendar', 'switch calendar',
+                                                       'next calendar'):
+        others = other_calendars(event)
+        place = next((i for i, c in enumerate(others) if c['id'] == EDIT['calendar']['id']), -1)
+        EDIT['calendar'] = others[(place + 1) % len(others)]
+        return confirm_edit(m)
+    scope = None
+    if 'this one' in CHOICES and command in ONE:
+        scope = 'one'
+    elif 'all' in CHOICES and command in EVERY:
+        scope = 'all'
+    elif 'yes' in CHOICES and command in YES:
+        scope = 'all' if event.recurring else 'single'
+    elif command in NO:
+        PENDING = None
+        EDIT.clear()
+        m.speak('Not changed. ' + describe())
+        return MODE
+    if scope is None:
+        return confirm_edit(m)
+    PENDING = None
+    return save_edit(m, scope)
+
+
+def save_edit(m, scope):
+    """Save through Thunderbird, then go to the event's day and say it."""
+    global INDEX
+    event, changes = EDIT['event'], edit_changes()
+    timing = changes.pop('timing', False)
+    if timing:
+        if scope == 'all':
+            # Every day keeps its own date: a later or earlier start and a new length, the same for each.
+            shift = int((EDIT['start'] - event.start).total_seconds() // 60)
+            if shift:
+                changes['shift'] = shift
+            if EDIT['all_day']:
+                changes['length'] = max(1, (EDIT['end'] - EDIT['start']).days) * 1440
+            else:
+                changes['length'] = int((EDIT['end'] - EDIT['start']).total_seconds() // 60)
+        elif EDIT['all_day']:
+            changes.update(allDay=True, start=EDIT['start'].date().isoformat(), end=EDIT['end'].date().isoformat())
+        else:
+            changes.update(allDay=False, start=calendar_events.utc_ms(EDIT['start']), end=calendar_events.utc_ms(EDIT['end']))
+    name = EDIT.get('title') or event.name
+    day = EDIT['start'].date() if timing else DAY
+    start = EDIT['start'] if timing else event.start
+    EDIT.clear()
+    try:
+        answer_ = thunderbird_pim.modify_event(event.calendar_id, event.id, changes,
+                                               occurrence=event.occurrence if scope == 'one' else '', all_of_them=scope == 'all')
+    except thunderbird_pim.PimError as exc:
+        m.speak(str(exc) + ' The change was not saved.')
+        return MODE
+    ids = {event.id, str((answer_ or {}).get('id') or '') if isinstance(answer_, dict) else ''}
+    words = show(m, day)
+    place = next((i for i, e in enumerate(EVENTS) if e.id in ids and e.start == start), None)
+    if place is None:
+        place = next((i for i, e in enumerate(EVENTS) if e.id in ids), None)
+    if place is not None:
+        INDEX = place
+        words = spoken_day(day, today(m)) + '. ' + describe() + (' ' + NOTICE if NOTICE else '')
+    m.speak('Saved ' + name + {'one': ', this one only', 'all': ', all of them'}.get(scope, '') + '. ' + words)
     return MODE

@@ -90,6 +90,51 @@ async function contactChecks() {
   await assert.rejects(call('deleteContact', {id: 'c5'}), /cannot be changed/);
   await assert.rejects(call('deleteContact', {id: 'nope'}), /no longer in Thunderbird/);
 
+  // Changing a contact: only the lines asked for change; the rest of the card is kept as it was.
+  const card = id => state.contacts.find(c => c.id === id).properties.vCard;
+  assert.equal(await call('updateContact', {id: 'c1', name: 'John Smyth', phone: '555-0200'}), true);
+  assert.match(card('c1'), /\r\nFN:John Smyth\r\n/);
+  assert.match(card('c1'), /\r\nEMAIL:john@example\.com\r\n/, 'the email address is kept');
+  assert.match(card('c1'), /\r\nTEL;TYPE=cell:555-0200\r\n/, 'the phone keeps its type');
+  assert.match(card('c1'), /^BEGIN:VCARD\r\nVERSION:4\.0\r\n[\s\S]*END:VCARD\r\n$/);
+  let after = (await call('contacts')).contacts;
+  assert.deepEqual(after.find(c => c.id === 'c1'), {id: 'c1', bookId: 'book-google', book: 'me@gmail.com', name: 'John Smyth',
+    emails: ['john@example.com'], phones: ['555-0200'], readOnly: false});
+  // The first email address changes; others stay. An empty one removes it.
+  await call('updateContact', {id: 'c2', email: 'mary@new.example'});
+  assert.deepEqual((await call('contacts')).contacts.find(c => c.id === 'c2').emails, ['mary@new.example', 'mary.work@example.org']);
+  await call('updateContact', {id: 'c2', email: ''});
+  assert.deepEqual((await call('contacts')).contacts.find(c => c.id === 'c2').emails, ['mary.work@example.org']);
+  // A card with no phone gets one before END:VCARD; a grouped line (item1.EMAIL) keeps its group and type.
+  await call('updateContact', {id: 'c2', phone: '555-0300'});
+  assert.match(card('c2'), /\r\nTEL;VALUE=TEXT:555-0300\r\nEND:VCARD\r\n$/);
+  await call('updateContact', {id: 'c4', email: 'ann@new.example'});
+  assert.match(card('c4'), /\r\nitem1\.EMAIL;TYPE=home:ann@new\.example\r\n/);
+  assert.match(card('c4'), /\r\nN:Brown;Ann;;;\r\n/, 'the name is not touched when it is not changed');
+  // A new name changes the N line too, and adds the FN line a card must have.
+  await call('updateContact', {id: 'c4', name: 'Ann Green'});
+  assert.match(card('c4'), /\r\nN:Green;Ann;;;\r\n/);
+  assert.match(card('c4'), /\r\nFN:Ann Green\r\nEND:VCARD\r\n$/);
+  assert.equal((await call('contacts')).contacts.find(c => c.id === 'c4').name, 'Ann Green');
+  // A phone saved as a tel: address stays one.
+  state.contacts.push({id: 'c9', parentId: 'book-personal', type: 'contact', readOnly: false,
+    properties: {vCard: 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Tel Uri\r\nTEL;VALUE=uri:tel:+1-555-0123\r\nNOTE:Keep me\r\nEND:VCARD\r\n'}});
+  await call('updateContact', {id: 'c9', phone: '+1-555-0999'});
+  assert.equal(card('c9'), 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Tel Uri\r\nTEL;VALUE=uri:tel:+1-555-0999\r\nNOTE:Keep me\r\nEND:VCARD\r\n');
+  // A name with a comma is escaped; a card with no N line is not given one.
+  await call('updateContact', {id: 'c9', name: 'Uri, Tel'});
+  assert.equal(card('c9'), 'BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Uri\\, Tel\r\nTEL;VALUE=uri:tel:+1-555-0999\r\nNOTE:Keep me\r\nEND:VCARD\r\n');
+  // Checks before Thunderbird is asked, and Thunderbird's answers.
+  const before = state.contactCalls.length;
+  await assert.rejects(call('updateContact', {id: 'c1', name: ' '}), /shorter name/);
+  await assert.rejects(call('updateContact', {id: 'c1', email: 'not an address'}), /not a complete email address/);
+  await assert.rejects(call('updateContact', {id: 'c1', phone: '1'.repeat(41)}), /shorter phone number/);
+  await assert.rejects(call('updateContact', {id: 'c1'}), /Nothing was changed/);
+  await assert.rejects(call('updateContact', {id: ''}), /not available/);
+  assert.equal(state.contactCalls.length, before);
+  await assert.rejects(call('updateContact', {id: 'c5', name: 'X'}), /cannot be changed, so the contact was not changed/);
+  await assert.rejects(call('updateContact', {id: 'nope', name: 'X'}), /no longer in Thunderbird/);
+
   // Newer Thunderbird (addressBooks.contacts): create takes the vCard itself.
   const newer = createFakeMessenger();
   const created = [];
@@ -99,6 +144,11 @@ async function contactChecks() {
   const newerBridge = loadBridge(newer.api);
   const answer = plain(await newerBridge.handle({id: 6, method: 'addContact', params: {name: 'Ray', email: 'ray@example.com'}}));
   assert.deepEqual(answer.result, {id: 'new1', bookId: 'book-personal', book: 'Personal Address Book'});
+  // ... and update takes the vCard itself too.
+  const updated = [];
+  newer.api.addressBooks.contacts.update = async (id, vCard) => { assert.equal(typeof vCard, 'string'); updated.push([id, vCard]); };
+  assert.equal(plain(await newerBridge.handle({id: 10, method: 'updateContact', params: {id: 'c3', name: 'Joe Plumber'}})).result, true);
+  assert.match(updated[0][1], /\r\nFN:Joe Plumber\r\n/);
   assert.equal(plain(await newerBridge.handle({id: 7, method: 'contacts'})).result.contacts.length, 5);
 
   // Without the address book permission (an older add-on copy's manifest), a plain answer.
@@ -166,6 +216,52 @@ async function calendarChecks() {
   await assert.rejects(call('deleteEvent', {calendarId: 'cal-google', id: 'e3'}), /no longer in the calendar/);
   await assert.rejects(call('deleteEvent', {calendarId: 'cal-holidays', id: 'e2'}), /cannot be changed/);
 
+  // Changing an event: only the parts asked for; checked before Thunderbird is asked.
+  const doctor = () => state.events.find(e => e.id === 'e1');
+  assert.deepEqual(await call('modifyEvent', {calendarId: 'cal-google', id: 'e1', changes: {title: ' Dentist ', location: ''}}), {id: 'e1'});
+  assert.deepEqual(state.calendarCalls.at(-1).modify, {calendarId: 'cal-google', id: 'e1', occurrence: '', all: false,
+    changes: {title: 'Dentist', location: ''}});
+  assert.deepEqual([doctor().title, doctor().location, doctor().notes], ['Dentist', '', 'Bring the card.']);
+  const later = Date.UTC(2026, 9, 30, 19);
+  await call('modifyEvent', {calendarId: 'cal-google', id: 'e1', changes: {allDay: false, start: later, end: later + 1800000}});
+  assert.deepEqual(state.calendarCalls.at(-1).modify.changes, {allDay: false, start: String(later), end: String(later + 1800000)});
+  await call('modifyEvent', {calendarId: 'cal-google', id: 'e1', changes: {allDay: true, start: '2026-10-30', end: '2026-10-31'}});
+  assert.equal(doctor().start, '2026-10-30');
+  await call('modifyEvent', {calendarId: 'cal-google', id: 'e1', changes: {calendarId: 'cal-home'}});
+  assert.equal(doctor().calendarId, 'cal-home');
+  // Bad requests never reach Thunderbird.
+  const asked = state.calendarCalls.length;
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {}}), /Nothing was changed/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {title: ' '}}), /shorter name/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {start: later, end: later - 1, allDay: false}}), /end after it starts/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {start: later, allDay: false}}), /end after it starts/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {shift: 60, length: 60}}), /whole repeating event/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {notes: 'x'.repeat(4001)}}), /too long/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {color: 'red'}}), /Nothing was changed/);
+  await assert.rejects(call('modifyEvent', {calendarId: '', id: 'e1', changes: {title: 'X'}}), /not available/);
+  assert.equal(state.calendarCalls.length, asked);
+  // Thunderbird's answers, said plainly.
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-holidays', id: 'e2', changes: {title: 'X'}}), /cannot be changed, so the event was not changed/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'gone', changes: {title: 'X'}}), /no longer in the calendar/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-home', id: 'e1', changes: {calendarId: 'cal-holidays'}}), /cannot be changed/);
+  // A repeating event: one day, or all of them with a new start time and length on the same day.
+  // (The checks above deleted it; put two of its days back.)
+  for (const [day, occurrence] of [[27, '20261027T140000Z'], [3, '20261103T140000Z']]) {
+    const begins = Date.UTC(2026, day === 3 ? 10 : 9, day, 14);
+    state.events.push({id: 'e3', calendarId: 'cal-google', calendarName: 'me@gmail.com', title: 'Group meeting', location: '', notes: '',
+      allDay: false, start: begins, end: begins + 3600000, recurring: true, occurrence});
+  }
+  await call('modifyEvent', {calendarId: 'cal-google', id: 'e3', occurrence: '20261027T140000Z', changes: {title: 'Team'}});
+  assert.deepEqual(state.events.filter(e => e.id === 'e3').map(e => e.title), ['Team', 'Group meeting']);
+  await call('modifyEvent', {calendarId: 'cal-google', id: 'e3', all: true, changes: {shift: 60, length: 30}});
+  assert.deepEqual(state.calendarCalls.at(-1).modify, {calendarId: 'cal-google', id: 'e3', occurrence: '', all: true, changes: {shift: 60, length: 30}});
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-google', id: 'e3', all: true, changes: {shift: 1440}}), /same day/);
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-google', id: 'e3', occurrence: '20261027T140000Z', changes: {calendarId: 'cal-home'}}),
+    /whole repeating event/);
+  // An add-on copy from before editing answers "unsupported", which Voice Companion turns into update advice.
+  delete api.voiceCompanionCalendar.modifyEvent;
+  await assert.rejects(call('modifyEvent', {calendarId: 'cal-google', id: 'e3', changes: {title: 'X'}}), /calendar is not available|Close Thunderbird/);
+
   // An add-on without the calendar Experiment says what to do.
   delete api.voiceCompanionCalendar;
   await assert.rejects(call('calendars'), /calendar is not available\. Close Thunderbird, then try again/);
@@ -174,12 +270,17 @@ async function calendarChecks() {
 // ---- experiment/calendar.js against a stand-in for Thunderbird's calendar manager ----
 
 function fakeCalendarManager() {
-  const UTC = {tzid: 'UTC'}, local = {tzid: 'America/Chicago'};
-  // calIDateTime: month counts from 0; an eight-digit value is a date (all-day).
-  const dateTime = (ms, isDate = false) => {
+  const UTC = {tzid: 'UTC', isUTC: true, isFloating: false}, local = {tzid: 'America/Chicago', isFloating: false};
+  const paris = {tzid: 'Europe/Paris', isFloating: false};
+  // calIDateTime: month counts from 0; an eight-digit value is a date (all-day). addDuration changes it in place.
+  const dateTime = (ms, isDate = false, timezone = UTC) => {
     const d = new Date(ms);
-    return {isDate, year: d.getUTCFullYear(), month: d.getUTCMonth(), day: d.getUTCDate(), nativeTime: ms * 1000, ms,
-      getInTimezone(zone) { return {icalString: new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}; }};
+    return {isDate, year: d.getUTCFullYear(), month: d.getUTCMonth(), day: d.getUTCDate(), nativeTime: ms * 1000, ms, timezone, zone: timezone,
+      getInTimezone(zone) { return {icalString: new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}; },
+      clone() { return dateTime(this.ms, this.isDate, this.timezone); },
+      addDuration(duration) {
+        Object.assign(this, dateTime(this.ms + (this.isDate ? duration.days * 86400000 : duration.inSeconds * 1000), this.isDate, this.timezone));
+      }};
   };
   const cal = {
     createDateTime(text) {
@@ -187,17 +288,40 @@ function fakeCalendarManager() {
       if (!m) throw new Error('bad date ' + text);
       return dateTime(Date.UTC(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)), !m[4]);
     },
-    dtz: {dateTimeToJsDate: dt => new Date(dt.ms), jsDateToDateTime: (date, zone) => Object.assign(dateTime(date.getTime()), {zone}),
+    // calIDuration: whole days, or seconds (negative allowed).
+    createDuration: () => ({days: 0, inSeconds: 0}),
+    dtz: {dateTimeToJsDate: dt => new Date(dt.ms), jsDateToDateTime: (date, zone) => dateTime(date.getTime(), false, zone),
       defaultTimezone: local},
     timezoneService: {UTC},
     getUUID: () => 'uuid-1',
     calls: [],
   };
-  const item = (props) => ({...props, getProperty(name) { return (props.properties || {})[name] || null; }});
-  const series = item({id: 'series', title: 'Walk', startDate: dateTime(Date.UTC(2026, 9, 26, 13)), endDate: dateTime(Date.UTC(2026, 9, 26, 14)),
-    recurrenceInfo: {getOccurrenceFor(rid) { return {recurrenceId: Object.assign({}, rid, {found: true})}; },
-      removeOccurrenceAt(rid) { cal.calls.push({removeOccurrenceAt: rid}); }},
-    clone() { cal.calls.push({clone: 'series'}); return {...this, recurrenceInfo: this.recurrenceInfo}; }});
+  // calIItemBase: clone() gives a changeable copy; the original stays as Thunderbird gave it.
+  const item = (props) => ({...props, properties: {...(props.properties || {})},
+    getProperty(name) { return this.properties[name] || null; },
+    setProperty(name, value) { this.properties[name] = value; },
+    deleteProperty(name) { delete this.properties[name]; },
+    clone() {
+      cal.calls.push({clone: this.id});
+      const copy = item({...this, startDate: this.startDate && this.startDate.clone(), endDate: this.endDate && this.endDate.clone()});
+      if (this.recurrenceInfo) copy.recurrenceInfo = this.recurrenceInfo.cloneFor(copy);
+      return copy;
+    }});
+  // calIRecurrenceInfo, for the series it belongs to.
+  const recurrence = base => ({
+    getOccurrenceFor(rid) {
+      return item({id: base.id, title: base.title, startDate: dateTime(rid.ms), endDate: dateTime(rid.ms + 3600000),
+        recurrenceId: Object.assign(dateTime(rid.ms), {found: true}), parentItem: base});
+    },
+    removeOccurrenceAt(rid) { cal.calls.push({removeOccurrenceAt: rid}); },
+    modifyException(occurrence, owner) { cal.calls.push({modifyException: {item: occurrence, owner}}); },
+    onStartDateChange(newStart, oldStart) { cal.calls.push({onStartDateChange: [newStart.ms, oldStart.ms]}); },
+    cloneFor(copy) { return recurrence(copy); },
+  });
+  const series = item({id: 'series', title: 'Walk', startDate: dateTime(Date.UTC(2026, 9, 26, 13)), endDate: dateTime(Date.UTC(2026, 9, 26, 14))});
+  series.recurrenceInfo = recurrence(series);
+  const single = item({id: 'lunch', title: 'Lunch', startDate: dateTime(Date.UTC(2026, 9, 30, 11), false, paris),
+    endDate: dateTime(Date.UTC(2026, 9, 30, 12), false, paris), properties: {LOCATION: 'Cafe', DESCRIPTION: 'Old notes'}});
   const occurrence = item({id: 'series', title: 'Walk', startDate: dateTime(Date.UTC(2026, 9, 27, 13)), endDate: dateTime(Date.UTC(2026, 9, 27, 14)),
     recurrenceId: dateTime(Date.UTC(2026, 9, 27, 13)), parentItem: series});
   const allDay = item({id: 'trip', title: 'Trip', startDate: dateTime(Date.UTC(2026, 9, 27), true), endDate: dateTime(Date.UTC(2026, 9, 29), true),
@@ -213,9 +337,9 @@ function fakeCalendarManager() {
     async getItem(wanted) { return this.items.find(i => i.id === wanted && !i.recurrenceId) || null; },
     async adoptItem(event) { cal.calls.push({adoptItem: event}); return event; },
     async deleteItem(event) { cal.calls.push({deleteItem: event.id}); },
-    async modifyItem(changed, old) { cal.calls.push({modifyItem: [changed.id, old.id]}); return changed; },
+    async modifyItem(changed, old) { cal.calls.push({modifyItem: [changed, old]}); return changed; },
   });
-  const google = makeCalendar('g', 'Google', 'caldav', false, [occurrence, allDay, series]);
+  const google = makeCalendar('g', 'Google', 'caldav', false, [occurrence, allDay, series, single]);
   const work = makeCalendar('w', 'Work', 'caldav', false, []);
   const off = makeCalendar('o', 'Turned off', 'storage', false, [allDay], true);
   const holidays = makeCalendar('h', 'Holidays', 'ics', true, []);
@@ -225,7 +349,7 @@ function fakeCalendarManager() {
     constructor() { this.properties = {}; }
     setProperty(name, value) { this.properties[name] = value; }
   }
-  return {cal, CalEvent, google, work};
+  return {cal, CalEvent, google, work, series, single};
 }
 
 function loadCalendarExperiment(fake) {
@@ -289,12 +413,70 @@ async function experimentChecks() {
   assert.deepEqual(plain(await api.deleteEvent('g', 'series', '20261027T130000Z', false)), {deleted: true, all: false});
   const removed = fake.cal.calls.find(c => c.removeOccurrenceAt).removeOccurrenceAt;
   assert.equal(removed.found, true, 'the occurrence Thunderbird knows is removed, with its own time zone');
-  assert.deepEqual(fake.cal.calls.at(-1), {modifyItem: ['series', 'series']});
+  assert.deepEqual(fake.cal.calls.at(-1).modifyItem.map(i => i.id), ['series', 'series']);
   assert.deepEqual(plain(await api.deleteEvent('g', 'series', '20261027T130000Z', true)), {deleted: true, all: true});
   assert.deepEqual(fake.cal.calls.at(-1), {deleteItem: 'series'});
   assert.deepEqual(plain(await api.deleteEvent('g', 'trip', '', false)), {deleted: true, all: true});
   assert.deepEqual(plain(await api.deleteEvent('g', 'missing', '', false)), {deleted: false, reason: 'missing'});
   assert.deepEqual(plain(await api.deleteEvent('h', 'x', '', false)), {deleted: false, reason: 'readonly'});
+
+  // Changing a single event: a copy with the changes replaces it, in its own time zone.
+  const editing = fakeCalendarManager();
+  const edit = loadCalendarExperiment(editing);
+  const lunch = editing.single;
+  const newStart = Date.UTC(2026, 9, 30, 19);
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'lunch', occurrence: '', all: false,
+    changes: {title: 'Late lunch', location: '', notes: 'Bring cash', allDay: false, start: String(newStart), end: String(newStart + 1800000)}})),
+  {modified: true, id: 'lunch'});
+  const [changed, old] = editing.cal.calls.at(-1).modifyItem;
+  assert.equal(old, lunch, 'the item Thunderbird gave is the old one');
+  assert.notEqual(changed, lunch, 'Thunderbird gets a changed copy');
+  assert.deepEqual([changed.title, changed.properties.LOCATION, changed.properties.DESCRIPTION], ['Late lunch', undefined, 'Bring cash']);
+  assert.deepEqual([changed.startDate.ms, changed.endDate.ms, changed.startDate.zone.tzid], [newStart, newStart + 1800000, 'Europe/Paris'],
+    'an event made in another time zone keeps it');
+  assert.equal(lunch.title, 'Lunch', 'the old item is not changed');
+  // To all day, as dates with no time.
+  await edit.modifyEvent({calendarId: 'g', id: 'lunch', occurrence: '', all: false, changes: {allDay: true, start: '2026-10-30', end: '2026-11-01'}});
+  const allDayed = editing.cal.calls.at(-1).modifyItem[0];
+  assert.deepEqual([allDayed.startDate.isDate, allDayed.startDate.day, allDayed.endDate.day], [true, 30, 1]);
+
+  // One day of a repeating event: an exception for that day replaces the series, like Thunderbird's "Edit only this occurrence".
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'series', occurrence: '20261027T130000Z', all: false,
+    changes: {title: 'Long walk'}})), {modified: true, id: 'series'});
+  const exception = editing.cal.calls.find(c => c.modifyException).modifyException;
+  assert.deepEqual([exception.item.title, exception.item.recurrenceId.ms, exception.owner], ['Long walk', Date.UTC(2026, 9, 27, 13), true]);
+  const [newSeries, oldSeries] = editing.cal.calls.at(-1).modifyItem;
+  assert.equal(oldSeries, editing.series);
+  assert.equal(newSeries.title, 'Walk', 'the rest of the series keeps its name');
+  // All of them: the name, and a later start on the same day with a new length, kept in the series' time zone.
+  await edit.modifyEvent({calendarId: 'g', id: 'series', occurrence: '', all: true, changes: {title: 'Walk', shift: 90, length: 45}});
+  const whole = editing.cal.calls.at(-1).modifyItem[0];
+  assert.deepEqual([whole.startDate.ms, whole.endDate.ms], [Date.UTC(2026, 9, 26, 14, 30), Date.UTC(2026, 9, 26, 15, 15)]);
+  // Days already deleted or changed move with the series, as when Thunderbird's own window changes the time;
+  // otherwise a deleted day would come back at the new time.
+  assert.deepEqual(editing.cal.calls.find(c => c.onStartDateChange).onStartDateChange,
+    [Date.UTC(2026, 9, 26, 14, 30), Date.UTC(2026, 9, 26, 13)]);
+  // Moving a whole event to another calendar: added there first, then removed here, so it is never lost.
+  editing.cal.calls.length = 0;
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'lunch', occurrence: '', all: false, changes: {calendarId: 'w'}})),
+    {modified: true, id: 'lunch'});
+  assert.deepEqual(editing.cal.calls.map(c => Object.keys(c)[0]), ['clone', 'adoptItem', 'deleteItem']);
+  assert.deepEqual(editing.cal.calls[1].adoptItem.calendar, {id: 'w'});
+  // A failed add keeps the event where it was.
+  editing.work.adoptItem = async () => { throw new Error('offline'); };
+  editing.cal.calls.length = 0;
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'lunch', occurrence: '', all: false, changes: {calendarId: 'w'}})),
+    {modified: false, reason: 'failed'});
+  assert.ok(!editing.cal.calls.some(c => c.deleteItem));
+  // Refusals.
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'h', id: 'x', occurrence: '', all: false, changes: {title: 'X'}})),
+    {modified: false, reason: 'readonly'});
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'nope', occurrence: '', all: false, changes: {title: 'X'}})),
+    {modified: false, reason: 'missing'});
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'lunch', occurrence: '', all: false, changes: {calendarId: 'h'}})),
+    {modified: false, reason: 'readonly'});
+  assert.deepEqual(plain(await edit.modifyEvent({calendarId: 'g', id: 'series', occurrence: '20261027T130000Z', all: false,
+    changes: {calendarId: 'w'}})), {modified: false, reason: 'series'});
 
   // Thunderbird without its calendar modules: plain answers, never an exception.
   const broken = loadCalendarExperiment({cal: null, CalEvent: null});
@@ -314,8 +496,8 @@ async function experimentChecks() {
   assert.deepEqual(schema[0].functions.map(f => f.name).sort(), Object.keys(api).sort());
   assert.ok(schema[0].functions.every(f => f.async === true && f.type === 'function'));
   const [major, minor] = manifest.version.split('.').map(Number);
-  // 1.3.0 adds contacts and calendars; a higher version replaces installed 1.2 copies.
-  assert.ok(major > 1 || minor >= 3, 'the add-on version was raised so installed copies are replaced');
+  // 1.3.0 added contacts and calendars; 1.4.0 adds changing events and contacts. A higher version replaces installed copies.
+  assert.ok(major > 1 || minor >= 4, 'the add-on version was raised so installed copies are replaced');
   // Every file the add-on needs is packaged.
   const packaged = fs.readFileSync(path.join(__dirname, '..', 'build_thunderbird_addon.py'), 'utf8');
   for (const file of ['pim.js', 'experiment/calendar.js', 'experiment/calendar-schema.json']) assert.ok(packaged.includes("'" + file + "'"), file);

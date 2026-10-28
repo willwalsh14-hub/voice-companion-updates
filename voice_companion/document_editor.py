@@ -250,6 +250,9 @@ class VoiceDocument:
     # Alignment and spacing for the first paragraph; later paragraphs copy it.
     pending_layout: tuple | None = field(default=None, repr=False)
 
+    # Said when there is nothing to read; an email draft says "message body".
+    EMPTY_NOTICE = 'The document is empty.'
+
     def __setattr__(self, name, value):
         # A selection is a pair of paragraph/offset positions. Remember the text it
         # was made against so a later edit (delete paragraph, dictation, undo...)
@@ -843,12 +846,15 @@ class VoiceDocument:
             self.pending_spacing_candidate = None
         if navigation in ('next paragraph','previous paragraph'):
             if not self.paragraphs: return 'The document is empty.'
+            old = self.cursor
             self.cursor = max(0,min(len(self.paragraphs)-1,self.cursor+(1 if navigation=='next paragraph' else -1)))
             self.word_cursor = self.sentence_cursor = 0
             self.navigation_position = (self.cursor,0)
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             self.reading.position = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
-            return self.process('read current paragraph')
+            # At the first or last paragraph, say so; repeating it alone sounded like a move.
+            edge = '' if self.cursor != old else 'End of document. ' if navigation == 'next paragraph' else 'Beginning of document. '
+            return edge + self.process('read current paragraph')
         if navigation in ('start of line','end of line'):
             if not self.paragraphs: return 'The document is empty.'
             p = self.paragraphs[self.cursor]
@@ -1156,6 +1162,8 @@ class VoiceDocument:
                 return self.describe_cell()
             return p.text.strip() or 'Empty paragraph.'
         if request:
+            if not any(p.text.strip() for p in self.paragraphs):
+                return self.EMPTY_NOTICE   # as every other command says it
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             unit, direction = request
             if unit!='read' and self.paragraphs:
@@ -1450,20 +1458,24 @@ class VoiceDocument:
             return self.describe_cell()
         if command in ('next cell', 'move right a cell'):
             cell = self.table_cell()
-            if cell:
-                for index in range(self.cursor+1, len(self.paragraphs)):
-                    if self.paragraphs[index].table_id == cell.table_id:
-                        self.cursor = index
-                        return self.describe_cell()
-            return 'End of table.'
+            if cell is None:
+                return 'You are not in a table.'
+            for index in range(self.cursor+1, len(self.paragraphs)):
+                if self.paragraphs[index].table_id == cell.table_id:
+                    self.cursor = index
+                    return self.describe_cell()
+            # At the last (or first) cell, say where you stay, as at the other table edges.
+            return 'End of table. ' + self.describe_cell()
         if command in ('previous cell', 'move left a cell'):
             cell = self.table_cell()
-            if cell:
-                for index in range(self.cursor-1, -1, -1):
-                    if self.paragraphs[index].table_id == cell.table_id:
-                        self.cursor = index
-                        return self.describe_cell()
-            return 'Start of table.'
+            if cell is None:
+                return 'You are not in a table.'
+            for index in range(self.cursor-1, -1, -1):
+                if self.paragraphs[index].table_id == cell.table_id:
+                    self.cursor = index
+                    return self.describe_cell()
+            # At the last (or first) cell, say where you stay, as at the other table edges.
+            return 'Start of table. ' + self.describe_cell()
         if command in ('next row', 'row down'):
             return self.table_move(row_delta=1)
         if command in ('previous row', 'row up'):
@@ -1620,8 +1632,10 @@ class VoiceDocument:
         if command in ('remove italic', 'not italic'):
             return self.format_current(italic=False)
         if command in ('list headings', 'what are the headings'):
-            headings = [(i, p.text) for i, p in enumerate(self.paragraphs) if p.kind.startswith('Heading')]
-            return ', '.join(f'Heading {i + 1}: {name}' for i, name in headings) if headings else 'No headings yet.'
+            # "Heading 3: Plans" sounded like heading level 3; it was the paragraph number.
+            headings = [(i, p) for i, p in enumerate(self.paragraphs) if p.kind.startswith('Heading')]
+            return ('. '.join(f'{p.text.strip() or "Empty heading"}, heading level {p.kind[-1]}, paragraph {i + 1}'
+                              for i, p in headings) + '.') if headings else 'No headings yet.'
         if command in ('next heading', 'go to next heading','previous heading','go to previous heading'):
             backwards='previous' in command
             for i in (range(self.cursor-1,-1,-1) if backwards else range(self.cursor + 1, len(self.paragraphs))):

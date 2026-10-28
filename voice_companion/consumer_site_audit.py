@@ -202,9 +202,25 @@ def audit(timeout=20000):
     report['failed']=sum(s['status']=='failed' for s in report['sites'])
     return report
 
+def failure_annotations(report,github=None):
+    """One GitHub error line per failed site, naming the checks that failed.
+
+    The full report cannot be read from outside the build, so a failure must name
+    its reason here (CLAUDE.md: every failure must name itself)."""
+    if not (os.environ.get('GITHUB_ACTIONS') if github is None else github):return []
+    lines=[]
+    for site in report.get('sites',[]):
+        if site.get('status')!='failed':continue
+        failed=[c for c in site.get('checks',[]) if not c.get('passed')]
+        detail='; '.join(str(c.get('action'))+' -> '+str(c.get('feedback',''))[:160] for c in failed[:6]) or site.get('reason','no reason recorded')
+        message=('Loaded '+str(site.get('loaded_url'))+'. Failed: '+detail).replace('%','%25').replace('\r','').replace('\n','%0A')
+        lines.append('::error title=Site audit: '+str(site.get('name'))+'::'+message)
+    return lines
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--output',default='VoiceCompanion-Consumer-Site-Audit.txt');parser.add_argument('--timeout',type=int,default=20000);args=parser.parse_args()
     report=audit(args.timeout)
     Path(args.output).write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     print('LIVE SITE AUDIT SUMMARY '+json.dumps({k:report[k] for k in ('version','passed','blocked','failed')}),flush=True)
+    for line in failure_annotations(report):print(line,flush=True)
     raise SystemExit(bool(report['failed']))

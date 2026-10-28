@@ -6,7 +6,7 @@ to the Voice Companion Mail Connection add-on through thunderbird_bridge.
 """
 from email.utils import getaddresses
 
-from mailbox_access import MailboxError, html_text, message_date
+from mailbox_access import MailboxError, html_text, message_date, reply_addresses
 from thunderbird_bridge import ThunderbirdError, ThunderbirdUnavailable, current
 
 INBOX = 'inbox'   # Voice Companion's name for "this account's inbox"
@@ -55,6 +55,21 @@ MAIL_CHECK_NOTICES = {
 }
 
 
+def person(text):
+    """(name, address) from one sender or recipient as Thunderbird gives it.
+
+    Thunderbird decodes the header first, so a name with a comma is not quoted:
+    "Smith, John <john@example.com>". Read as a list, that is two people, and
+    "Smith" is not an address. The address is empty when there is none."""
+    import re
+    text = ' '.join(str(text or '').split())
+    found = re.fullmatch(r'(.*?)\s*<([^<>\s]+@[^<>\s]+)>', text)
+    if found:
+        return found[1].strip().strip('"').strip(), found[2]
+    pairs = [(name, address) for name, address in getaddresses([text]) if '@' in address]
+    return pairs[0] if pairs else ('', '')
+
+
 def connected():
     bridge = current()
     return bridge is not None and bridge.connected.is_set()
@@ -98,6 +113,34 @@ def call(method, **params):
 def accounts():
     """Thunderbird accounts with sending identities, for connecting in Companion."""
     return call('accounts')
+
+
+READ_LIMIT = 5 * 1024 * 1024   # characters read aloud from one message, as for Yahoo
+LONG_MESSAGE = 'This message is very long. Only the first part is read here. Open it in Thunderbird for the rest.'
+
+
+def readable_parts(parts):
+    """A huge message, made small enough to read: (parts, cut).
+
+    Pictures written into the HTML (data: addresses) are never read aloud, so they go
+    first. Then the plain text is used, and only if that is still too long is the
+    text cut. Reading many megabytes of HTML stopped Voice Companion for minutes."""
+    import re
+    html, plain = str(parts.get('html') or ''), str(parts.get('plain') or '')
+    if len(html) <= READ_LIMIT and len(plain) <= READ_LIMIT:
+        return parts, False
+    parts = dict(parts)
+    if len(html) > READ_LIMIT:
+        html = re.sub(r'''(\bsrc\s*=\s*["']?)data:[^"'\s>]*''', r'\1', html, flags=re.I)
+    if len(html) > READ_LIMIT and plain:
+        html = ''
+    cut = False
+    if len(html) > READ_LIMIT:
+        html, cut = html[:READ_LIMIT], True
+    if len(plain) > READ_LIMIT:
+        plain, cut = plain[:READ_LIMIT], True
+    parts.update(html=html, plain=plain)
+    return parts, cut
 
 
 class ThunderbirdMailbox:
@@ -145,7 +188,7 @@ class ThunderbirdMailbox:
     def _rows(page):
         rows = []
         for item in page.get('rows', []):
-            (name, sender), = getaddresses([item.get('from', '')]) or [('', '')]
+            name, sender = person(item.get('from', ''))
             rows.append({'id': item['id'], 'from': sender or item.get('from') or 'Unknown sender',
                          'sender_name': name, 'subject': item.get('subject') or '(no subject)',
                          'date': message_date(item.get('date')),
@@ -164,12 +207,15 @@ class ThunderbirdMailbox:
     def read_message(self, message_id, folder_id=None):
         parts = call('read', messageId=self._message(message_id))
         from email_reader import plain_body
+        parts, cut = readable_parts(parts)
         if parts.get('html'):
             body = html_text(parts['html'])
             if parts.get('plain'):
                 body.plain = str(plain_body(parts['plain']))
         else:
             body = plain_body(parts.get('plain', ''))
+        if cut:
+            body = plain_body(str(body) + '\n\n' + LONG_MESSAGE)
         # None: an older add-on, or Thunderbird could not list them.
         found = parts.get('attachments')
         body.attachments = self._attachment_rows(found) if isinstance(found, list) else None
@@ -226,11 +272,14 @@ class ThunderbirdMailbox:
         if action not in ('reply', 'reply_all', 'forward'):
             raise MailboxError('Unknown email response.')
         info = call('context', messageId=self._message(message_id))
-        sender = getaddresses([info.get('replyTo') or info.get('author', '')])
-        others = getaddresses(list(info.get('recipients', [])) + list(info.get('ccList', []))) if action == 'reply_all' else []
+        # Reply-To is the raw header, so it is read as a list; the others come decoded.
+        sender = ([found for _, found in getaddresses([info['replyTo']])] if info.get('replyTo') else
+                  [person(info.get('author', ''))[1]])
+        to = [person(item)[1] for item in info.get('recipients', []) or []]
+        copied = [person(item)[1] for item in info.get('ccList', []) or []]
         recipients = []
-        for _, found in sender + others:
-            if found and found.casefold() != own_address.casefold() and found.casefold() not in [a.casefold() for a in recipients]:
+        for found in reply_addresses(action, sender, to, copied, own_address):
+            if found.casefold() not in [a.casefold() for a in recipients]:
                 recipients.append(found)
         subject = info.get('subject') or '(no subject)'
         prefix = 'Fwd: ' if action == 'forward' else 'Re: '
@@ -285,7 +334,12 @@ def submit(draft, account):
         params['forward'] = {'messageId': ThunderbirdMailbox._message(context['source_id'])}
         if isinstance(context.get('original_attachments'), list):
             # The original's files go along, less the ones the person took off.
-            params['forward']['drop'] = [str(name) for name in context.get('dropped_attachments', [])]
+            # By part, so the right one of two files with the same name is left out (add-on 1.3.1);
+            # older add-ons use the names.
+            from email_draft import original_split
+            dropped = original_split(context)[1]
+            params['forward']['drop'] = [str(item.get('name', '')) for item in dropped]
+            params['forward']['dropParts'] = [str(item['id']) for item in dropped if item.get('id')]
     from user_stop import Stopped
     import time
     say = PROGRESS

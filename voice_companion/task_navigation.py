@@ -1,7 +1,7 @@
 """Word processor, document commands, and local media navigation."""
 import json
 from pathlib import Path
-from menu_navigation import announce_item, bounded_index, next_match
+from menu_navigation import announce_item, bounded_index, next_match, spoken_key
 
 DOCUMENT_TYPES = {'.docx', '.txt', '.md', '.csv', '.tsv', '.html', '.htm', '.pdf', '.odt', '.epub'}
 MEDIA_TYPES = {'.mp3', '.wav', '.ogg', '.oga', '.opus', '.flac', '.m4a', '.aac', '.mp4', '.m4v', '.webm', '.ogv', '.mov'}
@@ -72,6 +72,20 @@ DOCUMENT_ACTIONS['Format'].extend([('Heading '+str(level),'Ctrl+Alt+'+str(level)
 # then the displayed item number. This covers commands without a conventional key.
 for _group,_items in DOCUMENT_ACTIONS.items():
     DOCUMENT_ACTIONS[_group]=[(name,key or next((k for k,v in SHORTCUTS.items() if v==command),'Alt, '+str(list(DOCUMENT_ACTIONS).index(_group)+1)+', '+('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[i])),command) for i,(name,key,command) in enumerate(_items)]
+
+
+def spoken_speed(text):
+    """A playback speed typed or said: 1.5, 1.5x, one point five, two times."""
+    import re
+    value = re.sub(r'(?:\s*(?:x|times|speed))+$', '', str(text).strip().rstrip('.!?').casefold()).strip()
+    try:
+        return float(value)
+    except ValueError:
+        number = __import__('document_editor').spoken_number(value)
+    try:
+        return float(number)
+    except (TypeError, ValueError):
+        raise ValueError('Say a number from 0.5 to 3, such as 1.5.') from None
 
 
 class TaskNavigation:
@@ -154,7 +168,7 @@ class TaskNavigation:
         return mode
 
     def describe(self, item, index, count):
-        return announce_item(item[0], index, count) + (' '+item[1]+'.' if item[1] else '')
+        return announce_item(item[0], index, count) + (' '+spoken_key(item[1])+'.' if item[1] else '')
 
     def pick(self, kind):
         m = self.app
@@ -194,6 +208,10 @@ class TaskNavigation:
             except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
                 # An empty "New Microsoft Word Document" or a damaged file must not stop the app.
                 raise ValueError('This document is empty or damaged, so it could not be opened.') from error
+            except OSError as error:
+                # Open in Word, or on a network drive that dropped: say so, not "[Errno 13]".
+                from document_reader import unreadable
+                raise ValueError(unreadable(path, error)) from error
             except ValueError as error:
                 if 'cannot preserve' not in str(error):raise
                 from document_reader import open_document
@@ -265,11 +283,15 @@ class TaskNavigation:
         path = Path(path)
         self.picker = None
         if not path.is_file():
-            m.speak(path.name+' is no longer there. It may have been moved or deleted.'); return self.enter('reader_menu', 'Document reader')
+            # One message: the reason, then the menu (a second message would stop the first).
+            return self.enter('reader_menu', path.name+' is no longer there. It may have been moved or deleted. Document reader menu')
         try:
             m.FILE_READER = open_document(path)
         except (ValueError, OSError) as error:
-            m.speak(str(error)); return self.enter('reader_menu', 'Document reader')
+            return self.enter('reader_menu', str(error).rstrip('. ')+'. Document reader menu')
+        except Exception:
+            # A damaged file (not a real zip, broken XML, a missing part) must never stop the app.
+            return self.enter('reader_menu', path.name+' could not be opened. It may be damaged. Document reader menu')
         self.remember_read(path); self.reader_return = 'reader_menu'
         if m.PREFERENCES.get('reader_auto_read', True):
             m.speak('Opened '+path.name+'. '+m.FILE_READER.reading.read(True))
@@ -307,7 +329,7 @@ class TaskNavigation:
             if result == 'settings': m.SETTINGS_PANEL.command('Word processor')
             return result
         if command == '@player_menu':
-            return self.enter('local_media', 'Player menu')
+            return self.enter('local_media', 'Media player menu')
         if command == '@player_close':
             self.player_menu = False
             player = m.media().player
@@ -388,7 +410,8 @@ class TaskNavigation:
             optional = len(prompt) > 2 and prompt[2]
             if command in ('cancel','escape','go back'):
                 self.prompt=None
-                m.speak('Canceled. Back to '+{'file_reader':'document reader','mailbox':'email','web':'the web page'}.get(target,target.replace('_',' '))+'.'); return target
+                # The same name the screen has everywhere else ("Back to Word processor menu.").
+                m.speak('Canceled. '+m.options_return_notice(target)); return target
             if text == '@task:skip' and optional: text = ''
             if not text.strip() and not optional:m.speak('Enter a value, or press Escape to cancel.');return mode
             result=self.handle(template.format(value=text.strip()), target) if target == 'local_media' else m.handle(template.format(value=text.strip()), target, typed=True)
@@ -424,11 +447,11 @@ class TaskNavigation:
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')
         if command in ('document reader','open document reader','document reader menu') and mode not in ('document','email_draft','note'):
-            return self.enter('reader_menu', 'Document reader')
+            return self.enter('reader_menu', 'Document reader menu')
         if mode == 'reader_menu' and command in ('open a document','open document','recent documents','recent','options','open options','help'):
             return self.action({'open a document':'@reader_open','open document':'@reader_open','recent documents':'@reader_recent','recent':'@reader_recent'}.get(command,'@options:Document reader' if 'options' in command else 'help with document reader'), mode)
         if command in ('notepad','open notepad','notepad menu') and mode not in ('document','email_draft','note'):
-            return self.enter('notepad_menu', 'Notepad')
+            return self.enter('notepad_menu', 'Notepad menu')
         if mode == 'notepad_menu' and command in ('create a note','new note','open a note','open notes','options','open options','notepad options'):
             return self.action({'create a note':'write a note','new note':'write a note','open a note':'list notes','open notes':'list notes'}.get(command,'@options:Notepad'), mode)
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
@@ -468,7 +491,7 @@ class TaskNavigation:
                 m.speak(('Paused.' if result else 'Playing.') if action == 'toggle' else {'play':'Playing.','pause':'Paused.','stop':'Stopped.'}[action]); return mode
             if command in ('volume up','volume down') or command.startswith('speed '):
                 if player.kind!='local': m.speak('Open a media file first.'); return mode
-                value = player.adjust('volume', .1 if command=='volume up' else -.1) if command.startswith('volume') else player.adjust('speed', float(__import__('document_editor').spoken_number(text.strip()[6:]) or text.strip()[6:]))
+                value = player.adjust('volume', .1 if command=='volume up' else -.1) if command.startswith('volume') else player.adjust('speed', spoken_speed(text.strip()[6:]))
                 m.speak(('Volume '+str(round(value*100))+' percent.') if command.startswith('volume') else 'Playback speed '+str(value)+'.'); return mode
             if command in ('status','media status'):
                 if player.kind!='local':m.speak('No media file open. Choose Open a media file.');return mode
@@ -485,7 +508,7 @@ class TaskNavigation:
                 if self.group: self.group = None; return self.enter(mode, 'Document menu')
                 m.speak('Back to document.'); return 'document'
             if mode == 'recent_documents': return self.enter('word_processor', 'Word processor menu')
-            if mode == 'reader_recent': return self.enter('reader_menu', 'Document reader')
+            if mode == 'reader_recent': return self.enter('reader_menu', 'Document reader menu')
             if mode == 'local_media':
                 if not m.PREFERENCES.get('keep_audio_playing',False) and m.MEDIA_HUB and m.MEDIA_HUB.player.kind=='local':m.MEDIA_HUB.player.control('stop')
                 files, self.player_files = self.player_files, None
@@ -513,7 +536,8 @@ class TaskNavigation:
             old = self.indices.get(mode, 0)
             index = 0 if command=='home' else len(items)-1 if command=='end' else max(0,min(len(items)-1,old+(1 if command=='next' else -1)))
             self.indices[mode] = index
-            m.speak(('Start of list. ' if index==old==0 else 'End of list. ' if index==old else '')+self.describe(items[index], index, len(items))); return mode
+            forward = command in ('next', 'end')
+            m.speak((('End of list. ' if forward else 'Start of list. ') if index==old else '')+self.describe(items[index], index, len(items))); return mode
         if command.startswith('letter:'):
             index = next_match([i[0] for i in items], self.indices.get(mode, 0), command[-1])
             if index is not None: self.indices[mode] = index; m.speak(self.describe(items[index], index, len(items)))

@@ -166,7 +166,7 @@ def opened_message(address, opened, prefilled, copied, version=None):
     if opened:
         start = 'Thunderbird is open to add ' + address + '. '
         if copied:
-            fill = 'The address is copied. Say show Thunderbird, then paste it in the email address box with Control V. '
+            fill = 'The address is copied. Say show Thunderbird, then paste it in the email address box with Control+V. '
         else:
             fill = 'Say show Thunderbird, then type the address in the email address box. '
         steps = 'Type your name if that box is empty, then choose Continue. '

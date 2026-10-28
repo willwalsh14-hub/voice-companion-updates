@@ -147,7 +147,7 @@ class ModelTests(unittest.TestCase):
     def test_failures_say_why_and_what_to_do(self):
         self.send(edge('a', new=True)); self.said()
         self.send(edge('a', 'Interrupted', 'NetworkDisconnected', received=300))
-        self.assertEqual(self.said(), ['a.pdf did not finish downloading. The internet connection was lost. Press Control+D for downloads, then Space to try again.'])
+        self.assertEqual(self.said(), ['a.pdf did not finish downloading. The internet connection was lost. To try again, open Downloads and press Space.'])
         self.assertEqual(self.model.toggle(self.record('a')), 'Trying a.pdf again.')
         self.assertEqual(self.edge.sent[-1], ('a', 'resume'))
         self.send(edge('b', new=True)); self.said()

@@ -115,6 +115,11 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
       into the previous Options dialog before the next one was drawn. Fixed;
       most likely the same cause. If a main build fails again, read the
       annotations.
+- [x] test_skip_ad_in_a_shadow_root failed on some runs and passed on others,
+      on main too. Cause: the page made its Skip button with a 300 ms timer,
+      which raced the first page reading on a busy computer. When the timer
+      won, the button was already known and no news was said. The test now
+      shows the button only after the page is read.
 - [ ] Known and kept by design: in Dictation only mode, a sentence starting
       with "find" still runs the editor's find command.
 - [ ] A volunteer tester group beyond the private beta, with a short weekly

@@ -27,7 +27,7 @@ class NotepadMenuTests(CompanionTestCase):
 
     def test_notepad_opens_its_menu_with_four_items(self):
         self.open_menu()
-        self.assertTrue(self.said[-1].startswith('Notepad. Create a note'), self.said[-1])
+        self.assertTrue(self.said[-1].startswith('Notepad menu. Create a note'), self.said[-1])
         names = [name for name, _, _ in companion.task_navigation().items('notepad_menu')]
         self.assertEqual(names, ['Create a note', 'Open a note', 'Options', 'Main menu'])
         self.assertEqual(dict(companion.MAIN_MENU_CHOICES)['Notepad'], 'notepad')
@@ -47,7 +47,7 @@ class NotepadMenuTests(CompanionTestCase):
             mode = self.key('Escape', mode)
         self.assertEqual(mode, 'notepad_menu')
         self.assertTrue(save.called)
-        self.assertTrue(self.said[-1].startswith('Note saved. Notepad.'), self.said[-1])
+        self.assertTrue(self.said[-1].startswith('Note saved. Notepad menu.'), self.said[-1])
         self.assertEqual(self.key('Escape', mode), 'awake')
 
     def test_open_a_note_lists_notes_over_the_menu(self):

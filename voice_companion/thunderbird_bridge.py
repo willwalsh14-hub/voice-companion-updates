@@ -18,7 +18,9 @@ from regular_browser import address
 HOST_NAME = 'com.voicecompanion.mail'
 ADDON_ID = 'voice-companion-mail@willwalsh14-hub'
 PROTOCOL = 3
-MAX_FRAME = 8 * 1024 * 1024
+# One request or answer. A message is sent whole, and a message bigger than this
+# ended the connection to Thunderbird (8 MB was too small for some newsletters).
+MAX_FRAME = 64 * 1024 * 1024
 KEY_FILE = 'mail-bridge.key'
 
 
@@ -87,7 +89,10 @@ class MailRelay:
         finally:
             with self.state_lock:
                 if self.pipe is pipe: self.pipe = None; self.connected.clear()
-            for waiter in list(self.pending.values()): waiter['event'].set()
+            # Wake only the requests sent on this connection. After Thunderbird restarts, the
+            # old connection ends while new requests already wait on the new one.
+            for waiter in list(self.pending.values()):
+                if waiter.get('pipe') is pipe: waiter['event'].set()
             try: pipe.close()
             except OSError: pass
 
@@ -103,6 +108,7 @@ class MailRelay:
             with self.send_lock:
                 pipe = self.pipe
                 if pipe is None: raise ThunderbirdUnavailable('Thunderbird is not connected to Voice Companion.')
+                waiter['pipe'] = pipe
                 pipe.send_bytes(encode({'id': ident, 'method': method, 'params': params or {}}))
             import user_stop
             waited, answered = 0, False

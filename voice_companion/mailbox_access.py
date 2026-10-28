@@ -34,6 +34,20 @@ def message_date(value):
         return 'unavailable'
 
 
+def reply_addresses(action, sender, to, copied, own_address):
+    """Who a reply goes to, first the main recipient. Never your own address.
+
+    A reply to a message you sent yourself (in Sent) goes to the people you
+    wrote to, as in Thunderbird and Gmail, instead of to nobody."""
+    own = str(own_address or '').casefold()
+    sender, to, copied = ([a for a in values if a and '@' in a] for values in (sender, to, copied))
+    if sender and all(a.casefold() == own for a in sender):
+        people = to + (copied if action == 'reply_all' else [])
+    else:
+        people = sender + (to + copied if action == 'reply_all' else [])
+    return [a for a in people if a.casefold() != own]
+
+
 from email_reader import render_html
 
 

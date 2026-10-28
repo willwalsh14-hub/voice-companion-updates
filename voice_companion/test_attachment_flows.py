@@ -134,14 +134,14 @@ class MessageAttachmentTests(FlowTestCase):
                                                'Press L to list them. Hello from Sam.'), self.last())
         mode = self.press('L', mode)
         self.assertEqual(mode, 'attachments')
-        self.assertIn('report.pdf, 10 kilobytes. 1 of 3.', self.last())
+        self.assertEqual(self.last(), 'Attachments, 3 files. report.pdf, 10 kilobytes, 1 of 3.')
         self.press('Up', mode)
-        self.assertEqual(self.last(), 'Start of list. report.pdf, 10 kilobytes. 1 of 3.')
+        self.assertEqual(self.last(), 'Start of list. report.pdf, 10 kilobytes, 1 of 3.')
         self.press('Down', mode)
-        self.assertEqual(self.last(), 'photo.jpg, 14 bytes. 2 of 3.')
+        self.assertEqual(self.last(), 'photo.jpg, 14 bytes, 2 of 3.')
         self.press('End', mode)
         self.press('Down', mode)
-        self.assertEqual(self.last(), 'End of list. setup.exe, 10 bytes. 3 of 3.')
+        self.assertEqual(self.last(), 'End of list. setup.exe, 10 bytes, 3 of 3.')
         self.press('Home', mode)
         # Escape goes back to the message, where you were.
         self.assertEqual(self.press('Escape', mode), 'mailbox')
@@ -187,7 +187,7 @@ class MessageAttachmentTests(FlowTestCase):
         self.assertIn('That folder does not exist', self.last())
         app.handle_keyboard(str(target), mode)
         self.assertEqual(self.last(), 'Saved report.pdf as report (1).pdf in your Keep folder, because a file with that name was already there.')
-        with patch('file_manager._place', return_value=str(target)):
+        with patch('attachment_screen.place', return_value=target):
             app.handle('Save all attachments to Documents', mode)
         self.assertIn('Saved 3 attachments in your Keep folder', self.last())
 
@@ -231,7 +231,7 @@ class MessageAttachmentTests(FlowTestCase):
         self.assertEqual(mode, 'file_reader')
         self.assertIn('Clinic opens at nine.', self.last())
         self.assertEqual(self.press('Escape', mode), 'attachments')
-        self.assertEqual(self.last(), 'Attachments. notes.txt, 21 bytes. 1 of 1.')
+        self.assertEqual(self.last(), 'Attachments, 1 file. notes.txt, 21 bytes, 1 of 1.')
 
     def test_forward_says_the_original_files_go_along(self):
         mode = self.inbox()
@@ -245,7 +245,7 @@ class MessageAttachmentTests(FlowTestCase):
         self.assertEqual(mode, 'attachments')
         self.press('Down', mode)
         self.press('Delete', mode)
-        self.assertEqual(self.last(), 'Removed photo.jpg. 2 attachments left. setup.exe, 10 bytes. 2 of 2.')
+        self.assertEqual(self.last(), 'Removed photo.jpg. 2 attachments left. setup.exe, 10 bytes, 2 of 2.')
         self.assertEqual(draft.response_context['dropped_attachments'], ['photo.jpg'])
         # A received message's files cannot be taken off it.
         self.press('Escape', mode)
@@ -261,7 +261,7 @@ class DraftAttachmentTests(FlowTestCase):
         app.FILE_MANAGER.choose('letter.txt')
         mode = self.press('Enter', mode)
         self.assertEqual(mode, 'email_draft')
-        self.assertEqual(self.last(), 'Attached letter.txt, 9 bytes. Back to email draft. Subject field.')
+        self.assertEqual(self.last(), 'Attached letter.txt. 1 attachment. Back to email draft. Subject field.')
         self.assertEqual(draft.compose_step, 'subject')
         self.assertEqual([a['name'] for a in draft.attachments], ['letter.txt'])
         self.assertIsNone(app.task_navigation().picker)
@@ -283,7 +283,7 @@ class DraftAttachmentTests(FlowTestCase):
         app.FILE_MANAGER.choose('photo.jpg'); app.handle_keyboard('toggle selection', mode)
         self.assertEqual(self.press('Enter', mode), 'email_draft')
         self.assertEqual(sorted(a['name'] for a in draft.attachments), ['letter.txt', 'photo.jpg'])
-        self.assertIn('Attached 2 attachments', self.last())
+        self.assertIn('. 2 attachments. Back to email draft.', self.last())
         # Escape out of the drive list goes back to the draft with nothing attached.
         mode = self.settle_files(self.press('Ctrl+T', 'email_draft'))
         app.handle_keyboard('drive list', mode); self.settle_files(mode)
@@ -296,14 +296,14 @@ class DraftAttachmentTests(FlowTestCase):
         draft.attach([self.files / 'letter.txt', self.files / 'photo.jpg'])
         mode = self.press('Ctrl+L', 'email_draft')
         self.assertEqual(mode, 'attachments')
-        self.assertIn('2 attachments: letter.txt, 9 bytes; photo.jpg, 14 bytes.', self.last())
+        self.assertEqual(self.last(), 'Attachments, 2 files. letter.txt, 9 bytes, 1 of 2.')
         self.press('Delete', mode)
-        self.assertEqual(self.last(), 'Removed letter.txt. 1 attachment left. photo.jpg, 14 bytes. 1 of 1.')
+        self.assertEqual(self.last(), 'Removed letter.txt. 1 attachment left. photo.jpg, 14 bytes, 1 of 1.')
         self.assertEqual(self.press('Escape', mode), 'email_draft')
         self.assertEqual(app.handle('remove attachment photo', 'email_draft'), 'email_draft')
         self.assertEqual(self.last(), 'Removed photo.jpg. No attachments left.')
         self.assertEqual(self.press('Ctrl+L', 'email_draft'), 'email_draft')
-        self.assertEqual(self.last(), 'This email has no attachments. Press Control+T to attach a file.')
+        self.assertEqual(self.last(), 'This email has no attachments. Say attach a file, or press Control+T.')
 
     def test_writing_that_only_sounds_like_a_command_is_text(self):
         draft = self.draft()
@@ -343,7 +343,7 @@ class FileManagerEmailTests(FlowTestCase):
         app.FILE_MANAGER.choose('letter.txt'); app.handle_keyboard('toggle selection', mode)
         app.FILE_MANAGER.choose('photo.jpg'); app.handle_keyboard('toggle selection', mode)
         self.assertEqual(self.press('Ctrl+N', mode), 'email_draft')
-        self.assertEqual(self.last(), 'New email. Attached 2 attachments: letter.txt, photo.jpg. To field. '
+        self.assertEqual(self.last(), 'New email. Attached letter.txt and photo.jpg. 2 attachments. To field. '
                                       'Who do you want to send it to? Type an address, or say a saved contact name.')
         self.assertEqual(app.email_draft.compose_step, 'recipient')
         self.assertTrue(app.email_draft.path.exists())
@@ -367,7 +367,7 @@ class FileManagerEmailTests(FlowTestCase):
         self.assertEqual(self.last(), 'No email draft is open. Press Control+N to start a new email with this file.')
         draft = self.draft()
         self.assertEqual(self.press('Ctrl+T', mode), 'email_draft')
-        self.assertEqual(self.last(), 'Attached photo.jpg, 14 bytes. Back to email draft.')
+        self.assertEqual(self.last(), 'Attached photo.jpg. 1 attachment. Back to email draft.')
         self.assertEqual([a['name'] for a in draft.attachments], ['photo.jpg'])
 
 

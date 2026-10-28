@@ -284,8 +284,10 @@ class BusyPageTests(unittest.TestCase):
         # The player's controls live in a shadow root; the button arrives later.
         self.load('''<div id="player"><p>Video playing</p><div id="ad"></div></div><p>Comments</p>
         <script>window.skips=0;const root=document.getElementById('ad').attachShadow({mode:'open'});root.innerHTML='<span>Ad</span>';
-        setTimeout(()=>{root.innerHTML='<span>Ad</span><button>Skip Ad</button>';root.querySelector('button').onclick=()=>{window.skips++;document.getElementById('ad').remove();};},300);</script>''')
-        self.page.wait_for_function("!!document.getElementById('ad').shadowRoot.querySelector('button')")
+        window.showSkip=()=>{root.innerHTML='<span>Ad</span><button>Skip Ad</button>';root.querySelector('button').onclick=()=>{window.skips++;document.getElementById('ad').remove();};};</script>''')
+        # The button arrives after the page was read. A timer raced the first
+        # reading on a busy computer: when it won, the button was already known.
+        self.page.evaluate('showSkip()')
         self.assertEqual(self.session.refresh_changed(), SKIP_AD_READY)
         started = time.monotonic()
         self.assertEqual(self.session.command('Skip ad.'), 'Ad skipped.')

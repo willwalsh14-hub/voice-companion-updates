@@ -1,39 +1,41 @@
 {
-  "version": "0.2.170-test",
+  "version": "0.2.171-test",
   "status": "Testing build",
   "date": "October 27, 2026",
-  "baseline": "0.2.169-test",
-  "scope": "Contacts, a calendar, and email attachments, all through Thunderbird.",
+  "baseline": "0.2.170-test",
+  "scope": "A large, clear screen for low vision, a calendar you can edit, attachments by voice, and over 80 fixes.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Contacts",
+          "title": "Large text and colors",
           "details": [
-            "Contacts is on the main menu. It lists your Thunderbird contacts, such as Google contacts, with the ones saved here.",
-            "Up and Down read each name, email, and phone. Press Enter for details.",
-            "Control+E writes an email to the contact. You can also say email John from the main menu.",
-            "Control+N adds a contact. Delete removes one after a question."
+            "The window now shows the screen name, the list or menu with the chosen item marked, and what was just said.",
+            "Text is large and yellow on black at first. Change it in Display options.",
+            "Control+Plus and Control+Minus change the text size. Control+9 changes the colors. F11 turns full screen on or off.",
+            "You can also say bigger text, smaller text, or high contrast."
           ]
         },
         {
-          "title": "Calendar",
+          "title": "Calendar and contacts",
           "details": [
-            "Calendar is on the main menu. It shows your Thunderbird calendars, such as Google Calendar.",
-            "It opens on today. Up and Down move through the events. Left and Right change the day.",
-            "Control+N adds an event. You can say add appointment tomorrow at 3 PM called doctor.",
-            "Say what is on my calendar today from any screen."
+            "Control+G goes to a date. You can also say go to December 25.",
+            "F2 changes an event. You can say move event to Friday at 2.",
+            "F2 also changes a contact's name, email, or phone."
           ]
         },
         {
-          "title": "Email attachments",
+          "title": "Attachments by voice",
           "details": [
-            "A message says how many files it has. Press L to list them. Enter opens one.",
-            "Control+S saves a file to your Downloads folder. You can also say save all attachments.",
-            "In an email you are writing, Control+T attaches a file. Control+L lists the files.",
-            "In File manager, Control+N sends the files you chose in a new email.",
-            "A forward now includes the files from the first email."
+            "Say attach my resume from Documents, or attach the last download.",
+            "Say open the PDF, save all to Desktop, or remove photo."
+          ]
+        },
+        {
+          "title": "Speech transcript",
+          "details": [
+            "Say start transcript to keep a file of everything Voice Companion says. This helps a helper find a problem."
           ]
         }
       ]
@@ -42,17 +44,35 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Thunderbird connection",
+          "title": "Starting up",
           "details": [
-            "The Voice Companion part in Thunderbird now works with your contacts, calendars, and files.",
-            "Thunderbird may ask you once to allow it. Choose Allow."
+            "Voice Companion now says one clear message when it starts, every time.",
+            "It says the version, any update result, the microphone state, and where you are.",
+            "Nothing is cut off, even after an update or with the microphone off."
           ]
         },
         {
-          "title": "Yahoo",
+          "title": "Menus and Options",
           "details": [
-            "A large Yahoo message is now read from its text, instead of being skipped.",
-            "Yahoo files can be saved and sent too."
+            "Menus say their full name, such as Document reader menu.",
+            "Keys are said the same way everywhere, such as Control+O.",
+            "A word Voice Companion did not understand no longer sends you to the main menu."
+          ]
+        },
+        {
+          "title": "Email, documents, and files",
+          "details": [
+            "A reply to your own sent email now goes to the right people.",
+            "A sender name with a comma no longer stops the Inbox from opening.",
+            "A file that is damaged or open in another program no longer stops the app."
+          ]
+        },
+        {
+          "title": "Web, downloads, and media",
+          "details": [
+            "Buttons that change part of a page now say what changed, and keep your place.",
+            "Find now finds words on the page, not just links.",
+            "A Word file you get from the web now opens in the Document reader."
           ]
         }
       ]

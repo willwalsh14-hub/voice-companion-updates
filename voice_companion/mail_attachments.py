@@ -77,8 +77,110 @@ def names(items):
 
 
 def label(item, index, count):
-    """One line of the Attachments list: 'report.pdf, 1.2 megabytes. 1 of 2.'"""
-    return item['name'] + ', ' + size_words(item.get('size')) + '. ' + str(index + 1) + ' of ' + str(count) + '.'
+    """One line of the Attachments list: 'report.pdf, 1.2 megabytes, 1 of 2.', like every other list."""
+    return item['name'] + ', ' + size_words(item.get('size')) + ', ' + str(index + 1) + ' of ' + str(count) + '.'
+
+
+def file_count(count):
+    return str(count) + (' file' if count == 1 else ' files')
+
+
+def joined(words):
+    """'a', 'a and b', 'a, b and c'; after five names, 'and 3 more'."""
+    words = list(words)
+    shown, more = words[:SPOKEN_NAMES], len(words) - SPOKEN_NAMES
+    if more > 0:
+        return ', '.join(shown) + ' and ' + str(more) + ' more'
+    if len(shown) < 2:
+        return ''.join(shown)
+    return ', '.join(shown[:-1]) + ' and ' + shown[-1]
+
+
+# Spoken names ------------------------------------------------------------------
+# People say "report dot PDF", "the photo", "my resume" or "the spreadsheet".
+
+KINDS = (
+    (('pdf', 'pdf file', 'pdf document', 'acrobat file'), ('.pdf',), 'PDF document'),
+    (('photo', 'picture', 'image', 'pic', 'photograph', 'snapshot', 'jpeg', 'jpg'),
+     ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.heic', '.heif', '.webp', '.tif', '.tiff'), 'picture'),
+    (('word document', 'word file', 'document', 'doc', 'letter'), ('.docx', '.doc', '.odt', '.rtf'), 'Word document'),
+    (('spreadsheet', 'excel file', 'excel spreadsheet', 'workbook', 'sheet'), ('.xlsx', '.xls', '.xlsm', '.ods', '.csv'), 'spreadsheet'),
+    (('presentation', 'slides', 'slide show', 'powerpoint'), ('.pptx', '.ppt', '.odp'), 'presentation'),
+    (('text file', 'text', 'note', 'notes'), ('.txt', '.md'), 'text file'),
+    (('video', 'movie', 'clip', 'video clip'), ('.mp4', '.mov', '.m4v', '.avi', '.wmv', '.mkv', '.webm'), 'video'),
+    (('song', 'audio', 'sound', 'recording', 'voice message', 'music', 'audio file'),
+     ('.mp3', '.m4a', '.wav', '.wma', '.ogg', '.flac', '.aac', '.opus'), 'sound file'),
+    (('zip', 'zip file', 'archive', 'compressed file', 'compressed folder'), ('.zip', '.7z', '.rar', '.gz'), 'compressed folder'),
+    # Not "message" or "email" alone: "open message" in Email is about the message itself.
+    (('attached message', 'attached email', 'forwarded message', 'forwarded email', 'eml'), ('.eml', '.msg'), 'email message'),
+    (('web page', 'webpage', 'html file'), ('.html', '.htm'), 'web page'),
+    (('calendar invitation', 'invitation', 'invite', 'calendar file'), ('.ics',), 'calendar invitation'),
+    (('contact card', 'business card', 'vcard'), ('.vcf',), 'contact card'),
+)
+
+
+def plain_words(value):
+    """Lower case words only: 'Résumé_2026 (final).PDF' gives 'resume 2026 final pdf'."""
+    import unicodedata
+    text = unicodedata.normalize('NFKD', str(value or '').casefold())
+    text = ''.join(c for c in text if not unicodedata.combining(c))
+    return ' '.join(re.sub(r'[\W_]+', ' ', text).split())
+
+
+def spoken_name(value):
+    """What was said, ready to compare with file names: no "the", "dot" made a break."""
+    text = ' ' + plain_words(value) + ' '
+    text = re.sub(r' (?:dot|period|point|underscore|dash|hyphen|minus) ', ' ', text)
+    words = text.split()
+    while words and words[0] in ('the', 'my', 'a', 'an', 'this', 'that', 'our', 'your'):
+        words = words[1:]
+    while len(words) > 1 and words[-1] in ('file', 'attachment', 'attached'):
+        words = words[:-1]
+    return ' '.join(words)
+
+
+def kind_of(name):
+    """The KINDS row for a file name, or None."""
+    suffix = Path(str(name)).suffix.casefold()
+    return next((row for row in KINDS if suffix in row[1]), None)
+
+
+def kind_words(name):
+    """'PDF document', 'picture', 'ZIP file' or 'file': what kind of file it is, in words."""
+    row = kind_of(name)
+    if row is not None:
+        return row[2]
+    if kind(name) == 'program':
+        return 'program'
+    suffix = Path(str(name)).suffix.lstrip('.')
+    return (suffix.upper() + ' file') if suffix and len(suffix) <= 6 and suffix.isalnum() else 'file'
+
+
+def name_matches(names, said, loose=True):
+    """The places in names of the files that best fit what was said, best first.
+
+    Exact name, then exact name without its ending, then a kind ("the PDF", "the photo")
+    when only those files have it, then names that start with the words, then (when
+    loose) names that hold every word. An empty list: nothing fits."""
+    wanted = spoken_name(said)
+    if not wanted:
+        return []
+    keys = [plain_words(name) for name in names]
+    stems = [plain_words(Path(str(name)).stem) if Path(str(name)).suffix else plain_words(name) for name in names]
+    for test in (lambda i: keys[i] == wanted, lambda i: stems[i] == wanted):
+        found = [i for i in range(len(names)) if test(i)]
+        if found:
+            return found
+    kinds = [row for row in KINDS if wanted in row[0]]
+    if kinds:
+        found = [i for i, name in enumerate(names) if Path(str(name)).suffix.casefold() in kinds[0][1]]
+        if found:
+            return found
+    found = [i for i in range(len(names)) if (keys[i] + ' ').startswith(wanted + ' ')]
+    if found or not loose:
+        return found
+    words = wanted.split()
+    return [i for i in range(len(names)) if all(word in keys[i].split() for word in words)]
 
 
 def total_size(items):

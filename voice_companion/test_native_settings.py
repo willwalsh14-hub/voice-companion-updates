@@ -142,7 +142,7 @@ class NativeSettingsTests(unittest.TestCase):
 
     def test_text_entry_is_self_voicing_and_password_is_hidden(self):
         hwnd=self.open_panel();self.panel.command('documents')
-        self.wait(lambda:self.session.category==5)
+        self.wait(lambda:self.session.category==CATEGORIES.index('Word processor options'))
         self.wait(lambda:any('Font for new documents, Calibri' in message for message in self.notices))
         # The font is a list: a first letter moves to the next matching font.
         fonts=self.u.GetDlgItem(hwnd,200)

@@ -360,7 +360,7 @@
 },
 "awake | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "awake"
 },
@@ -989,7 +989,7 @@
 },
 "awake | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -1336,7 +1336,7 @@
 },
 "awake | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -1390,7 +1390,7 @@
 },
 "awake | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -1760,7 +1760,7 @@
 },
 "awake | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2123,7 +2123,7 @@
 },
 "awake | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2439,7 +2439,7 @@
 },
 "awake | notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -2589,7 +2589,7 @@
 },
 "awake | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2607,7 +2607,7 @@
 },
 "awake | open notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -2702,7 +2702,7 @@
 },
 "awake | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2862,7 +2862,7 @@
 },
 "awake | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -3006,7 +3006,7 @@
 },
 "awake | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -3971,7 +3971,7 @@
 },
 "awake | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -3983,7 +3983,7 @@
 },
 "awake | version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "awake"
 },
@@ -4046,7 +4046,7 @@
 },
 "awake | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -4166,7 +4166,7 @@
 },
 "awake | what version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "awake"
 },
@@ -4181,6 +4181,18 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"awake | where am i": {
+"said": [
+"Main menu. The microphone is on."
+],
+"screen_after": "awake"
+},
+"awake | where am i now": {
+"said": [
+"Main menu. The microphone is on."
+],
+"screen_after": "awake"
 },
 "awake | where are my documents": {
 "said": [
@@ -4901,7 +4913,7 @@
 },
 "document | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "document",
 "text": [
@@ -5837,7 +5849,7 @@
 },
 "document | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -6355,7 +6367,7 @@
 },
 "document | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -6436,7 +6448,7 @@
 },
 "document | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -6976,7 +6988,7 @@
 },
 "document | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -7507,7 +7519,7 @@
 },
 "document | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -8201,7 +8213,7 @@
 },
 "document | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -8368,7 +8380,7 @@
 },
 "document | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -8593,7 +8605,7 @@
 },
 "document | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -8809,7 +8821,7 @@
 },
 "document | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -10241,7 +10253,7 @@
 },
 "document | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -10259,7 +10271,7 @@
 },
 "document | version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "document",
 "text": [
@@ -10331,7 +10343,7 @@
 },
 "document | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -10484,7 +10496,7 @@
 },
 "document | what version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "document",
 "text": [
@@ -10507,6 +10519,24 @@
 "screen_after": "help",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | where am i": {
+"said": [
+"Paragraph 1 of 1. Hello world. Second sentence."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | where am i now": {
+"said": [
+"where am i now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. where am i now"
 ]
 },
 "document | where are my documents": {
@@ -11321,7 +11351,7 @@
 },
 "email_draft | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -11492,11 +11522,11 @@
 },
 "email_draft | attachments": {
 "said": [
-"attachments"
+"This email has no attachments. Say attach a file, or press Control+T."
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world. attachments"
+"Hello world."
 ]
 },
 "email_draft | audio tutorial": {
@@ -12344,7 +12374,7 @@
 },
 "email_draft | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -12892,7 +12922,7 @@
 },
 "email_draft | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -12973,7 +13003,7 @@
 },
 "email_draft | email help": {
 "said": [
-"Write An Email. Start a new message (S), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write An Email. Start a new message (S), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -13525,7 +13555,7 @@
 },
 "email_draft | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14063,7 +14093,7 @@
 },
 "email_draft | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14767,7 +14797,7 @@
 },
 "email_draft | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -14934,7 +14964,7 @@
 },
 "email_draft | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -15159,7 +15189,7 @@
 },
 "email_draft | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -15375,7 +15405,7 @@
 },
 "email_draft | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -16812,7 +16842,7 @@
 },
 "email_draft | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -16830,7 +16860,7 @@
 },
 "email_draft | version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16902,7 +16932,7 @@
 },
 "email_draft | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -17055,7 +17085,7 @@
 },
 "email_draft | what version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17078,6 +17108,24 @@
 "screen_after": "help",
 "text": [
 "Hello world."
+]
+},
+"email_draft | where am i": {
+"said": [
+"Paragraph 1 of 1. Hello world."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | where am i now": {
+"said": [
+"where am i now"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. where am i now"
 ]
 },
 "email_draft | where are my documents": {
@@ -17744,8 +17792,7 @@
 },
 "help | back": {
 "said": [
-"Help closed. Back where you were.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -17777,7 +17824,7 @@
 },
 "help | back to topics": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18380,7 +18427,7 @@
 },
 "help | end of list": {
 "said": [
-"Fix A Problem (F), 30 of 30."
+"Large Text And Colors (L), 31 of 31."
 ],
 "screen_after": "help"
 },
@@ -18540,8 +18587,7 @@
 },
 "help | go back": {
 "said": [
-"Help closed. Back where you were.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -18609,7 +18655,7 @@
 },
 "help | help": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -18701,7 +18747,7 @@
 },
 "help | last item": {
 "said": [
-"Fix A Problem (F), 30 of 30."
+"Large Text And Colors (L), 31 of 31."
 ],
 "screen_after": "help"
 },
@@ -18865,7 +18911,7 @@
 },
 "help | manual": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19001,7 +19047,7 @@
 },
 "help | next": {
 "said": [
-"Getting Started (G), 2 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"Getting Started (G), 2 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19082,7 +19128,7 @@
 },
 "help | notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -19192,7 +19238,7 @@
 },
 "help | open manual": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -19206,7 +19252,7 @@
 },
 "help | open notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -19285,7 +19331,7 @@
 },
 "help | open user guide": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -20199,7 +20245,7 @@
 },
 "help | user guide": {
 "said": [
-"About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -20327,6 +20373,14 @@
 "said": [
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
+"screen_after": "help"
+},
+"help | where am i": {
+"said": [],
+"screen_after": "help"
+},
+"help | where am i now": {
+"said": [],
 "screen_after": "help"
 },
 "help | where are my documents": {
@@ -20921,7 +20975,7 @@
 },
 "mailbox | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "mailbox"
 },
@@ -21784,7 +21838,7 @@
 },
 "mailbox | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -22229,7 +22283,7 @@
 },
 "mailbox | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -22304,7 +22358,7 @@
 },
 "mailbox | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -22817,7 +22871,7 @@
 },
 "mailbox | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23285,7 +23339,7 @@
 },
 "mailbox | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23713,7 +23767,7 @@
 },
 "mailbox | notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -23914,7 +23968,7 @@
 },
 "mailbox | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -23938,7 +23992,7 @@
 },
 "mailbox | open notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -24054,7 +24108,7 @@
 },
 "mailbox | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -24264,7 +24318,7 @@
 },
 "mailbox | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -24456,7 +24510,7 @@
 },
 "mailbox | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -25728,7 +25782,7 @@
 },
 "mailbox | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -25743,7 +25797,7 @@
 },
 "mailbox | version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "mailbox"
 },
@@ -25803,7 +25857,7 @@
 },
 "mailbox | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -25938,7 +25992,7 @@
 },
 "mailbox | what version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "mailbox"
 },
@@ -25953,6 +26007,24 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"mailbox | where am i": {
+"calls": [
+"call.process('where am i')"
+],
+"said": [
+"session handled: where am i"
+],
+"screen_after": "mailbox"
+},
+"mailbox | where am i now": {
+"calls": [
+"call.process('where am i now')"
+],
+"said": [
+"session handled: where am i now"
+],
+"screen_after": "mailbox"
 },
 "mailbox | where are my documents": {
 "said": [
@@ -26552,7 +26624,7 @@
 },
 "note | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "note"
 },
@@ -26702,7 +26774,7 @@
 },
 "note | back": {
 "said": [
-"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27177,7 +27249,7 @@
 },
 "note | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27524,7 +27596,7 @@
 },
 "note | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27579,7 +27651,7 @@
 },
 "note | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27639,7 +27711,7 @@
 },
 "note | exit": {
 "said": [
-"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27675,7 +27747,7 @@
 },
 "note | exit note": {
 "said": [
-"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27844,7 +27916,7 @@
 },
 "note | go back": {
 "said": [
-"Note saved. Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27940,7 +28012,7 @@
 },
 "note | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28295,7 +28367,7 @@
 },
 "note | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28757,7 +28829,7 @@
 },
 "note | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28870,7 +28942,7 @@
 },
 "note | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -29020,7 +29092,7 @@
 },
 "note | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -29164,7 +29236,7 @@
 },
 "note | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -30120,7 +30192,7 @@
 },
 "note | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -30132,7 +30204,7 @@
 },
 "note | version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "note"
 },
@@ -30180,7 +30252,7 @@
 },
 "note | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -30282,7 +30354,7 @@
 },
 "note | what version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "note"
 },
@@ -30297,6 +30369,18 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"note | where am i": {
+"said": [
+"where am i"
+],
+"screen_after": "note"
+},
+"note | where am i now": {
+"said": [
+"where am i now"
+],
+"screen_after": "note"
 },
 "note | where are my documents": {
 "said": [
@@ -30984,7 +31068,7 @@
 },
 "web | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "web"
 },
@@ -31947,7 +32031,7 @@
 },
 "web | commands help": {
 "said": [
-"Using Voice Commands. Give a command (G), 1 of 6.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Using Voice Commands. Give a command (G), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -32418,7 +32502,7 @@
 },
 "web | document help": {
 "said": [
-"Write A Document. Create and name a document (C), 1 of 9.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Write A Document. Create and name a document (C), 1 of 9. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -32500,7 +32584,7 @@
 },
 "web | email help": {
 "said": [
-"Read And Organize Email. Read messages (R), 1 of 7.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Read And Organize Email. Read messages (R), 1 of 7. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -33078,7 +33162,7 @@
 },
 "web | help": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33609,7 +33693,7 @@
 },
 "web | manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -34081,7 +34165,7 @@
 },
 "web | notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -34303,7 +34387,7 @@
 },
 "web | open manual": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -34329,7 +34413,7 @@
 },
 "web | open notepad": {
 "said": [
-"Notepad. Create a note (C), 1 of 4. Ctrl+N."
+"Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -34456,7 +34540,7 @@
 },
 "web | open user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -34682,7 +34766,7 @@
 },
 "web | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -34898,7 +34982,7 @@
 },
 "web | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -36269,7 +36353,7 @@
 },
 "web | user guide": {
 "said": [
-"User guide. About this guide (A), 1 of 30. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -36285,7 +36369,7 @@
 },
 "web | version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "web"
 },
@@ -36346,7 +36430,7 @@
 },
 "web | web help": {
 "said": [
-"Browse The Web. Open the web browser menu (O), 1 of 10.. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Browse The Web. Open the web browser menu (O), 1 of 10. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -36488,7 +36572,7 @@
 },
 "web | what version": {
 "said": [
-"Voice Companion version <VERSION>. This is the self-voicing email and web test build."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "web"
 },
@@ -36503,6 +36587,26 @@
 "I could not identify one help topic. Say back to topics to browse the list."
 ],
 "screen_after": "help"
+},
+"web | where am i": {
+"calls": [
+"call.command('where am i')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: where am i"
+],
+"screen_after": "web"
+},
+"web | where am i now": {
+"calls": [
+"call.command('where am i now')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: where am i now"
+],
+"screen_after": "web"
 },
 "web | where are my documents": {
 "said": [

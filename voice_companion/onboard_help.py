@@ -59,7 +59,7 @@ class HelpSession:
         subs = self._subtopics()
         from menu_navigation import announce_item
         return (announce_item(subs[self.subtopic_index][0],self.subtopic_index,len(subs))+
-                '. Say next or previous, then that one to read it. Say back to topics for all chapters.')
+                ' Say next or previous, then that one to read it. Say back to topics for all chapters.')
 
     def start(self):
         return 'User guide. ' + self._item()
@@ -86,13 +86,26 @@ class HelpSession:
             'notepad':'write a note', 'notes':'write a note', 'updates':'check for updates', 'tutorial':'using help and lessons',
             'downloads':'download files', 'download manager':'download files', 'download':'download files', 'download folder':'download files',
             'attachments':'read and organize email', 'attachment':'read and organize email', 'email attachments':'read and organize email',
+            'display':'large text and colors', 'display options':'large text and colors', 'large text':'large text and colors',
+            'text size':'large text and colors', 'colors':'large text and colors', 'colours':'large text and colors',
+            'color scheme':'large text and colors', 'contrast':'large text and colors', 'high contrast':'large text and colors',
+            'magnifier':'large text and colors', 'magnification':'large text and colors', 'zoom':'large text and colors',
+            'low vision':'large text and colors', 'screen':'large text and colors', 'full screen':'large text and colors',
         }
+        # Help on these screens opens their own part of a chapter, not its first part.
+        part = {'attachments': 'open and save attachments', 'attachment': 'open and save attachments',
+                'email attachments': 'open and save attachments'}.get(wanted)
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)
                    if topic['name'].casefold() == wanted or topic['name'].casefold().startswith(wanted)]
         if len(matches) != 1:
             return 'I could not identify one help topic. Say back to topics to browse the list.'
         self.topic_index = matches[0]
+        subs = self._subtopics()
+        found = [i for i, (name, _) in enumerate(subs) if part and name.casefold() == part]
+        if found:
+            self.subtopic_index = found[0]
+            return self._open_article(subs[found[0]][1], subs[found[0]][0])
         return self._open_topic()
 
     def _open_topic(self):

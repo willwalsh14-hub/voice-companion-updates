@@ -27,6 +27,30 @@ class WebError(Exception):
     pass
 
 
+LEAVE_NOTICE=('This page has changes that are not saved, so it stayed open. '
+              'To leave it anyway, try again. The changes will be lost.')
+
+
+def dialog_text(kind_,message):
+    """What is said for a page's alert, confirm or prompt box. Companion answers
+    Cancel to questions, so a page never takes an action the user did not choose."""
+    message=_plain(message)
+    if message and message[-1] not in '.!?':message+='.'
+    if kind_=='alert':return 'Page message: '+message if message else 'The page showed a message with no words.'
+    if kind_=='prompt':return 'The page asked you to type an answer, so it was canceled.'+(' It asked: '+message if message else '')
+    return 'Website confirmation canceled: '+message if message else 'The website asked a question with no words, so it was canceled.'
+
+
+class FileDownloading(WebError):
+    """The address is a file: the browser downloads it and the page stays as it was."""
+
+
+LINK_DOWNLOADING='This link is a file, so it is downloading. Press Control+D to see your downloads.'
+ADDRESS_DOWNLOADING='This address is a file, so it is downloading. Press Control+D to see your downloads.'
+# Guided Chrome is started by the driver, which does not keep its downloads.
+GUIDED_CHROME_NO_DOWNLOADS='Guided Chrome cannot save downloads. To get this file, say use embedded Edge, then choose it again.'
+
+
 def _plain(text):
     return re.sub(r'\s+', ' ', str(text or '')).strip()
 
@@ -296,8 +320,13 @@ class BrowserBackend:
             # The address is a file, not a page: the browser downloads it instead
             # (downloads.py announces it). The current page stays as it was.
             if 'download is starting' in str(exc).casefold():
-                raise WebError('This address is a file, so it is downloading. Press Control+D to see your downloads.') from exc
+                raise FileDownloading(self.download_notice(ADDRESS_DOWNLOADING)) from exc
             raise
+
+    def download_notice(self,notice):
+        """What to say when a link or address is a file."""
+        guided_chrome=getattr(self,'browser','')=='chrome' and not getattr(self,'regular',False) and not getattr(self,'_embedded',None)
+        return GUIDED_CHROME_NO_DOWNLOADS if guided_chrome else notice
 
     def back(self):
         if not self.history_step(-1):raise WebError('There is no previous page.')
@@ -405,6 +434,8 @@ class BrowserBackend:
         import time
         deadline=time.monotonic()+self.HISTORY_WAIT;checks=0;page=self.page
         while True:
+            if getattr(self,'dialog_notice','')==LEAVE_NOTICE:
+                self.dialog_notice='';raise WebError(LEAVE_NOTICE)
             now=self._history_identity()
             if now is not None and now!=start:
                 if not now[0].startswith(('http://','https://')) and start[0].startswith(('http://','https://')):
@@ -748,12 +779,22 @@ class BrowserBackend:
             return element.count()==1 and element.is_visible() and element.evaluate("(e,item)=>!e.closest('[aria-hidden=\"true\"],[inert]')&&e.tagName.toLowerCase()===item.tag&&(e.type||'').toLowerCase()===(item.type||'')",item)
         except Exception:return False
 
+    # How long a second try to leave a page with unsaved changes leaves it.
+    LEAVE_AGAIN=60
+
     def _watch_dialogs(self):
         if not hasattr(self.page,'on'):return
         if getattr(self,'dialog_page',None) is self.page:return
         self.dialog_page=self.page
         def dialog_notice(dialog):
-            self.dialog_notice=('Page message: ' if dialog.type=='alert' else 'Website confirmation canceled: ')+dialog.message
+            import time
+            if dialog.type=='beforeunload':
+                # The page has changes that are not saved. Stay the first time and
+                # say why; a second try soon after leaves, as Leave does in a browser.
+                if time.monotonic()-getattr(self,'leave_asked',float('-inf'))<self.LEAVE_AGAIN:
+                    self.leave_asked=float('-inf');dialog.accept();return
+                self.leave_asked=time.monotonic();self.dialog_notice=LEAVE_NOTICE;dialog.dismiss();return
+            self.dialog_notice=dialog_text(dialog.type,dialog.message)
             dialog.dismiss()
         self.page.on('dialog',dialog_notice)
 
@@ -778,6 +819,11 @@ class BrowserBackend:
         opened=[]
         request_errors=[]
         pending_requests=set()
+        # A link or button that starts a download: the page stays, and saying so
+        # at once beats waiting and then reporting that nothing opened.
+        import downloads as download_list
+        files=[];model=download_list.current();serial=model.serial if model is not None else None
+        def file_started(download):files.append(download)
         def new_page(page):opened.append(page)
         def started_request(request):
             try:
@@ -797,11 +843,15 @@ class BrowserBackend:
         if self.context:self.context.on('page',new_page)
         before_page.on('request',started_request);before_page.on('requestfinished',finished_request)
         before_page.on('requestfailed',failed_request);before_page.on('response',failed_response)
+        before_page.on('download',file_started)
         try:
             self.last_action_started=True
             if key and focused:self.page.keyboard.press(key)
-            elif key:element.press(key,timeout=10000)
-            else:element.click(timeout=10000)
+            # The driver would wait for a navigation the click starts, up to the
+            # timeout, then fail; a slow site made a working link sound broken.
+            # The loop below watches the page instead.
+            elif key:element.press(key,timeout=10000,no_wait_after=True)
+            else:element.click(timeout=10000,no_wait_after=True)
             if kind(item)=='button' or key:
                 try:
                     # A button that removes itself when pressed (Skip ad, Close,
@@ -813,7 +863,14 @@ class BrowserBackend:
             clicked_at=time.monotonic()
             deadline=clicked_at+8
             changed=False
-            while time.monotonic()<deadline:
+            def loading():
+                # A slow site is still sending the next page: keep waiting, as a browser does.
+                try:return any(r.resource_type=='document' for r in pending_requests) and time.monotonic()<clicked_at+30
+                except Exception:return False
+            while time.monotonic()<deadline or loading():
+                if getattr(self,'dialog_notice','')==LEAVE_NOTICE:break
+                if files or model is not None and model.serial!=serial:
+                    return {'unchanged':True,'download':True,'notice':self.download_notice(LINK_DOWNLOADING)}
                 candidates=[p for p in opened if not p.is_closed()]
                 if self.context:
                     candidates.extend(p for p in self.context.pages if p not in before_pages and p not in candidates and not p.is_closed())
@@ -828,7 +885,9 @@ class BrowserBackend:
                     navigation_changed=frame.url!=before_url or any(now.get(k)!=before.get(k) for k in ('url','epoch','frames','frame_identity'))
                     # A link may open a dialog or update content through
                     # JavaScript without changing its URL.
-                    needs_navigation=kind(item)=='link' and item.get('href')!=before_url
+                    # A link to this same page (href="#", or a script link) changes it in place.
+                    href=str(item.get('href') or '')
+                    needs_navigation=kind(item)=='link' and href!=before_url and not href.lower().startswith('javascript:') and urlsplit(href)._replace(fragment='')!=urlsplit(before_url)._replace(fragment='')
                     dom_changed=any(now.get(k)!=before.get(k) for k in ('revision','frame_states'))
                     modal_ready=needs_navigation and dom_changed and frame.evaluate('()=>[...document.querySelectorAll(\'[role="dialog"][aria-modal="true"],dialog[open]\')].some(e=>!e.hidden&&getComputedStyle(e).display!=="none"&&getComputedStyle(e).visibility!=="hidden")')
                     content_changed=dom_changed and (frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text or frame.evaluate(controls_signature)!=before_controls)
@@ -844,9 +903,12 @@ class BrowserBackend:
                 try:changed=frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")!=before_text
                 except Exception:pass
             if not changed:
-                if kind(item)=='link':raise WebError('The link did not finish opening. The current page remains available; the link was not clicked again.')
                 dialog_notice=getattr(self,'dialog_notice','')
-                return {'unchanged':True,'notice':(dialog_notice+'. ' if isinstance(dialog_notice,str) and dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
+                dialog_notice=dialog_notice if isinstance(dialog_notice,str) else ''
+                if dialog_notice:self.dialog_notice=''
+                if dialog_notice==LEAVE_NOTICE:raise WebError(LEAVE_NOTICE)
+                if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
+                return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
                     if frame.evaluate("()=>document.body?.innerText.slice(0,200000)||''")==before_text:
@@ -876,6 +938,8 @@ class BrowserBackend:
             if self.context:self.context.remove_listener('page',new_page)
             before_page.remove_listener('request',started_request);before_page.remove_listener('requestfinished',finished_request)
             before_page.remove_listener('requestfailed',failed_request);before_page.remove_listener('response',failed_response)
+            try:before_page.remove_listener('download',file_started)
+            except Exception:pass
 
     def focus(self,item):
         if editable_combo(item):self._text_element(item).focus();return
@@ -1516,7 +1580,7 @@ class WebSession:
         from web_modes import page_key_feedback
         notice=page_key_feedback(key,before,after)
         dialog=getattr(self.backend,'dialog_notice','')
-        if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+'. '+notice).strip()
+        if isinstance(dialog,str) and dialog:self.backend.dialog_notice='';notice=(dialog+' '+notice).strip()
         return notice
 
     def app_changes(self):
@@ -1636,7 +1700,7 @@ class WebSession:
                 if (self.snapshot or {}).get('modal_key'):
                     self.backend.page.keyboard.press('Escape')
                     result=self._refresh(read=False,wait=False)
-                    return ('Dialog remains open. Move to its Close button.' if self.snapshot.get('modal_key') else 'Dialog closed. '+result)
+                    return ('Dialog remains open. Move to its Close button.' if self.snapshot.get('modal_key') else result if 'Dialog closed.' in result else 'Dialog closed. '+result)
                 self.pending=None;self.submit_pending=None;return 'Leave website.'
             elif key in ('Activate','Space'):
                 if self.keyboard_field:return describe(self.keyboard_field)
@@ -1661,7 +1725,10 @@ class WebSession:
                 if role=='button' and skip_ad_button({'url':self.snapshot.get('url',''),'elements':[item]}):return self.skip_ad()
                 if role in ('button','menuitem','menuitemradio','menuitemcheckbox'):
                     self.progress('Loading page.')
+                    before=self._before_action()
                     action=self.backend.activate(item)
+                    same=self._same_page_result(before,action)
+                    if same:return same
                     message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
                     return (action.get('validation') or action.get('notice') or message) if isinstance(action,dict) else message
                 if role in ('link','button'):
@@ -1905,7 +1972,7 @@ class WebSession:
                 except Exception as exc:
                     if not navigation_interrupted(exc) or attempt==2:raise
                     if hasattr(self.backend,'page'):self.backend.page.wait_for_timeout(100)
-        leaving=self.snapshot
+        leaving=self.snapshot;known_state=self.document_state or {}
         snapshot,captured_state = self._capture()
         if leaving and leaving.get('url')!=snapshot.get('url'):
             # Another page: keep the reading place here for Back and Forward.
@@ -1970,9 +2037,82 @@ class WebSession:
         if dialog_notice:self.backend.dialog_notice=''
         if self.running_browser()=='webview2' and (urlsplit(url).hostname or '').lower()=='accounts.google.com':
             # Google blocks its own sign-in inside embedded browsers such as WebView2.
-            dialog_notice=GOOGLE_SIGN_IN_NOTICE+(' '+dialog_notice if dialog_notice else '')
-        return ((dialog_notice+'. ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
+            dialog_notice=GOOGLE_SIGN_IN_NOTICE+'.'+(' '+dialog_notice if dialog_notice else '')
+        dialog=self._dialog_change(leaving,known_state,old_anchor,read)
+        if dialog:return (dialog_notice+' ' if dialog_notice else '')+dialog
+        return ((dialog_notice+' ' if dialog_notice else '')+('Page loaded: ' if getattr(self.backend,'page_ready',True) else 'Page content ready: ') + _plain(self.snapshot['title']) + '. Site: ' +
                 (urlsplit(url).hostname or 'unknown') + '.' + (' '+self.reading.read(True) if (self.auto_read if read is None else read) else ''))
+
+    def _live_news(self):
+        """Messages the page put in its status or alert areas since the last look."""
+        reader=getattr(self.backend,'page_key_state',None)
+        if not callable(reader):return []
+        try:state=reader(drain=True)
+        except Exception:return []
+        return list(dict.fromkeys(t for t in (state or {}).get('live') or [] if isinstance(t,str) and t.strip()))
+
+    def _before_action(self):
+        """The page as it is before a button or link is used, and its messages so far cleared."""
+        self._live_news()
+        return self._stamp(),getattr(self.backend,'page',None)
+
+    def _same_page_result(self,before,action):
+        """After a button or link changed only this page: what to say, keeping the reading place.
+
+        A screen reader stays on the button and says the page's message. Reading
+        the whole page again from the top lost the user's place. Returns None
+        when another page opened, so the usual page reading follows."""
+        stamp,page=before
+        if not isinstance(action,dict) or action.get('validation') or action.get('unchanged') or action.get('download'):return None
+        after=self._stamp()
+        if not stamp or not after or getattr(self.backend,'page',None) is not page or any(stamp.get(k)!=after.get(k) for k in ('url','epoch')):return None
+        anchor=dict(self.browse.current() or {}) if self.browse else {}
+        old_lines=set(self.reading.text.split('\n'))
+        try:message=self._refresh(wait=False,read=False,preserve=True)
+        except Exception:return None
+        if 'Dialog opened.' in message:
+            # Focus moves into a dialog when it opens: read it from its top, as a screen
+            # reader does. The page's reading place does not belong to the dialog, and keeping
+            # it sent E to the dialog's last field instead of its first.
+            self.browse.set_position(0);self.reading.position=self.reading.continuation=self.browse.position
+            self.preferred_column=None;self.cursor_changed(True)
+            # A dialog's contents are read as a new page's are, when automatic reading is on.
+            return (message+' '+self.reading.read(True)).strip() if self.auto_read and not self.app_mode else message
+        if 'Dialog closed.' in message:return message
+        sentence=lambda t:t if t.endswith(('.','!','?')) else t+'.'
+        news=self._live_news()
+        if news:return ' '.join(sentence(t) for t in news)
+        current=self.browse.current() if self.browse else None
+        same=bool(current and anchor and current.get('key')==anchor.get('key'))
+        # The control itself changed: expanded, pressed, checked or renamed.
+        if same and any(current.get(k)!=anchor.get(k) for k in ('expanded','pressed','checked','selected','label')):
+            return describe(current,self.browse.elements)
+        # Otherwise the words that are new on the page, such as a thank-you line.
+        added=[line.strip() for line in self.reading.text.split('\n') if line.strip() and line not in old_lines][:3]
+        if added:return ' '.join(sentence(line[:300]) for line in added)
+        if same:return describe(current,self.browse.elements)
+        return 'The page changed. '+(describe(current,self.browse.elements) if current else '')
+
+    def _dialog_change(self,leaving,known_state,old_anchor,read):
+        """What to say when a dialog on the same page opened or closed, or ''.
+
+        A dialog is not a new page. When it closes, the cursor goes back to the
+        control that opened it, as a screen reader returns focus there."""
+        if not leaving or leaving.get('url')!=self.snapshot.get('url') or known_state.get('epoch')!=(self.document_state or {}).get('epoch'):
+            self.dialog_opener=None;return ''
+        before,after=leaving.get('modal_key',''),self.snapshot.get('modal_key','')
+        if after and not before:
+            self.dialog_opener=old_anchor
+            text=self.reading.read(True) if (self.auto_read if read is None else read) else ''
+            return ('Dialog opened. '+text).strip()
+        if before and not after:
+            opener=getattr(self,'dialog_opener',None);self.dialog_opener=None
+            target=next((e for e in self.browse.elements if opener and e.get('key')==opener.get('key') and e.get('frame_index')==opener.get('frame_index')),None)
+            if target is None:return ''
+            self.browse.index=self.browse.elements.index(target);self.browse.position=target.get('start',0)
+            self.reading.position=self.reading.continuation=self.browse.position;self.preferred_column=None;self.cursor_changed(True)
+            return 'Dialog closed. '+describe(target,self.browse.elements)
+        return ''
 
     def refresh_changed(self):
         self.refresh_now=False
@@ -2126,7 +2266,8 @@ class WebSession:
             self.backend.goto(url)
             return ''
         except WebError as failure:
-            if self.injected_backend or getattr(self.backend,'regular',False):raise
+            # A file address is downloading in this browser. Closing it would stop the download.
+            if isinstance(failure,FileDownloading) or self.injected_backend or getattr(self.backend,'regular',False):raise
             # The other guided browser: Chrome when embedded Edge cannot start,
             # embedded Edge when Chrome cannot start (Chrome is not installed).
             failed=self.backend.browser
@@ -2160,7 +2301,12 @@ class WebSession:
         except ValueError as exc:
             return str(exc)
         except Exception:
-            return 'The page did not open. Check the address and internet connection.'
+            return self.take_leave_notice() or 'The page did not open. Check the address and internet connection.'
+
+    def take_leave_notice(self):
+        """The notice for a page that stayed open because of unsaved changes, once."""
+        if getattr(self.backend,'dialog_notice','')!=LEAVE_NOTICE:return ''
+        self.backend.dialog_notice='';return LEAVE_NOTICE
 
     def search(self, query, provider=None):
         if not _plain(query): return 'What would you like to look up?'
@@ -2209,6 +2355,11 @@ class WebSession:
         self.link_position = None
         controls = [c for c in self.snapshot['controls'] if c['role'] in ('link','button','menuitem','menuitemradio','menuitemcheckbox')]
         self.choices = match_choices(controls, request)
+        words = re.sub(r"^(?:find|look for|i am looking for|i'm looking for|where is|how do i)\s+", '', _plain(request), flags=re.I).rstrip('.!?,').strip()
+        if not self.choices and words:
+            # Words in the page text: move the reading place there, as Find does in a browser.
+            found = self.find_text(words)
+            if found: return found
         if not self.choices:
             # A result can arrive after the initial page paint.
             for _ in range(3):
@@ -2221,10 +2372,31 @@ class WebSession:
                 self.choices = match_choices(controls, request)
                 if self.choices: break
         if not self.choices:
-            return ('I could not identify a matching link or button. The site may have changed or hidden its controls. '
+            return ('I could not identify a matching link or button' + (', or find ' + words + ' in the page text' if words else '') + '. ' +
+                    'The site may have changed or hidden its controls. '
                     'Say list links to hear what I can find, or ask your helper to inspect the page.')
         self.suggestion_index = 0
         return self._suggest()
+
+    def find_text(self, words):
+        """Move the reading place to the next place the words appear, and read that line."""
+        text = self.reading.text or ''
+        wanted = words.casefold()
+        if not wanted or not text:return ''
+        folded = text.casefold()
+        before = self.reading.position
+        start = folded.find(wanted, min(len(text), before + 1))
+        wrapped = start < 0
+        if wrapped:start = folded.find(wanted)
+        if start < 0:return ''
+        self.reading.position = self.reading.continuation = start
+        if self.browse:self.browse.set_position(start)
+        self.preferred_column = None
+        line_start = text.rfind('\n', 0, start) + 1
+        line_end = text.find('\n', start)
+        line = text[line_start:len(text) if line_end < 0 else line_end].strip()
+        self.cursor_changed(True)
+        return ('Found from the top of the page: ' if wrapped and before > 0 else 'Found: ') + line
 
     def link_items(self):
         snapshot=self.snapshot or {}
@@ -2412,8 +2584,12 @@ class WebSession:
             return 'This action may submit information or move money. Ask your helper to review and complete it in the browser.'
         try:
             self.progress('Loading page.')
+            before=self._before_action()
             navigation=self.backend.activate(item)
+            if isinstance(navigation,dict) and navigation.get('download'):return navigation['notice']
             fragment=navigation.get('fragment') if isinstance(navigation,dict) else None
+            same=None if fragment else self._same_page_result(before,navigation)
+            if same:return same
             message=self._refresh(read=False if fragment else None)
             if fragment:
                 target=next((e for e in self.browse.elements+self.snapshot.get('anchors',[]) if e.get('id')==fragment and e.get('frame_index')==navigation.get('frame_index')),None)
@@ -2608,8 +2784,11 @@ class WebSession:
             return 'Finish the remaining fields or say cancel form before reviewing submission.'
         try: current = self.backend.snapshot()
         except Exception: return 'I could not recheck this form. Do not submit it by voice.'
-        if current['url'] != self.snapshot['url'] or urlsplit(current['url']).scheme != 'https':
+        if current['url'] != self.snapshot['url']:
             return 'The page changed. Say read page before trying to submit.'
+        if urlsplit(current['url']).scheme != 'https':
+            return ('This page is not secure, because its address does not start with https. '
+                    'Forms here are not sent by voice. Ask your helper to check it in the browser.')
         if self.form_page and current['url'] != self.form_page:
             return 'The form moved to a different page. Say read page before trying again.'
         controls = current.get('controls', [])
@@ -2899,12 +3078,12 @@ class WebSession:
             try: self.favorites.add(name, self.snapshot['url'])
             except WebError as exc: return str(exc)
             return 'Saved favorite ' + name + '. Say list favorites to hear it.'
-        match = re.fullmatch(r'(?:save|add) favorite (?:as |called )?(.+)', spoken, re.I)
+        match = re.fullmatch(r'(?:save|add) favorite (?:as |called )?(.+)', _plain(spoken).rstrip('.!?,'), re.I)
         if match:
             if not self.snapshot: return 'Open a website first.'
             try: self.favorites.add(match[1], self.snapshot['url'])
             except WebError as exc: return str(exc)
-            return 'Saved favorite ' + match[1] + '.'
+            return 'Saved favorite ' + _plain(match[1]) + '.'
         if command in ('list favorites','my favorites'):
             values = self.favorites.all()
             self.favorite_items=list(values.items())

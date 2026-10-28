@@ -28,7 +28,9 @@ def snapshot(m):
     podcast_names={str(i+1)+'. '+s['name']:s['feed'] for i,s in enumerate(subs)}
     podcast_limits={str(i+1)+'. '+s['name']:s.get('download_limit','manual') for i,s in enumerate(subs)}
     engine='ai' if m.AI_SPEECH and m.AI_SPEECH.enabled else 'espeak' if m.ESPEAK_SPEECH and m.ESPEAK_SPEECH.enabled else 'windows'
-    context={'engines':('SAPI',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS}
+    context={'engines':('SAPI',)+(('espeak',) if m.ESPEAK_SPEECH else ())+('ai',),'windows_voices':tuple(v[1] for v in voices if v[0]=='windows'),'espeak_voices':tuple(v[1] for v in voices if v[0]=='espeak'),'ai_voices':VOICES,'accounts':tuple(p+' '+a for p,a in accounts),'podcasts':tuple(podcast_names),'podcast_limits':podcast_limits,'podcast_feeds':podcast_names,'actions':ACTIONS,
+             # Fonts installed on this computer, found by the window; None lists every screen font.
+             'display_fonts':getattr(m.APP_WINDOW,'font_families',None)}
     from windows_actions import startup_enabled
     values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':__import__('web_assistant').browser_setting(m.APP),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
@@ -48,6 +50,7 @@ def stop_preview(m):
 def preview_settings(m,values,text):
     """Play staged voice settings without changing or saving preferences."""
     stop_preview(m);m.interrupt_speech()
+    if hasattr(m,'TRANSCRIPT'):m.TRANSCRIPT.said(text)
     if m.TEXT_MODE:return
     engine=str(values['engine']).lower();engine='windows' if engine=='sapi' else engine
     rate=int(values['rate']);volume=int(values['volume']);pitch=int(values.get('pitch',0))
@@ -123,6 +126,7 @@ def apply_settings(m,values):
     for key in DEFAULTS:m.PREFERENCES[key]=values[key]
     m.PREFERENCES['ai_consent']=bool(values.get('ai_consent'))
     save_preferences(m);m.save_speech_settings()
+    if hasattr(m,'apply_transcript'):m.apply_transcript()   # Startup and exit options: the speech transcript
     m.APP.mkdir(parents=True,exist_ok=True)
     from storage import write_text_atomic
     write_text_atomic(m.APP/'email-list-size.txt',values['email_list_size'])

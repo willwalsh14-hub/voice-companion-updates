@@ -18,6 +18,19 @@ NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'nine': 9, 'ninth': 9, 'ten': 10, 'tenth': 10}
 NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
+# Commands about "the message you are on". In an empty folder each says the list is empty.
+EMPTY_LIST_COMMANDS = ('next', 'previous', 'next message', 'previous message', 'first message', 'last message',
+                       'start of list', 'beginning of list', 'end of list', 'first message on page',
+                       'last message on page', 'newest message', 'first message in folder', 'oldest message',
+                       'last message in folder', 'message details', 'who is this from', 'read message details',
+                       'open current message', 'read current message', 'repeat message', 'read message',
+                       'open message', 'open that', 'read that', 'open it', 'read email', 'open email',
+                       'that one', 'okay', 'ok', 'confirm', 'confirm that', 'select all messages',
+                       'toggle message selection', 'extend selection next', 'extend selection previous',
+                       'select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message',
+                       'unmark message', 'deselect message', 'unselect message', 'delete', 'delete message',
+                       'delete this message', 'move', 'move to folder', 'move message', 'move this message',
+                       'move message to folder')
 
 
 def sender_address(row):
@@ -203,7 +216,10 @@ class MailSession:
             step = 1 if command in ('next folder', 'move down', 'down', 'next') else -1
             new = picker['index'] + step
             if not 0 <= new < len(picker['folders']):
-                return 'That is the ' + ('last' if step > 0 else 'first') + ' folder. ' + picker['folders'][picker['index']][0] + '.'
+                # Said as in every other list (Start of list, End of list).
+                index = picker['index']
+                return (('End of list. ' if step > 0 else 'Start of list. ') + 'Folder ' + str(index + 1) + ' of ' +
+                        str(len(picker['folders'])) + ': ' + self._spoken_folder(picker['folders'][index][0]) + '.')
             picker['index'] = new
             return name_first('Folder ' + str(new + 1) + ' of ' + str(len(picker['folders'])) + ': ' + self._spoken_folder(picker['folders'][new][0]) + '. Say that one to ' + verb + '.')
         if command in ('current folder', 'repeat folder'):
@@ -419,7 +435,7 @@ class MailSession:
         self.body_content=body or ''
         self.body_format=None
         import json
-        try:format=json.loads((Path(self.folder)/'preferences.json').read_text()).get('email_format','html')
+        try:format=json.loads((Path(self.folder)/'preferences.json').read_text(encoding='utf-8')).get('email_format','html')
         except (OSError,ValueError):format='html'
         self.set_format(format)
         self.body_offset = 0
@@ -557,6 +573,11 @@ class MailSession:
                 if command in ('cancel', 'go back', 'back'):
                     return 'Folder choice canceled. Nothing was changed.'
                 return 'Say rename to followed by the new name, or cancel.'
+            if (not self.rows and self.view == 'folder' and command in EMPTY_LIST_COMMANDS and
+                    not (self.marked_ids and command in ('delete', 'move', 'move to folder'))):
+                # An empty folder is an empty list, the same for every key and command.
+                return ('Empty list. No messages on this page of ' + self.folder_name +
+                        '. Press F5 or say list messages to check again.')
             if command in ('first message on page','last message on page') and self.rows and not self.folder_picker:
                 return self.page_edge(command.startswith('last'))
             if command in ('newest message','first message in folder','oldest message','last message in folder') and self.rows and not self.folder_picker:
@@ -641,7 +662,7 @@ class MailSession:
                 return self._read(self.current) if self.current else 'Say read message followed by a number first.'
             if command in ('list links','read links','list buttons','read buttons') or re.fullmatch(r'(?:open|activate) (?:link|button) (\d+)',command):
                 import json
-                try:format=json.loads((Path(self.folder)/'preferences.json').read_text()).get('email_format','html')
+                try:format=json.loads((Path(self.folder)/'preferences.json').read_text(encoding='utf-8')).get('email_format','html')
                 except (OSError,ValueError):format='html'
                 if self.view!='message':return 'Open a message first.'
                 if format!='html':return 'Choose HTML under Options, Email, Email format to navigate links.'
@@ -827,7 +848,7 @@ class MailSession:
                 self.folder_name, self.folder_id = 'Inbox', 'inbox'
                 self.rows, self.current = [], None
                 self._clear_marks()
-                return 'Folder change completed. Back at Inbox. Say list folders to check it.'
+                return 'Folder change completed. Back to Inbox. Say list folders to check it.'
             if command.startswith('move selected to '):
                 ids = self._selected_ids()
                 name = command[len('move selected to '):].strip()
@@ -930,6 +951,8 @@ class MailSession:
     def _current_list(self):
         if not self.rows:
             return self.list_messages()
-        parts = [self._summary(i) for i in range(1, len(self.rows) + 1)]
-        return 'Back to ' + self.folder_name + '. ' + ' '.join(parts)
+        # The message you were on, as in any list; never the whole page read aloud.
+        if self.current is None or not 1 <= self.current <= len(self.rows):
+            self.current = 1
+        return 'Back to ' + self.folder_name + '. ' + self._summary(self.current)
 

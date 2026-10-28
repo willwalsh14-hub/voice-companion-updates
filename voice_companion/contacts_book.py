@@ -158,8 +158,42 @@ class ContactBook:
                 if thunderbird_pim.connected():
                     raise ValueError(str(exc)) from exc
                 # Thunderbird could not start: keep the contact here rather than lose it.
+        existing = self.local.get(name)
+        if existing:
+            # Saving would replace the contact already saved under this name, and lose its details.
+            raise ValueError('There is already a contact named ' + str(existing.get('name') or name) + '. '
+                             'To change it, choose ' + str(existing.get('name') or name) + ', then press F2.')
         self.local.save(name, email, phone.strip())
         return 'on this computer'
+
+    def update(self, contact, name=None, email=None, phone=None):
+        """Change a contact's name, first email address or first phone number. None leaves one as it
+        is; '' removes it. Thunderbird keeps the rest of the contact. Returns the name afterwards."""
+        new_name = contact.name if name is None else name.strip()
+        if not new_name or len(new_name) > 80 or re.search(r'[\r\n<>]', new_name):
+            raise ValueError('Use a short contact name without symbols.')
+        if email:
+            from email_draft import normalize_recipient
+            email = normalize_recipient(email)
+        if phone is not None:
+            phone = phone.strip()
+            if len(phone) > 40 or re.search(r'[\r\n]', phone):
+                raise ValueError('Use a shorter phone number.')
+        emails = contact.emails if email is None else ([email] if email else []) + contact.emails[1:]
+        phones = contact.phones if phone is None else ([phone] if phone else []) + contact.phones[1:]
+        if not emails and not phones:
+            raise ValueError('A contact needs an email address or a phone number.')
+        if contact.source == 'thunderbird':
+            if contact.read_only:
+                raise ValueError('This address book cannot be changed, so ' + contact.name + ' was not changed.')
+            try:
+                thunderbird_pim.update_contact(contact.id, name=None if name is None else new_name, email=email, phone=phone)
+            except thunderbird_pim.PimError as exc:
+                raise ValueError(str(exc)) from exc
+            CACHE['at'] = None
+            return new_name
+        self.local.replace(contact.name, new_name, emails[0] if emails else '', phones[0] if phones else '')
+        return new_name
 
     def delete(self, contact):
         if contact.source == 'thunderbird':

@@ -62,6 +62,12 @@ def add_contact(name, email='', phone='', book_id=''):
     return call('addContact', bookId=book_id, name=name, email=email, phone=phone)
 
 
+def update_contact(contact_id, **changes):
+    """Change a contact's name, first email address or first phone number (name=, email=, phone=).
+    An empty email or phone removes it; the rest of the contact is kept."""
+    return call('updateContact', id=contact_id, **{key: value for key, value in changes.items() if value is not None})
+
+
 def delete_contact(contact_id):
     return call('deleteContact', id=contact_id)
 
@@ -87,3 +93,10 @@ def add_event(calendar_id, title, start, end, all_day=False, location='', notes=
 
 def delete_event(calendar_id, event_id, occurrence='', all_of_them=False):
     return call('deleteEvent', calendarId=calendar_id, id=event_id, occurrence=occurrence, all=bool(all_of_them))
+
+
+def modify_event(calendar_id, event_id, changes, occurrence='', all_of_them=False):
+    """Change an event. changes holds only what changes (see modifyEvent in pim.js): title, location,
+    notes; allDay with start and end; calendarId to move it; shift and length for a whole repeating event."""
+    return call('modifyEvent', calendarId=calendar_id, id=event_id, occurrence=occurrence, all=bool(all_of_them),
+                changes=dict(changes))

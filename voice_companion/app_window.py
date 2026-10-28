@@ -62,6 +62,60 @@ def show_context_text(old, field, seq, web_cursor_changed=False):
     return bool(web_cursor_changed or field.get('focus', False) or field.get('ack', 0) >= seq)
 
 
+def use_display_scaling():
+    """Draw this thread's windows at the Windows display scale, so text is sharp, not stretched.
+
+    Only the window thread changes: Options and other windows keep their own setting.
+    Font sizes are in points, so they follow the Windows scale either way."""
+    import sys
+    if sys.platform!='win32':return
+    try:
+        import ctypes
+        set_context=ctypes.windll.user32.SetThreadDpiAwarenessContext
+        set_context.restype=ctypes.c_void_p;set_context.argtypes=[ctypes.c_void_p]
+        set_context(ctypes.c_void_p(-2))  # DPI_AWARENESS_CONTEXT_SYSTEM_AWARE
+    except (AttributeError,OSError):pass  # Older Windows: Windows stretches the window instead.
+
+
+def saved_display(folder):
+    """The saved display options, read before the app sends them, so the window opens large at once."""
+    import json
+    from pathlib import Path
+    import display_options
+    try:preferences=json.loads((Path(folder)/'preferences.json').read_text(encoding='utf-8')) if folder else {}
+    except (OSError,ValueError,TypeError):preferences={}
+    return display_options.settings(preferences)
+
+
+def window_geometry(screen_width,screen_height):
+    """A large window, centered, for when full screen is off: most of the screen."""
+    width=max(470,int(screen_width*.8));height=max(300,int(screen_height*.8))
+    return f'{width}x{height}+{max(0,(screen_width-width)//2)}+{max(0,(screen_height-height)//3)}'
+
+
+def list_lines(items,index):
+    """The display list's text: one line per item; the selected line starts with an arrow."""
+    return [('\u25ba\t' if i==index else '\t')+str(item) for i,item in enumerate(items)]
+
+
+def flow_positions(widths,height,width,gap=6):
+    """Where each button goes so a row of buttons wraps onto more lines instead of being cut off.
+
+    Returns ([(x, y)], total height)."""
+    places=[];x=y=0
+    for need in widths:
+        if x and x+need>width:x=0;y+=height+gap
+        places.append((x,y));x+=need+gap
+    return places,(y+height if widths else 0)
+
+
+def position_text(field):
+    """'3 of 15' for the selected item, or ''."""
+    index=field.get('display_index');count=field.get('display_count')
+    if index is None or not count:return ''
+    return str(index+field.get('display_offset',0)+1)+' of '+str(count)
+
+
 class CompanionWindow:
     def __init__(self, version, data_folder=None):
         self.version = version
@@ -87,6 +141,8 @@ class CompanionWindow:
         self.command_entry_active=False
         self.last_navigation=0.0
         self.media_shortcut=None
+        # Font names installed on this computer, found by the window thread (plain text, safe to read anywhere).
+        self.font_families=None
         self.thread = threading.Thread(target=self._thread_main, name='Voice Companion window', daemon=True)
 
     def _thread_main(self):
@@ -124,10 +180,12 @@ class CompanionWindow:
             frames=sys._current_frames();frame=frames.get(self.thread.ident)
             if frame is not None:stack=''.join(traceback.format_stack(frame)[-12:])
             del frames,frame
-        return {'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
+        # Short facts first: a build annotation keeps only the start of this message.
+        return {'recent keys and focus':list(self.key_trace),'mode':self.context.get('mode'),
+                'command box active':self.command_entry_active,'commands':list(self.commands.queue)[-12:],
+                'thread alive':self.thread.is_alive(),'ready':self.ready.is_set(),'problem':repr(self.problem),
                 'waiting updates':self.ui_actions.qsize(),'window errors':list(self.ui_errors),
-                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()],
-                'recent keys':list(self.key_trace)}
+                'window thread is at':stack,'other threads':[t.name for t in __import__('threading').enumerate()]}
 
     def set_context(self,context):
         if not self.closed.is_set():self.ui_actions.put(('context',context))
@@ -141,7 +199,10 @@ class CompanionWindow:
     def feedback(self,text):
         if text:
             self.show(text)
-            if getattr(self,'keyboard_output',None) and not self.keyboard_output.problem:self.keyboard_output.speak(text)
+            if getattr(self,'keyboard_output',None) and not self.keyboard_output.problem:
+                # The opt-in speech transcript (speech_transcript.py); the queue below is written by the main loop.
+                __import__('speech_transcript').TRANSCRIPT.said(text)
+                self.keyboard_output.speak(text)
             else:self.key_feedback.put(text)
 
     def focus_email_field(self, field, value=''):
@@ -213,7 +274,10 @@ class CompanionWindow:
     def _run(self):
         try:
             import tkinter as tk
+            import tkinter.font as tkfont
             from tkinter import scrolledtext
+            import display_options
+            use_display_scaling()
             root = tk.Tk()
             self.root=root
             def callback_error(kind,error,trace):
@@ -231,31 +295,57 @@ class CompanionWindow:
             self.media_shortcut.register()
             root.bind('<Destroy>',lambda event:self.closed.set() if event.widget==root else None)
             root.title('Voice Companion ' + self.version)
-            root.geometry('660x560')
-            root.option_add('*Font',('Segoe UI',12))
+            try:self.font_families=sorted(set(str(name) for name in tkfont.families(root)))
+            except tk.TclError:self.font_families=None
+            # Large, high-contrast display for low vision (display_options.py). Every font is
+            # a named font, so a new text size or font changes the whole window at once.
+            display_values=saved_display(self.data_folder)
+            fonts={role:tkfont.Font(root,font=display_options.font(display_values,role,self.font_families)) for role in ('title','message','body','hint','heading')}
+            fonts['selected']=tkfont.Font(root,font=display_options.font(display_values,'body',self.font_families,weight='bold'))
+            for style,weight,slant in (('bold','bold','roman'),('italic','normal','italic')):
+                fonts[style]=tkfont.Font(root,font=display_options.font(display_values,'body',self.font_families,weight=weight,slant=slant))
+            fonts['code']=tkfont.Font(root,family='Consolas',size=display_options.scaled(12,display_values))
+            root.geometry(window_geometry(root.winfo_screenwidth(),root.winfo_screenheight()))
+            root.option_add('*Font',fonts['body'])
             root.minsize(470, 300)
             root.protocol('WM_DELETE_WINDOW', lambda: (user_stop.request(), flush_pending_edit(), self.commands.put(('keyboard','Alt+F4'))))
-            heading = tk.Label(root, text='Voice Companion', font=('Segoe UI', 20, 'bold'))
-            heading.pack(anchor='w', padx=18, pady=(16, 4))
+            # The screen name, large, at the top: "Main menu", "Email: Inbox".
+            heading = tk.Label(root, text='Voice Companion', font=fonts['title'], wraplength=600, justify='left', anchor='w')
             startup_label=tk.Label(root, text='Say “Wake up” to begin. Say “What version?” to check this build.',
-                     font=('Segoe UI', 11), wraplength=600, justify='left')
-            startup_label.pack(anchor='w', padx=18)
+                     font=fonts['hint'], wraplength=600, justify='left')
             entry_label = tk.Label(root, text='Type a command or email address, then press Enter:',
-                                   font=('Segoe UI', 11),wraplength=600,justify='left')
-            entry_label.pack(anchor='w', padx=18, pady=(8, 0))
-            typed = tk.Entry(root, font=('Segoe UI', 12))
+                                   font=fonts['hint'],wraplength=600,justify='left')
+            typed = tk.Entry(root, font=fonts['body'])
             self.typed=typed
-            typed.pack(fill='x', padx=18)
             self.email_field = None
-            file_list=tk.Listbox(root,font=('Segoe UI',12),exportselection=False,selectmode='multiple')
+            # The screen's list, menu or text is shown in this area; it fills the space left.
+            content=tk.Frame(root)
+            content.pack_propagate(False)
+            file_list=tk.Listbox(root,font=fonts['body'],exportselection=False,selectmode='multiple')
             self.file_list=file_list
             file_toolbar=tk.Frame(root)
             self.file_toolbar=file_toolbar;self.file_buttons=[]
             for label,request in (('Search','search files'),('Search subfolders','search subfolders'),('Sort','sort files'),('Clear search','clear search'),('Drives','drive list'),('Main menu','main menu')):
                 button=tk.Button(file_toolbar,text=label,command=lambda command=request:self.commands.put(command),takefocus=True)
-                button.pack(side='left',padx=3);self.file_buttons.append(button)
+                self.file_buttons.append(button)
                 button.bind('<FocusIn>',lambda event,name=label:self.feedback(name+' button. Enter activates. Tab moves to the next control.'))
                 button.bind('<Return>',lambda event,command=request:(self.commands.put(command),'break')[1])
+            def flow(frame,buttons):
+                # Large text makes a row of buttons wider than the window: wrap them onto more lines.
+                def arrange(event=None):
+                    width=frame.winfo_width()
+                    if width<=1:width=max(400,root.winfo_width()-36)
+                    height=max([button.winfo_reqheight() for button in buttons] or [0])
+                    places,total=flow_positions([button.winfo_reqwidth() for button in buttons],height,width)
+                    for button,(x,y) in zip(buttons,places):button.place(x=x,y=y)
+                    if int(frame.cget('height'))!=total:frame.configure(height=total)
+                frame.bind('<Configure>',arrange,add='+')
+                arrangers.append(arrange)
+                # Place the buttons now, so the row is never empty or unplaced when it first
+                # appears: Tab to a button that is not placed yet would leave focus where it was.
+                arrange()
+            arrangers=[]
+            flow(file_toolbar,self.file_buttons)
             update_toolbar=tk.Frame(root)
             self.update_buttons=[]
             for label,request,hint in (('Status','update status','Alt+S or F5'),('Cancel update','cancel update','Alt+C or Escape')):
@@ -276,6 +366,10 @@ class CompanionWindow:
                 index=controls.index(event.widget) if event.widget in controls else 0
                 backward=bool(event.state&1) or event.keysym=='ISO_Left_Tab'
                 target=controls[(index+(-1 if backward else 1))%len(controls)]
+                if not target.winfo_ismapped():
+                    # The toolbar was just shown: finish laying it out before moving focus.
+                    for arrange in arrangers:arrange()
+                    root.update_idletasks()
                 target.focus_set()
                 if target==file_list:self.feedback('File list. Use arrows or type the first letters of an item.')
                 return 'break'
@@ -336,6 +430,11 @@ class CompanionWindow:
                     self.commands.put(typed.get().strip());typed.delete(0,'end')
                 self.commands.put(('keyboard','Alt'));return 'break'
             root.bind_all('<KeyRelease>',alt_release,add='+')
+            def trace_focus(event):
+                # Where keyboard focus went, so a test failure can say who took it.
+                try:self.key_trace.append(f'focus {event.widget} detail={event.detail} mode={self.context.get("mode")}')
+                except Exception:pass
+            root.bind_all('<FocusIn>',trace_focus,add='+')
             from time_date import PressCounter,clock_key,key_request
             clock_presses=PressCounter()
             def shortcut(event):
@@ -362,6 +461,13 @@ class CompanionWindow:
                     if self.keyboard_output:self.keyboard_output.interrupt()
                     cancel_phonetic()
                     self.commands.put(('keyboard','Ctrl+F1'));return 'break'
+                display_request=display_options.display_key(key,event.state)
+                if display_request:
+                    # Control+Plus, Control+Minus, Control+0: text size. Control+9: colors. F11: full
+                    # screen. On every screen, as in a web browser; never typed into a page or document.
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    flush_pending_edit();cancel_phonetic()
+                    self.commands.put(('keyboard',display_request));return 'break'
                 self.last_navigation=time.monotonic()
                 control=bool(event.state&4);shift=bool(event.state&1)
                 watch_alt(event)
@@ -653,32 +759,74 @@ class CompanionWindow:
             root.bind_all('<Alt-o>',settings_shortcut)
             root.bind_all('<Alt-O>',settings_shortcut)
             route_alt_keys(root)
-            tk.Button(root,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))).pack(anchor='w',padx=18)
-            tk.Button(root, text='Enter typed command', command=submit_typed).pack(anchor='w', padx=18)
-            tk.Button(root, text='AI voice setup (trainer)', command=self.setup_ai_voice).pack(anchor='w', padx=18)
+            button_row=tk.Frame(root)
+            flow(button_row,[tk.Button(button_row,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))),
+                             tk.Button(button_row, text='Enter typed command', command=submit_typed),
+                             tk.Button(button_row, text='AI voice setup (trainer)', command=self.setup_ai_voice)])
             self.current = tk.StringVar(root, value='Starting speech and microphone...')
-            status_label=tk.Label(root, textvariable=self.current, font=('Segoe UI', 12),
-                     wraplength=600, justify='left')
-            status_label.pack(anchor='w', padx=18, pady=14)
+            # The last thing spoken, in large text under the screen name. A few lines at most,
+            # so a long message never pushes the list or text off the screen.
+            message_view=tk.Text(root,wrap='word',font=fonts['message'],height=2,takefocus=0,borderwidth=0,cursor='arrow')
+            message_view.insert('1.0',self.current.get());message_view.configure(state='disabled')
+            history = scrolledtext.ScrolledText(root, wrap='word', font=fonts['body'], state='disabled', height=4)
+            editor=tk.Text(root,wrap='word',font=fonts['body'],undo=True,exportselection=False,height=4)
+            self.editor=editor
+            # Lists and menus as lines, the selected one marked with an arrow, bold and highlighted;
+            # never by color alone. It never takes the keyboard: keys stay where they are.
+            display_view=scrolledtext.ScrolledText(root,wrap='word',font=fonts['body'],takefocus=0,height=4,cursor='arrow')
+            display_view.vbar.configure(takefocus=0)
+            display_view.configure(state='disabled')
+            heading.pack(fill='x', padx=18, pady=(12, 2))
+            message_view.pack(fill='x', padx=18, pady=(0, 8))
+            content.pack(fill='both', expand=True)
+            entry_label.pack(anchor='w', padx=18, pady=(6, 0))
+            typed.pack(fill='x', padx=18)
+            button_row.pack(fill='x', padx=18, pady=(6, 0))
+            startup_label.pack(anchor='w', padx=18, pady=(2, 10))
+            history.pack(in_=content, fill='both', expand=True, padx=18, pady=(0, 8))
             def resize_labels(event):
                 if event.widget==root:
-                    for label in (startup_label,entry_label,status_label):label.configure(wraplength=max(1,event.width-36))
+                    for label in (heading,startup_label,entry_label):label.configure(wraplength=max(1,event.width-36))
             root.bind('<Configure>',resize_labels,add='+')
-            history = scrolledtext.ScrolledText(root, wrap='word', font=('Segoe UI', 11), state='disabled')
-            history.pack(fill='both', expand=True, padx=18, pady=(0, 18))
-            editor=tk.Text(root,wrap='word',font=('Segoe UI',12),undo=True,exportselection=False)
-            self.editor=editor
+            def fit_layout(event=None):
+                """Large text on a small screen: the list area always keeps room for a few lines.
+
+                Without this the hint line and the button row took all the space at large text
+                sizes, the File manager list got none, and Windows then dropped its key presses.
+                The hint line, then the button row, give way first."""
+                if event is not None and event.widget is not root:return
+                height=root.winfo_height()
+                if height<=1:return
+                rows=fonts['body'].metrics('linespace')*4+24
+                if self.context.get('mode')=='files':rows+=file_toolbar.winfo_reqheight()+8
+                fixed=heading.winfo_reqheight()+14+message_view.winfo_reqheight()+8+entry_label.winfo_reqheight()+6+typed.winfo_reqheight()
+                # The command box always stays: the list takes what is left if the window is short.
+                rows=max(1,min(rows,height-fixed))
+                if int(content.cget('height'))!=rows:content.configure(height=rows)
+                room=height-fixed-rows
+                buttons=button_row.winfo_reqheight()+6
+                show_buttons=room>=buttons
+                show_hint=room>=buttons+startup_label.winfo_reqheight()+12
+                if show_buttons and not button_row.winfo_manager():button_row.pack(after=typed,fill='x',padx=18,pady=(6,0))
+                if not show_buttons and button_row.winfo_manager():button_row.pack_forget()
+                if show_hint and not startup_label.winfo_manager():startup_label.pack(after=button_row if show_buttons else typed,anchor='w',padx=18,pady=(2,10))
+                if not show_hint and startup_label.winfo_manager():startup_label.pack_forget()
+            root.bind('<Configure>',fit_layout,add='+')
             from visual_accessibility import readable_color,focus_style
             for widget in (typed,editor):focus_style(widget)
-            editor.tag_configure('bold',font=('Segoe UI',12,'bold'))
-            editor.tag_configure('italic',font=('Segoe UI',12,'italic'))
+            editor.tag_configure('bold',font=fonts['bold'])
+            editor.tag_configure('italic',font=fonts['italic'])
             editor.tag_configure('underline',underline=True)
-            editor.tag_configure('heading',font=('Segoe UI',16,'bold'))
+            editor.tag_configure('heading',font=fonts['heading'])
             editor.tag_configure('strike',overstrike=True)
             editor.tag_configure('superscript',offset=4)
             editor.tag_configure('subscript',offset=-4)
             editor.tag_configure('highlight',background='#ffff99',foreground='#000000')
-            editor.tag_configure('code',font=('Consolas',12))
+            editor.tag_configure('code',font=fonts['code'])
+            # The line with the caret or reading place; under every other mark, so selected text shows.
+            editor.tag_configure('reading_line');editor.tag_lower('reading_line')
+            display_view.tag_configure('selected',font=fonts['selected'])
+            display_view.tag_configure('reading_line')
             def reader_link(position):
                 editor.mark_set('insert','1.0 + '+str(position)+' chars');send_text_position()
                 self.commands.put(('keyboard','Enter'));return 'break'
@@ -689,7 +837,8 @@ class CompanionWindow:
             def link_at_caret():
                 caret=offset()
                 return next((span for span in self.context.get('rich_spans',[]) if span[2] in ('link','button') and span[0]<=caret<span[1]),None)
-            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None,'web_navigation_pending':False,'web_escape_pending':False}
+            local={'text':'','seq':0,'applying':False,'phonetic':None,'reading_after':None,'link':None,'web_navigation_pending':False,'web_escape_pending':False,
+                   'display_values':None,'display_shown':None,'palette':None,'caret_target':None,'caret_after':None,'editor_place':None,'file_current':None}
             def offset(index='insert'):return len(editor.get('1.0',index))
             def selection():
                 try:return (offset('sel.first'),offset('sel.last'))
@@ -854,6 +1003,136 @@ class CompanionWindow:
                 tk.Button(dialog, text='Cancel', command=close).pack(anchor='w', padx=16, pady=12)
                 key_entry.focus_set()
 
+            def tk_color(name):
+                # Windows color names (the Windows colors scheme) exist only on Windows.
+                try:root.winfo_rgb(name);return name
+                except tk.TclError:
+                    return {'SystemWindowText':'#000000','SystemWindow':'#FFFFFF','SystemHighlight':'#0078D7','SystemHighlightText':'#FFFFFF'}.get(name,'#000000')
+            def paint(widget,palette,ring):
+                if isinstance(widget,tk.Toplevel):return
+                try:names=set(widget.keys())
+                except tk.TclError:names=set()
+                values={'background':palette['bg'],'foreground':palette['fg'],'activebackground':palette['select_bg'],'activeforeground':palette['select_fg'],
+                        'selectbackground':palette['select_bg'],'selectforeground':palette['select_fg'],'inactiveselectbackground':palette['select_bg'],
+                        'insertbackground':palette['caret'],'highlightbackground':palette['bg'],'highlightcolor':palette['focus'],
+                        'disabledforeground':palette['fg'],'disabledbackground':palette['bg'],'readonlybackground':palette['bg'],'troughcolor':palette['bg']}
+                change={name:value for name,value in values.items() if name in names}
+                if widget.winfo_class() in ('Entry','Text','Listbox','Button') and str(widget.cget('takefocus'))!='0':change['highlightthickness']=ring
+                # A wide, steady caret: nothing on the screen flashes.
+                if 'insertwidth' in names:change.update(insertwidth=max(2,ring),insertofftime=0)
+                try:widget.configure(**change)
+                except tk.TclError:pass
+                for child in widget.winfo_children():paint(child,palette,ring)
+            def set_full_screen(on):
+                if not on:
+                    try:root.state('normal')
+                    except tk.TclError:pass
+                    root.geometry(window_geometry(root.winfo_screenwidth(),root.winfo_screenheight()))
+                try:root.state('zoomed' if on else 'normal')
+                except tk.TclError:
+                    try:root.attributes('-zoomed',bool(on))  # Linux test computers
+                    except tk.TclError:pass
+            def apply_display(values,force=False):
+                """Colors, fonts, text size, spacing and full screen from the display options."""
+                old=local['display_values']
+                if not values or values==old and not force:return
+                values=display_options.settings(values);local['display_values']=dict(values)
+                family=display_options.font_family(values,self.font_families)
+                for role in ('title','message','body','hint','heading'):
+                    name,size,weight,slant=display_options.font(values,role,self.font_families)
+                    fonts[role].configure(family=name,size=size,weight=weight,slant=slant)
+                body_size=display_options.scaled(display_options.BASE_SIZES['body'],values)
+                for role,weight,slant in (('selected','bold','roman'),('bold','bold','roman'),('italic','bold' if values['display_bold'] else 'normal','italic')):
+                    fonts[role].configure(family=family,size=body_size,weight=weight,slant=slant)
+                fonts['code'].configure(size=body_size)
+                palette={name:(tk_color(color) if color else None) for name,color in display_options.colors(values).items()}
+                local['palette']=palette
+                ring=max(2,round(3*display_options.percent(values)/100))
+                root.configure(background=palette['bg'])
+                paint(root,palette,ring)
+                above,below=display_options.line_gap(values,fonts['body'].metrics('linespace'))
+                for view in (editor,history,display_view,message_view):view.configure(spacing1=above,spacing3=below,spacing2=above+below)
+                tab=max(fonts['selected'].measure('\u25ba '),fonts['selected'].measure('WW'))+max(4,ring)
+                display_view.configure(tabs=(tab,))
+                display_view.tag_configure('item',lmargin2=tab)
+                display_view.tag_configure('selected',background=palette['select_bg'],foreground=palette['select_fg'])
+                for view in (editor,display_view):view.tag_configure('reading_line',background=palette['line'] or '')
+                # Marked files use the line color; the current file uses the highlight (mark_current_file).
+                file_list.configure(activestyle='underline',selectbackground=palette['line'] or palette['select_bg'],selectforeground=palette['fg'] if palette['line'] else palette['select_fg'])
+                local['file_current']=None;local['display_shown']=None;local['editor_place']=None
+                for arrange in arrangers:root.after_idle(arrange)
+                root.after_idle(fit_layout)
+                if old is None or bool(old.get('display_full_screen'))!=bool(values['display_full_screen']):set_full_screen(values['display_full_screen'])
+            def place_caret():
+                # Windows Magnifier, ZoomText and Fusion follow the system caret: put it on the
+                # selected item or the reading place.
+                local['caret_after']=None
+                target=local['caret_target']
+                if not target:return
+                widget,index=target
+                try:
+                    if not widget.winfo_ismapped():return
+                    box=widget.bbox(index)
+                    if box:root.tk.call('tk','caret',widget,'-x',box[0],'-y',box[1],'-height',box[3])
+                except tk.TclError:pass
+            def schedule_caret(widget,index):
+                local['caret_target']=(widget,index)
+                if local['caret_after'] is None:local['caret_after']=root.after(60,place_caret)
+            def mark_current_file(index):
+                palette=local['palette']
+                if not palette or not 0<=index<file_list.size():return
+                old=local['file_current']
+                if old is not None and old!=index and old<file_list.size():
+                    file_list.itemconfigure(old,background='',foreground='',selectbackground='',selectforeground='')
+                file_list.itemconfigure(index,background=palette['select_bg'],foreground=palette['select_fg'],selectbackground=palette['select_bg'],selectforeground=palette['select_fg'])
+                local['file_current']=index;schedule_caret(file_list,index)
+            def show_display(field,text_mode):
+                """Show the screen name, and the list, menu or note. Returns the view to show, or None."""
+                position=position_text(field)
+                heading.configure(text=(field.get('display_title') or 'Voice Companion')+('   '+position if position else ''))
+                if text_mode or field.get('mode')=='files':return None
+                items=field.get('display_items');text=field.get('display_text')
+                if items is None and text is None:return history
+                key=(tuple(items) if items is not None else None,field.get('display_index'),text,field.get('display_caret'))
+                if key!=local['display_shown']:
+                    local['display_shown']=key
+                    display_view.configure(state='normal');display_view.delete('1.0','end')
+                    if items is not None:
+                        index=field.get('display_index')
+                        for i,line in enumerate(list_lines(items,index) if items else ['\tThe list is empty.']):
+                            display_view.insert('end',line+'\n',('item','selected') if i==index else ('item',))
+                        target=str(index+1)+'.0' if index is not None else '1.0'
+                    else:
+                        display_view.insert('1.0',text)
+                        target='1.0 + '+str(min(len(text),max(0,int(field.get('display_caret') or 0))))+' chars'
+                        display_view.tag_add('reading_line',target+' linestart',target+' lineend')
+                    display_view.configure(state='disabled')
+                    if items is not None and index is not None:
+                        # Keep an item above and below the selected one in view, when there is room.
+                        display_view.see(str(index+3)+'.0');display_view.see(str(max(1,index))+'.0')
+                    display_view.see(target)
+                    local['display_target']=target
+                schedule_caret(display_view,local.get('display_target','1.0'))
+                return display_view
+            def track_editor():
+                # The reading line follows the caret as keys move it or the app reads on.
+                if not editor.winfo_ismapped():return
+                place=(editor.index('insert'),editor.index('end'))
+                if place==local['editor_place']:return
+                local['editor_place']=place
+                editor.tag_remove('reading_line','1.0','end')
+                editor.tag_add('reading_line','insert display linestart','insert display lineend')
+                schedule_caret(editor,'insert')
+            def show_message(message):
+                message_view.configure(state='normal');message_view.delete('1.0','end');message_view.insert('1.0',message)
+                message_view.configure(state='disabled')
+                try:lines=int(root.tk.call(message_view,'count','-update','-displaylines','1.0','end'))
+                except (tk.TclError,ValueError):lines=2
+                message_view.configure(height=max(1,min(3,lines)))
+            def show_body(view):
+                for other in (history,display_view):
+                    if other is not view:other.pack_forget()
+                view.pack(in_=content,fill='both',expand=True,padx=18,pady=(0,8))
             def poll_once():
                 while True:
                     if self.closed.is_set():return
@@ -863,9 +1142,12 @@ class CompanionWindow:
                     if action=='ui_call':
                         field();continue
                     if action=='context':
-                        if field.get('mode')=='update_download':update_toolbar.pack(before=history,fill='x',padx=18,pady=6)
+                        if field.get('mode')=='update_download':
+                            first=next(iter(content.pack_slaves()),None)
+                            update_toolbar.pack(in_=content,fill='x',padx=18,pady=6,**({'before':first} if first is not None and first!=update_toolbar else {}))
                         else:update_toolbar.pack_forget()
                         old=self.context;self.context=field
+                        if field.get('display'):apply_display(field['display'])
                         mode=field['mode'];source=field.get('source')
                         transition=old.get('mode')!=mode or old.get('source')!=source or old.get('browser_name_input')!=field.get('browser_name_input') or field.get('focus',False)
                         if transition and mode=='web':self.command_entry_active=False
@@ -886,9 +1168,11 @@ class CompanionWindow:
                                 typed.focus_force()
                         if field.get('web_private') and field.get('web_field')!=old.get('web_field'):
                             typed.delete(0,'end');typed.insert(0,field['web_field'].get('value',''));entry_label.configure(text=field['web_field']['label']+' (private); Enter saves, Tab moves, Escape cancels:')
-                        if mode!='files':file_list.pack_forget();file_toolbar.pack_forget()
+                        if mode!='files':file_list.pack_forget();file_toolbar.pack_forget();fit_layout()
                         if mode=='files':
-                            history.pack_forget();editor.pack_forget();file_toolbar.pack(side='bottom',fill='x',padx=18,pady=(0,18));file_list.pack(fill='both',expand=True,padx=18)
+                            history.pack_forget();editor.pack_forget();display_view.pack_forget()
+                            file_toolbar.pack(in_=content,side='bottom',fill='x',padx=18,pady=(0,8));file_list.pack(in_=content,fill='both',expand=True,padx=18)
+                            fit_layout()
                             values=field.get('file_items',[])
                             if tuple(file_list.get(0,'end'))!=tuple(values):
                                 file_list.delete(0,'end')
@@ -897,15 +1181,17 @@ class CompanionWindow:
                             index=min(field.get('file_index',0),max(0,len(values)-1))
                             for selected_index in field.get('file_selected_indices',[index]):
                                 if 0<=selected_index<len(values):file_list.selection_set(selected_index)
-                            if values:file_list.activate(index);file_list.see(index)
+                            if values:file_list.activate(index);file_list.see(index);mark_current_file(index)
                             if field.get('focus'):
                                 if field.get('file_name_input'):typed.focus_force()
                                 else:file_list.focus_force()
                         text_mode=source is not None and mode in ('document','email_draft','mailbox','help','web','file_reader')
+                        body=show_display(field,text_mode)
                         if transition or (field.get('ack',0)>=local['seq'] and field.get('text','')!=editor.get('1.0','end-1c')):cancel_phonetic()
                         if text_mode:
                             editor.configure(state='normal')
-                            history.pack_forget();editor.pack(fill='both',expand=True,padx=18,pady=(0,18))
+                            history.pack_forget();display_view.pack_forget();editor.pack(in_=content,fill='both',expand=True,padx=18,pady=(0,8))
+                            local['editor_place']=None
                             web_cursor_changed=mode=='web' and (old.get('web_cursor_revision')!=field.get('web_cursor_revision') or old.get('web_revision')!=field.get('web_revision'))
                             if web_cursor_changed or transition:local['web_navigation_pending']=False
                             if web_cursor_changed and local['reading_after'] is not None:root.after_cancel(local['reading_after']);local['reading_after']=None
@@ -926,7 +1212,8 @@ class CompanionWindow:
                                 if style.startswith('docfont:'):
                                     import json
                                     family,size,weight,slant=json.loads(style[8:])
-                                    editor.tag_configure(tag,font=(family,int(size),weight,slant))
+                                    # The document's own size, made larger by the text size in Display options.
+                                    editor.tag_configure(tag,font=(family,display_options.scaled(int(size),local['display_values'] or {}),weight,slant))
                                 if style in ('link','button'):
                                     editor.tag_configure(tag,foreground=readable_color(editor),underline=True)
                                     editor.tag_bind(tag,'<Button-1>',lambda event,u=url,a=start:reader_link(a) if self.context.get('mode')=='file_reader' else open_link(u))
@@ -941,7 +1228,8 @@ class CompanionWindow:
                                     except (AttributeError,OSError):pass
                                 editor.focus_force()
                         else:
-                            editor.pack_forget();history.pack(fill='both',expand=True,padx=18,pady=(0,18)) if mode!='files' else None
+                            editor.pack_forget()
+                            if mode!='files':show_body(body or history)
                             if mode!='email_draft' or not self.email_field:
                                 self.email_field=None;self.last_email_request=None
                                 if transition and not field.get('media_form') and not ((mode=='document_name' or field.get('file_name_input')) and old.get('mode')=='settings'):typed.delete(0,'end')
@@ -1013,17 +1301,20 @@ class CompanionWindow:
                         root.deiconify()
                         root.lift()
                         typed.focus_force()
+                latest=None
                 while True:
                     if self.closed.is_set():return
                     try: message = self.messages.get_nowait()
                     except queue.Empty: break
-                    self.current.set(message)
+                    self.current.set(message);latest=message
                     history.configure(state='normal')
                     history.insert('end', message + '\n\n')
                     if int(history.index('end-1c').split('.')[0]) > 90:
                         history.delete('1.0', '30.0')
                     history.see('end')
                     history.configure(state='disabled')
+                if latest is not None:show_message(latest)
+                track_editor()
             def poll():
                 # One failed update must never stop the window: without the
                 # next check it would stop speaking and answering keys for good.
@@ -1035,6 +1326,7 @@ class CompanionWindow:
                 finally:
                     if not self.closed.is_set(): root.after(15, poll)
 
+            apply_display(display_values,force=True)
             self.ready.set()
             root.after(15, poll)
             root.mainloop()

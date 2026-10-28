@@ -11,7 +11,7 @@ The Word processor, File manager and Media player keep their own Alt menus
 list as the menu, the main menu is already a menu, and on the Web browser menu
 Alt says where you are.
 """
-from menu_navigation import announce_item, next_match
+from menu_navigation import announce_item, next_match, spoken_key
 
 # (label, key, command). The key is the shortcut that does the same thing, or ''
 # when there is none; the menu then says its menu path, such as "Alt, 3, 2".
@@ -74,7 +74,8 @@ MENUS = {
         ('Attachments', [
             ('List attachments', 'L', 'list attachments'),
             ('Save all attachments', '', 'save all attachments'),
-            ('Open attachment', '', 'open attachment')]),
+            ('Open attachment', '', 'open attachment'),
+            ('Attachment sizes', '', 'how big are the attachments')]),
     ]),
     'email_draft': ('Email draft menu', [
         ('Message', [
@@ -100,10 +101,12 @@ MENUS = {
             ('Writing email help', 'F1', 'help with writing email')]),
         ('Attachments', [
             ('Attach a file', 'Ctrl+T', 'attach a file'),
+            ('Attach the last download', '', 'attach the last download'),
             ('List attachments', 'Ctrl+L', 'list attachments'),
             ('Remove an attachment', '', 'remove attachment')]),
     ]),
-    'note': ('Notepad menu', [
+    # Named after what is open, so it is not confused with the Notepad menu you start from.
+    'note': ('Note menu', [
         ('Notepad', [
             ('Save and close note', 'Ctrl+S', 'save note'),
             ('Read note', 'Ctrl+R', 'read from top'),
@@ -159,6 +162,7 @@ MENUS = {
             ('Open details', 'Enter', 'open contact'),
             ('Read all details', '', 'read contact'),
             ('Phone number', '', 'call details'),
+            ('Edit contact', 'F2', 'edit contact'),
             ('Delete contact', 'Delete', 'delete contact')]),
         ('Contacts', [
             ('Add contact', 'Ctrl+N', 'add contact'),
@@ -173,6 +177,7 @@ MENUS = {
             ('Next event', 'Down', 'next event'),
             ('Previous event', 'Up', 'previous event'),
             ('Add event', 'Ctrl+N', 'add event'),
+            ('Edit event', 'F2', 'edit event'),
             ('Delete event', 'Delete', 'delete event')]),
         ('Day', [
             ('Today', 'Home', 'today'),
@@ -180,7 +185,7 @@ MENUS = {
             ('Previous day', 'Left', 'previous day'),
             ('Next week', 'Page Down', 'next week'),
             ('Previous week', 'Page Up', 'previous week'),
-            ('Go to a day', '', 'go to {value}')]),
+            ('Go to a date', 'Ctrl+G', 'go to date')]),
         ('Calendar', [
             ('Refresh calendar', '', 'refresh calendar'),
             ('Calendar help', 'F1', 'help with calendar'),
@@ -212,14 +217,16 @@ MENUS = {
         ('Attachment', [
             ('Open', 'Enter', 'open attachment'),
             ('Save in Downloads', 'Ctrl+S', 'save attachment'),
-            ('Save to a folder', '', 'save attachment to folder'),
+            ('Save to a folder', 'Ctrl+D', 'save attachment to folder'),
             ('Save all', 'Ctrl+Shift+S', 'save all attachments'),
+            ('Details', 'Ctrl+I', 'read attachment details'),
             ('Remove from this email', 'Delete', 'remove attachment'),
             ('Attach another file', 'Ctrl+T', 'attach a file'),
             ('Attachments help', 'F1', 'help with attachments'),
             ('Close the list', 'Escape', 'close attachments')]),
     ]),
-    'file_reader': ('Document reader menu', [
+    # Named after what is open, so it is not confused with the Document reader menu you start from.
+    'file_reader': ('Document menu', [
         ('Read', [
             ('Read document', 'Ctrl+R', 'read document'),
             ('Find text', 'Ctrl+F', 'find {value}'),
@@ -247,8 +254,8 @@ MENUS = {
 # and Media player handle Alt themselves when it is pressed.
 ALT_SCREENS = frozenset(MENUS) | {'awake', 'browser_menu', 'media', 'podcast'}
 # Spoken ways to open a menu, besides its name ("email menu").
-OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('menu', 'open menu', 'reader menu'),
-                'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('note menu',),
+OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('menu', 'open menu', 'reader menu', 'document reader menu'),
+                'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('notepad menu',),
                 'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu'),
                 'contacts': ('menu', 'open menu', 'contact menu'), 'calendar': ('menu', 'open menu'),
                 'attachments': ('menu', 'open menu', 'attachment menu')}
@@ -349,7 +356,7 @@ class ScreenMenu:
             return text
         groups = MENUS[self.mode][1]
         group = 0 if len(groups) == 1 else self.group
-        text += ' ' + (key or menu_path(self.mode, group, index)) + '.'
+        text += ' ' + (spoken_key(key) or menu_path(self.mode, group, index)) + '.'
         if not command.startswith(('@', 'web key ')) and '{value}' not in command:
             text += ' Say ' + command + '.'
         return text

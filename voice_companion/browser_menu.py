@@ -84,7 +84,8 @@ class BrowserMenu:
                 return 'Main menu.', 'main'
             return self.start(resume=keep_open and bool(session.snapshot)), None
         if self.level == 'name':
-            name = text.strip()
+            # Speech adds a closing period or mark; it is not part of the name.
+            name = ' '.join(text.split()).rstrip('.!?,').strip()
             if not name:
                 return 'Say or type the favorite name, then press Enter.', None
             try:

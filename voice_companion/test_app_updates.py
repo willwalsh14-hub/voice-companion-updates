@@ -209,31 +209,37 @@ class ExternalUpdaterEnvironmentTests(unittest.TestCase):
 
 
 class StartupUpdatePromptTests(unittest.TestCase):
-    def test_startup_offer_precedes_readiness(self):
+    # The offer is asked at the END of the one startup announcement, after the version
+    # and the microphone (Will, October 2026; test_startup_announcement.py). The check
+    # itself says nothing; it keeps the question in STARTUP_QUESTION.
+    def setUp(self):
+        for name,value in dict(MICROPHONE_OFF=False,MICROPHONE_FAILED=False).items():
+            p=patch.object(companion,name,value);p.start();self.addCleanup(p.stop)
+    def test_startup_offer_is_kept_for_the_end_of_the_announcement(self):
         service=Mock(); service.check.return_value=True; service.events=queue.Queue(); release={'version':'0.2.86-test'}; service.events.put(('available',release))
         with patch.object(companion,'UPDATES',service),patch.object(companion,'STARTUP_UPDATE_PENDING',False),patch.object(companion,'UPDATE_RETURN_MODE','awake'),patch.object(companion,'speak') as say:
             self.assertEqual(companion.startup_update_mode(),'update_offer')
             self.assertTrue(companion.STARTUP_UPDATE_PENDING)
             self.assertEqual(service.release,release)
-            say.assert_called_once_with('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
-            say.reset_mock()
+            say.assert_not_called()
+            self.assertEqual(companion.STARTUP_QUESTION,'A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
             self.assertEqual(companion.handle('no','update_offer'),'sleep')
-            say.assert_called_once_with(companion.startup_prompt())
-    def test_no_update_and_check_failure_announce_readiness(self):
+            say.assert_called_once_with(__import__('startup_speech').followup('on'))
+    def test_no_update_and_check_failure_ask_nothing(self):
         for event in ('current','check_failed'):
             service=Mock();service.check.return_value=True;service.events=queue.Queue();service.events.put((event,False))
             with patch.object(companion,'UPDATES',service),patch.object(companion,'STARTUP_UPDATE_PENDING',False),patch.object(companion,'speak') as say:
                 self.assertEqual(companion.startup_update_mode(),'sleep')
-                say.assert_called_once_with(companion.startup_prompt())
+                say.assert_not_called();self.assertIsNone(companion.STARTUP_QUESTION)
     def test_startup_timeout_and_unconfigured_server_still_allow_wake(self):
         service=Mock();service.check.return_value=True;service.events.get.side_effect=queue.Empty
         with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as say:
             self.assertEqual(companion.startup_update_mode(),'sleep')
-            say.assert_called_once_with(companion.startup_prompt())
+            say.assert_not_called()
         service.check.return_value=False
         with patch.object(companion,'UPDATES',service),patch.object(companion,'speak') as say:
             self.assertEqual(companion.startup_update_mode(),'sleep')
-            say.assert_called_once_with(companion.startup_prompt())
+            say.assert_not_called()
     def test_download_reminder_is_not_repeated_and_progress_uses_five_percent_steps(self):
         service=Mock();service.events=queue.Queue()
         with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_LAST_PERCENT',0),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'speak') as say:
