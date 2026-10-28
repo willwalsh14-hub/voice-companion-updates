@@ -160,11 +160,12 @@ class TaskNavigation:
             return None
         return ([name for name, _, _ in items], self.indices.get(mode, 0), lambda i: self.indices.update({mode:i}))
 
-    def enter(self, mode, title):
-        self.indices[mode] = 0
-        if mode == 'local_media': self.player_menu = True
+    def enter(self, mode, title, index=0):
         items = self.items(mode)
-        self.app.speak(title+'. '+(self.describe(items[0], 0, len(items)) if items else 'No recent documents.'))
+        index = index if items and 0 <= index < len(items) else 0
+        self.indices[mode] = index
+        if mode == 'local_media': self.player_menu = True
+        self.app.speak(title+'. '+(self.describe(items[index], index, len(items)) if items else 'No recent documents.'))
         return mode
 
     def describe(self, item, index, count):
@@ -455,7 +456,8 @@ class TaskNavigation:
         if mode == 'notepad_menu' and command in ('create a note','new note','open a note','open notes','options','open options','notepad options'):
             return self.action({'create a note':'write a note','new note':'write a note','open a note':'list notes','open notes':'list notes'}.get(command,'@options:Notepad'), mode)
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
-            return self.enter('media_menu', 'Media menu')
+            # Back from Radio or Podcasts, you are on the one you left, not on Radio.
+            return self.enter('media_menu', 'Media menu', (1 if getattr(m, 'MEDIA_SECTION', 'radio') == 'podcast' else 0) if mode == 'media' else 0)
         if command in ('media player','open media player'):
             self.player_files = None; self.player_picker = None; self.player_return = None
             return self.enter('local_media', 'Media player')
@@ -526,7 +528,7 @@ class TaskNavigation:
                     self.picker = picker
                     from file_manager import location_name
                     m.speak(('Back to '+location_name(files.location)+'. ' if picker else 'File manager. ')+files.say_current()); return 'files'
-                return self.enter('media_menu', 'Media menu')
+                return self.enter('media_menu', 'Media menu', 2)  # On Media player, where you left.
             # handle() says Main menu once when the screen changes.
             return 'awake'
         if command in ('next','previous','home','end'):

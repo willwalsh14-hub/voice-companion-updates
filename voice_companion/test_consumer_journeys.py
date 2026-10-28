@@ -149,6 +149,21 @@ class RadioJourneyTests(Journey):
         self.assertEqual(self.spoken,['Scheduled recordings continue while the app runs. '+app.MAIN_MENU_PROMPT])
 
 
+    def test_escape_from_podcasts_or_the_player_returns_to_that_media_menu_item(self):
+        """Escape from Podcasts or Media player said "Media menu. Radio, 1 of 3." and lost your place."""
+        self.hub()
+        mode=self.say('media menu','awake');self.say('next',mode)
+        mode=self.say('that one',mode);self.assertEqual(mode,'media')
+        mode=app.handle_keyboard(app.navigation_key('Escape',mode),mode)
+        self.assertEqual(mode,'media_menu');self.assertEqual(self.spoken[-1],'Media menu. Podcasts (P), 2 of 3.')
+        self.say('next',mode);mode=self.say('that one',mode);self.assertEqual(mode,'local_media')
+        self.spoken.clear();mode=app.handle_keyboard(app.navigation_key('Escape',mode),mode)
+        self.assertEqual(mode,'media_menu');self.assertEqual(self.spoken[-1],'Media menu. Media player (M), 3 of 3.')
+        self.say('previous',mode);self.say('previous',mode);mode=self.say('that one',mode)
+        self.spoken.clear();mode=app.handle_keyboard(app.navigation_key('Escape',mode),mode)
+        self.assertEqual(self.spoken[-1],'Media menu. Radio (R), 1 of 3.')
+
+
 class SpokenAddressTests(Journey):
     web=WebsiteByVoiceTests.web
 
