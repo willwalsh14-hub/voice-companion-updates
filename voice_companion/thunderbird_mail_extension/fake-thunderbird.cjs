@@ -23,6 +23,9 @@ if (process.env.FAKE_THUNDERBIRD_CALENDAR_BROKEN) state.calendarBroken = true;
 // Contacts and calendars from two email accounts (Gmail and Outlook), or an add-on from before accounts were given.
 if (process.env.FAKE_THUNDERBIRD_TWO_ACCOUNTS) addSecondAccount(state);
 if (process.env.FAKE_THUNDERBIRD_NO_ACCOUNTS) withoutAccounts(state, api);
+// A calendar Thunderbird cannot read now (by name, as the Experiment reports it), or an address book (by id).
+if (process.env.FAKE_THUNDERBIRD_FAILED_CALENDAR) state.failedCalendars = [process.env.FAKE_THUNDERBIRD_FAILED_CALENDAR];
+if (process.env.FAKE_THUNDERBIRD_FAILED_BOOK) state.failBook = process.env.FAKE_THUNDERBIRD_FAILED_BOOK;
 const messageListeners = [], disconnectListeners = [];
 
 function write(message) {

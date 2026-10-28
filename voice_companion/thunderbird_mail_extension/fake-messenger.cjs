@@ -328,7 +328,9 @@ function addContactsAndCalendars(api, state) {
     listEvents: async (startMs, endMs) => {
       state.calendarCalls.push({list: [startMs, endMs]});
       if (state.calendarBroken) return null;
-      return {events: state.events.filter(e => overlaps(e, startMs, endMs)).map(e => ({...e})), failed: state.failedCalendars || []};
+      // Like Thunderbird: a calendar that cannot be read gives no events and is named.
+      const failed = state.failedCalendars || [];
+      return {events: state.events.filter(e => overlaps(e, startMs, endMs) && !failed.includes(e.calendarName)).map(e => ({...e})), failed};
     },
     createEvent: async details => {
       state.calendarCalls.push({create: {...details}});

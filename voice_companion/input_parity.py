@@ -28,11 +28,13 @@ SCREEN_KEYS = {
                   'Ctrl+Up': 'move download earlier', 'Ctrl+Down': 'move download later'},
     # Contacts (contacts_screen.py). Up, Down, Home, End, letters, Enter and Escape work as in every list.
     'contacts': {'F1': 'help with contacts', 'Ctrl+N': 'add contact', 'Ctrl+E': 'email contact',
-                 'Ctrl+F': 'find contact {value}', 'Delete': 'delete contact', 'F2': 'edit contact'},
+                 'Ctrl+F': 'find contact {value}', 'Delete': 'delete contact', 'F2': 'edit contact',
+                 'Ctrl+L': 'choose address book'},
     # Calendar (calendar_screen.py). Enter reads the event; Escape goes to the main menu.
     'calendar': {'F1': 'help with calendar', 'Up': 'previous event', 'Down': 'next event', 'Left': 'previous day',
                  'Right': 'next day', 'Home': 'today', 'Prior': 'previous week', 'Next': 'next week',
-                 'Ctrl+N': 'add event', 'Delete': 'delete event', 'F2': 'edit event', 'Ctrl+G': 'go to date'},
+                 'Ctrl+N': 'add event', 'Delete': 'delete event', 'F2': 'edit event', 'Ctrl+G': 'go to date',
+                 'Ctrl+L': 'choose calendar'},
     # The Attachments list (attachment_screen.py). Up, Down, Home, End, Enter and Escape work as in every list.
     # Letters move to the next name that starts with them, as in Contacts, so actions use Control.
     'attachments': {'F1': 'help with attachments', 'Ctrl+S': 'save attachment', 'Ctrl+Shift+S': 'save all attachments',

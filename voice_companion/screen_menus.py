@@ -169,7 +169,9 @@ MENUS = {
             ('Find contact', 'Ctrl+F', 'find contact {value}'),
             ('Refresh contacts', '', 'refresh contacts'),
             ('Contacts help', 'F1', 'help with contacts'),
-            ('Main menu', '', 'main menu')]),
+            ('Main menu', '', 'main menu'),
+            # Last, so hiding it (one email account) moves no other item.
+            ('Choose address book', 'Ctrl+L', 'choose address book')]),
     ]),
     'calendar': ('Calendar menu', [
         ('Event', [
@@ -189,7 +191,9 @@ MENUS = {
         ('Calendar', [
             ('Refresh calendar', '', 'refresh calendar'),
             ('Calendar help', 'F1', 'help with calendar'),
-            ('Main menu', '', 'main menu')]),
+            ('Main menu', '', 'main menu'),
+            # Last, so hiding it (one email account) moves no other item.
+            ('Choose calendar', 'Ctrl+L', 'choose calendar')]),
     ]),
     'help': ('Help menu', [
         ('Help', [
@@ -343,10 +347,20 @@ class ScreenMenu:
     def entries(self):
         groups = MENUS[self.mode][1]
         if len(groups) == 1:
-            return groups[0][1]
+            return self.shown(groups[0][1])
         if self.group is None:
             return [(name, '', None) for name, _ in groups]
-        return groups[self.group][1]
+        return self.shown(groups[self.group][1])
+
+    def shown(self, entries):
+        """The items that apply now. Choosing a calendar or address book is left out with one email account."""
+        hidden = ()
+        if self.mode in ('calendar', 'contacts'):
+            try:
+                hidden = __import__(self.mode + '_screen').hidden_commands()
+            except Exception:
+                hidden = ()
+        return [entry for entry in entries if entry[2] not in hidden]
 
     def describe(self, index):
         entries = self.entries()
