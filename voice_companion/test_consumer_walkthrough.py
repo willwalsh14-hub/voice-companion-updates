@@ -246,5 +246,54 @@ class FileManagerUnknownWordsTests(FileActionWordsTests):
         self.assertEqual(self.manager.command('Open b.'), 'Opening b.txt.')
 
 
+class ThatOneMeansTheHighlightedChoiceTests(CompanionTestCase):
+    """In a yes or no question, "that one" picks the choice you are on, as Enter does.
+
+    Heard before: Exit and Shut down start on No. Enter answered No, but saying
+    "That one." answered Yes: it closed the app or shut down the computer."""
+
+    def setUp(self):
+        super().setUp()
+        for name, value in (('CONFIRM_CHOICE', 'yes'), ('EXIT_RETURN_MODE', 'awake'), ('POWER_ACTION', None),
+                            ('POWER_RETURN_MODE', 'awake'), ('MAIN_MENU_LEAD', '')):
+            p = patch.object(companion, name, value, create=True); p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'sync_app_context'); p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'finish_exit', return_value='exit'); self.exit = p.start(); self.addCleanup(p.stop)
+        import windows_actions
+        p = patch.object(windows_actions, 'request_power'); self.power = p.start(); self.addCleanup(p.stop)
+
+    def key(self, name, mode):
+        request = companion.navigation_key(name, mode)
+        return companion.handle_keyboard(request, mode) if request else mode
+
+    def test_exit_starts_on_no_and_that_one_keeps_the_app_open(self):
+        self.assertEqual(self.key('Escape', 'awake'), 'exit_confirm')
+        for phrase in ('That one.', 'confirm that'):
+            with self.subTest(phrase=phrase):
+                self.assertEqual(companion.handle(phrase, 'exit_confirm'), 'awake')
+                self.exit.assert_not_called()
+                self.key('Escape', 'awake')
+        self.key('Up', 'exit_confirm')
+        self.assertEqual(companion.handle('That one.', 'exit_confirm'), 'exit')
+
+    def test_shut_down_starts_on_no_and_that_one_does_not_shut_down(self):
+        with patch.dict(companion.PREFERENCES, ask_before_shutdown=True):
+            self.assertEqual(companion.handle('shut down computer', 'awake', typed=True), 'power_confirm')
+            self.assertEqual(companion.handle('That one.', 'power_confirm'), 'awake')
+        self.power.assert_not_called()
+
+    def test_yes_and_okay_still_answer_yes(self):
+        self.key('Escape', 'awake')
+        self.assertEqual(companion.handle('Yes.', 'exit_confirm'), 'exit')
+
+    def test_save_question_on_no_with_that_one_discards(self):
+        doc = self.open_document(); doc.title = 'Letter'
+        with patch.object(companion, 'discard_document_changes') as discard, patch.object(type(doc), 'save') as save:
+            self.assertEqual(companion.handle('leave document', 'document', typed=True), 'document_save')
+            self.key('Down', 'document_save')
+            companion.handle('That one.', 'document_save')
+        discard.assert_called_once(); save.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

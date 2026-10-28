@@ -3219,6 +3219,9 @@ def _handle(text, mode, typed=False):
             if result=='email_draft':focus_email_entry()
             return result
         NAMED_LIST=None
+    # "That one" picks the highlighted choice, as Enter does. Exit and Shut down start on No.
+    if command in ('that one','confirm that') and mode in ('exit_confirm','power_confirm','document_save'):
+        command=CONFIRM_CHOICE
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
             speak('Canceled.');return EXIT_RETURN_MODE
