@@ -449,7 +449,7 @@ WHICH = ('which calendar', 'which calendars', 'which calendar am i in', 'what ca
          'what calendars am i looking at', 'which calendar is shown', 'which calendars are shown', 'what calendar is shown',
          'what calendars are shown', 'which calendar is open')
 SHOW = re.compile(r'(?:(?P<verb>show|view|see|open|use|switch to|change to|go to|look at|look in)(?: me)?(?: only| just)? )?'
-                  r'(?:(?:the|my|only|just) )*(?P<what>.+?)(?P<kind>(?: (?:calendars?|accounts?))+)?')
+                  r'(?:(?:the|my|only|just) )*(?P<what>.+?)(?P<kind>(?: calendars?)+)?')
 CHOOSE_HINT = 'To choose another, press Control+L.'
 
 

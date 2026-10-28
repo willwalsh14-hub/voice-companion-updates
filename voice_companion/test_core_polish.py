@@ -321,7 +321,7 @@ class SpokenKeyNamesTests(CompanionTestCase):
                 menu.group = g
                 if len(groups) > 1:
                     menu.level = 'items'
-                texts += [menu.describe(i) for i in range(len(entries))]
+                texts += [menu.describe(i) for i in range(len(menu.entries()))]   # items hidden now are left out
         manager = file_manager.FileManager()
         for kind in (True, 'sort'):
             manager.menu = kind

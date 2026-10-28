@@ -435,6 +435,17 @@ class ContactsOneAccountTests(CompanionHarness):
         self.assertEqual(self.said(), 'Contacts. 5 contacts. Ann Brown, ann@example.com, 1 of 5.')
 
 
+class MainMenuWordsTests(CompanionHarness):
+    thunderbird = False
+
+    def test_email_account_commands_are_not_taken(self):
+        # "Switch to Gmail account" changes the email account; it must not open Contacts or Calendar.
+        for words in ('switch to Gmail account', 'use my Outlook account', 'open my email account', 'show Gmail account'):
+            with self.subTest(words=words):
+                self.assertIsNone(contacts_screen.handle(app, words, 'awake'))
+                self.assertIsNone(calendar_screen.handle(app, words, 'awake'))
+
+
 class MenuFileTests(unittest.TestCase):
     def test_the_items_are_last_with_their_keys(self):
         self.assertEqual(MENUS['calendar'][1][-1][1][-1], ('Choose calendar', 'Ctrl+L', 'choose calendar'))

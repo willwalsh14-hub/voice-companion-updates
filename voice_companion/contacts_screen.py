@@ -495,7 +495,7 @@ WHICH = ('which contacts', 'which address book', 'which address books', 'which c
          'which address books are shown', 'which address book is shown', 'which address book is open')
 SHOW = re.compile(r'(?:(?P<verb>show|view|see|open|use|switch to|change to|go to|look at|look in)(?: me)?(?: only| just)? )?'
                   r'(?:(?:the|my|only|just) )*(?P<what>.+?)'
-                  r'(?P<kind>(?: (?:contacts|contact lists?|address books?|accounts?))+)?')
+                  r'(?P<kind>(?: (?:contacts|contact lists?|address books?))+)?')
 CHOOSE_HINT = 'To choose another, press Control+L.'
 
 
