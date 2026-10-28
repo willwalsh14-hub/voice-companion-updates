@@ -10,7 +10,8 @@ SCREEN_KEYS = {
     'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
-                    'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments'},
+                    'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments',
+                    'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo'},
     # Email: one letter per action, no modifiers (Will, October 2026). Letters act in the
     # message list and in an open message; K and B stay for links and buttons in a message.
     'mailbox': {'N': 'new email', 'R': 'reply', 'A': 'reply all', 'F': 'forward', 'M': 'move',

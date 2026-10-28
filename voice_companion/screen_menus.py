@@ -104,6 +104,10 @@ MENUS = {
             ('Attach the last download', '', 'attach the last download'),
             ('List attachments', 'Ctrl+L', 'list attachments'),
             ('Remove an attachment', '', 'remove attachment')]),
+        # Last, so the Alt paths of the groups above stay the same.
+        ('Undo and redo', [
+            ('Undo', 'Ctrl+Z', 'undo'),
+            ('Redo', 'Ctrl+Y', 'redo')]),
     ]),
     # Named after what is open, so it is not confused with the Notepad menu you start from.
     'note': ('Note menu', [

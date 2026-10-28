@@ -59,6 +59,8 @@ DOCUMENT_ACTIONS['Edit'].extend([(label, '', command) for label,command in (
     ('Replace current word','replace word with {value}'),('Replace current sentence','replace sentence with {value}'),
     ('Replace current paragraph','replace paragraph with {value}'),('Delete current word','delete current word'),
     ('Delete current line','delete current line'),('Delete current sentence','delete sentence'),('Delete current paragraph','delete current paragraph'))])
+# Redo goes last, so the menu letters of the items above stay the same.
+DOCUMENT_ACTIONS['Edit'].append(('Redo', 'Ctrl+Y', 'redo'))
 TABLE_KEYS={'next cell':'Tab','previous cell':'Shift+Tab','next row':'Alt+Down','previous row':'Alt+Up','next column':'Alt+Right','previous column':'Alt+Left'}
 DOCUMENT_ACTIONS['Table']=[(name,TABLE_KEYS.get(command,''),command) for name,_,command in DOCUMENT_ACTIONS['Table']]
 SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, command in items if key and key not in ('Enter', 'Alt+T','Tab','Shift+Tab','F12')}

@@ -81,7 +81,7 @@ def documents_folder():
 def document_format_command(command):
     if structural_selection_request(command) or document_control_request(command):
         return True
-    if command in ('normal text', 'make this normal text', 'make this a normal paragraph', 'make this a bulleted list', 'make this a bullet', 'make this a numbered list', 'remove table', 'delete cell contents', 'where in table', 'what cell', 'move right a cell', 'move left a cell', 'row down', 'row up', 'column right', 'column left', 'list headings', 'what are the headings', 'next heading', 'go to next heading', 'new line', 'insert new line', 'line break', 'new paragraph', 'undo', 'undo that', 'remove list', 'end list', 'leave table', 'after table', 'read table', 'review table', 'delete table', 'clear cell', 'read cell', 'next cell', 'previous cell'):
+    if command in ('normal text', 'make this normal text', 'make this a normal paragraph', 'make this a bulleted list', 'make this a bullet', 'make this a numbered list', 'remove table', 'delete cell contents', 'where in table', 'what cell', 'move right a cell', 'move left a cell', 'row down', 'row up', 'column right', 'column left', 'list headings', 'what are the headings', 'next heading', 'go to next heading', 'new line', 'insert new line', 'line break', 'new paragraph', 'undo', 'undo that', 'redo', 'redo that', 'save', 'save it', 'remove list', 'end list', 'leave table', 'after table', 'read table', 'review table', 'delete table', 'clear cell', 'read cell', 'next cell', 'previous cell'):
         return True
     return bool(re.match(r'^(?:apply heading(?: level)? |heading (?:level )?|make this (?:a heading|bold|italic|underlined)|'
                          r'(?:set|change|use) (?:word )?(?:font|size) |(?:bold|italic|italicize|underline) (?:word|this|paragraph)|'
@@ -4046,6 +4046,12 @@ def _handle(text, mode, typed=False):
         return 'document_save'
     if mode=='document' and command in ('save as','save document as','save the document as','save this document as','save my document as'):
         return start_save_as()
+    if (mode=='document' and document is not None and command in ('save','save it','save document','save my document')
+            and re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I)):
+        # "Save." on a document with no name yet asks for its name first, then saves.
+        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+        DOCUMENT_NAMING_ACTION='name document'
+        speak('This document has no name yet. Say or type its name, then press Enter.');return 'document_name'
     if mode=='document' and command in ('name document','rename document'):
         DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
         DOCUMENT_NAMING_ACTION='name document'
