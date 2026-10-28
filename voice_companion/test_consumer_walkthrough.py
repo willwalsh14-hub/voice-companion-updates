@@ -403,5 +403,27 @@ class AddEventFromMainMenuTests(__import__('test_calendar_screen').CalendarHarne
         self.assertEqual(len(self.speech.call_args_list), 1, self.speech.call_args_list)
 
 
+class TutorialQuestionsTests(unittest.TestCase):
+    def setUp(self):
+        from practice_tutorial import PracticeTutorial
+        self.tutorial = PracticeTutorial(); self.tutorial.start()
+
+    def test_what_can_i_say_lists_the_lesson_commands(self):
+        # Heard: "No explanation found for what can i say. Say lesson list, ..."
+        for phrase in ('What can I say?', 'what can I do', 'What do I say?'):
+            with self.subTest(phrase=phrase):
+                said, finished = self.tutorial.process(phrase)
+                self.assertFalse(finished)
+                self.assertTrue(said.startswith('Use Up and Down to choose, and Enter to open. Say next lesson,'), said)
+        self.tutorial.process('word processor')
+        said, _ = self.tutorial.process('What can I say?')
+        self.assertIn('Say next lesson,', said)
+        self.assertEqual(self.tutorial.process('repeat')[0], said)
+
+    def test_a_search_that_finds_nothing_repeats_the_words_as_said(self):
+        said, _ = self.tutorial.process('explain command Zebra Crossing')
+        self.assertTrue(said.startswith('No explanation found for Zebra Crossing.'), said)
+
+
 if __name__ == '__main__':
     unittest.main()
