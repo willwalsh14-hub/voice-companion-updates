@@ -271,6 +271,23 @@ class DefaultFolderTests(DocumentFlowCase):
         self.assertEqual(app.handle('Same folder.', 'document_name'), 'document')
         self.assertEqual(app.document.path, self.elsewhere / 'Copy.docx')
 
+    def test_typed_same_folder_works_like_the_spoken_words(self):
+        # The window sends typed names as "name document <text>".
+        self.open_elsewhere()
+        app.handle('save as', 'document'); app.handle('Copy', 'document_name', typed=True)
+        self.assertEqual(app.handle('name document same folder', 'document_name', typed=True), 'document')
+        self.assertEqual(app.document.path, self.elsewhere / 'Copy.docx')
+
+    def test_the_folder_label_is_only_shown_while_save_as_asks_for_the_folder(self):
+        self.open_elsewhere()
+        app.handle('save as', 'document'); app.handle('Copy', 'document_name', typed=True)
+        self.assertEqual(app.app_context('document_name').get('naming_label'), 'Folder; press Enter to save there:')
+        app.handle('@main_menu', 'document_name')          # Control+F1 leaves half-way
+        app.handle('name document', 'document')            # later, F2 renames
+        self.assertIsNone(app.app_context('document_name').get('naming_label'))
+        self.assertEqual(app.handle('Renamed', 'document_name', typed=True), 'document')
+        self.assertEqual(app.document.path, self.elsewhere / 'Renamed.docx')
+
     def test_new_documents_stay_in_the_default_folder_after_opening_or_saving_elsewhere(self):
         self.open_elsewhere()
         app.handle('save as', 'document'); app.handle('Copy', 'document_name', typed=True)

@@ -313,10 +313,10 @@ def ask_save_as_folder(name,lead=''):
         text+=' Say same folder to save it next to the file you opened.'
     speak(text);return 'document_name'
 
-def choose_save_as_folder(value,command):
+def choose_save_as_folder(value):
     global SAVE_AS_FOLDER,CONFIRM_CHOICE
     default=documents_folder()
-    words=re.sub(r'^(?:the|my) ','',command.strip())
+    words=re.sub(r'^(?:the|my) ','',normalized_command(value).strip())
     if words in ('same folder','this folder','current folder','same place','same folder as before'):folder=document.folder
     elif words in ('default','default folder','documents voice companion','voice companion') or value.strip()==str(default):folder=default
     else:
@@ -359,7 +359,7 @@ def document_naming(text,typed):
         speak('Say or type a document name first.');return 'document_name'
     value=PENDING_DOCUMENT_NAME[1] if confirm else re.sub(r'^(?:name document|save document as|save as)\s+','',text.strip(),flags=re.I)
     if saving_as and SAVE_AS_TITLE is not None:
-        return choose_save_as_folder(value,command if not confirm else '')
+        return choose_save_as_folder(value)
     if not typed and not confirm:
         # A spoken name waits, so a misheard word is never used as a file name.
         value=value.strip().rstrip('.!?,;:').strip()
@@ -438,7 +438,7 @@ def app_context(mode):
     if logical=='web' and web_session and (web_session.pending or web_session.submit_pending):context['confirmation']=CONFIRM_CHOICE
     if logical=='document_name':
         context['naming_request']=PENDING_DOCUMENT_NAME
-        if SAVE_AS_TITLE is not None:context['naming_label']='Folder; press Enter to save there:'
+        if DOCUMENT_NAMING_ACTION=='save as' and SAVE_AS_TITLE is not None:context['naming_label']='Folder; press Enter to save there:'
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
         return context
@@ -4000,7 +4000,7 @@ def _handle(text, mode, typed=False):
     if mode=='document' and command in ('save as','save document as','save the document as','save this document as','save my document as'):
         return start_save_as()
     if mode=='document' and command in ('name document','rename document'):
-        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=None
+        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
         DOCUMENT_NAMING_ACTION='name document'
         speak('Name this document. Say or type its name, then press Enter.');return 'document_name'
     save_as_named=re.fullmatch(r'\s*save (?:the |this |my )?(?:document )?as\s+(.+?)[.!?]*\s*',text,re.I|re.S) if mode=='document' and document is not None else None
