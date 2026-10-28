@@ -181,8 +181,9 @@ class EmailUndoTests(unittest.TestCase):
     def test_save_alone_saves_the_draft(self):
         with tempfile.TemporaryDirectory() as folder:
             draft = VoiceEmail(Path(folder), recipient='sam@example.com', compose_step='body')
-            for phrase in ('Save.', 'Save it.'):
-                self.assertIn('saved locally', draft.process(phrase))
+            # "Save my document" once said "Saved the Word document as ... .eml" in a draft.
+            for phrase in ('Save.', 'Save it.', 'Save my document.'):
+                self.assertIn('Email draft saved locally', draft.process(phrase))
 
 
 class KeysTests(unittest.TestCase):

@@ -377,7 +377,7 @@ class VoiceEmail(VoiceDocument):
             return result
         text = raw.strip()
         command = text.lower().rstrip('.!?').strip()
-        if command in ('save email', 'save draft', 'finish email', 'save document', 'finish document', 'save', 'save it'):
+        if command in ('save email', 'save draft', 'finish email', 'save document', 'save my document', 'finish document', 'save', 'save it'):
             self.dictating = False
             self.save()
             self._discard_baseline.clear()
