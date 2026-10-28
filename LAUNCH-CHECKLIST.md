@@ -145,3 +145,7 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.172: Thunderbird add-on check failed once, then passed (found October 28, 2026)
 - quitChecks waited a fixed 5 ms for the dispatched quit. Windows timers are about 15 ms, so the wait could end first.
 - The test now waits for the quit itself, up to 2 seconds.
+
+## 0.2.173: real window tests crashed with Tcl_AsyncDelete on Windows (October 28, 2026)
+- The new hint line widget was kept as self.hint_label and never released at close, so another thread freed it.
+- Fixed by releasing it on the window thread. test_window_widget_release now checks that every widget kept on the window is released.
