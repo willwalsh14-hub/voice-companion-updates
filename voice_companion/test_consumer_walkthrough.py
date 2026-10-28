@@ -469,5 +469,38 @@ class FirstTimeEmailTests(CompanionTestCase):
                     self.assertEqual(companion.THUNDERBIRD_SETUP['message'], 'Install Thunderbird? Say yes or no.')
 
 
+class LargeTextLayoutTests(unittest.TestCase):
+    """400 percent text, full screen off, on a 1024 by 768 screen: the title and the last
+    message took the whole window. The list got no room, and the command box, which has
+    the keyboard at the main menu, was pushed off the window (Windows drops keys sent to it)."""
+    # Heights measured in the real window at 400 percent (pixels).
+    SIZES = dict(heading=272, entry=109, label=55, message_line=129, list_line=74)
+
+    def plan(self, height, message_lines=2):
+        from display_options import fit_plan
+        s = self.SIZES
+        return fit_plan(height, s['heading'], s['entry'], s['label'], s['message_line'], message_lines,
+                        least=s['list_line'] + 24, wanted=s['list_line'] * 4 + 24)
+
+    def used(self, plan):
+        lines, label, rows = plan
+        s = self.SIZES
+        return s['heading'] + 14 + s['entry'] + (s['message_line'] * lines + 8 if lines else 0) + (s['label'] + 6 if label else 0) + rows
+
+    def test_a_short_window_keeps_the_command_box_and_one_list_line(self):
+        plan = self.plan(614)
+        self.assertGreaterEqual(plan[2], self.SIZES['list_line'] + 24)
+        self.assertLessEqual(self.used(plan), 614)
+
+    def test_the_message_gives_way_first_then_the_label(self):
+        self.assertEqual(self.plan(2000)[:2], (2, True))
+        self.assertEqual(self.plan(272 + 14 + 109 + 129 + 8 + 55 + 6 + 98)[:2], (1, True))
+        self.assertEqual(self.plan(272 + 14 + 109 + 55 + 6 + 98)[:2], (0, True))
+        self.assertEqual(self.plan(272 + 14 + 109 + 98)[:2], (0, False))
+
+    def test_a_tall_window_keeps_everything(self):
+        self.assertEqual(self.plan(1400, 3), (3, True, 74 * 4 + 24))
+
+
 if __name__ == '__main__':
     unittest.main()
