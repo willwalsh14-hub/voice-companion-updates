@@ -420,7 +420,8 @@ def app_context(mode):
     if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
-        context['menu_letters']=not context['browser_name_input']
+        context['menu_letters']=not context['browser_name_input'] and web_session.menu.level!='confirm'
+        if web_session.menu.level=='confirm':context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and web_session.list_focus in ('links','headings','fields'):context['menu_letters']=False
     if logical=='web' and web_session and web_session.list_focus in ('links','headings'):context['web_name_list']=web_session.list_focus
     if NAMED_LIST:context['named_list']=True;context['mode']='list';return context
@@ -862,8 +863,85 @@ def clock_text_entry(mode, typed=False):
     return mode=='web' and web_session is not None and bool(getattr(web_session,'keyboard_field',None))
 
 
+def now_playing():
+    """What plays now, for "What's playing?" and F3."""
+    if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
+    try:return MEDIA_HUB.now_playing()
+    except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
+
+
+def now_playing_asked(text,mode,typed=False):
+    """True for "What's playing?" where words are commands. "What is this?" counts only
+    while something plays, and not on the Calendar, where it reads the event."""
+    asked=__import__('media_hub').now_playing_request(text)
+    if not asked or clock_text_entry(mode,typed):return False
+    return asked=='clear' or mode!='calendar' and MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind)
+
+
+# Screens where "play" keeps its own meaning, or where words are typed.
+STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings',
+                        'tutorial','sleep','exit_confirm','power_confirm','document_save','document_replace','update_offer','update_download')
+
+
+def station_asked(text,mode,typed=False):
+    """The station name in "Play WGN" on a screen where words are commands, else None."""
+    if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed) or NAMED_LIST or screen_question(mode):return None
+    return __import__('media_hub').station_request(text)
+
+
+def screen_question(mode):
+    """True while Contacts, Calendar, Attachments or Downloads asks a question or for a
+    name; the answer there may start with "Play"."""
+    module={'calendar':'calendar_screen','contacts':'contacts_screen','attachments':'attachment_screen','downloads':'download_screen'}.get(mode)
+    if module is None:return False
+    screen=__import__(module)
+    return getattr(screen,'PENDING',None) is not None or bool(getattr(screen,'ADDING',None))
+
+
+# Background notices wait for a quiet moment: Companion silent, no key pressed for this
+# many seconds, and nobody speaking (October 2026).
+NOTICE_QUIET_SECONDS=3.0
+MEDIA_STREAM_ALERT=None        # (play number, message) waiting to be said
+MEDIA_STREAM_NEXT_CHECK=0.0
+
+
+def quiet_for_notice(now,hearing=None):
+    """True when a background notice will not talk over the user."""
+    if speech_busy():return False
+    last=getattr(APP_WINDOW,'last_navigation',0) if APP_WINDOW is not None else 0
+    if isinstance(last,(int,float)) and now-last<NOTICE_QUIET_SECONDS:return False
+    try:return not (hearing and hearing())
+    except Exception:return True
+
+
+def poll_media_stream(now=None,hearing=None):
+    """Main loop: check a playing radio stream every 2 seconds. When it stops by itself,
+    say so once, at a quiet moment, unless something else has started playing."""
+    global MEDIA_STREAM_ALERT,MEDIA_STREAM_NEXT_CHECK
+    hub=MEDIA_HUB
+    if hub is None:return
+    now=time.monotonic() if now is None else now
+    if now>=MEDIA_STREAM_NEXT_CHECK:
+        MEDIA_STREAM_NEXT_CHECK=now+2
+        try:alert=hub.check_stream(now)
+        except Exception:alert=None
+        if alert:MEDIA_STREAM_ALERT=alert
+    if MEDIA_STREAM_ALERT is None:return
+    session,message=MEDIA_STREAM_ALERT
+    if getattr(hub.player,'session',session)!=session or not getattr(hub.player,'kind',None):
+        MEDIA_STREAM_ALERT=None;return   # played again, or closed: the news is old
+    if quiet_for_notice(now,hearing):
+        MEDIA_STREAM_ALERT=None;speak(message)
+
+
 def navigation_key(key,mode):
     global KEYBOARD_NAVIGATION
+    if key=='F3':
+        # F3 says what plays now, on every screen; it changes nothing (Will, October 2026).
+        previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+        try:interrupt_speech();speak(now_playing())
+        finally:KEYBOARD_NAVIGATION=previous
+        return None
     if key in time_date.KEY_REQUESTS:
         # F12 or Insert+F12 works everywhere, even in setup, lists and questions; it changes nothing.
         previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
@@ -949,9 +1027,9 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
-        if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
+        if key.lower() in ('y','n','alt+y','alt+n','letter:y','letter:n'):return 'yes' if key.lower() in ('y','alt+y','letter:y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             choice='yes' if key in ('Up','Left','ShiftTab') else 'no'
             if choice==CONFIRM_CHOICE:speak('Start of list.' if choice=='yes' else 'End of list.');return None
@@ -1226,8 +1304,10 @@ def web_writing_field():
     """True while a web text box you write in (a message or comment box) is being edited.
     A site's search box with suggestions and a password box are not writing."""
     session = web_session
-    # Looked up on the class, so a stand-in session is never asked.
-    writing = getattr(type(session), 'writing_field', None) if session is not None else None
+    # Looked up on the class, so a stand-in session is never asked. In Dictation only
+    # mode the same text boxes are writing: "Microphone off." there is text (Will, October 2026).
+    name = 'writing_box' if INPUT_MODE == 'dictation' else 'writing_field'
+    writing = getattr(type(session), name, None) if session is not None else None
     return bool(callable(writing) and writing(session) is True)
 
 
@@ -1869,9 +1949,18 @@ def open_browser_menu(regular=False):
     return 'browser_menu'
 
 def handle_browser_menu(text):
-    global SEARCH_RETURN_MODE
+    global SEARCH_RETURN_MODE,CONFIRM_CHOICE
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
     if action=='main':return 'awake'  # handle() says the main menu; "Main menu." first said it twice.
+    if action in ('ask','confirm'):
+        # "Delete favorite ...?" starts on No; arrows choose, Enter answers, Escape keeps it.
+        if action=='ask':CONFIRM_CHOICE='no'
+        speak(notice);return 'browser_menu'
+    if action=='page':
+        # A favorite named from a page: back to the page and your place on it.
+        if web_session.snapshot:
+            speak(notice+' '+options_return_notice('web'));return 'web'
+        notice+=' The page is no longer open. '+web_session.menu.start()
     if notice:speak(notice)
     if action=='downloads':return __import__('download_screen').open_manager(sys.modules[__name__],'browser_menu')
     if action=='chrome':
@@ -3330,6 +3419,9 @@ def _handle(text, mode, typed=False):
     clock=time_date.clock_request(text,clock_text_entry(mode,typed))
     if clock:
         speak_clock(clock);return mode
+    # "What's playing?" works on every screen too, and is text where people write.
+    if now_playing_asked(text,mode,typed):
+        speak(now_playing());return mode
     # "Bigger text", "Change colors", "Full screen": the screen for low vision, from every screen
     # where words are commands. In a document, email, note or text box they are text.
     display=__import__('display_options').voice_request(text) if mode!='settings' and not clock_text_entry(mode,typed) else None
@@ -3352,6 +3444,19 @@ def _handle(text, mode, typed=False):
     if mode=='chrome_setup':
         import chrome_setup
         return chrome_setup.handle(sys.modules[__name__],text,mode)
+    # "Play WGN" from the main menu and other screens where words are commands: find the
+    # station and play it, or offer a short list (Will, October 2026). The Radio screen,
+    # web pages and writing fields keep their own meaning of "play". Before the list screens
+    # (Contacts, Calendar, Downloads, Attachments), which would only repeat their help.
+    station=station_asked(text,mode,typed)
+    if station:
+        hub=media()
+        try:result=hub.play_by_name(station)
+        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
+        if hub.station_choices:
+            MEDIA_SECTION='radio';media_navigation().show_choices()
+            speak(result);return 'media'
+        speak(result);return mode
     try:
         menu_result=screen_menu().handle(text,mode)
         if menu_result is not None:return menu_result
@@ -4393,6 +4498,8 @@ def _handle(text, mode, typed=False):
     if mode == 'web':
         if command in ('new favorite','add favorite','go to favorite','delete favorite','rename favorite','new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
             web_session.menu.start()
+            # A favorite named here comes back to this page once it is saved (Will, October 2026).
+            web_session.menu.return_to_page=command in ('new favorite','add favorite','new bookmark','add bookmark')
             return handle_browser_menu(text)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
@@ -5310,6 +5417,7 @@ def main():
                 try: media_notice = MEDIA_NOTICES.get_nowait()
                 except queue.Empty: break
                 speak(media_notice)
+            poll_media_stream(hearing=lambda:bool(json.loads(recognizer.PartialResult()).get('partial','')))
             if APP_WINDOW is not None:
                 try: settings_result = APP_WINDOW.settings_results.get_nowait()
                 except queue.Empty: settings_result = None

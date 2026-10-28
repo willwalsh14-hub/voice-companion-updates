@@ -3102,7 +3102,7 @@
 },
 "awake | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -9175,7 +9175,7 @@
 },
 "document | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -16084,7 +16084,7 @@
 },
 "email_draft | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -26910,7 +26910,7 @@
 },
 "mailbox | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -31901,7 +31901,7 @@
 },
 "note | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -37909,7 +37909,7 @@
 },
 "web | radio help": {
 "said": [
-"Listen To Radio. Find and play a station (F), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Radio. Find and play a station (F), 1 of 6. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },

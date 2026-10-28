@@ -458,6 +458,11 @@ class CompanionWindow:
                         self.commands.put(('keyboard','Doc:SaveAs'));return 'break'
                     if mode=='document' and 'Caps_Lock' in document_modifiers:caps_modifier['used']=True
                     self.commands.put(('keyboard',key_request(clock_presses.press())));return 'break'
+                if key=='F3' and not event.state&(1|4) and not alt_held(event.state):
+                    # F3 says what is playing, on every screen; never typed into a page or document.
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard','F3'));return 'break'
                 if key=='F9' and not event.state&(1|4) and not alt_held(event.state):
                     # F9 turns the microphone fully off or on, on every screen.
                     if self.keyboard_output:self.keyboard_output.interrupt()

@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib import request, parse
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from media_player import MediaPlayer, seek_message
+from media_player import MediaPlayer, StreamWatch, seek_message, spoken_time as playback_time, _number
 from time_date import DAYS, MONTHS, spoken_time
 
 RADIO_API = 'https://de1.api.radio-browser.info/json/stations/search'
@@ -103,6 +103,60 @@ def _station_words(value):
     return joined
 
 
+NOTHING_PLAYING = ('Nothing is playing. To start, say Play and a station name, such as Play WGN. '
+                   'Or choose Media on the main menu for radio, podcasts, and your own files.')
+# "What's playing?" in the words people use. Ambiguous ones ("What is this?") count only
+# while something is loaded; the app decides that.
+NOW_PLAYING_PHRASES = ('what s playing', 'whats playing', 'what is playing', 'what s playing now', 'whats playing now',
+                       'what is playing now', 'what am i listening to', 'what station is this',
+                       'what station is playing', 'what station am i listening to', 'which station is this',
+                       'what episode is this', 'what episode is playing', 'which episode is this',
+                       'what podcast is this', 'what podcast is playing', 'what file is playing', 'what song is this')
+NOW_PLAYING_AMBIGUOUS = ('what is this', 'what s this', 'whats this')
+
+
+def now_playing_request(spoken):
+    """'clear' for "What's playing?" and the like, 'ambiguous' for "What is this?", else None.
+    Recognizer punctuation and capitals do not matter."""
+    words = ' '.join(re.sub(r'[^\w\s]', ' ', str(spoken).casefold()).split())
+    words = re.sub(r'^(?:please |hey |so |and )|(?: please| now please)$', '', words)
+    if words in NOW_PLAYING_PHRASES:
+        return 'clear'
+    if words in NOW_PLAYING_AMBIGUOUS:
+        return 'ambiguous'
+    return None
+
+
+# "Play WGN", "Play station WGN", "Play WGN radio": a station by name from any screen
+# where words are commands. These words after Play mean something else.
+NOT_STATION_NAMES = ('audio', 'radio', 'podcast', 'podcasts', 'the podcast', 'media', 'it', 'this', 'that',
+                     'this one', 'that one', 'or pause', 'pause', 'next', 'previous', 'next one', 'previous one',
+                     'next episode', 'previous episode', 'the next episode', 'the previous episode', 'station', 'a station',
+                     'the station', 'radio station', 'a radio station', 'something', 'again', 'music', 'file', 'the file',
+                     'a file', 'media file', 'a media file', 'my file', 'video', 'the video', 'all')
+NOT_STATION_STARTS = ('episode', 'download', 'recording', 'preset', 'favorite', 'podcast ', 'the podcast ', 'number ',
+                      'station number ', 'file ', 'the file ', 'media file ', 'chapter', 'next ', 'previous ')
+
+
+def station_request(spoken):
+    """The station name in "Play WGN", "Play station WGN" or "Play WGN radio.", else None."""
+    text = ' '.join(re.sub(r'[,;:!?]+', ' ', str(spoken)).split()).rstrip('.').strip()
+    match = re.fullmatch(r'(?:please )?play (?:(?:the )?(?:radio station|station|radio) )?(.+?)(?: radio station| station| radio| on the radio)?(?: please)?', text, re.I)
+    if not match:
+        return None
+    name = match[1].strip(' .')
+    folded = name.casefold()
+    if (not name or folded in NOT_STATION_NAMES or folded.startswith(NOT_STATION_STARTS)
+            or _radio_number(folded) is not None or folded.isdigit()):
+        return None
+    return name
+
+
+def _sentence(text):
+    text = str(text).strip()
+    return text if text.endswith(('.', '!', '?')) else text + '.'
+
+
 def _interval_seconds(value):
     """Understand spoken durations without changing playback when ambiguous."""
     words={'a':1,'an':1,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,
@@ -168,6 +222,9 @@ class MediaHub:
         self.preset_index = None
         self.preset_delete_pending = None
         self.preset_browsing = False
+        # What was opened, for "What's playing?": (address, details).
+        self._playing = None
+        self._watch = StreamWatch()
 
     def _path(self, name): return self.folder / name
 
@@ -259,6 +316,7 @@ class MediaHub:
             station = saved[index]
             try: self.player.open(station['url'], station['name'], 'radio')
             except Exception: return 'Preset ' + station['name'] + ' could not play. The stream may have changed.'
+            self._remember(station['url'], what='station', name=station['name'])
             self.preset_index = index
             self.station_index = None
             self.current_station = station
@@ -411,12 +469,36 @@ class MediaHub:
         try: self.player.open(station['url'], station['name'], 'radio')
         except Exception:
             return station['name']+' could not start in the audio player. Say next station or choose another result.'
+        self._remember(station['url'], what='station', name=station['name'])
         self.current_station = station
         return 'Playing ' + station['name'] + '. Say pause or stop.'
 
+    # Words that do not tell stations apart: "WGN" and "WGN Radio" are the same request.
+    STATION_FILLER = ('the', 'radio', 'station', 'fm', 'am')
+
+    def play_by_name(self, name):
+        """"Play WGN" from any screen: search as Radio search does, then play the only
+        match or the one with exactly that name, or offer a short list of up to five."""
+        found = self.search_radio('name', name)
+        if not self.stations:
+            unavailable = 'The live directory is unavailable. ' if found.startswith('The live directory') else ''
+            return unavailable + 'I could not find a station called ' + name + '. Check the name, or say Radio to search for stations.'
+        wanted = [word for word in _station_words(name) if word not in self.STATION_FILLER]
+        def words(station): return [word for word in _station_words(station['name']) if word not in self.STATION_FILLER]
+        exact = [i for i, station in enumerate(self.stations) if words(station) == wanted]
+        if len(exact) == 1: return self.play_station(exact[0]+1)
+        close = [i for i, station in enumerate(self.stations) if all(word in words(station) for word in wanted)]
+        picks = (exact or close or list(range(len(self.stations))))[:5]
+        if len(picks) == 1: return self.play_station(picks[0]+1)
+        self.station_choices = picks
+        self.station_choice_index = 0
+        return ('I found ' + _counted(len(picks), 'station') + ' for ' + name + '. Choice 1 of ' + str(len(picks)) + ': ' +
+                self.stations[picks[0]]['name'] + '. Say next or previous to hear another, then that one to play it. Say cancel to stop.')
+
     def play_station_named(self, phrase):
         if not self.stations:
-            return 'Search for stations first.'
+            # No results yet: search for it, as "Play WGN" does on other screens.
+            return self.play_by_name(phrase)
         wanted = _station_words(phrase)
         if not wanted:
             return 'Say a station name or a result number.'
@@ -433,6 +515,65 @@ class MediaHub:
             return ('I found '+str(len(matches))+' matching stations. Choice 1: '+self.stations[matches[0]]['name']+
                     '. Say next or previous to hear a choice, then that one to play it.')
         return 'I did not find '+phrase+' in these results. Say search followed by the station name to search again.'
+
+    def _remember(self, url, **details):
+        self._playing = (url, details)
+
+    def _details(self):
+        """What the hub opened, if it is still what the player has loaded."""
+        if not self._playing: return {}
+        url, details = self._playing
+        return details if getattr(self.player, 'url', url) == url else {}
+
+    def now_playing(self):
+        """"What's playing?": the station, the podcast and episode, or the file, and
+        whether it is paused, with the place and length when they are known."""
+        player = self.player
+        kind = getattr(player, 'kind', None)
+        if not kind: return NOTHING_PLAYING
+        details = self._details()
+        what = details.get('what')
+        title = details.get('name') or details.get('title') or getattr(player, 'title', None) or 'Unnamed audio'
+        streaming = getattr(player, 'streaming', None)
+        live = kind == 'radio' and (streaming() if callable(streaming) else what == 'station')
+        if kind == 'radio':
+            label = ('Station: ' if live else 'Radio recording: ') + _sentence(title)
+        elif what == 'episode':
+            label = ('Podcast: ' + _sentence(details['show']) + ' ' if details.get('show') else '') + 'Episode: ' + _sentence(details['title'])
+        elif kind == 'podcast':
+            label = 'Podcast episode: ' + _sentence(title)
+        else:
+            label = 'File: ' + _sentence(title)
+        try: status = player.status()
+        except Exception: status = None
+        if not isinstance(status, dict): return label
+        if status.get('failed'):
+            return label + ' Stopped, because the stream failed. Say Play or press Control+P to try again, or choose another station.'
+        state = 'Paused.' if status.get('paused') else 'Playing.'
+        position, duration = _number(status.get('position')), _number(status.get('duration'))
+        if live or position is None: return label + ' ' + state
+        return (label + ' ' + state + ' Position ' + playback_time(position) +
+                (' of ' + playback_time(duration) if duration else '') + '.')
+
+    def check_stream(self, now):
+        """One regular check of a playing radio stream. Returns (play number, message)
+        the first time a stream that had started stops, errors or stalls; else None.
+        Runs on the thread that opened the player."""
+        player = self.player
+        streaming = getattr(player, 'streaming', None)
+        if not callable(streaming) or not streaming(): return None
+        try: sample = player.health()
+        except Exception: sample = None
+        reason = self._watch.check(getattr(player, 'session', None), sample, now)
+        if not reason: return None
+        try: player.mark_failed()
+        except Exception: pass
+        name = self._details().get('name') or getattr(player, 'title', None) or 'The station'
+        if reason == 'gone':
+            message = name + ' stopped, because the audio player closed. Choose the station again to play it.'
+        else:
+            message = name + ' stopped playing. The station or the internet connection may be down. Say Play or press Control+P to try again, or choose another station.'
+        return getattr(player, 'session', None), message
 
     def _record_worker(self, station, minutes, stop):
         url = station['url']
@@ -793,6 +934,7 @@ class MediaHub:
         episode=self.episodes[i]
         try: self.player.open(episode['url'],episode['title'],'podcast')
         except Exception: return 'This episode could not start. Try another episode.'
+        self._remember(episode['url'], what='episode', show=episode.get('show',''), title=episode['title'])
         self.current_episode_index=i
         self.episode_index=i
         self.chapters=self._chapters(episode)
@@ -933,6 +1075,7 @@ class MediaHub:
         if not 0<=i<len(files): return 'That download number is unavailable.'
         try: self.player.open(files[i].as_uri(),files[i].stem,'podcast')
         except Exception: return 'The downloaded episode could not play.'
+        self._remember(files[i].as_uri(), what='download', name=files[i].stem)
         self.current_episode_index=None
         self.chapters=[]
         return 'Playing downloaded episode '+files[i].stem+'.'
@@ -943,6 +1086,7 @@ class MediaHub:
         if not 0<=i<len(files): return 'That recording number is unavailable.'
         try: self.player.open(files[i].as_uri(),files[i].stem,'radio')
         except Exception: return 'The saved radio recording could not play.'
+        self._remember(files[i].as_uri(), what='recording', name=files[i].stem)
         return 'Playing recording '+files[i].stem+'. Say pause audio or stop audio.'
 
     def command(self, spoken, section=None):
@@ -989,7 +1133,7 @@ class MediaHub:
                     return self.play_station(number) if self.stations else 'Search for stations first.'
             named=re.fullmatch(r'(?:play|open|listen to|tune to)\s+(?:station\s+)?(.+)',text,re.I)
             if named and cmd not in ('play radio','play audio','play podcast') and not cmd.startswith(('play recording ','play download ','play episode ')):
-                return self.play_station_named(named[1])
+                return self.play_station_named(station_request(text) or named[1])
             if cmd in ('search','search for','search stations','search radio','find stations','find radio'):
                 self.awaiting_radio_search=True
                 return 'What station would you like to find? Say its name.'
