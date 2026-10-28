@@ -2,7 +2,7 @@
 
 F12, or Insert+F12 as in common screen readers, says the time. Pressed twice
 quickly, it says the date. Spoken requests: "What time is it?", "What's the
-date?", "What day is it?" and similar.
+date?", "What day is it?", "What year is it?" and similar.
 
 In a document, email, note or name box, writing comes first: a single word such
 as "Time." or "The date." is text. Only a clear question is a request there.
@@ -25,7 +25,10 @@ TIME_QUESTIONS = (r'(?:what time is it|whats the time|what is the time|(?:tell m
                   r'|(?:whats|what is) the current time)' + _NOW)
 TIME_WORDS = r'(?:the )?(?:current )?time' + _NOW
 DATE_QUESTIONS = (r'(?:what date is it|(?:whats|what is) (?:the|todays) date|todays date'
-                  r'|(?:tell me|say|check) (?:the|todays) date|what day is (?:it|today)|(?:whats|what is) today)' + _NOW)
+                  r'|(?:tell me|say|check) (?:the|todays) date|what day is (?:it|today)|(?:whats|what is) today'
+                  # Older users ask for one part; the full date answers each.
+                  r'|(?:what|which) (?:day of the week|month|year) is (?:it|this|today)'
+                  r'|(?:whats|what is) the (?:day|month|year)|which day is it)' + _NOW)
 DATE_WORDS = r'(?:the )?date' + _NOW
 BOTH_QUESTIONS = r'(?:(?:whats|what is|tell me|say) the (?:date and time|time and date))' + _NOW
 BOTH_WORDS = r'(?:the )?(?:date and time|time and date)' + _NOW

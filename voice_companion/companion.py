@@ -661,10 +661,13 @@ MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous t
 # Said together with the next main menu announcement, in one message: a second
 # message would stop the first one (the keyboard voice interrupts itself).
 MAIN_MENU_LEAD = ''
+# Counts main menu announcements, so handle() does not say it a second time.
+MAIN_MENU_ANNOUNCED = 0
 
 def announce_main_menu():
-    global MAIN_MENU_INDEX, MAIN_MENU_LEAD
+    global MAIN_MENU_INDEX, MAIN_MENU_LEAD, MAIN_MENU_ANNOUNCED
     MAIN_MENU_INDEX = None
+    MAIN_MENU_ANNOUNCED += 1
     lead, MAIN_MENU_LEAD = MAIN_MENU_LEAD, ''
     if lead.strip():speak(lead.strip() + ' ' + prompt_text(MAIN_MENU_PROMPT, VERBOSITY))
     else:speak_prompt(MAIN_MENU_PROMPT)
@@ -1195,8 +1198,31 @@ def writing_dictation(mode, typed=False):
     "help with ...", "use ... at ..."). In a writing field, a sentence that only starts that
     way and does not complete the command is dictation, not an error."""
     editor_open = (mode == 'document' and document is not None or
-                   mode == 'email_draft' and email_draft is not None or mode == 'note')
+                   mode == 'email_draft' and email_draft is not None or mode == 'note' or
+                   mode == 'web' and web_writing_field())
     return not typed and INPUT_MODE != 'commands' and editor_open
+
+
+def spoken_website(text):
+    """"Go to VA dot gov." or "VA dot gov." said outside a text box: ask to open the site,
+    as "Open website" does, instead of a dead end. Returns True when it asked."""
+    global pending_website
+    from browser_navigation import spoken_address_request
+    address = spoken_address_request(text)
+    if not address:
+        return False
+    pending_website = prepare_address(address)
+    speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
+    return True
+
+
+def web_writing_field():
+    """True while a web text box you write in (a message or comment box) is being edited.
+    A site's search box with suggestions and a password box are not writing."""
+    session = web_session
+    # Looked up on the class, so a stand-in session is never asked.
+    writing = getattr(type(session), 'writing_field', None) if session is not None else None
+    return bool(callable(writing) and writing(session) is True)
 
 
 def speech_control(value):
@@ -1799,11 +1825,13 @@ CLOSE_BROWSER_COMMANDS=('close browser','close the browser','close browser windo
 
 def close_browser_window():
     """Close the browser even when Keep browser window open is on, then go to the main menu."""
+    global MAIN_MENU_LEAD
     regular=getattr(getattr(web_session,'backend',None),'regular',False) is True
     try:web_session.leave(False)
     except Exception:
         speak('The browser window could not close. Try closing it again.');return 'web' if web_session.snapshot else 'browser_menu'
-    speak('Companion let go of your browser. Its tabs stay open.' if regular else 'Browser window closed.')
+    # One message: a second one would cut this one off.
+    MAIN_MENU_LEAD=('Companion let go of your browser. Its tabs stay open.' if regular else 'Browser window closed.')
     announce_main_menu()
     return 'awake'
 
@@ -1837,8 +1865,8 @@ def open_browser_menu(regular=False):
 def handle_browser_menu(text):
     global SEARCH_RETURN_MODE
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
+    if action=='main':return 'awake'  # handle() says the main menu; "Main menu." first said it twice.
     if notice:speak(notice)
-    if action=='main':return 'awake'
     if action=='downloads':return __import__('download_screen').open_manager(sys.modules[__name__],'browser_menu')
     if action=='chrome':
         import chrome_setup
@@ -1861,15 +1889,17 @@ def handle_browser_menu(text):
         return 'web' if web_session.snapshot else 'browser_menu'
     return 'browser_menu'
 
-def run_web_search(query):
-    """Search-entry text is literal, even when it resembles an app command."""
+def run_web_search(query,typed=True):
+    """Search-entry text is literal, even when it resembles an app command.
+    Spoken, an address such as "VA dot gov." opens the site, not a search for it."""
     global web_session
     web_session=web_session or WebSession(APP,progress=speak_status)
     web_session.auto_read=PREFERENCES.get('web_auto_read',True)
     web_session.search_engine=PREFERENCES.get('web_search_engine','google')
     revision=getattr(web_session,'page_revision',0)
-    from browser_navigation import looks_like_address
-    speak_web_result(web_session.open(query) if looks_like_address(query) else web_session.search(query),revision)
+    from browser_navigation import looks_like_address,spoken_address_request
+    address=query if looks_like_address(query) else None if typed else spoken_address_request(query)
+    speak_web_result(web_session.open(address) if address else web_session.search(query),revision)
     return 'web' if web_session.snapshot else 'search'
 
 def refresh_browser_view(mode):
@@ -3344,7 +3374,7 @@ def _handle(text, mode, typed=False):
             return 'awake'
         speak(result)
         return mode
-    if mode=='browser_menu' and command not in ('help','options','open options','main menu','back to main menu','exit companion','go to sleep') and not command.startswith(('help with ', 'help for ')) and (command=='resume' or not speech_control(command)) and speech_setting_request(text) is None and command not in VOICE_LIST_COMMANDS and command not in ('use sapi','use sapi voice','use windows voice','use ai voice','use espeak','document help','email help','web help','radio help','podcast help','commands help') and not spoken_control(command):
+    if mode=='browser_menu' and pending_website is None and not command.startswith(('open website ','go to website ')) and command not in ('help','options','open options','main menu','back to main menu','exit companion','go to sleep') and not command.startswith(('help with ', 'help for ')) and (command=='resume' or not speech_control(command)) and speech_setting_request(text) is None and command not in VOICE_LIST_COMMANDS and command not in ('use sapi','use sapi voice','use windows voice','use ai voice','use espeak','document help','email help','web help','radio help','podcast help','commands help') and not spoken_control(command):
         return handle_browser_menu(text)
     if command in ('next','previous'):
         state=menu_state(mode)
@@ -3968,11 +3998,9 @@ def _handle(text, mode, typed=False):
         speak(MEDIA_HUB.command(text))
         return mode
     if mode == 'media':
-        if command in ('exit','main menu','back to main menu','leave radio','leave podcasts'):
-            speak('Scheduled recordings continue while the app runs.')
-            return 'awake'
-        if command in ('go back','back') and not (media().stations if MEDIA_SECTION == 'radio' else media().shows):
-            speak('Scheduled recordings continue while the app runs.')
+        if command in ('exit','main menu','back to main menu','leave radio','leave podcasts') or command in ('go back','back') and not (media().stations if MEDIA_SECTION == 'radio' else media().shows):
+            # Only when something is scheduled, and with the main menu in one message.
+            if media().has_scheduled_recordings():MAIN_MENU_LEAD='Scheduled recordings continue while the app runs.'
             return 'awake'
         if command in ('radio','internet radio','podcasts','listen to podcasts'):
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
@@ -4257,7 +4285,7 @@ def _handle(text, mode, typed=False):
         MAIN_MENU_INDEX = bounded_index(MAIN_MENU_INDEX,1 if command=='next' else -1,len(MAIN_MENU_CHOICES))
         speak(announce_item(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(MAIN_MENU_CHOICES)))
         return mode
-    if mode == 'awake' and command in PICK_CONFIRM:
+    if mode == 'awake' and command in PICK_CONFIRM and pending_website is None:  # A website question is answered below.
         if MAIN_MENU_INDEX is None:
             speak('Say next or previous to choose an option.')
             return mode
@@ -4301,7 +4329,7 @@ def _handle(text, mode, typed=False):
     if pending_website is not None:
         address, host = pending_website
         pending_website = None
-        if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
+        if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website', 'okay', 'ok', 'confirm', 'that one'):
             web_session = web_session or WebSession(APP,progress=speak_status)
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             web_session.search_engine=PREFERENCES.get('web_search_engine','google')
@@ -4320,7 +4348,7 @@ def _handle(text, mode, typed=False):
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
             SEARCH_RETURN_MODE='web'
-            speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
+            speak('Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels.')
             return 'search'
         revision=getattr(web_session,'page_revision',0)
         if text.startswith('web key '):
@@ -4338,6 +4366,9 @@ def _handle(text, mode, typed=False):
                 speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
             except ValueError as exc:
                 speak(str(exc))
+            return 'web'
+        if (command.startswith(('go to ', 'open ', 'visit ')) and not web_writing_field() and __import__('browser_navigation').spoken_address_request(text)
+                and not (command.startswith('go to ') and web_session.favorites.get(text.strip()[6:])) and spoken_website(text)):
             return 'web'
         speak_web_result(web_session.command(text),revision)
         return 'web'
@@ -4647,7 +4678,7 @@ def _handle(text, mode, typed=False):
         speak(media().search_podcasts(text))
         return 'media'
     if mode == 'search':
-        return run_web_search(text)
+        return run_web_search(text,typed)
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
@@ -4753,7 +4784,7 @@ def _handle(text, mode, typed=False):
             speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'bing' if command.startswith('bing ') else None),revision)
             return 'web' if web_session.snapshot else 'awake'
         SEARCH_RETURN_MODE='awake'
-        speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
+        speak('Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels.')
         return 'search'
     if mode in ('word_processor','notepad_menu','reader_menu','media_menu','local_media','recent_documents','reader_recent'):
         # Nothing above understood the words. A misheard word must not throw you out of
@@ -4761,6 +4792,7 @@ def _handle(text, mode, typed=False):
         if command in ('main menu','back to main menu','go to main menu'):return 'awake'   # handle() says Main menu
         speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
         return mode
+    if mode == 'awake' and spoken_website(text):return 'awake'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 
@@ -4907,6 +4939,7 @@ def handle(text, mode, typed=False):
         KEYBOARD_NAVIGATION=True
     old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
     old_send=pending_send
+    announced=MAIN_MENU_ANNOUNCED
     _HANDLE_DEPTH += 1
     try:
         if _HANDLE_DEPTH==1:
@@ -4925,7 +4958,7 @@ def handle(text, mode, typed=False):
         result=open_email_link(url)
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
-        announce_main_menu()
+        if MAIN_MENU_ANNOUNCED==announced:announce_main_menu()
     if result!=mode:DICTATION_ECHO.clear()
     if _HANDLE_DEPTH==0 and result!='exit':sync_app_context(result,result!=mode)
     return result

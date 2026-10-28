@@ -294,7 +294,7 @@ class CloseBrowserTests(unittest.TestCase):
                     self.assertEqual(app.handle(phrase, mode), 'awake')
                 self.backend.close.assert_called_once()
                 self.assertIsNone(self.session.snapshot)
-                self.assertIn('Browser window closed.', [call.args[0] for call in speak.call_args_list])
+                self.assertTrue(any(call.args[0].startswith('Browser window closed.') for call in speak.call_args_list))  # Said with the main menu, in one message.
 
     def test_leaving_website_still_keeps_the_page_when_asked(self):
         with patch.object(app, 'web_session', self.session), patch.object(app, 'PREFERENCES', {'web_keep_open': True}), \
@@ -309,7 +309,7 @@ class CloseBrowserTests(unittest.TestCase):
                 patch.object(app, 'speak') as speak, patch.object(app, 'speak_prompt'), patch.object(app, 'APP_WINDOW', None), \
                 patch.object(app, 'pending_website', None):
             self.assertEqual(app.handle('close browser window', 'web'), 'awake')
-        self.assertIn('Companion let go of your browser. Its tabs stay open.', [call.args[0] for call in speak.call_args_list])
+        self.assertTrue(any(call.args[0].startswith('Companion let go of your browser. Its tabs stay open.') for call in speak.call_args_list))  # Said with the main menu, in one message.
 
 
 if __name__ == '__main__':

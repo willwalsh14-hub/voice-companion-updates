@@ -142,7 +142,7 @@ class RadioScheduleTests(unittest.TestCase):
             hub._save('radio-schedule.json', jobs)
             spoken = hub.command('list scheduled recordings', section='radio')
             self.assertIn('1. A damaged schedule entry', spoken)
-            self.assertIn('4. Later at 2026-10-22T09:00:00', spoken)
+            self.assertIn('4. Later, Thursday, October 22 at nine AM.', spoken)
             self.assertEqual(hub.command('cancel scheduled recording 1', section='radio'),
                              'Canceled a damaged schedule entry.')
             self.assertEqual(hub.command('cancel scheduled recording 3', section='radio'),

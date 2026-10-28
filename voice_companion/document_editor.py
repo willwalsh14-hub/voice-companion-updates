@@ -1022,7 +1022,7 @@ class VoiceDocument:
             if kind == 'all':
                 selected = TextSelection(0, 0, len(self.paragraphs)-1, len(self.paragraphs[-1].text))
                 self._apply_selection_action(selected, 'select')
-                return 'Selected all text in the document. ' + str(len(self.paragraphs)) + ' paragraphs.'
+                return 'Selected all text in the document. ' + str(len(self.paragraphs)) + (' paragraph.' if len(self.paragraphs) == 1 else ' paragraphs.')
             numbers = {'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10}
             if kind != 'paragraph':
                 paragraph = self.paragraphs[self.cursor]
