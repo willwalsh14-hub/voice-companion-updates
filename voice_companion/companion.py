@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.172-test'
+APP_VERSION = '0.2.173-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -81,7 +81,7 @@ def documents_folder():
 def document_format_command(command):
     if structural_selection_request(command) or document_control_request(command):
         return True
-    if command in ('normal text', 'make this normal text', 'make this a normal paragraph', 'make this a bulleted list', 'make this a bullet', 'make this a numbered list', 'remove table', 'delete cell contents', 'where in table', 'what cell', 'move right a cell', 'move left a cell', 'row down', 'row up', 'column right', 'column left', 'list headings', 'what are the headings', 'next heading', 'go to next heading', 'new line', 'insert new line', 'line break', 'new paragraph', 'undo', 'undo that', 'remove list', 'end list', 'leave table', 'after table', 'read table', 'review table', 'delete table', 'clear cell', 'read cell', 'next cell', 'previous cell'):
+    if command in ('normal text', 'make this normal text', 'make this a normal paragraph', 'make this a bulleted list', 'make this a bullet', 'make this a numbered list', 'remove table', 'delete cell contents', 'where in table', 'what cell', 'move right a cell', 'move left a cell', 'row down', 'row up', 'column right', 'column left', 'list headings', 'what are the headings', 'next heading', 'go to next heading', 'new line', 'insert new line', 'line break', 'new paragraph', 'undo', 'undo that', 'redo', 'redo that', 'save', 'save it', 'remove list', 'end list', 'leave table', 'after table', 'read table', 'review table', 'delete table', 'clear cell', 'read cell', 'next cell', 'previous cell'):
         return True
     return bool(re.match(r'^(?:apply heading(?: level)? |heading (?:level )?|make this (?:a heading|bold|italic|underlined)|'
                          r'(?:set|change|use) (?:word )?(?:font|size) |(?:bold|italic|italicize|underline) (?:word|this|paragraph)|'
@@ -416,10 +416,12 @@ def app_context(mode):
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
     if logical=='contacts':__import__('contacts_screen').context(sys.modules[__name__],context)
     if logical=='calendar':__import__('calendar_screen').context(sys.modules[__name__],context)
+    if logical=='draft_leave':__import__('draft_leave').context(sys.modules[__name__],context)
     if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
         context['browser_name_input']=web_session.menu.level=='name'
-        context['menu_letters']=not context['browser_name_input']
+        context['menu_letters']=not context['browser_name_input'] and web_session.menu.level!='confirm'
+        if web_session.menu.level=='confirm':context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and web_session.list_focus in ('links','headings','fields'):context['menu_letters']=False
     if logical=='web' and web_session and web_session.list_focus in ('links','headings'):context['web_name_list']=web_session.list_focus
     if NAMED_LIST:context['named_list']=True;context['mode']='list';return context
@@ -656,6 +658,7 @@ def process_keyboard_batch(mode):
     return mode
 
 SLEEP_RETURN_MODE = 'awake'
+MAIN_MENU_NOT_UNDERSTOOD = 'I did not understand that. You are on the main menu. Press F1 for help.'
 MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.'
 
 # Said together with the next main menu announcement, in one message: a second
@@ -746,7 +749,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','document_replace','draft_leave','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
         return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
@@ -860,8 +863,85 @@ def clock_text_entry(mode, typed=False):
     return mode=='web' and web_session is not None and bool(getattr(web_session,'keyboard_field',None))
 
 
+def now_playing():
+    """What plays now, for "What's playing?" and F3."""
+    if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
+    try:return MEDIA_HUB.now_playing()
+    except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
+
+
+def now_playing_asked(text,mode,typed=False):
+    """True for "What's playing?" where words are commands. "What is this?" counts only
+    while something plays, and not on the Calendar, where it reads the event."""
+    asked=__import__('media_hub').now_playing_request(text)
+    if not asked or clock_text_entry(mode,typed):return False
+    return asked=='clear' or mode!='calendar' and MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind)
+
+
+# Screens where "play" keeps its own meaning, or where words are typed.
+STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings',
+                        'tutorial','sleep','exit_confirm','power_confirm','document_save','document_replace','update_offer','update_download')
+
+
+def station_asked(text,mode,typed=False):
+    """The station name in "Play WGN" on a screen where words are commands, else None."""
+    if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed) or NAMED_LIST or screen_question(mode):return None
+    return __import__('media_hub').station_request(text)
+
+
+def screen_question(mode):
+    """True while Contacts, Calendar, Attachments or Downloads asks a question or for a
+    name; the answer there may start with "Play"."""
+    module={'calendar':'calendar_screen','contacts':'contacts_screen','attachments':'attachment_screen','downloads':'download_screen'}.get(mode)
+    if module is None:return False
+    screen=__import__(module)
+    return getattr(screen,'PENDING',None) is not None or bool(getattr(screen,'ADDING',None))
+
+
+# Background notices wait for a quiet moment: Companion silent, no key pressed for this
+# many seconds, and nobody speaking (October 2026).
+NOTICE_QUIET_SECONDS=3.0
+MEDIA_STREAM_ALERT=None        # (play number, message) waiting to be said
+MEDIA_STREAM_NEXT_CHECK=0.0
+
+
+def quiet_for_notice(now,hearing=None):
+    """True when a background notice will not talk over the user."""
+    if speech_busy():return False
+    last=getattr(APP_WINDOW,'last_navigation',0) if APP_WINDOW is not None else 0
+    if isinstance(last,(int,float)) and now-last<NOTICE_QUIET_SECONDS:return False
+    try:return not (hearing and hearing())
+    except Exception:return True
+
+
+def poll_media_stream(now=None,hearing=None):
+    """Main loop: check a playing radio stream every 2 seconds. When it stops by itself,
+    say so once, at a quiet moment, unless something else has started playing."""
+    global MEDIA_STREAM_ALERT,MEDIA_STREAM_NEXT_CHECK
+    hub=MEDIA_HUB
+    if hub is None:return
+    now=time.monotonic() if now is None else now
+    if now>=MEDIA_STREAM_NEXT_CHECK:
+        MEDIA_STREAM_NEXT_CHECK=now+2
+        try:alert=hub.check_stream(now)
+        except Exception:alert=None
+        if alert:MEDIA_STREAM_ALERT=alert
+    if MEDIA_STREAM_ALERT is None:return
+    session,message=MEDIA_STREAM_ALERT
+    if getattr(hub.player,'session',session)!=session or not getattr(hub.player,'kind',None):
+        MEDIA_STREAM_ALERT=None;return   # played again, or closed: the news is old
+    if quiet_for_notice(now,hearing):
+        MEDIA_STREAM_ALERT=None;speak(message)
+
+
 def navigation_key(key,mode):
     global KEYBOARD_NAVIGATION
+    if key=='F3':
+        # F3 says what plays now, on every screen; it changes nothing (Will, October 2026).
+        previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+        try:interrupt_speech();speak(now_playing())
+        finally:KEYBOARD_NAVIGATION=previous
+        return None
     if key in time_date.KEY_REQUESTS:
         # F12 or Insert+F12 works everywhere, even in setup, lists and questions; it changes nothing.
         previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
@@ -905,10 +985,14 @@ def _navigation_key(key,mode):
         if request!='':return request
     task_key=task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
+    if mode=='draft_leave':
+        # Leaving a written email: save it, throw it away, or keep writing (draft_leave.py).
+        return __import__('draft_leave').navigation_key(sys.modules[__name__],key)
     if mode=='calendar' and __import__('calendar_screen').PENDING is not None:
         # A question on the Calendar owns the arrows and Enter (this one, all, or no).
         return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
-    from input_parity import screen_command
+    from input_parity import screen_command,MAIL_HEADER_KEYS
+    if mode=='mailbox' and key in MAIL_HEADER_KEYS:return MAIL_HEADER_KEYS[key]
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
@@ -943,9 +1027,9 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or mode=='browser_menu' and web_session is not None and web_session.menu.level=='confirm' or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
-        if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
+        if key.lower() in ('y','n','alt+y','alt+n','letter:y','letter:n'):return 'yes' if key.lower() in ('y','alt+y','letter:y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
             choice='yes' if key in ('Up','Left','ShiftTab') else 'no'
             if choice==CONFIRM_CHOICE:speak('Start of list.' if choice=='yes' else 'End of list.');return None
@@ -1066,7 +1150,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.','draft_leave':'Back to the question about your email.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -1220,8 +1304,10 @@ def web_writing_field():
     """True while a web text box you write in (a message or comment box) is being edited.
     A site's search box with suggestions and a password box are not writing."""
     session = web_session
-    # Looked up on the class, so a stand-in session is never asked.
-    writing = getattr(type(session), 'writing_field', None) if session is not None else None
+    # Looked up on the class, so a stand-in session is never asked. In Dictation only
+    # mode the same text boxes are writing: "Microphone off." there is text (Will, October 2026).
+    name = 'writing_box' if INPUT_MODE == 'dictation' else 'writing_field'
+    writing = getattr(type(session), name, None) if session is not None else None
     return bool(callable(writing) and writing(session) is True)
 
 
@@ -1863,9 +1949,18 @@ def open_browser_menu(regular=False):
     return 'browser_menu'
 
 def handle_browser_menu(text):
-    global SEARCH_RETURN_MODE
+    global SEARCH_RETURN_MODE,CONFIRM_CHOICE
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
     if action=='main':return 'awake'  # handle() says the main menu; "Main menu." first said it twice.
+    if action in ('ask','confirm'):
+        # "Delete favorite ...?" starts on No; arrows choose, Enter answers, Escape keeps it.
+        if action=='ask':CONFIRM_CHOICE='no'
+        speak(notice);return 'browser_menu'
+    if action=='page':
+        # A favorite named from a page: back to the page and your place on it.
+        if web_session.snapshot:
+            speak(notice+' '+options_return_notice('web'));return 'web'
+        notice+=' The page is no longer open. '+web_session.menu.start()
     if notice:speak(notice)
     if action=='downloads':return __import__('download_screen').open_manager(sys.modules[__name__],'browser_menu')
     if action=='chrome':
@@ -2778,6 +2873,39 @@ def handle_mailbox_screen(text, command, mode, typed):
     return 'mailbox'
 
 
+def close_email_draft(mode, discard, notice=None):
+    """Close the email draft and go back to the inbox. discard: remove what was not saved."""
+    global email_draft, mail_session, pending_send, MAIN_MENU_LEAD
+    pending_send = None
+    discarded = True
+    if discard:
+        try:
+            discarded = email_draft.discard()
+        except OSError:
+            speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
+            return 'email_draft'
+    provider = email_draft.provider
+    email_draft = None
+    if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
+    if notice is None:
+        notice = 'Draft canceled without saving.'
+    speak(notice if discarded else
+          'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
+    finish_mail_announcement()
+    if mail_session is None and provider in REMOVED_MAIL_PROVIDERS:
+        # A draft from a removed Gmail or Microsoft connection: back to the chosen account.
+        chosen = connected_selection()
+        provider = chosen[0] if chosen else provider
+    if mail_session is None and provider in MAIL_PROVIDERS:
+        mail_session = MailSession(provider, APP, progress=mail_progress)
+    if mail_session is not None:
+        speak(mail_session.process('open inbox'))
+        return 'mailbox'
+    # Said with Main menu, in one message: a second message would cut this one off.
+    MAIN_MENU_LEAD = 'No email account is set up yet.'
+    return 'awake'
+
+
 def forward_attachment_note(context):
     """What a new forward says about the original's files."""
     if context.get('action') != 'forward':
@@ -3291,6 +3419,9 @@ def _handle(text, mode, typed=False):
     clock=time_date.clock_request(text,clock_text_entry(mode,typed))
     if clock:
         speak_clock(clock);return mode
+    # "What's playing?" works on every screen too, and is text where people write.
+    if now_playing_asked(text,mode,typed):
+        speak(now_playing());return mode
     # "Bigger text", "Change colors", "Full screen": the screen for low vision, from every screen
     # where words are commands. In a document, email, note or text box they are text.
     display=__import__('display_options').voice_request(text) if mode!='settings' and not clock_text_entry(mode,typed) else None
@@ -3313,6 +3444,19 @@ def _handle(text, mode, typed=False):
     if mode=='chrome_setup':
         import chrome_setup
         return chrome_setup.handle(sys.modules[__name__],text,mode)
+    # "Play WGN" from the main menu and other screens where words are commands: find the
+    # station and play it, or offer a short list (Will, October 2026). The Radio screen,
+    # web pages and writing fields keep their own meaning of "play". Before the list screens
+    # (Contacts, Calendar, Downloads, Attachments), which would only repeat their help.
+    station=station_asked(text,mode,typed)
+    if station:
+        hub=media()
+        try:result=hub.play_by_name(station)
+        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
+        if hub.station_choices:
+            MEDIA_SECTION='radio';media_navigation().show_choices()
+            speak(result);return 'media'
+        speak(result);return mode
     try:
         menu_result=screen_menu().handle(text,mode)
         if menu_result is not None:return menu_result
@@ -3422,6 +3566,25 @@ def _handle(text, mode, typed=False):
             speak('Restarting the computer.' if POWER_ACTION=='restart' else 'Shutting down the computer.')
             POWER_ACTION=None;return 'exit'
         speak('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.');return mode
+    if mode == 'draft_leave' and not spoken_control(command):
+        import draft_leave
+        choice = draft_leave.answer(text)
+        if email_draft is None:
+            speak('The email is already closed.');return 'awake'
+        if choice == 'keep':
+            speak('Keep writing. ' + options_return_notice('email_draft'))
+            focus_email_entry()
+            return 'email_draft'
+        if choice == 'save':
+            try:
+                saved = email_draft.process('save draft')
+            except OSError:
+                speak(UNSAVED_DRAFT + ' ' + draft_leave.SHORT_QUESTION);return mode
+            return close_email_draft(mode, discard=False, notice=saved)
+        if choice == 'discard':
+            return close_email_draft(mode, discard=True, notice='Email thrown away.')
+        speak('Leave this email? ' + draft_leave.SHORT_QUESTION)
+        return mode
     if mode=='document_save' and not spoken_control(command) and command not in ('options','open options','settings','open settings'):
         if command in ('cancel','go back','back'):
             speak('Your document is still open.');return 'document'
@@ -3701,6 +3864,10 @@ def _handle(text, mode, typed=False):
             else:speak('Help closed. ' + options_return_notice(help_return_mode))
             return help_return_mode
         if result is not None:speak(result)
+        elif typed or not speech_busy():
+            # Words Help does not know get a short answer (Will, October 2026). While Help
+            # is reading aloud they are ignored, so talk in the room never cuts a topic off.
+            speak(help_session.not_understood())
         return 'help'
     global SPEECH_PITCH, SPEECH_RATE, SPEECH_VOLUME, PUNCTUATION_LEVEL
     if command in ('check voices', 'voice check', 'voice diagnostics'):
@@ -3931,29 +4098,11 @@ def _handle(text, mode, typed=False):
                         'cancel reply draft', 'cancel forward draft', 'cancel forwarding') or
             re.fullmatch(r'(?:go|go back|back|return|take me)(?: to)? (?:the |my )?inbox', command)):
         pending_send = None
-        try:
-            discarded = email_draft.discard()
-        except OSError:
-            speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
-            return mode
-        provider = email_draft.provider
-        email_draft = None
-        if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
-        speak('Draft canceled without saving.' if discarded else
-              'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
-        finish_mail_announcement()
-        if mail_session is None and provider in REMOVED_MAIL_PROVIDERS:
-            # A draft from a removed Gmail or Microsoft connection: back to the chosen account.
-            chosen = connected_selection()
-            provider = chosen[0] if chosen else provider
-        if mail_session is None and provider in MAIL_PROVIDERS:
-            mail_session = MailSession(provider, APP, progress=mail_progress)
-        if mail_session is not None:
-            speak(mail_session.process('open inbox'))
-            return 'mailbox'
-        # Said with Main menu, in one message: a second message would cut this one off.
-        MAIN_MENU_LEAD = 'No email account is set up yet.'
-        return 'awake'
+        import draft_leave
+        if draft_leave.unsaved(email_draft, any(item is email_draft for item, _ in KEYBOARD_DIRTY.values())):
+            # Ask first (Will, October 2026): save it, throw it away, or keep writing.
+            return draft_leave.ask(sys.modules[__name__])
+        return close_email_draft(mode, discard=True)
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
         dictation_feedback(email_draft.process(text))
@@ -4046,6 +4195,12 @@ def _handle(text, mode, typed=False):
         return 'document_save'
     if mode=='document' and command in ('save as','save document as','save the document as','save this document as','save my document as'):
         return start_save_as()
+    if (mode=='document' and document is not None and command in ('save','save it','save document','save my document')
+            and re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I)):
+        # "Save." on a document with no name yet asks for its name first, then saves.
+        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+        DOCUMENT_NAMING_ACTION='name document'
+        speak('This document has no name yet. Say or type its name, then press Enter.');return 'document_name'
     if mode=='document' and command in ('name document','rename document'):
         DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
         DOCUMENT_NAMING_ACTION='name document'
@@ -4343,6 +4498,8 @@ def _handle(text, mode, typed=False):
     if mode == 'web':
         if command in ('new favorite','add favorite','go to favorite','delete favorite','rename favorite','new bookmark','add bookmark','go to bookmark','delete bookmark','rename bookmark','web history','history','list bookmarks'):
             web_session.menu.start()
+            # A favorite named here comes back to this page once it is saved (Will, October 2026).
+            web_session.menu.return_to_page=command in ('new favorite','add favorite','new bookmark','add bookmark')
             return handle_browser_menu(text)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
@@ -4798,6 +4955,10 @@ def _handle(text, mode, typed=False):
         speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
         return mode
     if mode == 'awake' and spoken_website(text):return 'awake'
+    if mode == 'awake':
+        # Said like every other menu: what happened, where you are, and where help is.
+        speak(MAIN_MENU_NOT_UNDERSTOOD)
+        return 'awake'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 
@@ -5256,6 +5417,7 @@ def main():
                 try: media_notice = MEDIA_NOTICES.get_nowait()
                 except queue.Empty: break
                 speak(media_notice)
+            poll_media_stream(hearing=lambda:bool(json.loads(recognizer.PartialResult()).get('partial','')))
             if APP_WINDOW is not None:
                 try: settings_result = APP_WINDOW.settings_results.get_nowait()
                 except queue.Empty: settings_result = None

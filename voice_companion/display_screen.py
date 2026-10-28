@@ -92,6 +92,10 @@ def _confirmation(m, mode, value):
     if mode == 'calendar':
         import calendar_screen
         choices = tuple(calendar_screen.CHOICES)
+    if mode == 'draft_leave':
+        import draft_leave
+        if choice in draft_leave.CHOICES:
+            return [draft_leave.NAMES[c] for c in draft_leave.CHOICES], draft_leave.CHOICES.index(choice)
     if choice not in choices:
         return None
     names = {'this one': 'This one only', 'all': 'All of them'}
@@ -145,6 +149,53 @@ def _menu_lines(m, mode, value):
     return names, index
 
 
+# The window's hint line under the typing box (Will, October 2026): short, because large
+# text wraps it. Asleep: how to wake up. Microphone off: use the keys. Otherwise the screen,
+# F1 for help where F1 opens help, and the main keys of that screen.
+HINT_KEYS = {
+    'awake': 'Arrows move. Enter opens.',
+    'document': 'Alt opens the menu. Control+S saves.',
+    'email_draft': 'Tab moves between boxes. Alt+S sends.',
+    'mailbox': 'Enter opens. R replies. N writes new.',
+    'note': 'Control+S saves.',
+    'files': 'Arrows move. Enter opens. Alt opens the menu.',
+    'web': 'Escape opens the browser menu.',
+    'help': 'Arrows move. Escape goes back.',
+    'file_reader': 'Arrows read. Escape goes back.',
+    'local_media': 'Space plays or pauses. Alt opens the menu.',
+    'tutorial': 'F1 lists commands.',
+}
+QUESTION_HINT = 'Arrows choose. Enter answers.'
+
+
+def has_help_key(mode):
+    from input_parity import SCREEN_KEYS
+    # In the tutorial F1 lists the lesson's commands; HINT_KEYS says that instead.
+    return mode != 'tutorial' and ('F1' in SCREEN_KEYS.get(mode, {}) or mode in ('document', 'files'))
+
+
+def hint(m, mode, value):
+    """The hint line for this screen. `mode` is the app's mode ('sleep' while asleep)."""
+    microphone = _safe(m.microphone_state, 'on')
+    if mode == 'sleep':
+        if microphone == 'on':
+            return 'Asleep. Say Wake up, or press Control+F12.'
+        return 'Microphone off. Press Control+F12 to wake up.'
+    logical = value.get('mode')
+    name = options.SCREEN_NAMES.get(logical) or options.screen_name(logical)
+    if microphone != 'on':
+        lead = 'Microphone off. Use the keys.' if microphone == 'off' else 'Microphone not working. Use the keys.'
+        return lead + (' F1 for help.' if has_help_key(logical) else '')
+    if value.get('confirmation') is not None:
+        return name + '. ' + QUESTION_HINT
+    keys = HINT_KEYS.get(logical)
+    if logical == 'mailbox' and value.get('source'):
+        keys = 'Alt+1 to Alt+6 read the header. R replies.'   # a message is open
+    if keys is None and _safe(lambda: m.menu_state(logical), None) is not None:
+        keys = 'Arrows move. Enter chooses.'
+    return ' '.join(part for part in (name + '.', 'F1 for help.' if has_help_key(logical) else '', keys or '') if part)
+
+
 def context(m, mode, value):
     """The display keys for one app context. `mode` is the app's mode ('sleep' while asleep)."""
     logical = value.get('mode')
@@ -153,6 +204,7 @@ def context(m, mode, value):
     if mode == 'sleep':
         name += ', microphone asleep'
     result['display_title'] = name
+    result['display_hint'] = hint(m, mode, value)
     lines = _menu_lines(m, logical, value)
     if lines is not None:
         items, index = lines

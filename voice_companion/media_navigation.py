@@ -240,6 +240,10 @@ class MediaNavigation:
         attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index'}.get(self.view)
         self.item_index=(getattr(h,attr,None) or 0) if attr else 0;self.revision+=1
         return result
+    def show_choices(self):
+        """Show the short list "Play WGN" offered, so arrows and Enter choose from it."""
+        self.form=None;self.pending=None;self.view='station_choices';self.focus='items'
+        self.item_index=self.hub.station_choice_index or 0;self.revision+=1
     def voice_key(self,key):return self.keyboard(key,voice=True)
     def command(self,text):
         self.set_keyboard_mode(False)

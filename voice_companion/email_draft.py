@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass, field, fields
 from email.message import EmailMessage, MIMEPart
 from pathlib import Path
 
-from document_editor import Paragraph, TextRun, VoiceDocument
+from document_editor import UNDO_REQUESTS, Paragraph, TextRun, VoiceDocument
 from field_selection import FieldSelection, selection_command
 from storage import keep_previous
 from address_book import AddressBook
@@ -84,7 +84,6 @@ class VoiceEmail(VoiceDocument):
     recipient: str = ''
     subject: str = ''
     provider: str = ''
-    last_metadata: tuple | None = None
     last_accepted_hash: str = ''
     last_attempt_hash: str = ''
     cc: list[str] = field(default_factory=list)
@@ -206,9 +205,19 @@ class VoiceEmail(VoiceDocument):
             cache[key] = part.as_bytes()
         return cache[key]
 
-    def checkpoint(self):
-        super().checkpoint()
-        self.last_metadata = (self.recipient, self.subject, self.provider)
+    def _undo_extra(self):
+        # Undo brings back the addresses, subject and account with the message text.
+        return (self.recipient, self.subject, self.provider, list(self.cc), list(self.bcc),
+                bool(self.response_context.get('recipient_override')))
+
+    def _restore_extra(self, extra):
+        if extra is None:
+            return
+        self.recipient, self.subject, self.provider, cc, bcc, override = extra
+        self.cc, self.bcc = list(cc), list(bcc)
+        if self.response_context:
+            if override: self.response_context['recipient_override'] = True
+            else: self.response_context.pop('recipient_override', None)
 
     def move_to_account(self, provider):
         """Send this draft from another kind of account (Gmail and Microsoft were removed).
@@ -348,7 +357,7 @@ class VoiceEmail(VoiceDocument):
         return draft
 
     def apply_field_selection_edit(self, field, value):
-        self.checkpoint()
+        self.checkpoint({'recipient':'the To address','subject':'the subject','cc':'the CC addresses','bcc':'the BCC addresses'}.get(field))
         if field == 'recipient': self.recipient = value
         elif field == 'subject': self.subject = value
         elif field in ('cc','bcc'): setattr(self,field,[a.strip() for a in value.split(',') if a.strip()])
@@ -368,7 +377,7 @@ class VoiceEmail(VoiceDocument):
             return result
         text = raw.strip()
         command = text.lower().rstrip('.!?').strip()
-        if command in ('save email', 'save draft', 'finish email', 'save document', 'finish document'):
+        if command in ('save email', 'save draft', 'finish email', 'save document', 'save my document', 'finish document', 'save', 'save it'):
             self.dictating = False
             self.save()
             self._discard_baseline.clear()
@@ -410,7 +419,7 @@ class VoiceEmail(VoiceDocument):
             return 'Who should receive the ' + field.upper() + ' copy? Say the email address, or say skip.'
         if command in ('no subject','skip subject','leave subject blank') or command=='skip' and self.compose_step=='subject':
             if self.response_context:return 'This response keeps the original subject.'
-            self.checkpoint();self.subject='';self.compose_step='body';self.save()
+            self.checkpoint('the subject');self.subject='';self.compose_step='body';self.save()
             return 'No subject. What would you like the message to say?'
         if command in ('skip','skip cc','skip bcc') and self.compose_step in ('cc','bcc'):
             self.compose_step = self.after_copy_step or 'body'
@@ -422,7 +431,7 @@ class VoiceEmail(VoiceDocument):
             field = copy_match.group(1).lower() if copy_match else self.compose_step
             try: address = normalize_recipient(contact_address(copy_match.group(2) if copy_match else text))
             except ValueError as exc: return str(exc) + ' Say skip to leave this field blank.'
-            self.checkpoint()
+            self.checkpoint('the ' + field.upper() + ' address')
             values = getattr(self, field)
             if address not in values: values.append(address)
             if self.response_context: self.response_context['recipient_override'] = True
@@ -436,7 +445,7 @@ class VoiceEmail(VoiceDocument):
             return self.append_text(literal, literal=True)
         if command.startswith('use yahoo'):
             provider = command.split()[1]
-            self.checkpoint()
+            self.checkpoint('the email account')
             self.provider = provider
             self.save()
             return provider.capitalize() + ' selected for this local draft. Ask your helper to confirm the account is connected before sending.'
@@ -449,7 +458,7 @@ class VoiceEmail(VoiceDocument):
                 recipient = normalize_recipient(contact_address(spoken))
             except ValueError as exc:
                 return str(exc)
-            self.checkpoint()
+            self.checkpoint('the To address')
             self.recipient = recipient
             if self.response_context.get('action') in ('reply', 'reply_all'):
                 self.response_context['recipient_override'] = True
@@ -466,14 +475,14 @@ class VoiceEmail(VoiceDocument):
             subject = prepare_dictation(text[len('subject is '):], old_school_cleanup=False)
             if '\n' in subject or '\r' in subject:
                 return 'Please say the subject on one line.'
-            self.checkpoint()
+            self.checkpoint('the subject')
             self.subject = subject
             self.save()
             self.compose_step = 'body'
             return 'Subject recorded as ' + self.subject + '. What would you like the message to say?'
-        if self.compose_step == 'recipient' and text and not command.startswith(('read ', 'help ', 'save ', 'name ', 'use ', 'start dictation', 'pause dictation', 'undo')):
+        if self.compose_step == 'recipient' and text and command not in UNDO_REQUESTS and not command.startswith(('read ', 'help ', 'save ', 'name ', 'use ', 'start dictation', 'pause dictation', 'undo')):
             return self.process('email to ' + text)
-        if self.compose_step == 'subject' and text and not command.startswith(('read ', 'help ', 'save ', 'name ', 'use ', 'start dictation', 'pause dictation', 'undo')):
+        if self.compose_step == 'subject' and text and command not in UNDO_REQUESTS and not command.startswith(('read ', 'help ', 'save ', 'name ', 'use ', 'start dictation', 'pause dictation', 'undo')):
             return self.process('subject is ' + text)
         if command in ('read recipient', 'who is this to'):
             return 'Recipient: ' + (self.recipient or 'not entered.')
@@ -486,16 +495,8 @@ class VoiceEmail(VoiceDocument):
             self.dictating = False
             self.save()
             return 'This test cannot send email yet. I saved the draft locally. It has not been sent.'
-        if command in ('undo', 'undo that', 'undo last change'):
-            previous = self.last_metadata
-            response = super().process(raw)
-            if previous is not None and response.startswith('Undid'):
-                self.recipient, self.subject, self.provider = previous
-                self.last_metadata = None
-                self.save()
-            return response
         if command in ('help with email', 'help with emails'):
-            return 'Say email to followed by an address, subject is followed by a subject, then speak your message. Say read paragraph, replace word, undo, or save draft. Say send it to hear the full review, then yes to send or cancel send. To include command words in your message, say type literally followed by the words.'
+            return 'Say email to followed by an address, subject is followed by a subject, then speak your message. Say read paragraph, replace word, undo, redo, or save draft. Say send it to hear the full review, then yes to send or cancel send. To include command words in your message, say type literally followed by the words.'
         if command.startswith(('name document ', 'title is ')):
             return 'Use subject is followed by the email subject. The draft has its own saved name.'
         response = super().process(raw)

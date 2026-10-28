@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 663
-- Already had both ways: 528
+- Actions inventoried: 671
+- Already had both ways: 536
 - Gaps found: 135
 - Gaps fixed (Added): 127
 - Not applicable (N/A, with reason): 8
@@ -439,6 +439,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Delete current paragraph"
 - Keyboard: Alt, 2, W
+- Status: Both
+
+### Redo
+
+- Voice: "Redo"
+- Keyboard: Ctrl+Y
 - Status: Both
 
 ## Word processor document: Format
@@ -2081,7 +2087,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 8, 4
 - Status: Added: Alt menu path
 
-## Alt menu, Email: Attachments
+## Alt menu, Email: Header and attachments
 
 ### List attachments
 
@@ -2106,6 +2112,36 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "How big are the attachments"
 - Keyboard: Alt, 9, 4
 - Status: Added: Alt menu path
+
+### From
+
+- Voice: "Who is it from"
+- Keyboard: Alt+1
+- Status: Both
+
+### To
+
+- Voice: "Who is it to"
+- Keyboard: Alt+2
+- Status: Both
+
+### CC
+
+- Voice: "Read the cc"
+- Keyboard: Alt+3
+- Status: Both
+
+### Subject
+
+- Voice: "What is the subject"
+- Keyboard: Alt+4
+- Status: Both
+
+### Date sent
+
+- Voice: "When was it sent"
+- Keyboard: Alt+5
+- Status: Both
 
 ## Alt menu, Email draft: Message
 
@@ -2242,6 +2278,20 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Remove attachment"
 - Keyboard: Alt, 5, 4
 - Status: Added: Alt menu path
+
+## Alt menu, Email draft: Undo and redo
+
+### Undo
+
+- Voice: "Undo"
+- Keyboard: Ctrl+Z
+- Status: Both
+
+### Redo
+
+- Voice: "Redo"
+- Keyboard: Ctrl+Y
+- Status: Both
 
 ## Alt menu, Note: Notepad
 

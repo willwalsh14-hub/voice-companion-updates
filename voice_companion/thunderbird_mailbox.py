@@ -268,6 +268,18 @@ class ThunderbirdMailbox:
     def attachment_bytes(self, message_id, attachment, folder_id=None):
         return b''.join(self.attachment_chunks(message_id, attachment, folder_id))
 
+    def message_headers(self, message_id, folder_id=None):
+        """The people a message went to: {'to': [(name, address)], 'cc': [...]}, from Thunderbird's own header."""
+        info = call('context', messageId=self._message(message_id))
+        def people(items):
+            found = []
+            for item in items or []:
+                name, address = person(item)
+                if name or address or str(item or '').strip():
+                    found.append((name or ('' if address else ' '.join(str(item).split())), address))
+            return found
+        return {'to': people(info.get('recipients')), 'cc': people(info.get('ccList'))}
+
     def response_context(self, message_id, action, own_address, folder_id=None):
         if action not in ('reply', 'reply_all', 'forward'):
             raise MailboxError('Unknown email response.')

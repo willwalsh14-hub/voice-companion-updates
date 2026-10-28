@@ -150,3 +150,6 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 - test_consumer_audio: after a station that failed, the next one said it could not start.
 - Likely cause: the failed stream's emptying load() interrupts the next play() with an AbortError.
 - The player now tries an interrupted start again, and records why a start failed (last_start_error), so a failure names its reason.
+## 0.2.173: real window tests crashed with Tcl_AsyncDelete on Windows (October 28, 2026)
+- The new hint line widget was kept as self.hint_label and never released at close, so another thread freed it.
+- Fixed by releasing it on the window thread. test_window_widget_release now checks that every widget kept on the window is released.

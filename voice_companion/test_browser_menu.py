@@ -57,7 +57,11 @@ class BrowserMenuTests(unittest.TestCase):
         self.assertIsNone(self.session.favorites.get('My news'))
         reloaded = WebSession(self.folder.name, FakeBackend())
         self.assertEqual(reloaded.favorites.get('Daily news')['url'], 'https://example.com')
-        self.run_command('delete bookmark');self.run_command('enter')
+        self.run_command('delete bookmark')
+        # Deleting asks first, with No chosen (Will, October 2026).
+        self.assertEqual(self.run_command('enter'), ('Delete favorite Daily news? Say Yes or No. Escape keeps it.', 'ask'))
+        self.assertEqual(len(self.session.favorites.all()), 1)
+        self.run_command('yes')
         self.assertEqual(self.session.favorites.all(), {})
 
     def test_typeahead_repeated_letter_prefix_and_boundaries(self):

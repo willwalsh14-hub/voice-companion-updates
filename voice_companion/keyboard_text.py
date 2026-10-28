@@ -19,6 +19,32 @@ def phonetic(value):return PHONETICS.get(value.lower(),'')
 def document_text(doc):return '\n'.join(p.text for p in doc.paragraphs)
 def absolute(doc,position):return sum(len(p.text)+1 for p in doc.paragraphs[:position[0]])+position[1]
 
+def keyboard_undo_step(doc,start,removed,inserted):
+    """One Undo step for a run of typing, not one per key.
+
+    Letters typed one after another join the step before them, until a sentence ends,
+    Enter is pressed, or anything else happens (a voice command, a jump with the arrows).
+    Backspace and Delete pressed one after another join in the same way."""
+    from document_editor import undo_words
+    def words(text):
+        if undo_words(text):return undo_words(text)
+        if text.strip():return ' '.join(str(character(c)) for c in text.strip()[:5])
+        return 'a line break' if '\n' in text else 'a space'
+    step=doc.undo_steps[-1] if doc.undo_steps and doc.last_change_type=='keyboard' else None
+    run=step.run if step is not None else None
+    if inserted and not removed and '\n' not in inserted:
+        if run and run[0]=='typing' and run[2]==start and not re.search(r'[.!?]\s$|\n',run[3]):
+            text=run[3]+inserted;step.run=('typing',run[1],start+len(inserted),text);step.label='typing: '+words(text)
+            return
+        doc.checkpoint('typing: '+words(inserted));doc.undo_steps[-1].run=('typing',start,start+len(inserted),inserted);return
+    if removed and not inserted:
+        if run and run[0]=='deleting' and start+len(removed)==run[1]:      # Backspace again
+            text=removed+run[3];step.run=('deleting',start,start,text);step.label='deleting: '+words(text);return
+        if run and run[0]=='deleting' and start==run[1]:                   # Delete again
+            text=run[3]+removed;step.run=('deleting',start,start,text);step.label='deleting: '+words(text);return
+        doc.checkpoint('deleting: '+words(removed));doc.undo_steps[-1].run=('deleting',start,start,removed);return
+    doc.checkpoint('typing: '+words(inserted) if inserted.strip() else 'the change');return
+
 def replace_keyboard_text(doc,before,after,caret,selection=None):
     """Splice only the changed range, preserving surrounding runs and paragraph styles."""
     if document_text(doc)!=before:raise ValueError('Text changed before that keyboard edit could be applied. Your latest saved text is still available.')
@@ -33,14 +59,14 @@ def replace_keyboard_text(doc,before,after,caret,selection=None):
         prefix,suffix=first.text[:a],last.text[b:]
         prefix_styles=doc._character_styles(first)[:a];suffix_styles=doc._character_styles(last)[b:]
         inherited=copy.copy(prefix_styles[-1]) if prefix_styles else TextRun('',first.bold,first.italic,first.underline,first.font,first.size)
-        pieces=after[start:end_new].split('\n');doc.checkpoint();created=[]
+        pieces=after[start:end_new].split('\n');keyboard_undo_step(doc,start,before[start:end_old],after[start:end_new]);created=[]
         for index,piece in enumerate(pieces):
             p=copy.deepcopy(first if index==0 or index<len(pieces)-1 else last)
             p.text=(prefix if index==0 else '')+piece+(suffix if index==len(pieces)-1 else '')
             styles=(prefix_styles if index==0 else [])+[inherited]*len(piece)+(suffix_styles if index==len(pieces)-1 else [])
             p.runs=doc.compress_runs(p.text,styles);created.append(p)
         doc.paragraphs[i:j+1]=created
-        doc.last_change_type='edit'
+        doc.last_change_type='keyboard'
     doc.reading.set_text(after);doc.reading.position=max(0,min(len(after),caret));doc.reading.continuation=doc.reading.position
     pos=doc._location(max(0,min(len(after),caret)));doc.cursor=pos[0];doc.insertion_position=pos;doc.navigation_position=None
     doc.selection_candidates=[];doc.replacement_candidates=[]

@@ -10,7 +10,8 @@ SCREEN_KEYS = {
     'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
-                    'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments'},
+                    'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments',
+                    'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo'},
     # Email: one letter per action, no modifiers (Will, October 2026). Letters act in the
     # message list and in an open message; K and B stay for links and buttons in a message.
     'mailbox': {'N': 'new email', 'R': 'reply', 'A': 'reply all', 'F': 'forward', 'M': 'move',
@@ -57,6 +58,12 @@ SCREEN_KEYS = {
                  'Ctrl+Down': 'continue reading'},
     'sleep': {'Ctrl+F12': 'wake up'},
 }
+# Email: Alt and a number says one line of the message's header, as screen reader users know
+# from Outlook (Will, October 2026). It works in the message list and in an open message.
+# The window sends these itself (mail_header_key); chord() and screen_key() leave Alt keys alone,
+# so they are not in SCREEN_KEYS. companion.navigation_key turns them into the spoken questions.
+MAIL_HEADER_KEYS = {'Alt+1': 'who is it from', 'Alt+2': 'who is it to', 'Alt+3': 'read the cc',
+                    'Alt+4': 'what is the subject', 'Alt+5': 'when was it sent', 'Alt+6': 'how many attachments'}
 # Earlier keys that still work, so nobody's habits break. The guide and menus name the
 # simpler keys above; these are not listed there (Will, October 2026).
 OLD_KEYS = {
@@ -126,6 +133,16 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
     if mode == 'help' and key in HELP_ARTICLE_ONLY and not context.get('help_reader'):
         return None
     return key
+
+
+def mail_header_key(keysym, state):
+    """'Alt+1' to 'Alt+6' for Alt and a number key (with no Control or Shift), else None."""
+    from key_state import modifiers
+    control, shift, alt = modifiers(state)
+    if not alt or control or shift:
+        return None
+    key = 'Alt+' + str(keysym)
+    return key if key in MAIL_HEADER_KEYS else None
 
 
 def screen_command(key, mode):

@@ -237,6 +237,49 @@ class Paragraph:
     line_spacing_rule: str = 'auto'
 
 
+# Undo and Redo keep this many steps, and drop the oldest steps once the copies they
+# keep hold more text than UNDO_TEXT_LIMIT characters (so a long book cannot fill memory).
+UNDO_LIMIT = 100
+UNDO_TEXT_LIMIT = 4_000_000
+UNDO_REQUESTS = {'undo': 'undo', 'undo that': 'undo', 'undo last change': 'undo',
+                 'redo': 'redo', 'redo that': 'redo', 'redo last change': 'redo'}
+# How a command is named after "Undid" or "Redid", when its words are not plain enough.
+UNDO_NAMES = {'toggle bold': 'bold', 'toggle italic': 'italic', 'toggle underline': 'underline',
+              'new line': 'a new line', 'insert new line': 'a new line', 'line break': 'a new line',
+              'new paragraph': 'a new paragraph', 'paste': 'the paste', 'paste that': 'the paste',
+              'paste text': 'the paste'}
+
+
+def undo_words(text, limit=10):
+    """At most `limit` words of what changed, without the closing punctuation, for "Undid typing: ..."."""
+    words = ' '.join(str(text).split()).rstrip('.,;:!?')
+    parts = words.split(' ')
+    return ' '.join(parts[:limit]) + (' and more' if len(parts) > limit else '')
+
+
+def undo_name(command):
+    """Plain words for a voice command that changed the document: "Undid bold.", "Undid delete paragraph."."""
+    command = ' '.join(str(command or '').split())
+    if not command:
+        return 'the last change'
+    return UNDO_NAMES.get(command) or undo_words(command, 8)
+
+
+@dataclass
+class UndoStep:
+    """The document as it was before one change, and the words that name the change."""
+    title: str
+    paragraphs: list
+    cursor: int
+    label: str
+    extra: object = None
+    # Typing from the keyboard: (kind, start, end, text) while one run of typing can grow.
+    run: tuple | None = None
+
+    def size(self):
+        return sum(len(p.text) for p in self.paragraphs)
+
+
 @dataclass
 class VoiceDocument:
     folder: Path
@@ -258,7 +301,9 @@ class VoiceDocument:
     replacement_index: int = 0
     replacement_text: str = ''
     last_change_type: str = ''
-    last_change: tuple | None = None
+    # Undo and Redo history, newest last (UndoStep). Kept in memory while the document is open.
+    undo_steps: list = field(default_factory=list, repr=False, compare=False)
+    redo_steps: list = field(default_factory=list, repr=False, compare=False)
     _opening: bool = False
     reading: ReadingCursor = field(default_factory=ReadingCursor, repr=False)
     source_path: Path | None = field(default=None, repr=False)
@@ -470,12 +515,84 @@ class VoiceDocument:
         except BaseException:
             self.folder, self.title, self.source_path = previous
             raise
-        self.last_change = None   # Undo must not rename the copy back.
+        # Undo must not rename the copy back: every kept step now belongs to the copy.
+        for step in self.undo_steps + self.redo_steps:
+            step.title = self.title
         return self.path
 
-    def checkpoint(self):
-        self.last_change = (self.title, copy.deepcopy(self.paragraphs), self.cursor)
+    # Undo and Redo ------------------------------------------------------------
+
+    def _undo_extra(self):
+        """More state that Undo restores; an email draft adds its addresses and subject."""
+        return None
+
+    def _restore_extra(self, extra):
+        pass
+
+    def _snapshot(self, label, title=None):
+        return UndoStep(self.title if title is None else title, copy.deepcopy(self.paragraphs), self.cursor,
+                        label, copy.deepcopy(self._undo_extra()))
+
+    def _same_as_now(self, step):
+        return step.title == self.title and step.paragraphs == self.paragraphs and step.extra == self._undo_extra()
+
+    def _push_undo(self, step):
+        steps = self.undo_steps
+        # A step that changed nothing (a command that stopped after the checkpoint) is dropped.
+        if steps and self._same_as_now(steps[-1]):
+            steps.pop()
+        steps.append(step)
+        self.redo_steps.clear()
+        while len(steps) > UNDO_LIMIT or len(steps) > 1 and sum(s.size() for s in steps) > UNDO_TEXT_LIMIT:
+            steps.pop(0)
+
+    def checkpoint(self, label=None):
+        """Remember the document before a change, so Undo can bring it back."""
+        self._push_undo(self._snapshot(label or undo_name(getattr(self, '_undo_command', ''))))
         self.last_change_type = 'edit'
+
+    @property
+    def last_change(self):
+        """The state before the most recent change, or None (older code reads it)."""
+        return self.undo_steps[-1] if self.undo_steps else None
+
+    def _restore_step(self, step):
+        """Put the document back as the step has it. False if a rename back is blocked."""
+        old_path = self.path
+        current_title = self.title
+        self.title = step.title
+        if self.path != old_path and self.path.exists():
+            self.title = current_title
+            return False
+        self.paragraphs, self.cursor = step.paragraphs, min(step.cursor, max(0, len(step.paragraphs) - 1))
+        self._restore_extra(step.extra)
+        self.selection = None
+        self.insertion_position = None
+        self.navigation_position = None
+        self.changed()
+        if self.path != old_path:
+            old_path.unlink(missing_ok=True)
+        return True
+
+    def undo_or_redo(self, redo=False):
+        source, target = (self.redo_steps, self.undo_steps) if redo else (self.undo_steps, self.redo_steps)
+        while source and self._same_as_now(source[-1]):
+            source.pop()
+        if not source:
+            word = 'redo' if redo else 'undo'
+            return ('Nothing more to ' + word + '.') if target else ('There is nothing to ' + word + '.')
+        step = source[-1]
+        now = self._snapshot(step.label)
+        if not self._restore_step(step):
+            return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
+        source.pop()
+        target.append(now)
+        self.last_change_type = 'edit'
+        done = ('Redid ' if redo else 'Undid ') + step.label + '. '
+        if not self.paragraphs:
+            return done + self.EMPTY_NOTICE
+        p = self.paragraphs[self.cursor]
+        return done + (self.describe_cell() if p.table_id else f'Paragraph {self.cursor + 1} of {len(self.paragraphs)}. ' + (p.text or 'Empty paragraph.'))
 
     @staticmethod
     def spacing_description(p):
@@ -602,7 +719,7 @@ class VoiceDocument:
     def append_text(self, text, literal=False):
         if not literal: text = prepare_dictation(text)
         if not text: return 'I did not hear text to add.'
-        self.checkpoint()
+        self.checkpoint('typing: ' + undo_words(text))
         self.selection = None
         if not self.paragraphs:
             self.paragraphs.append(Paragraph(''))
@@ -842,6 +959,7 @@ class VoiceDocument:
         if literal: return self.append_text(literal[1], literal=True)
         if command == 'type new line': return self.append_text('new line', literal=True)
         command = ' '.join(command.split())
+        self._undo_command = command   # names the change if this command makes one
         if self.replacement_candidates:
             if command in ('first item','last item','start of list','end of list'):
                 self.replacement_index=0 if command in ('first item','start of list') else len(self.replacement_candidates)-1
@@ -917,7 +1035,10 @@ class VoiceDocument:
                 self.title = previous_title
                 return 'I could not save that file name. Your document remains open under its previous name.'
             save_as = command.startswith('save ')
-            self.last_change = None if save_as else (previous_title,copy.deepcopy(self.paragraphs),self.cursor)
+            if save_as:
+                for step in self.undo_steps + self.redo_steps: step.title = self.title
+            else:
+                self._push_undo(self._snapshot('the new name', title=previous_title))
             self.last_change_type = 'edit'
             if not save_as and new_path != old_path:
                 try: old_path.unlink(missing_ok=True)
@@ -942,10 +1063,13 @@ class VoiceDocument:
             if self.selection and self.selected_text():
                 selected = self.selection
                 if selected.first_paragraph != selected.last_paragraph and any(p.table_id for p in self.paragraphs[selected.first_paragraph:selected.last_paragraph+1]):
-                    previous = (self.title,copy.deepcopy(self.paragraphs),self.cursor)
+                    previous = self._snapshot(undo_name('new line'))
+                    kept = list(self.undo_steps)
                     self._apply_selection_action(selected,'delete')
                     result = self.process('new line')
-                    self.last_change = previous
+                    # One step for the whole change, as the user sees it.
+                    self.undo_steps[:] = kept
+                    self._push_undo(previous)
                     return result
                 self._replace_selection('\n')
                 return 'New line.'
@@ -1221,29 +1345,9 @@ class VoiceDocument:
             if unit == 'sentence' and self.paragraphs:
                 self.sentence_cursor = max(0, len(re.findall(r'\S.*?[.!?](?=\s|$)', self.paragraphs[self.cursor].text[:local])) )
             return result
-        if command in ('undo', 'undo that', 'undo last change'):
-            if self.last_change is None:
-                return 'There is no change to undo.'
-            old_path = self.path
-            current_title = self.title
-            previous_title, previous_paragraphs, previous_cursor = self.last_change
-            self.title = previous_title
-            if self.path != old_path and self.path.exists():
-                self.title = current_title
-                return 'I cannot undo the rename because another document has the old name.'
-            self.paragraphs, self.cursor = previous_paragraphs, previous_cursor
-            self.last_change = None
-            self.selection = None
-            self.insertion_position = None
-            self.changed()
-            if self.path != old_path:
-                old_path.unlink(missing_ok=True)
-            if not self.paragraphs:
-                return 'Undid the last change. The document is empty.'
-            p = self.paragraphs[self.cursor]
-            location = self.describe_cell() if p.table_id else f'Paragraph {self.cursor + 1} of {len(self.paragraphs)}. ' + (p.text or 'Empty paragraph.')
-            return 'Undid the last change. ' + location
-        if command in ('save document', 'save my document', 'finish document'):
+        if command in UNDO_REQUESTS:
+            return self.undo_or_redo(UNDO_REQUESTS[command] == 'redo')
+        if command in ('save document', 'save my document', 'finish document', 'save', 'save it'):
             self.dictating = False
             self.save()
             return 'Saved the Word document as ' + self.path.name + '.'
@@ -1679,7 +1783,7 @@ class VoiceDocument:
                     return self.process('read paragraph')
             return 'No previous headings.' if backwards else 'No more headings.'
         if command == 'help with documents':
-            return 'Speak normally to write. Say new paragraph, heading level two, bold word, underline this, set font to Arial, single space, double space, or custom spacing. Say bulleted list, numbered list, create table with two rows and two columns, next cell, read formatting, undo, or save document.'
+            return 'Speak normally to write. Say new paragraph, heading level two, bold word, underline this, set font to Arial, single space, double space, or custom spacing. Say bulleted list, numbered list, create table with two rows and two columns, next cell, read formatting, undo, redo, or save document.'
         if self.dictating:
             return self.append_text(text)
         return 'I did not recognize that document request. Say help with documents for examples.'

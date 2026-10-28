@@ -155,7 +155,7 @@ class CompanionWindow:
                 try:self.ui_actions.get_nowait()
                 except queue.Empty:break
             self.root=self.typed=self.editor=self.current=self.file_list=None
-            self.file_toolbar=None;self.file_buttons=[];self.update_buttons=[]
+            self.file_toolbar=self.hint_label=None;self.file_buttons=[];self.update_buttons=[]
             import gc
             gc.collect()
 
@@ -311,8 +311,10 @@ class CompanionWindow:
             root.protocol('WM_DELETE_WINDOW', lambda: (user_stop.request(), flush_pending_edit(), self.commands.put(('keyboard','Alt+F4'))))
             # The screen name, large, at the top: "Main menu", "Email: Inbox".
             heading = tk.Label(root, text='Voice Companion', font=fonts['title'], wraplength=600, justify='left', anchor='w')
-            startup_label=tk.Label(root, text='Say “Wake up” to begin. Say “What version?” to check this build.',
+            # The hint line; display_screen.hint replaces it to fit each screen once the app sends its state.
+            startup_label=tk.Label(root, text='Say Wake up, or press Control+F12.',
                      font=fonts['hint'], wraplength=600, justify='left')
+            self.hint_label=startup_label
             entry_label = tk.Label(root, text='Type a command or email address, then press Enter:',
                                    font=fonts['hint'],wraplength=600,justify='left')
             typed = tk.Entry(root, font=fonts['body'])
@@ -456,6 +458,11 @@ class CompanionWindow:
                         self.commands.put(('keyboard','Doc:SaveAs'));return 'break'
                     if mode=='document' and 'Caps_Lock' in document_modifiers:caps_modifier['used']=True
                     self.commands.put(('keyboard',key_request(clock_presses.press())));return 'break'
+                if key=='F3' and not event.state&(1|4) and not alt_held(event.state):
+                    # F3 says what is playing, on every screen; never typed into a page or document.
+                    if self.keyboard_output:self.keyboard_output.interrupt()
+                    cancel_phonetic()
+                    self.commands.put(('keyboard','F3'));return 'break'
                 if key=='F9' and not event.state&(1|4) and not alt_held(event.state):
                     # F9 turns the microphone fully off or on, on every screen.
                     if self.keyboard_output:self.keyboard_output.interrupt()
@@ -649,7 +656,11 @@ class CompanionWindow:
                     request='Help:'+('Ctrl+' if control and key in ('Left','Right') else '')+key
                 elif mode=='document' and key=='F2':request='F2'
                 elif mode=='mailbox':
-                    if self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not alt_held(event.state) and key.lower() in ('k','b'):
+                    from input_parity import mail_header_key
+                    if mail_header_key(key,event.state) and not (event.widget==typed and self.command_entry_active):
+                        # Alt+1 to Alt+6: From, To, CC, Subject, Date sent, attachments.
+                        request=mail_header_key(key,event.state)
+                    elif self.context.get('source') and self.context.get('email_html') and event.widget==self.editor and not control and not alt_held(event.state) and key.lower() in ('k','b'):
                         request='Email:'+('previous ' if shift else 'next ')+('link' if key.lower()=='k' else 'button')
                     elif shift and key in ('Up','Down') and not self.context.get('source') and not self.typed.get():request='Shift'+key
                     elif key=='F2':request='F2'
@@ -1107,6 +1118,9 @@ class CompanionWindow:
                 """Show the screen name, and the list, menu or note. Returns the view to show, or None."""
                 position=position_text(field)
                 heading.configure(text=(field.get('display_title') or 'Voice Companion')+('   '+position if position else ''))
+                # The hint line fits the screen and the microphone (display_screen.hint).
+                if field.get('display_hint') and startup_label.cget('text')!=field['display_hint']:
+                    startup_label.configure(text=field['display_hint']);fit_layout()
                 if text_mode or field.get('mode')=='files':return None
                 items=field.get('display_items');text=field.get('display_text')
                 if items is None and text is None:return history

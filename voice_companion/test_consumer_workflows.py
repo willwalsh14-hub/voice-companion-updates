@@ -86,7 +86,9 @@ class ConsumerWorkflowTests(unittest.TestCase):
         self.say('go to subject',mode);self.say('read subject',mode)
         self.assertIn('Status update',self.speech.call_args.args[0])
         self.assertEqual(self.say('go to sleep',mode),'sleep');self.assertEqual(app.resume_from_sleep(),'email_draft')
-        self.assertEqual(self.say('cancel','email_draft'),'mailbox')
+        # A written draft asks first (Will, October 2026); throwing it away removes it.
+        self.assertEqual(self.say('cancel','email_draft'),'draft_leave')
+        self.assertEqual(self.say('throw it away','draft_leave'),'mailbox')
         self.assertIsNone(app.email_draft);self.assertFalse(list((self.root/'Email Drafts').glob('*.eml')))
 
     def test_full_help_topics_and_subtopics_have_finite_keyboard_and_voice_lists(self):

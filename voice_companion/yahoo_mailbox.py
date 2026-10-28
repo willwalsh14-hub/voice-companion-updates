@@ -497,6 +497,16 @@ class YahooMailbox:
             return body
         return self._with(operation)
 
+    def message_headers(self, message_id, folder_id='INBOX'):
+        """The people a message went to: {'to': [(name, address)], 'cc': [...]}. Only these two lines are fetched."""
+        def operation(conn):
+            self._select(conn, folder_id)
+            head = self._section(conn, self._uid(message_id), 'HEADER.FIELDS (TO CC)')
+            msg = BytesParser(policy=policy.default).parsebytes(head or b'', headersonly=True)
+            return {key: [(name, address) for name, address in getaddresses([_header(msg, field)]) if name or address]
+                    for key, field in (('to', 'To'), ('cc', 'Cc'))}
+        return self._with(operation)
+
     def response_context(self, message_id, action, own_address, folder_id='INBOX'):
         if action not in ('reply', 'reply_all', 'forward'):
             raise MailboxError('Unknown email response.')
