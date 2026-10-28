@@ -877,7 +877,8 @@ def now_playing_asked(text,mode,typed=False):
 
 
 # Screens where "play" keeps its own meaning, or where words are typed.
-STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings')
+STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings',
+                        'tutorial','sleep','exit_confirm','power_confirm','document_save','document_replace','update_offer','update_download')
 
 
 def station_asked(text,mode,typed=False):

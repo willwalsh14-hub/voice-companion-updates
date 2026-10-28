@@ -608,6 +608,12 @@ class PlayStationByNameTests(MediaTestCase):
         contacts.assert_called_once()
         self.assertEqual(self.hub.player.opened, [])
 
+    def test_the_tutorial_and_yes_or_no_questions_keep_the_words(self):
+        for mode in ('tutorial', 'exit_confirm', 'power_confirm', 'update_offer'):
+            with self.subTest(mode=mode):
+                self.assertIsNone(companion.station_asked('Play WGN.', mode))
+        self.assertEqual(companion.station_asked('Play WGN.', 'awake'), 'WGN')
+
     def test_commands_only_plays_from_a_document(self):
         companion.INPUT_MODE = 'commands'
         self.open_document()
