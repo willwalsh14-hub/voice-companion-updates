@@ -20,7 +20,7 @@ jobs:
             $ErrorActionPreference = 'Continue'
             $out = (& python -m unittest -v $t 2>&1 | ForEach-Object { "$_" })
             $code = $LASTEXITCODE
-            $fails = ($out | Where-Object { $_ -match '^(FAIL|ERROR):|^AssertionError|Error:' } | Select-Object -First 12) -join '%0A'
+            $fails = ((($out | Where-Object { $_ -match '^(FAIL|ERROR):|Error' } | Select-Object -First 10) + @('--- last lines ---') + ($out | Select-Object -Last 25)) -join '%0A').Replace('::',': ')
             Write-Output ('::error title=Window test ' + $t + '::' + $t + ': ' + $(if ($code -eq 0) { 'PASS' } else { 'FAIL%0A' + $fails }))
           }
           throw 'Diagnostic finished. See the annotations.'
