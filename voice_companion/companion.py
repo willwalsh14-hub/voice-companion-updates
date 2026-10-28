@@ -1220,8 +1220,10 @@ def web_writing_field():
     """True while a web text box you write in (a message or comment box) is being edited.
     A site's search box with suggestions and a password box are not writing."""
     session = web_session
-    # Looked up on the class, so a stand-in session is never asked.
-    writing = getattr(type(session), 'writing_field', None) if session is not None else None
+    # Looked up on the class, so a stand-in session is never asked. In Dictation only
+    # mode the same text boxes are writing: "Microphone off." there is text (Will, October 2026).
+    name = 'writing_box' if INPUT_MODE == 'dictation' else 'writing_field'
+    writing = getattr(type(session), name, None) if session is not None else None
     return bool(callable(writing) and writing(session) is True)
 
 

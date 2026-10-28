@@ -1850,8 +1850,13 @@ class WebSession:
     def writing_field(self):
         """True while a text box for writing is being edited: dictation comes first there,
         and a sentence that only starts like a command is text (CLAUDE.md)."""
+        return self.input_mode=='mixed' and self.writing_box()
+
+    def writing_box(self):
+        """True while a text box for writing is being edited, in any input mode. A site's
+        search box with suggestions, a choice box and a password box are not writing."""
         field=self.keyboard_field
-        return (isinstance(field,dict) and self.input_mode=='mixed' and text_field(field) and not editable_combo(field)
+        return (isinstance(field,dict) and text_field(field) and not editable_combo(field)
                 and not choice_field(field) and field.get('type')!='password' and not field.get('readonly'))
 
     def dictate_to_focus(self, spoken, literal=False):
