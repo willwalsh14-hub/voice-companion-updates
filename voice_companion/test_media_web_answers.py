@@ -352,6 +352,7 @@ class WhatIsPlayingTests(MediaTestCase):
 
     def test_recognizer_punctuation_and_other_ways_to_ask(self):
         self.play_station()
+        self.assertIsNone(__import__('media_hub').now_playing_request("What's on?"))   # the Calendar's words
         for words in ('What is playing.', 'Whats playing', 'WHAT\'S PLAYING NOW?', 'What is this?', 'What am I listening to?',
                       'What station is this.', 'What episode is this?'):
             with self.subTest(words=words):
@@ -588,6 +589,23 @@ class PlayStationByNameTests(MediaTestCase):
         companion.web_session = web_text_box(self.folder, 'mixed')
         companion.handle('Play WGN.', 'web')
         self.assertEqual(companion.web_session.typed, ['Play WGN.'])
+        self.assertEqual(self.hub.player.opened, [])
+
+    def test_list_screens_play_but_their_questions_keep_the_words(self):
+        import calendar_screen, contacts_screen
+        for mode in ('contacts', 'calendar', 'downloads', 'attachments'):
+            with self.subTest(mode=mode):
+                self.hub.player.opened.clear()
+                self.assertEqual(companion.handle('Play WGN.', mode), mode)
+                self.assertEqual(self.hub.player.opened[-1][1], 'WGN')
+        # Naming a new event: "Play WGN radio show" is the name, not a station.
+        self.hub.player.opened.clear()
+        with patch.object(calendar_screen, 'PENDING', ('add', {})), patch.object(calendar_screen, 'handle', return_value='calendar') as calendar:
+            companion.handle('Play WGN radio show', 'calendar')
+        calendar.assert_called_once()
+        with patch.object(contacts_screen, 'ADDING', {'step': 'name'}), patch.object(contacts_screen, 'handle', return_value='contacts') as contacts:
+            companion.handle('Play WGN', 'contacts')
+        contacts.assert_called_once()
         self.assertEqual(self.hub.player.opened, [])
 
     def test_commands_only_plays_from_a_document(self):

@@ -882,8 +882,17 @@ STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','t
 
 def station_asked(text,mode,typed=False):
     """The station name in "Play WGN" on a screen where words are commands, else None."""
-    if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed):return None
+    if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed) or NAMED_LIST or screen_question(mode):return None
     return __import__('media_hub').station_request(text)
+
+
+def screen_question(mode):
+    """True while Contacts, Calendar, Attachments or Downloads asks a question or for a
+    name; the answer there may start with "Play"."""
+    module={'calendar':'calendar_screen','contacts':'contacts_screen','attachments':'attachment_screen','downloads':'download_screen'}.get(mode)
+    if module is None:return False
+    screen=__import__(module)
+    return getattr(screen,'PENDING',None) is not None or bool(getattr(screen,'ADDING',None))
 
 
 # Background notices wait for a quiet moment: Companion silent, no key pressed for this
@@ -3395,6 +3404,19 @@ def _handle(text, mode, typed=False):
     if mode=='chrome_setup':
         import chrome_setup
         return chrome_setup.handle(sys.modules[__name__],text,mode)
+    # "Play WGN" from the main menu and other screens where words are commands: find the
+    # station and play it, or offer a short list (Will, October 2026). The Radio screen,
+    # web pages and writing fields keep their own meaning of "play". Before the list screens
+    # (Contacts, Calendar, Downloads, Attachments), which would only repeat their help.
+    station=station_asked(text,mode,typed)
+    if station:
+        hub=media()
+        try:result=hub.play_by_name(station)
+        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
+        if hub.station_choices:
+            MEDIA_SECTION='radio';media_navigation().show_choices()
+            speak(result);return 'media'
+        speak(result);return mode
     try:
         menu_result=screen_menu().handle(text,mode)
         if menu_result is not None:return menu_result
@@ -3865,18 +3887,6 @@ def _handle(text, mode, typed=False):
         # Opens where File manager options say (drive list, C drive, Documents, ...).
         speak('File manager. '+FILE_MANAGER.refresh(start_location(PREFERENCES.get('file_manager_start'))))
         return 'files'
-    # "Play WGN" from the main menu and other screens where words are commands: find the
-    # station and play it, or offer a short list (Will, October 2026). The Radio screen,
-    # web pages and writing fields keep their own meaning of "play".
-    station=station_asked(text,mode,typed)
-    if station:
-        hub=media()
-        try:result=hub.play_by_name(station)
-        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
-        if hub.station_choices:
-            MEDIA_SECTION='radio';media_navigation().show_choices()
-            speak(result);return 'media'
-        speak(result);return mode
     if mode=='files':
         if command in ('main menu','back to main menu','close file manager','leave file manager'):
             # handle() says Main menu once when the screen changes.
