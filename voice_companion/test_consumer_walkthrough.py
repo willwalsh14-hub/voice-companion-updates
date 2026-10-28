@@ -502,5 +502,28 @@ class LargeTextLayoutTests(unittest.TestCase):
         self.assertEqual(self.plan(1400, 3), (3, True, 74 * 4 + 24))
 
 
+class SpeechLimitTests(CompanionTestCase):
+    """Heard: "Louder." at full volume said only "Volume 100 percent.", as if it had changed.
+    "Bigger text." at the largest size says "Largest text size."; the voice now says its limits too."""
+
+    def setUp(self):
+        super().setUp()
+        for name, value in (('SPEECH_VOLUME', 100), ('SPEECH_RATE', 10), ('SPEECH_PITCH', -10)):
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def test_each_limit_is_named(self):
+        for phrase, heard in (('Louder.', 'Loudest volume. Volume 100 percent.'),
+                              ('Speak faster.', 'Fastest rate. Voice rate 10.'),
+                              ('Lower pitch.', 'Lowest pitch. Voice pitch -10.')):
+            with self.subTest(phrase=phrase):
+                companion.handle(phrase, 'awake')
+                self.assertEqual(self.said[-1], heard)
+
+    def test_a_change_inside_the_range_is_said_as_before(self):
+        companion.handle('Quieter.', 'awake')
+        self.assertTrue(self.said[-1].startswith('Volume '), self.said)
+        self.assertNotIn('Quietest', self.said[-1])
+
+
 if __name__ == '__main__':
     unittest.main()

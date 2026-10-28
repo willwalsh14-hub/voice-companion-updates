@@ -324,7 +324,8 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             with patch.object(companion, 'connect') as connect, patch.object(
                     companion, 'start_thunderbird_add', return_value='awake') as add:
                 self.assertEqual(companion.handle('Gmail', 'awake'), 'awake')
-                add.assert_called_once_with('awake')
+                # "Gmail works through Thunderbird." is said with the first setup step, in one message.
+                add.assert_called_once_with('awake', 'Gmail works through Thunderbird.')
                 connect.assert_not_called()
             store = ProtectedStore(self.root)
             store.save('thunderbird', {'address':'one@example.com'})
@@ -341,8 +342,8 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
                 companion, 'start_thunderbird_add', return_value='awake') as add:
             self.assertEqual(companion.handle('Connect my Gmail', 'awake'), 'awake')
             connect.assert_not_called()
-            add.assert_called_once_with('awake')
-            self.assertEqual(speech.call_args.args[0], 'Gmail works through Thunderbird.')
+            # Said with the first setup step, in one message, so it is not cut off.
+            add.assert_called_once_with('awake', 'Gmail works through Thunderbird.')
 
     def test_build_version_is_reported_by_diagnostics(self):
         output = io.StringIO()

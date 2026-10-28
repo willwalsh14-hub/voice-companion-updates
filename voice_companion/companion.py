@@ -1339,7 +1339,12 @@ def change_speech_setting(command, writing=False):
         if not TEXT_MODE: voice.Volume = value
     save_speech_settings()
     if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
-    speak('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')
+    # Asked to go past a limit: say so, as "Bigger text." says "Largest text size."
+    limit=''
+    if operation=='delta' and value==current and amount:
+        limit={('volume',1):'Loudest volume. ',('volume',-1):'Quietest volume. ',('rate',1):'Fastest rate. ',('rate',-1):'Slowest rate. ',
+               ('pitch',1):'Highest pitch. ',('pitch',-1):'Lowest pitch. '}.get((kind,1 if amount>0 else -1),'')
+    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.'))
     return True
 
 def voice_choices(engine=None):
