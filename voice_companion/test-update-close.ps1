@@ -131,6 +131,16 @@ $script:users = @([pscustomobject]@{ ProcessId = 201; AppName = ''; ServiceName 
 $result = Wait-CompanionFilesFree $Folder @() 999 0
 Assert ($result.Code -eq 1) 'Voice Companion programs that keep starting are not blamed on the user.'
 
+# An antivirus scan (a Windows service) is waited for quietly, and named only at the end.
+$script:said = @()
+$script:lockRounds = @(@('a'), @('a'))
+$script:users = @([pscustomobject]@{ ProcessId = 4000; AppName = 'Microsoft Defender Antivirus Service'; ServiceName = 'WinDefend' })
+$result = Wait-CompanionFilesFree $Folder @() 999 120
+Assert ($null -eq $result -and $script:said.Count -eq 0) 'A short antivirus scan must not be blamed on the user.'
+$script:lockRounds = @(, @('a'))
+$result = Wait-CompanionFilesFree $Folder @() 999 0
+Assert ($result.Code -eq 2 -and $result.Names[0] -eq 'Microsoft Defender Antivirus Service') 'A service that never lets go is still named at the end.'
+
 # This script itself never counts as the user's program.
 $script:said = @()
 $script:lockRounds = @(, @('a'))

@@ -154,7 +154,7 @@ function Close-CompanionProcesses([string]$InstallFolder, [int]$SelfId = $PID, [
       $process = Open-CompanionProcess $entry
       if (-not $process) { continue }
       Write-CloseLog ('Closing ' + $entry.Name + ' (process ' + $entry.ProcessId + ', ' + $entry.Why + ').')
-      $names[$process] = $entry.Name
+      $names[$process.Id] = $entry.Name
       $handles += $process
     }
     # Gently: the window's close message, as the close button does.
@@ -167,12 +167,12 @@ function Close-CompanionProcesses([string]$InstallFolder, [int]$SelfId = $PID, [
     foreach ($attempt in 1, 2) {
       if (-not $running.Count) { break }
       foreach ($process in $running) {
-        Write-CloseLog ('Stopping ' + $names[$process] + ' (process ' + $process.Id + ').')
+        Write-CloseLog ('Stopping ' + $names[$process.Id] + ' (process ' + $process.Id + ').')
         try { $process.Kill() } catch { Write-CloseLog ('Stop failed: ' + $_) }
       }
       $running = @(Wait-CompanionExit $running $ForceSeconds)
     }
-    $left = @($running | ForEach-Object { $names[$_] } | Sort-Object -Unique)
+    $left = @($running | ForEach-Object { $names[$_.Id] } | Sort-Object -Unique)
     if ($left.Count) { Write-CloseLog ('Still running: ' + ($left -join ', ') + '.') } else { Write-CloseLog 'All Voice Companion programs are closed.' }
     return $left
   } finally {
@@ -292,13 +292,18 @@ function Wait-CompanionFilesFree([string]$InstallFolder, [string[]]$GuideFolder,
     Write-CloseLog ('Files still in use: ' + (($locked | Select-Object -First 5) -join '; ') + '.')
     $users = @()
     try { $users = @(Get-FileUsers $locked) } catch { Write-CloseLog ('Could not find which program uses the files: ' + $_) }
-    $outside = @(); $ours = $false
+    $outside = @(); $services = @(); $ours = $false
     $everything = @(Get-CompanionProcessList)
     foreach ($user in $users) {
       if ($user.ProcessId -eq $SelfId) { continue }
       $process = $everything | Where-Object { $_.ProcessId -eq $user.ProcessId } | Select-Object -First 1
       if ($process -and (Test-InsideFolder $process.Path $InstallFolder)) { $ours = $true; continue }
       $name = Get-FriendlyName $user $process
+      if ([string]$user.ServiceName) {
+        # A Windows service (an antivirus scan) lets go by itself: wait without blaming the user.
+        Write-CloseLog ('In use by the Windows service ' + $name + ' (' + $user.ServiceName + ').')
+        $services += $name; continue
+      }
       Write-CloseLog ('In use by ' + $name + ' (process ' + $user.ProcessId + ', ' + [string]$(if ($process) { $process.Path } else { 'unknown' }) + ').')
       $outside += $name
     }
@@ -306,7 +311,7 @@ function Wait-CompanionFilesFree([string]$InstallFolder, [string[]]$GuideFolder,
       # A Voice Companion program started again (a browser can restart the browser host).
       [void](Close-CompanionProcesses $InstallFolder $SelfId $GentleSeconds $ForceSeconds)
     }
-    if (-not $outside.Count -and -not $ours) { $outside = @('Another program') }
+    if (-not $outside.Count -and -not $ours -and -not $services.Count) { $outside = @('Another program') }
     if ($outside.Count) {
       # Said at once, again when the programs change, and every 30 seconds.
       $message = Get-BlockedMessage $outside
@@ -316,6 +321,7 @@ function Wait-CompanionFilesFree([string]$InstallFolder, [string[]]$GuideFolder,
     }
     if ((Get-Date) -ge $deadline) {
       if ($outside.Count) { return [pscustomobject]@{ Code = 2; Names = @($outside | Sort-Object -Unique) } }
+      if ($services.Count) { return [pscustomobject]@{ Code = 2; Names = @($services | Sort-Object -Unique) } }
       return [pscustomobject]@{ Code = 1; Names = @('Voice Companion') }
     }
     Start-Sleep -Seconds 2
