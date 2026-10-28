@@ -2,12 +2,22 @@ param([string]$InstallerPath,[string]$AppPath,[int]$PreviousProcessId,[string]$E
 $ErrorActionPreference = 'Stop'
 $result = Join-Path $DataFolder 'update-result.json'
 $log = Join-Path $DataFolder 'update-install-log.txt'
+# Setup writes its own log (it replaces the file it is given); it is added to ours after Setup ends.
+$setupLog = Join-Path $DataFolder 'update-setup-log.txt'
 $updateFolder = Split-Path $InstallerPath
+$script:blockedBy = @()
 Set-Location -LiteralPath $updateFolder
 [Environment]::CurrentDirectory = $updateFolder
 $progressFile = Join-Path $updateFolder 'install-percent.txt'
 $voice = $null; $listener = $null; $setup = $null
-function Write-UpdateError($failure) { try { $failure.ToString() | Add-Content -LiteralPath $log } catch {} }
+function Write-UpdateError($failure) { try { ((Get-Date).ToString('HH:mm:ss') + ' ' + $failure.ToString()) | Add-Content -LiteralPath $log -Encoding UTF8 } catch {} }
+function Write-UpdateLog([string]$message) { Write-UpdateError $message }
+try { ((Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + ' Update helper started for ' + $InstallerPath) | Set-Content -LiteralPath $log -Encoding UTF8 } catch {}
+# The close step (close-companion.ps1) is copied next to this helper.
+$closeScript = Join-Path $PSScriptRoot 'close-companion.ps1'
+if (Test-Path -LiteralPath $closeScript) { . $closeScript; $script:CloseLogFile = $log }
+# Set after the close step is loaded: its parameters share these names.
+$installFolder = Split-Path $AppPath
 function Close-UpdateAudio {
   if ($script:listener) {
     'stop' | Set-Content -LiteralPath (Join-Path $updateFolder 'voice-stop') -Encoding ASCII
@@ -19,29 +29,33 @@ function Close-UpdateAudio {
     $script:listener = $null
   }
 }
+function Test-CompanionRunning {
+  # By program file, not by process id: Windows reuses the old app's id.
+  try {
+    $appFullPath = [IO.Path]::GetFullPath($AppPath)
+    return [bool](@(Get-CompanionProcessList | Where-Object { $_.Path -and [string]::Equals([IO.Path]::GetFullPath($_.Path), $appFullPath, [StringComparison]::OrdinalIgnoreCase) }).Count)
+  } catch { Write-UpdateError $_; return $false }
+}
 function Restart-Companion {
   Close-UpdateAudio
   if (-not $NoRestart) {
+    Write-UpdateLog 'Starting Voice Companion again.'
     Start-Process -FilePath $AppPath -ArgumentList '--resume-after-update' -WorkingDirectory (Split-Path $AppPath)
   }
+}
+function Add-SetupLog {
+  # Setup's own log goes into the update log once, so one file tells the whole story.
+  if (-not (Test-Path -LiteralPath $setupLog)) { return }
+  try {
+    '----- Setup log -----' | Add-Content -LiteralPath $log -Encoding UTF8
+    Get-Content -LiteralPath $setupLog | Add-Content -LiteralPath $log -Encoding UTF8
+    '----- End of Setup log -----' | Add-Content -LiteralPath $log -Encoding UTF8
+    Remove-Item -LiteralPath $setupLog -Force
+  } catch { Write-UpdateError $_ }
 }
 function Say-Percent([int]$percent) {
   # The independent listener owns progress speech while its microphone is on.
   if (-not $listener -and $voice) { try { $voice.Speak([string]$percent + ' percent.', 1) | Out-Null } catch { Write-UpdateError $_ } }
-}
-function Close-InstalledBrowserHosts {
-  # Native messaging hosts belong to Chrome/Edge, so exiting Companion alone
-  # does not release their copies of the installed DLLs. Never stop browsers
-  # or hosts belonging to a different installation.
-  $hostPath = [IO.Path]::GetFullPath((Join-Path (Split-Path $AppPath) 'VoiceCompanion-BrowserHost.exe'))
-  foreach ($browserHost in @(Get-Process -Name 'VoiceCompanion-BrowserHost' -ErrorAction SilentlyContinue)) {
-    try {
-      if ($browserHost.HasExited) { continue }
-      if (-not [string]::Equals($browserHost.Path, $hostPath, [StringComparison]::OrdinalIgnoreCase)) { continue }
-      $browserHost.Kill()
-      if (-not $browserHost.WaitForExit(10000)) { throw 'The browser connection did not close for installation.' }
-    } finally { $browserHost.Dispose() }
-  }
 }
 function Stop-PreviousCompanion($previous) {
   # The app saves documents, drafts and notes before it hands over. If it has not
@@ -65,8 +79,18 @@ try {
   if ((Get-FileHash -LiteralPath $InstallerPath -Algorithm SHA256).Hash -ne $ExpectedHash) { throw 'Installer integrity check failed.' }
   if (-not $NoSpeech) { $voice = New-Object -ComObject SAPI.SpVoice }
   if ($ReadyFile) { '{"ready":true}' | Set-Content -LiteralPath $ReadyFile -Encoding UTF8 }
+  Write-UpdateLog 'Installer verified. Waiting for Voice Companion to close.'
   Stop-PreviousCompanion (Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue)
-  Close-InstalledBrowserHosts
+  # Close everything else that runs from the install folder (the browser hosts,
+  # Playwright, WebView2, eSpeak, a second copy), and wait until the files are free.
+  # A program that is not Voice Companion is named to the user, never closed.
+  if (-not (Get-Command Invoke-CompanionClose -ErrorAction SilentlyContinue)) { throw 'The update close step is missing.' }
+  $script:CloseVoice = $voice
+  $closing = Invoke-CompanionClose $installFolder @(Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Voice Companion\User Guides') $PID
+  if ($closing.Code -eq 2) {
+    $script:blockedBy = @($closing.Names)
+    throw ('Files are in use by ' + (Join-Names $closing.Names) + '.')
+  } elseif ($closing.Code -ne 0) { throw ('Part of Voice Companion would not close: ' + (Join-Names $closing.Names) + '.') }
   '0' | Set-Content -LiteralPath $progressFile -Encoding ASCII
   if (-not $NoSpeech) {
     $listenerPath = Join-Path $updateFolder 'update-voice-runtime\VoiceCompanion-UpdateVoice.exe'
@@ -80,7 +104,8 @@ try {
       Start-Sleep -Milliseconds 100; $listener.Refresh()
     }
   }
-  $arguments = '/VERYSILENT /SUPPRESSMSGBOXES /SP- /NORESTART /RESTARTEXITCODE=3010 /CLOSEAPPLICATIONS /NORESTARTAPPLICATIONS /LOG="' + $log + '" /UPDATESTATUSFILE="' + $progressFile + '"'
+  $arguments = '/VERYSILENT /SUPPRESSMSGBOXES /SP- /NORESTART /RESTARTEXITCODE=3010 /CLOSEAPPLICATIONS /NORESTARTAPPLICATIONS /LOGCLOSEAPPLICATIONS /LOG="' + $setupLog + '" /UPDATESTATUSFILE="' + $progressFile + '"'
+  Write-UpdateLog 'Starting Setup.'
   $setup = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -WorkingDirectory $updateFolder -PassThru
   $setupHandle = $setup.Handle
   $percent = 0; $announced = -5
@@ -95,6 +120,8 @@ try {
     Start-Sleep -Milliseconds 100; $setup.Refresh()
   }
   $setup.WaitForExit()
+  Write-UpdateLog ('Setup ended with exit code ' + $setup.ExitCode + '.')
+  Add-SetupLog
   if ($setup.ExitCode -eq 3010) {
     '{"succeeded":false,"restart_required":true}' | Set-Content -LiteralPath $result -Encoding UTF8
   } elseif ($setup.ExitCode -ne 0) { throw ('Setup did not finish successfully. Exit code ' + $setup.ExitCode) }
@@ -117,13 +144,20 @@ try {
 } catch {
   $failure = $_.Exception; Write-UpdateError $failure
   if ($setup) { try { $setup.WaitForExit() } catch { Write-UpdateError $_ } }
+  Add-SetupLog
   Close-UpdateAudio
-  @{ succeeded = $false; error = $failure.Message; installer_exit_code = $(if ($setup) { $setup.ExitCode } else { $null }) } | ConvertTo-Json | Set-Content -LiteralPath $result -Encoding UTF8
+  @{ succeeded = $false; error = $failure.Message; installer_exit_code = $(if ($setup) { $setup.ExitCode } else { $null }); blocked_by = @($script:blockedBy) } | ConvertTo-Json | Set-Content -LiteralPath $result -Encoding UTF8
   if ($ReadyFile -and -not (Test-Path $ReadyFile)) { '{"ready":false}' | Set-Content -LiteralPath $ReadyFile -Encoding UTF8 }
-  if ($voice) { try { $voice.Speak('The update did not finish. Reopening Voice Companion.',3) | Out-Null } catch {} }
-  if (-not $NoRestart -and -not (Get-Process -Id $PreviousProcessId -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath $AppPath)) { Restart-Companion }
+  if ($voice) {
+    $reason = 'The update did not finish. Reopening Voice Companion.'
+    if ($script:blockedBy.Count) { $reason = 'The update did not finish, because ' + (Join-Names $script:blockedBy) + $(if ($script:blockedBy.Count -gt 1) { ' are' } else { ' is' }) + ' still using a Voice Companion file. Reopening Voice Companion.' }
+    try { $voice.Speak($reason,3) | Out-Null; $voice.WaitUntilDone(15000) | Out-Null } catch {}
+  }
+  if (-not $NoRestart -and -not (Test-CompanionRunning) -and (Test-Path -LiteralPath $AppPath)) { Restart-Companion }
   exit 1
 } finally {
+  # Browsers find the browser host again (Setup's last step writes new files when it succeeds).
+  if (Get-Command Resume-NativeHostManifests -ErrorAction SilentlyContinue) { Resume-NativeHostManifests $installFolder }
   Close-UpdateAudio
   if ($voice) { try { [System.Runtime.InteropServices.Marshal]::FinalReleaseComObject($voice) | Out-Null } catch {} }
 }

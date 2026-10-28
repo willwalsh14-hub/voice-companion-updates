@@ -4706,7 +4706,11 @@ def announce_startup():
     update_result = None
     result_file = APP / 'update-result.json'
     if result_file.exists():
-        try:update_result = startup_speech.update_result(json.loads(result_file.read_text(encoding='utf-8-sig')))
+        try:
+            update_data = json.loads(result_file.read_text(encoding='utf-8-sig'))
+            update_result = startup_speech.update_result(update_data)
+            # The user's own program held a file: say which, and what to do.
+            if startup_speech.update_notice(update_data):STARTUP_NOTICES.append(startup_speech.update_notice(update_data))
         except (OSError, ValueError):update_result = None
         try:result_file.unlink(missing_ok=True)
         except OSError:pass

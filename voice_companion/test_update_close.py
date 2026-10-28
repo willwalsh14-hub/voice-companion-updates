@@ -159,6 +159,54 @@ class ClosingStepTests(unittest.TestCase):
         self.assertIn('PASS:', result.stdout)
 
 
+class BlockedUpdateStartupTests(unittest.TestCase):
+    """After an update stopped because the user's program held a file, the app says
+    which program, and what to do, in its one startup announcement."""
+
+    def test_notice_names_the_program_and_what_to_do(self):
+        import startup_speech
+        notice = startup_speech.update_notice({'succeeded': False, 'blocked_by': ['Microsoft Word']})
+        self.assertEqual(notice, 'Microsoft Word was using a Voice Companion file, so the update could not install. '
+                                 'Save your work in Microsoft Word and close it. Then choose Check for updates on the main menu.')
+        two = startup_speech.update_notice({'succeeded': False, 'blocked_by': ['Notepad', 'Microsoft Word']})
+        self.assertTrue(two.startswith('Microsoft Word and Notepad were using a Voice Companion file'), two)
+        # Windows PowerShell writes one name as a plain string.
+        self.assertTrue(startup_speech.update_notice({'succeeded': False, 'blocked_by': 'Notepad'}).startswith('Notepad was using'))
+        for result in ({'succeeded': True}, {'succeeded': False}, {'succeeded': False, 'blocked_by': []},
+                       {'succeeded': False, 'blocked_by': [None, 3, '']}, None, [], 'text'):
+            self.assertEqual(startup_speech.update_notice(result), '', result)
+
+    def test_startup_says_the_reason_after_the_result_with_the_microphone_off(self):
+        import companion
+        import startup_speech
+        from unittest import mock
+        from test_core_email_fixes import CompanionTestCase
+        from test_startup_announcement import FakeUpdates
+
+        class Case(CompanionTestCase):
+            def runTest(inner):
+                for name, value in dict(MICROPHONE_OFF=True, MICROPHONE_FAILED=False, STARTUP_UPDATE_PENDING=False,
+                                        STARTUP_QUESTION=None, STARTUP_NOTICES=[], MAIN_MENU_LEAD='',
+                                        UPDATE_RETURN_MODE='awake', PREFERENCES={'check_updates': True},
+                                        UPDATES=FakeUpdates()).items():
+                    patcher = mock.patch.object(companion, name, value, create=True); patcher.start(); inner.addCleanup(patcher.stop)
+                with mock.patch.object(companion.sys, 'argv', ['companion', '--resume-after-update']):
+                    (inner.folder / 'update-result.json').write_text(json.dumps(
+                        {'succeeded': False, 'error': 'Files are in use by Microsoft Word.', 'blocked_by': ['Microsoft Word']}), encoding='utf-8')
+                    # The microphone is off: the app starts on the main menu, not asleep.
+                    inner.assertEqual(companion.announce_startup(), 'awake')
+                inner.assertEqual(len(inner.said), 1, inner.said)
+                text = inner.said[0]
+                for piece in ('is ready.', startup_speech.UPDATE_RESULTS['failed'], 'Microsoft Word was using a Voice Companion file',
+                              'Check for updates', startup_speech.MICROPHONE['off'], 'You are on the main menu.'):
+                    inner.assertIn(piece, text)
+                inner.assertLess(text.index('The update did not finish.'), text.index('Microsoft Word was using'))
+                inner.assertLess(text.index('Microsoft Word was using'), text.index('The microphone is off'))
+        result = unittest.TestResult()
+        Case().run(result)
+        self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
+
+
 class UpdateCloseWiringTests(unittest.TestCase):
     def test_helper_closes_everything_before_setup_and_never_aborts_in_setup(self):
         helper = (HERE / 'apply-update.ps1').read_text(encoding='utf-8')
