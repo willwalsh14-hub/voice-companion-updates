@@ -133,7 +133,20 @@ class MediaPlayer:
             document.getElementById('status').textContent='Loading audio.';
             let timer;
             try {
-                const started=await Promise.race([a.play().then(()=>true,()=>false),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),timeout)})]);
+                // After a stream that failed, its emptying load() can still be running. It interrupts
+                // the next play() with an AbortError, and the next station then failed to start as well.
+                // An interrupted start is tried again; any other refusal is final.
+                window.voiceCompanionStartError='';
+                const attempt=async()=>{
+                    for(let i=0;i<4;i++){
+                        try{await a.play();return true;}
+                        catch(error){window.voiceCompanionStartError=(error&&error.name||'Error')+': '+(error&&error.message||'');
+                            if(!error||error.name!=='AbortError')return false;
+                            await new Promise(resolve=>setTimeout(resolve,150));}
+                    }
+                    return false;
+                };
+                const started=await Promise.race([attempt(),new Promise(resolve=>{timer=setTimeout(()=>{window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
                 if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
                 return started;
             } finally {clearTimeout(timer);}
@@ -141,6 +154,9 @@ class MediaPlayer:
               'ducked':getattr(self,'duck_factor',0) if self.ducked else 0})
         if not result:
             self.kind=None
+            # Why, for the log and for test failures; the user hears the plain message.
+            try:self.last_start_error=self.page.evaluate('window.voiceCompanionStartError||""')
+            except Exception:self.last_start_error=''
             raise OSError('This audio format could not start in the player.')
         self.kind=kind
 

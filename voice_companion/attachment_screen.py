@@ -11,7 +11,7 @@ voice command, as on the Contacts and Calendar screens:
   "Save all to Desktop".
 - Delete takes a file off a draft. "Remove photo".
 - Control+I reads its details. "How big is it", "read attachment details".
-- Control+T attaches another file. "Attach report from Documents", "attach the last download".
+- Control+O attaches another file (Control+T, the old key, still works). "Attach report from Documents", "attach the last download".
 - Escape goes back to the message or draft, where you were.
 
 File names match loosely, because speech is messy: "report dot PDF", "the photo",
@@ -19,7 +19,7 @@ File names match loosely, because speech is messy: "report dot PDF", "the photo"
 
 Attaching uses File manager as a picker, like opening a document: Enter on a
 file attaches it (Space marks several first) and returns to the draft. In File
-manager, Control+N starts a new email with the chosen files, and Control+T adds
+manager, Control+N starts a new email with the chosen files, and Control+O adds
 them to the email draft that is open. Without File manager, "attach my resume
 from Documents" looks for the file in that folder, and "attach the last download"
 takes the newest finished download.
@@ -41,7 +41,7 @@ HELP = ('Attachments. Up and Down Arrow move through the files. Home and End rea
         'Enter opens a file. Documents open in Document reader, and sound and video in the media player. '
         'Control+S saves the file in your Downloads folder. Control+D saves it in a folder you name. '
         'Control+Shift+S saves them all. Control+I reads the details. '
-        'In an email you are writing, Delete takes a file off, and Control+T attaches another. '
+        'In an email you are writing, Delete takes a file off, and Control+O attaches another. '
         'Alt opens the attachments menu. Escape goes back.')
 
 SOURCE = None        # 'message' or 'draft'
@@ -53,6 +53,8 @@ PENDING = None       # ('run', item): a Yes or No question; ('folder', items): a
 CHOICE = 'no'
 OPENED = None        # the file Enter opened in Document reader, so Escape there comes back here
 CANDIDATES = []      # files found by "attach ... from Documents", offered in a short list
+OLD_KEY_NOTICE = ''  # said before the next attach message, once per session
+OLD_KEY_NOTICE_GIVEN = False
 
 LIST_PHRASES = ('list attachments', 'show attachments', 'open attachments', 'read attachments', 'what is attached',
                 'what attachments', 'attachments list', 'list the attachments', 'show the attachments',
@@ -261,7 +263,7 @@ def open_for_draft(m, mode, hint='', index=0):
     draft = m.email_draft
     found = draft.all_attachments() if draft is not None else []
     if not found:
-        m.speak('This email has no attachments. Say attach a file, or press Control+T.')
+        m.speak('This email has no attachments. Say attach a file, or press Control+O.')
         return mode
     SOURCE, RETURN_MODE, MESSAGE, PENDING = 'draft', 'email_draft', None, None
     _set(found, index)
@@ -544,7 +546,7 @@ def draft_command(m, raw, command, mode, typed=False):
         found = draft.all_attachments()
         m.speak((files_words.summary(found) + total_words(found) +
                  files_words.limit_warning(files_words.total_size(found))) if found else
-                'This email has no attachments. Say attach a file, or press Control+T.')
+                'This email has no attachments. Say attach a file, or press Control+O.')
         return mode
     if command in LAST_DOWNLOAD:
         m.pending_send = None
@@ -952,22 +954,36 @@ def launch(m, item, mode, kind=None):
 
 # Attaching -------------------------------------------------------------------
 
+def old_key_used():
+    """Control+T, the attach key before 0.2.172, was pressed: say the new key, once per session."""
+    global OLD_KEY_NOTICE, OLD_KEY_NOTICE_GIVEN
+    if not OLD_KEY_NOTICE_GIVEN:
+        OLD_KEY_NOTICE, OLD_KEY_NOTICE_GIVEN = 'Control+T is now Control+O. ', True
+
+
+def old_key_notice():
+    """The notice to say first, if Control+T was just pressed; it is said only once."""
+    global OLD_KEY_NOTICE
+    notice, OLD_KEY_NOTICE = OLD_KEY_NOTICE, ''
+    return notice
+
+
 def pick(m, mode):
     """File manager as a picker: Enter on a file attaches it and comes back to the draft."""
     from file_manager import FileManager, start_location
     if m.email_draft is None:
-        m.speak('No email is open. Say new email first.')
+        m.speak(old_key_notice() + 'No email is open. Say new email first.')
         return mode
     try:
         m.email_draft.save()
     except OSError:
-        m.speak('The draft could not be saved, so File manager did not open. Try again.')
+        m.speak(old_key_notice() + 'The draft could not be saved, so File manager did not open. Try again.')
         return mode
     m.FILE_MANAGER = FileManager()
     m.FILE_MANAGER.pick_extensions = None
     m.FILE_MANAGER.pick_label = 'attach'
     m.task_navigation().picker = 'attach'
-    m.speak('Attach a file. Enter attaches the file you are on. Space marks several. Escape goes back to the email. '
+    m.speak(old_key_notice() + 'Attach a file. Enter attaches the file you are on. Space marks several. Escape goes back to the email. '
             + m.FILE_MANAGER.refresh(start_location(m.PREFERENCES.get('file_manager_start'))))
     return 'files'
 
@@ -1176,10 +1192,14 @@ def email_files(m, mode):
 
 def attach_to_draft(m, mode):
     if m.email_draft is None:
-        m.speak('No email draft is open. Press Control+N to start a new email with this file.')
+        m.speak(old_key_notice() + 'No email draft is open. Press Control+N to start a new email with this file.')
         return mode
-    said = m.email_draft.attach(chosen_files(m.FILE_MANAGER))
+    notice = old_key_notice()
+    try:
+        said = m.email_draft.attach(chosen_files(m.FILE_MANAGER))
+    except AttachmentError as error:
+        raise AttachmentError(notice + str(error)) from error
     m.task_navigation().picker = None
-    m.speak(said + ' Back to email draft.')
+    m.speak(notice + said + ' Back to email draft.')
     m.focus_email_entry()
     return 'email_draft'

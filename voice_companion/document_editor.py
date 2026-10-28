@@ -173,6 +173,25 @@ def document_filename(title):
     return name or 'Untitled'
 
 
+def checked_document_name(text):
+    """(file name without .docx, None), or (None, what to say) when Windows cannot use the name."""
+    proposed = ' '.join(str(text).split()).strip(' .')
+    if not proposed: return None, 'Please say or type a document name.'
+    if re.search(r'[<>:"/\\|?*]', proposed): return None, 'That file name contains a character Windows cannot use. Please choose another name.'
+    proposed = document_filename(proposed)
+    if re.fullmatch(r'(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?', proposed, re.I): return None, 'Windows reserves that file name. Please choose another name.'
+    return proposed, None
+
+
+def existing_document(folder, name):
+    """The .docx in folder with this name, in any letter case, or None."""
+    wanted = (name + '.docx').casefold()
+    try:
+        return next((p for p in Path(folder).glob('*.docx') if p.name.casefold() == wanted), None)
+    except OSError:
+        return None
+
+
 PARAGRAPH_ORDINALS = {'first':1, 'second':2, 'third':3, 'fourth':4, 'fifth':5,
                       'sixth':6, 'seventh':7, 'eighth':8, 'ninth':9, 'tenth':10}
 
@@ -436,6 +455,22 @@ class VoiceDocument:
                 z.writestr(name, value)
         keep_previous(self.path)
         temporary.replace(self.path)
+        return self.path
+
+    def save_as(self, folder, title):
+        """Save a copy as folder/title.docx and keep working in the copy. The first file is not changed.
+
+        On an error the document keeps its old name and folder. A file already at the
+        target is replaced only after the user said Yes; save() keeps its previous copy."""
+        previous = (self.folder, self.title, self.source_path)
+        self.folder, self.title, self.source_path = Path(folder), title, None
+        try:
+            self.folder.mkdir(parents=True, exist_ok=True)   # a first copy into Documents, Voice Companion
+            self.save()
+        except BaseException:
+            self.folder, self.title, self.source_path = previous
+            raise
+        self.last_change = None   # Undo must not rename the copy back.
         return self.path
 
     def checkpoint(self):
@@ -869,11 +904,9 @@ class VoiceDocument:
         name = re.fullmatch(NAME_PATTERN, ' '.join(text.split()), re.I | re.S)
         if name:
             self.selection_candidates, self.selection_action = [], ''
-            proposed = ' '.join(name[1].split()).strip(' .')
-            if not proposed: return 'Please say a document name after the naming command.'
-            if re.search(r'[<>:"/\\|?*]', proposed): return 'That file name contains a character Windows cannot use. Please choose another name.'
-            proposed = document_filename(proposed)
-            if re.fullmatch(r'(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?',proposed,re.I): return 'Windows reserves that file name. Please choose another name.'
+            if not ' '.join(name[1].split()).strip(' .'): return 'Please say a document name after the naming command.'
+            proposed, problem = checked_document_name(name[1])
+            if problem: return problem
             old_path, previous_title = self.path, self.title
             new_path = self.folder / (proposed + '.docx')
             if new_path != old_path and any(p.name.casefold() == new_path.name.casefold() for p in self.folder.glob('*.docx')):
@@ -989,7 +1022,7 @@ class VoiceDocument:
             if kind == 'all':
                 selected = TextSelection(0, 0, len(self.paragraphs)-1, len(self.paragraphs[-1].text))
                 self._apply_selection_action(selected, 'select')
-                return 'Selected all text in the document. ' + str(len(self.paragraphs)) + ' paragraphs.'
+                return 'Selected all text in the document. ' + str(len(self.paragraphs)) + (' paragraph.' if len(self.paragraphs) == 1 else ' paragraphs.')
             numbers = {'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10}
             if kind != 'paragraph':
                 paragraph = self.paragraphs[self.cursor]

@@ -100,7 +100,7 @@ MENUS = {
             ('Email options', '', '@options:Email'),
             ('Writing email help', 'F1', 'help with writing email')]),
         ('Attachments', [
-            ('Attach a file', 'Ctrl+T', 'attach a file'),
+            ('Attach a file', 'Ctrl+O', 'attach a file'),
             ('Attach the last download', '', 'attach the last download'),
             ('List attachments', 'Ctrl+L', 'list attachments'),
             ('Remove an attachment', '', 'remove attachment')]),
@@ -169,7 +169,9 @@ MENUS = {
             ('Find contact', 'Ctrl+F', 'find contact {value}'),
             ('Refresh contacts', '', 'refresh contacts'),
             ('Contacts help', 'F1', 'help with contacts'),
-            ('Main menu', '', 'main menu')]),
+            ('Main menu', '', 'main menu'),
+            # Last, so hiding it (one email account) moves no other item.
+            ('Choose address book', 'Ctrl+L', 'choose address book')]),
     ]),
     'calendar': ('Calendar menu', [
         ('Event', [
@@ -189,7 +191,9 @@ MENUS = {
         ('Calendar', [
             ('Refresh calendar', '', 'refresh calendar'),
             ('Calendar help', 'F1', 'help with calendar'),
-            ('Main menu', '', 'main menu')]),
+            ('Main menu', '', 'main menu'),
+            # Last, so hiding it (one email account) moves no other item.
+            ('Choose calendar', 'Ctrl+L', 'choose calendar')]),
     ]),
     'help': ('Help menu', [
         ('Help', [
@@ -221,7 +225,7 @@ MENUS = {
             ('Save all', 'Ctrl+Shift+S', 'save all attachments'),
             ('Details', 'Ctrl+I', 'read attachment details'),
             ('Remove from this email', 'Delete', 'remove attachment'),
-            ('Attach another file', 'Ctrl+T', 'attach a file'),
+            ('Attach another file', 'Ctrl+O', 'attach a file'),
             ('Attachments help', 'F1', 'help with attachments'),
             ('Close the list', 'Escape', 'close attachments')]),
     ]),
@@ -343,10 +347,20 @@ class ScreenMenu:
     def entries(self):
         groups = MENUS[self.mode][1]
         if len(groups) == 1:
-            return groups[0][1]
+            return self.shown(groups[0][1])
         if self.group is None:
             return [(name, '', None) for name, _ in groups]
-        return groups[self.group][1]
+        return self.shown(groups[self.group][1])
+
+    def shown(self, entries):
+        """The items that apply now. Choosing a calendar or address book is left out with one email account."""
+        hidden = ()
+        if self.mode in ('calendar', 'contacts'):
+            try:
+                hidden = __import__(self.mode + '_screen').hidden_commands()
+            except Exception:
+                hidden = ()
+        return [entry for entry in entries if entry[2] not in hidden]
 
     def describe(self, index):
         entries = self.entries()

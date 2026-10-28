@@ -16,6 +16,7 @@ import thunderbird_pim
 from address_book import AddressBook
 
 KEEP_SECONDS = 300
+LOCAL_ID = '@local'     # the contacts saved on this computer, as one address book (see ContactBook.view)
 # Last list read from Thunderbird: {'at': monotonic time, 'contacts': [Contact], 'books': [...]}.
 CACHE = {'at': None, 'contacts': [], 'books': []}
 
@@ -28,6 +29,7 @@ class Contact:
     source: str = 'local'           # 'thunderbird' or 'local'
     id: str = ''                    # Thunderbird's contact id, or the local name key
     book: str = ''                  # the address book's name in Thunderbird
+    book_id: str = ''               # the address book's id in Thunderbird
     read_only: bool = False
 
     @property
@@ -60,7 +62,8 @@ def from_thunderbird(item):
     emails = strings(item.get('emails'))
     name = str(item.get('name') or '').strip() or (emails[0] if emails else '')
     return Contact(name=name[:200], emails=emails, phones=strings(item.get('phones')), source='thunderbird',
-                   id=str(item.get('id') or ''), book=str(item.get('book') or ''), read_only=bool(item.get('readOnly')))
+                   id=str(item.get('id') or ''), book=str(item.get('book') or ''), book_id=str(item.get('bookId') or ''),
+                   read_only=bool(item.get('readOnly')))
 
 
 def from_local(entry):
@@ -100,6 +103,9 @@ class ContactBook:
         self.local = AddressBook(folder, self.account)
         self.notice = ''              # why Thunderbird's contacts are missing, when they are
         self.books = []
+        self.thunderbird = []         # Thunderbird's contacts as last read, before merging
+        self.failed_books = []        # ids of the address books that could not be read
+        self.saved_in = ''            # the id of the address book the last new contact went into
 
     def local_contacts(self):
         return [from_local(entry) for entry in self.local.all().values() if isinstance(entry, dict) and entry.get('name')]
@@ -107,12 +113,14 @@ class ContactBook:
     def load(self, use_thunderbird=True):
         """Read every contact. Thunderbird is asked when usable; a failure leaves the local ones and a notice."""
         self.notice = ''
+        self.failed_books = []
         found = []
         if use_thunderbird and thunderbird_pim.usable(self.folder):
             try:
                 answer = thunderbird_pim.contacts()
                 found = [from_thunderbird(item) for item in answer['contacts'] if isinstance(item, dict)]
                 self.books = [book for book in answer.get('books', []) if isinstance(book, dict)]
+                self.failed_books = [str(book) for book in answer.get('failedBooks') or [] if book]
                 CACHE.update(at=time.monotonic(), contacts=found, books=self.books)
                 if answer.get('failed'):
                     self.notice = 'Some Thunderbird address books could not be read. Try again in a minute.'
@@ -121,7 +129,16 @@ class ContactBook:
                 found = []
         elif use_thunderbird:
             self.notice = 'Only contacts saved on this computer are here. To use your Google or Outlook contacts, say add Thunderbird account.'
+        self.thunderbird = found
         return merge(found, self.local_contacts())
+
+    def view(self, ids=None):
+        """The contacts last read, merged, from every address book (None) or only these book ids.
+        LOCAL_ID stands for the contacts saved on this computer. Books are chosen before merging,
+        so a person in two accounts is still in each one's list."""
+        if ids is None:
+            return merge(self.thunderbird, self.local_contacts())
+        return merge([c for c in self.thunderbird if c.book_id in ids], self.local_contacts() if LOCAL_ID in ids else [])
 
     def cached(self):
         """Contacts without asking Thunderbird, unless it is connected and the kept list is old."""
@@ -137,8 +154,9 @@ class ContactBook:
                 return str(book.get('id', ''))
         return ''
 
-    def add(self, name, email='', phone=''):
+    def add(self, name, email='', phone='', book_id='', here=False):
         """Save a new contact: into Thunderbird when it is connected, else on this computer.
+        book_id chooses the Thunderbird address book; here saves it on this computer.
         Returns where it was saved, as words."""
         name = name.strip()
         if email:
@@ -148,10 +166,12 @@ class ContactBook:
             raise ValueError('Use a short contact name without symbols.')
         if not email and not phone.strip():
             raise ValueError('A contact needs an email address or a phone number.')
-        if thunderbird_pim.usable(self.folder):
+        self.saved_in = LOCAL_ID
+        if not here and thunderbird_pim.usable(self.folder):
             try:
-                answer = thunderbird_pim.add_contact(name, email, phone.strip(), self.preferred_book())
+                answer = thunderbird_pim.add_contact(name, email, phone.strip(), book_id or self.preferred_book())
                 CACHE['at'] = None
+                self.saved_in = str((answer or {}).get('bookId') or '') if isinstance(answer, dict) else ''
                 book = str((answer or {}).get('book') or '')
                 return 'in Thunderbird' + (', ' + book if book else '')
             except thunderbird_pim.PimError as exc:

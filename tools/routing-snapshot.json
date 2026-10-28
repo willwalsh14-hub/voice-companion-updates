@@ -564,9 +564,9 @@
 },
 "awake | beginning of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | beginning of list": {
 "said": [
@@ -576,7 +576,7 @@
 },
 "awake | bing": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -816,7 +816,7 @@
 },
 "awake | check email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -832,9 +832,27 @@
 ],
 "screen_after": "awake"
 },
+"awake | check mail": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
 "awake | check microsoft email": {
 "said": [
 "No Outlook address is connected. Outlook works through Thunderbird. Say add account to set it up."
+],
+"screen_after": "awake"
+},
+"awake | check my email": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
+"awake | check my mail": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -924,9 +942,9 @@
 },
 "awake | close document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | close email": {
 "said": [
@@ -1132,15 +1150,15 @@
 },
 "awake | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | create email": {
 "said": [
@@ -1322,6 +1340,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | do not replace": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | do not send": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1330,9 +1354,9 @@
 },
 "awake | document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | document help": {
 "said": [
@@ -1384,7 +1408,7 @@
 },
 "awake | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1420,9 +1444,9 @@
 },
 "awake | end of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | end of list": {
 "said": [
@@ -1468,15 +1492,15 @@
 },
 "awake | exit document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | exit document mode": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | exit email": {
 "said": [
@@ -1545,7 +1569,7 @@
 },
 "awake | find": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -1682,9 +1706,9 @@
 },
 "awake | go to beginning of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | go to bookmark": {
 "said": [
@@ -1692,11 +1716,17 @@
 ],
 "screen_after": "awake"
 },
+"awake | go to email": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
 "awake | go to end of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | go to favorite": {
 "said": [
@@ -1712,13 +1742,25 @@
 },
 "awake | go to inbox": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
 "awake | go to main menu": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | go to my email": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
+"awake | go to my inbox": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1734,6 +1776,12 @@
 ],
 "screen_after": "sleep"
 },
+"awake | go to the inbox": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
 "awake | go to website": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
@@ -1748,7 +1796,7 @@
 },
 "awake | google": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -1808,7 +1856,7 @@
 },
 "awake | inbox": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -1878,6 +1926,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | keep it": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | last item": {
 "said": [
 "Exit Voice Companion (E), 15 of 15."
@@ -1892,9 +1946,9 @@
 },
 "awake | leave document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | leave email": {
 "said": [
@@ -2081,7 +2135,7 @@
 },
 "awake | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "awake"
 },
@@ -2195,7 +2249,7 @@
 },
 "awake | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2220,6 +2274,12 @@
 "session handled: my favorites"
 ],
 "screen_after": "web"
+},
+"awake | my inbox": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
 },
 "awake | my notes": {
 "said": [
@@ -2247,9 +2307,9 @@
 },
 "awake | name document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | never mind": {
 "said": [
@@ -2271,9 +2331,9 @@
 },
 "awake | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | new email": {
 "said": [
@@ -2319,7 +2379,7 @@
 },
 "awake | new search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -2517,7 +2577,7 @@
 },
 "awake | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2577,7 +2637,7 @@
 },
 "awake | open inbox": {
 "said": [
-"Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -2587,11 +2647,35 @@
 ],
 "screen_after": "awake"
 },
+"awake | open mail": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
 "awake | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"awake | open my email": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
+"awake | open my inbox": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
+"awake | open my mail": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
 },
 "awake | open my notes": {
 "said": [
@@ -2691,6 +2775,12 @@
 "awake | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "awake"
+},
+"awake | open the inbox": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
 },
@@ -3040,15 +3130,57 @@
 ],
 "screen_after": "awake"
 },
+"awake | read email": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
 "awake | read gmail": {
 "said": [
 "No Gmail address is connected. Gmail works through Thunderbird. Say add account to set it up."
 ],
 "screen_after": "awake"
 },
+"awake | read mail": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
 "awake | read my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
+"awake | read my mail": {
+"said": [
+"No email account is set up yet. Say add account to set one up."
+],
+"screen_after": "awake"
+},
+"awake | read my note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | read my notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | read note": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
+],
+"screen_after": "awake"
+},
+"awake | read notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -3061,6 +3193,12 @@
 "awake | read paragraph": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | read saved notes": {
+"said": [
+"You have no saved notes yet. Say Write a note to start one."
 ],
 "screen_after": "awake"
 },
@@ -3179,9 +3317,9 @@
 },
 "awake | rename document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | rename favorite": {
 "said": [
@@ -3196,6 +3334,18 @@
 "screen_after": "awake"
 },
 "awake | repeat that": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | replace": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | replace it": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
@@ -3285,9 +3435,9 @@
 },
 "awake | save document as": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | save favorite": {
 "said": [
@@ -3298,6 +3448,12 @@
 "awake | save favorite as": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | save my document as": {
+"said": [
+"No document is open. Say create a document, or say open a document."
 ],
 "screen_after": "awake"
 },
@@ -3316,6 +3472,18 @@
 "awake | save preset as": {
 "said": [
 "I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
+"awake | save the document as": {
+"said": [
+"No document is open. Say create a document, or say open a document."
+],
+"screen_after": "awake"
+},
+"awake | save this document as": {
+"said": [
+"No document is open. Say create a document, or say open a document."
 ],
 "screen_after": "awake"
 },
@@ -3351,7 +3519,7 @@
 },
 "awake | search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -3380,7 +3548,7 @@
 },
 "awake | search the web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -3875,9 +4043,9 @@
 },
 "awake | top of document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"No document is open. Say create a document, or say open a document."
 ],
-"screen_after": "document"
+"screen_after": "awake"
 },
 "awake | turn off auto downloads": {
 "said": [
@@ -3987,6 +4155,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | visit": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
+],
+"screen_after": "awake"
+},
 "awake | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -4007,7 +4181,7 @@
 },
 "awake | web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -4265,9 +4439,9 @@
 },
 "awake | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "awake | write a message": {
 "said": [
@@ -4368,6 +4542,12 @@
 "awake | yes please": {
 "said": [
 "Say next or previous to choose an option."
+],
+"screen_after": "awake"
+},
+"awake | yes replace it": {
+"said": [
+"I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works."
 ],
 "screen_after": "awake"
 },
@@ -5622,6 +5802,15 @@
 "Hello world. Second sentence. check gmail"
 ]
 },
+"document | check mail": {
+"said": [
+"check mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check mail"
+]
+},
 "document | check microsoft email": {
 "said": [
 "check microsoft email"
@@ -5629,6 +5818,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. check microsoft email"
+]
+},
+"document | check my email": {
+"said": [
+"check my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check my email"
+]
+},
+"document | check my mail": {
+"said": [
+"check my mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check my mail"
 ]
 },
 "document | check outlook": {
@@ -6061,18 +6268,18 @@
 },
 "document | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
 },
 "document | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
@@ -6347,6 +6554,15 @@
 "Hello world. Second sentence. do it"
 ]
 },
+"document | do not replace": {
+"said": [
+"do not replace"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. do not replace"
+]
+},
 "document | do not send": {
 "said": [
 "do not send"
@@ -6439,7 +6655,7 @@
 },
 "document | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "document",
 "text": [
@@ -6887,6 +7103,15 @@
 "Hello world. Second sentence. go to bookmark"
 ]
 },
+"document | go to email": {
+"said": [
+"go to email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to email"
+]
+},
 "document | go to end of document": {
 "said": [
 "End of document. Hello world. Second sentence."
@@ -6932,6 +7157,24 @@
 "Hello world. Second sentence. go to main menu"
 ]
 },
+"document | go to my email": {
+"said": [
+"go to my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to my email"
+]
+},
+"document | go to my inbox": {
+"said": [
+"go to my inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to my inbox"
+]
+},
 "document | go to options": {
 "said": [
 "go to options"
@@ -6948,6 +7191,15 @@
 "screen_after": "sleep",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | go to the inbox": {
+"said": [
+"go to the inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. go to the inbox"
 ]
 },
 "document | go to website": {
@@ -7164,6 +7416,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. items"
+]
+},
+"document | keep it": {
+"said": [
+"keep it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. keep it"
 ]
 },
 "document | last item": {
@@ -7456,7 +7717,7 @@
 },
 "document | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "document",
 "text": [
@@ -7627,7 +7888,7 @@
 },
 "document | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "document",
 "text": [
@@ -7659,6 +7920,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. my favorites"
+]
+},
+"document | my inbox": {
+"said": [
+"my inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. my inbox"
 ]
 },
 "document | my notes": {
@@ -7735,9 +8005,9 @@
 },
 "document | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
@@ -8105,7 +8375,7 @@
 },
 "document | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "document",
 "text": [
@@ -8211,6 +8481,15 @@
 "Hello world. Second sentence. open link"
 ]
 },
+"document | open mail": {
+"said": [
+"open mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open mail"
+]
+},
 "document | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
@@ -8218,6 +8497,33 @@
 "screen_after": "help",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | open my email": {
+"said": [
+"open my email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my email"
+]
+},
+"document | open my inbox": {
+"said": [
+"open my inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my inbox"
+]
+},
+"document | open my mail": {
+"said": [
+"open my mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open my mail"
 ]
 },
 "document | open my notes": {
@@ -8367,6 +8673,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | open the inbox": {
+"said": [
+"open the inbox"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. open the inbox"
 ]
 },
 "document | open tutorial": {
@@ -8873,6 +9188,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | read email": {
+"said": [
+"read email"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read email"
+]
+},
 "document | read gmail": {
 "said": [
 "read gmail"
@@ -8882,6 +9206,15 @@
 "Hello world. Second sentence. read gmail"
 ]
 },
+"document | read mail": {
+"said": [
+"read mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read mail"
+]
+},
 "document | read my email": {
 "said": [
 "read my email"
@@ -8889,6 +9222,51 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. read my email"
+]
+},
+"document | read my mail": {
+"said": [
+"read my mail"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read my mail"
+]
+},
+"document | read my note": {
+"said": [
+"read my note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read my note"
+]
+},
+"document | read my notes": {
+"said": [
+"read my notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read my notes"
+]
+},
+"document | read note": {
+"said": [
+"read note"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read note"
+]
+},
+"document | read notes": {
+"said": [
+"read notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read notes"
 ]
 },
 "document | read outlook": {
@@ -8907,6 +9285,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | read saved notes": {
+"said": [
+"read saved notes"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. read saved notes"
 ]
 },
 "document | read selection": {
@@ -9112,6 +9499,24 @@
 "Hello world. Second sentence. repeat that"
 ]
 },
+"document | replace": {
+"said": [
+"replace"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. replace"
+]
+},
+"document | replace it": {
+"said": [
+"replace it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. replace it"
+]
+},
 "document | replace paragraph with New text": {
 "said": [
 "Replaced the paragraph with: New text"
@@ -9229,7 +9634,7 @@
 },
 "document | save as": {
 "said": [
-"Name this document. Say or type its name, then press Enter."
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
 ],
 "screen_after": "document_name",
 "text": [
@@ -9238,7 +9643,7 @@
 },
 "document | save document as": {
 "said": [
-"Name this document. Say or type its name, then press Enter."
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
 ],
 "screen_after": "document_name",
 "text": [
@@ -9261,6 +9666,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. save favorite as"
+]
+},
+"document | save my document as": {
+"said": [
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | save note": {
@@ -9288,6 +9702,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. save preset as"
+]
+},
+"document | save the document as": {
+"said": [
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | save this document as": {
+"said": [
+"Save as. Please say or type the new name for your document, then press Enter or say confirm."
+],
+"screen_after": "document_name",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | saved notes": {
@@ -10278,6 +10710,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | visit": {
+"said": [
+"visit"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. visit"
+]
+},
 "document | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -10640,9 +11081,9 @@
 },
 "document | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world. Second sentence."
 ]
@@ -10798,6 +11239,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. yes please"
+]
+},
+"document | yes replace it": {
+"said": [
+"yes replace it"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. yes replace it"
 ]
 },
 "document | yes send email": {
@@ -11522,7 +11972,7 @@
 },
 "email_draft | attachments": {
 "said": [
-"This email has no attachments. Say attach a file, or press Control+T."
+"This email has no attachments. Say attach a file, or press Control+O."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -12146,6 +12596,15 @@
 "Hello world. check gmail"
 ]
 },
+"email_draft | check mail": {
+"said": [
+"check mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check mail"
+]
+},
 "email_draft | check microsoft email": {
 "said": [
 "check microsoft email"
@@ -12153,6 +12612,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. check microsoft email"
+]
+},
+"email_draft | check my email": {
+"said": [
+"check my email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check my email"
+]
+},
+"email_draft | check my mail": {
+"said": [
+"check my mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check my mail"
 ]
 },
 "email_draft | check outlook": {
@@ -12586,18 +13063,18 @@
 },
 "email_draft | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
 },
 "email_draft | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
@@ -12902,6 +13379,15 @@
 "Hello world. do it"
 ]
 },
+"email_draft | do not replace": {
+"said": [
+"do not replace"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. do not replace"
+]
+},
 "email_draft | do not send": {
 "said": [
 "Sending canceled. The email remains a local draft."
@@ -12994,7 +13480,7 @@
 },
 "email_draft | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -13449,6 +13935,15 @@
 "Hello world. go to bookmark"
 ]
 },
+"email_draft | go to email": {
+"said": [
+"go to email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go to email"
+]
+},
 "email_draft | go to end of document": {
 "said": [
 "End of document. Hello world."
@@ -13499,6 +13994,29 @@
 "Hello world. go to main menu"
 ]
 },
+"email_draft | go to my email": {
+"said": [
+"go to my email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. go to my email"
+]
+},
+"email_draft | go to my inbox": {
+"calls": [
+"call.process('open inbox')",
+"call.pending.__bool__()"
+],
+"said": [
+"Draft canceled without saving.",
+"session handled: open inbox"
+],
+"screen_after": "mailbox",
+"text": [
+"Hello world."
+]
+},
 "email_draft | go to options": {
 "said": [
 "go to options"
@@ -13513,6 +14031,20 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep",
+"text": [
+"Hello world."
+]
+},
+"email_draft | go to the inbox": {
+"calls": [
+"call.process('open inbox')",
+"call.pending.__bool__()"
+],
+"said": [
+"Draft canceled without saving.",
+"session handled: open inbox"
+],
+"screen_after": "mailbox",
 "text": [
 "Hello world."
 ]
@@ -13736,6 +14268,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. items"
+]
+},
+"email_draft | keep it": {
+"said": [
+"keep it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. keep it"
 ]
 },
 "email_draft | last item": {
@@ -14029,7 +14570,7 @@
 },
 "email_draft | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -14201,7 +14742,7 @@
 },
 "email_draft | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -14233,6 +14774,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. my favorites"
+]
+},
+"email_draft | my inbox": {
+"said": [
+"my inbox"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. my inbox"
 ]
 },
 "email_draft | my notes": {
@@ -14319,9 +14869,9 @@
 },
 "email_draft | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
@@ -14689,7 +15239,7 @@
 },
 "email_draft | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -14795,6 +15345,15 @@
 "Hello world. open link"
 ]
 },
+"email_draft | open mail": {
+"said": [
+"open mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open mail"
+]
+},
 "email_draft | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
@@ -14802,6 +15361,33 @@
 "screen_after": "help",
 "text": [
 "Hello world."
+]
+},
+"email_draft | open my email": {
+"said": [
+"open my email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my email"
+]
+},
+"email_draft | open my inbox": {
+"said": [
+"open my inbox"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my inbox"
+]
+},
+"email_draft | open my mail": {
+"said": [
+"open my mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open my mail"
 ]
 },
 "email_draft | open my notes": {
@@ -14951,6 +15537,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | open the inbox": {
+"said": [
+"open the inbox"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. open the inbox"
 ]
 },
 "email_draft | open tutorial": {
@@ -15457,6 +16052,15 @@
 "Hello world."
 ]
 },
+"email_draft | read email": {
+"said": [
+"read email"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read email"
+]
+},
 "email_draft | read gmail": {
 "said": [
 "read gmail"
@@ -15466,6 +16070,15 @@
 "Hello world. read gmail"
 ]
 },
+"email_draft | read mail": {
+"said": [
+"read mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read mail"
+]
+},
 "email_draft | read my email": {
 "said": [
 "read my email"
@@ -15473,6 +16086,51 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. read my email"
+]
+},
+"email_draft | read my mail": {
+"said": [
+"read my mail"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read my mail"
+]
+},
+"email_draft | read my note": {
+"said": [
+"read my note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read my note"
+]
+},
+"email_draft | read my notes": {
+"said": [
+"read my notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read my notes"
+]
+},
+"email_draft | read note": {
+"said": [
+"read note"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read note"
+]
+},
+"email_draft | read notes": {
+"said": [
+"read notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read notes"
 ]
 },
 "email_draft | read outlook": {
@@ -15491,6 +16149,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | read saved notes": {
+"said": [
+"read saved notes"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. read saved notes"
 ]
 },
 "email_draft | read selection": {
@@ -15696,6 +16363,24 @@
 "Hello world. repeat that"
 ]
 },
+"email_draft | replace": {
+"said": [
+"replace"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. replace"
+]
+},
+"email_draft | replace it": {
+"said": [
+"replace it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. replace it"
+]
+},
 "email_draft | replace paragraph with New text": {
 "said": [
 "Replaced the paragraph with: New text"
@@ -15852,6 +16537,15 @@
 "Hello world. save favorite as"
 ]
 },
+"email_draft | save my document as": {
+"said": [
+"Please say a document name after the naming command."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | save note": {
 "said": [
 "save note"
@@ -15877,6 +16571,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. save preset as"
+]
+},
+"email_draft | save the document as": {
+"said": [
+"Please say a document name after the naming command."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | save this document as": {
+"said": [
+"Please say a document name after the naming command."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | saved notes": {
@@ -16867,6 +17579,15 @@
 "Hello world."
 ]
 },
+"email_draft | visit": {
+"said": [
+"visit"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. visit"
+]
+},
 "email_draft | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -17229,9 +17950,9 @@
 },
 "email_draft | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document",
+"screen_after": "document_name",
 "text": [
 "Hello world."
 ]
@@ -17387,6 +18108,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | yes replace it": {
+"said": [
+"yes replace it"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. yes replace it"
 ]
 },
 "email_draft | yes send email": {
@@ -18018,7 +18748,19 @@
 "said": [],
 "screen_after": "help"
 },
+"help | check mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | check microsoft email": {
+"said": [],
+"screen_after": "help"
+},
+"help | check my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | check my mail": {
 "said": [],
 "screen_after": "help"
 },
@@ -18357,6 +19099,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | do not replace": {
+"said": [],
+"screen_after": "help"
+},
 "help | do not send": {
 "said": [],
 "screen_after": "help"
@@ -18607,6 +19353,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | go to email": {
+"said": [],
+"screen_after": "help"
+},
 "help | go to end of document": {
 "said": [],
 "screen_after": "help"
@@ -18627,6 +19377,14 @@
 "said": [],
 "screen_after": "help"
 },
+"help | go to my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | go to my inbox": {
+"said": [],
+"screen_after": "help"
+},
 "help | go to options": {
 "said": [],
 "screen_after": "help"
@@ -18636,6 +19394,10 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"help | go to the inbox": {
+"said": [],
+"screen_after": "help"
 },
 "help | go to website": {
 "said": [],
@@ -18742,6 +19504,10 @@
 "screen_after": "help"
 },
 "help | items": {
+"said": [],
+"screen_after": "help"
+},
+"help | keep it": {
 "said": [],
 "screen_after": "help"
 },
@@ -18879,7 +19645,7 @@
 },
 "help | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "help"
 },
@@ -18974,6 +19740,10 @@
 "screen_after": "help"
 },
 "help | my favorites": {
+"said": [],
+"screen_after": "help"
+},
+"help | my inbox": {
 "said": [],
 "screen_after": "help"
 },
@@ -19236,10 +20006,26 @@
 "said": [],
 "screen_after": "help"
 },
+"help | open mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | open manual": {
 "said": [
 "About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
+"screen_after": "help"
+},
+"help | open my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | open my inbox": {
+"said": [],
+"screen_after": "help"
+},
+"help | open my mail": {
+"said": [],
 "screen_after": "help"
 },
 "help | open my notes": {
@@ -19321,6 +20107,10 @@
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
 ],
+"screen_after": "help"
+},
+"help | open the inbox": {
+"said": [],
 "screen_after": "help"
 },
 "help | open tutorial": {
@@ -19572,11 +20362,39 @@
 "said": [],
 "screen_after": "help"
 },
+"help | read email": {
+"said": [],
+"screen_after": "help"
+},
 "help | read gmail": {
 "said": [],
 "screen_after": "help"
 },
+"help | read mail": {
+"said": [],
+"screen_after": "help"
+},
 "help | read my email": {
+"said": [],
+"screen_after": "help"
+},
+"help | read my mail": {
+"said": [],
+"screen_after": "help"
+},
+"help | read my note": {
+"said": [],
+"screen_after": "help"
+},
+"help | read my notes": {
+"said": [],
+"screen_after": "help"
+},
+"help | read note": {
+"said": [],
+"screen_after": "help"
+},
+"help | read notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -19585,6 +20403,10 @@
 "screen_after": "help"
 },
 "help | read paragraph": {
+"said": [],
+"screen_after": "help"
+},
+"help | read saved notes": {
 "said": [],
 "screen_after": "help"
 },
@@ -19685,6 +20507,14 @@
 "said": [],
 "screen_after": "help"
 },
+"help | replace": {
+"said": [],
+"screen_after": "help"
+},
+"help | replace it": {
+"said": [],
+"screen_after": "help"
+},
 "help | replace paragraph with New text": {
 "said": [],
 "screen_after": "help"
@@ -19757,6 +20587,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | save my document as": {
+"said": [],
+"screen_after": "help"
+},
 "help | save note": {
 "said": [],
 "screen_after": "help"
@@ -19766,6 +20600,14 @@
 "screen_after": "help"
 },
 "help | save preset as": {
+"said": [],
+"screen_after": "help"
+},
+"help | save the document as": {
+"said": [],
+"screen_after": "help"
+},
+"help | save this document as": {
 "said": [],
 "screen_after": "help"
 },
@@ -20257,6 +21099,10 @@
 "said": [],
 "screen_after": "help"
 },
+"help | visit": {
+"said": [],
+"screen_after": "help"
+},
 "help | voice check": {
 "said": [],
 "screen_after": "help"
@@ -20502,6 +21348,10 @@
 "screen_after": "help"
 },
 "help | yes please": {
+"said": [],
+"screen_after": "help"
+},
+"help | yes replace it": {
 "said": [],
 "screen_after": "help"
 },
@@ -21641,12 +22491,39 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | check mail": {
+"calls": [
+"call.process('check mail')"
+],
+"said": [
+"session handled: check mail"
+],
+"screen_after": "mailbox"
+},
 "mailbox | check microsoft email": {
 "calls": [
 "call.process('check microsoft email')"
 ],
 "said": [
 "session handled: check microsoft email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | check my email": {
+"calls": [
+"call.process('check my email')"
+],
+"said": [
+"session handled: check my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | check my mail": {
+"calls": [
+"call.process('check my mail')"
+],
+"said": [
+"session handled: check my mail"
 ],
 "screen_after": "mailbox"
 },
@@ -22028,15 +22905,15 @@
 },
 "mailbox | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | create email": {
 "said": [
@@ -22263,6 +23140,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | do not replace": {
+"calls": [
+"call.process('do not replace')"
+],
+"said": [
+"session handled: do not replace"
+],
+"screen_after": "mailbox"
+},
 "mailbox | do not send": {
 "calls": [
 "call.process('do not send')"
@@ -22352,7 +23238,7 @@
 },
 "mailbox | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "mailbox"
 },
@@ -22781,6 +23667,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | go to email": {
+"calls": [
+"call.process('go to email')"
+],
+"said": [
+"session handled: go to email"
+],
+"screen_after": "mailbox"
+},
 "mailbox | go to end of document": {
 "calls": [
 "call.process('go to end of document')"
@@ -22823,6 +23718,24 @@
 ],
 "screen_after": "awake"
 },
+"mailbox | go to my email": {
+"calls": [
+"call.process('go to my email')"
+],
+"said": [
+"session handled: go to my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | go to my inbox": {
+"calls": [
+"call.process('go to my inbox')"
+],
+"said": [
+"session handled: go to my inbox"
+],
+"screen_after": "mailbox"
+},
 "mailbox | go to options": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
@@ -22834,6 +23747,15 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"mailbox | go to the inbox": {
+"calls": [
+"call.process('go to the inbox')"
+],
+"said": [
+"session handled: go to the inbox"
+],
+"screen_after": "mailbox"
 },
 "mailbox | go to website": {
 "calls": [
@@ -23028,6 +23950,15 @@
 ],
 "said": [
 "session handled: items"
+],
+"screen_after": "mailbox"
+},
+"mailbox | keep it": {
+"calls": [
+"call.process('keep it')"
+],
+"said": [
+"session handled: keep it"
 ],
 "screen_after": "mailbox"
 },
@@ -23285,7 +24216,7 @@
 },
 "mailbox | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "mailbox"
 },
@@ -23438,7 +24369,7 @@
 },
 "mailbox | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "mailbox"
 },
@@ -23460,6 +24391,15 @@
 ],
 "said": [
 "session handled: my favorites"
+],
+"screen_after": "mailbox"
+},
+"mailbox | my inbox": {
+"calls": [
+"call.process('my inbox')"
+],
+"said": [
+"session handled: my inbox"
 ],
 "screen_after": "mailbox"
 },
@@ -23531,9 +24471,9 @@
 },
 "mailbox | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | new email": {
 "said": [
@@ -23875,7 +24815,7 @@
 },
 "mailbox | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "mailbox"
 },
@@ -23966,11 +24906,47 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | open mail": {
+"calls": [
+"call.process('open mail')"
+],
+"said": [
+"session handled: open mail"
+],
+"screen_after": "mailbox"
+},
 "mailbox | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"mailbox | open my email": {
+"calls": [
+"call.process('open my email')"
+],
+"said": [
+"session handled: open my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open my inbox": {
+"calls": [
+"call.process('open my inbox')"
+],
+"said": [
+"session handled: open my inbox"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open my mail": {
+"calls": [
+"call.process('open my mail')"
+],
+"said": [
+"session handled: open my mail"
+],
+"screen_after": "mailbox"
 },
 "mailbox | open my notes": {
 "calls": [
@@ -24097,6 +25073,15 @@
 "mailbox | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "mailbox"
+},
+"mailbox | open the inbox": {
+"calls": [
+"call.process('open the inbox')"
+],
+"said": [
+"session handled: open the inbox"
 ],
 "screen_after": "mailbox"
 },
@@ -24547,6 +25532,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | read email": {
+"calls": [
+"call.process('read email')"
+],
+"said": [
+"session handled: read email"
+],
+"screen_after": "mailbox"
+},
 "mailbox | read gmail": {
 "calls": [
 "call.process('read gmail')"
@@ -24556,12 +25550,66 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | read mail": {
+"calls": [
+"call.process('read mail')"
+],
+"said": [
+"session handled: read mail"
+],
+"screen_after": "mailbox"
+},
 "mailbox | read my email": {
 "calls": [
 "call.process('read my email')"
 ],
 "said": [
 "session handled: read my email"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read my mail": {
+"calls": [
+"call.process('read my mail')"
+],
+"said": [
+"session handled: read my mail"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read my note": {
+"calls": [
+"call.process('read my note')"
+],
+"said": [
+"session handled: read my note"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read my notes": {
+"calls": [
+"call.process('read my notes')"
+],
+"said": [
+"session handled: read my notes"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read note": {
+"calls": [
+"call.process('read note')"
+],
+"said": [
+"session handled: read note"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read notes": {
+"calls": [
+"call.process('read notes')"
+],
+"said": [
+"session handled: read notes"
 ],
 "screen_after": "mailbox"
 },
@@ -24580,6 +25628,15 @@
 ],
 "said": [
 "session handled: read paragraph"
+],
+"screen_after": "mailbox"
+},
+"mailbox | read saved notes": {
+"calls": [
+"call.process('read saved notes')"
+],
+"said": [
+"session handled: read saved notes"
 ],
 "screen_after": "mailbox"
 },
@@ -24759,6 +25816,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | replace": {
+"calls": [
+"call.process('replace')"
+],
+"said": [
+"session handled: replace"
+],
+"screen_after": "mailbox"
+},
+"mailbox | replace it": {
+"calls": [
+"call.process('replace it')"
+],
+"said": [
+"session handled: replace it"
+],
+"screen_after": "mailbox"
+},
 "mailbox | replace paragraph with New text": {
 "calls": [
 "call.process('replace paragraph with New text')"
@@ -24906,6 +25981,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | save my document as": {
+"calls": [
+"call.process('save my document as')"
+],
+"said": [
+"session handled: save my document as"
+],
+"screen_after": "mailbox"
+},
 "mailbox | save note": {
 "calls": [
 "call.process('save note')"
@@ -24927,6 +26011,24 @@
 ],
 "said": [
 "session handled: save preset as"
+],
+"screen_after": "mailbox"
+},
+"mailbox | save the document as": {
+"calls": [
+"call.process('save the document as')"
+],
+"said": [
+"session handled: save the document as"
+],
+"screen_after": "mailbox"
+},
+"mailbox | save this document as": {
+"calls": [
+"call.process('save this document as')"
+],
+"said": [
+"session handled: save this document as"
 ],
 "screen_after": "mailbox"
 },
@@ -25801,6 +26903,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | visit": {
+"calls": [
+"call.process('visit')"
+],
+"said": [
+"session handled: visit"
+],
+"screen_after": "mailbox"
+},
 "mailbox | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -26106,9 +27217,9 @@
 },
 "mailbox | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "mailbox | write a message": {
 "said": [
@@ -26244,6 +27355,15 @@
 ],
 "said": [
 "session handled: yes please"
+],
+"screen_after": "mailbox"
+},
+"mailbox | yes replace it": {
+"calls": [
+"call.process('yes replace it')"
+],
+"said": [
+"session handled: yes replace it"
 ],
 "screen_after": "mailbox"
 },
@@ -26774,7 +27894,7 @@
 },
 "note | back": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -26810,8 +27930,7 @@
 },
 "note | back to main menu": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"The note was empty, so nothing was saved. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -27097,9 +28216,27 @@
 ],
 "screen_after": "note"
 },
+"note | check mail": {
+"said": [
+"check mail"
+],
+"screen_after": "note"
+},
 "note | check microsoft email": {
 "said": [
 "check microsoft email"
+],
+"screen_after": "note"
+},
+"note | check my email": {
+"said": [
+"check my email"
+],
+"screen_after": "note"
+},
+"note | check my mail": {
+"said": [
+"check my mail"
 ],
 "screen_after": "note"
 },
@@ -27392,15 +28529,15 @@
 },
 "note | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | create email": {
 "said": [
@@ -27582,6 +28719,12 @@
 ],
 "screen_after": "note"
 },
+"note | do not replace": {
+"said": [
+"do not replace"
+],
+"screen_after": "note"
+},
 "note | do not send": {
 "said": [
 "do not send"
@@ -27645,7 +28788,7 @@
 },
 "note | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "note"
 },
@@ -27711,7 +28854,7 @@
 },
 "note | exit": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27747,7 +28890,7 @@
 },
 "note | exit note": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27916,7 +29059,7 @@
 },
 "note | go back": {
 "said": [
-"Note saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
+"The note was empty, so nothing was saved. Notepad menu. Create a note (C), 1 of 4. Control+N."
 ],
 "screen_after": "notepad_menu"
 },
@@ -27941,6 +29084,12 @@
 "note | go to bookmark": {
 "said": [
 "go to bookmark"
+],
+"screen_after": "note"
+},
+"note | go to email": {
+"said": [
+"go to email"
 ],
 "screen_after": "note"
 },
@@ -27974,6 +29123,18 @@
 ],
 "screen_after": "note"
 },
+"note | go to my email": {
+"said": [
+"go to my email"
+],
+"screen_after": "note"
+},
+"note | go to my inbox": {
+"said": [
+"go to my inbox"
+],
+"screen_after": "note"
+},
 "note | go to options": {
 "said": [
 "go to options"
@@ -27985,6 +29146,12 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"note | go to the inbox": {
+"said": [
+"go to the inbox"
+],
+"screen_after": "note"
 },
 "note | go to website": {
 "said": [
@@ -28127,6 +29294,12 @@
 "note | items": {
 "said": [
 "items"
+],
+"screen_after": "note"
+},
+"note | keep it": {
+"said": [
+"keep it"
 ],
 "screen_after": "note"
 },
@@ -28324,7 +29497,7 @@
 },
 "note | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "note"
 },
@@ -28354,8 +29527,7 @@
 },
 "note | main menu": {
 "said": [
-"Note saved.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"The note was empty, so nothing was saved. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -28439,7 +29611,7 @@
 },
 "note | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "note"
 },
@@ -28458,6 +29630,12 @@
 "note | my favorites": {
 "said": [
 "my favorites"
+],
+"screen_after": "note"
+},
+"note | my inbox": {
+"said": [
+"my inbox"
 ],
 "screen_after": "note"
 },
@@ -28511,9 +29689,9 @@
 },
 "note | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | new email": {
 "said": [
@@ -28757,7 +29935,7 @@
 },
 "note | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "note"
 },
@@ -28827,11 +30005,35 @@
 ],
 "screen_after": "note"
 },
+"note | open mail": {
+"said": [
+"open mail"
+],
+"screen_after": "note"
+},
 "note | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"note | open my email": {
+"said": [
+"open my email"
+],
+"screen_after": "note"
+},
+"note | open my inbox": {
+"said": [
+"open my inbox"
+],
+"screen_after": "note"
+},
+"note | open my mail": {
+"said": [
+"open my mail"
+],
+"screen_after": "note"
 },
 "note | open my notes": {
 "said": [
@@ -28931,6 +30133,12 @@
 "note | open settings": {
 "said": [
 "The settings panel requires the app window. Voice settings commands are still available."
+],
+"screen_after": "note"
+},
+"note | open the inbox": {
+"said": [
+"open the inbox"
 ],
 "screen_after": "note"
 },
@@ -29270,15 +30478,57 @@
 ],
 "screen_after": "note"
 },
+"note | read email": {
+"said": [
+"read email"
+],
+"screen_after": "note"
+},
 "note | read gmail": {
 "said": [
 "read gmail"
 ],
 "screen_after": "note"
 },
+"note | read mail": {
+"said": [
+"read mail"
+],
+"screen_after": "note"
+},
 "note | read my email": {
 "said": [
 "read my email"
+],
+"screen_after": "note"
+},
+"note | read my mail": {
+"said": [
+"read my mail"
+],
+"screen_after": "note"
+},
+"note | read my note": {
+"said": [
+"read my note"
+],
+"screen_after": "note"
+},
+"note | read my notes": {
+"said": [
+"read my notes"
+],
+"screen_after": "note"
+},
+"note | read note": {
+"said": [
+"read note"
+],
+"screen_after": "note"
+},
+"note | read notes": {
+"said": [
+"read notes"
 ],
 "screen_after": "note"
 },
@@ -29291,6 +30541,12 @@
 "note | read paragraph": {
 "said": [
 "There is no text to read."
+],
+"screen_after": "note"
+},
+"note | read saved notes": {
+"said": [
+"read saved notes"
 ],
 "screen_after": "note"
 },
@@ -29431,6 +30687,18 @@
 ],
 "screen_after": "note"
 },
+"note | replace": {
+"said": [
+"replace"
+],
+"screen_after": "note"
+},
+"note | replace it": {
+"said": [
+"replace it"
+],
+"screen_after": "note"
+},
 "note | replace paragraph with New text": {
 "said": [
 "replace paragraph with New text"
@@ -29531,6 +30799,12 @@
 ],
 "screen_after": "note"
 },
+"note | save my document as": {
+"said": [
+"save my document as"
+],
+"screen_after": "note"
+},
 "note | save note": {
 "said": [
 "The note was empty.",
@@ -29547,6 +30821,18 @@
 "note | save preset as": {
 "said": [
 "save preset as"
+],
+"screen_after": "note"
+},
+"note | save the document as": {
+"said": [
+"save the document as"
+],
+"screen_after": "note"
+},
+"note | save this document as": {
+"said": [
+"save this document as"
 ],
 "screen_after": "note"
 },
@@ -30208,6 +31494,12 @@
 ],
 "screen_after": "note"
 },
+"note | visit": {
+"said": [
+"visit"
+],
+"screen_after": "note"
+},
 "note | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -30450,9 +31742,9 @@
 },
 "note | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "note | write a message": {
 "said": [
@@ -30553,6 +31845,12 @@
 "note | yes please": {
 "said": [
 "yes please"
+],
+"screen_after": "note"
+},
+"note | yes replace it": {
+"said": [
+"yes replace it"
 ],
 "screen_after": "note"
 },
@@ -31353,7 +32651,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -31813,6 +33110,16 @@
 ],
 "screen_after": "web"
 },
+"web | check mail": {
+"calls": [
+"call.command('check mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: check mail"
+],
+"screen_after": "web"
+},
 "web | check microsoft email": {
 "calls": [
 "call.command('check microsoft email')",
@@ -31820,6 +33127,26 @@
 ],
 "said": [
 "session handled: check microsoft email"
+],
+"screen_after": "web"
+},
+"web | check my email": {
+"calls": [
+"call.command('check my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: check my email"
+],
+"screen_after": "web"
+},
+"web | check my mail": {
+"calls": [
+"call.command('check my mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: check my mail"
 ],
 "screen_after": "web"
 },
@@ -31930,9 +33257,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -31991,9 +33316,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -32002,7 +33325,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -32226,15 +33548,15 @@
 },
 "web | create a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | create document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | create email": {
 "said": [
@@ -32480,6 +33802,16 @@
 ],
 "screen_after": "web"
 },
+"web | do not replace": {
+"calls": [
+"call.command('do not replace')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: do not replace"
+],
+"screen_after": "web"
+},
 "web | do not send": {
 "calls": [
 "call.command('do not send')",
@@ -32578,7 +33910,7 @@
 },
 "web | email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "web"
 },
@@ -32693,9 +34025,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -32750,9 +34080,7 @@
 "call.leave(False)"
 ],
 "said": [
-"Browser window closed.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Browser window closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -33058,6 +34386,16 @@
 ],
 "screen_after": "browser_menu"
 },
+"web | go to email": {
+"calls": [
+"call.command('go to email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to email"
+],
+"screen_after": "web"
+},
 "web | go to end of document": {
 "calls": [
 "call.command('go to end of document')",
@@ -33108,6 +34446,26 @@
 ],
 "screen_after": "web"
 },
+"web | go to my email": {
+"calls": [
+"call.command('go to my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to my email"
+],
+"screen_after": "web"
+},
+"web | go to my inbox": {
+"calls": [
+"call.command('go to my inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to my inbox"
+],
+"screen_after": "web"
+},
 "web | go to options": {
 "calls": [
 "call.command('go to options')",
@@ -33123,6 +34481,16 @@
 "Going to sleep. Say wake up when you need me."
 ],
 "screen_after": "sleep"
+},
+"web | go to the inbox": {
+"calls": [
+"call.command('go to the inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: go to the inbox"
+],
+"screen_after": "web"
 },
 "web | go to website": {
 "calls": [
@@ -33336,6 +34704,16 @@
 ],
 "screen_after": "web"
 },
+"web | keep it": {
+"calls": [
+"call.command('keep it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: keep it"
+],
+"screen_after": "web"
+},
 "web | last item": {
 "calls": [
 "call.command('last item')",
@@ -33411,7 +34789,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -33631,7 +35008,7 @@
 },
 "web | louder": {
 "said": [
-"Volume 100 percent."
+"Loudest volume. Volume 100 percent."
 ],
 "screen_after": "web"
 },
@@ -33680,7 +35057,6 @@
 "call.leave(False)"
 ],
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open.",
 "Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
@@ -33801,7 +35177,7 @@
 },
 "web | my email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "web"
 },
@@ -33828,6 +35204,16 @@
 ],
 "said": [
 "session handled: my favorites"
+],
+"screen_after": "web"
+},
+"web | my inbox": {
+"calls": [
+"call.command('my inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: my inbox"
 ],
 "screen_after": "web"
 },
@@ -33909,9 +35295,9 @@
 },
 "web | new document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | new email": {
 "said": [
@@ -33973,7 +35359,7 @@
 },
 "web | new search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -34283,7 +35669,7 @@
 },
 "web | open email": {
 "said": [
-"No email account is selected. Say add account, or list email accounts."
+"No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "web"
 },
@@ -34385,11 +35771,51 @@
 ],
 "screen_after": "web"
 },
+"web | open mail": {
+"calls": [
+"call.command('open mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open mail"
+],
+"screen_after": "web"
+},
 "web | open manual": {
 "said": [
 "User guide. About this guide (A), 1 of 31. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
+},
+"web | open my email": {
+"calls": [
+"call.command('open my email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my email"
+],
+"screen_after": "web"
+},
+"web | open my inbox": {
+"calls": [
+"call.command('open my inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my inbox"
+],
+"screen_after": "web"
+},
+"web | open my mail": {
+"calls": [
+"call.command('open my mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open my mail"
+],
+"screen_after": "web"
 },
 "web | open my notes": {
 "calls": [
@@ -34532,6 +35958,16 @@
 ],
 "screen_after": "web"
 },
+"web | open the inbox": {
+"calls": [
+"call.command('open the inbox')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: open the inbox"
+],
+"screen_after": "web"
+},
 "web | open tutorial": {
 "said": [
 "Say main menu first, then start tutorial. This protects what you are working on."
@@ -34558,7 +35994,7 @@
 },
 "web | open web browser": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -35024,6 +36460,16 @@
 ],
 "screen_after": "web"
 },
+"web | read email": {
+"calls": [
+"call.command('read email')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read email"
+],
+"screen_after": "web"
+},
 "web | read gmail": {
 "calls": [
 "call.command('read gmail')",
@@ -35034,6 +36480,16 @@
 ],
 "screen_after": "web"
 },
+"web | read mail": {
+"calls": [
+"call.command('read mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read mail"
+],
+"screen_after": "web"
+},
 "web | read my email": {
 "calls": [
 "call.command('read my email')",
@@ -35041,6 +36497,56 @@
 ],
 "said": [
 "session handled: read my email"
+],
+"screen_after": "web"
+},
+"web | read my mail": {
+"calls": [
+"call.command('read my mail')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read my mail"
+],
+"screen_after": "web"
+},
+"web | read my note": {
+"calls": [
+"call.command('read my note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read my note"
+],
+"screen_after": "web"
+},
+"web | read my notes": {
+"calls": [
+"call.command('read my notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read my notes"
+],
+"screen_after": "web"
+},
+"web | read note": {
+"calls": [
+"call.command('read note')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read note"
+],
+"screen_after": "web"
+},
+"web | read notes": {
+"calls": [
+"call.command('read notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read notes"
 ],
 "screen_after": "web"
 },
@@ -35061,6 +36567,16 @@
 ],
 "said": [
 "session handled: read paragraph"
+],
+"screen_after": "web"
+},
+"web | read saved notes": {
+"calls": [
+"call.command('read saved notes')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: read saved notes"
 ],
 "screen_after": "web"
 },
@@ -35257,6 +36773,26 @@
 ],
 "screen_after": "web"
 },
+"web | replace": {
+"calls": [
+"call.command('replace')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: replace"
+],
+"screen_after": "web"
+},
+"web | replace it": {
+"calls": [
+"call.command('replace it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: replace it"
+],
+"screen_after": "web"
+},
 "web | replace paragraph with New text": {
 "calls": [
 "call.command('replace paragraph with New text')",
@@ -35413,6 +36949,16 @@
 ],
 "screen_after": "web"
 },
+"web | save my document as": {
+"calls": [
+"call.command('save my document as')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: save my document as"
+],
+"screen_after": "web"
+},
 "web | save note": {
 "calls": [
 "call.command('save note')",
@@ -35440,6 +36986,26 @@
 ],
 "said": [
 "session handled: save preset as"
+],
+"screen_after": "web"
+},
+"web | save the document as": {
+"calls": [
+"call.command('save the document as')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: save the document as"
+],
+"screen_after": "web"
+},
+"web | save this document as": {
+"calls": [
+"call.command('save this document as')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: save this document as"
 ],
 "screen_after": "web"
 },
@@ -35495,7 +37061,7 @@
 },
 "web | search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -35531,13 +37097,13 @@
 },
 "web | search the web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
 "web | search web": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -36373,6 +37939,16 @@
 ],
 "screen_after": "web"
 },
+"web | visit": {
+"calls": [
+"call.command('visit')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: visit"
+],
+"screen_after": "web"
+},
 "web | voice check": {
 "said": [
 "Voice checking requires Windows speech output."
@@ -36403,7 +37979,7 @@
 },
 "web | web browser": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -36456,7 +38032,7 @@
 },
 "web | web search": {
 "said": [
-"Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels."
+"Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels."
 ],
 "screen_after": "search"
 },
@@ -36692,9 +38268,9 @@
 },
 "web | write a document": {
 "said": [
-"New Word document. Speak to write. Say name document followed by a title, or ask for document help."
+"Please say or type the name for your document, then press Enter or say confirm."
 ],
-"screen_after": "document"
+"screen_after": "document_name"
 },
 "web | write a message": {
 "said": [
@@ -36839,6 +38415,16 @@
 ],
 "said": [
 "session handled: yes please"
+],
+"screen_after": "web"
+},
+"web | yes replace it": {
+"calls": [
+"call.command('yes replace it')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: yes replace it"
 ],
 "screen_after": "web"
 },

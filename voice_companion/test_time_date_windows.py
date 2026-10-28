@@ -65,8 +65,9 @@ class WindowClockKeyTests(unittest.TestCase):
         return [item for item in list(self.window.commands.queue) if isinstance(item, tuple) and item[0] == 'keyboard']
 
     def test_f12_once_and_twice_on_each_screen(self):
+        # In an open document F12 alone is Save As (Will, October 2026); see test_insert_f12_and_num_lock.
         for context in (dict(mode='awake'), dict(mode='note'), dict(mode='mailbox'), dict(mode='files'),
-                        dict(mode='document', source='document:1'), dict(mode='email_draft', source='email:1'),
+                        dict(mode='document_menu'), dict(mode='email_draft', source='email:1'),
                         dict(mode='web', web_browse=True), dict(mode='web', web_app_mode=True),
                         dict(mode='awake', screen_menu=True), dict(mode='awake', confirmation='yes'),
                         dict(mode='web', web_private=True, web_field={'label': 'Password'})):
@@ -98,8 +99,10 @@ class WindowClockKeyTests(unittest.TestCase):
         time.sleep(0.6)
         while not self.window.commands.empty():
             self.window.commands.get_nowait()
+        # F12 alone in a document is Save As, with Num Lock on too.
         self.press('F12', state=8)  # Num Lock on.
-        self.wait(lambda: ('keyboard', 'F12') in self.requests())
+        self.wait(lambda: ('keyboard', 'Doc:SaveAs') in self.requests())
+        self.assertNotIn(('keyboard', 'F12'), self.requests())
 
     def test_control_f12_is_microphone_sleep(self):
         self.screen(mode='awake')

@@ -13,6 +13,10 @@ Keys (each also has a voice command, see input_parity.SCREEN_KEYS and the guide)
   3 PM" do it in one step. A repeating event asks "this one or all".
 - Delete removes one after a Yes or No question; for a repeating event it asks
   "this one or all". F1 is help, Escape goes to the main menu, Alt opens the menu.
+- With two or more email accounts in Thunderbird, Control+L chooses which calendar
+  to show: one, every one of an account, or all (pim_sources.py). "Show Gmail
+  calendar", "show all calendars" and "which calendar am I in" do it by voice.
+  With one account none of this is offered or said.
 
 "What's on my calendar today?" (or tomorrow, or a day) works from any screen
 where words are commands, and "add appointment tomorrow at 3 PM called doctor"
@@ -23,6 +27,7 @@ import re
 from datetime import datetime, time, timedelta
 
 import calendar_events
+import pim_sources
 import thunderbird_pim
 from menu_navigation import announce_item
 from spoken_dates import MONTH_NAMES, WEEKDAYS, find_day, missing_date, only_day, parse_day, parse_when, spoken_day
@@ -55,6 +60,10 @@ CHOICES = ('yes', 'no')
 DRAFT = {}             # the new event while its time and name are asked
 LAST_CALENDAR = None   # the calendar the last event was added to
 EDIT = {}              # the event being changed and its new values (see start_editing)
+SOURCES = None         # pim_sources.Sources for CALENDARS
+SOURCE = pim_sources.ALL   # which calendars are shown: 'all', 'account:<email>' or 'source:<id>'
+SOURCE_NOTICE = ''     # said once when the calendar chosen last time is gone
+NOTICE_SAID = False    # the last show() said SOURCE_NOTICE, so "Showing all calendars" is not said too
 
 
 def today(m):
@@ -62,42 +71,98 @@ def today(m):
 
 
 def reset():
-    global DAY, EVENTS, INDEX, NOTICE, CALENDARS, PENDING, DRAFT, CHOICE, CHOICES
+    global DAY, EVENTS, INDEX, NOTICE, CALENDARS, PENDING, DRAFT, CHOICE, CHOICES, SOURCES, SOURCE, SOURCE_NOTICE
     DAY, EVENTS, INDEX, NOTICE, CALENDARS, PENDING, DRAFT, CHOICE, CHOICES = None, [], 0, '', [], None, {}, 'no', ('yes', 'no')
+    SOURCES, SOURCE, SOURCE_NOTICE = None, pim_sources.ALL, ''
     EDIT.clear()
 
 
 # ---- Reading Thunderbird -----------------------------------------------------------
 
 def load_calendars(m):
-    """The calendars that are turned on. A failure is a notice, never an exception."""
-    global CALENDARS
+    """The calendars that are turned on, and which of them are shown (the choice kept from last time)."""
+    global CALENDARS, SOURCES, SOURCE, SOURCE_NOTICE
     CALENDARS = [c for c in thunderbird_pim.calendars() if isinstance(c, dict)]
+    first = SOURCES is None
+    SOURCES = pim_sources.Sources('calendar', CALENDARS)
+    if first:
+        SOURCE, SOURCE_NOTICE = pim_sources.resolve(m.APP, 'calendar', SOURCES)
+    elif not SOURCES.has(SOURCE):
+        # The calendar on screen was removed in Thunderbird while Calendar was open.
+        SOURCE_NOTICE = SOURCES.words(SOURCE) + ' is no longer in Thunderbird, so all calendars are shown.' if SOURCES.active() else ''
+        SOURCE = pim_sources.ALL
+        pim_sources.remember(m.APP, 'calendar', SOURCE, SOURCES.words(SOURCE))
     return CALENDARS
 
 
-def events_on(day):
-    """The events on one local day, from every calendar."""
+def choosing():
+    """True when there is a choice of calendars (two or more email accounts)."""
+    return SOURCES is not None and SOURCES.active()
+
+
+def showing():
+    """'Showing all calendars.' or 'Showing Calendar, Outlook, vet@outlook.com.'; '' with one account."""
+    return 'Showing ' + lower_first(SOURCES.words(SOURCE)) + '.' if choosing() else ''
+
+
+def lower_first(words):
+    return words[0].lower() + words[1:] if words.startswith('All ') else words
+
+
+def shown_ids():
+    return SOURCES.ids(SOURCE) if choosing() else None
+
+
+def calendar_words(calendar):
+    """How a calendar is named in a question: 'the Home calendar', or with more than one account
+    'Calendar, Outlook, vet@outlook.com', so two calendars called Calendar are told apart."""
+    if choosing():
+        return SOURCES.label(SOURCES.find(calendar.get('id')) or dict(calendar, account=''))
+    return 'the ' + str(calendar.get('name') or '') + ' calendar'
+
+
+def hidden_commands():
+    """Alt menu items that do not apply: choosing a calendar, with only one account."""
+    return () if choosing() else ('choose calendar',)
+
+
+def events_on(day, ids=None):
+    """The events on one local day, from every calendar, or only those with these calendar ids."""
     start, end = calendar_events.day_range(day)
     # A little before and after, so an event across midnight is found from either side.
     answer = thunderbird_pim.events(start - 86400000, end + 86400000)
     failed = [str(name) for name in answer.get('failed', []) if name]
-    return calendar_events.for_day(answer['events'], day), failed
+    events = calendar_events.for_day(answer['events'], day)
+    if ids is not None:
+        events = [event for event in events if event.calendar_id in ids]
+        names = {str(c.get('name') or '') for c in CALENDARS if str(c.get('id')) in ids}
+        failed = [name for name in failed if name in names]
+    if choosing():
+        for event in events:
+            found = SOURCES.find(event.calendar_id)
+            if found:
+                event.calendar = SOURCES.short(found)    # two calendars called Calendar are told apart
+    return events, failed
 
 
 def show(m, day, opening=False):
     """Go to a day and say it: "Today, Monday, October 26. 3 events. <first event>"."""
-    global DAY, EVENTS, INDEX, NOTICE
+    global DAY, EVENTS, INDEX, NOTICE, SOURCE_NOTICE
     DAY, INDEX, NOTICE = day, 0, ''
     try:
         if opening or not CALENDARS:
             load_calendars(m)
-        EVENTS, failed = events_on(day)
+        EVENTS, failed = events_on(day, shown_ids())
         if failed:
-            NOTICE = ' '.join('The ' + name + ' calendar could not be read.' for name in failed[:3])
+            NOTICE = ' '.join(failed_words(name) for name in failed[:3])
     except thunderbird_pim.PimError as exc:
         EVENTS, NOTICE = [], str(exc)
     words = spoken_day(day, today(m)) + '. ' + day_summary()
+    global NOTICE_SAID
+    NOTICE_SAID = bool(SOURCE_NOTICE)
+    if SOURCE_NOTICE:
+        words = SOURCE_NOTICE + ' ' + words
+        SOURCE_NOTICE = ''
     if NOTICE:
         words += ' ' + NOTICE
     elif opening and CALENDARS and all(c.get('type') == 'storage' for c in CALENDARS):
@@ -105,6 +170,14 @@ def show(m, day, opening=False):
     elif opening and not CALENDARS:
         words += ' Thunderbird has no calendars turned on. Press F1 to learn how to add one.'
     return words
+
+
+def failed_words(name):
+    """'The Holidays calendar could not be read.' With two accounts, the calendar's full name when only one has it."""
+    same = [c for c in CALENDARS if str(c.get('name') or '') == name]
+    if choosing() and len(same) == 1:
+        return SOURCES.label(SOURCES.find(same[0].get('id'))) + ' could not be read.'
+    return 'The ' + name + ' calendar could not be read.'
 
 
 def day_summary():
@@ -125,13 +198,22 @@ def current():
     return EVENTS[INDEX] if EVENTS and 0 <= INDEX < len(EVENTS) else None
 
 
-def open_screen(m, mode=None, day=None):
+def open_screen(m, mode=None, day=None, quiet=False):
+    """quiet: open on the day without saying it, when the next question is said at once
+    ("Add an event." from the main menu); a second message would cut off the first."""
     reset()
     if not thunderbird_pim.usable(m.APP):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode or 'awake'
-    m.speak('Calendar. ' + show(m, day or today(m), opening=True))
+    words = show(m, day or today(m), opening=True)
+    if not quiet:
+        m.speak('Calendar. ' + with_showing(words))
     return MODE
+
+
+def with_showing(words):
+    """The day's words after which calendars are shown, unless a notice already said it."""
+    return (showing() + ' ' if choosing() and not NOTICE_SAID else '') + words
 
 
 # ---- Hooks from companion.py -------------------------------------------------------
@@ -165,14 +247,25 @@ def navigation_key(m, key):
             return None
         if key in ('Enter', 'Space') and PENDING[0] == 'edit-field':
             return '@calendar:field ' + CHOICE      # "time" alone would say the clock time
+        if key in ('Enter', 'Space') and PENDING[0] == 'source':
+            return '@calendar:source ' + CHOICE
         return {'Enter': CHOICE, 'Space': CHOICE, 'Escape': 'no', 'F1': 'help with calendar'}.get(key)
     return {'Up': 'previous event', 'Down': 'next event', 'Enter': 'read event', 'Escape': 'close calendar'}.get(key)
+
+
+def choice_names():
+    """The lines the window shows while choosing a calendar, else None."""
+    if PENDING and PENDING[0] == 'source':
+        return [SOURCES.words(choice) for choice in CHOICES]
+    return None
 
 
 def choice_words():
     """What the arrows say on a question: "Yes.", "This one only.", or "Place: VA clinic, 5 of 7."."""
     if PENDING and PENDING[0] == 'edit-field':
         return announce_item(field_label(CHOICE, PENDING[1]), CHOICES.index(CHOICE), len(CHOICES), hotkey=False)
+    if PENDING and PENDING[0] == 'source':
+        return announce_item(SOURCES.words(CHOICE), CHOICES.index(CHOICE), len(CHOICES), hotkey=False)
     return {'this one': 'This one only.', 'all': 'All of them.'}.get(CHOICE, CHOICE.capitalize() + '.')
 
 
@@ -196,9 +289,16 @@ def handle(m, text, mode, typed=False):
             return tell_day(m, asked['day'] or 'today', mode)
         if mode == 'awake' and command in OPEN:
             return open_screen(m, mode)
+        wanted = SHOW.fullmatch(command)
+        if mode == 'awake' and wanted and wanted['verb'] and wanted['kind'] and wanted['what'] not in ('my', 'the'):
+            # "Show Gmail calendar" from the main menu: open Calendar on that calendar.
+            opened = open_screen(m, mode)
+            if opened != MODE or not choosing():
+                return opened
+            return show_source(m, wanted['what'], opening=True)
         if mode == 'awake' and (ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule')
                                 and command not in ('add', 'new', 'create', 'schedule') or ADD_START.match(command)):
-            opened = open_screen(m, mode)
+            opened = open_screen(m, mode, quiet=True)
             if opened != MODE:
                 return opened
             return start_adding(m, raw)
@@ -244,7 +344,13 @@ def command_here(m, raw, command):
         reset()
         return 'awake'      # handle() says Main menu when the screen changes
     if command in OPEN + ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'refresh', 'refresh calendar'):
-        m.speak(show(m, DAY or today(m), opening=command.startswith('refresh')))
+        words = show(m, DAY or today(m), opening=command.startswith('refresh'))
+        m.speak(with_showing(words) if command in OPEN + ('where am i', 'refresh', 'refresh calendar') else words)
+        return MODE
+    if command in CHOOSE:
+        return start_choosing(m)
+    if command in WHICH:
+        m.speak(showing() + ' ' + CHOOSE_HINT if choosing() else 'All your calendars are shown.')
         return MODE
     days = {'today': 0, 'go to today': 0, 'back to today': 0, 'home': 0, 'next day': 1, 'previous day': -1,
             'next week': 7, 'previous week': -7, 'last week': -7, 'day after': 1, 'day before': -1}
@@ -292,6 +398,11 @@ def command_here(m, raw, command):
     if ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule', 'make', 'book', 'put', 'set') \
             or ADD_START.match(command):
         return start_adding(m, raw)
+    wanted = SHOW.fullmatch(command)
+    if wanted and wanted['what'] not in ('my', 'the') and (wanted['verb'] and wanted['kind'] or
+                                                           (wanted['verb'] or wanted['kind']) and choosing() and SOURCES.match(wanted['what'])):
+        # "Show Gmail calendar", "show all calendars", "Family calendar", "Outlook".
+        return show_source(m, wanted['what'])
     day = day_command(m, command, raw)
     if day is not None:
         m.speak(show(m, day))
@@ -325,6 +436,97 @@ def day_command(m, command, raw=''):
     if found is not None and span == (0, len(words)) or found is not None and moved:
         return found
     return date_from(m, raw) if raw else None
+
+
+# ---- Choosing which calendars are shown ----------------------------------------------
+#
+# Only with two or more email accounts (pim_sources.Sources.active). Control+L lists
+# All calendars, each account, and each calendar; the arrows and Enter choose. Or say
+# "show Gmail calendar", "show the Family calendar", "show all calendars".
+
+CHOOSE = ('choose calendar', 'choose a calendar', 'choose calendars', 'choose which calendar', 'pick a calendar', 'pick calendar',
+          'select calendar', 'select a calendar', 'list calendars', 'calendar list', 'my calendars', 'switch calendars',
+          'other calendars')
+WHICH = ('which calendar', 'which calendars', 'which calendar am i in', 'what calendar am i in', 'which calendar is this',
+         'what calendar is this', 'which calendar am i looking at', 'what calendar am i looking at', 'which calendars am i looking at',
+         'what calendars am i looking at', 'which calendar is shown', 'which calendars are shown', 'what calendar is shown',
+         'what calendars are shown', 'which calendar is open')
+SHOW = re.compile(r'(?:(?P<verb>show|view|see|open|use|switch to|change to|go to|look at|look in)(?: me)?(?: only| just)? )?'
+                  r'(?:(?:the|my|only|just) )*(?P<what>.+?)(?P<kind>(?: calendars?)+)?')
+CHOOSE_HINT = 'To choose another, press Control+L.'
+
+
+def start_choosing(m, first=None, lead=''):
+    """Control+L: the list of calendars to show, on the one shown now."""
+    global PENDING, CHOICE, CHOICES
+    if not choosing():
+        m.speak('You have one email account in Thunderbird, so all your calendars are shown.')
+        return MODE
+    CHOICES = tuple(value for value, _ in SOURCES.choices())
+    CHOICE = first if first in CHOICES else SOURCE if SOURCE in CHOICES else CHOICES[0]
+    PENDING = ('source', None)
+    m.speak(lead + 'Choose the calendars to show. ' + choice_words() +
+            ' Use the arrows and Enter, or say a name. Escape cancels.')
+    return MODE
+
+
+def show_source(m, words, opening=False):
+    """'Show Gmail calendar': show it, or ask which when the words fit more than one."""
+    if not choosing():
+        if not opening:     # open_screen already said the day
+            m.speak(show(m, DAY or today(m)))
+        return MODE
+    found = SOURCES.match(words)
+    if len(found) == 1:
+        return use_source(m, found[0])
+    if found:
+        return start_choosing(m, found[0], 'More than one calendar fits. ')
+    return start_choosing(m, None, 'No calendar is called ' + words + '. ')
+
+
+def use_source(m, choice):
+    """Show these calendars, keep the choice for next time, and say the day."""
+    global SOURCE, PENDING
+    PENDING = None
+    SOURCE = choice
+    kept = pim_sources.remember(m.APP, 'calendar', choice, SOURCES.words(choice))
+    words = show(m, DAY or today(m))
+    m.speak(showing() + ' ' + words + ('' if kept else ' This choice could not be saved for next time.'))
+    return MODE
+
+
+def source_answer(m, command):
+    """An answer while the list of calendars is open."""
+    global CHOICE
+    if command.startswith('@'):
+        value = command.split(' ', 1)[1] if ' ' in command else ''
+        return use_source(m, value) if value in CHOICES else MODE
+    if command in NO:
+        global PENDING
+        PENDING = None
+        m.speak('Not changed. ' + showing())
+        return MODE
+    steps = {'next': 1, 'down': 1, 'next item': 1, 'previous': -1, 'up': -1, 'previous item': -1}
+    if command in steps:
+        place = CHOICES.index(CHOICE) + steps[command]
+        if 0 <= place < len(CHOICES):
+            CHOICE = CHOICES[place]
+            m.speak(choice_words())
+        else:
+            m.speak(('Start of list. ' if place < 0 else 'End of list. ') + choice_words())
+        return MODE
+    if command in YES or command in ('that one', 'this one'):
+        return use_source(m, CHOICE)
+    wanted = SHOW.fullmatch(command)
+    found = SOURCES.match(wanted['what'] if wanted else command)
+    if len(found) == 1:
+        return use_source(m, found[0])
+    if found:
+        CHOICE = found[0]
+        m.speak('More than one calendar fits. ' + choice_words() + ' Use the arrows and Enter.')
+        return MODE
+    m.speak('Choose the calendars to show. ' + choice_words() + ' Use the arrows and Enter, or say a name. Escape cancels.')
+    return MODE
 
 
 GO_TO_WORDS = ('go to date', 'go to a date', 'go to day', 'go to a day', 'go to', 'jump to date', 'jump to a date',
@@ -374,6 +576,8 @@ def internal(m, raw, mode):
         return edit_step(m, action[5:], value)
     if action == 'field' and PENDING is not None and PENDING[0] == 'edit-field':
         return answer(m, value.strip())
+    if action == 'source' and PENDING is not None and PENDING[0] == 'source':
+        return source_answer(m, '@source ' + value.strip())
     return mode
 
 
@@ -384,10 +588,19 @@ def writable():
 
 
 def default_calendar(m):
-    """The last calendar used, else an online one (Google first if it is named for the account), else Home."""
+    """The calendar on screen when one can be changed; else the last calendar used, else an online one
+    (Google first if it is named for the account), else Home."""
     choices = writable()
     if not choices:
         return None
+    ids = shown_ids()
+    if ids is not None:
+        shown = [c for c in choices if c['id'] in ids]
+        if shown:
+            # One account shown: the last one used there, else its main calendar (named by its address).
+            last = next((c for c in shown if c['id'] == LAST_CALENDAR), None)
+            main = next((c for c in shown if str(c.get('name', '')).casefold() == str(c.get('account', '')).casefold()), None)
+            return last or main or shown[0]
     by_id = {c['id']: c for c in choices}
     if LAST_CALENDAR in by_id:
         return by_id[LAST_CALENDAR]
@@ -491,6 +704,10 @@ def next_question(m):
     if not DRAFT.get('title'):
         return prompt(m, 'title', 'What is it called? Type or say a name, such as Doctor, then press Enter.')
     DRAFT['calendar'] = DRAFT.get('calendar') or default_calendar(m)
+    ids = shown_ids()
+    if ids is not None and DRAFT['calendar']['id'] not in ids and 'note' not in DRAFT:
+        # Only calendars that cannot be changed are shown, such as a holiday list.
+        DRAFT['note'] = SOURCES.words(SOURCE) + ' cannot be changed. '
     PENDING, CHOICE, CHOICES = ('add', DRAFT), 'yes', ('yes', 'no')
     m.speak(add_question(m))
     return MODE
@@ -512,8 +729,8 @@ def add_question(m):
     if not when.all_day and when.start_end()[0] < m.CLOCK() or when.all_day and when.day < today(m):
         passed = 'That time has already passed. '
     others = len(writable()) > 1
-    return ('Add ' + DRAFT['title'] + ', ' + draft_time_words(m) + ', to the ' + DRAFT['calendar']['name'] + ' calendar? ' + passed +
-            'Say Yes to save or No to cancel.' + (' To use another calendar, say change calendar.' if others else ''))
+    return (DRAFT.get('note', '') + 'Add ' + DRAFT['title'] + ', ' + draft_time_words(m) + ', to ' + calendar_words(DRAFT['calendar']) +
+            '? ' + passed + 'Say Yes to save or No to cancel.' + (' To use another calendar, say change calendar.' if others else ''))
 
 
 def save_draft(m):
@@ -541,8 +758,19 @@ def save_draft(m):
     if place is not None:
         INDEX = place
         words = spoken_day(when.day, today(m)) + '. ' + describe()
-    m.speak('Saved ' + title + ' in the ' + calendar['name'] + ' calendar. ' + words)
+    elif not_shown(calendar['id']):
+        words += ' ' + not_shown_words(calendar)
+    m.speak('Saved ' + title + ' in ' + calendar_words(calendar) + '. ' + words)
     return MODE
+
+
+def not_shown(calendar_id):
+    ids = shown_ids()
+    return ids is not None and calendar_id not in ids
+
+
+def not_shown_words(calendar):
+    return ('It is in ' + calendar_words(calendar) + ', which is not shown now. To see it, press Control+L and choose All calendars.')
 
 
 # ---- Deleting --------------------------------------------------------------------
@@ -577,6 +805,8 @@ def answer(m, command):
         return None
     if action in ('edit-field', 'edit'):
         return edit_answer(m, action, command)
+    if action == 'source':
+        return source_answer(m, command)
     if action == 'add':
         if command in ('change calendar', 'another calendar', 'other calendar', 'switch calendar', 'next calendar'):
             choices = writable()
@@ -918,7 +1148,7 @@ def edit_question(m):
         return ('Change the notes for ' + name + ' to: ' + EDIT['notes'].rstrip('.!?') + '?') if EDIT['notes'] else \
             'Remove the notes from ' + name + '?'
     if field == 'calendar':
-        return 'Move ' + name + ' to the ' + EDIT['calendar']['name'] + ' calendar?'
+        return 'Move ' + name + ' to ' + calendar_words(EDIT['calendar']) + '?'
     return 'Change ' + name + ' to ' + when_words(m, EDIT['all_day'], EDIT['start'], EDIT['end']) + '?'
 
 
@@ -1037,5 +1267,8 @@ def save_edit(m, scope):
     if place is not None:
         INDEX = place
         words = spoken_day(day, today(m)) + '. ' + describe() + (' ' + NOTICE if NOTICE else '')
+    elif 'calendarId' in changes and not_shown(changes['calendarId']):
+        target = next((c for c in CALENDARS if c.get('id') == changes['calendarId']), {'id': changes['calendarId'], 'name': ''})
+        words += ' ' + not_shown_words(target)
     m.speak('Saved ' + name + {'one': ', this one only', 'all': ', all of them'}.get(scope, '') + '. ' + words)
     return MODE

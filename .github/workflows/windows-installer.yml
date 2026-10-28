@@ -33,7 +33,18 @@ jobs:
       - name: Check experimental regular-browser message handling
         run: node ./voice_companion/regular_browser_extension/test-worker.cjs
       - name: Check Thunderbird mail add-on
-        run: node ./voice_companion/thunderbird_mail_extension/test-bridge.cjs
+        shell: pwsh
+        run: |
+          # A failure names itself in an annotation: the logs cannot always be read.
+          $output = node ./voice_companion/thunderbird_mail_extension/test-bridge.cjs 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Output $output
+          if ($code) {
+            $clean = $output -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+            if ($clean.Length -gt 3500) { $clean = $clean.Substring(0, 1200) + '%0A...%0A' + $clean.Substring($clean.Length - 2300) }
+            Write-Output ('::error title=Thunderbird mail add-on checks failed::' + $clean)
+            exit $code
+          }
       - name: Install installer compiler
         shell: pwsh
         run: |

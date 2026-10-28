@@ -12,6 +12,11 @@ Keys (each also has a voice command, see input_parity.SCREEN_KEYS and the guide)
   Yes or No question.
   Control+F finds a contact by name. F1 is help. Alt opens the Contacts menu.
 - Escape on the list goes to the main menu.
+- With two or more email accounts in Thunderbird, Control+L chooses which address
+  book to show: one, every one of an account, or all (pim_sources.py). "Show Gmail
+  contacts", "show all contacts" and "which address book am I in" do it by voice.
+  New contacts go into the address book shown. With one account none of this is
+  offered or said.
 
 "Email John", "send an email to John Smith" and "write to Mary" also work from
 the main menu (email_by_name). companion.py calls into this module from a few
@@ -20,6 +25,7 @@ small hooks; `m` is the companion module.
 import re
 
 import contacts_book
+import pim_sources
 import thunderbird_pim
 from menu_navigation import announce_item, next_match
 
@@ -52,6 +58,9 @@ CHOICES = ('yes', 'no')
 EDIT = {}              # the contact being changed, which part, and its new value
 ADDING = {}            # the new contact while its name, email and phone are asked
 BOOK = None
+SOURCES = None         # pim_sources.Sources for the address books
+SOURCE = pim_sources.ALL   # which address books are shown: 'all', 'account:<email>' or 'source:<id>'
+SOURCE_NOTICE = ''     # said once when the address book chosen last time is gone
 
 
 def book(m):
@@ -64,20 +73,74 @@ def book(m):
 
 
 def reset():
-    global CONTACTS, INDEX, SELECTED, VIEW, DETAILS, DETAIL_INDEX, PENDING, ADDING, BOOK
+    global CONTACTS, INDEX, SELECTED, VIEW, DETAILS, DETAIL_INDEX, PENDING, ADDING, BOOK, SOURCES, SOURCE, SOURCE_NOTICE
     CONTACTS, INDEX, SELECTED, VIEW, DETAILS, DETAIL_INDEX, PENDING, ADDING, BOOK = [], 0, None, 'list', [], 0, None, {}, None
+    SOURCES, SOURCE, SOURCE_NOTICE = None, pim_sources.ALL, ''
     EDIT.clear()
 
 
 def reload(m, keep=None):
-    """Read the contacts again; stay on the same contact (or `keep`) when it is still there."""
+    """Read the contacts again; stay on the same contact (or `keep`) when it is still there.
+    Only the address books chosen are shown (see pim_sources)."""
     global CONTACTS, BOOK
     BOOK = book(m)
-    CONTACTS = BOOK.load()
+    BOOK.load()
+    choose_sources(m)
+    CONTACTS = BOOK.view(shown_ids())
     wanted = keep or SELECTED
     place = next((i for i, c in enumerate(CONTACTS) if c.key == wanted), None)
     select(place if place is not None else min(INDEX, max(0, len(CONTACTS) - 1)))
-    return BOOK.notice
+    notice = BOOK.notice
+    ids = shown_ids()
+    if ids is not None and BOOK.failed_books:
+        # Only the address books shown matter; name them.
+        failed = [SOURCES.label(SOURCES.find(i)) for i in BOOK.failed_books if i in ids and SOURCES.find(i)]
+        notice = ' '.join(name + ' could not be read. Try again in a minute.' for name in failed[:3])
+    return notice
+
+
+def choose_sources(m):
+    """The address books from Thunderbird, and the contacts on this computer as one more; which are shown."""
+    global SOURCES, SOURCE, SOURCE_NOTICE
+    items = [dict(b) for b in BOOK.books]
+    if BOOK.local_contacts():
+        items.append({'id': contacts_book.LOCAL_ID, 'name': 'Saved on this computer'})
+    first = SOURCES is None
+    SOURCES = pim_sources.Sources('contacts', items)
+    if first:
+        SOURCE, SOURCE_NOTICE = pim_sources.resolve(m.APP, 'contacts', SOURCES)
+    elif not SOURCES.has(SOURCE):
+        SOURCE_NOTICE = SOURCES.words(SOURCE) + ' is no longer in Thunderbird, so all address books are shown.' if SOURCES.active() else ''
+        SOURCE = pim_sources.ALL
+        pim_sources.remember(m.APP, 'contacts', SOURCE, SOURCES.words(SOURCE))
+
+
+def choosing():
+    """True when there is a choice of address books (two or more email accounts)."""
+    return SOURCES is not None and SOURCES.active()
+
+
+def shown_ids():
+    return SOURCES.ids(SOURCE) if choosing() else None
+
+
+def showing():
+    """'Showing all address books.' or 'Showing Contacts, Outlook, vet@outlook.com.'; '' with one account."""
+    if not choosing():
+        return ''
+    words = SOURCES.words(SOURCE)
+    return 'Showing ' + (words[0].lower() + words[1:] if words.startswith('All ') else words) + '.'
+
+
+def hidden_commands():
+    """Alt menu items that do not apply: choosing an address book, with only one account."""
+    return () if choosing() else ('choose address book',)
+
+
+def book_words(book_id):
+    """An address book's name with its account, for saying where a contact is."""
+    found = SOURCES.find(book_id) if SOURCES is not None else None
+    return SOURCES.label(found) if found else ''
 
 
 def select(index):
@@ -92,14 +155,20 @@ def current():
 
 def describe(index=None):
     if not CONTACTS:
+        if shown_ids() is not None:
+            return 'No contacts here. Press Control+L to show another address book, or Control+N to add a contact.'
         return 'No contacts yet. Press Control+N to add one, or say add contact.'
     index = INDEX if index is None else index
     return announce_item(CONTACTS[index].label(), index, len(CONTACTS), hotkey=False)
 
 
 def summary(notice=''):
+    """'Contacts. Showing all address books. 6 contacts. Ann Brown, ann@example.com, 1 of 6.'"""
+    global SOURCE_NOTICE
     count = len(CONTACTS)
-    text = 'Contacts. ' + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe()
+    lead = SOURCE_NOTICE + ' ' if SOURCE_NOTICE else showing() + ' ' if choosing() else ''
+    SOURCE_NOTICE = ''
+    text = 'Contacts. ' + lead + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe()
     return text + (' ' + notice if notice else '')
 
 
@@ -124,8 +193,9 @@ def menu_state(m):
 def navigation_key(m, key):
     """The command for a key on the Contacts screen, or None when the key does nothing here."""
     global CHOICE
-    if PENDING is not None and PENDING[0] == 'edit-field':
-        # What to change: Name, Email, Phone. Enter sends an internal request ("email" alone opens Email).
+    if PENDING is not None and PENDING[0] in ('edit-field', 'source'):
+        # What to change (Name, Email, Phone), or which address books to show. Enter sends an internal
+        # request ("email" alone opens Email).
         if key in ('Up', 'Left', 'ShiftTab', 'Home', 'Down', 'Right', 'Tab', 'End'):
             place = CHOICES.index(CHOICE)
             wanted = 0 if key == 'Home' else len(CHOICES) - 1 if key == 'End' else place + (-1 if key in ('Up', 'Left', 'ShiftTab') else 1)
@@ -133,10 +203,11 @@ def navigation_key(m, key):
                 m.speak('Start of list.' if key in ('Up', 'Left', 'ShiftTab', 'Home') else 'End of list.')
             else:
                 CHOICE = CHOICES[wanted]
-                m.speak(field_choice())
+                m.speak(field_choice() if PENDING[0] == 'edit-field' else source_choice())
                 m.sync_app_context(MODE)
             return None
-        return {'Enter': '@contacts:field ' + CHOICE, 'Space': '@contacts:field ' + CHOICE, 'Escape': 'no'}.get(key)
+        request = '@contacts:' + ('field ' if PENDING[0] == 'edit-field' else 'source ') + CHOICE
+        return {'Enter': request, 'Space': request, 'Escape': 'no', 'F1': 'help with contacts'}.get(key)
     if PENDING is not None:
         if key.lower() in ('y', 'alt+y'):
             return 'yes'
@@ -195,6 +266,13 @@ def _handle(m, raw, command, mode, typed):
             return None
         if mode == 'awake' and command in OPEN:
             return open_screen(m, mode)
+        wanted = SHOW.fullmatch(command)
+        if mode == 'awake' and wanted and wanted['verb'] and wanted['kind'] and wanted['what'] not in ('my', 'the'):
+            # "Show Gmail contacts" from the main menu: open Contacts on that address book.
+            opened = open_screen(m, mode)
+            if not choosing():
+                return opened
+            return show_source(m, wanted['what'], opening=True)
         if mode == 'awake' and command in ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact'):
             open_screen(m, mode)
             return start_adding(m)
@@ -210,6 +288,8 @@ def _handle(m, raw, command, mode, typed):
 
 def command_here(m, raw, command):
     global PENDING, CHOICE, VIEW, DETAIL_INDEX
+    if PENDING is not None and PENDING[0] == 'source':
+        return source_answer(m, command)
     if PENDING is not None and PENDING[0] in ('edit-field', 'edit'):
         return edit_answer(m, command)
     if PENDING is not None:
@@ -245,6 +325,16 @@ def command_here(m, raw, command):
         VIEW = 'list'
         m.speak(summary())
         return MODE
+    if command in CHOOSE:
+        return start_choosing(m)
+    if command in WHICH:
+        m.speak(showing() + ' ' + CHOOSE_HINT if choosing() else 'All your contacts are shown.')
+        return MODE
+    wanted = SHOW.fullmatch(command)
+    if wanted and wanted['what'] not in ('my', 'the') and (wanted['verb'] and wanted['kind'] or
+                                                           (wanted['verb'] or wanted['kind']) and choosing() and SOURCES.match(wanted['what'])):
+        # "Show Gmail contacts", "show all contacts", "Outlook address book", "show Outlook".
+        return show_source(m, wanted['what'])
     if command in ('refresh', 'refresh contacts', 'reload contacts', 'update contacts', 'sync contacts'):
         notice = reload(m)
         m.speak(summary(notice))
@@ -253,12 +343,11 @@ def command_here(m, raw, command):
         return start_adding(m)
     added = re.fullmatch(r'(?:add|save|create) contact (.+?) (?:as|at|email is) (.+)', raw.rstrip('.!?'), re.I)
     if added:
-        where = BOOK.add(added[1], added[2])
+        book_id, here, note = add_target()
+        where = saved_words(BOOK.add(added[1], added[2], book_id=book_id, here=here))
         reload(m)
-        found = next((i for i, c in enumerate(CONTACTS) if c.name.casefold() == added[1].strip().casefold()), None)
-        if found is not None:
-            select(found)
-        m.speak('Saved ' + added[1].strip() + ' ' + where + '. ' + describe())
+        from email_draft import normalize_recipient
+        m.speak(after_adding(added[1], normalize_recipient(added[2]), where, note))
         return MODE
     if VIEW == 'details' and command in ('next', 'previous', 'home', 'end', 'next item', 'previous item', 'first item', 'last item'):
         old = DETAIL_INDEX
@@ -380,6 +469,8 @@ def internal(m, raw, mode):
         return command_here(m, 'edit contact', 'edit contact')
     if action == 'field' and PENDING is not None and PENDING[0] == 'edit-field':
         return edit_answer(m, letter or value)
+    if action == 'source' and PENDING is not None and PENDING[0] == 'source':
+        return source_answer(m, '@source ' + value)
     if action in ('edit-name', 'edit-email', 'edit-phone'):
         return edit_step(m, action[5:], value)
     if action in ('add-name', 'add-email', 'add-phone'):
@@ -387,6 +478,153 @@ def internal(m, raw, mode):
     if action == 'find':
         return find_contact(m, value)
     return mode
+
+
+# ---- Choosing which address books are shown --------------------------------------
+#
+# Only with two or more email accounts (pim_sources.Sources.active). Control+L lists
+# All address books, each account, and each address book; the arrows and Enter choose.
+# Or say "show Gmail contacts", "show the Outlook address book", "show all contacts".
+
+CHOOSE = ('choose address book', 'choose an address book', 'choose address books', 'choose contact list', 'choose a contact list',
+          'choose which contacts', 'pick an address book', 'pick address book', 'select address book', 'select an address book',
+          'list address books', 'address books', 'address book list', 'contact lists', 'switch address books')
+WHICH = ('which contacts', 'which address book', 'which address books', 'which contact list', 'which address book am i in',
+         'what address book am i in', 'which contact list am i in', 'what contact list am i in', 'which contacts am i looking at',
+         'what contacts am i looking at', 'which address book is this', 'what address book is this', 'which contacts are shown',
+         'which address books are shown', 'which address book is shown', 'which address book is open')
+SHOW = re.compile(r'(?:(?P<verb>show|view|see|open|use|switch to|change to|go to|look at|look in)(?: me)?(?: only| just)? )?'
+                  r'(?:(?:the|my|only|just) )*(?P<what>.+?)'
+                  r'(?P<kind>(?: (?:contacts|contact lists?|address books?))+)?')
+CHOOSE_HINT = 'To choose another, press Control+L.'
+
+
+def source_choice():
+    return announce_item(SOURCES.words(CHOICE), CHOICES.index(CHOICE), len(CHOICES), hotkey=False)
+
+
+def choice_names():
+    """The lines the window shows while choosing an address book, else None."""
+    if PENDING is not None and PENDING[0] == 'source':
+        return [SOURCES.words(choice) for choice in CHOICES]
+    return None
+
+
+def start_choosing(m, first=None, lead=''):
+    """Control+L: the list of address books to show, on the one shown now."""
+    global PENDING, CHOICE, CHOICES, VIEW
+    if not choosing():
+        m.speak('You have one email account in Thunderbird, so all your contacts are shown.')
+        return MODE
+    VIEW = 'list'
+    CHOICES = tuple(value for value, _ in SOURCES.choices())
+    CHOICE = first if first in CHOICES else SOURCE if SOURCE in CHOICES else CHOICES[0]
+    PENDING = ('source', None)
+    m.speak(lead + 'Choose the address books to show. ' + source_choice() +
+            ' Use the arrows and Enter, or say a name. Escape cancels.')
+    return MODE
+
+
+def show_source(m, words, opening=False):
+    """'Show Gmail contacts': show them, or ask which when the words fit more than one."""
+    if not choosing():
+        if not opening:     # open_screen already said the list
+            m.speak(summary())
+        return MODE
+    found = SOURCES.match(words)
+    if len(found) == 1:
+        return use_source(m, found[0])
+    if found:
+        return start_choosing(m, found[0], 'More than one address book fits. ')
+    return start_choosing(m, None, 'No address book is called ' + words + '. ')
+
+
+def use_source(m, choice):
+    """Show these address books, keep the choice for next time, and say the list."""
+    global SOURCE, PENDING, CONTACTS, VIEW
+    PENDING, VIEW = None, 'list'
+    SOURCE = choice
+    kept = pim_sources.remember(m.APP, 'contacts', choice, SOURCES.words(choice))
+    CONTACTS = BOOK.view(shown_ids())
+    select(0)
+    count = len(CONTACTS)
+    m.speak(showing() + ' ' + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe() +
+            ('' if kept else ' This choice could not be saved for next time.'))
+    return MODE
+
+
+def source_answer(m, command):
+    """An answer while the list of address books is open."""
+    global PENDING, CHOICE
+    if command.startswith('@'):
+        value = command.split(' ', 1)[1] if ' ' in command else ''
+        return use_source(m, value) if value in CHOICES else MODE
+    if command in ('help', 'what mode', 'toggle audio') or command.startswith(('help with ', 'help for ')):
+        return None
+    if command in NO:
+        PENDING = None
+        m.speak('Not changed. ' + showing())
+        return MODE
+    steps = {'next': 1, 'down': 1, 'next item': 1, 'previous': -1, 'up': -1, 'previous item': -1}
+    if command in steps:
+        place = CHOICES.index(CHOICE) + steps[command]
+        if 0 <= place < len(CHOICES):
+            CHOICE = CHOICES[place]
+            m.speak(source_choice())
+        else:
+            m.speak(('Start of list. ' if place < 0 else 'End of list. ') + source_choice())
+        return MODE
+    if command in YES or command in ('that one', 'this one'):
+        return use_source(m, CHOICE)
+    wanted = SHOW.fullmatch(command)
+    found = SOURCES.match(wanted['what'] if wanted else command)
+    if len(found) == 1:
+        return use_source(m, found[0])
+    if found:
+        CHOICE = found[0]
+        m.speak('More than one address book fits. ' + source_choice() + ' Use the arrows and Enter.')
+        return MODE
+    m.speak('Choose the address books to show. ' + source_choice() + ' Use the arrows and Enter, or say a name. Escape cancels.')
+    return MODE
+
+
+def add_target():
+    """Where a new contact goes: (book_id, here, note). The address book shown when it can be changed;
+    with All shown, or only books that cannot be changed, the usual place, and a note that says so."""
+    ids = shown_ids()
+    if ids is None:
+        return '', False, ''
+    shown = [item for item in SOURCES.shown(SOURCE)]
+    if any(item['id'] == contacts_book.LOCAL_ID for item in shown) and len(shown) == 1:
+        return '', True, ''
+    books = [item for item in shown if item['id'] != contacts_book.LOCAL_ID and not item.get('readOnly')]
+    books.sort(key=lambda item: 'collected' in str(item.get('name', '')).casefold())
+    if books:
+        return books[0]['id'], False, ''
+    return '', False, SOURCES.words(SOURCE) + ' cannot be changed. '
+
+
+def saved_words(where):
+    """'in Contacts, Outlook, vet@outlook.com' with two accounts; else what ContactBook.add said.
+    Call it before the contacts are read again: that makes a new ContactBook."""
+    if choosing() and BOOK is not None:
+        if BOOK.saved_in == contacts_book.LOCAL_ID:
+            return 'on this computer'
+        name = book_words(BOOK.saved_in)
+        if name:
+            return 'in ' + name
+    return where
+
+
+def after_adding(name, email, where, note):
+    """What is said after a new contact is saved: where it went, then the contact, or why it is not in the list."""
+    found = next((i for i, c in enumerate(CONTACTS) if c.name.casefold() == name.strip().casefold()
+                  and (not email or email in c.emails)), None)
+    if found is not None:
+        select(found)
+        return note + 'Saved ' + name.strip() + ' ' + where + '. ' + describe()
+    hidden = ' It is not in the address books shown now. To see it, press Control+L and choose All address books.' if choosing() else ''
+    return note + 'Saved ' + name.strip() + ' ' + where + '.' + hidden + ' ' + describe()
 
 
 # ---- Details ---------------------------------------------------------------------
@@ -412,11 +650,18 @@ def details_for(contact):
         items.append(('No email address', ''))
     for phone in contact.phones:
         items.append(('Phone: ' + phone, ''))
-    items.append(('Saved in: ' + contact.where(), ''))
+    items.append(('Saved in: ' + where(contact), ''))
     if not contact.read_only:
         items.append(('Edit contact', '@contacts:edit'))
         items.append(('Delete contact', '@contacts:delete'))
     return items
+
+
+def where(contact):
+    """Where a contact is saved. With two accounts, the address book's account too."""
+    if choosing() and contact.source == 'thunderbird' and book_words(contact.book_id):
+        return 'Thunderbird address book ' + book_words(contact.book_id)
+    return contact.where()
 
 
 def details_item():
@@ -429,7 +674,7 @@ def full_details(contact):
     parts = [contact.name or 'No name']
     parts += ['Email ' + e for e in contact.emails] or ['No email address']
     parts += ['Phone ' + p for p in contact.phones]
-    parts.append(contact.where())
+    parts.append(where(contact))
     return '. '.join(parts) + '.'
 
 
@@ -534,6 +779,23 @@ def email_by_name(m, command, mode):
 
 # ---- Adding ----------------------------------------------------------------------
 
+DIGIT_WORDS = {'zero': '0', 'oh': '0', 'o': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+               'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
+NOT_A_PHONE = ('That does not look like a phone number. Type or say the digits, then press Enter. '
+               'To leave it out, press Enter or say skip.')
+
+
+def phone_value(value):
+    """A phone number as typed, or spoken digits as numbers ("five five five, oh one" is "555 01").
+    None when it has fewer than three digits: a name typed in the wrong box is not a phone number."""
+    text = str(value).strip().rstrip('.!?').strip()
+    groups = [g.split() for g in re.split(r'\s*[,;]\s*', text) if g.strip()]
+    words = [t.casefold() for g in groups for t in g]
+    if any(w in DIGIT_WORDS for w in words) and all(w in DIGIT_WORDS or w.isdigit() for w in words):
+        text = ' '.join(''.join(DIGIT_WORDS.get(t.casefold(), t) for t in g) for g in groups)
+    return text if sum(c.isdigit() for c in text) >= 3 else None
+
+
 def start_adding(m):
     """Control+N: ask for the name, then the email address, then the phone number."""
     global ADDING
@@ -572,24 +834,23 @@ def add_step(m, step, value):
             except ValueError as exc:
                 return prompt(m, 'email', str(exc) + ' Type it again, or press Enter to leave it out.')
         return prompt(m, 'phone', 'Phone number? Type or say it, then press Enter. To leave it out, press Enter or say skip.')
-    phone = '' if m.normalized_command(value) in SKIP else value
+    phone = '' if m.normalized_command(value) in SKIP else phone_value(value)
+    if phone is None:
+        return prompt(m, 'phone', NOT_A_PHONE)
     if not ADDING.get('email') and not phone:
         return prompt(m, 'phone', 'A contact needs an email address or a phone number. Type a phone number, '
                                   'or press Escape to cancel.')
     details, ADDING = ADDING, {}
     global BOOK
     BOOK = BOOK or book(m)
+    book_id, here, note = add_target() if SOURCES is not None else ('', False, '')
     try:
-        where = BOOK.add(details['name'], details.get('email', ''), phone)
+        where = saved_words(BOOK.add(details['name'], details.get('email', ''), phone, book_id=book_id, here=here))
     except ValueError as exc:
         m.speak(str(exc) + ' The contact was not saved.')
         return MODE
     reload(m)
-    found = next((i for i, c in enumerate(CONTACTS) if c.name.casefold() == details['name'].casefold()
-                  and (not details.get('email') or details['email'] in c.emails)), None)
-    if found is not None:
-        select(found)
-    m.speak('Saved ' + details['name'] + ' ' + where + '. ' + describe())
+    m.speak(after_adding(details['name'], details.get('email', ''), where, note))
     return MODE
 
 
@@ -706,7 +967,9 @@ def edit_step(m, field, value):
             except ValueError as exc:
                 return ask(m, 'edit-email', str(exc) + ' Type it again, or press Escape to cancel.', optional=True)
     else:
-        new = '' if removing else value.rstrip('.!?').strip()
+        new = '' if removing else phone_value(value)
+        if new is None:
+            return ask(m, 'edit-phone', NOT_A_PHONE.replace('To leave it out, press Enter or say skip.', 'Escape cancels.'), optional=True)
         if len(new) > 40 or re.search(r'[\r\n]', new):
             return ask(m, 'edit-phone', 'Use a shorter phone number. Type it again, or press Escape to cancel.', optional=True)
     others = contact.phones if field == 'email' else contact.emails

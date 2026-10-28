@@ -9,7 +9,7 @@ MEDIA_TYPES = {'.mp3', '.wav', '.ogg', '.oga', '.opus', '.flac', '.m4a', '.aac',
 # Every menu action uses the existing voice command path, including its prompts,
 # save confirmations, undo history and validation. A value opens a text prompt.
 DOCUMENT_ACTIONS = {
-    'File': [('Save', 'Ctrl+S', 'save document'), ('Save as', 'Ctrl+Shift+S', 'save as'),
+    'File': [('Save', 'Ctrl+S', 'save document'), ('Save as', 'F12', 'save as'),
              ('Rename', 'F2', 'name document'), ('Open', 'Ctrl+O', '@open'),
              ('New', 'Ctrl+N', 'create a document'), ('Close', 'Ctrl+W', 'leave document')],
     'Edit': [('Undo', 'Ctrl+Z', 'undo'), 
@@ -61,7 +61,9 @@ DOCUMENT_ACTIONS['Edit'].extend([(label, '', command) for label,command in (
     ('Delete current line','delete current line'),('Delete current sentence','delete sentence'),('Delete current paragraph','delete current paragraph'))])
 TABLE_KEYS={'next cell':'Tab','previous cell':'Shift+Tab','next row':'Alt+Down','previous row':'Alt+Up','next column':'Alt+Right','previous column':'Alt+Left'}
 DOCUMENT_ACTIONS['Table']=[(name,TABLE_KEYS.get(command,''),command) for name,_,command in DOCUMENT_ACTIONS['Table']]
-SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, command in items if key and key not in ('Enter', 'Alt+T','Tab','Shift+Tab')}
+SHORTCUTS = {key: command for items in DOCUMENT_ACTIONS.values() for _, key, command in items if key and key not in ('Enter', 'Alt+T','Tab','Shift+Tab','F12')}
+# Control+Shift+S, the Save As key before F12, still works.
+SHORTCUTS['Ctrl+Shift+S'] = 'save as'
 SHORTCUTS.update({'Ctrl+Alt+'+str(level):'heading '+str(level) for level in range(1,7)})
 SHORTCUTS.update({'CapsLock+F':'what formatting','CapsLock+Down':'what is selected',
                  'Ctrl+Shift+L':'bulleted list','Ctrl+Shift+7':'numbered list','Ctrl+Alt+T':'create table with {value}',
@@ -160,11 +162,12 @@ class TaskNavigation:
             return None
         return ([name for name, _, _ in items], self.indices.get(mode, 0), lambda i: self.indices.update({mode:i}))
 
-    def enter(self, mode, title):
-        self.indices[mode] = 0
-        if mode == 'local_media': self.player_menu = True
+    def enter(self, mode, title, index=0):
         items = self.items(mode)
-        self.app.speak(title+'. '+(self.describe(items[0], 0, len(items)) if items else 'No recent documents.'))
+        index = index if items and 0 <= index < len(items) else 0
+        self.indices[mode] = index
+        if mode == 'local_media': self.player_menu = True
+        self.app.speak(title+'. '+(self.describe(items[index], index, len(items)) if items else 'No recent documents.'))
         return mode
 
     def describe(self, item, index, count):
@@ -377,6 +380,7 @@ class TaskNavigation:
         if mode == 'document':
             if key in ('Doc:NextCell','Doc:PreviousCell'):return 'next cell' if key=='Doc:NextCell' else 'previous cell'
             if key == 'Alt': self.group = None; return 'document menu'
+            if key == 'Doc:SaveAs': return 'save as'   # F12 (see time_date.save_as_key)
             return SHORTCUTS.get(key)
         if mode == 'local_media':
             common = {'Space':'play or pause','Ctrl+O':'@media_open','Ctrl+S':'stop media','Ctrl+I':'media status'}
@@ -421,7 +425,7 @@ class TaskNavigation:
         if text.startswith('@prompt:'):
             # A direct key for a command that needs a value, such as Ctrl+F in Document reader.
             return self.action(text[len('@prompt:'):], mode)
-        if mode in ('document_name','document_save','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
+        if mode in ('document_name','document_save','document_replace','settings','power_confirm','exit_confirm','tutorial','sleep','search'):return None
         if mode=='files' and m.FILE_MANAGER and m.FILE_MANAGER.pending:return None
         if m.NAMED_LIST:return None
         if mode=='browser_menu' and m.web_session and m.web_session.menu.level=='name':return None
@@ -455,7 +459,8 @@ class TaskNavigation:
         if mode == 'notepad_menu' and command in ('create a note','new note','open a note','open notes','options','open options','notepad options'):
             return self.action({'create a note':'write a note','new note':'write a note','open a note':'list notes','open notes':'list notes'}.get(command,'@options:Notepad'), mode)
         if command in ('media','media menu','open media') and mode not in ('document','email_draft'):
-            return self.enter('media_menu', 'Media menu')
+            # Back from Radio or Podcasts, you are on the one you left, not on Radio.
+            return self.enter('media_menu', 'Media menu', (1 if getattr(m, 'MEDIA_SECTION', 'radio') == 'podcast' else 0) if mode == 'media' else 0)
         if command in ('media player','open media player'):
             self.player_files = None; self.player_picker = None; self.player_return = None
             return self.enter('local_media', 'Media player')
@@ -526,7 +531,7 @@ class TaskNavigation:
                     self.picker = picker
                     from file_manager import location_name
                     m.speak(('Back to '+location_name(files.location)+'. ' if picker else 'File manager. ')+files.say_current()); return 'files'
-                return self.enter('media_menu', 'Media menu')
+                return self.enter('media_menu', 'Media menu', 2)  # On Media player, where you left.
             # handle() says Main menu once when the screen changes.
             return 'awake'
         if command in ('next','previous','home','end'):

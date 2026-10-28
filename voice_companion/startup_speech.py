@@ -53,6 +53,25 @@ def update_result(result):
     return 'succeeded' if result.get('succeeded') else 'failed'
 
 
+def update_notice(result):
+    """Why an update stopped, when one of the user's own programs held a Voice Companion
+    file (apply-update.ps1 writes their names in blocked_by), and what to do next."""
+    if not isinstance(result, dict) or result.get('succeeded'):
+        return ''
+    names = result.get('blocked_by')
+    if isinstance(names, str):
+        names = [names]
+    if not isinstance(names, list):
+        return ''
+    names = sorted({name.strip() for name in names if isinstance(name, str) and name.strip()})
+    if not names:
+        return ''
+    joined = names[0] if len(names) == 1 else ', '.join(names[:-1]) + ' and ' + names[-1]
+    verb, them = ('was', 'it') if len(names) == 1 else ('were', 'them')
+    return (joined + ' ' + verb + ' using a Voice Companion file, so the update could not install. '
+            'Save your work in ' + joined + ' and close ' + them + '. Then choose Check for updates on the main menu.')
+
+
 def microphone_text(state):
     """The microphone and how to use the app, without where you are."""
     return HOW_TO.get(state, HOW_TO['on'])

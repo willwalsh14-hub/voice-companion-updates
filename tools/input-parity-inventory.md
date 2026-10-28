@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 661
-- Already had both ways: 526
+- Actions inventoried: 663
+- Already had both ways: 528
 - Gaps found: 135
 - Gaps fixed (Added): 127
 - Not applicable (N/A, with reason): 8
@@ -254,7 +254,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Attach to open email draft
 
 - Voice: "Attach to draft"
-- Keyboard: Ctrl+T
+- Keyboard: Ctrl+O
 - Status: Both
 
 ### Main menu
@@ -274,7 +274,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Save as
 
 - Voice: "Save as"
-- Keyboard: Ctrl+Shift+S
+- Keyboard: F12
 - Status: Both
 
 ### Rename
@@ -2222,7 +2222,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Attach a file
 
 - Voice: "Attach a file"
-- Keyboard: Ctrl+T
+- Keyboard: Ctrl+O
 - Status: Both
 
 ### Attach the last download
@@ -2545,6 +2545,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 2, 5
 - Status: Added: Alt menu path
 
+### Choose address book
+
+- Voice: "Choose address book"
+- Keyboard: Ctrl+L
+- Status: Both
+
 ## Alt menu, Calendar: Event
 
 ### Read event
@@ -2640,6 +2646,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Main menu"
 - Keyboard: Alt, 3, 3
 - Status: Added: Alt menu path
+
+### Choose calendar
+
+- Voice: "Choose calendar"
+- Keyboard: Ctrl+L
+- Status: Both
 
 ## Alt menu, Help: Help
 
@@ -2782,7 +2794,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Attach another file
 
 - Voice: "Attach a file"
-- Keyboard: Ctrl+T
+- Keyboard: Ctrl+O
 - Status: Both
 
 ### Attachments help

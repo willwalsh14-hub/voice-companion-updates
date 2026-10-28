@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.171-test"
+#define AppVersion "0.2.172-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}
@@ -14,7 +14,13 @@ OutputBaseFilename=VoiceCompanion-Setup
 Compression=lzma2
 SolidCompression=yes
 SetupLogging=yes
-CloseApplications=yes
+; Voice Companion's own programs are closed by PrepareToInstall below, with no
+; question to answer. Restart Manager is a safety net for one that starts again
+; in the meantime (a browser can restart the browser host): it is forced, since
+; nothing but Voice Companion's own programs can be left by then. Setup never
+; restarts programs: the update helper starts Voice Companion again itself.
+CloseApplications=force
+RestartApplications=no
 ArchitecturesAllowed=x64compatible
 WizardStyle=modern
 DisableWelcomePage=yes
@@ -31,6 +37,8 @@ UsePreviousTasks=no
 Name: "setupchrome"; Description: "Set up Chrome and the Voice Companion extension when Voice Companion opens"; Flags: unchecked
 
 [Files]
+; The close step, run by PrepareToInstall before any file is changed.
+Source: "dist\VoiceCompanion\close-companion.ps1"; Flags: dontcopy
 Source: "dist\VoiceCompanion\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "dist\VoiceCompanion\START HERE - Veteran.txt"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
 Source: "dist\VoiceCompanion\START HERE - Veteran.html"; DestDir: "{userdocs}\Voice Companion\User Guides"; Flags: ignoreversion uninsneveruninstall
@@ -57,6 +65,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\com.voicecompa
 Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\com.voicecompanion.mail"; ValueType: string; ValueName: ""; ValueData: "{app}\mail-native-host.json"; Flags: uninsdeletekey
 
 [UninstallDelete]
+Type: files; Name: "{app}\*.update-paused"
 Type: files; Name: "{app}\browser-native-host.json"
 Type: files; Name: "{app}\mail-native-host.json"
 
@@ -75,6 +84,97 @@ Filename: "{app}\VoiceCompanion-Diagnostics.exe"; Parameters: "--refresh-guides"
 Filename: "{app}\VoiceCompanion.exe"; Description: "Open Voice Companion now"; Flags: postinstall nowait skipifsilent
 
 [Code]
+var
+  CloseStepFolder: String;
+
+function CloseStepNames(const ReasonFile: String; var Count: Integer): String;
+var
+  Lines: TArrayOfString;
+  Index: Integer;
+begin
+  Result := '';
+  Count := 0;
+  // The first line is the code; each line after it names one program.
+  if LoadStringsFromFile(ReasonFile, Lines) then
+    for Index := 1 to GetArrayLength(Lines) - 1 do
+      if Trim(Lines[Index]) <> '' then
+      begin
+        if Result <> '' then Result := Result + ', ';
+        Result := Result + Trim(Lines[Index]);
+        Count := Count + 1;
+      end;
+end;
+
+// Close every Voice Companion program and its hidden helpers before any file is
+// changed, and wait until the files are free (close-companion.ps1). Programs that
+// belong to the user are never closed: when one holds a file, Setup stops before
+// changing anything and names it. The updates of older versions run this too.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode, Index, Count: Integer;
+  Script, ReasonFile, LogFile, Params, Names: String;
+  Lines: TArrayOfString;
+begin
+  Result := '';
+  CloseStepFolder := ExpandConstant('{app}');
+  if not DirExists(CloseStepFolder) then Exit;
+  ExtractTemporaryFile('close-companion.ps1');
+  Script := ExpandConstant('{tmp}\close-companion.ps1');
+  ReasonFile := ExpandConstant('{tmp}\close-reason.txt');
+  LogFile := ExpandConstant('{tmp}\close-log.txt');
+  Params := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + Script + '" -InstallFolder "' + CloseStepFolder +
+    '" -GuideFolder "' + ExpandConstant('{userdocs}\Voice Companion\User Guides') + '" -ReasonFile "' + ReasonFile +
+    '" -LogFile "' + LogFile + '"';
+  // A silent update has no window: the close step says what to do out loud.
+  if WizardSilent then Params := Params + ' -Speak';
+  Log('Closing Voice Companion programs before installing.');
+  if not Exec(ExpandConstant('{sysnative}\WindowsPowerShell\v1.0\powershell.exe'), Params, ExpandConstant('{tmp}'), SW_HIDE,
+    ewWaitUntilTerminated, ResultCode) then
+  begin
+    // Restart Manager still closes Voice Companion's programs.
+    Log('The close step could not start: ' + SysErrorMessage(ResultCode));
+    Exit;
+  end;
+  if LoadStringsFromFile(LogFile, Lines) then
+    for Index := 0 to GetArrayLength(Lines) - 1 do Log(Lines[Index]);
+  Log('The close step ended with code ' + IntToStr(ResultCode) + '.');
+  if ResultCode = 0 then Exit;
+  Names := CloseStepNames(ReasonFile, Count);
+  if ResultCode = 2 then
+  begin
+    if (Count = 0) or (Names = 'Another program') then
+      Result := 'Another program is using a Voice Companion file. Save your work and close your other programs. Then run the update again.'
+    else if Count = 1 then
+      Result := Names + ' is using a Voice Companion file. Save your work in ' + Names + ' and close it. Then run the update again.'
+    else
+      Result := 'These programs are using Voice Companion files: ' + Names + '. Save your work and close them. Then run the update again.';
+  end
+  else
+    Result := 'Part of Voice Companion would not close. Restart the computer. Then run the update again.';
+end;
+
+// Browsers find the browser host again. Setup's last step writes new manifests;
+// when Setup stops first, the paused ones come back.
+procedure RestoreNativeHostManifest(const Name: String);
+var
+  Live, Paused: String;
+begin
+  Live := AddBackslash(CloseStepFolder) + Name;
+  Paused := Live + '.update-paused';
+  if not FileExists(Paused) then Exit;
+  if FileExists(Live) then DeleteFile(Paused)
+  else if not RenameFile(Paused, Live) then Log('Could not restore ' + Name + '.');
+end;
+
+procedure DeinitializeSetup;
+begin
+  if CloseStepFolder <> '' then
+  begin
+    RestoreNativeHostManifest('browser-native-host.json');
+    RestoreNativeHostManifest('mail-native-host.json');
+  end;
+end;
+
 procedure CurInstallProgressChanged(CurProgress, MaxProgress: Integer);
 var
   ProgressPath: String;

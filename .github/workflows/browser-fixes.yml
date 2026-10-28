@@ -28,8 +28,17 @@ jobs:
         working-directory: voice_companion
         shell: pwsh
         run: |
-          python -m unittest test_app_updates test_text_selection test_document_controls test_document_formatting test_dictation_echo test_settings test_file_manager.FileManagerTests -v 2>&1 | Tee-Object -FilePath fixes-test-results.txt
-          if ($LASTEXITCODE) { throw 'Fix regression checks failed.' }
+          python -m unittest test_app_updates test_update_close test_text_selection test_document_controls test_document_formatting test_dictation_echo test_settings test_file_manager.FileManagerTests -v 2>&1 | Tee-Object -FilePath fixes-test-results.txt
+          if ($LASTEXITCODE) {
+            # Name the failed tests and their output in an annotation: the logs cannot always be read.
+            $text = Get-Content -LiteralPath fixes-test-results.txt -Raw
+            $start = $text.IndexOf('======')
+            $failed = $(if ($start -ge 0) { $text.Substring($start) } else { $text })
+            $clean = $failed -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+            if ($clean.Length -gt 3500) { $clean = $clean.Substring(0, 1200) + '%0A...%0A' + $clean.Substring($clean.Length - 2300) }
+            Write-Output ('::error title=Fix regression checks failed::' + $clean)
+            throw 'Fix regression checks failed.'
+          }
       - name: Test live Chromium controls and semantics
         working-directory: voice_companion
         shell: pwsh
@@ -46,7 +55,7 @@ jobs:
       - name: Package changed source files
         shell: pwsh
         run: |
-          Compress-Archive -Path voice_companion/apply-update.ps1,voice_companion/document_editor.py,voice_companion/test_app_updates.py,voice_companion/test_text_selection.py,voice_companion/test-update-host-cleanup.ps1,voice_companion/test-update-previous-app.ps1,voice_companion/live_fix_audit.py -DestinationPath Voice-Companion-tested-fixes.zip
+          Compress-Archive -Path voice_companion/apply-update.ps1,voice_companion/document_editor.py,voice_companion/test_app_updates.py,voice_companion/test_text_selection.py,voice_companion/close-companion.ps1,voice_companion/test_update_close.py,voice_companion/test-update-close.ps1,voice_companion/test-update-close-windows.ps1,voice_companion/test-update-previous-app.ps1,voice_companion/live_fix_audit.py -DestinationPath Voice-Companion-tested-fixes.zip
       - uses: actions/upload-artifact@v6
         if: always()
         with:

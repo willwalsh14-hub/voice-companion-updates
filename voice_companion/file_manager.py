@@ -214,7 +214,7 @@ class ShellFiles:
 
 MENU=(('Open','Enter','open'),('Select or unselect current item','Space','toggle selection'),('Select all','Ctrl+A','select all'),('Clear selection','Ctrl+Shift+A','clear selection'),('Rename','F2','rename'),('Delete','Delete','delete'),('Copy','Ctrl+C','copy'),('Cut','Ctrl+X','cut'),('Paste','Ctrl+V','paste'),('Refresh','F5','refresh'),('Previous folder','Escape','go back'),('Drive list','Ctrl+D','drive list'),('Read file manager help','F1','file manager help'),('Main menu','Say Main menu','main menu'))
 SORT_MENU=(('Name','Alt+N','sort by name'),('Date created','Alt+C','sort by date created'),('Date modified','Alt+M','sort by date modified'),('Date added (first seen here)','Alt+D','sort by date added'),('Ascending','Alt+A','sort ascending'),('Descending','Alt+Z','sort descending'))
-MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Email this file','Ctrl+N','email this file'),('Attach to open email draft','Ctrl+T','attach to draft'),('Main menu','Alt+Home','main menu'))
+MENU=MENU[:-1]+(('Search current list','Ctrl+E','search files'),('Search subfolders','Ctrl+Shift+F','search subfolders'),('Clear search','Ctrl+Shift+X','clear search'),('Sort files','Alt+S','sort files'),*SORT_MENU,('Email this file','Ctrl+N','email this file'),('Attach to open email draft','Ctrl+O','attach to draft'),('Main menu','Alt+Home','main menu'))
 # Email this file and Attach to draft need the app (attachment_screen.py); File manager hands them over.
 ATTACH_COMMANDS=('email this file','attach to draft')
 
@@ -274,9 +274,10 @@ class FileManager:
         if self.location is None or any(i.drive or not i.filesystem for i in targets):raise ValueError('Choose files or folders inside a drive. Drives and virtual locations cannot be renamed, deleted, copied, or cut.')
         return targets
     def choose(self,name):
-        name=name.strip().casefold()
+        # A recognizer ends "Photos." with a period; Windows names never end in one.
+        heard=name.strip().rstrip('.!?');name=heard.casefold()
         matches=[(n,i) for n,i in enumerate(self.items) if i.name.casefold()==name or i.path.casefold()==name or Path(i.name).stem.casefold()==name or (i.drive and name in (ntpath.splitdrive(i.path)[0].rstrip(':').casefold()+' drive','drive '+ntpath.splitdrive(i.path)[0].rstrip(':').casefold()))]
-        if len(matches)!=1:raise ValueError('More than one item matches. Use arrows or say its full path.' if matches else 'No item has that name in this list.')
+        if len(matches)!=1:raise ValueError('More than one item matches. Use arrows or say its full path.' if matches else 'No item is named '+heard+'. Say an item name, or press F1 for help.')
         self.index=matches[0][0]
     def command(self,text):
         text=text.strip();cmd=text.casefold().rstrip('.!?')
@@ -284,7 +285,10 @@ class FileManager:
         if cmd in ('file manager help','help with file manager','help for file manager','help','commands'):return HELP
         if self.busy:
             if cmd in ('escape','go back','cancel') and not self.mutating:
-                self.view.cancel.set();self.job_id+=1;self.busy=False;return 'Opening canceled. '+self.say_current()
+                self.view.cancel.set();self.job_id+=1;self.busy=False
+                # Nothing has loaded yet: there is no folder to call empty.
+                if self.location is None and not self.items:return 'Opening canceled. Press F5 to load the drive list again, or Escape to leave File manager.'
+                return 'Opening canceled. '+self.say_current()
             return 'File manager is working. Please wait.'
         if self.pending:
             action,paths=self.pending
@@ -366,7 +370,7 @@ class FileManager:
             targets=self.targets()
             if len(targets)!=1:raise ValueError('Select one item to rename.')
             if match[1]:return self.mutate('rename',[targets[0].path],name=valid_name(match[1]))
-            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, including the extension, then press Enter.'
+            self.pending=('rename',[targets[0].path]);return 'Rename '+targets[0].name+'. Type or say the new name, '+('' if targets[0].folder else 'including the extension, ')+'then press Enter.'
         if cmd in ('status','where am i','current item','read current item'):return location_name(self.location)+'. '+self.say_current()
         if cmd in ('open','enter','okay','ok','activate','confirm','that one'):
             item=self.current()
@@ -379,7 +383,7 @@ class FileManager:
                 if Path(item.path).suffix.lower() not in self.pick_extensions:raise ValueError('Choose a supported '+getattr(self,'pick_label','document')+' file.')
                 if getattr(self,'pick_label',None)=='document' and Path(item.path).suffix.lower()!='.docx':
                     from document_reader import open_document
-                    return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+'. Scanned pages are read with offline OCR.')
+                    return self.start_job(lambda:open_document(item.path),self.finish_open,'Opening '+item.name+('. Scanned pages are read with offline OCR.' if Path(item.path).suffix.lower()=='.pdf' else '.'))
                 return self.start_job(lambda:Path(item.path),self.finish_pick,'Opening '+item.name+'.')
             from task_navigation import MEDIA_TYPES
             if Path(item.path).suffix.lower() in MEDIA_TYPES:
@@ -389,7 +393,7 @@ class FileManager:
         name=re.sub(r'^open(?: file| folder| drive)?\s+','',text,flags=re.I);self.choose(name)
         return self.command('open')
     def mutate(self,action,paths,**kwargs):
-        return self.start_job(lambda:self.backend.operate(action,paths,**kwargs),lambda _:self.after_change('File action complete.'),'Working on '+str(len(paths))+' items.',mutating=True)
+        return self.start_job(lambda:self.backend.operate(action,paths,**kwargs),lambda _:self.after_change('File action complete.'),'Working on '+str(len(paths))+(' item.' if len(paths)==1 else ' items.'),mutating=True)
     def after_change(self,message):
         self.selected.clear();self.refresh_here();return message+' Refreshing folder.'
     def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+(' '.join(reader.warnings[:3])+'. ' if reader.warnings else '')+reader.reading.read(True)

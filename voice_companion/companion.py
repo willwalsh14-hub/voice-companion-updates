@@ -18,7 +18,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from vosk import KaldiRecognizer, Model, SetLogLevel
-from document_editor import VoiceDocument, structural_selection_request, document_control_request, LINE_BREAK_COMMANDS
+from document_editor import VoiceDocument, structural_selection_request, document_control_request, LINE_BREAK_COMMANDS, checked_document_name, existing_document
 from field_selection import FieldSelection, selection_command
 from email_draft import VoiceEmail, normalize_recipient, email_field_destination
 from address_book import AddressBook
@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.171-test'
+APP_VERSION = '0.2.172-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -216,7 +216,13 @@ KEYBOARD_DIRTY = {}
 UI_CONTEXT_CACHE = None
 PENDING_DOCUMENT_NAME = None
 DOCUMENT_NAME_RETURN = "awake"
-DOCUMENT_NAMING_ACTION = "name document"
+DOCUMENT_NAMING_ACTION = "name document"  # or "new document", "save as"
+NEW_DOCUMENT_RETURN = None  # where Escape goes while a new document waits for its name
+SAVE_AS_TITLE = None        # Save As: the new name, while it asks for the folder
+SAVE_AS_FOLDER = None       # Save As: the folder, while it asks whether to replace a file
+# Will, October 2026: every way of creating a document says exactly this.
+NEW_DOCUMENT_PROMPT = 'Please say or type the name for your document, then press Enter or say confirm.'
+SAVE_AS_PROMPT = 'Please say or type the new name for your document, then press Enter or say confirm.'
 DOCUMENT_CLOSE_TARGET = "awake"
 DOCUMENT_BASELINE = None
 CONFIRM_CHOICE = "yes"
@@ -244,6 +250,134 @@ def discard_document_changes():
         if document.path!=path:document.path.unlink(missing_ok=True)
     elif re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):document.path.unlink(missing_ok=True)
     KEYBOARD_DIRTY.pop(id(document),None)
+
+# New documents and Save As. New documents always go to documents_folder(): opening
+# or saving a file somewhere else never changes that (Will, October 2026).
+def folder_words(folder):
+    if Path(folder)==documents_folder():return 'Documents, Voice Companion'
+    return __import__('attachment_screen').where(Path(folder))
+
+def same_file(first,second):
+    try:return os.path.normcase(str(Path(first).resolve()))==os.path.normcase(str(Path(second).resolve()))
+    except OSError:return False
+
+def start_new_document(mode):
+    """Ask for the name first; the editor opens once the name is given."""
+    global NEW_DOCUMENT_RETURN,PENDING_DOCUMENT_NAME,SAVE_AS_TITLE,SAVE_AS_FOLDER,DOCUMENT_NAMING_ACTION
+    NEW_DOCUMENT_RETURN='document' if mode in ('document','document_menu') and document is not None else 'word_processor'
+    PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+    DOCUMENT_NAMING_ACTION='new document'
+    speak(NEW_DOCUMENT_PROMPT)
+    return 'document_name'
+
+def create_named_document(value):
+    global document,NEW_DOCUMENT_RETURN,PENDING_DOCUMENT_NAME
+    name,problem=checked_document_name(value)
+    if problem:
+        speak(problem);return 'document_name'
+    folder=documents_folder()
+    if existing_document(folder,name) is not None:
+        speak('A document named '+name+' already exists. Please choose another name. To open it, choose Recent documents or say open document '+name+'.')
+        return 'document_name'
+    try:made=VoiceDocument(folder,title=name)
+    except OSError:
+        speak('Your documents folder could not be used, so no document was created. Check the folder in File manager, then try again.')
+        return 'document_name'
+    document=made;NEW_DOCUMENT_RETURN=None;PENDING_DOCUMENT_NAME=None
+    checkpoint_document()
+    apply_document_defaults(document)
+    document.dictating=INPUT_MODE!='commands'
+    speak('New document, '+name+'. Speak or type to write. For help, say help with documents, or press F1.')
+    return 'document'
+
+def start_save_as(name_text=None):
+    """Save As: the name, then the folder. A name already said goes straight to the folder."""
+    global DOCUMENT_NAME_RETURN,DOCUMENT_NAMING_ACTION,PENDING_DOCUMENT_NAME,SAVE_AS_TITLE,SAVE_AS_FOLDER
+    DOCUMENT_NAME_RETURN='document';DOCUMENT_NAMING_ACTION='save as'
+    PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+    if name_text is None:
+        speak('Save as. '+SAVE_AS_PROMPT);return 'document_name'
+    name,problem=checked_document_name(name_text)
+    if problem:
+        speak(problem+' '+SAVE_AS_PROMPT);return 'document_name'
+    return ask_save_as_folder(name,'Save as '+name+'. ')
+
+def ask_save_as_folder(name,lead=''):
+    global SAVE_AS_TITLE,PENDING_DOCUMENT_NAME
+    SAVE_AS_TITLE=name
+    default=documents_folder()
+    # The box holds the default folder, so Enter (or "confirm") saves there.
+    PENDING_DOCUMENT_NAME=(time.monotonic_ns(),str(default))
+    text=lead+'Now choose a folder. Press Enter or say confirm to save in '+folder_words(default)+'. Or say or type another folder, such as Desktop.'
+    if document is not None and not same_file(document.folder,default):
+        text+=' Say same folder to save it next to the file you opened.'
+    speak(text);return 'document_name'
+
+def choose_save_as_folder(value):
+    global SAVE_AS_FOLDER,CONFIRM_CHOICE
+    default=documents_folder()
+    words=re.sub(r'^(?:the|my) ','',normalized_command(value).strip())
+    if words in ('same folder','this folder','current folder','same place','same folder as before'):folder=document.folder
+    elif words in ('default','default folder','documents voice companion','voice companion') or value.strip()==str(default):folder=default
+    else:
+        from mail_attachments import AttachmentError
+        try:folder=__import__('attachment_screen').spoken_folder(value)
+        except AttachmentError as error:
+            speak(str(error)+' Or say confirm to save in '+folder_words(default)+'.');return 'document_name'
+    target=existing_document(folder,SAVE_AS_TITLE)
+    if target is not None and not same_file(target,document.path):
+        SAVE_AS_FOLDER=folder;CONFIRM_CHOICE='no'
+        speak(target.name+' is already in that folder. Replace it? Yes or no. Use arrows to choose, then Enter. Escape keeps it.')
+        return 'document_replace'
+    return finish_save_as(folder)
+
+def finish_save_as(folder,title=None):
+    global SAVE_AS_TITLE,SAVE_AS_FOLDER,PENDING_DOCUMENT_NAME
+    title=title or SAVE_AS_TITLE
+    SAVE_AS_TITLE=SAVE_AS_FOLDER=PENDING_DOCUMENT_NAME=None
+    try:path=document.save_as(folder,title)
+    except (OSError,ValueError):
+        speak('I could not save there. The file may be open in another program, or the folder may not allow changes. Your document is still open under its old name.')
+        return 'document'
+    checkpoint_document()
+    speak('Saved as '+path.name+' in '+folder_words(folder)+'. You are now working in '+path.stem+'.')
+    return 'document'
+
+def document_naming(text,typed):
+    """The document name box: a new document's name, a new name, or Save As (name, then folder)."""
+    global PENDING_DOCUMENT_NAME,NEW_DOCUMENT_RETURN,SAVE_AS_TITLE,SAVE_AS_FOLDER
+    command=normalized_command(text)
+    saving_as=DOCUMENT_NAMING_ACTION=='save as'
+    if command in ('cancel','cancel naming','go back'):
+        PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+        if DOCUMENT_NAMING_ACTION=='new document':
+            target=NEW_DOCUMENT_RETURN or 'word_processor';NEW_DOCUMENT_RETURN=None
+            speak('Canceled. No document was created. '+options_return_notice(target));return target
+        speak(('Save as canceled.' if saving_as else 'Naming canceled.')+' Your document is still open.');return 'document'
+    confirm=not typed and command in ('ok','okay','confirm','confirm that','that one')
+    if confirm and PENDING_DOCUMENT_NAME is None:
+        speak('Say or type a document name first.');return 'document_name'
+    value=PENDING_DOCUMENT_NAME[1] if confirm else re.sub(r'^(?:name document|save document as|save as)\s+','',text.strip(),flags=re.I)
+    if saving_as and SAVE_AS_TITLE is not None:
+        return choose_save_as_folder(value)
+    if not typed and not confirm:
+        # A spoken name waits, so a misheard word is never used as a file name.
+        value=value.strip().rstrip('.!?,;:').strip()
+        PENDING_DOCUMENT_NAME=(time.monotonic_ns(),value)
+        speak(value+'. Press Enter or say confirm to use this name.');return 'document_name'
+    if DOCUMENT_NAMING_ACTION=='new document':return create_named_document(value)
+    if saving_as:
+        name,problem=checked_document_name(value)
+        if problem:
+            speak(problem);return 'document_name'
+        return ask_save_as_folder(name)
+    result=document.process(DOCUMENT_NAMING_ACTION+' '+value)
+    speak(result)
+    if result.startswith(('Document named ','Saved document as ')):
+        PENDING_DOCUMENT_NAME=None
+        checkpoint_document()
+        return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_NAME_RETURN],'awake',typed) if DOCUMENT_NAME_RETURN in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_NAME_RETURN=='word_processor' else DOCUMENT_NAME_RETURN
+    return 'document_name'
 
 def app_context(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
@@ -299,10 +433,12 @@ def app_context(mode):
                 context['media_input']=not field['choices']
             else:context['media_button']='OK' if nav.field_index==len(nav.form['fields']) else 'Cancel'
         else:context['media_form']=None
-    if pending_website is not None or logical in ('document_save','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None or chrome_confirming(logical):context['confirmation']=CONFIRM_CHOICE
+    if pending_website is not None or logical in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or logical=='email_draft' and pending_send is not None or chrome_confirming(logical):context['confirmation']=CONFIRM_CHOICE
     if logical=='mailbox' and mail_session and mail_session.pending:context['confirmation']=CONFIRM_CHOICE
     if logical=='web' and web_session and (web_session.pending or web_session.submit_pending):context['confirmation']=CONFIRM_CHOICE
-    if logical=='document_name':context['naming_request']=PENDING_DOCUMENT_NAME
+    if logical=='document_name':
+        context['naming_request']=PENDING_DOCUMENT_NAME
+        if DOCUMENT_NAMING_ACTION=='save as' and SAVE_AS_TITLE is not None:context['naming_label']='Folder; press Enter to save there:'
     editor=document if logical=='document' else email_draft if logical=='email_draft' and email_draft and (email_draft.compose_step or 'body')=='body' else None
     if editor is not None and (getattr(editor,'selection_candidates',[]) or getattr(editor,'replacement_candidates',[]) or getattr(editor,'pending_spacing',False)):
         return context
@@ -525,10 +661,13 @@ MAIN_MENU_PROMPT = 'Main menu. What would you like to do? Say next or previous t
 # Said together with the next main menu announcement, in one message: a second
 # message would stop the first one (the keyboard voice interrupts itself).
 MAIN_MENU_LEAD = ''
+# Counts main menu announcements, so handle() does not say it a second time.
+MAIN_MENU_ANNOUNCED = 0
 
 def announce_main_menu():
-    global MAIN_MENU_INDEX, MAIN_MENU_LEAD
+    global MAIN_MENU_INDEX, MAIN_MENU_LEAD, MAIN_MENU_ANNOUNCED
     MAIN_MENU_INDEX = None
+    MAIN_MENU_ANNOUNCED += 1
     lead, MAIN_MENU_LEAD = MAIN_MENU_LEAD, ''
     if lead.strip():speak(lead.strip() + ' ' + prompt_text(MAIN_MENU_PROMPT, VERBOSITY))
     else:speak_prompt(MAIN_MENU_PROMPT)
@@ -607,7 +746,7 @@ def menu_state(mode):
                 lambda index:setattr(owner,attribute,index)) if names else None
     module=sys.modules[__name__]
     if account_setup:return state([name for name,_ in ACCOUNT_TYPES],module,'ACCOUNT_MENU_INDEX')
-    if mode in ('document_save','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
+    if mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer','chrome_setup') or mode=='email_draft' and pending_send is not None:
         return None
     if NAMED_LIST:
         return ([item[0] for item in NAMED_LIST['items']],NAMED_LIST['index'],lambda index:NAMED_LIST.update(index=index))
@@ -619,7 +758,8 @@ def menu_state(mode):
         return state([x[1] for x in synthesizers()],module,'SYNTH_PICK_INDEX')
     if VOICE_PICK_INDEX is not None:
         return state([x[1] for x in voice_choices(VOICE_PICK_ENGINE)],module,'VOICE_PICK_INDEX')
-    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending:
+    # While a folder loads, the arrows say Please wait (FileManager.command), not End of list.
+    if mode=='files' and FILE_MANAGER and not FILE_MANAGER.pending and not FILE_MANAGER.busy:
         names=FILE_MANAGER.labels()
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
@@ -771,6 +911,8 @@ def _navigation_key(key,mode):
     from input_parity import screen_command
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
+    if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
+        __import__('attachment_screen').old_key_used()   # the attach key before Control+O
     if direct:return direct
     if mode=='downloads':return __import__('download_screen').navigation_key(sys.modules[__name__],key)
     if mode=='attachments' and not NAMED_LIST:return __import__('attachment_screen').navigation_key(sys.modules[__name__],key)
@@ -801,7 +943,7 @@ def _navigation_key(key,mode):
     if key=='Alt+F4':return 'exit companion'
     if mode=='chrome_setup' and not chrome_confirming(mode):
         return {'Escape':'cancel','F5':'status','F1':'status'}.get(key)
-    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
+    confirming=THUNDERBIRD_SETUP is not None or ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('confirm') or pending_website is not None or chrome_confirming(mode) or mode in ('document_save','document_replace','power_confirm','exit_confirm','update_offer') or mode=='email_draft' and pending_send is not None or (mode=='mailbox' and mail_session and mail_session.pending) or (mode=='web' and web_session and (web_session.pending or web_session.submit_pending))
     if confirming:
         if key.lower() in ('y','n','alt+y','alt+n'):return 'yes' if key.lower() in ('y','alt+y') else 'no'
         if key in ('Up','Down','Left','Right','Tab','ShiftTab'):
@@ -946,6 +1088,11 @@ def poll_file_manager(mode):
             FILE_READER=FILE_MANAGER.opened;FILE_MANAGER.opened=None
             if task_navigation().picker=='document':
                 task_navigation().remember(FILE_READER.path);task_navigation().picker=None
+            elif task_navigation().picker=='reader':
+                # Document reader, Open a document: a text file or PDF is remembered and Escape
+                # goes back to the Document reader menu, the same as a Word file (read_file).
+                task_navigation().remember_read(FILE_READER.path);task_navigation().picker=None
+                task_navigation().reader_return='reader_menu'
             notice=notice or 'Opened '+FILE_READER.title+'. Read-only document. '+FILE_READER.reading.read(True)
             if mode=='sleep':SLEEP_RETURN_MODE='file_reader'
             else:mode='file_reader'
@@ -1051,8 +1198,31 @@ def writing_dictation(mode, typed=False):
     "help with ...", "use ... at ..."). In a writing field, a sentence that only starts that
     way and does not complete the command is dictation, not an error."""
     editor_open = (mode == 'document' and document is not None or
-                   mode == 'email_draft' and email_draft is not None or mode == 'note')
+                   mode == 'email_draft' and email_draft is not None or mode == 'note' or
+                   mode == 'web' and web_writing_field())
     return not typed and INPUT_MODE != 'commands' and editor_open
+
+
+def spoken_website(text):
+    """"Go to VA dot gov." or "VA dot gov." said outside a text box: ask to open the site,
+    as "Open website" does, instead of a dead end. Returns True when it asked."""
+    global pending_website
+    from browser_navigation import spoken_address_request
+    address = spoken_address_request(text)
+    if not address:
+        return False
+    pending_website = prepare_address(address)
+    speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
+    return True
+
+
+def web_writing_field():
+    """True while a web text box you write in (a message or comment box) is being edited.
+    A site's search box with suggestions and a password box are not writing."""
+    session = web_session
+    # Looked up on the class, so a stand-in session is never asked.
+    writing = getattr(type(session), 'writing_field', None) if session is not None else None
+    return bool(callable(writing) and writing(session) is True)
 
 
 def speech_control(value):
@@ -1333,7 +1503,12 @@ def change_speech_setting(command, writing=False):
         if not TEXT_MODE: voice.Volume = value
     save_speech_settings()
     if KEYBOARD_SPEECH and not TEXT_MODE:KEYBOARD_SPEECH.configure(voice.Voice.Id,SPEECH_RATE,SPEECH_VOLUME,ESPEAK_SPEECH,SPEECH_PITCH,ai=AI_SPEECH,capital_letters=PREFERENCES.get('capital_letters','do nothing'))
-    speak('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.')
+    # Asked to go past a limit: say so, as "Bigger text." says "Largest text size."
+    limit=''
+    if operation=='delta' and value==current and amount:
+        limit={('volume',1):'Loudest volume. ',('volume',-1):'Quietest volume. ',('rate',1):'Fastest rate. ',('rate',-1):'Slowest rate. ',
+               ('pitch',1):'Highest pitch. ',('pitch',-1):'Lowest pitch. '}.get((kind,1 if amount>0 else -1),'')
+    speak(limit+('Voice '+kind+' '+str(value)+'.' if kind in ('rate','pitch') else 'Volume '+str(value)+' percent.'))
     return True
 
 def voice_choices(engine=None):
@@ -1650,11 +1825,13 @@ CLOSE_BROWSER_COMMANDS=('close browser','close the browser','close browser windo
 
 def close_browser_window():
     """Close the browser even when Keep browser window open is on, then go to the main menu."""
+    global MAIN_MENU_LEAD
     regular=getattr(getattr(web_session,'backend',None),'regular',False) is True
     try:web_session.leave(False)
     except Exception:
         speak('The browser window could not close. Try closing it again.');return 'web' if web_session.snapshot else 'browser_menu'
-    speak('Companion let go of your browser. Its tabs stay open.' if regular else 'Browser window closed.')
+    # One message: a second one would cut this one off.
+    MAIN_MENU_LEAD=('Companion let go of your browser. Its tabs stay open.' if regular else 'Browser window closed.')
     announce_main_menu()
     return 'awake'
 
@@ -1688,8 +1865,8 @@ def open_browser_menu(regular=False):
 def handle_browser_menu(text):
     global SEARCH_RETURN_MODE
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
+    if action=='main':return 'awake'  # handle() says the main menu; "Main menu." first said it twice.
     if notice:speak(notice)
-    if action=='main':return 'awake'
     if action=='downloads':return __import__('download_screen').open_manager(sys.modules[__name__],'browser_menu')
     if action=='chrome':
         import chrome_setup
@@ -1712,15 +1889,17 @@ def handle_browser_menu(text):
         return 'web' if web_session.snapshot else 'browser_menu'
     return 'browser_menu'
 
-def run_web_search(query):
-    """Search-entry text is literal, even when it resembles an app command."""
+def run_web_search(query,typed=True):
+    """Search-entry text is literal, even when it resembles an app command.
+    Spoken, an address such as "VA dot gov." opens the site, not a search for it."""
     global web_session
     web_session=web_session or WebSession(APP,progress=speak_status)
     web_session.auto_read=PREFERENCES.get('web_auto_read',True)
     web_session.search_engine=PREFERENCES.get('web_search_engine','google')
     revision=getattr(web_session,'page_revision',0)
-    from browser_navigation import looks_like_address
-    speak_web_result(web_session.open(query) if looks_like_address(query) else web_session.search(query),revision)
+    from browser_navigation import looks_like_address,spoken_address_request
+    address=query if looks_like_address(query) else None if typed else spoken_address_request(query)
+    speak_web_result(web_session.open(address) if address else web_session.search(query),revision)
     return 'web' if web_session.snapshot else 'search'
 
 def refresh_browser_view(mode):
@@ -1770,32 +1949,33 @@ def recover_audio_overflow(recognizer, utterance):
     return True
 
 
-def save_note(text):
+def save_note(text, say=None):
     """Save the note being written. Returns False, keeping the text, if it could not be saved."""
     global OPEN_NOTE
+    say = say or speak
     opened = OPEN_NOTE
     try:
         if opened is not None and not text.strip():
             OPEN_NOTE = None
-            speak('The note is empty, so your saved note was not changed.')
+            say('The note is empty, so your saved note was not changed.')
             return True
         if opened is not None and notepad.replace(APP, opened, text):
             OPEN_NOTE = None
-            speak('Saved your note.')
+            say('Saved your note.')
             return True
         notepad.add(APP, text)
     except OSError:
-        speak('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
+        say('Your note could not be saved. Your words are still here. Close any program using your notes file, then say save note again.')
         return False
     OPEN_NOTE = None
-    speak('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
+    say('Your notes file changed, so this was saved as a new note.' if opened is not None else 'Saved your note.')
     return True
 
 
-def flush_note(mode):
+def flush_note(mode, say=None):
     """Save a note in progress. Returns False if it could not be saved."""
     if mode == 'note' and note_buffer:
-        if save_note(' '.join(note_buffer)) is False:
+        if (save_note(' '.join(note_buffer), say) if say else save_note(' '.join(note_buffer))) is False:
             return False
         note_buffer.clear()
         note_selection.text = None
@@ -2195,13 +2375,14 @@ def start_thunderbird_quietly():
     return thread
 
 
-def start_thunderbird_add(mode):
-    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address."""
+def start_thunderbird_add(mode, lead=''):
+    """ "Add Thunderbird account": get Thunderbird ready, then ask for the address.
+    lead ("Gmail works through Thunderbird.") is said with the first step, in one message."""
     global THUNDERBIRD_SETUP
     try:
         flow = new_thunderbird_setup(adding=True)
         THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
-        return thunderbird_setup_step(flow.start(), mode)
+        return thunderbird_setup_step(flow.start(), mode, lead)
     except Exception:
         THUNDERBIRD_SETUP = None
         speak('Thunderbird setup stopped because of a problem. Nothing was changed. Say add Thunderbird account to try again.')
@@ -3032,17 +3213,18 @@ THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok'
 THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
 
 
-def thunderbird_setup_step(step, mode):
+def thunderbird_setup_step(step, mode, lead=''):
     """Speak one setup result; keep its yes or no question waiting."""
     global THUNDERBIRD_SETUP, CONFIRM_CHOICE
     flow = THUNDERBIRD_SETUP['flow'] if THUNDERBIRD_SETUP else None
     THUNDERBIRD_SETUP = None
+    said = (lead + ' ' + step.message).strip() if lead else step.message
     if step.question == 'address':
-        return ask_thunderbird_address(step.message, mode)
+        return ask_thunderbird_address(said, mode)
     if step.question:
         THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
         CONFIRM_CHOICE = 'yes'
-    speak(step.message)
+    speak(said)
     sync_app_context(mode, True)
     return mode
 
@@ -3075,7 +3257,7 @@ def _handle(text, mode, typed=False):
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
-    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE
+    global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE, SAVE_AS_TITLE, SAVE_AS_FOLDER
     global POWER_ACTION, POWER_RETURN_MODE, EXIT_RETURN_MODE
     global OPEN_NOTE, ACCOUNT_ENTRY, THUNDERBIRD_SETUP
     global SEARCH_RETURN_MODE,NAMED_LIST,EMAIL_LINK_RECIPIENT,MAIN_MENU_LEAD
@@ -3084,7 +3266,8 @@ def _handle(text, mode, typed=False):
     NOTE_LIST_COMMANDS = ('list notes', 'list my notes', 'list saved notes', 'list the notes', 'open notes', 'open my notes',
                           'open a note', 'open note', 'open saved notes', 'open a saved note', 'open saved note',
                           'show notes', 'show my notes', 'show saved notes')
-    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have')
+    NOTE_LIST_ELSEWHERE = NOTE_LIST_COMMANDS + ('my notes', 'saved notes', 'notes list', 'what notes do i have',
+                                              'read note', 'read notes', 'read my note', 'read my notes', 'read saved notes')
     command=normalized_command(text)
     if text=='@microphone':
         return set_microphone(MICROPHONE_OFF, mode)
@@ -3191,7 +3374,7 @@ def _handle(text, mode, typed=False):
             return 'awake'
         speak(result)
         return mode
-    if mode=='browser_menu' and command not in ('help','options','open options','main menu','back to main menu','exit companion','go to sleep') and not command.startswith(('help with ', 'help for ')) and (command=='resume' or not speech_control(command)) and speech_setting_request(text) is None and command not in VOICE_LIST_COMMANDS and command not in ('use sapi','use sapi voice','use windows voice','use ai voice','use espeak','document help','email help','web help','radio help','podcast help','commands help') and not spoken_control(command):
+    if mode=='browser_menu' and pending_website is None and not command.startswith(('open website ','go to website ')) and command not in ('help','options','open options','main menu','back to main menu','exit companion','go to sleep') and not command.startswith(('help with ', 'help for ')) and (command=='resume' or not speech_control(command)) and speech_setting_request(text) is None and command not in VOICE_LIST_COMMANDS and command not in ('use sapi','use sapi voice','use windows voice','use ai voice','use espeak','document help','email help','web help','radio help','podcast help','commands help') and not spoken_control(command):
         return handle_browser_menu(text)
     if command in ('next','previous'):
         state=menu_state(mode)
@@ -3216,6 +3399,9 @@ def _handle(text, mode, typed=False):
             if result=='email_draft':focus_email_entry()
             return result
         NAMED_LIST=None
+    # "That one" picks the highlighted choice, as Enter does. Exit and Shut down start on No.
+    if command in ('that one','confirm that') and mode in ('exit_confirm','power_confirm','document_save'):
+        command=CONFIRM_CHOICE
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
             speak('Canceled.');return EXIT_RETURN_MODE
@@ -3264,24 +3450,16 @@ def _handle(text, mode, typed=False):
             return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_CLOSE_TARGET=='word_processor' else 'awake'
         speak('Save this document? Yes or no.');return mode
     if mode=='document_name' and not spoken_control(normalized_command(text)) and normalized_command(text) not in ('options','open options','settings','open settings'):
-        if normalized_command(text) in ('cancel','cancel naming','go back'):
-            PENDING_DOCUMENT_NAME=None
-            speak('Naming canceled. Your document is still open.');return 'document'
-        confirm=not typed and normalized_command(text) in ('ok','okay','confirm','confirm that','that one')
-        if confirm and PENDING_DOCUMENT_NAME is None:
-            speak('Say or type a document name first.');return 'document_name'
-        title=re.sub(r'^(?:name document|save document as|save as)\s+','',text.strip(),flags=re.I)
-        if confirm:title=PENDING_DOCUMENT_NAME[1]
-        elif not typed:
-            PENDING_DOCUMENT_NAME=(time.monotonic_ns(),title)
-            speak(title+'. Press Enter or say okay to save the name.');return 'document_name'
-        result=document.process(DOCUMENT_NAMING_ACTION+' '+title)
-        speak(result)
-        if result.startswith(('Document named ','Saved document as ')):
-            PENDING_DOCUMENT_NAME=None
-            checkpoint_document()
-            return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_NAME_RETURN],'awake',typed) if DOCUMENT_NAME_RETURN in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_NAME_RETURN=='word_processor' else DOCUMENT_NAME_RETURN
-        return 'document_name'
+        return document_naming(text,typed)
+    if mode=='document_replace' and not spoken_control(command):
+        # Save As found a file with that name in the folder: replace it only after a Yes.
+        if command in ('yes','yes please','replace','replace it','yes replace it'):
+            target=existing_document(SAVE_AS_FOLDER,SAVE_AS_TITLE)
+            return finish_save_as(SAVE_AS_FOLDER,target.stem if target is not None else None)
+        if command in ('no','no thanks','cancel','go back','keep it','do not replace'):
+            SAVE_AS_TITLE=SAVE_AS_FOLDER=PENDING_DOCUMENT_NAME=None
+            speak('Not replaced. '+SAVE_AS_PROMPT);return 'document_name'
+        speak('Replace '+SAVE_AS_TITLE+'.docx? Yes or no. Escape keeps it.');return mode
     if mode == 'settings' and SETTINGS_PANEL is not None and not SETTINGS_PANEL.closed.is_set():
         control=speech_control(text)
         if control:
@@ -3487,7 +3665,7 @@ def _handle(text, mode, typed=False):
     power_commands=POWER_COMMANDS
     if mode!='sleep' and command in power_commands:
         action=power_commands[command]
-        if mode in ('document','document_name','document_save') and document is not None:
+        if mode in ('document','document_name','document_save','document_replace') and document is not None:
             DOCUMENT_CLOSE_TARGET=action;CONFIRM_CHOICE='yes'
             speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
             return 'document_save'
@@ -3568,7 +3746,7 @@ def _handle(text, mode, typed=False):
         speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
         return mode
     if spoken_control(command) == 'exit':
-        if mode in ('document','document_name','document_save') and document is not None:
+        if mode in ('document','document_name','document_save','document_replace') and document is not None:
             DOCUMENT_CLOSE_TARGET='exit';CONFIRM_CHOICE='yes'
             speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
             return 'document_save'
@@ -3773,7 +3951,8 @@ def _handle(text, mode, typed=False):
         if mail_session is not None:
             speak(mail_session.process('open inbox'))
             return 'mailbox'
-        speak('No email account is connected.')
+        # Said with Main menu, in one message: a second message would cut this one off.
+        MAIN_MENU_LEAD = 'No email account is set up yet.'
         return 'awake'
     if mode == 'email_draft' and email_draft is not None and email_field_destination(command):
         pending_send = None
@@ -3819,11 +3998,9 @@ def _handle(text, mode, typed=False):
         speak(MEDIA_HUB.command(text))
         return mode
     if mode == 'media':
-        if command in ('exit','main menu','back to main menu','leave radio','leave podcasts'):
-            speak('Scheduled recordings continue while the app runs.')
-            return 'awake'
-        if command in ('go back','back') and not (media().stations if MEDIA_SECTION == 'radio' else media().shows):
-            speak('Scheduled recordings continue while the app runs.')
+        if command in ('exit','main menu','back to main menu','leave radio','leave podcasts') or command in ('go back','back') and not (media().stations if MEDIA_SECTION == 'radio' else media().shows):
+            # Only when something is scheduled, and with the main menu in one message.
+            if media().has_scheduled_recordings():MAIN_MENU_LEAD='Scheduled recordings continue while the app runs.'
             return 'awake'
         if command in ('radio','internet radio','podcasts','listen to podcasts'):
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
@@ -3867,10 +4044,16 @@ def _handle(text, mode, typed=False):
         DOCUMENT_CLOSE_TARGET='awake' if command in ('main menu','back to main menu') else 'word_processor';CONFIRM_CHOICE='yes'
         speak('Save this document? Yes or no. Use arrows to choose, then Enter. Escape keeps editing.')
         return 'document_save'
-    if mode=='document' and command in ('name document','rename document','save as','save document as'):
-        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=None
-        DOCUMENT_NAMING_ACTION='save as' if command.startswith('save') else 'name document'
+    if mode=='document' and command in ('save as','save document as','save the document as','save this document as','save my document as'):
+        return start_save_as()
+    if mode=='document' and command in ('name document','rename document'):
+        DOCUMENT_NAME_RETURN='document';PENDING_DOCUMENT_NAME=SAVE_AS_TITLE=SAVE_AS_FOLDER=None
+        DOCUMENT_NAMING_ACTION='name document'
         speak('Name this document. Say or type its name, then press Enter.');return 'document_name'
+    save_as_named=re.fullmatch(r'\s*save (?:the |this |my )?(?:document )?as\s+(.+?)[.!?]*\s*',text,re.I|re.S) if mode=='document' and document is not None else None
+    if save_as_named:
+        # "Save as My Letter Copy": the name is heard; the folder question comes next.
+        return start_save_as(save_as_named[1])
     if mode == 'document' and document is not None and document_control_request(text):
         result=document.process(text)
         if result.startswith(('Document named ','Saved document as ','Saved the Word document as ')):checkpoint_document()
@@ -3943,8 +4126,7 @@ def _handle(text, mode, typed=False):
     if direct_connection and direct_connection[1] in THROUGH_THUNDERBIRD:
         # "Add Gmail account": Gmail and Microsoft mail are added in Thunderbird.
         account_setup = False
-        speak(THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
-        return start_thunderbird_add(mode)
+        return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[direct_connection[1]] + ' works through Thunderbird.')
     if direct_connection:
         account_setup = True
         command = direct_connection[1]
@@ -3959,8 +4141,7 @@ def _handle(text, mode, typed=False):
             return mode
         if command in THROUGH_THUNDERBIRD:
             account_setup = False
-            speak(THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
-            return start_thunderbird_add(mode)
+            return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
         provider = ('yahoo' if command in ('yahoo','yahoo mail') else
                     'thunderbird' if command in ('thunderbird','thunderbird mail','mozilla thunderbird') else None)
         if not provider:
@@ -4063,10 +4244,17 @@ def _handle(text, mode, typed=False):
                   'That account is not connected. Say add account or list email accounts.')
             return mode
         return switch_mail_account(*matches[0], mode)
-    if command in ('email', 'my email', 'open email'):
+    # Everyday words for the inbox, as a new user says them ("Open the inbox.", "Check my mail.").
+    # In a document, email or note they are text you are writing. In the inbox and on a web
+    # page they keep going to the mailbox or the page (a webmail page has its own Inbox).
+    if command in ('email', 'my email', 'open email') or mode not in ('mailbox', 'web') and not writing_dictation(mode, typed) and command in (
+            'open my email', 'go to email', 'go to my email', 'inbox', 'my inbox', 'open inbox', 'open the inbox',
+            'open my inbox', 'go to inbox', 'go to the inbox', 'go to my inbox', 'check my email', 'check mail',
+            'check my mail', 'read email', 'read mail', 'read my mail', 'open mail', 'open my mail'):
         selected = store.selected()
         if not selected:
-            speak_prompt('No email account is selected. Say add account, or list email accounts.')
+            speak_prompt('No email account is selected. Say add account, or list email accounts.' if connected_accounts(store) else
+                         'No email account is set up yet. Say add account to set one up.')
             return mode
         mail_session = MailSession(selected[0], APP, progress=mail_progress)
         speak(mail_session.process('open inbox'))
@@ -4097,7 +4285,7 @@ def _handle(text, mode, typed=False):
         MAIN_MENU_INDEX = bounded_index(MAIN_MENU_INDEX,1 if command=='next' else -1,len(MAIN_MENU_CHOICES))
         speak(announce_item(MAIN_MENU_CHOICES[MAIN_MENU_INDEX][0],MAIN_MENU_INDEX,len(MAIN_MENU_CHOICES)))
         return mode
-    if mode == 'awake' and command in PICK_CONFIRM:
+    if mode == 'awake' and command in PICK_CONFIRM and pending_website is None:  # A website question is answered below.
         if MAIN_MENU_INDEX is None:
             speak('Say next or previous to choose an option.')
             return mode
@@ -4132,12 +4320,7 @@ def _handle(text, mode, typed=False):
             focus_email_entry()
             return 'email_draft'
         if document_request:
-            document = VoiceDocument(documents_folder())
-            checkpoint_document()
-            apply_document_defaults(document)
-            document.dictating = INPUT_MODE != 'commands'
-            speak_prompt('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
-            return 'document'
+            return start_new_document(mode)
         note_buffer.clear()
         note_selection.text = None
         OPEN_NOTE = None
@@ -4146,7 +4329,7 @@ def _handle(text, mode, typed=False):
     if pending_website is not None:
         address, host = pending_website
         pending_website = None
-        if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website'):
+        if command in ('yes', 'yes please', 'yes open website', 'yes open it', 'confirm website', 'okay', 'ok', 'confirm', 'that one'):
             web_session = web_session or WebSession(APP,progress=speak_status)
             web_session.auto_read=PREFERENCES.get('web_auto_read',True)
             web_session.search_engine=PREFERENCES.get('web_search_engine','google')
@@ -4165,7 +4348,7 @@ def _handle(text, mode, typed=False):
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
         if command in ('search','search web','search the web','web search','new search','web browser','open web browser') or text=='web key Search':
             SEARCH_RETURN_MODE='web'
-            speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
+            speak('Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels.')
             return 'search'
         revision=getattr(web_session,'page_revision',0)
         if text.startswith('web key '):
@@ -4183,6 +4366,9 @@ def _handle(text, mode, typed=False):
                 speak('I heard website ' + pending_website[1] + '. Is that right? Say yes or no.')
             except ValueError as exc:
                 speak(str(exc))
+            return 'web'
+        if (command.startswith(('go to ', 'open ', 'visit ')) and not web_writing_field() and __import__('browser_navigation').spoken_address_request(text)
+                and not (command.startswith('go to ') and web_session.favorites.get(text.strip()[6:])) and spoken_website(text)):
             return 'web'
         speak_web_result(web_session.command(text),revision)
         return 'web'
@@ -4226,9 +4412,12 @@ def _handle(text, mode, typed=False):
                 copied = (('. CC ' + ', '.join(email_draft.cc) if email_draft.cc else '') +
                           ('. BCC ' + ', '.join(email_draft.bcc) if email_draft.bcc else ''))
                 context = email_draft.response_context
-                source_note = ('. This ' + context['action'].replace('_', ' ') +
-                               ' uses the original message in your mailbox' +
-                               ('. Original attachments may not be included'
+                # One period after each part, never two: a subject or message that ends in
+                # its own period, question mark or exclamation keeps it ("Sounds good." not "Sounds good..").
+                sentence = lambda text: text if text.rstrip().endswith(('.', '?', '!')) else text.rstrip() + '.'
+                source_note = (' This ' + context['action'].replace('_', ' ') +
+                               ' uses the original message in your mailbox.' +
+                               (' Original attachments may not be included.'
                                 if context['action'] == 'forward' and not isinstance(context.get('original_attachments'), list) else '')
                                if context else '')
                 from mail_attachments import count_words, limit_warning, missing, missing_message, names, total_size
@@ -4238,11 +4427,12 @@ def _handle(text, mode, typed=False):
                     pending_send = None
                     speak(missing_message(gone) + ' The draft is saved.')
                     return mode
-                attached = ('. With ' + count_words(len(files)) + ': ' + names(files) if files else '')
+                attached = (' With ' + count_words(len(files)) + ': ' + names(files) + '.' if files else '')
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
-                      copied + '. Subject ' + (subject or 'no subject') + attached + '. Message: ' + (body or 'no message body') + source_note +
-                      '.' + limit_warning(total_size(files)) +
+                      copied + '. ' + sentence('Subject ' + (subject or 'no subject')) + attached + ' ' +
+                      sentence('Message: ' + (body or 'no message body')) + source_note +
+                      limit_warning(total_size(files)) +
                       ' Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
                 reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
@@ -4366,12 +4556,19 @@ def _handle(text, mode, typed=False):
             OPEN_NOTE = None
             return open_saved_note(number[1], mode)
         if command in ('go back', 'back', 'exit', 'exit note', 'main menu', 'back to main menu'):
-            if not flush_note(mode):return mode
+            # One message: what happened to the note, then where you are. A second
+            # message would cut off the first; an empty note was never "saved".
+            said = []
+            had_words = bool(note_buffer)
+            if not flush_note(mode, said.append):
+                speak(' '.join(said));return mode
+            lead = (' '.join(said) or 'Note saved.') if had_words else ('The note was empty, so nothing was saved.' if OPEN_NOTE is None else
+                                                    'The note is empty, so your saved note was not changed.')
             OPEN_NOTE = None
             if command in ('main menu', 'back to main menu'):
-                speak('Note saved.');return 'awake'
+                MAIN_MENU_LEAD = lead;return 'awake'
             # Escape and Go back return to the Notepad menu, as a document returns to Word processor.
-            return task_navigation().enter('notepad_menu', 'Note saved. Notepad menu')
+            return task_navigation().enter('notepad_menu', lead + ' Notepad menu')
         if command in ('save note', 'finish note', 'done dictating'):
             if note_buffer:
                 if save_note(' '.join(note_buffer)) is False:return mode
@@ -4424,7 +4621,8 @@ def _handle(text, mode, typed=False):
         if command in ('check email', 'read my email'):
             selected = store.selected()
             if not selected:
-                speak_prompt('No email account is selected. Say add account, or list email accounts.')
+                speak_prompt('No email account is selected. Say add account, or list email accounts.' if connected_accounts(store) else
+                         'No email account is set up yet. Say add account to set one up.')
                 return mode
             provider = selected[0]
         else:
@@ -4480,7 +4678,7 @@ def _handle(text, mode, typed=False):
         speak(media().search_podcasts(text))
         return 'media'
     if mode == 'search':
-        return run_web_search(text)
+        return run_web_search(text,typed)
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
@@ -4494,12 +4692,12 @@ def _handle(text, mode, typed=False):
         speak('Continuing email draft ' + email_draft.title + '. Say read paragraph to hear the body.')
         return 'email_draft'
     if re.search(r'\b(document|word file|word document)\b', command):
-        document = VoiceDocument(documents_folder())
-        checkpoint_document()
-        apply_document_defaults(document)
-        document.dictating = INPUT_MODE != 'commands'
-        speak_prompt('New Word document. Speak to write. Say name document followed by a title, or ask for document help.')
-        return 'document'
+        # Only asking for a document makes a new one. "Close document" or "Beginning of
+        # document" with no document open used to ask for a new document's name.
+        if re.search(r'\b(close|leave|exit|quit|beginning|end|top|bottom|save|rename|name|read|delete|print)\b', command):
+            speak_prompt('No document is open. Say create a document, or say open a document.')
+            return 'awake'
+        return start_new_document(mode)
     if re.search(r'\b(note|dictate)\b', command):
         note_buffer.clear()
         note_selection.text = None
@@ -4591,7 +4789,7 @@ def _handle(text, mode, typed=False):
             speak_web_result(web_session.search(topic, provider='google' if command.startswith('google ') else 'bing' if command.startswith('bing ') else None),revision)
             return 'web' if web_session.snapshot else 'awake'
         SEARCH_RETURN_MODE='awake'
-        speak('Web address or search. Type an address or search and press Enter. Addresses do not need www or https. You can say a search. Escape cancels.')
+        speak('Web address or search. Say or type an address or a search, then press Enter. Addresses do not need www or https. Escape cancels.')
         return 'search'
     if mode in ('word_processor','notepad_menu','reader_menu','media_menu','local_media','recent_documents','reader_recent'):
         # Nothing above understood the words. A misheard word must not throw you out of
@@ -4599,6 +4797,7 @@ def _handle(text, mode, typed=False):
         if command in ('main menu','back to main menu','go to main menu'):return 'awake'   # handle() says Main menu
         speak('I did not understand that. You are on the '+options_return_notice(mode)[len('Back to '):].rstrip('.')+'. Press F1 for help.')
         return mode
+    if mode == 'awake' and spoken_website(text):return 'awake'
     speak_prompt('I can write a note or document, open email, search the web, or find radio and podcasts. Say add account to connect email. Say commands only, dictation only, or normal mode to choose how speech works.')
     return 'awake'
 
@@ -4706,7 +4905,11 @@ def announce_startup():
     update_result = None
     result_file = APP / 'update-result.json'
     if result_file.exists():
-        try:update_result = startup_speech.update_result(json.loads(result_file.read_text(encoding='utf-8-sig')))
+        try:
+            update_data = json.loads(result_file.read_text(encoding='utf-8-sig'))
+            update_result = startup_speech.update_result(update_data)
+            # The user's own program held a file: say which, and what to do.
+            if startup_speech.update_notice(update_data):STARTUP_NOTICES.append(startup_speech.update_notice(update_data))
         except (OSError, ValueError):update_result = None
         try:result_file.unlink(missing_ok=True)
         except OSError:pass
@@ -4741,6 +4944,7 @@ def handle(text, mode, typed=False):
         KEYBOARD_NAVIGATION=True
     old_mail_pending=getattr(mail_session,"pending",None) if mail_session else None
     old_send=pending_send
+    announced=MAIN_MENU_ANNOUNCED
     _HANDLE_DEPTH += 1
     try:
         if _HANDLE_DEPTH==1:
@@ -4759,7 +4963,7 @@ def handle(text, mode, typed=False):
         result=open_email_link(url)
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
-        announce_main_menu()
+        if MAIN_MENU_ANNOUNCED==announced:announce_main_menu()
     if result!=mode:DICTATION_ECHO.clear()
     if _HANDLE_DEPTH==0 and result!='exit':sync_app_context(result,result!=mode)
     return result

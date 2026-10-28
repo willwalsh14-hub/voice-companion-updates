@@ -1,8 +1,9 @@
 """Email attachments the way a person uses them: keys, voice and the screens.
 
 - In email: hear a message's files, open the Attachments list, move, save, open.
-- In a draft: Control+T opens File manager as a picker, Enter attaches and comes back.
-- In File manager: Control+N emails the chosen files, Control+T adds them to the open draft.
+- In a draft: Control+O opens File manager as a picker, Enter attaches and comes back.
+- In File manager: Control+N emails the chosen files, Control+O adds them to the open draft.
+- Control+T, the old attach key, still works and says the new key once.
 - The send review names the files; a file gone before sending stops the send.
 - Thunderbird end to end: the real add-on in Node, the real bridge, real bytes.
 """
@@ -252,9 +253,9 @@ class MessageAttachmentTests(FlowTestCase):
 
 
 class DraftAttachmentTests(FlowTestCase):
-    def test_control_t_picks_a_file_and_comes_back_to_the_same_field(self):
+    def test_control_o_picks_a_file_and_comes_back_to_the_same_field(self):
         draft = self.draft(compose_step='subject')
-        mode = self.press('Ctrl+T', 'email_draft')
+        mode = self.press('Ctrl+O', 'email_draft')
         self.assertEqual(mode, 'files')
         self.assertTrue(self.last().startswith('Attach a file.'))
         self.settle_files(mode)
@@ -285,7 +286,7 @@ class DraftAttachmentTests(FlowTestCase):
         self.assertEqual(sorted(a['name'] for a in draft.attachments), ['letter.txt', 'photo.jpg'])
         self.assertIn('. 2 attachments. Back to email draft.', self.last())
         # Escape out of the drive list goes back to the draft with nothing attached.
-        mode = self.settle_files(self.press('Ctrl+T', 'email_draft'))
+        mode = self.settle_files(self.press('Ctrl+O', 'email_draft'))
         app.handle_keyboard('drive list', mode); self.settle_files(mode)
         self.assertEqual(self.press('Escape', mode), 'email_draft')
         self.assertEqual(self.last(), 'Nothing attached. Back to email draft.')
@@ -303,7 +304,7 @@ class DraftAttachmentTests(FlowTestCase):
         self.assertEqual(app.handle('remove attachment photo', 'email_draft'), 'email_draft')
         self.assertEqual(self.last(), 'Removed photo.jpg. No attachments left.')
         self.assertEqual(self.press('Ctrl+L', 'email_draft'), 'email_draft')
-        self.assertEqual(self.last(), 'This email has no attachments. Say attach a file, or press Control+T.')
+        self.assertEqual(self.last(), 'This email has no attachments. Say attach a file, or press Control+O.')
 
     def test_writing_that_only_sounds_like_a_command_is_text(self):
         draft = self.draft()
@@ -360,14 +361,48 @@ class FileManagerEmailTests(FlowTestCase):
         self.assertEqual(self.press('Enter', mode), 'email_draft')
         self.assertEqual([a['name'] for a in app.email_draft.attachments], ['letter.txt'])
 
-    def test_control_t_adds_to_the_open_draft(self):
+    def test_control_o_adds_to_the_open_draft(self):
         mode = self.files_screen()
         app.FILE_MANAGER.choose('photo.jpg')
-        self.assertEqual(self.press('Ctrl+T', mode), 'files')
+        self.assertEqual(self.press('Ctrl+O', mode), 'files')
         self.assertEqual(self.last(), 'No email draft is open. Press Control+N to start a new email with this file.')
         draft = self.draft()
-        self.assertEqual(self.press('Ctrl+T', mode), 'email_draft')
+        self.assertEqual(self.press('Ctrl+O', mode), 'email_draft')
         self.assertEqual(self.last(), 'Attached photo.jpg. 1 attachment. Back to email draft.')
+        self.assertEqual([a['name'] for a in draft.attachments], ['photo.jpg'])
+
+    def test_old_control_t_still_attaches_and_names_the_new_key_once(self):
+        # Will, October 2026: Control+O attaches. Habits from Control+T keep working;
+        # the first use in a session says the new key, later uses stay quiet.
+        attachment_screen.OLD_KEY_NOTICE_GIVEN = False
+        self.addCleanup(setattr, attachment_screen, 'OLD_KEY_NOTICE_GIVEN', False)
+        draft = self.draft()
+        mode = self.press('Ctrl+T', 'email_draft')
+        self.assertEqual(mode, 'files')
+        self.assertTrue(self.last().startswith('Control+T is now Control+O. Attach a file.'), self.last())
+        self.settle_files(mode)
+        app.FILE_MANAGER.choose('letter.txt')
+        self.assertEqual(self.press('Enter', mode), 'email_draft')
+        mode = self.press('Ctrl+T', 'email_draft')
+        self.assertTrue(self.last().startswith('Attach a file.'), self.last())
+        self.settle_files(mode)
+        app.FILE_MANAGER.choose('photo.jpg')
+        self.assertEqual(self.press('Enter', mode), 'email_draft')
+        self.assertEqual(sorted(a['name'] for a in draft.attachments), ['letter.txt', 'photo.jpg'])
+        # File manager's Control+T still works there too, without the notice now.
+        mode = self.files_screen()
+        app.FILE_MANAGER.choose('letter.txt')
+        self.assertEqual(self.press('Ctrl+T', mode), 'files')
+        self.assertEqual(self.last(), 'letter.txt is already attached.')
+
+    def test_old_control_t_in_file_manager_names_the_new_key(self):
+        attachment_screen.OLD_KEY_NOTICE_GIVEN = False
+        self.addCleanup(setattr, attachment_screen, 'OLD_KEY_NOTICE_GIVEN', False)
+        mode = self.files_screen()
+        app.FILE_MANAGER.choose('photo.jpg')
+        draft = self.draft()
+        self.assertEqual(self.press('Ctrl+T', mode), 'email_draft')
+        self.assertEqual(self.last(), 'Control+T is now Control+O. Attached photo.jpg. 1 attachment. Back to email draft.')
         self.assertEqual([a['name'] for a in draft.attachments], ['photo.jpg'])
 
 

@@ -50,5 +50,5 @@ if (-not $caught -or -not $frozen.Killed -or -not $frozen.Disposed) { throw 'An 
 Stop-PreviousCompanion $null
 
 if ($source -match "WaitForExit\(30000\) \| Out-Null \}\s*\r?\n\s*if \(Get-Process -Id \`$PreviousProcessId") { throw 'The helper still gives up when the old app is slow to close.' }
-if ($source.IndexOf("`n  Stop-PreviousCompanion") -lt 0 -or $source.IndexOf("`n  Stop-PreviousCompanion") -gt $source.IndexOf("`n  Close-InstalledBrowserHosts")) { throw 'The previous app must be closed before installation starts.' }
+if ($source.IndexOf("`n  Stop-PreviousCompanion") -lt 0 -or $source.IndexOf("`n  Stop-PreviousCompanion") -gt $source.IndexOf("`n  `$closing = Invoke-CompanionClose")) { throw 'The previous app must be closed before installation starts.' }
 Write-Output 'PASS: normal exit, polite close, stopping a stuck app, other programs untouched, unstoppable app, and ordering.'

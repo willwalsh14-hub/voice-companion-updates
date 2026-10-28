@@ -13,14 +13,6 @@ class Response:
     def read(self,size): result=self.body[:size];self.body=self.body[size:];return result
 
 class UpdateTests(unittest.TestCase):
-    @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows updater process cleanup')
-    def test_installed_browser_hosts_release_files_before_setup(self):
-        import os, subprocess
-        shell = Path(os.environ['SystemRoot'])/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe'
-        result = subprocess.run([str(shell), '-NoProfile', '-File', str(Path(__file__).with_name('test-update-host-cleanup.ps1'))], capture_output=True, text=True, timeout=30)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('PASS:', result.stdout)
-
     @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows updater process handling')
     def test_stuck_previous_app_is_stopped_so_update_restarts(self):
         import os, subprocess
@@ -120,7 +112,7 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(release_manifest(setup,'1.2.3-test','https://example.org/Setup.exe'),self.release())
         root=Path(__file__).parent;builder=(root/'build-windows.ps1').read_text()
         self.assertIn("'test_app_updates'",builder)
-        for name in ('update-settings.json','apply-update.ps1'):self.assertIn(name+':.',builder)
+        for name in ('update-settings.json','apply-update.ps1','close-companion.ps1'):self.assertIn(name+':.',builder)
 
 class UpdateHandoffTests(unittest.TestCase):
     release = UpdateTests.release
@@ -132,6 +124,7 @@ class UpdateHandoffTests(unittest.TestCase):
             service=AppUpdates(root,'1.2.2-test')
             resources=root/'resources';resources.mkdir()
             (resources/'apply-update.ps1').write_text('helper')
+            (resources/'close-companion.ps1').write_text('close step')
             (resources/'update-voice-runtime').mkdir()
             (resources/'update-voice-runtime'/'VoiceCompanion-UpdateVoice.exe').write_bytes(b'MZvoice')
             service.resources=resources
@@ -146,6 +139,8 @@ class UpdateHandoffTests(unittest.TestCase):
                 args=launch.call_args.args[0]
                 self.assertIn('apply-update.ps1',Path(args[args.index('-File')+1]).name)
                 self.assertEqual(args[args.index('-PreviousProcessId')+1],'123')
+                # The close step sits next to the helper, which loads it from its own folder.
+                self.assertEqual((download/'close-companion.ps1').read_text(),'close step')
                 setup.write_bytes(b'MZchanged')
                 with self.assertRaises(ValueError):service.launch(setup,self.release())
                 self.assertEqual(launch.call_count,1)

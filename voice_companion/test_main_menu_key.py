@@ -21,7 +21,8 @@ class MainMenuKeyTests(CompanionTestCase):
             with self.subTest(mode=mode):
                 self.said.clear()
                 self.assertEqual(companion.handle('@main_menu', mode, typed=True), 'awake')
-                self.assertEqual(self.said.count(companion.MAIN_MENU_PROMPT), 1, self.said)
+                # Once, alone or after what just happened ("Note saved. Main menu..."), in one message.
+                self.assertEqual(sum(said.count(companion.MAIN_MENU_PROMPT) for said in self.said), 1, self.said)
 
     def test_a_document_asks_to_save_first(self):
         document = self.open_document()

@@ -229,6 +229,8 @@ class AppUpdates:
             if hashlib.file_digest(source,'sha256').hexdigest() != release['sha256'].lower(): raise ValueError('Installer changed')
         helper = path.parent/'apply-update.ps1'
         shutil.copyfile(self.resources/'apply-update.ps1',helper)
+        # The helper's close step: closes Voice Companion's own programs before Setup.
+        shutil.copyfile(self.resources/'close-companion.ps1',path.parent/'close-companion.ps1')
         shutil.copytree(self.resources/'update-voice-runtime',path.parent/'update-voice-runtime',dirs_exist_ok=True)
         ready = path.parent/'update-ready.json'
         ready.unlink(missing_ok=True)

@@ -27,10 +27,10 @@ class ConsumerWorkflowTests(unittest.TestCase):
         return app.handle_keyboard(text,mode) if typed else app.handle(text,mode)
 
     def test_long_mixed_keyboard_voice_document_persists_exactly(self):
-        mode=self.say('create a document','awake')
+        mode=self.say('Workflow letter',self.say('create a document','awake'),typed=True)
         self.say('First line.',mode);self.say('new line',mode);self.say('Second line.',mode)
         self.say('select all',mode);self.say('scratch',mode)
-        self.say('Replacement text.',mode);self.say('save document as Consumer report',mode)
+        self.say('Replacement text.',mode);self.say('save document as Consumer report',mode);self.say('confirm','document_name')
         self.say('set font Arial',mode);self.say('set font size 14 point',mode);self.say('double space',mode)
         self.say('go to beginning of document',mode);self.say('read current word',mode)
         self.assertIn('Replacement',self.speech.call_args.args[0])
@@ -46,13 +46,14 @@ class ConsumerWorkflowTests(unittest.TestCase):
     def test_note_selection_and_switching_tasks_preserve_text(self):
         mode=self.say('write a note','awake');self.say('one two three',mode)
         self.say('select all',mode);self.say('scratch',mode);self.say('Keep this reminder.',mode)
-        self.assertEqual(self.say('create a document',mode),'document')
+        self.assertEqual(self.say('create a document',mode),'document_name')
+        self.assertEqual(self.say('Reminder letter','document_name',typed=True),'document')
         self.assertIn('Keep this reminder.',(self.root/'notes.txt').read_text())
         self.assertNotIn('one two three',(self.root/'notes.txt').read_text())
         self.assertEqual(document_text(app.document),'')
 
     def test_sleep_keeps_document_help_and_note_contexts(self):
-        mode=self.say('create a document','awake');self.say('Persistent paragraph.',mode)
+        mode=self.say('Sleep letter',self.say('create a document','awake'),typed=True);self.say('Persistent paragraph.',mode)
         self.assertEqual(self.say('go to sleep',mode),'sleep');self.assertEqual(app.SLEEP_RETURN_MODE,'document')
         self.assertEqual(app.resume_from_sleep(),'document')
         self.assertIn('Persistent paragraph.',document_text(app.document))

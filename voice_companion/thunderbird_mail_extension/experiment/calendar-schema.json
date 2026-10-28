@@ -7,7 +7,14 @@
         "name": "listCalendars",
         "type": "function",
         "async": true,
-        "description": "The calendars that are turned on. Resolves to [{id, name, type, readOnly}], or null when the calendar is not available.",
+        "description": "The calendars that are turned on. Resolves to [{id, name, type, readOnly, account}], or null when the calendar is not available. account is the email address the calendar belongs to, or '' when it is kept on this computer or not known.",
+        "parameters": []
+      },
+      {
+        "name": "describeAddressBooks",
+        "type": "function",
+        "async": true,
+        "description": "The email account of each address book. Resolves to [{id, account}], or null. account is '' for a book kept on this computer or when it is not known.",
         "parameters": []
       },
       {

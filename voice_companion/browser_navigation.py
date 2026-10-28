@@ -7,9 +7,13 @@ def spoken_address(spoken):
     """Turn a dictated address such as "VA dot gov." into "VA.gov".
 
     Speech recognizers add sentence punctuation, and people say "forward slash",
-    "dash", or a trailing "dot"; none of those words belong in the host name."""
+    "underscore", "dash", "please", or a trailing "dot"; none of those words
+    belong in the address as words."""
     address = str(spoken).strip()
+    # "Amazon dot com, please." The polite word is not part of the address.
+    address = re.sub(r'^please[\s,]+|[\s,]+please[.!?]*$', '', address, flags=re.I)
     address = re.sub(r'\s*\b(?:forward\s+)?slash\b\s*', '/', address, flags=re.I)
+    address = re.sub(r'\s*\bunderscore\b\s*', '_', address, flags=re.I)
     address = re.sub(r'\s*\bdot\b\s*', '.', address, flags=re.I)
     address = re.sub(r'(?<=\w)\s+(?:dash|hyphen)\s+(?=\w)', '-', address, flags=re.I)
     return address.strip().rstrip('.!?,;').strip()
@@ -54,3 +58,15 @@ def contains_address(text):
 
 def private_address_field(item):
     return item.get('type') in ('password','email','url') or bool(re.search(r'\b(?:password|email|e-mail|web(?:site)? address|url)\b',str(item.get('label','')),re.I))
+
+
+def spoken_address_request(spoken):
+    """The address in something said in the address box, or None for a search.
+
+    "VA dot gov.", "Open website VA dot gov" and "go to VA dot gov" are
+    addresses; "what is a dot com company" is a search."""
+    value=re.sub(r'^(?:(?:open|go to|visit)(?: the)? (?:website|web site|site|page)|open|go to|visit)\s+','',str(spoken).strip(),flags=re.I)
+    address=spoken_address(value)
+    if not looks_like_address(address):return None
+    try:return prepare_address(address)[0]
+    except ValueError:return None

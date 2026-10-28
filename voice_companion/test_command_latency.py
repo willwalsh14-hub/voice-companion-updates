@@ -40,7 +40,7 @@ class ConciseMenusTests(unittest.TestCase):
             for confirm in ('that one','confirm that','ok','okay'):
                 companion.MAIN_MENU_INDEX=1
                 self.assertEqual(companion.handle(confirm,'awake'),'word_processor')
-            self.assertEqual(companion.handle('write a document','awake'),'document')
+            self.assertEqual(companion.handle('write a document','awake'),'document_name')
 
     def test_synthesizer_browsing_only_says_position_and_name(self):
         with patch.object(companion,'synthesizers',return_value=[('windows','SAPI'),('espeak','eSpeak NG')]),patch.object(companion,'SYNTH_PICK_INDEX',0),patch.object(companion,'VOICE_PICK_INDEX',None),patch.object(companion,'speak') as speak:

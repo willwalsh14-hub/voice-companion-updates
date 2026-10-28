@@ -22,6 +22,14 @@ pull requests. Update this file as items are finished.
       build tools (the build guide's "Before giving it to the veteran" steps),
       with NVDA and with JAWS running, to check that speech does not clash.
 
+- [ ] **Will or a tester (update close step, 0.2.172):** with Chrome, Edge
+      and Thunderbird open and the user guide open in Word, accept an update.
+      Check that you hear that Word is using a Voice Companion file, that
+      Chrome, Edge and Thunderbird stay open, and that the update installs
+      and Voice Companion starts again once Word is closed. The 0.2.171 update
+      failed on Will's PC because Setup could not close VoiceCompanion.exe and
+      four browser host processes; `close-companion.ps1` now closes them first.
+
 ### Accounts and store reviews (Will)
 - [x] **Gmail and Outlook verification:** no longer needed. Will decided on
       October 26, 2026 that email works only through Thunderbird and Yahoo.
@@ -133,3 +141,12 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 3. The three GitHub checks must pass, including the Windows build.
 4. Will says go; Claude bumps the version, writes release notes, merges,
    and confirms the release is live.
+
+## 0.2.172: Thunderbird add-on check failed once, then passed (found October 28, 2026)
+- quitChecks waited a fixed 5 ms for the dispatched quit. Windows timers are about 15 ms, so the wait could end first.
+- The test now waits for the quit itself, up to 2 seconds.
+
+## 0.2.172: next station after a broken one failed to start on Windows (October 28, 2026)
+- test_consumer_audio: after a station that failed, the next one said it could not start.
+- Likely cause: the failed stream's emptying load() interrupts the next play() with an AbortError.
+- The player now tries an interrupted start again, and records why a start failed (last_start_error), so a failure names its reason.

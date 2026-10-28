@@ -67,8 +67,27 @@ def _label(item):
     return _plain(item.get('label') or item.get('text') or item.get('placeholder') or item.get('name'))
 
 
+DIGIT_WORDS={'zero':'0','oh':'0','o':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6','seven':'7','eight':'8','nine':'9'}
+
+
+def spoken_digits(spoken):
+    """'five five five, one two three four.' is '5551234'; None if it is not only digits.
+    Phone numbers, ZIP codes and PINs are said a digit at a time."""
+    words=re.findall(r"[a-z]+|\d+|[^\sa-z\d]",str(spoken).casefold())
+    digits=[]
+    for word in words:
+        if word.isdigit():digits.append(word)
+        elif word in DIGIT_WORDS:digits.append(DIGIT_WORDS[word])
+        elif word in ('dash','hyphen') or word in ',.-()':continue
+        else:return None
+    return ''.join(digits) or None
+
+
 def _voice_value(item,spoken,literal=False):
     if literal or item.get('type')=='password':return spoken
+    if item.get('type') in ('tel','number') or re.search(r'(?i)\b(?:phone|zip|postal|pin|code)\b',' '.join(str(item.get(k) or '') for k in ('label','name','autocomplete'))):
+        digits=spoken_digits(spoken)
+        if digits:return digits
     if editable_combo(item):
         # Searches and suggestions: a recognizer's closing period is not part of the query.
         return re.sub(r'(?<![.])[.!]$','',clean_dictation(spoken)).rstrip()
@@ -81,7 +100,8 @@ def _voice_value(item,spoken,literal=False):
     # Names, codes and account identifiers are not prose.
     identity = ' '.join(str(item.get(k) or '') for k in ('label','name','autocomplete','placeholder'))
     if re.search(r'(?i)\b(?:name|address|user|username|login|code|pin|account|zip|postal)\b',identity):
-        return clean_dictation(spoken)
+        # "John Smith." The recognizer's closing period is not part of a name or code.
+        return re.sub(r'(?<![.])[.!]$','',clean_dictation(spoken)).rstrip()
     return prepare_dictation(spoken)
 
 
@@ -908,6 +928,9 @@ class BrowserBackend:
                 if dialog_notice:self.dialog_notice=''
                 if dialog_notice==LEAVE_NOTICE:raise WebError(LEAVE_NOTICE)
                 if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
+                # A page's own message ("Item added to cart") says what happened. A question
+                # Companion canceled still says the website did not move on.
+                if dialog_notice.startswith(('Page message:','The page showed a message')) and not request_errors:return {'unchanged':True,'notice':dialog_notice}
                 return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
@@ -1729,7 +1752,9 @@ class WebSession:
                     action=self.backend.activate(item)
                     same=self._same_page_result(before,action)
                     if same:return same
-                    message=self._refresh(wait=False,read=False if isinstance(action,dict) and action.get('validation') else None)
+                    unchanged=isinstance(action,dict) and action.get('unchanged') and not action.get('download')
+                    # Nothing moved: stay on the button, as a screen reader does.
+                    message=self._refresh(wait=False,read=False if isinstance(action,dict) and (action.get('validation') or unchanged) else None,preserve=bool(unchanged))
                     return (action.get('validation') or action.get('notice') or message) if isinstance(action,dict) else message
                 if role in ('link','button'):
                     if item.get('href') and not self.address_allowed(item['href']):return 'That link does not use an HTTP or HTTPS page address.'
@@ -1805,6 +1830,15 @@ class WebSession:
         try: return self.backend.select_focused(spoken)
         except Exception: return 'I could not select text. Focus the browser field and try again.'
 
+    def _spaced(self,value,literal=False):
+        """A space before dictated words that follow other words, as in a document:
+        "claim." then "Thank you." is "claim. Thank you.", not "claim.Thank you."."""
+        field=self.keyboard_field
+        if literal or not value or not value[0].isalnum() or field.get('type') in ('email','url','password','number','tel'):return value
+        text=field.get('value','');caret=max(0,min(len(text),getattr(self,'web_edit_caret',len(text))))
+        start=(getattr(self,'selection',None) or (caret,caret))[0]
+        return (' ' if start>0 and not text[start-1].isspace() else '')+value
+
     def _insert_field_text(self,text):
         value=self.keyboard_field.get('value','')
         caret=max(0,min(len(value),getattr(self,'web_edit_caret',len(value))))
@@ -1812,6 +1846,13 @@ class WebSession:
         start=max(0,min(len(value),start));end=max(start,min(len(value),end))
         self.keyboard_field['value']=value[:start]+text+value[end:]
         self.web_edit_caret=start+len(text);self.selection=None
+
+    def writing_field(self):
+        """True while a text box for writing is being edited: dictation comes first there,
+        and a sentence that only starts like a command is text (CLAUDE.md)."""
+        field=self.keyboard_field
+        return (isinstance(field,dict) and self.input_mode=='mixed' and text_field(field) and not editable_combo(field)
+                and not choice_field(field) and field.get('type')!='password' and not field.get('readonly'))
 
     def dictate_to_focus(self, spoken, literal=False):
         self.last_dictated_text=None
@@ -1825,8 +1866,9 @@ class WebSession:
             if self.keyboard_field.get('readonly'):return 'This field is read-only. Move to another field to enter text.'
             try:value=_voice_value(self.keyboard_field,spoken,literal)
             except ValueError as exc:return str(exc)
+            value=self._spaced(value,literal)
             self._insert_field_text(value)
-            self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value
+            self.last_dictated_text='' if self.keyboard_field.get('type')=='password' else value.strip()
             if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
             return 'Text entered. Say save field or next control.'
         try: return self.backend.dictate_focused(spoken,literal=True) if literal else self.backend.dictate_focused(spoken)
@@ -2026,6 +2068,9 @@ class WebSession:
                 self.engine_index=0;self.list_focus='search_engines'
                 return 'This search engine requires human verification. Choose another engine for the same search. '+self.engine_notice()+' Use arrows and Enter, or say Try Bing, Try Brave Search, or Try DuckDuckGo. Escape returns to the page. Your default stays unchanged.'
             return 'This site is asking for human verification. Use Tab and Shift Tab to reach its controls. Enter or Space activates the chosen control. Use the site’s accessibility challenge option when available. The website decides whether verification passes.'
+        if url.startswith(('chrome-error:','edge-error:')):
+            # The browser's own error page: the site could not be reached.
+            return 'This page could not open. Check your internet connection, then try again. Say go back to return to the last page.'
         if not self.address_allowed(url):
             return 'Use an HTTP or HTTPS page address.'
         if not str(self.snapshot.get('text', '')).strip():
@@ -2544,8 +2589,13 @@ class WebSession:
         if kind == 'password': state = 'Password field. Dictation or keyboard entry is available; its value is masked.'
         elif kind in ('checkbox','radio'): state = 'Checked.' if item.get('checked') else 'Not checked.'
         elif item.get('tag') == 'select': state = 'Selected ' + _plain(item.get('selected')) + '.'
-        elif item.get('tag') in ('input','textarea'): state = 'Current value ' + (_plain(item.get('value')) or 'blank') + '.'
+        elif item.get('tag') in ('input','textarea'):
+            value = _plain(item.get('value')) or 'blank'
+            state = 'Current value ' + value + ('' if value[-1] in '.!?' else '.')
         else: state = ''
+        # The words page reading uses, not code words such as textarea or tel.
+        if item.get('tag') == 'textarea' or item.get('tag') == 'input' and kind in ('text','search','email','tel','url','number','input'):
+            kind = 'edit field'
         return 'Focused ' + _plain(item.get('label')) + ', ' + kind + '. ' + state
 
     def handoff(self):
@@ -2620,7 +2670,7 @@ class WebSession:
         self.list_focus='fields'
         self.field_list_index=0
         self.pending=None
-        return ('Found '+str(len(self.choices))+' fields. '+announce_item(_label(self.choices[0]),0,len(self.choices),hotkey=False)+
+        return ('Found '+str(len(self.choices))+(' field. ' if len(self.choices)==1 else ' fields. ')+announce_item(_label(self.choices[0]),0,len(self.choices),hotkey=False)+
                 ' Say next or previous, then that one to answer it.')
 
     def _ask_field(self):
@@ -2936,6 +2986,13 @@ class WebSession:
             self.keyboard_field['value']=value;self.web_edit_caret=len(value);self.selection=None
             if editable_combo(self.keyboard_field):return self.combo_typed() or self._combo_entered()
             return 'Text entered. Say save field, next control, or cancel field editing.'
+        if not self.keyboard_field and command.startswith(('type ', 'enter text ')) and self.snapshot:
+            # Not in a text box: say so, rather than searching the page for "type hello".
+            try:focused=self.backend.focused_control()
+            except Exception:focused=None
+            if focused and text_field(focused) and not focused.get('readonly'):
+                return self.backend.dictate_focused(spoken.split(' ',2)[2] if command.startswith('enter text ') else spoken.split(' ',1)[1])
+            return 'Move to a text box first. Say next text box, then type followed by your words.'
         # In a site's own search box, "search for" searches that site.
         search=re.match(r'^\s*search(?: for)?\s+(?!the web\b)(.+)',spoken,re.I|re.S)
         combo=self.keyboard_field if self.keyboard_field else self.browse.current() if self.browse and self.form_index is None and not self.list_focus else None
@@ -2987,6 +3044,12 @@ class WebSession:
             return ('Guided websites use ' + browser_name(self.browser) + '.' +
                     (' This page is open in ' + browser_name(running) + ' because ' + browser_name(self.browser) + ' could not start.' if running != self.browser else '') +
                     ' Say use Chrome or use embedded Edge to change it.')
+        if command=='where am i' and not self.keyboard_field and self.snapshot and self.browse and self.browse.current():
+            # In page view, the page and the place on it, as a screen reader says.
+            return 'Page: '+_plain(self.snapshot.get('title') or self._host())+'. '+describe(self.browse.current(),self.browse.elements)
+        if command in ('where am i','read current field','what field am i on') and self.keyboard_field and text_field(self.keyboard_field):
+            # The box you are typing in, with what you have written so far (not yet on the page).
+            return self._describe_focus(dict(self.keyboard_field))
         if command in ('where am i','read current field','what field am i on'):
             try: item = self.backend.focused_control()
             except Exception: item = None
@@ -3015,7 +3078,7 @@ class WebSession:
             return self.handoff()
         if command in ('review form','read form back','review my answers'):
             return self.review_form()
-        if command in ('help','help me','what can i do','what can i do here','i need help'):
+        if command in ('help','help me','what can i do','what can i do here','i need help') and not (self.writing_field() and command in ('what can i do','what can i do here','i need help')):
             return self._ask_field() if self.form_index is not None else self.help_here()
         if self.form_index is not None and command not in ('read page','read this page','refresh page'):
             if self.input_mode == 'commands' and command not in ('skip','skip field','repeat','repeat question',
@@ -3090,7 +3153,7 @@ class WebSession:
             self.favorite_index=0
             self.list_focus='favorites'
             self.pending=None
-            return ('Found '+str(len(self.favorite_items))+' favorites. '+announce_item(self.favorite_items[0][1]['name'],0,len(self.favorite_items))+
+            return ('Found '+str(len(self.favorite_items))+(' favorite. ' if len(self.favorite_items)==1 else ' favorites. ')+announce_item(self.favorite_items[0][1]['name'],0,len(self.favorite_items))+
                     ' Say next or previous, then that one to open it.' if self.favorite_items else 'No favorites saved yet.')
         if command.startswith('go to '):
             item=self.favorites.get(spoken.strip()[6:])
@@ -3112,6 +3175,10 @@ class WebSession:
             self.pending = None
             self.suggestion_index = None
             return 'Canceled. The web action was not opened.'
+        if self.writing_field() and self.form_index is None:
+            # In a text box, words that only start like a request ("Tell me about your day.",
+            # "Find a way to call Bob.") are what you are writing.
+            return self.dictate_to_focus(spoken)
         match = re.match(r'^(?:what does (?:this |the )?page say about|tell me about)\s+(.+)', spoken, re.I)
         if match: return self.answer_from_page(match[1])
         match = re.match(r'^(google|bing|brave(?: search)?|duck\s*duck\s*go)(?: for)?\s+(.+)', spoken, re.I)

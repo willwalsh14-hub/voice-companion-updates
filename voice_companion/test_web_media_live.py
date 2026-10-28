@@ -55,8 +55,8 @@ class LiveDialogTests(LiveBrowser):
         return self.session.keyboard('Activate')
 
     def test_page_messages_read_cleanly(self):
-        self.assertTrue(self.at('Save').startswith('Page message: Saved! The website'), self.session)
-        self.assertTrue(self.at('Empty').startswith('The page showed a message with no words. The website'))
+        self.assertEqual(self.at('Save'),'Page message: Saved!')  # The page's own words; nothing more.
+        self.assertEqual(self.at('Empty'),'The page showed a message with no words.')
         said = self.at('Remove')
         self.assertTrue(said.startswith('Website confirmation canceled: Delete item? The website'), said)
         self.assertFalse(self.page.evaluate('window.answer'))
