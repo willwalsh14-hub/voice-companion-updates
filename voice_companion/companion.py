@@ -4226,9 +4226,12 @@ def _handle(text, mode, typed=False):
                 copied = (('. CC ' + ', '.join(email_draft.cc) if email_draft.cc else '') +
                           ('. BCC ' + ', '.join(email_draft.bcc) if email_draft.bcc else ''))
                 context = email_draft.response_context
-                source_note = ('. This ' + context['action'].replace('_', ' ') +
-                               ' uses the original message in your mailbox' +
-                               ('. Original attachments may not be included'
+                # One period after each part, never two: a subject or message that ends in
+                # its own period, question mark or exclamation keeps it ("Sounds good." not "Sounds good..").
+                sentence = lambda text: text if text.rstrip().endswith(('.', '?', '!')) else text.rstrip() + '.'
+                source_note = (' This ' + context['action'].replace('_', ' ') +
+                               ' uses the original message in your mailbox.' +
+                               (' Original attachments may not be included.'
                                 if context['action'] == 'forward' and not isinstance(context.get('original_attachments'), list) else '')
                                if context else '')
                 from mail_attachments import count_words, limit_warning, missing, missing_message, names, total_size
@@ -4238,11 +4241,12 @@ def _handle(text, mode, typed=False):
                     pending_send = None
                     speak(missing_message(gone) + ' The draft is saved.')
                     return mode
-                attached = ('. With ' + count_words(len(files)) + ': ' + names(files) if files else '')
+                attached = (' With ' + count_words(len(files)) + ': ' + names(files) + '.' if files else '')
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
-                      copied + '. Subject ' + (subject or 'no subject') + attached + '. Message: ' + (body or 'no message body') + source_note +
-                      '.' + limit_warning(total_size(files)) +
+                      copied + '. ' + sentence('Subject ' + (subject or 'no subject')) + attached + ' ' +
+                      sentence('Message: ' + (body or 'no message body')) + source_note +
+                      limit_warning(total_size(files)) +
                       ' Is that right? Press Y or N, or use arrows or Tab and Enter. Escape keeps the draft. You can also say yes to send or no to keep it.')
             except (AccountError, DeliveryError, ValueError, KeyError) as exc:
                 reason=str(exc) if not isinstance(exc,KeyError) else 'The saved account information is incomplete. Reconnect the sending account.'
