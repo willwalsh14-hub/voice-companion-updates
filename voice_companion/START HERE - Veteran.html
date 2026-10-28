@@ -96,6 +96,7 @@ main:focus{outline:none}
 <li>To start the lessons, say "Start tutorial", or press <kbd>Control+T</kbd>.</li>
 <li>To open Help, say "Help", or press <kbd>F1</kbd>.</li>
 </ul>
+<p>If the main menu does not know your words, it says "I did not understand that. You are on the main menu. Press F1 for help."</p>
 <p>On the main menu, Alt says that you are in the main menu. The main menu is already a menu, so it has no Alt menu of its own.</p>
 <p>On most other screens, press <kbd>Alt</kbd> to open a menu of that screen's actions. Each item says its key and its voice command. Use the arrows and Enter to choose. Press a number to open a group or choose an item. Type a letter to find an item. <kbd>Escape</kbd> goes back one level. Press <kbd>Alt</kbd> again to close the menu.</p>
 <p>If a screen has no Alt menu, or you must answer a question first, Alt tells you why.</p>
@@ -199,6 +200,7 @@ main:focus{outline:none}
 <p>To go straight to a topic, say "Help with", followed by its name. For example, say "Help with documents", "Help with email", or "Help with web".</p>
 <p>Other useful requests are "Help with radio", "Help with podcasts", "Help with presets", and "Help with commands".</p>
 <p>On most screens, <kbd>F1</kbd> opens the Help topic for that screen. <kbd>Home</kbd> and <kbd>End</kbd> reach the ends of a list.</p>
+<p>If Help does not know your words, it says so, and says what to say next. While Help reads aloud, it does not answer, so talk in the room does not stop the reading.</p>
 <p>Press <kbd>Alt</kbd> to open the help menu. It has Help topics, Subsections, Release notes, Lessons, the guide folder, Close help, and Main menu.</p>
 <h3 id="part-3-2">3.2 Read part of a topic</h3>
 <p>Each Help topic has a list of smaller parts. Choose the part you want, then listen.</p>
@@ -350,7 +352,9 @@ main:focus{outline:none}
 <li>In a document or draft, say "Copy", "Cut", or "Delete", followed by the words to change. For example, say "Copy cat", "Cut cat", or "Delete cat".</li>
 <li>To remove the current part, say "Delete word", "Delete line", "Delete sentence", or "Delete paragraph". In a document, these are also in the Edit menu: press <kbd>Alt</kbd>, then <kbd>2</kbd>.</li>
 <li>To remove selected text, say "Scratch" or "Scratch that", or press <kbd>Control+Shift+Z</kbd>. With nothing selected, it removes the words you dictated last, where this works.</li>
-<li>To reverse an edit in a document or draft message, say "Undo", or press <kbd>Control+Z</kbd>. Check the text after the change.</li>
+<li>To reverse an edit in a document or draft message, say "Undo", or press <kbd>Control+Z</kbd>. Say it again to go back more steps. Companion says what it undid, such as "Undid bold".</li>
+<li>To put back what you undid, say "Redo", or press <kbd>Control+Y</kbd>. A new edit clears what Redo can put back.</li>
+<li>Typing from the keyboard is undone one sentence at a time. Companion keeps the last 100 changes. When there are no more, it says "Nothing more to undo".</li>
 </ul>
 <p>When you move to a new place, the old selection is cleared. Check your choice again before you change or remove text.</p>
 <h3 id="part-5-6">5.6 Replace or insert words</h3>
@@ -636,7 +640,7 @@ main:focus{outline:none}
 <h3 id="part-8-8">8.8 Save, copy, close, or reopen a document</h3>
 <p>Companion saves as you write.</p>
 <ul>
-<li>To save under the current name, say "Save document", or press <kbd>Control+S</kbd>.</li>
+<li>To save under the current name, say "Save", "Save document", or press <kbd>Control+S</kbd>. A document with no name asks for a name first. "Save" in a sentence, such as "Save the date for Friday", is text.</li>
 <li>To save a copy with a new name or in another folder, use Save As. See the steps below.</li>
 <li>To rename the file, say "Name document", followed by the new name, such as "Name document My Letter". Say "Undo" right after a rename to get the old name back.</li>
 </ul>
@@ -674,7 +678,7 @@ main:focus{outline:none}
 <ul>
 <li><kbd>Control+S</kbd> saves. <kbd>F12</kbd> saves as. <kbd>Control+Shift+S</kbd> also saves as. <kbd>F2</kbd> names the document.</li>
 <li><kbd>Control+N</kbd> creates a document. <kbd>Control+O</kbd> opens one. <kbd>Control+W</kbd> closes it after a save question.</li>
-<li><kbd>Control+Z</kbd> undoes. <kbd>Control+A</kbd> selects all.</li>
+<li><kbd>Control+Z</kbd> undoes. <kbd>Control+Y</kbd> redoes. <kbd>Control+A</kbd> selects all.</li>
 <li><kbd>Control+C</kbd> copies. <kbd>Control+X</kbd> cuts. <kbd>Control+V</kbd> pastes.</li>
 <li><kbd>Control+F</kbd> finds text. <kbd>Control+H</kbd> replaces text: type the old words, the word with, and the new words.</li>
 <li><kbd>Control+B</kbd>, <kbd>Control+I</kbd>, and <kbd>Control+U</kbd> turn bold, italic, and underline on or off.</li>
@@ -847,7 +851,7 @@ main:focus{outline:none}
 </ol>
 <p>With the keyboard, type an address in the To box and press <kbd>Enter</kbd>. Then go on to the subject and the message.</p>
 <p>To speak an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com. Say "underscore" for _ and "dash" for -.</p>
-<p>Press <kbd>Alt</kbd> to open the email draft menu. It has Message, Fields, Format, Contacts and help, and Attachments. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.</p>
+<p>Press <kbd>Alt</kbd> to open the email draft menu. It has Message, Fields, Format, Contacts and help, Attachments, and Undo and redo. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.</p>
 <h3 id="part-11-2">11.2 Change To, CC, BCC, or Subject</h3>
 <p>A message has these parts:</p>
 <ul>
@@ -874,20 +878,26 @@ main:focus{outline:none}
 <li>The address and subject boxes use plain text only.</li>
 <li>The person who reads your mail may see other fonts or spacing in their email app.</li>
 <li>To write words that sound like commands, say "Type literally" first.</li>
-<li>To reverse an edit in the body, say "Undo".</li>
+<li>To reverse an edit, say "Undo", or press <kbd>Control+Z</kbd>. Undo also brings back an address or subject you changed. To put it back, say "Redo", or press <kbd>Control+Y</kbd>.</li>
 <li>To hear the whole draft, say "Read email draft", or press <kbd>Control+R</kbd>.</li>
 </ul>
 <p>For help, say "Help with writing email", or press <kbd>F1</kbd>.</p>
 <h3 id="part-11-4">11.4 Save or cancel a draft</h3>
 <ul>
-<li>To keep a message for later, say "Save draft", or press <kbd>Control+S</kbd>.</li>
+<li>To keep a message for later, say "Save draft" or "Save", or press <kbd>Control+S</kbd>.</li>
 <li>To hear your saved drafts, say "List email drafts".</li>
 <li>To reopen a saved draft, say "Open email draft", or press <kbd>D</kbd> in the inbox. Use the arrows to choose a draft, then press <kbd>Enter</kbd>.</li>
 <li>To open a draft by name, say "Open email draft", followed by its name, such as "Open email draft Untitled".</li>
 <li>To save the draft and close it, say "Leave email". You go back to your email, or to the main menu if email was not open.</li>
 </ul>
-<p>To leave an unsent draft and throw away its changes, say "Cancel", "Cancel draft", or "Back to inbox", or press <kbd>Escape</kbd>. This works in a new message, a reply, a reply to all, or a forward, from any part of the draft.</p>
-<p>Save the draft first if you want to keep it. Canceling cannot take back a message already sent. If you reopened a saved draft, canceling keeps its earlier saved copy.</p>
+<p>To leave an unsent draft, say "Cancel", "Back", or "Back to inbox", or press <kbd>Escape</kbd>. This works in a new message, a reply, a reply to all, or a forward, from any part of the draft.</p>
+<p>If you wrote something that is not saved, Companion asks first: save it as a draft, throw it away, or keep writing.</p>
+<ul>
+<li>Save as a draft is chosen first. Press <kbd>Enter</kbd>, or say "Save draft", to keep it and go back to your email.</li>
+<li>To throw the changes away, say "Throw it away", or press <kbd>Down Arrow</kbd>, then <kbd>Enter</kbd>.</li>
+<li>To go back to the message, say "Keep writing" or "No", or press <kbd>Escape</kbd>. Nothing is lost.</li>
+</ul>
+<p>A draft with nothing written closes without the question. Throwing a draft away cannot take back a message already sent. If you reopened a saved draft, throwing it away keeps its earlier saved copy.</p>
 <h3 id="part-11-5">11.5 Review and send</h3>
 <ol>
 <li>Say "Send email", "Send it", or "Send that", or press <kbd>Control+Enter</kbd> or <kbd>Alt+S</kbd> in the draft.</li>
@@ -933,12 +943,21 @@ main:focus{outline:none}
 <li>Say "Email" or "Check email", or choose Email on the main menu.</li>
 <li>Listen to the sender, subject, and date of the selected message.</li>
 <li>To hear another message, say "Next message" or "Previous message", or press <kbd>Down Arrow</kbd> or <kbd>Up Arrow</kbd>.</li>
-<li>To read it, say "That one" or "Open current message", or press <kbd>Enter</kbd>.</li>
+<li>To read it, say "That one" or "Open current message", or press <kbd>Enter</kbd>. Companion says "Message opened." Then it reads the message.</li>
 </ol>
 <p>To open a message by number, say "Read message" or "Open message", followed by its number, such as "Read message 1" or "Open message 1".</p>
-<p>To repeat the sender, subject, and date, say "Message details", or press <kbd>I</kbd>. For more of a long message, say "Continue reading", or press <kbd>Down Arrow</kbd>.</p>
+<p>To repeat the sender, subject, and date, say "Message details", or press <kbd>I</kbd>. To hear one part of the header, use these keys or questions. They work in the message list and in an open message:</p>
+<ul>
+<li><kbd>Alt+1</kbd>: who it is from. Say "Who is it from?" or "Who sent this?"</li>
+<li><kbd>Alt+2</kbd>: who it is to. Say "Who is it to?"</li>
+<li><kbd>Alt+3</kbd>: the CC line. Say "Read the CC." If nobody got a copy, you hear "No CC."</li>
+<li><kbd>Alt+4</kbd>: the subject. Say "What is the subject?"</li>
+<li><kbd>Alt+5</kbd>: the date it was sent. Say "When was it sent?" or "Read the date."</li>
+<li><kbd>Alt+6</kbd>: how many files are attached. Say "How many attachments?"</li>
+</ul>
+<p>For more of a long message, say "Continue reading", or press <kbd>Down Arrow</kbd>.</p>
 <p>To read it again from the top, say "Read from beginning". To go back to the message list, say "Back to folder" or "Go back", or press <kbd>Escape</kbd>.</p>
-<p>Press <kbd>Alt</kbd> to open the email menu. Its groups are Messages, Select, Go to folder, Folder actions, Drafts and contacts, Accounts, Pages, Options and help, and Attachments. For example, press <kbd>Alt</kbd>, <kbd>3</kbd>, then <kbd>2</kbd> to go to Sent. Press <kbd>Alt</kbd>, <kbd>8</kbd>, then <kbd>1</kbd> for Email options.</p>
+<p>Press <kbd>Alt</kbd> to open the email menu. Its groups are Messages, Select, Go to folder, Folder actions, Drafts and contacts, Accounts, Pages, Options and help, and Header and attachments. For example, press <kbd>Alt</kbd>, <kbd>3</kbd>, then <kbd>2</kbd> to go to Sent. Press <kbd>Alt</kbd>, <kbd>8</kbd>, then <kbd>1</kbd> for Email options.</p>
 <p>The single-letter email keys are listed in part 12.6.</p>
 <h3 id="part-12-2">12.2 Go to folders</h3>
 <p>To choose a folder from a list, say "Go to folder", or press <kbd>G</kbd>. Use "Next", "Previous", and "That one", or the arrows and Enter.</p>
@@ -972,7 +991,7 @@ main:focus{outline:none}
 <p>Reply all goes to the sender and everyone else on the message. Check the addresses before you send.</p>
 <p>For a forward, give the new address when asked. Speak your added text. Then review and send as in part 11.5.</p>
 <p>A forward includes the original attachments. Companion says their names when the forward starts. To leave one out, say "Remove" and its name, such as "Remove the photo". Or open the Attachments list with <kbd>Control+L</kbd>, move to the file, and press <kbd>Delete</kbd>.</p>
-<p>To throw away the reply, say "Cancel" or "Back to inbox". Say "Save draft" first if you want to keep it.</p>
+<p>To leave the reply, say "Cancel" or "Back to inbox". If you wrote something, Companion asks whether to save it as a draft, throw it away, or keep writing.</p>
 <h3 id="part-12-5">12.5 Create and manage folders</h3>
 <ul>
 <li>To create a folder, say "Create folder", followed by the name, such as "Create folder Receipts". Or press <kbd>Alt</kbd>, <kbd>4</kbd>, then <kbd>1</kbd>.</li>
@@ -1011,6 +1030,7 @@ main:focus{outline:none}
 <li>G: to choose a folder, say "Go to folder", or press <kbd>G</kbd>.</li>
 <li>W: to hear the folder name, say "Which folder", or press <kbd>W</kbd>.</li>
 <li>I: to hear the sender, subject, and date, say "Message details", or press <kbd>I</kbd>.</li>
+<li><kbd>Alt+1</kbd> to <kbd>Alt+6</kbd>: to hear From, To, CC, Subject, the date sent, or how many files are attached. See part 12.1.</li>
 <li>C: to copy the sender's address, say "Copy sender address", or press <kbd>C</kbd>.</li>
 <li>E: to email the sender, say "New email to sender", or press <kbd>E</kbd>.</li>
 <li>D: to open a saved draft, say "Open email draft", or press <kbd>D</kbd>.</li>
@@ -1023,7 +1043,7 @@ main:focus{outline:none}
 <p>For email help, say "Help with email", or press <kbd>F1</kbd>.</p>
 <p>The Messages per list setting is in Email options. Choices include 10, 20, 30, 40, 50, 100, 1000, and all.</p>
 <h3 id="part-12-7">12.7 Open and save attachments</h3>
-<p>When you open a message that has files, Companion first says how many there are, with their names and sizes. For example, "2 attachments: report.pdf, 1.2 megabytes; photo.jpg, 300 kilobytes."</p>
+<p>When you open a message that has files, Companion says "Message opened." Then it says how many there are, with their names and sizes. For example, "2 attachments: report.pdf, 1.2 megabytes; photo.jpg, 300 kilobytes."</p>
 <p>The Attachments list works the same for a message you got and for an email you are writing.</p>
 <ol>
 <li>To open the Attachments list, say "Attachments" or "What's attached", or press <kbd>L</kbd>. In an email you are writing, press <kbd>Control+L</kbd>. You hear, for example, "Attachments, 2 files. report.pdf, 1.2 megabytes, 1 of 2."</li>
@@ -2157,6 +2177,7 @@ main:focus{outline:none}
 <li>The last thing Companion said is under the name.</li>
 <li>The list or menu you are in fills the middle. The selected item has an arrow in front of it. It is also bold and highlighted, so you can find it without seeing colors.</li>
 <li>In a document, email, note, help topic, or web page, the text fills the middle. The line with the caret has its own background. The caret is wide and does not blink.</li>
+<li>A short hint is under the typing box. It names the screen, says <kbd>F1</kbd> for help, and gives the main keys. While Companion is asleep, it says how to wake it up. With the microphone off, it says to use the keys.</li>
 <li>The window follows you as you move. It never takes your keys or adds speech.</li>
 </ul>
 <h3 id="part-30-2">30.2 Change the text size</h3>

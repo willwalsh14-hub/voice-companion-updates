@@ -66,6 +66,7 @@ ___ Select a repeated word by name. Choose the second match and check it.
 ___ Select a passage with Select through, Selection start, and Selection end.
 ___ Check What is selected before making a change.
 ___ Try copy, cut, paste, delete, Scratch, replacement, insertion, and Undo.
+___ Make three changes. Press Control+Z three times, then Control+Y three times. Check each spoken step and the text.
 ___ Repeat in a document, an email draft, and a note. Try reading in a received message and on a web page.
 ___ Say punctuation names. Check the text. Try Type literally with words that sound like commands.
 Result: ____________________
@@ -99,10 +100,12 @@ ___ Say Cancel send. Check that Yes afterward cannot send the canceled request.
 ___ Review again. Say Yes only when it is right. Check the receiving inbox.
 ___ If delivery is uncertain, check before trying again.
 ___ Save and reopen a draft. Cancel new, reply, reply-all, and forward drafts.
+___ Write a line in a draft and press Escape. Check the question. Try No, then Enter to save, then Throw it away.
 Result: ____________________
 
 9. Read and organize email
 ___ Read the inbox and a message. Return to the folder, then the inbox.
+___ Open a message. Check that it says Message opened. Press Alt+1 to Alt+6 and check each header line.
 ___ Try next and previous messages and loading another page of mail.
 ___ Use a folder list. Try two folders with the same name in different places.
 ___ Mark one message, then several. Move and delete only spare messages.
