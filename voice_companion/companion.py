@@ -771,6 +771,8 @@ def _navigation_key(key,mode):
     from input_parity import screen_command
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
+    if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
+        __import__('attachment_screen').old_key_used()   # the attach key before Control+O
     if direct:return direct
     if mode=='downloads':return __import__('download_screen').navigation_key(sys.modules[__name__],key)
     if mode=='attachments' and not NAMED_LIST:return __import__('attachment_screen').navigation_key(sys.modules[__name__],key)

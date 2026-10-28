@@ -10,7 +10,7 @@ SCREEN_KEYS = {
     'note': {'Ctrl+S': 'save note', 'Ctrl+R': 'read from top', 'F1': 'help with notepad'},
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
-                    'Ctrl+K': 'list contacts', 'Ctrl+T': 'attach a file', 'Ctrl+L': 'list attachments'},
+                    'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments'},
     # Email: one letter per action, no modifiers (Will, October 2026). Letters act in the
     # message list and in an open message; K and B stay for links and buttons in a message.
     'mailbox': {'N': 'new email', 'R': 'reply', 'A': 'reply all', 'F': 'forward', 'M': 'move',
@@ -37,9 +37,9 @@ SCREEN_KEYS = {
     # Letters move to the next name that starts with them, as in Contacts, so actions use Control.
     'attachments': {'F1': 'help with attachments', 'Ctrl+S': 'save attachment', 'Ctrl+Shift+S': 'save all attachments',
                     'Ctrl+D': 'save attachment to folder', 'Ctrl+I': 'read attachment details',
-                    'Delete': 'remove attachment', 'Ctrl+T': 'attach a file'},
+                    'Delete': 'remove attachment', 'Ctrl+O': 'attach a file'},
     # File manager: email the chosen files, or add them to the email draft that is open.
-    'files': {'Ctrl+N': 'email this file', 'Ctrl+T': 'attach to draft'},
+    'files': {'Ctrl+N': 'email this file', 'Ctrl+O': 'attach to draft'},
     'media': {'F1': 'help with radio'},  # 'help with podcasts' when Podcasts is open
     'word_processor': {'F1': 'help with documents'},
     'recent_documents': {'F1': 'help with documents'},
@@ -61,7 +61,11 @@ OLD_KEYS = {
     'awake': {'Ctrl+Shift+V': 'what version', 'Ctrl+Shift+M': 'what mode',
               'Ctrl+Shift+G': 'open user guides', 'Ctrl+Shift+T': 'start tutorial'},
     'note': {'Ctrl+Shift+R': 'read from top'},
-    'email_draft': {'Ctrl+Shift+R': 'read email draft'},
+    # Control+T attached files until 0.2.172; Control+O does now (Will, October 2026).
+    # The first use in a session says the new key (attachment_screen.old_key_used).
+    'email_draft': {'Ctrl+Shift+R': 'read email draft', 'Ctrl+T': 'attach a file'},
+    'attachments': {'Ctrl+T': 'attach a file'},
+    'files': {'Ctrl+T': 'attach to draft'},
     'file_reader': {'Ctrl+Shift+R': 'read document'},
     'tutorial': {'Ctrl+Shift+R': 'repeat', 'Ctrl+Shift+F': 'explain command {value}'},
     'mailbox': {'Ctrl+I': 'message details', 'Ctrl+Shift+I': 'which folder', 'Ctrl+O': 'open email draft',

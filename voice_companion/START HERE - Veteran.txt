@@ -588,7 +588,7 @@ Tab and Shift+Tab move between the list and these buttons: Search, Search subfol
 6.12 Email a file
 Choose a file in File manager. To send more than one, press Space on each file first. Folders cannot be sent.
 - To start a new email with the files attached, say "Email this file", or press Control+N. Then give the address, as in part 11.1.
-- To add the files to the email you are writing, say "Attach to draft", or press Control+T. You go back to the draft.
+- To add the files to the email you are writing, say "Attach to draft", or press Control+O. You go back to the draft.
 Both are also on the File manager menu. Press Alt to open it.
 
 7. DOCUMENT READER
@@ -947,7 +947,7 @@ To attach a file by its name, say "Attach", the name, "from", and the folder. Fo
 - If several files fit, you hear a short list, newest first. Use Up Arrow and Down Arrow, then press Enter on the file you want. Escape closes the list.
 - To attach the file you downloaded last, say "Attach the last download".
 To choose the file in File manager:
-1. In the draft, say "Attach a file", or press Control+T. File manager opens.
+1. In the draft, say "Attach a file", or press Control+O. File manager opens.
 2. Move to the file. To attach several files from one folder, press Space on each one.
 3. Press Enter. Companion attaches the files and takes you back to the same place in the draft.
 Folders cannot be attached. Escape in the File manager drive list goes back to the draft without attaching anything.
@@ -1061,7 +1061,7 @@ Keys and voice commands in the Attachments list:
 - Control+Shift+S: to save every file, say "Save all attachments", or press Control+Shift+S.
 - Control+I: to hear what kind of file it is, its size, and where it is, say "Read attachment details", or press Control+I.
 - Delete: in an email you are writing, to take the file off, say "Remove attachment", or press Delete.
-- Control+T: in an email you are writing, to attach another file, say "Attach a file", or press Control+T.
+- Control+O: in an email you are writing, to attach another file, say "Attach a file", or press Control+O.
 - F1: for help in the list, say "Help with attachments", or press F1.
 Press Alt to open the attachments menu. It has the same choices.
 You can say a file's name the way you would say it:

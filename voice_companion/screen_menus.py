@@ -100,7 +100,7 @@ MENUS = {
             ('Email options', '', '@options:Email'),
             ('Writing email help', 'F1', 'help with writing email')]),
         ('Attachments', [
-            ('Attach a file', 'Ctrl+T', 'attach a file'),
+            ('Attach a file', 'Ctrl+O', 'attach a file'),
             ('Attach the last download', '', 'attach the last download'),
             ('List attachments', 'Ctrl+L', 'list attachments'),
             ('Remove an attachment', '', 'remove attachment')]),
@@ -221,7 +221,7 @@ MENUS = {
             ('Save all', 'Ctrl+Shift+S', 'save all attachments'),
             ('Details', 'Ctrl+I', 'read attachment details'),
             ('Remove from this email', 'Delete', 'remove attachment'),
-            ('Attach another file', 'Ctrl+T', 'attach a file'),
+            ('Attach another file', 'Ctrl+O', 'attach a file'),
             ('Attachments help', 'F1', 'help with attachments'),
             ('Close the list', 'Escape', 'close attachments')]),
     ]),

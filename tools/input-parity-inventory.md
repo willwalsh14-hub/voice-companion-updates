@@ -254,7 +254,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Attach to open email draft
 
 - Voice: "Attach to draft"
-- Keyboard: Ctrl+T
+- Keyboard: Ctrl+O
 - Status: Both
 
 ### Main menu
@@ -2222,7 +2222,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Attach a file
 
 - Voice: "Attach a file"
-- Keyboard: Ctrl+T
+- Keyboard: Ctrl+O
 - Status: Both
 
 ### Attach the last download
@@ -2782,7 +2782,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Attach another file
 
 - Voice: "Attach a file"
-- Keyboard: Ctrl+T
+- Keyboard: Ctrl+O
 - Status: Both
 
 ### Attachments help
