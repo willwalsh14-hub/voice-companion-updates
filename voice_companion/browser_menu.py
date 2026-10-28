@@ -161,7 +161,7 @@ class BrowserMenu:
             if self.action == 'delete':
                 # Ask first, with No chosen, as when cancelling a download (Will, October 2026).
                 self.target = item['name']; self.level = 'confirm'
-                return self.delete_question(), 'confirm'
+                return self.delete_question(), 'ask'
             self.target = item['name']; self.level = 'name'
             return 'Rename favorite ' + self.target + '. Say or type the new name, then press Enter. Escape cancels.', None
         return 'The list is empty. Escape returns to the web browser menu.', None

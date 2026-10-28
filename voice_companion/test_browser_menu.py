@@ -59,7 +59,7 @@ class BrowserMenuTests(unittest.TestCase):
         self.assertEqual(reloaded.favorites.get('Daily news')['url'], 'https://example.com')
         self.run_command('delete bookmark')
         # Deleting asks first, with No chosen (Will, October 2026).
-        self.assertEqual(self.run_command('enter'), ('Delete favorite Daily news? Say Yes or No. Escape keeps it.', 'confirm'))
+        self.assertEqual(self.run_command('enter'), ('Delete favorite Daily news? Say Yes or No. Escape keeps it.', 'ask'))
         self.assertEqual(len(self.session.favorites.all()), 1)
         self.run_command('yes')
         self.assertEqual(self.session.favorites.all(), {})

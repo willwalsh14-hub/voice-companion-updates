@@ -861,8 +861,75 @@ def clock_text_entry(mode, typed=False):
     return mode=='web' and web_session is not None and bool(getattr(web_session,'keyboard_field',None))
 
 
+def now_playing():
+    """What plays now, for "What's playing?" and F3."""
+    if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
+    try:return MEDIA_HUB.now_playing()
+    except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
+
+
+def now_playing_asked(text,mode,typed=False):
+    """True for "What's playing?" where words are commands. "What is this?" counts only
+    while something plays, and not on the Calendar, where it reads the event."""
+    asked=__import__('media_hub').now_playing_request(text)
+    if not asked or clock_text_entry(mode,typed):return False
+    return asked=='clear' or mode!='calendar' and MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind)
+
+
+# Screens where "play" keeps its own meaning, or where words are typed.
+STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings')
+
+
+def station_asked(text,mode,typed=False):
+    """The station name in "Play WGN" on a screen where words are commands, else None."""
+    if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed):return None
+    return __import__('media_hub').station_request(text)
+
+
+# Background notices wait for a quiet moment: Companion silent, no key pressed for this
+# many seconds, and nobody speaking (October 2026).
+NOTICE_QUIET_SECONDS=3.0
+MEDIA_STREAM_ALERT=None        # (play number, message) waiting to be said
+MEDIA_STREAM_NEXT_CHECK=0.0
+
+
+def quiet_for_notice(now,hearing=None):
+    """True when a background notice will not talk over the user."""
+    if speech_busy():return False
+    last=getattr(APP_WINDOW,'last_navigation',0) if APP_WINDOW is not None else 0
+    if isinstance(last,(int,float)) and now-last<NOTICE_QUIET_SECONDS:return False
+    try:return not (hearing and hearing())
+    except Exception:return True
+
+
+def poll_media_stream(now=None,hearing=None):
+    """Main loop: check a playing radio stream every 2 seconds. When it stops by itself,
+    say so once, at a quiet moment, unless something else has started playing."""
+    global MEDIA_STREAM_ALERT,MEDIA_STREAM_NEXT_CHECK
+    hub=MEDIA_HUB
+    if hub is None:return
+    now=time.monotonic() if now is None else now
+    if now>=MEDIA_STREAM_NEXT_CHECK:
+        MEDIA_STREAM_NEXT_CHECK=now+2
+        try:alert=hub.check_stream(now)
+        except Exception:alert=None
+        if alert:MEDIA_STREAM_ALERT=alert
+    if MEDIA_STREAM_ALERT is None:return
+    session,message=MEDIA_STREAM_ALERT
+    if getattr(hub.player,'session',session)!=session or not getattr(hub.player,'kind',None):
+        MEDIA_STREAM_ALERT=None;return   # played again, or closed: the news is old
+    if quiet_for_notice(now,hearing):
+        MEDIA_STREAM_ALERT=None;speak(message)
+
+
 def navigation_key(key,mode):
     global KEYBOARD_NAVIGATION
+    if key=='F3':
+        # F3 says what plays now, on every screen; it changes nothing (Will, October 2026).
+        previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
+        try:interrupt_speech();speak(now_playing())
+        finally:KEYBOARD_NAVIGATION=previous
+        return None
     if key in time_date.KEY_REQUESTS:
         # F12 or Insert+F12 works everywhere, even in setup, lists and questions; it changes nothing.
         previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
@@ -1867,12 +1934,11 @@ def open_browser_menu(regular=False):
 
 def handle_browser_menu(text):
     global SEARCH_RETURN_MODE,CONFIRM_CHOICE
-    asking=web_session.menu.level=='confirm'
     notice,action=web_session.menu.process(text,web_session,PREFERENCES.get('web_keep_open',False))
     if action=='main':return 'awake'  # handle() says the main menu; "Main menu." first said it twice.
-    if action=='confirm':
+    if action in ('ask','confirm'):
         # "Delete favorite ...?" starts on No; arrows choose, Enter answers, Escape keeps it.
-        if not asking:CONFIRM_CHOICE='no'
+        if action=='ask':CONFIRM_CHOICE='no'
         speak(notice);return 'browser_menu'
     if action=='page':
         # A favorite named from a page: back to the page and your place on it.
@@ -3304,6 +3370,9 @@ def _handle(text, mode, typed=False):
     clock=time_date.clock_request(text,clock_text_entry(mode,typed))
     if clock:
         speak_clock(clock);return mode
+    # "What's playing?" works on every screen too, and is text where people write.
+    if now_playing_asked(text,mode,typed):
+        speak(now_playing());return mode
     # "Bigger text", "Change colors", "Full screen": the screen for low vision, from every screen
     # where words are commands. In a document, email, note or text box they are text.
     display=__import__('display_options').voice_request(text) if mode!='settings' and not clock_text_entry(mode,typed) else None
@@ -3796,6 +3865,18 @@ def _handle(text, mode, typed=False):
         # Opens where File manager options say (drive list, C drive, Documents, ...).
         speak('File manager. '+FILE_MANAGER.refresh(start_location(PREFERENCES.get('file_manager_start'))))
         return 'files'
+    # "Play WGN" from the main menu and other screens where words are commands: find the
+    # station and play it, or offer a short list (Will, October 2026). The Radio screen,
+    # web pages and writing fields keep their own meaning of "play".
+    station=station_asked(text,mode,typed)
+    if station:
+        hub=media()
+        try:result=hub.play_by_name(station)
+        except (OSError,ValueError) as exc:result='I could not complete that radio request. '+str(exc)
+        if hub.station_choices:
+            MEDIA_SECTION='radio';media_navigation().show_choices()
+            speak(result);return 'media'
+        speak(result);return mode
     if mode=='files':
         if command in ('main menu','back to main menu','close file manager','leave file manager'):
             # handle() says Main menu once when the screen changes.
@@ -5271,6 +5352,7 @@ def main():
                 try: media_notice = MEDIA_NOTICES.get_nowait()
                 except queue.Empty: break
                 speak(media_notice)
+            poll_media_stream(hearing=lambda:bool(json.loads(recognizer.PartialResult()).get('partial','')))
             if APP_WINDOW is not None:
                 try: settings_result = APP_WINDOW.settings_results.get_nowait()
                 except queue.Empty: settings_result = None

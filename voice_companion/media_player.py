@@ -8,8 +8,8 @@ PLAYER_HTML = '''<!doctype html><html lang="en"><meta charset="utf-8">
 button{font:inherit;margin:.35rem;padding:.6rem}audio,video{display:block;width:100%;max-height:75vh;margin:1rem 0}</style>
 <h1>Voice Companion Audio</h1><p id="title">No audio selected.</p>
 <audio id="audio" controls preload="none"></audio>
-<button onclick="audio.play()">Play</button><button onclick="audio.pause()">Pause</button>
-<button onclick="audio.pause();audio.currentTime=0">Stop</button>
+<button onclick="window.voiceCompanionUserPaused=false;audio.play()">Play</button><button onclick="window.voiceCompanionUserPaused=true;audio.pause()">Pause</button>
+<button onclick="window.voiceCompanionUserPaused=true;audio.pause();audio.currentTime=0">Stop</button>
 <button onclick="audio.currentTime=Math.max(0,audio.currentTime-15)">Back 15 seconds</button>
 <button onclick="audio.currentTime=Math.min(audio.duration||Infinity,audio.currentTime+15)">Forward 15 seconds</button>
 <p id="status"></p><script>
@@ -58,6 +58,58 @@ def seek_message(player, seconds, noun='track'):
     return jump+' Now at '+spoken_time(position)+'.'
 
 
+# A playing radio stream whose place has not moved for this long has stopped.
+# Shorter waits are normal buffering and are never reported.
+STALL_SECONDS = 10
+
+
+class StreamWatch:
+    """Decides, from regular checks of the player, when a radio stream that had
+    started has failed. Each play (a new station, or Play after a stop) is a new
+    session, and a failure is reported once per session.
+
+    A sample is the player's health(): paused, ended, error (a media error code
+    or None), position, and user_paused (the user paused or stopped it). None
+    means the player did not answer at all."""
+
+    def __init__(self, stall_seconds=STALL_SECONDS):
+        self.stall_seconds = stall_seconds
+        self.session = None
+        self.reported = False
+        self.position = None
+        self.since = None
+
+    def check(self, session, sample, now):
+        """'error', 'ended', 'stalled', 'gone' (the player stopped answering) or None."""
+        if session != self.session:
+            self.session, self.reported, self.position, self.since = session, False, None, None
+        if self.reported:
+            return None
+        if sample is None:
+            reason = 'gone'
+        elif sample.get('user_paused') or sample.get('paused') and not sample.get('ended') and sample.get('error') is None:
+            # The user paused or stopped it, or a helper pressed Pause in the
+            # player window. Not a failure; the stall clock starts again later.
+            self.position, self.since = None, None
+            return None
+        elif sample.get('error') is not None:
+            reason = 'error'
+        elif sample.get('ended'):
+            reason = 'ended'   # a live station never ends by itself
+        else:
+            position = sample.get('position')
+            moved = isinstance(position, (int, float)) and (self.position is None or position > self.position + 0.2)
+            if moved or self.since is None:
+                self.position = position if isinstance(position, (int, float)) else self.position
+                self.since = now
+                return None
+            if now - self.since < self.stall_seconds:
+                return None
+            reason = 'stalled'
+        self.reported = True
+        return reason
+
+
 class MediaPlayer:
     def __init__(self, folder):
         self.folder=Path(folder)
@@ -65,6 +117,11 @@ class MediaPlayer:
         self.kind=None
         self.ducked=False
         self.start_timeout_ms=12000
+        # What is loaded, for "What's playing?", and a number that changes with each
+        # play, so a stream failure is reported once per play.
+        self.title=self.url=None
+        self.session=0
+        self.failed=False
 
     @property
     def kind(self):
@@ -114,11 +171,13 @@ class MediaPlayer:
     def open(self, url, title, kind):
         self.start()
         self.kind=None
+        self.failed=False
         if self.page.url != (self.folder/'audio-player.html').as_uri():
             self.page.goto((self.folder/'audio-player.html').as_uri())
         result=self.page.evaluate('''async ({url,title,timeout,video,ducked}) => {
             // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
             window.voiceCompanionDucked=ducked;
+            window.voiceCompanionUserPaused=false;window.voiceCompanionFailed=false;
             let a=document.getElementById('audio');
             if(a.tagName!==(video?'VIDEO':'AUDIO')){
                 const replacement=document.createElement(video?'video':'audio');
@@ -143,6 +202,29 @@ class MediaPlayer:
             self.kind=None
             raise OSError('This audio format could not start in the player.')
         self.kind=kind
+        self.title,self.url=title,url
+        self.session+=1
+
+    def streaming(self):
+        """True while a live radio stream from the internet is loaded (not a saved recording)."""
+        return self.kind=='radio' and str(self.url or '').startswith(('http://','https://'))
+
+    def health(self):
+        """One check of the playing media, for StreamWatch."""
+        if not self.page or self.page.is_closed() or not self.kind:
+            return None
+        return self.page.evaluate("""() => {const a=document.getElementById('audio');
+            return {paused:a.paused,ended:a.ended,error:a.error?a.error.code:null,position:a.currentTime,
+                    user_paused:!!window.voiceCompanionUserPaused};}""")
+
+    def mark_failed(self):
+        """The stream stopped by itself: stop it, so Play loads it again."""
+        self.failed=True
+        if not self.page or self.page.is_closed():return
+        try:
+            self.page.evaluate("""() => {const a=document.getElementById('audio');window.voiceCompanionFailed=true;
+                window.voiceCompanionUserPaused=false;a.pause();}""")
+        except Exception:pass
 
     def adjust(self, setting, value):
         if not self.page or self.page.is_closed() or not self.kind:
@@ -163,7 +245,9 @@ class MediaPlayer:
     def status(self):
         if not self.page or self.page.is_closed() or not self.kind:
             raise ValueError('Open a media file first.')
-        return self.page.evaluate("() => {const a=document.getElementById('audio');return {paused:a.paused,position:a.currentTime,duration:Number.isFinite(a.duration)?a.duration:null};}")
+        status=self.page.evaluate("() => {const a=document.getElementById('audio');return {paused:a.paused,position:a.currentTime,duration:Number.isFinite(a.duration)?a.duration:null};}")
+        if isinstance(status,dict):status['failed']=self.failed
+        return status
 
     def set_ducked(self, ducked, factor=0.18):
         """Lower radio and podcast playback while Companion speaks.
@@ -183,16 +267,21 @@ class MediaPlayer:
 
     def control(self, action, seconds=15, position=None):
         if not self.page or self.page.is_closed() or not self.kind: return None
-        return self.page.evaluate('''async ({action,seconds,position,timeout}) => {
+        result=self.page.evaluate('''async ({action,seconds,position,timeout}) => {
             const a=document.getElementById('audio');
             const toggling=action==='toggle';
             if(toggling){
-                if(!a.paused){a.pause();return true}
+                if(!a.paused){window.voiceCompanionUserPaused=true;a.pause();return true}
                 action='play';
             }
-            if(action==='stop'){a.pause();try{a.currentTime=0}catch(e){};return 0}
-            if(action==='pause'){a.pause();return a.currentTime}
+            if(action==='stop'){window.voiceCompanionUserPaused=true;a.pause();try{a.currentTime=0}catch(e){};return 0}
+            if(action==='pause'){window.voiceCompanionUserPaused=true;a.pause();return a.currentTime}
             if(action==='play'){
+                window.voiceCompanionUserPaused=false;
+                // A stream that failed, or a live stream that ended, loads again: "try again".
+                if(window.voiceCompanionFailed||a.error||a.ended&&!Number.isFinite(a.duration)){
+                    window.voiceCompanionFailed=false;const source=a.src;a.removeAttribute('src');a.load();a.src=source;
+                }
                 let timer;
                 try {
                     const started=await Promise.race([a.play().then(()=>true,()=>false),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),timeout)})]);
@@ -208,3 +297,7 @@ class MediaPlayer:
             }
             return a.currentTime;
         }''',{'action':action,'seconds':seconds,'position':position,'timeout':self.start_timeout_ms})
+        if action=='play' or action=='toggle' and result is False:
+            # Playing again is a new play: a later stop is reported again.
+            self.failed=False;self.session+=1
+        return result
