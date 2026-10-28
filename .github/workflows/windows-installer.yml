@@ -19,6 +19,5 @@ jobs:
           python -m pip install --disable-pip-version-check -r voice_companion/requirements.txt
           python -m playwright install firefox chromium
           git worktree add main-copy origin/main
-          python tools/diag_contact.py main-copy/voice_companion main
           python tools/diag_contact.py voice_companion release
           throw 'Diagnostic finished. See the annotations.'
