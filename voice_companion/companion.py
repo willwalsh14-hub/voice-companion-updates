@@ -2420,7 +2420,8 @@ def set_microphone(on, mode):
     """Turn the microphone fully on or off, and say what happened and how to undo it."""
     global MICROPHONE_OFF, MICROPHONE_ANNOUNCED
     MICROPHONE_OFF = not on
-    MICROPHONE_ANNOUNCED = on
+    # Not when it still cannot open: "The microphone is on." is said once it really works.
+    MICROPHONE_ANNOUNCED = on and not MICROPHONE_FAILED
     PREFERENCES['microphone_off'] = not on
     try:save_preferences()
     except OSError:pass   # The switch still works now; it is only not remembered.

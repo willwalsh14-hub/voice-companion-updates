@@ -230,6 +230,10 @@ class MicrophoneThatCannotStartTests(CompanionTestCase):
         self.assertEqual(self.said, ['Microphone on. It could not start yet, so use the keys. '
                                      'Voice commands start by themselves when it works.'])
         self.assertNotIn('Voice commands are on', self.said[0])
+        # When it opens at last, the user hears that voice commands work now.
+        self.said.clear()
+        companion.microphone_retried(True, 'awake')
+        self.assertEqual(self.said, ['The microphone is on.'])
 
 
 class GuideSilenceWordsTests(unittest.TestCase):
