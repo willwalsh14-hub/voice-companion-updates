@@ -292,8 +292,13 @@ WINDOW_STILL_NEEDED = 'This page still needs Chrome\'s window, so it stays open.
 WINDOW_AS_BEFORE = ('Chrome is set to show its window, as before. To run it in the background, open Options, '
                     'Web browser, and choose Run the browser in the background.')
 WINDOW_NOT_CHROME = 'Only guided Chrome can run in the background. Embedded Edge is part of the Voice Companion window.'
+WINDOW_OWN_BROWSER = ('You are using your own browser, and it keeps its own window. Press Alt+Tab to find it. '
+                      'Only guided Chrome can run in the background.')
 WINDOW_FAILED = 'Chrome could not open again. Say open website to try again.'
 WINDOW_SWITCHING = 'Opening Chrome again in the same place. This takes a moment.'
+# A button opened a box for choosing a file, but Chrome runs in the background with no window to show it.
+FILE_BOX_HIDDEN = ('This button opens a box for choosing a file. That box needs Chrome\'s window. '
+                   'Say show browser window, then choose the button again.')
 PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc|security code|expiration date|expiry date)\b')
 
 
@@ -902,6 +907,12 @@ class BrowserBackend:
 
     def _watch_dialogs(self):
         if not hasattr(self.page,'on'):return
+        if getattr(self,'launched_hidden',False) and getattr(self,'file_box_page',None) is not self.page:
+            # Guided Chrome in the background has no window to show a file box in, so a
+            # button that opens one would seem to do nothing. Catch it and say what to do.
+            # With a window, Chrome shows its own file box, so nothing is caught there.
+            def file_box(chooser):self.dialog_notice=FILE_BOX_HIDDEN
+            self.page.on('filechooser',file_box);self.file_box_page=self.page
         if getattr(self,'dialog_page',None) is self.page:return
         self.dialog_page=self.page
         def dialog_notice(dialog):
@@ -1028,7 +1039,7 @@ class BrowserBackend:
                 if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
                 # A page's own message ("Item added to cart") says what happened. A question
                 # Companion canceled still says the website did not move on.
-                if dialog_notice.startswith(('Page message:','The page showed a message')) and not request_errors:return {'unchanged':True,'notice':dialog_notice}
+                if (dialog_notice.startswith(('Page message:','The page showed a message')) or dialog_notice==FILE_BOX_HIDDEN) and not request_errors:return {'unchanged':True,'notice':dialog_notice}
                 return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
@@ -2037,6 +2048,8 @@ class WebSession:
     def browser_window(self,show):
         """ "Show browser window" and "hide browser window". Returns what to say."""
         backend=self.backend
+        if getattr(backend,'regular',False):
+            return WINDOW_OWN_BROWSER
         if not getattr(backend,'guided_chrome',lambda:False)():
             return WINDOW_NOT_CHROME
         if not CHROME_IN_BACKGROUND:

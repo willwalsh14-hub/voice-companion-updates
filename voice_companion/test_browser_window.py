@@ -194,6 +194,16 @@ class SwitchingTests(unittest.TestCase):
         session = WebSession(self.temp.name, Edge(self.temp.name, {}))
         self.assertEqual(session.browser_window(False), web_assistant.WINDOW_NOT_CHROME)
 
+    def test_your_own_browser_is_not_called_embedded_edge(self):
+        """With your own Chrome linked by the extension, "Show browser window" said
+        "Embedded Edge is part of the Voice Companion window"."""
+        own = Guided(self.temp.name, {}); own.regular = True
+        session = WebSession(self.temp.name, own)
+        for show in (True, False):
+            said = session.browser_window(show)
+            self.assertEqual(said, web_assistant.WINDOW_OWN_BROWSER)
+            self.assertNotIn('Embedded Edge', said)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -564,6 +564,31 @@ class LiveWebTests(unittest.TestCase):
         self.assertEqual(self.session.engine_choices[0],'brave')
         self.assertEqual(self.session.search_engine,'google')
 
+class BackgroundFileBoxTests(unittest.TestCase):
+    """Guided Chrome in the background has no window, so it cannot show a file box.
+    Headless Chromium stands in for it here (Playwright's own Chromium, as above)."""
+    setUpClass=classmethod(LiveWebTests.setUpClass.__func__)
+    tearDownClass=classmethod(LiveWebTests.tearDownClass.__func__)
+    setUp=LiveWebTests.setUp
+    UPLOAD='<title>Claim</title><h1>Your claim</h1><input id="f" type="file" hidden><button onclick="document.getElementById(\'f\').click()">Upload a photo</button>'
+
+    def test_upload_button_says_the_file_box_needs_the_window(self):
+        """A button that opens a hidden file box did nothing; only "The website has not moved to another step." was said."""
+        import web_assistant
+        self.page.set_content(self.UPLOAD);self.session._refresh(read=False)
+        self.backend.launched_hidden=True
+        self.session.keyboard('Quick:b')
+        said=self.session.keyboard('Activate')
+        self.assertIn(web_assistant.FILE_BOX_HIDDEN,said)
+        self.assertNotIn('not moved',said)
+
+    def test_with_a_window_the_file_box_is_left_to_chrome(self):
+        """Chrome with its window shows its own file box; Companion must not catch it."""
+        self.page.set_content(self.UPLOAD);self.session._refresh(read=False)
+        self.backend.launched_hidden=False
+        self.session.keyboard('Quick:b');self.session.keyboard('Activate')
+        self.assertIsNone(getattr(self.backend,'file_box_page',None))
+
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):
     browser_name='chrome'
