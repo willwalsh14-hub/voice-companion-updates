@@ -264,10 +264,15 @@ class RealThunderbirdTests(unittest.TestCase):
     when it is started again (as a person does from the Start menu)."""
 
     def test_real_thunderbird(self):
-        import thunderbird_setup
         program = os.environ['VOICE_COMPANION_REAL_THUNDERBIRD']
-        system = thunderbird_setup.WindowsSystem()
-        system.launch_background(program)
+        # Its own profile, without the first-start question about the default mail program,
+        # started the way thunderbird_setup.WindowsSystem.launch_background starts it.
+        profile = tempfile.mkdtemp(prefix='vc-thunderbird-')
+        with open(os.path.join(profile, 'user.js'), 'w') as handle:
+            handle.write('user_pref("mail.shell.checkDefaultClient", false);\n')
+        info = subprocess.STARTUPINFO(); info.dwFlags |= subprocess.STARTF_USESHOWWINDOW; info.wShowWindow = 7
+        subprocess.Popen([program, '-profile', profile, '-no-remote'], startupinfo=info, close_fds=True,
+                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
         desktop = hiding.Win32Desktop()
         watch = hiding.ThunderbirdWindows(desktop)
         try:
@@ -280,14 +285,14 @@ class RealThunderbirdTests(unittest.TestCase):
             time.sleep(10)
             windows = desktop.windows()
             print('REAL windows after 10 s: %r' % (windows,), flush=True)
-            # Thunderbird's first start may open its own question windows; each one is shown.
+            # The add-on's "minimize" request, as Voice Companion sends it once Thunderbird is connected.
+            for window in windows:
+                if window.kind == hiding.MAIN_CLASS and not window.owned: desktop.minimize(window.handle)
+            time.sleep(1)
             watch.enable()
             for _ in range(20):
                 watch.poll(); time.sleep(0.25)
             print('REAL after enable: waiting=%s tucked=%r messages=%r' % (watch.waiting, watch.tucked, list(watch.messages.queue)), flush=True)
-            for window in desktop.windows():
-                if window.minimized and window.kind == hiding.MAIN_CLASS and not window.owned and window.handle not in watch.tucked:
-                    watch.tucked[window.handle] = desktop.tuck(window.handle)
             tucked = dict(watch.tucked)
             self.assertTrue(tucked, 'a minimized main window was hidden')
             time.sleep(5)
@@ -295,7 +300,7 @@ class RealThunderbirdTests(unittest.TestCase):
                 self.assertTrue(desktop.style(handle) & 0x80, 'Thunderbird kept the tool-window style')
             watch.waiting = 'none'; watch.seen.clear()
             while not watch.messages.empty(): watch.messages.get_nowait()
-            subprocess.Popen([program])    # started again: Thunderbird brings its window up
+            subprocess.Popen([program, '-profile', profile])    # started again: Thunderbird brings its window up
             came_up = False
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline and not came_up:
@@ -309,6 +314,7 @@ class RealThunderbirdTests(unittest.TestCase):
         finally:
             watch.disable()
             subprocess.run(['taskkill', '/IM', 'thunderbird.exe', '/F'], capture_output=True)
+            time.sleep(2); shutil.rmtree(profile, ignore_errors=True)
 
 
 if __name__ == '__main__':
