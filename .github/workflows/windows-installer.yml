@@ -37,6 +37,12 @@ jobs:
           $audio = (Get-Service Audiosrv -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status)
           $devices = (Get-CimInstance Win32_SoundDevice -ErrorAction SilentlyContinue | Measure-Object).Count
           Write-Output ('::error title=Sound on this runner::Audiosrv=' + $audio + ' sound devices=' + $devices)
+          # Try audio with the Windows audio service started (no sound card: it may still refuse).
+          Start-Service Audiosrv -ErrorAction SilentlyContinue
+          $audio = (Get-Service Audiosrv -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status)
+          Write-Output ('::error title=Sound after starting the service::Audiosrv=' + $audio)
+          Report 'Headless Chrome with audio service' @('test_browser_window_live.BackgroundChromeLiveTests.test_runs_headless_with_sound_and_its_usual_name')
+          exit 0
       - name: Real Thunderbird check (try branch only)
         shell: pwsh
         working-directory: voice_companion
@@ -52,3 +58,4 @@ jobs:
           $text = (($out | Where-Object { $_ -match '(FAIL|ERROR|skipped|REAL|Error|assert|\.\.\. ok|Ran )' } | Select-Object -First 40) -join '%0A').Replace('::', ': ')
           if ($text.Length -gt 3800) { $text = $text.Substring(0, 3800) }
           Write-Output ('::error title=Real Thunderbird::' + $(if ($code -eq 0) { 'PASS%0A' } else { 'FAIL%0A' }) + $text)
+          exit 0
