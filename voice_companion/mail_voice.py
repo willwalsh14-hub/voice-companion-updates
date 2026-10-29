@@ -73,6 +73,11 @@ def header_request(text):
     return HEADER_COMMANDS.get(command)
 
 
+def plural(count, word):
+    """'1 message', '2 messages'."""
+    return str(count) + ' ' + word + ('' if count == 1 else 's')
+
+
 def spoken_people(people):
     """'Jane Smith and Bob Jones': names, or the address when a person has no name."""
     from mail_attachments import joined
@@ -194,7 +199,7 @@ class MailSession:
             return ('I see ' + str(len(folders)) + ' folders named ' + ambiguous_name +
                     '. First choice: ' + menu_label(self._spoken_folder(folders[0][0])) +
                     '. Say next or previous to hear another, then that one to ' + verb + '.')
-        return ('Found '+str(len(folders))+' folders. Folder 1: '+menu_label(self._spoken_folder(folders[0][0]))+
+        return ('Found '+plural(len(folders), 'folder')+'. Folder 1: '+menu_label(self._spoken_folder(folders[0][0]))+
                 '. Say next or previous, then that one to ' + verb + '. Say cancel to leave this list.')
 
     def _open_named_folder(self, spoken):
@@ -827,7 +832,7 @@ class MailSession:
                 return 'Marked message '+str(self.current)+'.'
             if command=='select all messages':
                 for number in range(1,len(self.rows)+1):self._mark(number)
-                return str(len(self.rows))+' messages on this page selected.'
+                return plural(len(self.rows), 'message')+' on this page selected.'
             if command in ('select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message'):
                 self._current_ids()
                 self._mark(self.current)
@@ -852,7 +857,7 @@ class MailSession:
                 self._clear_marks()
                 return 'Selection cleared.'
             if command in ('what is selected', 'read selection'):
-                return ('Marked ' + str(len(self.marked_ids)) + ' messages across this folder.'
+                return ('Marked ' + plural(len(self.marked_ids), 'message') + ' across this folder.'
                         if self.marked_ids else 'No messages selected.')
             if command in ('move selected', 'move selected to folder', 'move selected to'):
                 return self._choose_folder('message_move', self._selected_ids())

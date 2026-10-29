@@ -172,6 +172,22 @@ class InboxWordsTests(CompanionCase):
     def test_unknown_words_say_they_were_not_understood(self):
         self.assertTrue(self.say('zebra quantum lantern').startswith('I did not understand that. '), self.last())
 
+    def test_one_of_a_kind_is_said_without_a_plural(self):
+        # Before: "Marked 1 messages", "1 messages on this page selected", "Found 1 folders".
+        self.say('mark')
+        self.assertEqual(self.say('what is selected'), 'Marked 1 message across this folder.')
+        self.say('clear selection')
+        self.say('mark')
+        self.say('next message')
+        self.say('mark')
+        self.assertEqual(self.say('what is selected'), 'Marked 2 messages across this folder.')
+        session = companion.mail_session
+        session.rows = session.rows[:1]
+        session.current = 1
+        self.assertEqual(self.say('select all messages'), '1 message on this page selected.')
+        with patch.object(FakeClient, 'folders', lambda self: [('Inbox', 'inbox')]):
+            self.assertTrue(self.say('go to folder').startswith('Found 1 folder. '), self.last())
+
     def test_reply_in_the_list_says_how_to_open_the_message(self):
         self.say('reply')
         self.assertIn('Press Enter', self.last())
