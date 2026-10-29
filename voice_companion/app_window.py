@@ -816,6 +816,12 @@ class CompanionWindow:
                 if height<=1:return
                 line=fonts['body'].metrics('linespace')
                 toolbar=file_toolbar.winfo_reqheight()+8 if self.context.get('mode')=='files' else 0
+                # A long screen name at the largest text could take the whole window and leave the
+                # command box no room. Then it gives way: the message font, then one line.
+                width=max(1,root.winfo_width()-36)
+                for font,wrap in ((fonts['title'],width),(fonts['message'],width),(fonts['message'],0)):
+                    if str(heading.cget('font'))!=str(font) or int(heading.cget('wraplength'))!=wrap:heading.configure(font=font,wraplength=wrap)
+                    if height-heading.winfo_reqheight()-14-typed.winfo_reqheight()>=line+24+toolbar:break
                 # At very large text the title and last message alone could fill a short window;
                 # then the message, then the "Type a command" label, give way (display_options.fit_plan).
                 shown=int(message_view.cget('height'))
@@ -1117,7 +1123,10 @@ class CompanionWindow:
             def show_display(field,text_mode):
                 """Show the screen name, and the list, menu or note. Returns the view to show, or None."""
                 position=position_text(field)
-                heading.configure(text=(field.get('display_title') or 'Voice Companion')+('   '+position if position else ''))
+                title=(field.get('display_title') or 'Voice Companion')+('   '+position if position else '')
+                if heading.cget('text')!=title:
+                    # A longer or shorter screen name changes the room left for the list and the command box.
+                    heading.configure(text=title);fit_layout()
                 # The hint line fits the screen and the microphone (display_screen.hint).
                 if field.get('display_hint') and startup_label.cget('text')!=field['display_hint']:
                     startup_label.configure(text=field['display_hint']);fit_layout()
