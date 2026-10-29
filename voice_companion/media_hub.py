@@ -432,6 +432,8 @@ class MediaHub:
         countries = {'united states':'US','usa':'US','canada':'CA','united kingdom':'GB',
                      'uk':'GB','australia':'AU','germany':'DE','france':'FR'}
         query = countries.get(value.casefold(), value.upper() if param=='countrycode' and len(value)==2 else value)
+        # Radio Browser keeps its tags in small letters ("jazz"); a typed "Jazz" finds the same.
+        if param=='tag': query=query.casefold()
         options={param:query,'limit':60,'hidebroken':'true','order':'votes','reverse':'true'}
         online_error = ''
         source=self.source()

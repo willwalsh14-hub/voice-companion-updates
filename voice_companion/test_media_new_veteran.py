@@ -246,6 +246,14 @@ class StationNamesKeepCapitalsTests(NewVeteranMediaTestCase):
         self.say('Search radio for jazz')
         self.assertEqual(self.say('Play WQXR'), 'I did not find WQXR in these results. Say search followed by the station name to search again.')
 
+    def test_a_typed_genre_with_a_capital_is_searched_in_small_letters(self):
+        asked = []
+        directory = self.hub.fetch_json
+        self.hub.fetch_json = lambda url: (asked.append(url), directory(url))[1]
+        self.say('Media', 'Radio')
+        self.say('Browse genre Jazz')
+        self.assertIn('tag=jazz', asked[-1])
+
 
 
 class WhatVideoIsThisTests(unittest.TestCase):
