@@ -1,0 +1,49 @@
+name: Chrome Web Store check
+# Once a day, send the latest released browser extension to the Chrome Web Store
+# if the store is behind: for example when a review was still running at release
+# time, or sign-in was set up after a release. Same script as the release step.
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: chrome-web-store
+  cancel-in-progress: false
+jobs:
+  store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Find the latest published release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          echo "Latest release: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Get the store script from main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: main
+          sparse-checkout: tools
+      - name: Get the extension from the latest release
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          path: release
+          sparse-checkout: voice_companion/regular_browser_extension
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Send the released browser extension to the Chrome Web Store
+        env:
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+          CWS_SERVICE_ACCOUNT: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
+        run: python -u main/tools/chrome_store_publish.py --extension release/voice_companion/regular_browser_extension
