@@ -163,6 +163,9 @@ class HelperWiringTests(unittest.TestCase):
     def setUp(self):
         self.helper = (HERE / 'apply-update.ps1').read_text(encoding='utf-8')
 
+    def test_these_checks_run_in_the_windows_build(self):
+        self.assertIn("'test_update_install'", (HERE / 'build-windows.ps1').read_text(encoding='utf-8'))
+
     def test_missing_update_speech_never_stops_the_update(self):
         self.assertNotIn("throw 'The update speech files are missing.'", self.helper)
         self.assertNotIn("throw 'The update speech window did not start.'", self.helper)
