@@ -651,8 +651,8 @@ class InstallTests(StarterCase):
         step = flow.start()
         self.assertEqual(step.question, 'install_program')
         step = flow.answer('install_program', True)
-        self.assertEqual(system.commands[0], ['winget', 'install', '--id', 'Mozilla.Thunderbird', '-e', '--silent',
-                                              '--accept-package-agreements', '--accept-source-agreements'])
+        self.assertEqual(system.commands, [['winget', 'install', '--id', 'Mozilla.Thunderbird', '-e', '--silent',
+                                            '--accept-package-agreements', '--accept-source-agreements']])
         self.assertEqual(self.said[0], thunderbird_setup.INSTALLING)
         self.assertEqual(self.said.count(thunderbird_setup.STILL_INSTALLING), 2)   # 40 seconds: at 15 and 30
         self.assertIn('Thunderbird is installed. Starting Thunderbird for the first time.', self.said)
