@@ -91,7 +91,7 @@ def guide_markup(blocks, web=False):
     output = []
     for i, (heading, paragraphs) in enumerate(blocks):
         if heading:
-            output.append(f'<section><h2 id="{chapter_id(heading, i)}">{html.escape(heading.title())}</h2>')
+            output.append(f'<section><h2 id="{chapter_id(heading, i)}">{html.escape(heading.title().replace('Youtube', 'YouTube'))}</h2>')
         elif web and paragraphs:
             output.append('<section><h2 id="about">About this guide</h2>')
         ordered = False; bulleted = False
@@ -130,7 +130,7 @@ def navigation(blocks, prefix='', about=False):
         if not heading:continue
         children=''.join(f'<li><a href="{prefix}#{part_id(value)}">{html.escape(value)}</a></li>'
                          for value in paragraphs if subtitle(value))
-        output.append(f'<li><a href="{prefix}#{chapter_id(heading, i)}">{html.escape(heading.title())}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
+        output.append(f'<li><a href="{prefix}#{chapter_id(heading, i)}">{html.escape(heading.title().replace('Youtube', 'YouTube'))}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
     return ''.join(output)
 
 
