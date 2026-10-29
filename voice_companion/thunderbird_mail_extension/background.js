@@ -498,6 +498,13 @@ class MailBridge {
     return {minimized: count};
   }
 
+  // "Hidden from the taskbar" in Voice Companion: questions Thunderbird asks stay in reach.
+  async background({on = false}) {
+    const setup = this.api.voiceCompanionSetup;
+    if (!setup || typeof setup.keepPromptsInView !== 'function') return {watching: false};
+    try { return {watching: Boolean((await setup.keepPromptsInView(Boolean(on))).watching)}; } catch (error) { return {watching: false}; }
+  }
+
   static innerBody(html) {
     const match = /<body[^>]*>([\s\S]*)<\/body>/i.exec(html || '');
     return match ? match[1] : (html || '');
@@ -675,11 +682,11 @@ MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for it
 MailBridge.CHUNK = 1024 * 1024;              // largest piece of an attachment sent to Voice Companion
 MailBridge.MAX_UPLOAD = 60 * 1024 * 1024;    // largest file Voice Companion may attach
 MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dropped after this long
-MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn',
+MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
   'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
-  'captureSignIn', 'takeSignIn', 'minimize', 'quit', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
+  'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api) {

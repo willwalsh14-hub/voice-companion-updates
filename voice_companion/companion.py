@@ -2533,6 +2533,12 @@ def apply_thunderbird_window(relay=None):
         THUNDERBIRD_WINDOWS.enable()
     else:
         THUNDERBIRD_WINDOWS.disable()
+    # The add-on brings up the window holding any question Thunderbird asks inside it, so the
+    # question is never left in a window that is off the taskbar (an older add-on cannot).
+    try:
+        (relay or mail_relay()).request('background', {'on': hidden}, timeout=10)
+    except Exception:
+        pass
     return hidden
 
 

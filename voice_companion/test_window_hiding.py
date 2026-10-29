@@ -328,6 +328,7 @@ class CompanionWiringTests(unittest.TestCase):
         self.companion.PREFERENCES['thunderbird_window'] = hiding.HIDDEN
         self.companion.quiet_thunderbird(self.relay)
         self.assertFalse(self.desktop.taskbar(self.main))
+        self.relay.request.assert_any_call('background', {'on': True}, timeout=10)
         self.relay.request.return_value = {'quit': True}
         self.assertEqual(self.companion.close_started_thunderbird(lambda: self.relay), {'quit': True})
         self.assertTrue(self.desktop.taskbar(self.main))

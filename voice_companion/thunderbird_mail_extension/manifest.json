@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Voice Companion Mail Connection",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Lets Voice Companion read, organize and send your Thunderbird email, and use its contacts and calendars, by voice. Thunderbird keeps your sign-in. Only the email, contacts and events you choose are sent, by Thunderbird.",
   "browser_specific_settings": {
     "gecko": {
