@@ -406,6 +406,10 @@ class ContactsScreenTests(CompanionHarness):
         self.assertNotIn('Sue', [c.name for c in contacts_screen.CONTACTS])
         mode = app.handle('add a new contact', mode)
         self.assertEqual(mode, 'task_input')
+        # "No" is not a name: ask again.
+        mode = app.handle('No.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'A contact needs a name. Type or say the name, then press Enter. '
+                                                             'Escape cancels.'))
         mode = app.handle('Tim', mode)
         mode = app.handle('tim at example dot com', mode)
         mode = app.handle('no thanks', mode)

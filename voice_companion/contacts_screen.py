@@ -33,6 +33,7 @@ MODE = 'contacts'
 HELP_TOPIC = 'contacts'
 YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'yes delete it', 'delete it', 'enter')
 NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'keep it', 'do not delete')
+NOT_A_NAME = ('no', 'no thanks', 'none', 'nothing', 'skip', 'no name', 'i don t know')
 SKIP = ('', 'skip', 'none', 'no', 'no thanks', 'no email', 'no email address', 'no phone', 'no phone number', 'leave it out',
         'leave it blank', 'nothing')
 PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
@@ -834,6 +835,8 @@ def add_step(m, step, value):
             return prompt(m, 'name', 'Type or say the name, then press Enter. Escape cancels.')
         if len(value) > 80 or re.search(r'[\r\n<>]', value):
             return prompt(m, 'name', 'Use a shorter name without symbols. Type or say the name, then press Enter.')
+        if m.normalized_command(value) in NOT_A_NAME:
+            return prompt(m, 'name', 'A contact needs a name. Type or say the name, then press Enter. Escape cancels.')
         ADDING = {'name': value}
         return prompt(m, 'email', 'Email address for ' + value + '? Type or say it, then press Enter. '
                                   'To leave it out, press Enter or say skip.')
