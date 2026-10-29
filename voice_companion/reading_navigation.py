@@ -69,6 +69,12 @@ class ReadingCursor:
         return piece + (' Say continue reading for more.' if end < len(self.text) else ' End of text.')
 
 
+def edge_notice(cursor, name):
+    """'End of document. ' when the last move could not go further, else ''."""
+    edge = getattr(cursor, 'edge', None)
+    return (('End of ' if edge == 'end' else 'Beginning of ') + name + '. ') if edge else ''
+
+
 def reading_request(command):
     command=re.sub(r'\s+',' ',command.lower().strip().rstrip('.!?'))
     command=re.sub(r'^(?:go|move|jump) (?:to )?(?:the )?','',command)

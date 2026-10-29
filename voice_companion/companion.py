@@ -4175,7 +4175,7 @@ def _handle(text, mode, typed=False):
         if request:
             unit,direction=request
             result=FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction)
-            if unit!='read' and FILE_READER.reading.edge:result=('End' if FILE_READER.reading.edge=='end' else 'Beginning')+' of document. '+result
+            if unit!='read':result=__import__('reading_navigation').edge_notice(FILE_READER.reading,'document')+result
             speak(result)
         elif command in ('beginning of document','top of document','go to beginning of document'):
             FILE_READER.reading.position=0;speak(FILE_READER.reading.move('line',0))
@@ -4870,7 +4870,7 @@ def _handle(text, mode, typed=False):
             note_reading.set_text(' '.join(note_buffer))
             unit, direction = request
             result = note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction)
-            if unit != 'read' and note_reading.edge: result = ('End' if note_reading.edge == 'end' else 'Beginning') + ' of note. ' + result
+            if unit != 'read': result = __import__('reading_navigation').edge_notice(note_reading, 'note') + result
             speak(result)
             return mode
         if command in NOTE_LIST_COMMANDS:

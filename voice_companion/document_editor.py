@@ -9,7 +9,7 @@ from xml.etree import ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from storage import keep_previous
-from reading_navigation import ReadingCursor, reading_request
+from reading_navigation import ReadingCursor, reading_request, edge_notice
 from dictation_text import clean_dictation
 from ai_dictation import prepare_dictation
 
@@ -1347,9 +1347,9 @@ class VoiceDocument:
                 current_end = current_base+len(self.paragraphs[self.cursor].text)
                 if not current_base <= self.reading.position <= current_end: self.reading.position = current_base
             result = self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
-            if unit != 'read' and getattr(self.reading, 'edge', None):
+            if unit != 'read':
                 # Repeating the last word alone sounded like a move, as at the last paragraph.
-                result = ('End of ' if self.reading.edge == 'end' else 'Beginning of ') + self.EDGE_NAME + '. ' + result
+                result = edge_notice(self.reading, self.EDGE_NAME) + result
             base = 0
             local = 0
             for i,p in enumerate(self.paragraphs):
