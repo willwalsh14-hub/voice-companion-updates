@@ -5141,7 +5141,7 @@ def _handle(text, mode, typed=False):
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',
                            'search radio','find station','find radio','browse genre','browse country','browse state','browse city',
-                           'search podcast','find podcast','browse podcasts','list podcasts','list subscriptions','refresh subscriptions',
+                           'search podcast','find podcast','browse podcasts','top podcast','podcast categories','list podcasts','list subscriptions','refresh subscriptions',
                            'check podcasts','update subscribed podcasts','auto download','automatically download',
                            'manual downloads','turn off auto downloads','set podcast ','set show ',
                            'open podcast ','subscribe to podcast ','subscribe podcast ',

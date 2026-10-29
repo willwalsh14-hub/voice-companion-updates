@@ -15,12 +15,14 @@ class Action:
 
 RADIO=(Action('Search stations',form='search'),Action('Browse genre',form='genre'),Action('Browse country',form='country'),Action('Browse state',form='state'),Action('Browse city',form='city'),Action('Station database',form='source'),Action('List stations','list stations'),Action('List presets','list presets'),Action('Save preset',form='preset'),Action('Delete preset','delete preset'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Record selected station',form='record'),Action('Schedule selected station',form='schedule'),Action('Stop recording','stop recording'),Action('List scheduled recordings','list scheduled recordings'),Action('Cancel selected scheduled recording','cancel selected scheduled recording'),Action('List saved recordings','list recordings'),Action('Refresh station directories','refresh stations'),Action('Import RadioSure stations',form='import'))
 RADIO_STATION=(Action('Add to favorites',form='preset'),Action('Record current station',form='record'),Action('Schedule recording',form='schedule'),Action('Pause audio','pause'),Action('Play','resume'),Action('Stop recording','stop recording'),Action('Cancel scheduled recordings','list scheduled recordings'))
-PODCASTS=(Action('Search podcasts',form='search'),Action('Browse podcast category',form='category'),Action('List podcast shows','list shows'),Action('List subscriptions','list subscriptions'),Action('Open selected podcast','open selected feed'),Action('Subscribe to selected podcast','subscribe'),Action('Remove selected subscription','remove selected subscription'),Action('Download selected episode','download this episode'),Action('List downloaded episodes','list downloads'),Action('Automatic downloads',form='automatic'),Action('Manual downloads','manual downloads'),Action('Refresh subscriptions','refresh subscriptions'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Rewind audio',form='rewind'),Action('Forward audio',form='forward'),Action('Next chapter','next chapter'),Action('Previous chapter','previous chapter'),Action('Play next episode','next episode'),Action('Play previous episode','previous episode'),Action('Open next podcast','next podcast'),Action('Open previous podcast','previous podcast'))
+# Browse means looking through lists; Search asks for a name (tester, October 2026).
+PODCASTS=(Action('Browse podcasts','browse podcasts'),Action('Top podcasts','top podcasts'),Action('Search podcasts',form='search'),Action('List podcast shows','list shows'),Action('List subscriptions','list subscriptions'),Action('Open selected podcast','open selected feed'),Action('Subscribe to selected podcast','subscribe'),Action('Remove selected subscription','remove selected subscription'),Action('Download selected episode','download this episode'),Action('List downloaded episodes','list downloads'),Action('Automatic downloads',form='automatic'),Action('Manual downloads','manual downloads'),Action('Refresh subscriptions','refresh subscriptions'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Rewind audio',form='rewind'),Action('Forward audio',form='forward'),Action('Next chapter','next chapter'),Action('Previous chapter','previous chapter'),Action('Play next episode','next episode'),Action('Play previous episode','previous episode'),Action('Open next podcast','next podcast'),Action('Open previous podcast','previous podcast'))
 
 class MediaNavigation:
     def __init__(self,hub,section='radio'):
         self.hub=hub;self.section=section;self.focus='actions';self.index=0;self.view='stations' if section=='radio' else 'shows';self.item_index=0;self.form=None;self.field_index=0;self.pending=None;self.confirm_choice='no';self.revision=0;self.audio_paused=False;self.keyboard_mode=False;self.full_radio_actions=False
         if hub.browsing_episodes:self.view='episodes';self.focus='items';self.item_index=hub.episode_index or 0
+        elif section=='podcast' and getattr(hub,'browsing_categories',False):self.view='categories';self.focus='items';self.item_index=hub.category_index or 0
         elif section=='radio' and hub.preset_browsing:self.view='presets';self.focus='items';self.item_index=hub.preset_index or 0
         elif section=='radio' and hub.stations:self.focus='items';self.item_index=hub.station_index or 0
         elif section=='podcast' and hub.shows:self.focus='items';self.item_index=hub.show_index or 0
@@ -42,6 +44,7 @@ class MediaNavigation:
         if self.view=='station_choices':return [h.stations[i] for i in h.station_choices]
         if self.view=='presets':return h.presets()
         if self.view=='shows':return h.shows
+        if self.view=='categories':return [{'name':name} for name in h.podcast_categories()]
         if self.view=='episodes':return h.episodes
         if self.view=='downloads':return [{'title':p.stem} for p in h.downloads()]
         if self.view=='recordings':
@@ -69,11 +72,12 @@ class MediaNavigation:
         if self.view in ('stations','station_choices','presets'):
             self.full_radio_actions=False
             if self.keyboard_mode:self.index=0
-        attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index'}.get(self.view)
+        attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index','categories':'category_index'}.get(self.view)
         if attr:setattr(h,attr,index)
         h.preset_browsing=self.view=='presets'
         if self.view=='episodes':h.browsing_episodes=True
         elif self.view=='shows':h.browsing_episodes=False
+        if self.section=='podcast':h.browsing_categories=self.view=='categories'
     def announce(self):
         state=self.state()
         if state:
@@ -109,6 +113,8 @@ class MediaNavigation:
             if key in ('Tab','ShiftTab'):self.focus='items' if self.focus=='actions' else 'actions';return ('Results. ' if self.focus=='items' else 'Actions. ')+self.announce()
             if key=='Escape':
                 if self.focus=='items' and self.view=='episodes':return self.run('back to podcasts')
+                # A category's podcasts: Escape goes back up to the categories.
+                if self.focus=='items' and self.view=='shows' and getattr(self.hub,'shows_category',None):return self.run('back to categories')
                 if self.focus=='items':self.focus='actions';return ('Station actions. ' if self.section=='radio' and self.actions is RADIO_STATION else '')+self.announce()
                 if self.section=='radio' and self.actions is RADIO_STATION:
                     self.full_radio_actions=True;self.index=0;return 'Radio menu. '+self.announce()
@@ -157,6 +163,7 @@ class MediaNavigation:
         if not self.items():return self.announce()
         self.item_index=max(0,min(self.item_index,len(self.items())-1));self.select_item(self.item_index)
         if self.view=='scheduled':return self.run('cancel selected scheduled recording')
+        if self.view=='categories':return self.run('browse podcasts category '+self.items()[self.item_index]['name'])
         cmd={'stations':f'play station {self.item_index+1}','station_choices':f'choose {self.item_index+1}','presets':'play preset','shows':'open selected feed','episodes':f'play episode {self.item_index+1}','downloads':f'play download {self.item_index+1}','recordings':f'play recording {self.item_index+1}'}.get(self.view)
         return self.run(cmd) if cmd and self.items() else self.announce()
     def open_form(self,name):
@@ -231,7 +238,7 @@ class MediaNavigation:
         if cmd.startswith('pause'):self.audio_paused=True
         elif cmd.startswith(('resume','play','stop')):self.audio_paused=False
         if h.preset_delete_pending:self.pending=('preset',h.preset_delete_pending);self.confirm_choice='no'
-        if cmd.startswith(('search','find','browse genre','browse country','browse state','browse city','browse podcasts category')) or cmd in ('list stations','list radio stations','list results'):
+        if cmd.startswith(('search','find','browse genre','browse country','browse state','browse city','browse podcasts category','top podcast')) or cmd in ('list stations','list radio stations','list results'):
             if h.stations and self.section=='radio':self.view='stations';self.focus='items'
             elif h.shows and self.section=='podcast':self.view='shows';self.focus='items'
         elif cmd in ('list presets','radio presets','list favorites'):self.view='presets';self.focus='items'
@@ -239,9 +246,11 @@ class MediaNavigation:
         elif cmd in ('list downloads','downloaded podcasts'):self.view='downloads';self.focus='items'
         elif cmd in ('list recordings','list radio recordings'):self.view='recordings';self.focus='items'
         elif cmd in ('list scheduled recordings','what recordings are scheduled'):self.view='scheduled';self.focus='items'
+        elif self.section=='podcast' and getattr(h,'browsing_categories',False):self.view='categories';self.focus='items'
+        elif self.section=='podcast' and self.view=='categories' and h.shows and getattr(h,'shows_category',None):self.view='shows';self.focus='items'
         elif h.browsing_episodes and self.section=='podcast':self.view='episodes';self.focus='items'
         elif h.station_choices and self.section=='radio':self.view='station_choices';self.focus='items'
-        attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index'}.get(self.view)
+        attr={'stations':'station_index','station_choices':'station_choice_index','presets':'preset_index','shows':'show_index','episodes':'episode_index','categories':'category_index'}.get(self.view)
         self.item_index=(getattr(h,attr,None) or 0) if attr else 0;self.revision+=1
         return result
     def show_choices(self):
