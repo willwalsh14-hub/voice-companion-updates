@@ -149,9 +149,13 @@ function Select-CompanionProcesses($Processes, [string]$InstallFolder, [int]$Sel
 
 function Open-CompanionProcess($entry) {
   # The live process, only if it is still the same one (same start time).
-  try { $process = [Diagnostics.Process]::GetProcessById($entry.ProcessId) } catch { return $null }
+  try { $process = [Diagnostics.Process]::GetProcessById($entry.ProcessId) }
+  catch { Write-CloseLog ($entry.Name + ' (process ' + $entry.ProcessId + ') has already ended.'); return $null }
   try {
-    if ($null -ne $entry.Created -and [Math]::Abs(($process.StartTime - $entry.Created).TotalSeconds) -gt 2) { $process.Dispose(); return $null }
+    if ($null -ne $entry.Created -and [Math]::Abs(($process.StartTime.ToUniversalTime() - ([datetime]$entry.Created).ToUniversalTime()).TotalSeconds) -gt 2) {
+      Write-CloseLog ('Process ' + $entry.ProcessId + ' is now another program (started ' + $process.StartTime + ', not ' + $entry.Created + '). Left alone.')
+      $process.Dispose(); return $null
+    }
   } catch {}
   return $process
 }
@@ -166,19 +170,41 @@ function Wait-CompanionExit($handles, [int]$seconds) {
 }
 
 function Close-CompanionProcesses([string]$InstallFolder, [int]$SelfId = $PID, [int]$GentleSeconds = 10, [int]$ForceSeconds = 10) {
-  # Returns the names of Voice Companion programs that would not close.
-  $selected = @(Select-CompanionProcesses (Get-CompanionProcessList) $InstallFolder $SelfId)
-  if (-not $selected.Count) { Write-CloseLog 'No Voice Companion programs are running.'; return @() }
+  # Returns the names of Voice Companion programs that would not close. Programs
+  # that start meanwhile (a browser restarts the browser host) are found by a new
+  # look, up to three rounds.
+  $left = @()
+  foreach ($round in 1, 2, 3) {
+    $listed = Get-Date
+    $all = @(Get-CompanionProcessList)
+    $selected = @(Select-CompanionProcesses $all $InstallFolder $SelfId)
+    $seconds = ((Get-Date) - $listed).TotalSeconds
+    if ($seconds -gt 3) { Write-CloseLog ('Listing ' + $all.Count + ' running programs took ' + [Math]::Round($seconds, 1) + ' seconds.') }
+    if (-not $selected.Count) {
+      if ($round -eq 1) { Write-CloseLog 'No Voice Companion programs are running.' }
+      return @()
+    }
+    $left = @(Close-SelectedProcesses $selected $GentleSeconds $ForceSeconds)
+    if ($left.Count) { return $left }
+  }
+  return $left
+}
+
+function Close-SelectedProcesses($selected, [int]$GentleSeconds, [int]$ForceSeconds) {
   $handles = @(); $names = @{}
   try {
     foreach ($entry in $selected) {
       $process = Open-CompanionProcess $entry
       if (-not $process) { continue }
-      Write-CloseLog ('Closing ' + $entry.Name + ' (process ' + $entry.ProcessId + ', ' + $entry.Why + ').')
+      Write-CloseLog ('Closing ' + $entry.Name + ' (process ' + $entry.ProcessId + ', ' + $entry.Path + ', ' + $entry.Why + ').')
       $names[$process.Id] = $entry.Name
       $handles += $process
     }
-    # Gently: the window's close message, as the close button does.
+    # Gently: the window's close message, as the close button does. Up to
+    # $GentleSeconds of waiting follow, so the user hears why it is quiet.
+    if (@($handles | Where-Object { try { -not $_.HasExited -and $_.MainWindowHandle -ne [IntPtr]::Zero } catch { $false } }).Count) {
+      Say-CloseMessage 'Closing Voice Companion. Please wait.'
+    }
     foreach ($process in $handles) {
       try { if (-not $process.HasExited -and $process.MainWindowHandle -ne [IntPtr]::Zero) { [void]$process.CloseMainWindow() } } catch { Write-CloseLog ('Close request failed: ' + $_) }
     }
@@ -201,8 +227,18 @@ function Close-CompanionProcesses([string]$InstallFolder, [int]$SelfId = $PID, [
   }
 }
 
+# Files a program can hold open: program files, and documents people open (the
+# guides, the release notes). Opening every file instead (speech models, browser
+# data, thousands of them) took 91 seconds on Will's computer: the antivirus
+# scanned each one as it was opened.
+$script:LockCheckExtensions = @('.exe', '.dll', '.pyd', '.zip', '.docx', '.doc', '.rtf', '.pdf', '.txt', '.htm', '.html', '.epub', '.brf', '.xlsx', '.odt', '.json')
+
 function Get-CompanionFiles([string]$InstallFolder, [string[]]$GuideFolder) {
-  foreach ($folder in @($InstallFolder) + @($GuideFolder)) {
+  if ($InstallFolder -and (Test-Path -LiteralPath $InstallFolder -PathType Container)) {
+    Get-ChildItem -LiteralPath $InstallFolder -Recurse -File -Force -ErrorAction SilentlyContinue |
+      Where-Object { $script:LockCheckExtensions -contains $_.Extension.ToLowerInvariant() } | ForEach-Object { $_.FullName }
+  }
+  foreach ($folder in @($GuideFolder)) {
     if ($folder -and (Test-Path -LiteralPath $folder -PathType Container)) {
       Get-ChildItem -LiteralPath $folder -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
     }
@@ -217,8 +253,15 @@ function Test-FileLocked([string]$path) {
   catch { return $false }
 }
 
-function Find-LockedFiles([string]$InstallFolder, [string[]]$GuideFolder) {
-  return @(Get-CompanionFiles $InstallFolder $GuideFolder | Where-Object { Test-FileLocked $_ } | Select-Object -First 50)
+function Find-LockedFiles([string]$InstallFolder, [string[]]$GuideFolder, [int]$Seconds = 20) {
+  # At most $Seconds: a slow disk or scan never holds the update for long.
+  $deadline = (Get-Date).AddSeconds($Seconds)
+  $locked = New-Object System.Collections.ArrayList
+  foreach ($file in @(Get-CompanionFiles $InstallFolder $GuideFolder)) {
+    if (Test-FileLocked $file) { [void]$locked.Add($file); if ($locked.Count -ge 50) { break } }
+    if ((Get-Date) -gt $deadline) { Write-CloseLog ('The file check stopped after ' + $Seconds + ' seconds.'); break }
+  }
+  return @($locked)
 }
 
 function Get-FileUsers([string[]]$Files) {
@@ -298,52 +341,72 @@ function Get-BlockedMessage([string[]]$names) {
   return $joined + ' ' + $verb + ' using a Voice Companion file. Save your work in ' + $joined + ', then close it. The update will go on after that.'
 }
 
+function Resolve-FileUser($user, $everything, [string]$InstallFolder, [int]$SelfId) {
+  # Who holds a file, from what Restart Manager reported: the update itself,
+  # Voice Companion (its program file is in the install folder), a Windows service,
+  # a process that has already ended, or a program that is not Voice Companion.
+  $process = $everything | Where-Object { $_.ProcessId -eq $user.ProcessId } | Select-Object -First 1
+  $path = $(if ($process) { [string]$process.Path } else { '' })
+  if (-not $path) { try { $path = [string](Get-Process -Id $user.ProcessId -ErrorAction Stop).Path } catch {} }
+  $alive = [bool]$process -or [bool](Get-Process -Id $user.ProcessId -ErrorAction SilentlyContinue)
+  $kind = $(if ($user.ProcessId -eq $SelfId) { 'the update itself' }
+            elseif ($path -and (Test-InsideFolder $path $InstallFolder)) { 'Voice Companion' }
+            elseif ([string]$user.ServiceName) { 'a Windows service' }
+            elseif (-not $alive) { 'a program that has ended' }
+            elseif (-not $path) { 'a program Windows does not name' }
+            else { 'not Voice Companion' })
+  return [pscustomobject]@{ ProcessId = [int]$user.ProcessId; Name = (Get-FriendlyName $user $process); Path = $path; Kind = $kind }
+}
+
+function Stop-CompanionProcessById([int]$id, [string]$name) {
+  try {
+    $process = [Diagnostics.Process]::GetProcessById($id)
+    try { Write-CloseLog ('Stopping ' + $name + ' (process ' + $id + '), which holds Voice Companion files.'); $process.Kill(); [void]$process.WaitForExit(5000) }
+    finally { $process.Dispose() }
+  } catch { Write-CloseLog ('Could not stop process ' + $id + ': ' + $_.Exception.Message) }
+}
+
 function Wait-CompanionFilesFree([string]$InstallFolder, [string[]]$GuideFolder, [int]$SelfId = $PID, [int]$BlockedSeconds = 120,
-                                 [int]$GentleSeconds = 10, [int]$ForceSeconds = 10) {
-  # Returns $null when every file is free. Otherwise Code 2 and the names of the
-  # programs that hold files, or Code 1 when Voice Companion's own programs kept
-  # starting again.
+                                 [int]$GentleSeconds = 10, [int]$ForceSeconds = 10, [int]$UnknownSeconds = 20) {
+  # Returns $null when the update can go on, or Code 2 and the names of the
+  # user's programs that still hold files after $BlockedSeconds.
+  # Only a program that is not Voice Companion, still running and named by
+  # Windows is told to the user and waited for. Voice Companion's own programs are
+  # stopped. A lock nobody can be found for (a program that just ended, a Windows
+  # service such as an antivirus scan) is waited for quietly, at most
+  # $UnknownSeconds; then the update goes on, and Setup replaces those files when
+  # they are free. Will's 0.2.173 update was told "Another program is using a
+  # Voice Companion file" about Voice Companion's own runtime files.
   $deadline = (Get-Date).AddSeconds($BlockedSeconds)
+  $quietDeadline = (Get-Date).AddSeconds($UnknownSeconds)
   $lastSaid = $null; $lastMessage = ''
   while ($true) {
     $started = Get-Date
     $locked = @(Find-LockedFiles $InstallFolder $GuideFolder)
     $seconds = [Math]::Round(((Get-Date) - $started).TotalSeconds, 1)
     if (-not $locked.Count) { Write-CloseLog ('All Voice Companion files are free (checked in ' + $seconds + ' seconds).'); return $null }
-    Write-CloseLog ('Files still in use: ' + (($locked | Select-Object -First 5) -join '; ') + '.')
+    Write-CloseLog ([string]$locked.Count + ' files still in use (checked in ' + $seconds + ' seconds): ' + (($locked | Select-Object -First 5) -join '; ') + '.')
     $users = @()
-    try { $users = @(Get-FileUsers $locked) } catch { Write-CloseLog ('Could not find which program uses the files: ' + $_) }
-    $outside = @(); $services = @(); $ours = $false
-    $everything = @(Get-CompanionProcessList)
+    try { $users = @(Get-FileUsers $locked) } catch { Write-CloseLog ('Could not find which program uses the files: ' + $_.Exception.Message) }
+    if (-not $users.Count) { Write-CloseLog 'Windows names no program that holds them. A program that just ended can hold files for a moment.' }
+    $everything = @(); try { $everything = @(Get-CompanionProcessList) } catch { Write-CloseLog ('Could not list programs: ' + $_.Exception.Message) }
+    $outside = @()
     foreach ($user in $users) {
-      if ($user.ProcessId -eq $SelfId) { continue }
-      $process = $everything | Where-Object { $_.ProcessId -eq $user.ProcessId } | Select-Object -First 1
-      if ($process -and (Test-InsideFolder $process.Path $InstallFolder)) { $ours = $true; continue }
-      $name = Get-FriendlyName $user $process
-      if ([string]$user.ServiceName) {
-        # A Windows service (an antivirus scan) lets go by itself: wait without blaming the user.
-        Write-CloseLog ('In use by the Windows service ' + $name + ' (' + $user.ServiceName + ').')
-        $services += $name; continue
-      }
-      Write-CloseLog ('In use by ' + $name + ' (process ' + $user.ProcessId + ', ' + [string]$(if ($process) { $process.Path } else { 'unknown' }) + ').')
-      $outside += $name
+      $holder = Resolve-FileUser $user $everything $InstallFolder $SelfId
+      Write-CloseLog ('Held by ' + $holder.Name + ' (process ' + $holder.ProcessId + ', ' + $(if ($holder.Path) { $holder.Path } else { 'no program file' }) + '): ' + $holder.Kind + '.')
+      if ($holder.Kind -eq 'Voice Companion') { Stop-CompanionProcessById $holder.ProcessId $holder.Name }
+      elseif ($holder.Kind -eq 'not Voice Companion') { $outside += $holder.Name }
     }
-    if ($ours) {
-      # A Voice Companion program started again (a browser can restart the browser host).
-      [void](Close-CompanionProcesses $InstallFolder $SelfId $GentleSeconds $ForceSeconds)
-    }
-    if (-not $outside.Count -and -not $ours -and -not $services.Count) { $outside = @('Another program') }
     if ($outside.Count) {
       # Said at once, again when the programs change, and every 30 seconds.
       $message = Get-BlockedMessage $outside
       if ($message -ne $lastMessage -or -not $lastSaid -or ((Get-Date) - $lastSaid).TotalSeconds -ge 30) {
         Say-CloseMessage $message; $lastSaid = Get-Date; $lastMessage = $message
       }
-    }
-    if ((Get-Date) -ge $deadline) {
-      if ($outside.Count) { return [pscustomobject]@{ Code = 2; Names = @($outside | Sort-Object -Unique) } }
-      if ($services.Count) { return [pscustomobject]@{ Code = 2; Names = @($services | Sort-Object -Unique) } }
-      return [pscustomobject]@{ Code = 1; Names = @('Voice Companion') }
+      if ((Get-Date) -ge $deadline) { return [pscustomobject]@{ Code = 2; Names = @($outside | Sort-Object -Unique) } }
+    } elseif ((Get-Date) -ge $quietDeadline) {
+      Write-CloseLog 'Going on with the update. Setup replaces these files once they are free.'
+      return $null
     }
     Start-Sleep -Seconds 2
   }
@@ -375,8 +438,9 @@ function Resume-NativeHostManifests([string]$InstallFolder) {
 
 function Invoke-CompanionClose([string]$InstallFolder, [string[]]$GuideFolder, [int]$SelfId = $PID, [int]$GentleSeconds = 10,
                                [int]$ForceSeconds = 10, [int]$BlockedSeconds = 120) {
-  # The whole close step. Returns an object: Code 0 (files free), 1 (a Voice
-  # Companion program would not close) or 2 (another program holds a file), and Names.
+  # The whole close step. Returns an object: Code 0 (go on), 1 (go on, but a Voice
+  # Companion program did not close; Setup closes it) or 2 (a program of the
+  # user's holds a file: the only reason to stop), and Names.
   Write-CloseLog ('Preparing ' + $InstallFolder + ' for the update.')
   Suspend-NativeHostManifests $InstallFolder
   $left = @(Close-CompanionProcesses $InstallFolder $SelfId $GentleSeconds $ForceSeconds)
@@ -385,9 +449,12 @@ function Invoke-CompanionClose([string]$InstallFolder, [string[]]$GuideFolder, [
     Start-Sleep -Seconds 2
     $left = @(Close-CompanionProcesses $InstallFolder $SelfId $GentleSeconds $ForceSeconds)
   }
-  if ($left.Count) { return [pscustomobject]@{ Code = 1; Names = $left } }
+  # A Voice Companion program that would not close never stops the update: the
+  # file check below stops what holds files, and Setup closes the rest.
+  if ($left.Count) { Write-CloseLog ('Going on although ' + (Join-Names $left) + ' did not close.') }
   $blocked = Wait-CompanionFilesFree $InstallFolder $GuideFolder $SelfId $BlockedSeconds $GentleSeconds $ForceSeconds
   if ($blocked) { return $blocked }
+  if ($left.Count) { return [pscustomobject]@{ Code = 1; Names = $left } }
   return [pscustomobject]@{ Code = 0; Names = @() }
 }
 
@@ -399,13 +466,14 @@ if ($InstallFolder -and $MyInvocation.InvocationName -ne '.') {
     if ($Speak) { try { $script:CloseVoice = New-Object -ComObject SAPI.SpVoice } catch { Write-CloseLog ('Speech is not available: ' + $_) } }
     $outcome = Invoke-CompanionClose $InstallFolder $GuideFolder $PID $GentleSeconds $ForceSeconds $BlockedSeconds
     $code = $outcome.Code
-    if ($code -ne 0) {
-      Resume-NativeHostManifests $InstallFolder
-      if ($ReasonFile) { ([string]$code + "`r`n" + ($outcome.Names -join "`r`n")) | Set-Content -LiteralPath $ReasonFile -Encoding ASCII }
-    }
+    if ($ReasonFile -and $code -ne 0) { ([string]$code + "`r`n" + ($outcome.Names -join "`r`n")) | Set-Content -LiteralPath $ReasonFile -Encoding ASCII }
+    # Only code 2 stops Setup; then browsers get their browser host back at once.
+    # Otherwise Setup goes on, and puts the manifests back when it ends.
+    if ($code -eq 2) { Resume-NativeHostManifests $InstallFolder }
   } catch {
+    # The close step itself failed: Setup goes on, and Restart Manager closes
+    # Voice Companion's programs.
     Write-CloseLog ('The close step failed: ' + $_)
-    Resume-NativeHostManifests $InstallFolder
     if ($ReasonFile) { "1`r`n" | Set-Content -LiteralPath $ReasonFile -Encoding ASCII }
     $code = 1
   } finally {
