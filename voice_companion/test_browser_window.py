@@ -169,6 +169,25 @@ class SwitchingTests(unittest.TestCase):
         self.assertEqual(window_need({'url': 'https://shop.example/pay', 'controls': [
             {'label': 'Number', 'type': 'text', 'autocomplete': 'section-checkout billing cc-number'}]}), 'payment')
 
+    def test_a_card_box_that_appears_on_the_same_page_does_not_reload_it(self):
+        """A one-page checkout shows its card boxes after the address step, and a form can show
+        a file box after an answer. Chrome was started again and the page loaded again, which
+        lost what you had typed there."""
+        backend = self.backend
+        backend.document_stamp = lambda: {'url': backend.url, 'epoch': 7, 'revision': 1, 'ready': 'complete', 'busy': False, 'frames': []}
+        backend.pages['https://shop.example/checkout'] = {'title': 'Checkout', 'text': 'Your address.', 'controls': []}
+        self.session.open('https://shop.example/checkout')
+        backend.pages['https://shop.example/checkout'] = dict(PAYMENT)
+        said = self.session._refresh(read=False, preserve=True, wait=False)
+        self.assertEqual(backend.starts, [True])
+        self.assertIn(web_assistant.WINDOW_NEEDED_HERE['payment'], said)
+        self.assertIn('show browser window', said)
+        # Said once for this page, not on every update.
+        self.assertNotIn(web_assistant.WINDOW_NEEDED_HERE['payment'], self.session._refresh(read=False, preserve=True, wait=False))
+        # A new page that asks for a card still opens the window.
+        self.session.open('https://shop.example/pay')
+        self.assertEqual(backend.starts, [True, False])
+
     def test_show_and_hide_keep_the_page_and_reading_place(self):
         self.session.open('https://news.example/')
         self.session.reading.position = 11

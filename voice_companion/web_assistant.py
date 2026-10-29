@@ -307,6 +307,13 @@ WINDOW_OWN_BROWSER = ('You are using your own browser, and it keeps its own wind
                       'Only guided Chrome can run in the background.')
 WINDOW_FAILED = 'Chrome could not open again. Say open website to try again.'
 WINDOW_NEXT_SITE = ' It opens when you open a website.'
+WINDOW_NEEDED_HERE = {
+    'sign-in': 'This page now shows a Google sign-in.',
+    'check': 'This page now wants to check that you are a person.',
+    'payment': 'This page now asks for a card or payment.',
+    'file': 'This page now has a box for choosing a file.'}
+WINDOW_NEEDED_HOW = (' Chrome\'s window may be needed. To show it, say show browser window. '
+                     'Chrome then opens this page again, and you may need to enter your answers again.')
 WINDOW_SWITCHING = 'Opening Chrome again in the same place. This takes a moment.'
 # A button opened a box for choosing a file, but Chrome runs in the background with no window to show it.
 FILE_BOX_HIDDEN = ('This button opens a box for choosing a file. That box needs Chrome\'s window. '
@@ -2210,9 +2217,18 @@ class WebSession:
         # In app mode the page is in use, not being read: say only its title.
         if read is None and self.app_mode:read=False
         self.slider_field=None
+        before_url=(self.snapshot or {}).get('url');before_epoch=(self.document_state or {}).get('epoch')
         result=self._refresh_page(read,preserve,wait)
         need=window_need(self.snapshot) if self.snapshot and getattr(self.backend,'runs_hidden',lambda:False)() else None
-        if need:result=self._show_window(need,read)
+        if need:
+            epoch=(self.document_state or {}).get('epoch')
+            if before_url==self.snapshot.get('url') and before_epoch is not None and before_epoch==epoch:
+                # The same page changed (a one-page checkout, a form step). Starting Chrome
+                # again would load it again and lose what was typed, so only say so, once.
+                if getattr(self,'window_need_said',None)!=(before_url,epoch,need):
+                    self.window_need_said=(before_url,epoch,need)
+                    result=WINDOW_NEEDED_HERE[need]+WINDOW_NEEDED_HOW+' '+result
+            else:result=self._show_window(need,read)
         if self.app_mode!=self.mode_announced and self.snapshot:
             # Each site keeps its own mode; say which one this page uses.
             self.mode_announced=self.app_mode
