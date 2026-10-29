@@ -61,6 +61,10 @@ def decode(data):
 
 
 class BrowserRelay:
+    # Extension version state. Class defaults, so a relay is never without them.
+    extension_version = extension_outdated = None
+    update_requested = update_told = False
+
     def __init__(self, folder, pipe_endpoint=None, family='AF_PIPE'):
         from websockets.sync.server import serve
         self.folder = Path(folder); self.folder.mkdir(parents=True, exist_ok=True)
@@ -70,9 +74,6 @@ class BrowserRelay:
         if family != 'AF_PIPE': key_file.chmod(0o600)
         self.token = secrets.token_urlsafe(32)
         self.browser = 'chrome'
-        self.extension_version = None
-        self.extension_outdated = None  # The newer version Companion shipped, while an older one runs.
-        self.update_requested = self.update_told = False
         self.generation = 0
         self.pipe = self.websocket = None
         self.connected = threading.Event()
@@ -176,14 +177,19 @@ class BrowserRelay:
             pass
 
     def _check_extension_version(self, version):
-        self.extension_version = version if isinstance(version, str) else None
-        shipped = shipped_extension_version()
-        self.extension_outdated = shipped if extension_is_older(self.extension_version, shipped) else None
-        if self.extension_outdated and not self.update_requested:
-            # Once per run: an update reloads the extension, and an unpacked copy may come back unchanged.
-            self.update_requested = True
-            try: self._send({'method': 'VoiceCompanion.checkForUpdate', 'version': shipped})
-            except (OSError, ValueError): pass
+        # Never allowed to stop the link: a failure here only means no update nudge.
+        self.extension_outdated = None
+        try:
+            self.extension_version = version if isinstance(version, str) else None
+            shipped = shipped_extension_version()
+            # extension_outdated: the newer version Companion shipped, while an older one runs.
+            self.extension_outdated = shipped if extension_is_older(self.extension_version, shipped) else None
+            if self.extension_outdated and not self.update_requested:
+                # Once per run: an update reloads the extension, and an unpacked copy may come back unchanged.
+                self.update_requested = True
+                self._send({'method': 'VoiceCompanion.checkForUpdate', 'version': shipped})
+        except Exception:
+            pass
 
     def update_notice(self):
         """One plain sentence the first time an older extension is seen, once for each new version."""

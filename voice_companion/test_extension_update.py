@@ -76,6 +76,17 @@ class ExtensionVersionTests(unittest.TestCase):
             with mock.patch.object(sys, 'frozen', True, create=True), mock.patch.object(sys, 'executable', str(Path(folder) / 'VoiceCompanion.exe')):
                 self.assertEqual(browser_cdp_relay.shipped_extension_version(), '7.1')
 
+    def test_a_failing_version_check_never_drops_the_link(self):
+        with tempfile.TemporaryDirectory() as folder:
+            relay=self.relay(folder)
+            with mock.patch.object(browser_cdp_relay,'shipped_extension_version',side_effect=RuntimeError('damaged')):
+                native=self.connect(relay,'0.0.1')
+                native.send_bytes(encode({'method':'VoiceCompanion.download','params':'not a download'}))
+                time.sleep(.1)
+            self.assertTrue(relay.connected.is_set())
+            self.assertIs(relay.pipe is not None,True)
+            self.assertEqual(browser_cdp_relay.extension_update_notice(relay),'')
+
     def test_versions_compare_as_numbers(self):
         older=browser_cdp_relay.extension_is_older
         self.assertTrue(older('0.4.9','0.4.10'))
