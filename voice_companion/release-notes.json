@@ -3,11 +3,22 @@
   "status": "Testing build",
   "date": "October 28, 2026",
   "baseline": "0.2.173-test",
-  "scope": "New choices to keep Thunderbird and guided Chrome out of your way. Nothing changes unless you choose it.",
+  "scope": "Watch YouTube in Voice Companion, and new choices to keep Thunderbird and Chrome out of your way.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
+        {
+          "title": "YouTube",
+          "details": [
+            "Choose YouTube in the Media menu, or say YouTube.",
+            "Hear your Home videos and search with filters. You can also open your subscriptions, history and playlists.",
+            "Use simple keys to play, pause, skip, change speed and volume, turn captions on, and go to the next video.",
+            "Press Alt for the YouTube menu with every action and its key.",
+            "Like, subscribe and save ask Yes or No first.",
+            "To use your account, say sign in. It works in guided Chrome, where you type your own email and password."
+          ]
+        },
         {
           "title": "Thunderbird window choice",
           "details": [
