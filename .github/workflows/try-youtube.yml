@@ -49,7 +49,9 @@ jobs:
               $body = $(if ($start -ge 0) { $text.Substring($start) } else { $text })
               $clean = $body -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
               if ($clean.Length -gt 3500) { $clean = $clean.Substring(0, 1200) + '%0A...%0A' + $clean.Substring($clean.Length - 2300) }
-              Write-Output ('::error title=' + $Title + ' failed::' + $clean)
+              Write-Output ('::error title=' + $Title + ' failed::' + $clean) | Out-Host
+              $failedTests = @(Select-String -LiteralPath $log -Pattern '^(FAIL|ERROR): ' | ForEach-Object { $_.Line }) -join '%0A'
+              Write-Output ('::error title=' + $Title + ' failed tests::' + $failedTests) | Out-Host
             }
             return $code
           }
