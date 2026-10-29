@@ -22,6 +22,9 @@
  *  - keepPromptsInView: while Voice Companion keeps Thunderbird off the taskbar, bring up
  *    the window that holds any question Thunderbird asks, so it can be reached.
  *
+ *  - about: Thunderbird's version, update channel and profile folder, and how many messages
+ *    are being written, so Voice Companion can update Thunderbird safely.
+ *
  *  - getNewMail: ask Thunderbird to check the mail server for one folder now, the
  *    same as when a person opens that folder, so Voice Companion lists the newest
  *    mail. Thunderbird's add-on interface has no way to ask for this.
@@ -152,6 +155,48 @@ function fillPending(win) {
   }
 }
 
+// ---- How a new account connects (Thunderbird 154 and newer) ---------------------
+// For a Microsoft 365 address, Account Hub offers more than one way to connect: Microsoft Graph,
+// Exchange (EWS) and IMAP. Mozilla advises Graph for Microsoft 365, so Voice Companion chooses it
+// once for the new account. A choice the person makes after that is never changed.
+const GRAPH = /\bgraph\b/i;
+let graphChosen = false;
+
+function labelOf(input) {
+  try {
+    if (input.labels && input.labels.length) return text(input.labels[0]);
+  } catch (error) { /* no labels */ }
+  const aria = input.getAttribute('aria-label');
+  if (aria) return String(aria).replace(/\s+/g, ' ').trim();
+  for (let node = input.parentNode, depth = 0; node && depth < 4; node = node.parentNode, depth++) {
+    if (node.localName === 'label') return text(node);
+  }
+  return '';
+}
+
+function choiceInputs(win) {
+  for (const root of setupRoots(win)) {
+    const found = descendants(root, [], 0).filter(e => e.localName === 'input' &&
+      String(e.getAttribute('type') || '') === 'radio' && visible(e) && !e.disabled);
+    if (found.length) return found;
+  }
+  return [];
+}
+
+function chooseGraph(win) {
+  if (graphChosen || !win) return;
+  const radios = choiceInputs(win);
+  const graph = radios.find(radio => GRAPH.test(labelOf(radio)));
+  if (!graph) return;
+  graphChosen = true;
+  if (!graph.checked) graph.click();
+}
+
+function choices(win) {
+  return choiceInputs(win).map(radio => ({label: labelOf(radio).slice(0, 80), checked: Boolean(radio.checked)}))
+    .filter(choice => choice.label).slice(0, 6);
+}
+
 function addressFilled(win) {
   const [box] = inputs(win, 'email');
   return Boolean(box && box.value);
@@ -159,8 +204,9 @@ function addressFilled(win) {
 
 function page(win) {
   const roots = win ? setupRoots(win) : [];
-  if (!roots.length) return {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: []};
+  if (!roots.length) return {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: [], choices: []};
   fillPending(win);
+  chooseGraph(win);
   const elements = descendants(roots[0], [], 0).filter(visible);
   // The last visible heading is the current step's; the first is Thunderbird's own banner.
   const title = elements.filter(e => /^h[1-3]$/.test(e.localName || '')).pop() || {textContent: ''};
@@ -179,7 +225,7 @@ function page(win) {
     .map(e => String(e.getAttribute('type') || 'text') + (e.id ? '#' + e.id : '')).slice(0, 12);
   return {open: true, title: text(title).slice(0, 200), notes, button: button ? text(button).slice(0, 60) : '',
     canContinue: Boolean(button && !button.disabled), needsPassword: passwords.some(p => !p.value), fields,
-    addressFilled: addressFilled(win)};
+    addressFilled: addressFilled(win), choices: choices(win)};
 }
 
 // ---- Sign-in in Voice Companion's browser -------------------------------------
@@ -333,6 +379,22 @@ function quitThunderbird() {
   return {quit: true};
 }
 
+// ---- Which Thunderbird, which profile ----------------------------------------------
+
+// Voice Companion updates Thunderbird to the Release channel. Before and after, it checks the
+// version, the update channel ("release" or "esr"), that the same profile opened, and that no
+// message is being written (it never closes Thunderbird then). Nothing here changes anything.
+function about() {
+  let channel = '';
+  try { channel = String(Services.prefs.getDefaultBranch('').getCharPref('app.update.channel', '') || ''); } catch (error) { channel = ''; }
+  let profile = '';
+  try { profile = String(Services.dirsvc.get('ProfD', Ci.nsIFile).path || ''); } catch (error) { profile = ''; }
+  let composing = 0;
+  const windows = Services.wm.getEnumerator('msgcompose');
+  while (windows && windows.hasMoreElements() && composing < 100) { windows.getNext(); composing++; }
+  return {version: String(Services.appinfo.version || ''), channel, profile, composing};
+}
+
 // ---- Questions kept in view ("Hidden from the taskbar" in Voice Companion) --------------
 
 // Voice Companion keeps Thunderbird's minimized main window off the taskbar. A question
@@ -388,7 +450,7 @@ function keepPromptsInView(on) {
 
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
-    armedUntil = 0; captured = null; pending = null;
+    armedUntil = 0; captured = null; pending = null; graphChosen = false;
     unhook();
     keepPromptsInView(false);
   }
@@ -415,6 +477,7 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
           if (!opened) return {opened: false, prefilled: false};
           let prefilled = false, steady = 0;
           pending = email ? {email, name} : null;
+          graphChosen = false;     // a new account: Graph may be chosen for it once
           try {
             // Filled, and still filled a moment later (after the hub's own reset).
             for (let i = 0; pending && i < FILL_TRIES && steady < 5; i++) {
@@ -435,6 +498,7 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
         async setupContinue() {
           const win = mailWindow();
           fillPending(win);
+          chooseGraph(win);
           const button = win && mainButton(win);
           if (!button || button.disabled) return {pressed: false};
           pending = null;        // past the first step: nothing more to fill in
@@ -481,6 +545,10 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
 
         async quitThunderbird() {
           try { return quitThunderbird(); } catch (error) { return {quit: false, reason: 'error'}; }
+        },
+
+        async about() {
+          try { return about(); } catch (error) { return {version: '', channel: '', profile: '', composing: 0}; }
         },
 
         async getNewMail(accountId, path, inbox) {

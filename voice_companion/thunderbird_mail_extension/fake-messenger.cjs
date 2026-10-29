@@ -29,6 +29,9 @@ function createFakeMessenger() {
     // Mail that has reached the server but not Thunderbird yet. Thunderbird only shows it after
     // it checks the server (getNewMail in the Experiment). mailCheck: 'ok', 'fail', 'offline' or 'hang'.
     server: [], mailCheck: 'ok', mailChecks: [],
+    // Thunderbird 155 from the Release channel. userComposing: messages the person is writing in Thunderbird.
+    about: {version: '155.0', channel: 'release', profile: 'C:\\Users\\Will\\AppData\\Roaming\\Thunderbird\\Profiles\\abc.default-release'},
+    userComposing: 0,
   };
   let nextAccount = 3;
   state.addAccount = email => {
@@ -79,7 +82,8 @@ function createFakeMessenger() {
       getFolderInfo: async f => ({totalMessageCount: state.messages.filter(m => m.folderId === f.id).length,
         unreadMessageCount: state.messages.filter(m => m.folderId === f.id && !m.read).length}),
       create: async (parent, name) => {
-        const created = {id: parent.id.replace(/\/$/, '') + '/' + name, accountId: 'account1', path: (parent.path === '/' ? '' : parent.path) + '/' + name, name, specialUse: []};
+        const accountId = parent.accountId || (state.folders.find(f => f.id === parent.id) || {}).accountId || 'account1';
+        const created = {id: parent.id.replace(/\/$/, '') + '/' + name, accountId, path: (parent.path === '/' ? '' : parent.path) + '/' + name, name, specialUse: []};
         state.folders.push(created); return created;
       },
       rename: async (f, name) => { f.name = name; f.path = f.path.replace(/[^/]+$/, name); f.id = f.id.replace(/[^/]+$/, name); return f; },
@@ -124,9 +128,15 @@ function createFakeMessenger() {
         for (const id of ids) state.messages.find(m => m.id === id).folderId = destination.id;
         state.moved.push({ids, folderId: destination.id});
       },
+      // Like Thunderbird: each message goes to the Trash of its own account (Deleted Items for Microsoft).
       delete: async (ids, skipTrash) => {
         state.deleted.push({ids, skipTrash});
-        for (const id of ids) state.messages.find(m => m.id === id).folderId = 'account1://Trash';
+        for (const id of ids) {
+          const m = state.messages.find(x => x.id === id);
+          const accountId = (folder(m.folderId) || {}).accountId;
+          const trash = state.folders.find(f => f.accountId === accountId && f.specialUse.includes('trash'));
+          m.folderId = trash ? trash.id : 'account1://Trash';
+        }
       },
     },
     compose: {
@@ -211,6 +221,8 @@ function createFakeMessenger() {
       showSetup: async () => { state.shown++; return {shown: true}; },
       captureSignIn: async seconds => { state.capture.push(seconds); return {capturing: seconds > 0}; },
       takeSignIn: async () => { const found = state.signIn || {url: '', where: ''}; state.signIn = null; return found; },
+      // Which Thunderbird this is, and which profile it opened (experiment about()).
+      about: async () => ({...state.about, composing: state.openCompose.length + state.userComposing}),
       // Ask the server for new mail in one folder, as Thunderbird does when a folder is opened.
       getNewMail: async (accountId, path, inbox) => {
         state.mailChecks.push({accountId, path, inbox});
@@ -410,10 +422,41 @@ function addSecondAccount(state) {
     {id: 'o2', parentId: 'book-outlook', type: 'contact', readOnly: false, properties: {vCard: card('John Smith', 'john@example.com')}});
 }
 
+// Microsoft 365 added in Thunderbird 154 or newer with Microsoft Graph (account type "graph"), and an
+// Exchange account (type "ews", Thunderbird 145 and newer), beside Gmail. Thunderbird keeps their mail in
+// folders like any other account, with Microsoft's folder names; the add-on interface treats them the same.
+// Thunderbird has no calendars or address books for these accounts yet (Thunderbird blog, September 2026).
+function addMicrosoftAccounts(state) {
+  const add = (id, type, email, server) => {
+    state.accounts.push({id, name: email, type, rootFolder: {id: id + '://', isRoot: true, path: '/'},
+      identities: [{id: 'id' + id, email, name: 'Will Walsh'}]});
+    state.folders.push({id: id + '://', accountId: id, path: '/', name: 'Root', isRoot: true, specialUse: []},
+      {id: id + '://Inbox', accountId: id, path: '/Inbox', name: 'Inbox', specialUse: ['inbox']},
+      {id: id + '://Sent Items', accountId: id, path: '/Sent Items', name: 'Sent Items', specialUse: ['sent']},
+      {id: id + '://Deleted Items', accountId: id, path: '/Deleted Items', name: 'Deleted Items', specialUse: ['trash']},
+      {id: id + '://Archive', accountId: id, path: '/Archive', name: 'Archive', specialUse: ['archives']});
+    state.servers = Object.assign(state.servers || {}, {[id]: server});
+  };
+  add('account5', 'graph', 'will@contoso.onmicrosoft.com', 'graph.microsoft.com');
+  add('account6', 'ews', 'will@work.example', 'outlook.office365.com');
+  const at = day => new Date(Date.UTC(2026, 9, day, 12));
+  state.messages.push(
+    {id: 501, folderId: 'account5://Inbox', date: at(27), author: 'Benefits Office <benefits@va.example>', subject: 'Graph message',
+     read: false, size: 2048, recipients: ['will@contoso.onmicrosoft.com'], ccList: [], headerMessageId: 'graph501@contoso.example',
+     html: '<html><body><p>Sent through Microsoft Graph</p></body></html>', plain: 'Sent through Microsoft Graph', replyTo: '',
+     attachments: [{partName: '1.2', name: 'letter.pdf', contentType: 'application/pdf', data: new Uint8Array(Buffer.from('%PDF graph'))}]},
+    {id: 502, folderId: 'account5://Inbox', date: at(26), author: 'Sam <sam@example.com>', subject: 'Older graph message',
+     read: true, size: 900, recipients: ['will@contoso.onmicrosoft.com'], ccList: [], headerMessageId: 'graph502@contoso.example',
+     html: '', plain: 'Plain graph text', replyTo: '', attachments: []},
+    {id: 601, folderId: 'account6://Inbox', date: at(27), author: 'Boss <boss@work.example>', subject: 'Exchange message',
+     read: false, size: 1500, recipients: ['will@work.example'], ccList: [], headerMessageId: 'ews601@work.example',
+     html: '', plain: 'Exchange text', replyTo: '', attachments: []});
+}
+
 // The calendar Experiment from add-on 1.4 and older: no accounts.
 function withoutAccounts(state, api) {
   for (const calendar of state.calendars) delete calendar.account;
   delete api.voiceCompanionCalendar.describeAddressBooks;
 }
 
-module.exports = {createFakeMessenger, addSecondAccount, withoutAccounts};
+module.exports = {createFakeMessenger, addSecondAccount, withoutAccounts, addMicrosoftAccounts};

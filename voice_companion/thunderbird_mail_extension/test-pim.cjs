@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const {createFakeMessenger} = require('./fake-messenger.cjs');
+const {createFakeMessenger, addMicrosoftAccounts} = require('./fake-messenger.cjs');
 
 function loadBridge(api, withPim = true) {
   const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api});
@@ -557,9 +557,29 @@ async function experimentChecks() {
   for (const file of ['pim.js', 'experiment/calendar.js', 'experiment/calendar-schema.json']) assert.ok(packaged.includes("'" + file + "'"), file);
 }
 
+// Thunderbird 154 and newer with a Microsoft 365 (Graph) and an Exchange account. Thunderbird has no
+// calendars or address books for these accounts yet, so contacts and calendars stay exactly as they
+// were: the other accounts' books and calendars, and no error.
+async function microsoftAccountChecks() {
+  const plainBridge = loadBridge(createFakeMessenger().api);
+  const {api, state} = createFakeMessenger();
+  addMicrosoftAccounts(state);
+  const bridge = loadBridge(api);
+  const ask = async (target, method, params) => plain(await target.handle({id: 9, method, params}));
+  for (const method of ['addressBooks', 'calendars']) {
+    const answer = await ask(bridge, method, {});
+    assert.equal(answer.error, undefined, method);
+    assert.deepEqual(answer.result, (await ask(plainBridge, method, {})).result, method);
+  }
+  const events = await ask(bridge, 'events', {start: Date.UTC(2026, 9, 26), end: Date.UTC(2026, 9, 28)});
+  assert.equal(events.error, undefined);
+  assert.ok(events.result.events.length >= 1);
+}
+
 (async () => {
   await contactChecks();
   await calendarChecks();
   await experimentChecks();
+  await microsoftAccountChecks();
   console.log('Contacts and calendar add-on tests passed.');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
