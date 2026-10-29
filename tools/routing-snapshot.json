@@ -132,7 +132,7 @@
 },
 "awake | Help with the dishes tonight": {
 "said": [
-"User guide. I could not identify one help topic. Say back to topics to browse the list."
+"User guide. I did not find a help topic for the dishes tonight. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -1997,6 +1997,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | lessons": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
+},
 "awake | line": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -2762,7 +2768,7 @@
 },
 "awake | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -2789,6 +2795,12 @@
 "No email account is set up yet. Say add account to set one up."
 ],
 "screen_after": "awake"
+},
+"awake | open the tutorial": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
 },
 "awake | open tutorial": {
 "said": [
@@ -3263,7 +3275,7 @@
 },
 "awake | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -3875,11 +3887,23 @@
 ],
 "screen_after": "awake"
 },
+"awake | start lessons": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
+},
 "awake | start of list": {
 "said": [
 "File manager (F), 1 of 15."
 ],
 "screen_after": "awake"
+},
+"awake | start the tutorial": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
 },
 "awake | start tutorial": {
 "said": [
@@ -4085,9 +4109,9 @@
 },
 "awake | tutorial": {
 "said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
-"screen_after": "awake"
+"screen_after": "tutorial"
 },
 "awake | type": {
 "said": [
@@ -4328,13 +4352,13 @@
 },
 "awake | what input mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "awake"
 },
 "awake | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -4346,7 +4370,7 @@
 },
 "awake | what mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "awake"
 },
@@ -4364,7 +4388,7 @@
 },
 "awake | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -4374,15 +4398,39 @@
 ],
 "screen_after": "awake"
 },
+"awake | what version am i using": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "awake"
+},
+"awake | what version do i have": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "awake"
+},
+"awake | what version is it": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "awake"
+},
+"awake | what version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "awake"
+},
 "awake | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
 "awake | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -4445,7 +4493,7 @@
 },
 "awake | which mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "awake"
 },
@@ -4460,6 +4508,18 @@
 "Station database is all. Choices: All, Radio Browser, IPRD, or an imported RadioSure file. Say choose station database followed by its name."
 ],
 "screen_after": "media"
+},
+"awake | which version": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "awake"
+},
+"awake | which version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "awake"
 },
 "awake | work email": {
 "said": [
@@ -5123,11 +5183,11 @@
 },
 "document | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. The microphone is on."
+"about voice companion"
 ],
 "screen_after": "document",
 "text": [
-"Hello world. Second sentence."
+"Hello world. Second sentence. about voice companion"
 ]
 },
 "document | account": {
@@ -7547,6 +7607,15 @@
 "Hello world. Second sentence. leave website"
 ]
 },
+"document | lessons": {
+"said": [
+"lessons"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. lessons"
+]
+},
 "document | line": {
 "said": [
 "line"
@@ -8680,7 +8749,7 @@
 },
 "document | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -8721,6 +8790,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. open the inbox"
+]
+},
+"document | open the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | open tutorial": {
@@ -9414,7 +9492,7 @@
 },
 "document | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -10319,6 +10397,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | start lessons": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | start of list": {
 "said": [
 "start of list"
@@ -10326,6 +10413,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. start of list"
+]
+},
+"document | start the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | start tutorial": {
@@ -10778,11 +10874,11 @@
 },
 "document | version": {
 "said": [
-"Voice Companion version <VERSION>. The microphone is on."
+"version"
 ],
 "screen_after": "document",
 "text": [
-"Hello world. Second sentence."
+"Hello world. Second sentence. version"
 ]
 },
 "document | visit": {
@@ -10949,7 +11045,7 @@
 },
 "document | what input mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "document",
 "text": [
@@ -10958,7 +11054,7 @@
 },
 "document | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -10976,7 +11072,7 @@
 },
 "document | what mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "document",
 "text": [
@@ -11003,7 +11099,7 @@
 },
 "document | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -11019,9 +11115,45 @@
 "Hello world. Second sentence."
 ]
 },
+"document | what version am i using": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what version do i have": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what version is it": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -11030,7 +11162,7 @@
 },
 "document | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -11120,7 +11252,7 @@
 },
 "document | which mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "document",
 "text": [
@@ -11143,6 +11275,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. which station database"
+]
+},
+"document | which version": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | which version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | work email": {
@@ -11876,11 +12026,11 @@
 },
 "email_draft | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. The microphone is on."
+"about voice companion"
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world."
+"Hello world. about voice companion"
 ]
 },
 "email_draft | account": {
@@ -14445,6 +14595,15 @@
 "Hello world. leave website"
 ]
 },
+"email_draft | lessons": {
+"said": [
+"lessons"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. lessons"
+]
+},
 "email_draft | line": {
 "said": [
 "line"
@@ -15589,7 +15748,7 @@
 },
 "email_draft | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -15630,6 +15789,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. open the inbox"
+]
+},
+"email_draft | open the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | open tutorial": {
@@ -16323,7 +16491,7 @@
 },
 "email_draft | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -16578,7 +16746,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 403. It has not been sent."
+"Email draft saved locally as Routing check 405. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16596,7 +16764,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 404. It has not been sent."
+"Email draft saved locally as Routing check 406. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16614,7 +16782,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 405. It has not been sent."
+"Email draft saved locally as Routing check 407. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16641,7 +16809,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 407. It has not been sent."
+"Email draft saved locally as Routing check 409. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16650,7 +16818,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 408. It has not been sent."
+"Email draft saved locally as Routing check 410. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17233,6 +17401,15 @@
 "Hello world."
 ]
 },
+"email_draft | start lessons": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | start of list": {
 "said": [
 "start of list"
@@ -17240,6 +17417,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. start of list"
+]
+},
+"email_draft | start the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | start tutorial": {
@@ -17692,11 +17878,11 @@
 },
 "email_draft | version": {
 "said": [
-"Voice Companion version <VERSION>. The microphone is on."
+"version"
 ],
 "screen_after": "email_draft",
 "text": [
-"Hello world."
+"Hello world. version"
 ]
 },
 "email_draft | visit": {
@@ -17863,7 +18049,7 @@
 },
 "email_draft | what input mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17872,7 +18058,7 @@
 },
 "email_draft | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -17890,7 +18076,7 @@
 },
 "email_draft | what mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17917,7 +18103,7 @@
 },
 "email_draft | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -17933,9 +18119,45 @@
 "Hello world."
 ]
 },
+"email_draft | what version am i using": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what version do i have": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what version is it": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -17944,7 +18166,7 @@
 },
 "email_draft | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help",
 "text": [
@@ -18034,7 +18256,7 @@
 },
 "email_draft | which mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -18057,6 +18279,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. which station database"
+]
+},
+"email_draft | which version": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | which version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | work email": {
@@ -18388,7 +18628,7 @@
 },
 "help | Help with the dishes tonight": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for the dishes tonight. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -20233,6 +20473,12 @@
 ],
 "screen_after": "help"
 },
+"help | lessons": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
+},
 "help | line": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -20991,7 +21237,7 @@
 },
 "help | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -21018,6 +21264,12 @@
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
 "screen_after": "help"
+},
+"help | open the tutorial": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
 },
 "help | open tutorial": {
 "said": [
@@ -21483,7 +21735,7 @@
 },
 "help | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22085,11 +22337,23 @@
 ],
 "screen_after": "help"
 },
+"help | start lessons": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
+},
 "help | start of list": {
 "said": [
 "Start of list."
 ],
 "screen_after": "help"
+},
+"help | start the tutorial": {
+"said": [
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+],
+"screen_after": "tutorial"
 },
 "help | start tutorial": {
 "said": [
@@ -22295,9 +22559,9 @@
 },
 "help | tutorial": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
-"screen_after": "help"
+"screen_after": "tutorial"
 },
 "help | type": {
 "said": [
@@ -22511,7 +22775,7 @@
 },
 "help | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22541,7 +22805,7 @@
 },
 "help | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22551,15 +22815,39 @@
 ],
 "screen_after": "help"
 },
+"help | what version am i using": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | what version do i have": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | what version is it": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | what version is this": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
 "help | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -22630,6 +22918,18 @@
 "screen_after": "help"
 },
 "help | which station database": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | which version": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | which version is this": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -22940,7 +23240,7 @@
 },
 "mailbox | Help with the dishes tonight": {
 "said": [
-"User guide. I could not identify one help topic. Say back to topics to browse the list."
+"User guide. I did not find a help topic for the dishes tonight. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -25455,6 +25755,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | lessons": {
+"calls": [
+"call.process('lessons')"
+],
+"said": [
+"session handled: lessons"
+],
+"screen_after": "mailbox"
+},
 "mailbox | line": {
 "calls": [
 "call.process('line')"
@@ -26463,7 +26772,7 @@
 },
 "mailbox | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -26497,6 +26806,12 @@
 ],
 "said": [
 "session handled: open the inbox"
+],
+"screen_after": "mailbox"
+},
+"mailbox | open the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
 ],
 "screen_after": "mailbox"
 },
@@ -27128,7 +27443,7 @@
 },
 "mailbox | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -27957,12 +28272,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | start lessons": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "mailbox"
+},
 "mailbox | start of list": {
 "calls": [
 "call.process('start of list')"
 ],
 "said": [
 "session handled: start of list"
+],
+"screen_after": "mailbox"
+},
+"mailbox | start the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
 ],
 "screen_after": "mailbox"
 },
@@ -28503,13 +28830,13 @@
 },
 "mailbox | what input mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "mailbox"
 },
 "mailbox | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28524,7 +28851,7 @@
 },
 "mailbox | what mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "mailbox"
 },
@@ -28548,7 +28875,7 @@
 },
 "mailbox | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28558,15 +28885,39 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | what version am i using": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what version do i have": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what version is it": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "mailbox"
+},
 "mailbox | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
 "mailbox | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -28635,7 +28986,7 @@
 },
 "mailbox | which mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "mailbox"
 },
@@ -28654,6 +29005,18 @@
 ],
 "said": [
 "session handled: which station database"
+],
+"screen_after": "mailbox"
+},
+"mailbox | which version": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "mailbox"
+},
+"mailbox | which version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "mailbox"
 },
@@ -29195,7 +29558,7 @@
 },
 "note | about voice companion": {
 "said": [
-"Voice Companion version <VERSION>. The microphone is on."
+"about voice companion"
 ],
 "screen_after": "note"
 },
@@ -30814,6 +31177,12 @@
 ],
 "screen_after": "note"
 },
+"note | lessons": {
+"said": [
+"lessons"
+],
+"screen_after": "note"
+},
 "note | line": {
 "said": [
 "line"
@@ -31571,7 +31940,7 @@
 },
 "note | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -31596,6 +31965,12 @@
 "note | open the inbox": {
 "said": [
 "open the inbox"
+],
+"screen_after": "note"
+},
+"note | open the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
 ],
 "screen_after": "note"
 },
@@ -32062,7 +32437,7 @@
 },
 "note | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -32665,9 +33040,21 @@
 ],
 "screen_after": "note"
 },
+"note | start lessons": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "note"
+},
 "note | start of list": {
 "said": [
 "start of list"
+],
+"screen_after": "note"
+},
+"note | start the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
 ],
 "screen_after": "note"
 },
@@ -32971,7 +33358,7 @@
 },
 "note | version": {
 "said": [
-"Voice Companion version <VERSION>. The microphone is on."
+"version"
 ],
 "screen_after": "note"
 },
@@ -33085,13 +33472,13 @@
 },
 "note | what input mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "note"
 },
 "note | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33103,7 +33490,7 @@
 },
 "note | what mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "note"
 },
@@ -33121,7 +33508,7 @@
 },
 "note | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33131,15 +33518,39 @@
 ],
 "screen_after": "note"
 },
+"note | what version am i using": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "note"
+},
+"note | what version do i have": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "note"
+},
+"note | what version is it": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "note"
+},
+"note | what version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "note"
+},
 "note | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
 "note | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -33199,7 +33610,7 @@
 },
 "note | which mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "note"
 },
@@ -33212,6 +33623,18 @@
 "note | which station database": {
 "said": [
 "which station database"
+],
+"screen_after": "note"
+},
+"note | which version": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "note"
+},
+"note | which version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "note"
 },
@@ -33535,7 +33958,7 @@
 },
 "web | Help with the dishes tonight": {
 "said": [
-"User guide. I could not identify one help topic. Say back to topics to browse the list."
+"User guide. I did not find a help topic for the dishes tonight. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -36295,6 +36718,16 @@
 ],
 "screen_after": "browser_menu"
 },
+"web | lessons": {
+"calls": [
+"call.command('lessons')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: lessons"
+],
+"screen_after": "web"
+},
 "web | line": {
 "calls": [
 "call.command('line')",
@@ -37419,7 +37852,7 @@
 },
 "web | open release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -37456,6 +37889,12 @@
 ],
 "said": [
 "session handled: open the inbox"
+],
+"screen_after": "web"
+},
+"web | open the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
 ],
 "screen_after": "web"
 },
@@ -38150,7 +38589,7 @@
 },
 "web | release notes": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -39044,6 +39483,12 @@
 ],
 "screen_after": "web"
 },
+"web | start lessons": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
+],
+"screen_after": "web"
+},
 "web | start of list": {
 "calls": [
 "call.command('start of list')",
@@ -39051,6 +39496,12 @@
 ],
 "said": [
 "session handled: start of list"
+],
+"screen_after": "web"
+},
+"web | start the tutorial": {
+"said": [
+"Say main menu first, then start tutorial. This protects what you are working on."
 ],
 "screen_after": "web"
 },
@@ -39625,13 +40076,13 @@
 },
 "web | what input mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "web"
 },
 "web | what is new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -39647,7 +40098,7 @@
 },
 "web | what mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "web"
 },
@@ -39673,7 +40124,7 @@
 },
 "web | what s new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -39683,15 +40134,39 @@
 ],
 "screen_after": "web"
 },
+"web | what version am i using": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "web"
+},
+"web | what version do i have": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "web"
+},
+"web | what version is it": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "web"
+},
+"web | what version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "web"
+},
 "web | what's new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
 "web | whats new": {
 "said": [
-"I could not identify one help topic. Say back to topics to browse the list."
+"I did not find a help topic for what is new. About this guide (A), 1 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
 ],
 "screen_after": "help"
 },
@@ -39763,7 +40238,7 @@
 },
 "web | which mode": {
 "said": [
-"Input mode: mixed."
+"Input mode: Normal mode."
 ],
 "screen_after": "web"
 },
@@ -39784,6 +40259,18 @@
 ],
 "said": [
 "session handled: which station database"
+],
+"screen_after": "web"
+},
+"web | which version": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
+],
+"screen_after": "web"
+},
+"web | which version is this": {
+"said": [
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "web"
 },
