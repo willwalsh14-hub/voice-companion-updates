@@ -177,3 +177,7 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.174: Thunderbird stand-in tests passed on a try branch but failed in the build (October 29, 2026)
 - The stand-in was a copy of sys.executable named thunderbird.exe. In the build, sys.executable is a virtual environment's python.exe, which only launches the real Python as another program, so the windows belonged to python.exe.
 - Fixed by copying sys._base_executable. Lesson: a try branch must run tests the way the build does (same Python, same order).
+
+## 0.2.176: Thunderbird add-on check failed on Windows (October 29, 2026)
+- The account setup test cleared the form with a fixed 40 ms timer, which raced the fill on a slow Windows runner.
+- The test now clears the form after the open call returns.

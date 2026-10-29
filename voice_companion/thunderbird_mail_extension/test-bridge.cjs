@@ -892,12 +892,10 @@ async function experimentChecks() {
   // They are filled in again, so the address is there when Voice Companion reads the page.
   win = fakeWindow({hub: true});
   api = loadExperiment(win);
-  const resetSoon = new Promise(resolve => setTimeout(() => {
-    for (const part of win.parts) if (part.localName === 'input') part.value = '';
-    resolve();
-  }, 40));
+  // The reset happens after the boxes were filled. A fixed 40 ms timer raced the fill on a slow
+  // Windows build (0.2.176) and cleared the boxes first, so "prefilled" came back false.
   assert.deepEqual(plain(await api.openAccountSetup('reset@example.org', 'Reset Name', false)), {opened: true, prefilled: true});
-  await resetSoon;
+  for (const part of win.parts) if (part.localName === 'input') part.value = '';
   const afterReset = plain(await api.setupPage());
   assert.equal(win.parts[2].value, 'reset@example.org');
   assert.equal(win.parts[1].value, 'Reset Name');
