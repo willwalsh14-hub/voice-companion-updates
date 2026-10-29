@@ -158,7 +158,10 @@ class NativeSettingsTests(unittest.TestCase):
         # Wait for the Podcasts dialog to be drawn and announced. Until then, control 202
         # still belongs to the previous dialog, and a key sent to it is lost.
         self.wait(lambda:any(m.startswith('Podcasts options dialog.') for m in self.notices[before:]))
-        entry=self.u.GetDlgItem(hwnd,202)
+        # Find the editable box by its setting, not a fixed number: new Podcasts options
+        # (0.2.177) moved it. Controls are numbered 200 plus the field's place on the page.
+        index=next(i for i,f in enumerate(self.session.current_fields()) if f.key=='podcast_limit')
+        entry=self.u.GetDlgItem(hwnd,200+index)
         self.assertTrue(entry)
         self.u.PostMessageW(entry,0x102,ord('Z'),0)
         self.wait(lambda:'Z' in self.notices)
