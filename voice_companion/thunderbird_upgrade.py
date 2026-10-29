@@ -455,6 +455,7 @@ class Upgrade:
         profile, _ = setup.choose_profile(self.system)
         before = {'prefs': prefs_accounts(profile) if profile else {}}
         launched_for_check = False
+        was_open = self.system.running()
         if profile is not None and not self._connected() and not self.system.running() and \
                 setup.addon_state(profile) in ('active', 'waiting'):
             # Started quietly first, so its accounts and Inboxes can be compared afterwards.
@@ -482,7 +483,8 @@ class Upgrade:
                 try:
                     saved = backup(profile, profile_root(self.system, profile))
                 except OSError:
-                    self._start(profile)
+                    if was_open or launched_for_check:
+                        self._start(profile)
                     return Step(BACKUP_FAILED, None)
             self.progress(UPDATING)
             ran = install_release(self.system, info.folder, self.progress)
@@ -497,7 +499,8 @@ class Upgrade:
                                             'channel': after.channel if after else ''}
             if not ran or after is None or not is_current(after) or \
                     setup.version_tuple(after.version) < setup.version_tuple(info.version):
-                self._start(profile)
+                if was_open or launched_for_check:
+                    self._start(profile)    # the old Thunderbird, as it was
                 return Step(FAILED, None)
             self.info = after
         self.progress(CHECKING)
