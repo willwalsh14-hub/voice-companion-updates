@@ -416,6 +416,16 @@ class ContactsScreenTests(CompanionHarness):
         self.assertIn('Google contacts now come from Thunderbird.', self.said())
 
 
+class NamelessContactTests(unittest.TestCase):
+    def test_a_thunderbird_contact_with_only_a_phone_number_has_a_name_to_say(self):
+        # Google keeps contacts with only a phone number; every message names the contact.
+        contact = contacts_book.from_thunderbird({'id': 'c9', 'phones': ['555-0142'], 'book': 'Google'})
+        self.assertEqual(contact.name, 'No name')
+        self.assertEqual(contacts_screen.question(contact), 'Delete No name from your contacts? It is also removed from Thunderbird. '
+                                                            'Say Yes or No. Escape keeps it.')
+        self.assertEqual(contacts_book.from_thunderbird({'id': 'c8', 'emails': ['a@example.com']}).name, 'a@example.com')
+
+
 class NotStartedContactsTests(CompanionHarness):
     thunderbird = False
 
