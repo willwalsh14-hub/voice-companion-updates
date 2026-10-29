@@ -777,15 +777,22 @@ class CompanionWindow:
             root.bind_all('<Alt-O>',settings_shortcut)
             route_alt_keys(root)
             button_row=tk.Frame(root)
-            flow(button_row,[tk.Button(button_row,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))),
-                             tk.Button(button_row, text='Enter typed command', command=submit_typed),
-                             tk.Button(button_row, text='AI voice setup (trainer)', command=self.setup_ai_voice)])
+            row_buttons=[tk.Button(button_row,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))),
+                         tk.Button(button_row, text='Enter typed command', command=submit_typed),
+                         tk.Button(button_row, text='AI voice setup (trainer)', command=self.setup_ai_voice)]
+            for button in row_buttons:
+                # Tab can reach these buttons from the command box. Say where the keyboard went, so
+                # Enter never opens Options or a dialog by surprise.
+                button.bind('<FocusIn>',lambda event,name=button.cget('text'):self.feedback(name+' button. Enter activates. Shift+Tab goes back.'))
+            flow(button_row,row_buttons)
             self.current = tk.StringVar(root, value='Starting speech and microphone...')
             # The last thing spoken, in large text under the screen name. A few lines at most,
             # so a long message never pushes the list or text off the screen.
             message_view=tk.Text(root,wrap='word',font=fonts['message'],height=2,takefocus=0,borderwidth=0,cursor='arrow')
             message_view.insert('1.0',self.current.get());message_view.configure(state='disabled')
             history = scrolledtext.ScrolledText(root, wrap='word', font=fonts['body'], state='disabled', height=4)
+            # Its scroll bar never takes the keyboard: Tab there was silent, and keys went nowhere useful.
+            history.vbar.configure(takefocus=0)
             editor=tk.Text(root,wrap='word',font=fonts['body'],undo=True,exportselection=False,height=4)
             self.editor=editor
             # Lists and menus as lines, the selected one marked with an arrow, bold and highlighted;

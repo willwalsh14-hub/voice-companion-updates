@@ -91,5 +91,46 @@ class LargeHeadingWindowTests(unittest.TestCase):
         self.assertGreater(self.heading()[1], 0)
 
 
+    def tab_from_the_command_box(self):
+        """Press Tab in the command box; return the focused widget's class and what was said."""
+        import queue
+        while True:
+            try: self.window.key_feedback.get_nowait()
+            except queue.Empty: break
+        def tab():
+            self.window.typed.focus_force()
+            self.window.root.update()
+            self.window.typed.event_generate('<KeyPress>', keysym='Tab')
+            self.window.root.update()
+            return self.window.root.focus_get().winfo_class()
+        focused = self.call(tab)
+        said = []
+        while True:
+            try: said.append(self.window.key_feedback.get_nowait())
+            except queue.Empty: break
+        return focused, said
+
+    def test_tab_never_moves_the_keyboard_silently(self):
+        # On the YouTube screen with no list yet, Tab went silently to a scroll bar at large text,
+        # and to the Options button at normal text, where Enter then opened Options.
+        self.call(lambda: self.window.root.geometry('800x480'))
+        self.window.set_context(dict(mode='youtube', source=None, text='', caret=0, ack=0, focus=True, menu_letters=False,
+                                     display=__import__('display_options').settings({'display_text_size': '200 percent'}),
+                                     display_title='YouTube'))
+        time.sleep(.4)
+        focused, said = self.tab_from_the_command_box()
+        self.assertNotEqual(focused, 'Scrollbar')
+        if focused == 'Button':
+            self.assertTrue(said and said[-1].endswith(' button. Enter activates. Shift+Tab goes back.'), said)
+        self.call(lambda: self.window.root.geometry('1000x800'))
+        self.window.set_context(dict(mode='youtube', source=None, text='', caret=0, ack=0, focus=True, menu_letters=False,
+                                     display=__import__('display_options').settings({'display_text_size': '100 percent'}),
+                                     display_title='YouTube.'))
+        time.sleep(.4)
+        focused, said = self.tab_from_the_command_box()
+        self.assertEqual(focused, 'Button')
+        self.assertEqual(said[-1:], ['Options (Alt+O) button. Enter activates. Shift+Tab goes back.'])
+
+
 if __name__ == '__main__':
     unittest.main()
