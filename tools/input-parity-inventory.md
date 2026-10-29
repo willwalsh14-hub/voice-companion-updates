@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 726
-- Already had both ways: 571
-- Gaps found: 155
-- Gaps fixed (Added): 147
+- Actions inventoried: 730
+- Already had both ways: 572
+- Gaps found: 158
+- Gaps fixed (Added): 150
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -3009,7 +3009,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: F1
 - Status: Both
 
-## Alt menu, YouTube: Play
+## Alt menu, YouTube actions: Play
 
 ### Play or pause
 
@@ -3065,7 +3065,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 1, 9
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube: Sound and speed
+## Alt menu, YouTube actions: Sound and speed
 
 ### Volume up
 
@@ -3103,7 +3103,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 2, 6
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube: Captions and picture
+## Alt menu, YouTube actions: Captions and picture
 
 ### Captions on or off
 
@@ -3135,7 +3135,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: A
 - Status: Both
 
-## Alt menu, YouTube: Chapters
+## Alt menu, YouTube actions: Chapters
 
 ### List chapters
 
@@ -3155,7 +3155,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+Left
 - Status: Both
 
-## Alt menu, YouTube: This video
+## Alt menu, YouTube actions: This video
 
 ### Video details
 
@@ -3193,7 +3193,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 5, 6
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube: Your account
+## Alt menu, YouTube actions: Your account
 
 ### Like
 
@@ -3231,13 +3231,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 6, 6
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube: Go to
+### Sign out
 
-### Home
-
-- Voice: "Youtube home"
-- Keyboard: Alt, 7, 1
+- Voice: "Sign out"
+- Keyboard: Alt, 6, 7
 - Status: Added: Alt menu path
+
+## Alt menu, YouTube actions: Search
 
 ### Search
 
@@ -3245,40 +3245,66 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+F
 - Status: Both
 
+### Search filters
+
+- Voice: "Search filters"
+- Keyboard: Ctrl+Shift+F
+- Status: Both
+
+### Clear filters
+
+- Voice: "Clear filters"
+- Keyboard: Alt, 7, 3
+- Status: Added: Alt menu path
+
+## Alt menu, YouTube actions: Go to
+
+### YouTube menu
+
+- Voice: "Youtube menu"
+- Keyboard: Alt, 8, 1
+- Status: Added: Alt menu path
+
+### Home
+
+- Voice: "Youtube home"
+- Keyboard: Alt, 8, 2
+- Status: Added: Alt menu path
+
 ### New from subscriptions
 
 - Voice: "Subscriptions"
-- Keyboard: Alt, 7, 3
+- Keyboard: Alt, 8, 3
 - Status: Added: Alt menu path
 
 ### Subscribed channels
 
 - Voice: "My subscriptions"
-- Keyboard: Alt, 7, 4
+- Keyboard: Alt, 8, 4
 - Status: Added: Alt menu path
 
 ### History
 
 - Voice: "History"
-- Keyboard: Alt, 7, 5
+- Keyboard: Alt, 8, 5
 - Status: Added: Alt menu path
 
 ### Watch later
 
 - Voice: "Watch later"
-- Keyboard: Alt, 7, 6
+- Keyboard: Alt, 8, 6
 - Status: Added: Alt menu path
 
 ### Liked videos
 
 - Voice: "Liked videos"
-- Keyboard: Alt, 7, 7
+- Keyboard: Alt, 8, 7
 - Status: Added: Alt menu path
 
 ### Your playlists
 
 - Voice: "My playlists"
-- Keyboard: Alt, 7, 8
+- Keyboard: Alt, 8, 8
 - Status: Added: Alt menu path
 
 ### Load the list again
@@ -3287,7 +3313,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: F5
 - Status: Both
 
-## Alt menu, YouTube: Leave and help
+## Alt menu, YouTube actions: Leave and help
 
 ### Go back
 
@@ -3304,13 +3330,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Media menu
 
 - Voice: "Media menu"
-- Keyboard: Alt, 8, 3
+- Keyboard: Alt, 9, 3
 - Status: Added: Alt menu path
 
 ### Main menu
 
 - Voice: "Main menu"
-- Keyboard: Alt, 8, 4
+- Keyboard: Alt, 9, 4
 - Status: Added: Alt menu path
 
 ## Browser menu

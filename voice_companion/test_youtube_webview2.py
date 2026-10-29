@@ -71,7 +71,9 @@ class EmbeddedScreenTests(EmbeddedEdge, base.ScreenTests):
         # The web session uses the WebView2 backend itself, as in the app.
         self.web.backend = self.adapter
         self.assertEqual(self.say('YouTube.', 'awake'), 'youtube')
-        self.assertTrue(self.last().startswith('YouTube. Home. 5 items.'), self.last())
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.press('Down'); self.press('Enter')
+        self.assertTrue(self.last().startswith('Home. 5 items.'), self.last())
         self.press('Enter')
         self.assertEqual(self.last(), 'Playing Never Gonna Give You Up.')
         screen = self.ys.SCREEN

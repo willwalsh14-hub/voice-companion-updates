@@ -2155,27 +2155,47 @@ In a document, email, or note, spoken words such as "Bigger text" are typed as t
 31. WATCH YOUTUBE
 
 31.1 Open YouTube
-YouTube is in the Media menu. Companion uses the real YouTube website, but you hear simple lists instead of the page.
+YouTube is in the Media menu. Companion uses the real YouTube website, but you hear simple menus and lists instead of the page.
 1. Say "YouTube". Or choose Media on the main menu, then YouTube.
-2. Listen to the first video on the Home list. Each video says its title, channel, length, views, and age.
-3. Press Down Arrow and Up Arrow to hear more. At the end of the list, Down Arrow loads more videos.
-4. Press Enter to play the video you hear. On a channel or playlist, Enter opens its videos.
+2. You hear the YouTube menu. It has Search, Home, Subscriptions, History, Watch later, Liked videos, My playlists, and Sign in or Sign out.
+3. Press Down Arrow and Up Arrow to move. Or press the first letter of a name, such as H for Home.
+4. Press Enter to open the item you hear. You can also say its name, such as "Home" or "History".
+5. In a list, each video says its title, channel, length, views, and age. At the end of the list, Down Arrow loads more videos.
+6. Press Enter to play the video you hear. On a channel or playlist, Enter opens its videos.
 Live videos, Shorts, channels, playlists, and ads say what they are first.
-Escape goes back one list. From the first list, Escape goes to the Media menu.
-To search from any screen, say "Search YouTube for", then your words. For example, say "Search YouTube for bread recipes".
+Escape goes back one list. From a list, Escape goes back to the YouTube menu. From the YouTube menu, Escape goes to the Media menu.
+To go back to the YouTube menu from a list, you can also say "YouTube menu".
 
 31.2 Search with filters
-- To search, say "Search for", then your words, such as "Search for jazz piano".
-- To open the search form, say "Search YouTube", or press Control+F. Press Enter on Search words and type your words.
-- In the form, Up Arrow and Down Arrow move. Left Arrow and Right Arrow change a filter. Then choose Search now and press Enter.
-- The filters are upload date, type, length, features, and sort order.
-- Types are videos, channels, playlists, and movies. Features include subtitles, live, HD, and 4K.
-- You can also say a filter, such as "This week", "Only channels", "Under 4 minutes", "With subtitles", or "Sort by view count". The search runs again with it.
-- To remove the filters, say "Clear filters".
+To search for videos:
+1. Press Control+F anywhere in YouTube. Or choose Search in the YouTube menu, or say "Search YouTube".
+2. You hear "Say or type what to search for".
+3. Type your words, then press Enter. Or say your words. Companion says them back. Then press Enter, or say "Confirm", "Okay", or "Yes".
+4. You hear the first result. Use the arrows to hear more.
+Escape cancels the search. While the search box is open, the letters you type go into the box. They do not control the video.
+To search in one step, say "Search for", then your words, such as "Search for jazz piano". From any screen, say "Search YouTube for", then your words.
+
+Filters narrow your results. Companion uses the filters YouTube offers now. To choose one:
+1. After a search, say "Search filters", or press Control+Shift+F.
+2. You hear which filters are on. Then you hear the list: Upload date, Type, Length, Features, Sort, and Clear filters.
+3. Press Enter on a filter. You hear its choices. The one in use says "on".
+4. Press Enter on a choice. The search runs again with it. You hear the filters that are on.
+These are the choices:
+- Upload date: Today, This week, This month, or This year.
+- Type: Videos, Shorts, Channels, Playlists, or Movies.
+- Length: Under 3 minutes, 3 to 20 minutes, or Over 20 minutes.
+- Features: such as Live, 4K, HD, and Subtitles.
+- Sort: Relevance or Popularity.
+Some choices do not work with the filters that are on. They say "not offered".
+- You can also say a filter, such as "This week", "Only shorts", "Under 3 minutes", "With subtitles", or "Sort by popularity".
+- To take one filter away, choose the first choice in its list, such as Any time.
+- To remove all filters, say "Clear filters", or choose Clear filters in the list.
+- Filters stay on for your next search until you clear them.
 - To load the list again, say "Refresh YouTube", or press F5.
+YouTube no longer has a Last hour filter. It no longer sorts by upload date or by rating. If you ask for one of these, Companion tells you what to use instead.
 
 31.3 Play and control a video
-These keys work on the YouTube screen. Many are the same as YouTube's own keys.
+These keys work in a YouTube list. Many are the same as YouTube's own keys. In the YouTube menu and the filter lists, letters move to the next name instead.
 - To play or pause, say "Play or pause video", or press Space or K.
 - To skip back, say "Skip back", or press J or Left Arrow.
 - To skip forward, say "Skip forward", or press L or Right Arrow.
@@ -2223,14 +2243,15 @@ Ads in the lists are named too. They start with the word Ad.
 
 31.7 Use your YouTube account
 Your likes, subscriptions, playlists, and history come from your own YouTube account. You sign in yourself, on Google's own page. Companion never types or keeps your password.
-- To sign in, say "Sign in". Google's sign-in page opens on the web screen. Type your email and password there. Then say "Back to YouTube".
+- To sign in, choose Sign in in the YouTube menu, or say "Sign in". Google's sign-in page opens on the web screen. Type your email and password there. Then say "Back to YouTube".
+- To sign out, choose Sign out in the YouTube menu, or say "Sign out". Companion asks first. This signs the browser out of Google too.
 - Each change to your account asks first. Say Yes or No, or press Y or N.
 - To like the video, say "Like video", or press T. To take a like back, say "Remove like".
 - To subscribe to the channel, or to stop, say "Subscribe or unsubscribe", or press U.
 - To save the video, say "Save video", or press W. Choose Watch later or a playlist, then press Enter.
 - To save it straight to Watch later, say "Save to Watch later".
 - To post a comment, say "Post comment", then your words. You hear your comment first, and it is posted only if you say Yes. Everyone can see it.
-- Your own lists are in the YouTube menu: New from subscriptions, Subscribed channels, History, Watch later, Liked videos, and Your playlists. You can also say their names.
+- Your own lists are in the YouTube menu: Subscriptions, History, Watch later, Liked videos, and My playlists. You can also say their names. To hear the channels you follow, say "Subscribed channels".
 When you are signed out, Home, search, and playing still work. Account actions tell you that you need to sign in, and how.
 
 31.8 Sign in when you use embedded Edge
@@ -2240,7 +2261,7 @@ You can also use your own Chrome or Edge with the Voice Companion extension. You
 Google may also refuse to sign in a browser that a program controls. If Google says "This browser or app may not be secure", use your own browser with the extension.
 
 31.9 Keys, menus, and other audio
-- Press Alt to open the YouTube menu. It has every action, with its key.
+- Press Alt to open the YouTube actions menu. It has every action, with its key.
 - For help, say "Help with YouTube", or press F1.
 - When a video starts, radio, podcasts, and media files pause. If you start the radio again, the video pauses.
 - Control+P pauses or plays the video from any screen in Companion.
