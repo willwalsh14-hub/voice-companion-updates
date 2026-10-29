@@ -4100,6 +4100,7 @@ def _handle(text, mode, typed=False):
         if command.startswith('file letter '):
             state=menu_state(mode)
             if state:speak(FILE_MANAGER.command('file letters '+text[len('file letter '):]));sync_app_context(mode,True)
+            elif not FILE_MANAGER.busy and not FILE_MANAGER.pending and not FILE_MANAGER.items:speak('This folder is empty.')
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)

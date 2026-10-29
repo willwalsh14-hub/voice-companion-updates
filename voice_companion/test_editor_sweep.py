@@ -176,5 +176,24 @@ class OpenFromADocumentThenEscape(DocumentFlowCase):
         self.assertEqual(self.escape_out(mode), 'word_processor')
 
 
+class EmptyFolderKeys(DocumentFlowCase):
+    """In an empty folder, every key that needs an item says the folder is empty."""
+    def setUp(self):
+        super().setUp()
+        from file_manager import FileManager
+        from test_file_manager import FakeFiles, settle
+        empty = self.root / 'Empty'; empty.mkdir()
+        self.fm = FileManager(FakeFiles(empty))
+        self.stack.enter_context(patch.object(app, 'FILE_MANAGER', self.fm))
+        self.fm.refresh(str(empty)); settle(self.fm)
+
+    def test_keys_that_need_an_item(self):
+        for key in ('Space', 'Ctrl+A', 'Delete', 'F2', 'Ctrl+C', 'Ctrl+X', 'Letter:a'):
+            with self.subTest(key=key):
+                self.said.clear()
+                self.assertEqual(self.press(key, 'files'), 'files')
+                self.assertEqual(self.said, ['This folder is empty.'])
+
+
 if __name__ == '__main__':
     unittest.main()

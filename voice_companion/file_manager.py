@@ -278,7 +278,7 @@ class FileManager:
     def refresh_here(self):return self.refresh(self.location,preserve=self.current().path if self.current() else None)
     def targets(self):
         targets=[i for i in self.items if i.path in self.selected] or ([self.current()] if self.current() else [])
-        if not targets:raise ValueError('No item is selected.')
+        if not targets:raise ValueError('This folder is empty.' if self.location is not None and not self.items else 'No item is selected.')
         if self.location is None or any(i.drive or not i.filesystem for i in targets):raise ValueError('Choose files or folders inside a drive. Drives and virtual locations cannot be renamed, deleted, copied, or cut.')
         return targets
     def choose(self,name):
@@ -355,6 +355,7 @@ class FileManager:
         if cmd=='toggle selection' or match:
             if match and match[2]:self.choose(match[2])
             item=self.current()
+            if self.location is not None and not self.items:raise ValueError('This folder is empty.')
             if self.location is None or not item or item.drive or not item.filesystem:raise ValueError('Choose a file or folder inside a drive before selecting.')
             selected=item.path not in self.selected if cmd=='toggle selection' else match[1].lower() in ('select','mark','check')
             if selected:self.selected.add(item.path)
