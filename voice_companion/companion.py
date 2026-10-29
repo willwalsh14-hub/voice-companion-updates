@@ -2446,11 +2446,14 @@ def start_freeze_watch(limit=15.0, interval=5.0):
                 try:
                     import faulthandler
                     APP.mkdir(parents=True, exist_ok=True)
-                    with open(APP / 'freeze-report.txt', 'w', encoding='utf-8') as report:
+                    # Written whole, then put in place, so the report is never seen half written.
+                    partial = APP / 'freeze-report.tmp'
+                    with open(partial, 'w', encoding='utf-8') as report:
                         report.write('Voice Companion ' + APP_VERSION + ' stopped responding for ' + str(int(time.monotonic() - beat))
                                      + ' seconds at ' + time.strftime('%Y-%m-%d %H:%M:%S') + '.\n')
                         report.flush()
                         faulthandler.dump_traceback(file=report, all_threads=True)
+                    os.replace(partial, APP / 'freeze-report.txt')
                 except Exception:
                     pass
             elif not stalled:
