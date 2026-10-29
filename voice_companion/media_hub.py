@@ -111,7 +111,8 @@ NOW_PLAYING_PHRASES = ('what s playing', 'whats playing', 'what is playing', 'wh
                        'what is playing now', 'what am i listening to', 'what station is this',
                        'what station is playing', 'what station am i listening to', 'which station is this',
                        'what episode is this', 'what episode is playing', 'which episode is this',
-                       'what podcast is this', 'what podcast is playing', 'what file is playing', 'what song is this')
+                       'what podcast is this', 'what podcast is playing', 'what file is playing', 'what song is this',
+                       'what video is this', 'what is this video', 'what video is playing', 'which video is this')
 NOW_PLAYING_AMBIGUOUS = ('what is this', 'what s this', 'whats this')
 
 

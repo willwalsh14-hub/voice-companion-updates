@@ -247,5 +247,15 @@ class StationNamesKeepCapitalsTests(NewVeteranMediaTestCase):
         self.assertEqual(self.say('Play WQXR'), 'I did not find WQXR in these results. Say search followed by the station name to search again.')
 
 
+
+class WhatVideoIsThisTests(unittest.TestCase):
+    """"What is this video?" on the YouTube screen was not understood; "What is this?" was."""
+
+    def test_video_words_ask_what_is_playing(self):
+        from media_hub import now_playing_request
+        for words in ('What video is this?', 'What is this video?', 'What video is playing?', 'Which video is this.'):
+            self.assertEqual(now_playing_request(words), 'clear', words)
+
+
 if __name__ == '__main__':
     unittest.main()
