@@ -174,49 +174,58 @@ class MediaPlayer:
         self.failed=False
         if self.page.url != (self.folder/'audio-player.html').as_uri():
             self.page.goto((self.folder/'audio-player.html').as_uri())
-        result=self.page.evaluate('''async ({url,title,timeout,video,ducked}) => {
-            // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
-            window.voiceCompanionDucked=ducked;
-            window.voiceCompanionUserPaused=false;window.voiceCompanionFailed=false;
-            let a=document.getElementById('audio');
-            // After a stream that failed, its element can keep aborting the next fetch (Firefox:
-            // "The fetching process for the media resource was aborted"), so the next station failed
-            // too. A fresh element is used after any failed start, and when the kind changes.
-            if(a.tagName!==(video?'VIDEO':'AUDIO')||window.voiceCompanionFailedStart){
-                const replacement=document.createElement(video?'video':'audio');
-                replacement.id='audio';replacement.controls=true;replacement.preload='none';
-                a.pause();a.replaceWith(replacement);audio=replacement;a=replacement;
-                a.onerror=()=>document.getElementById('status').textContent='This media could not play.';
-                a.onplaying=()=>document.getElementById('status').textContent='Playing.';
-                a.onpause=()=>document.getElementById('status').textContent='Paused.';
-            }a.pause();a.src=url;
-            a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked||1);
-            document.getElementById('title').textContent=title;
-            document.getElementById('status').textContent='Loading audio.';
-            let timer;
-            try {
-                // After a stream that failed, its emptying load() can still be running. It interrupts
-                // the next play() with an AbortError, and the next station then failed to start as well.
-                // An interrupted start is tried again; any other refusal is final.
-                window.voiceCompanionStartError='';
-                const attempt=async()=>{
-                    for(let i=0;i<4;i++){
-                        try{await a.play();return true;}
-                        catch(error){window.voiceCompanionStartError=(error&&error.name||'Error')+': '+(error&&error.message||'');
-                            if(!error||error.name!=='AbortError')return false;
-                            await new Promise(resolve=>setTimeout(resolve,150));
-                            // Start the fetch again before the next try.
-                            a.src=url;a.load();}
-                    }
-                    return false;
-                };
-                const started=await Promise.race([attempt(),new Promise(resolve=>{timer=setTimeout(()=>{window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
-                window.voiceCompanionFailedStart=!started;
-                if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
-                return started;
-            } finally {clearTimeout(timer);}
-        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov'),
-              'ducked':getattr(self,'duck_factor',0) if self.ducked else 0})
+        # A start cut off with an AbortError is tried once more on a freshly loaded player page:
+        # on a busy computer Firefox can keep aborting the next fetch after a stream failed, even
+        # with a fresh element (the 0.2.172 and 0.2.176 publish builds stopped on this).
+        for attempt in range(2):
+            result=self.page.evaluate('''async ({url,title,timeout,video,ducked}) => {
+                // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
+                window.voiceCompanionDucked=ducked;
+                window.voiceCompanionUserPaused=false;window.voiceCompanionFailed=false;
+                let a=document.getElementById('audio');
+                // After a stream that failed, its element can keep aborting the next fetch (Firefox:
+                // "The fetching process for the media resource was aborted"), so the next station failed
+                // too. A fresh element is used after any failed start, and when the kind changes.
+                if(a.tagName!==(video?'VIDEO':'AUDIO')||window.voiceCompanionFailedStart){
+                    const replacement=document.createElement(video?'video':'audio');
+                    replacement.id='audio';replacement.controls=true;replacement.preload='none';
+                    a.pause();a.replaceWith(replacement);audio=replacement;a=replacement;
+                    a.onerror=()=>document.getElementById('status').textContent='This media could not play.';
+                    a.onplaying=()=>document.getElementById('status').textContent='Playing.';
+                    a.onpause=()=>document.getElementById('status').textContent='Paused.';
+                }a.pause();a.src=url;
+                a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked||1);
+                document.getElementById('title').textContent=title;
+                document.getElementById('status').textContent='Loading audio.';
+                let timer;
+                try {
+                    // After a stream that failed, its emptying load() can still be running. It interrupts
+                    // the next play() with an AbortError, and the next station then failed to start as well.
+                    // An interrupted start is tried again; any other refusal is final.
+                    window.voiceCompanionStartError='';
+                    const attempt=async()=>{
+                        for(let i=0;i<4;i++){
+                            try{await a.play();return true;}
+                            catch(error){window.voiceCompanionStartError=(error&&error.name||'Error')+': '+(error&&error.message||'');
+                                if(!error||error.name!=='AbortError')return false;
+                                await new Promise(resolve=>setTimeout(resolve,150));
+                                // Start the fetch again before the next try.
+                                a.src=url;a.load();}
+                        }
+                        return false;
+                    };
+                    const started=await Promise.race([attempt(),new Promise(resolve=>{timer=setTimeout(()=>{window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
+                    window.voiceCompanionFailedStart=!started;
+                    if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
+                    return started;
+                } finally {clearTimeout(timer);}
+            }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov'),
+                  'ducked':getattr(self,'duck_factor',0) if self.ducked else 0})
+            if result or attempt:break
+            try:error=self.page.evaluate('window.voiceCompanionStartError||""')
+            except Exception:error=''
+            if not str(error).startswith('AbortError'):break
+            self.page.goto((self.folder/'audio-player.html').as_uri())
         if not result:
             self.kind=None
             # Why, for the log and for test failures; the user hears the plain message.
