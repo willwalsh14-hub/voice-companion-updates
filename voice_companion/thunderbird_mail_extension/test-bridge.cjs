@@ -208,13 +208,14 @@ function load(api) {
   await microsoftAccountChecks();
   await aboutChecks();
   await graphChoiceChecks();
+  await noteWordsChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
 
 // ---- Thunderbird 154 and newer: Microsoft 365 through Microsoft Graph, and Exchange (EWS) ----
 
-// Will, October 2026: Thunderbird 154 added Microsoft Graph for Microsoft 365. Such an account has
-// type "graph" (Exchange: "ews"). Everything Voice Companion does with mail must work for it too.
+// Will, October 2026: Thunderbird 154 added Microsoft Graph for Microsoft 365. Thunderbird 159 lists such an
+// account with type "extension:graph" (Exchange: "ews"). Everything Voice Companion does with mail must work for it too.
 async function microsoftAccountChecks() {
   const {api, state} = createFakeMessenger();
   addMicrosoftAccounts(state);
@@ -227,7 +228,7 @@ async function microsoftAccountChecks() {
   // Listed as accounts, with their type, beside Gmail.
   const accounts = await call('accounts');
   assert.deepEqual(accounts.map(a => [a.id, a.type, a.identities[0].email]), [['account1', 'imap', 'me@gmail.com'],
-    ['account5', 'graph', 'will@contoso.onmicrosoft.com'], ['account6', 'ews', 'will@work.example']]);
+    ['account5', 'extension:graph', 'will@contoso.onmicrosoft.com'], ['account6', 'ews', 'will@work.example']]);
   for (const [accountId, label] of [['account5', 'Graph message'], ['account6', 'Exchange message']]) {
     // Folders by Microsoft's names; the inbox found by its kind.
     const folders = await call('folders', {accountId});
@@ -358,6 +359,19 @@ async function graphChoiceChecks() {
   const bridge = load(messenger);
   assert.deepEqual(plain((await bridge.handle({id: 44, method: 'setupPage', params: {}})).result).choices,
     [{label: 'Microsoft Graph API', checked: true}, {label: 'IMAP', checked: false}]);
+}
+
+// Thunderbird 159 on Windows (try PR 82): Account Hub's notice holds its own Show more and Show less
+// buttons, so the note was read as "Looking up configuration Show more Show less". Button words are
+// not part of what Thunderbird says.
+async function noteWordsChecks() {
+  const notice = () => new FakeElement('div', {class: 'notification-message', text: 'Looking up configuration Show more Show less'}, [
+    new FakeElement('span', {text: 'Looking up configuration'}), new FakeElement('button', {text: 'Show more'}),
+    new FakeElement('button', {text: 'Show less', visible: false})]);
+  const win = fakeWindow({hub: true, form: () => { const parts = setupForm(); parts.splice(3, 2, notice()); return parts; }});
+  const api = loadExperiment(win);
+  await api.openAccountSetup('will@outlook.com', '', false);
+  assert.deepEqual(plain(await api.setupPage()).notes, ['Looking up configuration']);
 }
 
 // ---- Attachments: listed, saved in pieces, attached to new mail, replies and forwards ----

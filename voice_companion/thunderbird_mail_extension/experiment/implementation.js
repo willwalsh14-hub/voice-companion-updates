@@ -197,6 +197,16 @@ function choices(win) {
     .filter(choice => choice.label).slice(0, 6);
 }
 
+// What a notice says, without the words of buttons inside it (Thunderbird 159: "Show more", "Show less").
+function noteText(element) {
+  let said = text(element);
+  for (const button of descendants(element, [], 0).filter(e => e.localName === 'button')) {
+    const words = text(button);
+    if (words) said = said.split(words).join(' ');
+  }
+  return said.replace(/\s+/g, ' ').trim();
+}
+
 function addressFilled(win) {
   const [box] = inputs(win, 'email');
   return Boolean(box && box.value);
@@ -214,7 +224,7 @@ function page(win) {
   for (const element of elements) {
     const kind = (element.getAttribute('role') || '') + ' ' + String(element.className || '') + ' ' + element.id;
     if (/\balert\b|error|warning|notification|status/i.test(kind)) {
-      const said = text(element).slice(0, 200);
+      const said = noteText(element).slice(0, 200);
       if (said && !notes.includes(said) && notes.length < 5) notes.push(said);
     }
   }

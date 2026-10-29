@@ -160,13 +160,17 @@ def prefs_accounts(profile):
 
 
 def addon_accounts(found):
-    """The same shape from the add-on's accounts answer (accounts with an address only)."""
+    """The same shape from the add-on's accounts answer (accounts with an address only).
+
+    Thunderbird 159 lists a Microsoft Graph account as "extension:graph"; its prefs.js says "graph".
+    The prefix is dropped so the two are compared as the same type."""
     accounts = {}
     for account in found or []:
         if not isinstance(account, dict) or not account.get('id'):
             continue
         addresses = sorted(str(i.get('email', '')).strip().lower() for i in account.get('identities') or [] if isinstance(i, dict))
-        accounts[str(account['id'])] = (str(account.get('type', '')).lower(), tuple(addresses))
+        kind = re.sub(r'^extension:', '', str(account.get('type', '')).lower())
+        accounts[str(account['id'])] = (kind, tuple(addresses))
     return accounts
 
 

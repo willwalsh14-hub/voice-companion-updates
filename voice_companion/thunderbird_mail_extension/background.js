@@ -665,10 +665,16 @@ class MailBridge {
   }
 
   // Why sending failed, in plain words, from Thunderbird's error text (never the text itself).
-  // type: the account's type. Microsoft Graph ("graph") and Exchange ("ews") accounts do not send over SMTP.
+  // An account type without the "extension:" Thunderbird puts before types added by its own modules:
+  // Thunderbird 159 lists a Microsoft Graph account as "extension:graph".
+  static baseType(type) {
+    return String(type || '').toLowerCase().replace(/^extension:/, '');
+  }
+
+  // type: the account's type. Microsoft Graph and Exchange ("ews") accounts do not send over SMTP.
   static sendFailure(error, type = '') {
     const text = String(error && error.message || '');
-    const microsoft = MailBridge.MICROSOFT_TYPES.includes(String(type || ''));
+    const microsoft = MailBridge.MICROSOFT_TYPES.includes(MailBridge.baseType(type));
     // Microsoft 365 through Graph or Exchange: the organization must approve Thunderbird for its mailboxes.
     if (microsoft && /admin(istrator)? (approval|consent)|AADSTS65001|AADSTS90094|consent/i.test(text)) {
       return 'Your organization must approve Thunderbird for Microsoft 365. Ask your IT administrator to allow Thunderbird.';
