@@ -48,7 +48,7 @@ body:
     attributes:
       label: Version
       description: Say "What version?" to Voice Companion and type what it answers. Leave blank if you are not sure.
-      placeholder: 0.2.175-test
+      placeholder: 0.2.176-test
   - type: dropdown
     id: often
     attributes:
