@@ -88,6 +88,77 @@ class RunningUpdateTests(unittest.TestCase):
         self.assertIn('Voice Companion is being updated.', companion.UPDATE_RUNNING_MESSAGE)
 
 
+def powershell():
+    if sys.platform == 'win32':
+        return str(Path(os.environ['SystemRoot']) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe')
+    import shutil
+    return os.environ.get('VC_PWSH') or shutil.which('pwsh')
+
+
+FAKE_CLOSE_STEP = r"""
+# Stand-in for close-companion.ps1: nothing runs from the install folder.
+function Write-CloseLog([string]$message) { }
+function Get-CompanionProcessList { @() }
+function Invoke-CompanionClose { [pscustomobject]@{ Code = $script:closeCode; Names = @('node.exe') } }
+function Resume-NativeHostManifests([string]$folder) { }
+function Join-Names([string[]]$names) { $names -join ' and ' }
+$script:closeCode = [int]$env:VC_CLOSE_CODE
+"""
+
+
+@unittest.skipUnless(powershell() and Path(powershell()).exists(), 'PowerShell is not installed')
+class HelperRunTests(unittest.TestCase):
+    """The real apply-update.ps1, with a stand-in Setup and close step."""
+
+    def run_helper(self, voice=False, close_code=0):
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        update = root / 'Updates' / 'id'; update.mkdir(parents=True)
+        data = root / 'data'; data.mkdir()
+        app = root / 'Programs' / 'Voice Companion' / 'VoiceCompanion.exe'; app.parent.mkdir(parents=True); app.write_bytes(b'MZapp')
+        (update / 'apply-update.ps1').write_text((HERE / 'apply-update.ps1').read_text(encoding='utf-8'), encoding='utf-8')
+        (update / 'close-companion.ps1').write_text(FAKE_CLOSE_STEP, encoding='utf-8')
+        if sys.platform == 'win32':
+            setup = update / 'VoiceCompanion-Setup.cmd'
+            setup.write_text('@echo 50> "%~dp0install-percent.txt"\r\n@exit /b 0\r\n')
+        else:
+            setup = update / 'VoiceCompanion-Setup.sh'
+            setup.write_text('#!/bin/sh\necho 50 > "$(dirname "$0")/install-percent.txt"\nexit 0\n'); setup.chmod(0o755)
+        if voice:
+            (update / 'update-voice-runtime').mkdir()   # present, but its program is missing
+        import hashlib
+        digest = hashlib.sha256(setup.read_bytes()).hexdigest()
+        arguments = [powershell(), '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', str(update / 'apply-update.ps1'),
+                     '-InstallerPath', str(setup), '-AppPath', str(app), '-PreviousProcessId', '-1', '-ExpectedHash', digest,
+                     '-DataFolder', str(data), '-ReadyFile', str(update / 'ready.json'), '-NoRestart']
+        result = subprocess.run(arguments, capture_output=True, text=True, timeout=180, env={**os.environ, 'VC_CLOSE_CODE': str(close_code)})
+        log = (data / 'update-install-log.txt').read_text(encoding='utf-8-sig') if (data / 'update-install-log.txt').exists() else ''
+        outcome = json.loads((data / 'update-result.json').read_text(encoding='utf-8-sig'))
+        return outcome, log, result, data
+
+    def test_missing_update_voice_still_installs(self):
+        # Will's log: "The update speech files are missing." and Setup never ran.
+        outcome, log, result, data = self.run_helper(voice=True)
+        self.assertTrue(outcome.get('succeeded'), (outcome, log, result.stdout, result.stderr))
+        self.assertIn('The update voice is missing', log)
+        self.assertIn('Setup ended with exit code 0', log)
+        self.assertFalse((data / 'update-running.json').exists(), 'The running mark must be gone when the update ends.')
+
+    def test_voice_companion_that_will_not_close_does_not_stop_the_update(self):
+        outcome, log, result, data = self.run_helper(close_code=1)
+        self.assertTrue(outcome.get('succeeded'), (outcome, log, result.stdout, result.stderr))
+        self.assertIn('Setup closes it', log)
+
+    def test_a_named_program_of_the_user_still_stops_the_update(self):
+        outcome, log, result, data = self.run_helper(close_code=2)
+        self.assertFalse(outcome.get('succeeded'))
+        self.assertEqual(outcome.get('blocked_by'), ['node.exe'])
+
+    def test_each_step_says_how_long_it_took(self):
+        outcome, log, result, data = self.run_helper()
+        for step in ('Closing the old Voice Companion took', 'The close step took'):
+            self.assertIn(step, log)
+
+
 class HelperWiringTests(unittest.TestCase):
     def setUp(self):
         self.helper = (HERE / 'apply-update.ps1').read_text(encoding='utf-8')
