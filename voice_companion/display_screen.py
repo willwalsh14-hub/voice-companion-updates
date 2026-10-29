@@ -73,6 +73,8 @@ def title(m, mode, value):
             detail = 'details'
     elif mode == 'web':
         detail = _safe(lambda: m.web_session.snapshot['title'])
+    elif mode == 'youtube':
+        detail = _safe(lambda: __import__('youtube_screen').title_detail(m))
     elif mode == 'help':
         session = getattr(m, 'help_session', None)
         if session is not None and session.level != 'topics':
@@ -164,6 +166,7 @@ HINT_KEYS = {
     'file_reader': 'Arrows read. Escape goes back.',
     'local_media': 'Space plays or pauses. Alt opens the menu.',
     'tutorial': 'F1 lists commands.',
+    'youtube': 'Enter plays. Space pauses. Alt opens the menu.',
 }
 QUESTION_HINT = 'Arrows choose. Enter answers.'
 

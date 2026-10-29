@@ -20,6 +20,11 @@ def sections():
     return guide_blocks(SOURCE)
 
 
+def heading_name(heading):
+    """'WATCH YOUTUBE' is 'Watch YouTube': chapter names in title case, names spelled as their owners do."""
+    return heading.title().replace('Youtube', 'YouTube')
+
+
 def subtitle(value):
     match = PART.fullmatch(value)
     return match[3] if match else None
@@ -91,7 +96,7 @@ def guide_markup(blocks, web=False):
     output = []
     for i, (heading, paragraphs) in enumerate(blocks):
         if heading:
-            output.append(f'<section><h2 id="{chapter_id(heading, i)}">{html.escape(heading.title())}</h2>')
+            output.append(f'<section><h2 id="{chapter_id(heading, i)}">{html.escape(heading_name(heading))}</h2>')
         elif web and paragraphs:
             output.append('<section><h2 id="about">About this guide</h2>')
         ordered = False; bulleted = False
@@ -130,7 +135,7 @@ def navigation(blocks, prefix='', about=False):
         if not heading:continue
         children=''.join(f'<li><a href="{prefix}#{part_id(value)}">{html.escape(value)}</a></li>'
                          for value in paragraphs if subtitle(value))
-        output.append(f'<li><a href="{prefix}#{chapter_id(heading, i)}">{html.escape(heading.title())}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
+        output.append(f'<li><a href="{prefix}#{chapter_id(heading, i)}">{html.escape(heading_name(heading))}</a>'+ (f'<ul>{children}</ul>' if children else '')+'</li>')
     return ''.join(output)
 
 
@@ -357,7 +362,7 @@ def build_word(title, blocks):
     for i,(heading,paragraphs) in enumerate(blocks):
         if not heading:continue
         chapter_link=doc.add_paragraph();chapter_link.paragraph_format.keep_with_next=True
-        word_link(chapter_link,heading.title(),'chapter_'+str(i))
+        word_link(chapter_link,heading_name(heading),'chapter_'+str(i))
         for j,value in enumerate(paragraphs):
             if subtitle(value):
                 para=doc.add_paragraph();para.paragraph_format.left_indent=Inches(.25)
@@ -366,7 +371,7 @@ def build_word(title, blocks):
     doc.add_page_break()
     for i,(heading,paragraphs) in enumerate(blocks):
         if not heading:continue
-        para=doc.add_paragraph(heading.title(),style='Heading 1');word_bookmark(para,'chapter_'+str(i),i)
+        para=doc.add_paragraph(heading_name(heading),style='Heading 1');word_bookmark(para,'chapter_'+str(i),i)
         number=None
         for j,value in enumerate(paragraphs):
             step=STEP.fullmatch(value)
@@ -413,9 +418,9 @@ def build_daisy(title, blocks):
     points=[];order=2
     for i,(heading,paragraphs) in enumerate(blocks):
         if heading:
-            name='heading-'+str(i);nodes.append((name,heading.title()))
-            body.append(f'<level2 id="section-{i}"><h2 id="{name}" smilref="guide.smil#text-{name}">{esc(heading.title())}</h2>')
-            points.append(f'<navPoint id="nav-{i}" playOrder="{order}"><navLabel><text>{esc(heading.title())}</text></navLabel><content src="guide.smil#par-{name}"/>');order+=1
+            name='heading-'+str(i);nodes.append((name,heading_name(heading)))
+            body.append(f'<level2 id="section-{i}"><h2 id="{name}" smilref="guide.smil#text-{name}">{esc(heading_name(heading))}</h2>')
+            points.append(f'<navPoint id="nav-{i}" playOrder="{order}"><navLabel><text>{esc(heading_name(heading))}</text></navLabel><content src="guide.smil#par-{name}"/>');order+=1
         part_open=False
         for j,value in enumerate(paragraphs):
             name=f'text-{i}-{j}';nodes.append((name,value))
@@ -437,7 +442,7 @@ def build_daisy(title, blocks):
 
 
 def validate(blocks):
-    chapters=[h.title() for h,_ in blocks if h]
+    chapters=[heading_name(h) for h,_ in blocks if h]
     parts=[p for _,paragraphs in blocks for p in paragraphs if subtitle(p)]
     page=(ROOT / f'{STEM}.html').read_text(encoding='utf-8')
     problems=audit_html(page)
@@ -463,7 +468,7 @@ def validate(blocks):
         ns={'x':'http://www.w3.org/1999/xhtml'};content=ET.fromstring(z.read('OEBPS/content.xhtml'));nav=ET.fromstring(z.read('OEBPS/nav.xhtml'))
         assert [h.text for h in content.findall('.//x:h2',ns)]==chapters
         assert [h.text for h in content.findall('.//x:h3',ns)]==parts
-        assert [a.text for a in nav.findall('.//x:a',ns)]==[text for h,paragraphs in blocks if h for text in [h.title()]+[v for v in paragraphs if subtitle(v)]]
+        assert [a.text for a in nav.findall('.//x:a',ns)]==[text for h,paragraphs in blocks if h for text in [heading_name(h)]+[v for v in paragraphs if subtitle(v)]]
         for name in ('META-INF/container.xml','OEBPS/package.opf'):ET.fromstring(z.read(name))
     with ZipFile(ROOT / f'{STEM} - DAISY 3.zip') as z:
         ns={'d':'http://www.daisy.org/z3986/2005/dtbook/','n':'http://www.daisy.org/z3986/2005/ncx/'}

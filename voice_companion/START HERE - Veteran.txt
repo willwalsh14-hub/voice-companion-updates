@@ -199,6 +199,16 @@ Contents
   30.2 Change the text size
   30.3 Change the colors
   30.4 Use full screen and a magnifier
+31 Watch YouTube
+  31.1 Open YouTube
+  31.2 Search with filters
+  31.3 Play and control a video
+  31.4 Captions, quality, and chapters
+  31.5 Ads
+  31.6 Learn about a video
+  31.7 Use your YouTube account
+  31.8 Sign in when you use embedded Edge
+  31.9 Keys, menus, and other audio
 
 1. GETTING STARTED
 
@@ -1597,7 +1607,7 @@ Search, favorites, web history, Go back, and Go forward stay in the web browser 
 19. MEDIA PLAYER
 
 19.1 Open and play a file
-1. Choose Media on the main menu, then Media player. Radio and Podcasts are also in the Media menu.
+1. Choose Media on the main menu, then Media player. Radio, Podcasts, and YouTube are also in the Media menu.
 2. Press Control+O to open the drive list.
 3. Use the arrows and Enter to open a drive, then a folder, then a sound or video file. Escape goes up one folder. Escape at the drive list goes back to the player.
 4. Companion says the file name and starts to play it.
@@ -2137,3 +2147,98 @@ The window fills the screen at first.
 Companion works with Windows Magnifier, ZoomText, and Fusion. Set your magnifier to follow the text cursor. It then follows the selected item in a list and the caret in your text.
 Companion also follows the Windows display scale, so text stays sharp.
 In a document, email, or note, spoken words such as "Bigger text" are typed as text. Use the keys there.
+
+31. WATCH YOUTUBE
+
+31.1 Open YouTube
+YouTube is in the Media menu. Companion uses the real YouTube website, but you hear simple lists instead of the page.
+1. Say "YouTube". Or choose Media on the main menu, then YouTube.
+2. Listen to the first video on the Home list. Each video says its title, channel, length, views, and age.
+3. Press Down Arrow and Up Arrow to hear more. At the end of the list, Down Arrow loads more videos.
+4. Press Enter to play the video you hear. On a channel or playlist, Enter opens its videos.
+Live videos, Shorts, channels, playlists, and ads say what they are first.
+Escape goes back one list. From the first list, Escape goes to the Media menu.
+To search from any screen, say "Search YouTube for", then your words. For example, say "Search YouTube for bread recipes".
+
+31.2 Search with filters
+- To search, say "Search for", then your words, such as "Search for jazz piano".
+- To open the search form, say "Search YouTube", or press Control+F. Press Enter on Search words and type your words.
+- In the form, Up Arrow and Down Arrow move. Left Arrow and Right Arrow change a filter. Then choose Search now and press Enter.
+- The filters are upload date, type, length, features, and sort order.
+- Types are videos, channels, playlists, and movies. Features include subtitles, live, HD, and 4K.
+- You can also say a filter, such as "This week", "Only channels", "Under 4 minutes", "With subtitles", or "Sort by view count". The search runs again with it.
+- To remove the filters, say "Clear filters".
+- To load the list again, say "Refresh YouTube", or press F5.
+
+31.3 Play and control a video
+These keys work on the YouTube screen. Many are the same as YouTube's own keys.
+- To play or pause, say "Play or pause video", or press Space or K.
+- To skip back, say "Skip back", or press J or Left Arrow.
+- To skip forward, say "Skip forward", or press L or Right Arrow.
+- A skip is 10 seconds at first. To change it, say "Skip amount", then a time, such as "Skip amount 30 seconds".
+- To move once by a set time, say "Forward" or "Back", then the time, such as "Forward 2 minutes".
+- To start the video again, say "Restart video", or press 0.
+- To jump through the video, press a number key: 1 is "Jump to 10 percent", 2 is "Jump to 20 percent", 3 is "Jump to 30 percent", 4 is "Jump to 40 percent", 5 is "Jump to 50 percent", 6 is "Jump to 60 percent", 7 is "Jump to 70 percent", 8 is "Jump to 80 percent", and 9 is "Jump to 90 percent".
+- To change the volume, say "Video volume up" or "Video volume down", or press Control+Up Arrow or Control+Down Arrow.
+- To turn the sound off or on, say "Mute or unmute", or press M.
+- To change the speed, say "Slower video" or "Faster video", or press Comma or Period.
+- To choose a speed, say "Video speed", then a number, such as "Video speed 1.5". "Normal speed" goes back.
+- To play the next video, say "Next video", or press N.
+- To play the video before it, say "Previous video", or press P.
+- To hear what is playing and where you are, say "What's playing?", or press F3.
+"Faster", "Slower", and "Volume up" alone change Companion's voice, not the video.
+You can still move through lists while a video plays. Up Arrow and Down Arrow never change the video.
+
+31.4 Captions, quality, and chapters
+- To turn captions on or off, say "Captions on or off", or press C.
+- To hear the caption that is showing now, say "Read caption", or press R.
+- To choose the picture quality, say "Video quality", or press Q. Choose with the arrows, then press Enter.
+- To turn autoplay on or off, say "Autoplay on or off", or press A. With autoplay on, the next video starts by itself.
+- To make the video fill the screen, say "Video full screen", or press F. Press F again to go back. F11 still changes Companion's own window.
+- To list the chapters, say "List chapters", or press H. Press Enter on a chapter to go there.
+- To go to the next chapter, say "Next chapter", or press Control+Right Arrow.
+- To go to the chapter before, say "Previous chapter", or press Control+Left Arrow.
+Some videos have no captions or chapters. Companion tells you so.
+
+31.5 Ads
+YouTube plays ads before and during some videos. Companion never hides an ad or skips it by itself.
+- When an ad starts, you hear "An ad is playing", and its number, such as Ad 1 of 2.
+- When you may skip it, you hear "Skip is ready". Then say "Skip ad", or press S.
+- When the ad ends, you hear the name of your video again.
+- You hear ad news only on the YouTube screen. On other screens, F3 tells you if an ad is playing.
+Ads in the lists are named too. They start with the word Ad.
+
+31.6 Learn about a video
+- To hear the title, channel, length, views, age, and likes, say "Video details", or press I.
+- To hear the description, say "Read description", or press D.
+- To read the comments, say "Read comments", or press O. Use the arrows to move between them.
+- To list the videos YouTube suggests next, say "Up next", or press X.
+- To see the channel's videos, say "Go to channel", or press G.
+- To use the real page on the web screen, say "Open in browser". To come back, say "Back to YouTube".
+
+31.7 Use your YouTube account
+Your likes, subscriptions, playlists, and history come from your own YouTube account. You sign in yourself, on Google's own page. Companion never types or keeps your password.
+- To sign in, say "Sign in". Google's sign-in page opens on the web screen. Type your email and password there. Then say "Back to YouTube".
+- Each change to your account asks first. Say Yes or No, or press Y or N.
+- To like the video, say "Like video", or press T. To take a like back, say "Remove like".
+- To subscribe to the channel, or to stop, say "Subscribe or unsubscribe", or press U.
+- To save the video, say "Save video", or press W. Choose Watch later or a playlist, then press Enter.
+- To save it straight to Watch later, say "Save to Watch later".
+- To post a comment, say "Post comment", then your words. You hear your comment first, and it is posted only if you say Yes. Everyone can see it.
+- Your own lists are in the YouTube menu: New from subscriptions, Subscribed channels, History, Watch later, Liked videos, and Your playlists. You can also say their names.
+When you are signed out, Home, search, and playing still work. Account actions tell you that you need to sign in, and how.
+
+31.8 Sign in when you use embedded Edge
+Google does not allow signing in inside embedded Edge. So in embedded Edge, YouTube works signed out.
+When you ask for an account feature, Companion offers to switch to Chrome. Say Yes, and YouTube opens in Chrome, where you can sign in. Web pages will open in Chrome too. To go back, say "Use embedded Edge".
+You can also use your own Chrome or Edge with the Voice Companion extension. You may already be signed in there. See chapter 18.
+Google may also refuse to sign in a browser that a program controls. If Google says "This browser or app may not be secure", use your own browser with the extension.
+
+31.9 Keys, menus, and other audio
+- Press Alt to open the YouTube menu. It has every action, with its key.
+- For help, say "Help with YouTube", or press F1.
+- When a video starts, radio, podcasts, and media files pause. If you start the radio again, the video pauses.
+- Control+P pauses or plays the video from any screen in Companion.
+- A video keeps playing when you go to the Media menu or another screen.
+- Going back to the main menu stops the video, unless Keep audio playing in the background is on. See part 25.8.
+- Videos play in a browser tab of their own, so you can look through lists while one plays.

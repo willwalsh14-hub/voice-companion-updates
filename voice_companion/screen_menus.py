@@ -266,6 +266,65 @@ MENUS = {
             ('Main menu', '', 'main menu'),
             ('Document reader help', 'F1', 'help with document reader')]),
     ]),
+    # YouTube (youtube_screen.py). Each key is the same on the screen without the menu.
+    'youtube': ('YouTube menu', [
+        ('Play', [
+            ('Play or pause', 'Space', 'play or pause video'),
+            ('Skip back', 'J', 'skip back'),
+            ('Skip forward', 'L', 'skip forward'),
+            ('Restart the video', '0', 'restart video'),
+            ('Next video', 'N', 'next video'),
+            ('Previous video', 'P', 'previous video'),
+            ('Skip ad', 'S', 'skip ad'),
+            ('Stop video', '', 'stop video'),
+            ('Skip amount', '', 'skip amount {value}')]),
+        ('Sound and speed', [
+            ('Volume up', 'Ctrl+Up', 'video volume up'),
+            ('Volume down', 'Ctrl+Down', 'video volume down'),
+            ('Sound on or off', 'M', 'mute or unmute'),
+            ('Slower', 'comma', 'slower video'),
+            ('Faster', 'period', 'faster video'),
+            ('Normal speed', '', 'normal speed')]),
+        ('Captions and picture', [
+            ('Captions on or off', 'C', 'captions on or off'),
+            ('Read the caption', 'R', 'read caption'),
+            ('Video quality', 'Q', 'video quality'),
+            ('Video full screen', 'F', 'video full screen'),
+            ('Autoplay on or off', 'A', 'autoplay on or off')]),
+        ('Chapters', [
+            ('List chapters', 'H', 'list chapters'),
+            ('Next chapter', 'Ctrl+Right', 'next chapter'),
+            ('Previous chapter', 'Ctrl+Left', 'previous chapter')]),
+        ('This video', [
+            ('Video details', 'I', 'video details'),
+            ('Description', 'D', 'read description'),
+            ('Comments', 'O', 'read comments'),
+            ('Up next', 'X', 'up next'),
+            ('Go to channel', 'G', 'go to channel'),
+            ('Open in browser', '', 'open in browser')]),
+        ('Your account', [
+            ('Like', 'T', 'like video'),
+            ('Subscribe or unsubscribe', 'U', 'subscribe or unsubscribe'),
+            ('Save to Watch later', '', 'save to watch later'),
+            ('Save to a playlist', 'W', 'save video'),
+            ('Add a comment', '', 'post comment {value}'),
+            ('Sign in', '', 'sign in')]),
+        ('Go to', [
+            ('Home', '', 'youtube home'),
+            ('Search', 'Ctrl+F', 'search youtube'),
+            ('New from subscriptions', '', 'subscriptions'),
+            ('Subscribed channels', '', 'my subscriptions'),
+            ('History', '', 'history'),
+            ('Watch later', '', 'watch later'),
+            ('Liked videos', '', 'liked videos'),
+            ('Your playlists', '', 'my playlists'),
+            ('Load the list again', 'F5', 'refresh youtube')]),
+        ('Leave and help', [
+            ('Go back', 'Escape', 'go back'),
+            ('YouTube help', 'F1', 'help with youtube'),
+            ('Media menu', '', 'media menu'),
+            ('Main menu', '', 'main menu')]),
+    ]),
 }
 
 # Screens where Alt does something here. Word processor, document, File manager
@@ -276,7 +335,7 @@ OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('
                 'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('notepad menu',),
                 'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu'),
                 'contacts': ('menu', 'open menu', 'contact menu'), 'calendar': ('menu', 'open menu'),
-                'attachments': ('menu', 'open menu', 'attachment menu')}
+                'attachments': ('menu', 'open menu', 'attachment menu'), 'youtube': ('menu', 'open menu')}
 NUMBER_WORDS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
 # Context flags that mean a text box, list or question owns the keyboard.
 BUSY_CONTEXT = ('named_list', 'task_input', 'account_entry', 'browser_name_input', 'file_name_input', 'media_input',

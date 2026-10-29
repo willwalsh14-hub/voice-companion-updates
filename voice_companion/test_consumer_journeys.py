@@ -155,13 +155,13 @@ class RadioJourneyTests(Journey):
         mode=self.say('media menu','awake');self.say('next',mode)
         mode=self.say('that one',mode);self.assertEqual(mode,'media')
         mode=app.handle_keyboard(app.navigation_key('Escape',mode),mode)
-        self.assertEqual(mode,'media_menu');self.assertEqual(self.spoken[-1],'Media menu. Podcasts (P), 2 of 3.')
+        self.assertEqual(mode,'media_menu');self.assertEqual(self.spoken[-1],'Media menu. Podcasts (P), 2 of 4.')
         self.say('next',mode);mode=self.say('that one',mode);self.assertEqual(mode,'local_media')
         self.spoken.clear();mode=app.handle_keyboard(app.navigation_key('Escape',mode),mode)
-        self.assertEqual(mode,'media_menu');self.assertEqual(self.spoken[-1],'Media menu. Media player (M), 3 of 3.')
+        self.assertEqual(mode,'media_menu');self.assertEqual(self.spoken[-1],'Media menu. Media player (M), 3 of 4.')
         self.say('previous',mode);self.say('previous',mode);mode=self.say('that one',mode)
         self.spoken.clear();mode=app.handle_keyboard(app.navigation_key('Escape',mode),mode)
-        self.assertEqual(self.spoken[-1],'Media menu. Radio (R), 1 of 3.')
+        self.assertEqual(self.spoken[-1],'Media menu. Radio (R), 1 of 4.')
 
 
     def test_next_episode_plays_the_next_episode_while_one_plays(self):
