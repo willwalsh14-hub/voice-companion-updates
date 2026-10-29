@@ -407,10 +407,14 @@
 "screen_after": "awake"
 },
 "awake | add bookmark": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('add bookmark', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | add email account": {
 "said": [
@@ -1203,10 +1207,14 @@
 "screen_after": "awake"
 },
 "awake | delete bookmark": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('delete bookmark', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | delete email account": {
 "said": [
@@ -1215,10 +1223,14 @@
 "screen_after": "awake"
 },
 "awake | delete favorite": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('delete favorite', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | delete line": {
 "said": [
@@ -1711,10 +1723,14 @@
 "screen_after": "awake"
 },
 "awake | go to bookmark": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('go to bookmark', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | go to email": {
 "said": [
@@ -1729,10 +1745,14 @@
 "screen_after": "awake"
 },
 "awake | go to favorite": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('go to favorite', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | go to folder": {
 "said": [
@@ -2010,10 +2030,14 @@
 "screen_after": "awake"
 },
 "awake | list bookmarks": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('list bookmarks', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | list contacts": {
 "said": [
@@ -2332,10 +2356,14 @@
 "screen_after": "awake"
 },
 "awake | new bookmark": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('new bookmark', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | new document": {
 "said": [
@@ -2356,10 +2384,14 @@
 "screen_after": "awake"
 },
 "awake | new favorite": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('new favorite', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | new line": {
 "said": [
@@ -3318,10 +3350,14 @@
 "screen_after": "awake"
 },
 "awake | rename bookmark": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('rename bookmark', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | rename document": {
 "said": [
@@ -3330,10 +3366,14 @@
 "screen_after": "awake"
 },
 "awake | rename favorite": {
-"said": [
-"I did not understand that. You are on the main menu. Press F1 for help."
+"calls": [
+"call.menu.start()",
+"call.menu.process('rename favorite', <WebSession id='N'>, False)"
 ],
-"screen_after": "awake"
+"said": [
+"menu handled"
+],
+"screen_after": "browser_menu"
 },
 "awake | repeat": {
 "said": [
@@ -4258,14 +4298,13 @@
 },
 "awake | web history": {
 "calls": [
-"call.search('history', provider=None)",
-"call.page_revision.__ne__(<mock>)",
-"call.search().__str__()"
+"call.menu.start()",
+"call.menu.process('web history', <WebSession id='N'>, False)"
 ],
 "said": [
-"<mock>"
+"menu handled"
 ],
-"screen_after": "web"
+"screen_after": "browser_menu"
 },
 "awake | web key": {
 "calls": [

@@ -5078,6 +5078,12 @@ def _handle(text, mode, typed=False):
         revision=getattr(web_session,'page_revision',0)
         speak_web_result(web_session.command(text),revision)
         return 'web' if web_session.snapshot else 'awake'
+    if mode == 'awake' and command in ('web history','go to favorite','delete favorite','rename favorite','new favorite','add favorite',
+                                       'go to bookmark','list bookmarks','delete bookmark','rename bookmark','new bookmark','add bookmark'):
+        # The web browser menu's own lists, said on the main menu ("Web history." searched Google for "history.").
+        web_session = web_session or WebSession(APP,progress=speak_status)
+        web_session.menu.start()
+        return handle_browser_menu(text)
     if re.search(r'\b(search|look up|google|bing|find|web)\b', command):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|bing|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:

@@ -99,6 +99,24 @@ class FavoritesFromMainMenuTests(Journey):
         app.web_session.open.assert_called_once_with('https://va.gov/')
 
 
+class WebListsFromMainMenuTests(Journey):
+    def test_web_history_and_favorite_commands_on_the_main_menu(self):
+        """On the main menu, "Web history." searched Google for "history.", and "Delete favorite"
+        and "Rename favorite" were not understood."""
+        from web_assistant import Favorites
+        from browser_menu import BrowserMenu
+        Favorites(self.root).add('News','https://news.example/')
+        BrowserMenu(self.root).record({'url':'https://va.gov/','title':'VA home'})
+        with patch('web_assistant.WebSession.search') as search:
+            for said,heard in (('Web history.','Web history. VA home'),('Go to favorite.','Favorites. News'),
+                               ('Delete favorite','Favorites. News'),('Rename favorite.','Favorites. News')):
+                with self.subTest(said=said):
+                    app.web_session=None
+                    self.assertEqual(self.say(said,'awake'),'browser_menu')
+                    self.assertTrue(' '.join(self.spoken).startswith(heard),self.spoken)
+            search.assert_not_called()
+
+
 class MainMenuSaidOnceTests(Journey):
     """The main menu prompt was said twice, or a closing message was cut off by it."""
     PROMPT=app.MAIN_MENU_PROMPT
