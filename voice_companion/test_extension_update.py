@@ -64,7 +64,17 @@ class ExtensionVersionTests(unittest.TestCase):
     def test_shipped_version_is_read_from_the_installed_extension(self):
         self.assertEqual(browser_cdp_relay.shipped_extension_version(),SHIPPED)
         with tempfile.TemporaryDirectory() as folder:
-            self.assertIsNone(browser_cdp_relay.shipped_extension_version(Path(folder)))
+            self.assertIsNone(browser_cdp_relay.shipped_extension_version(Path(folder) / 'manifest.json'))
+
+    def test_installed_app_reads_the_extension_beside_the_program(self):
+        # Same place browser_bridge_host registers the extension from.
+        import sys
+        with tempfile.TemporaryDirectory() as folder:
+            extension = Path(folder) / 'regular_browser_extension'
+            extension.mkdir()
+            (extension / 'manifest.json').write_text('{"version": "7.1"}', encoding='utf-8')
+            with mock.patch.object(sys, 'frozen', True, create=True), mock.patch.object(sys, 'executable', str(Path(folder) / 'VoiceCompanion.exe')):
+                self.assertEqual(browser_cdp_relay.shipped_extension_version(), '7.1')
 
     def test_versions_compare_as_numbers(self):
         older=browser_cdp_relay.extension_is_older

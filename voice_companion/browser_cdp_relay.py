@@ -16,13 +16,17 @@ from regular_browser import address
 
 MAX_FRAME = 16 * 1024 * 1024
 MAX_TO_EXTENSION = 1024 * 1024
-EXTENSION_MANIFEST = Path(__file__).resolve().parent / 'regular_browser_extension' / 'manifest.json'
 UPDATE_TOLD_FILE = 'browser-extension-update-told.txt'
 BROWSER_NAMES = {'chrome': 'Chrome', 'edge': 'Edge', 'brave': 'Brave'}
 
 
-def shipped_extension_version(manifest=EXTENSION_MANIFEST):
+def shipped_extension_version(manifest=None):
     """The extension version this Voice Companion installed, or None."""
+    if manifest is None:
+        # The installed app keeps the extension beside the program, as browser_bridge_host registers it.
+        import sys
+        folder = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
+        manifest = folder / 'regular_browser_extension' / 'manifest.json'
     try:
         version = json.loads(Path(manifest).read_text(encoding='utf-8'))['version']
     except (OSError, ValueError, KeyError, TypeError):
