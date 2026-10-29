@@ -64,6 +64,9 @@ class EmbeddedPlayerTests(EmbeddedEdge, base.PlayerTests):
 
 
 class EmbeddedScreenTests(EmbeddedEdge, base.ScreenTests):
+    def test_the_main_menu_closes_the_browser_and_youtube_starts_again(self):
+        self.skipTest('It closes every tab; the class shares one embedded Edge window. Chromium runs it.')
+
     def test_the_real_embedded_edge_backend_plays_in_a_second_tab_and_asks_before_account_changes(self):
         # The web session uses the WebView2 backend itself, as in the app.
         self.web.backend = self.adapter
