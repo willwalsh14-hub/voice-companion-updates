@@ -300,17 +300,39 @@ class RealThunderbirdTests(unittest.TestCase):
                 self.assertTrue(desktop.style(handle) & 0x80, 'Thunderbird kept the tool-window style')
             watch.waiting = 'none'; watch.seen.clear()
             while not watch.messages.empty(): watch.messages.get_nowait()
-            subprocess.Popen([program, '-profile', profile])    # started again: Thunderbird brings its window up
-            came_up = False
-            deadline = time.monotonic() + 30
-            while time.monotonic() < deadline and not came_up:
-                watch.poll(); time.sleep(0.25)
-                came_up = not watch.messages.empty()
-            print('REAL after second start: came_up=%s windows=%r foreground=%r' % (
-                came_up, desktop.windows(), ctypes.windll.user32.GetForegroundWindow()), flush=True)
-            self.assertTrue(came_up, 'starting Thunderbird again brought its hidden window up')
+            def start_again(hidden):
+                """Start Thunderbird again, as from the Start menu. True when its window came up."""
+                subprocess.Popen([program, '-profile', profile])
+                deadline = time.monotonic() + 30
+                while time.monotonic() < deadline:
+                    if hidden:
+                        watch.poll()
+                        if not watch.messages.empty(): return True
+                    elif any(not w.minimized for w in desktop.windows()):
+                        return True
+                    time.sleep(0.25)
+                return False
+            hidden_came_up = start_again(True)
+            print('REAL second start while hidden: came_up=%s windows=%r' % (hidden_came_up, desktop.windows()), flush=True)
+            # "Show Thunderbird" brings it up with the keyboard, and back on the taskbar.
+            said = watch.show()
+            front = ctypes.windll.user32.GetForegroundWindow()
+            print('REAL show: said=%r foreground=%r windows=%r' % (said, front, desktop.windows()), flush=True)
+            self.assertEqual(said, hiding.SHOWN)
             for handle in tucked:
                 self.assertFalse(desktop.style(handle) & 0x80, 'back on the taskbar')
+            self.assertIn(front, tucked)
+            # "Hide Thunderbird" puts it away again, and the style stays on Thunderbird's window.
+            self.assertEqual(watch.hide(), hiding.HIDDEN_NOW)
+            time.sleep(3)
+            for handle in tucked:
+                self.assertTrue(desktop.style(handle) & 0x80)
+            # The same second start with only "Minimized, as before": hiding must not make it worse.
+            watch.disable()
+            plain_came_up = start_again(False)
+            print('REAL second start while minimized as before: came_up=%s windows=%r' % (plain_came_up, desktop.windows()), flush=True)
+            self.assertTrue(hidden_came_up or not plain_came_up,
+                            'a second start brings Thunderbird up when minimized, but not when hidden')
         finally:
             watch.disable()
             subprocess.run(['taskkill', '/IM', 'thunderbird.exe', '/F'], capture_output=True)
