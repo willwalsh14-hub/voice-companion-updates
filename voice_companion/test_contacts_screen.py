@@ -477,6 +477,10 @@ class NoThunderbirdContactsTests(CompanionHarness):
         mode = app.handle('skip', mode)
         self.assertEqual(self.said(), 'Saved Lee on this computer. Lee, lee@example.com, 1 of 1.')
         self.assertEqual(AddressBook(self.root).get('lee')['address'], 'lee@example.com')
+        # The details say where it is in plain words, not "Saved in: Saved on this computer".
+        self.press('Enter', mode)
+        self.assertIn('Saved on this computer', [label for label, _ in contacts_screen.DETAILS])
+        self.press('Escape', mode)
         # A phone number alone is enough.
         mode = app.handle('add contact', mode)
         for answer in ('Plumber', '', '555 0199'):

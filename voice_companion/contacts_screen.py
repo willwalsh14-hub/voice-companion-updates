@@ -668,7 +668,8 @@ def details_for(contact):
         items.append(('No email address', ''))
     for phone in contact.phones:
         items.append(('Phone: ' + phone, ''))
-    items.append(('Saved in: ' + where(contact), ''))
+    place = where(contact)
+    items.append((place if place.startswith('Saved ') else 'Saved in: ' + place, ''))
     if not contact.read_only:
         items.append(('Edit contact', '@contacts:edit'))
         items.append(('Delete contact', '@contacts:delete'))
