@@ -311,6 +311,14 @@ class InboxWordsTests(CompanionCase):
         with patch.object(FakeClient, 'folders', lambda self: [('Inbox', 'inbox')]):
             self.assertTrue(self.say('go to folder').startswith('Found 1 folder. '), self.last())
 
+    def test_all_messages_says_how_more_are_reached(self):
+        # Before: "I load 10 at a time as you say next message." Next message stops at the
+        # end of the page; more come with Page Down.
+        said = self.say('set list size to all')
+        self.assertTrue(said.startswith('All messages, 10 at a time. For more, press Page Down, or say next page. Inbox. '), said)
+        self.assertEqual(self.say('email list size'), 'All messages, 10 at a time. For more, press Page Down, or say next page. '
+                                                      'Say set to 20, set list to 1000, or set to all.')
+
     def test_reply_in_the_list_says_how_to_open_the_message(self):
         self.say('reply')
         self.assertIn('Press Enter', self.last())

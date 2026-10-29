@@ -18,6 +18,8 @@ NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'nine': 9, 'ninth': 9, 'ten': 10, 'tenth': 10}
 NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
+# "All": pages of 10. The arrows stop at the end of a page, as in every list.
+ALL_MESSAGES = 'All messages, 10 at a time. For more, press Page Down, or say next page.'
 # Commands about "the message you are on". In an empty folder each says the list is empty.
 EMPTY_LIST_COMMANDS = ('next', 'previous', 'next message', 'previous message', 'first message', 'last message',
                        'start of list', 'beginning of list', 'end of list', 'first message on page',
@@ -625,10 +627,10 @@ class MailSession:
                 return 'I could not save that email list setting. Try again.'
             self.previous_cursors.clear()
             result = self.list_messages()
-            return ('All messages are available; I load 10 at a time as you say next message. ' if self.all_messages else
+            return (ALL_MESSAGES + ' ' if self.all_messages else
                     'Showing ' + value + ' messages at a time. ') + result
         if command in ('email list size', 'mail list size', 'how many emails', 'how many messages per page'):
-            return ('All messages, loaded 10 at a time.' if self.all_messages else
+            return (ALL_MESSAGES if self.all_messages else
                     str(self.list_size) + ' messages at a time.') + ' Say set to 20, set list to 1000, or set to all.'
         open_selection = ('that one', 'okay', 'ok', 'confirm', 'confirm that')
         if self.pending and command in open_selection and command not in ('okay', 'ok'):
