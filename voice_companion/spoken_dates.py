@@ -269,8 +269,8 @@ def _resolve(hour, minute, meridiem, hint):
     elif hour <= 12:
         if hint == 'am':
             hour = 0 if hour == 12 else hour
-        elif hint == 'pm':
-            hour = hour if hour == 12 else hour + 12
+        elif hint == 'pm' or hint == 'night':
+            hour = (0 if hint == 'night' else 12) if hour == 12 else hour + 12
         elif 1 <= hour <= 6:
             hour += 12
     return time(hour % 24, minute)
@@ -282,10 +282,15 @@ TIME_ONE = r'\b(?:at\s|by\s|around\s|starting\sat\s)?(?:(?P<named>noon|midday|mi
 LENGTH = (r'\bfor\s(?:(?P<half>half\san\shour)|(?P<n>' + NUM + r'|a|an)\s(?P<unit>hours?|hrs?|minutes?|mins?)'
           r'(?:\s(?:and\s)?(?:(?P<andhalf>a\shalf)|(?P<m>' + NUM + r')\s(?:minutes?|mins?)))?)\b')
 ALL_DAY = r'\b(?:all\sday|all-day|the\swhole\sday)(?:\slong)?\b'
+# The part of the day: it sets AM or PM (see _hint) and is not part of an event's name.
+# "Friday evening" and "today morning" too; "Morning walk" keeps its word.
+PERIOD = r'\b(?:in\sthe\s(?:morning|afternoon|evening|night)|at\snight|(?<=day\s)(?:morning|afternoon|evening|night))\b'
 
 
 def _hint(low):
-    if re.search(r'\b(?:tonight|evening|this\safternoon|tomorrow\s(?:afternoon|evening|night))\b', low):
+    if re.search(r'\b(?:at|in\sthe)\snight\b', low):
+        return 'night'      # "8 at night" is 8 PM; "12 at night" is midnight
+    if re.search(r'\b(?:tonight|evening|afternoon|night)\b', low):
         return 'pm'
     if re.search(r'\bmorning\b', low):
         return 'am'
@@ -350,6 +355,9 @@ def parse_when(text, now, future=True, base=None):
                 result.start = _resolve(clock[0], clock[1], clock[2], hint)
             result.spans.append(match.span())
             break
+    for match in re.finditer(PERIOD, low):
+        if not _taken(result.spans, *match.span()):
+            result.spans.append(match.span())
     length = re.search(LENGTH, low)
     if length and not _taken(result.spans, *length.span()):
         if length['half']:

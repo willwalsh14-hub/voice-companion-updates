@@ -60,7 +60,8 @@ def from_thunderbird(item):
     def strings(values):
         return [str(v).strip() for v in (values or []) if isinstance(v, str) and str(v).strip()][:10]
     emails = strings(item.get('emails'))
-    name = str(item.get('name') or '').strip() or (emails[0] if emails else '')
+    # A contact with only a phone number still has a name to say ("Delete No name?", not "Delete ?").
+    name = str(item.get('name') or '').strip() or (emails[0] if emails else 'No name')
     return Contact(name=name[:200], emails=emails, phones=strings(item.get('phones')), source='thunderbird',
                    id=str(item.get('id') or ''), book=str(item.get('book') or ''), book_id=str(item.get('bookId') or ''),
                    read_only=bool(item.get('readOnly')))

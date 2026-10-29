@@ -38,10 +38,17 @@ NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'do not save', '
 PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'calendar menu', 'menu', 'open menu')
-OPEN = ('calendar', 'open calendar', 'my calendar', 'show calendar', 'show my calendar', 'open my calendar', 'calendar app')
+OPEN = ('calendar', 'open calendar', 'my calendar', 'show calendar', 'show my calendar', 'open my calendar', 'calendar app',
+        'go to calendar', 'go to my calendar', 'open the calendar', 'view calendar', 'view my calendar', 'my schedule',
+        'show my schedule', 'open my schedule', 'my appointments', 'show my appointments')
 ADD_WORDS = r'(?:add|new|create|make|schedule|set up|book|put)(?: an?| new)?(?: (?:event|appointment|meeting|reminder))?'
 ADD = re.compile(r'(?:' + ADD_WORDS + r')(?:(?: to| on)(?: my)? calendar)?')
-ADD_START = re.compile(r'(?:add|new|create|make|schedule|book)(?: an?| new)? (?:event|appointment|meeting)\b')
+# "Add an appointment", "schedule a doctor appointment", "add a reminder": up to two words may name it,
+# but a note, email or list about a meeting is not an event.
+ADD_START = re.compile(r'(?:add|new|create|make|schedule|book)(?: an?| new)? (?:event|appointment|meeting|reminder)\b|'
+                       r'(?:add|create|make|schedule|book)(?: an?| new| my)?'
+                       r'(?: (?!(?:notes?|e ?mails?|messages?|lists?|contacts?|documents?|files?|letters?|about|for|to)\b)\w+){1,2}'
+                       r' (?:appointment|meeting)\b')
 ASK = re.compile(r"(?:(?:what s|what is|whats) on (?:my )?(?:calendar|schedule)|(?:what s|what is|whats) on|"
                  r"what do i have(?: on| going on)?|what s happening|read (?:my )?calendar(?: for)?|"
                  r"(?:my )?(?:calendar|schedule) for)(?: for)?(?: (?P<day>.+))?")
@@ -205,10 +212,15 @@ def open_screen(m, mode=None, day=None, quiet=False):
     if not thunderbird_pim.usable(m.APP):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode or 'awake'
+    global OPENED
     words = show(m, day or today(m), opening=True)
+    OPENED = 'Calendar. ' + with_showing(words)
     if not quiet:
-        m.speak('Calendar. ' + with_showing(words))
+        m.speak(OPENED)
     return MODE
+
+
+OPENED = ''            # what opening the screen says, kept when it opened quietly
 
 
 def with_showing(words):
@@ -291,11 +303,14 @@ def handle(m, text, mode, typed=False):
             return open_screen(m, mode)
         wanted = SHOW.fullmatch(command)
         if mode == 'awake' and wanted and wanted['verb'] and wanted['kind'] and wanted['what'] not in ('my', 'the'):
-            # "Show Gmail calendar" from the main menu: open Calendar on that calendar.
-            opened = open_screen(m, mode)
-            if opened != MODE or not choosing():
+            # "Show Gmail calendar" from the main menu: open Calendar on that calendar, and say it once.
+            opened = open_screen(m, mode, quiet=True)
+            if opened != MODE:
                 return opened
-            return show_source(m, wanted['what'], opening=True)
+            if not choosing():
+                m.speak(OPENED)
+                return MODE
+            return show_source(m, wanted['what'], lead='Calendar. ')
         if mode == 'awake' and (ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule')
                                 and command not in ('add', 'new', 'create', 'schedule') or ADD_START.match(command)):
             opened = open_screen(m, mode, quiet=True)
@@ -345,7 +360,11 @@ def command_here(m, raw, command):
         return 'awake'      # handle() says Main menu when the screen changes
     if command in OPEN + ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'refresh', 'refresh calendar'):
         words = show(m, DAY or today(m), opening=command.startswith('refresh'))
-        m.speak(with_showing(words) if command in OPEN + ('where am i', 'refresh', 'refresh calendar') else words)
+        if command in OPEN + ('where am i',):
+            words = 'Calendar. ' + with_showing(words)      # the screen's name first, as on Contacts
+        elif command in ('refresh', 'refresh calendar'):
+            words = with_showing(words)
+        m.speak(words)
         return MODE
     if command in CHOOSE:
         return start_choosing(m)
@@ -389,7 +408,9 @@ def command_here(m, raw, command):
     if phrase is not None:
         return start_editing(m, *phrase)
     if command in ('delete event', 'remove event', 'delete this event', 'delete appointment', 'cancel event',
-                   'cancel appointment', 'delete', 'remove'):
+                   'cancel appointment', 'delete', 'remove', 'delete it', 'remove it', 'delete the event', 'delete the appointment',
+                   'delete this appointment', 'cancel the appointment', 'cancel this appointment', 'cancel my appointment',
+                   'delete my appointment', 'cancel the event', 'cancel this event'):
         event = current()
         if event is None:
             m.speak('No events on this day.')
@@ -470,28 +491,28 @@ def start_choosing(m, first=None, lead=''):
     return MODE
 
 
-def show_source(m, words, opening=False):
-    """'Show Gmail calendar': show it, or ask which when the words fit more than one."""
+def show_source(m, words, lead=''):
+    """'Show Gmail calendar': show it, or ask which when the words fit more than one.
+    lead: 'Calendar. ' when the screen opens with this."""
     if not choosing():
-        if not opening:     # open_screen already said the day
-            m.speak(show(m, DAY or today(m)))
+        m.speak(show(m, DAY or today(m)))
         return MODE
     found = SOURCES.match(words)
     if len(found) == 1:
-        return use_source(m, found[0])
+        return use_source(m, found[0], lead)
     if found:
-        return start_choosing(m, found[0], 'More than one calendar fits. ')
-    return start_choosing(m, None, 'No calendar is called ' + words + '. ')
+        return start_choosing(m, found[0], lead + 'More than one calendar fits. ')
+    return start_choosing(m, None, lead + 'No calendar is called ' + words + '. ')
 
 
-def use_source(m, choice):
+def use_source(m, choice, lead=''):
     """Show these calendars, keep the choice for next time, and say the day."""
     global SOURCE, PENDING
     PENDING = None
     SOURCE = choice
     kept = pim_sources.remember(m.APP, 'calendar', choice, SOURCES.words(choice))
     words = show(m, DAY or today(m))
-    m.speak(showing() + ' ' + words + ('' if kept else ' This choice could not be saved for next time.'))
+    m.speak(lead + showing() + ' ' + words + ('' if kept else ' This choice could not be saved for next time.'))
     return MODE
 
 
@@ -650,8 +671,14 @@ def start_adding(m, raw=''):
     return add_step(m, 'when', original)
 
 
+NOT_A_NAME = ('no', 'no thanks', 'none', 'nothing', 'skip', 'no name', 'i don t know')
+FILLER = ('for', 'on', 'at', 'to', 'in', 'a', 'an', 'the', 'my', 'and', 'of')
+
+
 def title_from(rest):
-    rest = rest.strip(' .,!?')
+    rest = re.sub(r"^['’]s\b", '', rest.strip(' .,!?')).strip(' .,!?')     # "tomorrow's meeting": the day is gone
+    if all(word.casefold() in FILLER for word in rest.split()):
+        return ''       # "make an appointment for Friday at 10": "for" is not a name; ask for one
     called = re.search(r'\b(?:called|named|titled|about)\s+(.+)$', rest, re.I)
     if called:
         return called[1].strip(' .,!?')
@@ -666,7 +693,7 @@ def add_step(m, step, value):
         if found.day is None:
             return prompt(m, 'when', 'I did not catch a day or time. Say something like tomorrow at 3 PM, '
                                      'or October 30 all day. Escape cancels.')
-        DRAFT = {'when': found, 'title': title_from(found.rest)}
+        DRAFT = {'when': found, 'title': title_from(found.rest), 'said': value}
         if found.start is None and not found.all_day:
             return prompt(m, 'time', spoken_day(found.day, today(m)) + '. What time? Say a time like 3 PM, '
                                      'or say all day. Escape cancels.')
@@ -680,6 +707,10 @@ def add_step(m, step, value):
             return next_question(m)
         # A time alone ("3", "10:30") is read as "at 3".
         spoken = value if re.match(r'\s*(?:at|from|between|by)\b', value, re.I) else 'at ' + value
+        # "Friday evening", then "7": the evening still counts.
+        period = re.search(r'\b(?:morning|afternoon|evening|tonight|night)\b', DRAFT.get('said', ''), re.I)
+        if period and not re.search(r'\b(?:[ap]\.?\s?m\b|morning|afternoon|evening|night|noon|midnight)', value, re.I):
+            spoken += ' ' + {'tonight': 'in the evening', 'night': 'at night'}.get(period[0].lower(), 'in the ' + period[0].lower())
         found = parse_when(spoken, now, future=True, base=DRAFT['when'].day)
         if found.start is None and not found.all_day:
             return prompt(m, 'time', 'I did not catch a time. Say a time like 3 PM or 10:30 AM, or say all day.')
@@ -691,6 +722,8 @@ def add_step(m, step, value):
         title = ' '.join(value.split()).strip(' .,!?')
         if not title:
             return prompt(m, 'title', 'Type or say a name for the event, such as Doctor, then press Enter.')
+        if m.normalized_command(title) in NOT_A_NAME:
+            return prompt(m, 'title', 'An event needs a name. Type or say a name, such as Doctor, then press Enter. Escape cancels.')
         if len(title) > 200:
             return prompt(m, 'title', 'That name is too long. Say a shorter name.')
         DRAFT['title'] = title
@@ -746,7 +779,7 @@ def save_draft(m):
     try:
         added = thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
     except thunderbird_pim.PimError as exc:
-        m.speak(str(exc) + ' The event was not saved.')
+        m.speak(not_saved(exc, 'The event was not saved.'))
         return MODE
     LAST_CALENDAR = calendar['id']
     words = show(m, when.day)
@@ -762,6 +795,12 @@ def save_draft(m):
         words += ' ' + not_shown_words(calendar)
     m.speak('Saved ' + title + ' in ' + calendar_words(calendar) + '. ' + words)
     return MODE
+
+
+def not_saved(exc, words):
+    """Why saving failed, and that nothing was saved, unless the reason already says so."""
+    text = str(exc)
+    return text if 'could not save' in text else text + ' ' + words
 
 
 def not_shown(calendar_id):
@@ -789,12 +828,21 @@ def ask_delete(m, event):
     return MODE
 
 
+def on_day(day, m):
+    """'on Friday, October 30', or 'tomorrow, Tuesday, October 27' (never "on Tomorrow")."""
+    words = spoken_day(day, today(m))
+    first, _, rest = words.partition(', ')
+    if first in ('Today', 'Tomorrow', 'Yesterday') and rest:
+        return first.lower() + ', ' + rest
+    return 'on ' + words
+
+
 def delete_question(m, event):
-    when = spoken_day(DAY, today(m)) + ', ' + event.when(DAY)[0].lower() + event.when(DAY)[1:]
+    hours = event.when(DAY)[0].lower() + event.when(DAY)[1:]
     if event.recurring:
-        return (event.name + ' repeats. Delete only this one, on ' + when + ', or all of them? '
+        return (event.name + ' repeats. Delete only this one, ' + on_day(DAY, m) + ', ' + hours + ', or all of them? '
                 'Say this one, all, or no. Escape keeps it.')
-    return 'Delete ' + event.name + ', ' + when + '? Say Yes or No. Escape keeps it.'
+    return 'Delete ' + event.name + ', ' + spoken_day(DAY, today(m)) + ', ' + hours + '? Say Yes or No. Escape keeps it.'
 
 
 def answer(m, command):
@@ -1180,7 +1228,7 @@ def confirm_edit(m):
                 ' Say this one, or no. Escape cancels.')
     else:
         CHOICES = ('this one', 'all', 'no')
-        tail = (' ' + name + ' repeats. Change only this one, on ' + spoken_day(event.start.date(), today(m)) +
+        tail = (' ' + name + ' repeats. Change only this one, ' + on_day(event.start.date(), m) +
                 ', or all of them? Say this one, all, or no. Escape cancels.')
     PENDING, CHOICE = ('edit', EDIT), CHOICES[0]
     m.speak(edit_question(m) + passed + tail)
@@ -1257,7 +1305,7 @@ def save_edit(m, scope):
         answer_ = thunderbird_pim.modify_event(event.calendar_id, event.id, changes,
                                                occurrence=event.occurrence if scope == 'one' else '', all_of_them=scope == 'all')
     except thunderbird_pim.PimError as exc:
-        m.speak(str(exc) + ' The change was not saved.')
+        m.speak(not_saved(exc, 'The change was not saved.'))
         return MODE
     ids = {event.id, str((answer_ or {}).get('id') or '') if isinstance(answer_, dict) else ''}
     words = show(m, day)
