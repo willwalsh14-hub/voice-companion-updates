@@ -177,3 +177,8 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.174: Thunderbird stand-in tests passed on a try branch but failed in the build (October 29, 2026)
 - The stand-in was a copy of sys.executable named thunderbird.exe. In the build, sys.executable is a virtual environment's python.exe, which only launches the real Python as another program, so the windows belonged to python.exe.
 - Fixed by copying sys._base_executable. Lesson: a try branch must run tests the way the build does (same Python, same order).
+
+## Podcast player without a window (October 29, 2026, branch claude/podcast-feedback)
+- The radio and podcast player's Firefox now runs headless, so no window takes the keyboard.
+- On Windows (try branch, PR 86) it showed no window, kept the focus, and played forward, three runs out of three.
+- [ ] Build computers have no sound device. A person must listen once to confirm the sound reaches the speakers. If it does not, start Firefox with a window again, minimized and off the taskbar.

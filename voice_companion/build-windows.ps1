@@ -221,7 +221,7 @@ $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 & $python -m playwright install firefox
 if ($LASTEXITCODE -ne 0) { throw 'The Firefox engine for the audio player could not be installed.' }
 $env:VOICE_COMPANION_REQUIRE_WEB_TESTS = '1'
-$audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audio','test_radio_stream_live')
+$audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audio','test_radio_stream_live','test_media_player_window')
 if ($audioResult -ne 0) { throw 'The audio player checks failed.' }
 # Page checks run in Playwright's Chromium (prepared above for the extension checks).
 $env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
