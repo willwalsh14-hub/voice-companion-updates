@@ -2554,8 +2554,11 @@ def hide_thunderbird_window():
     if THUNDERBIRD_WINDOWS is not None:
         return THUNDERBIRD_WINDOWS.hide(THUNDERBIRD_STARTED)
     try:
-        from thunderbird_mailbox import relay
-        relay().request('minimize', {}, timeout=10)
+        # Never relay(): it starts Thunderbird, or asks a setup question, just to hide it.
+        import thunderbird_mailbox
+        if not thunderbird_mailbox.connected():
+            return window_hiding.NOT_RUNNING
+        thunderbird_mailbox.current().request('minimize', {}, timeout=10)
     except Exception:
         return window_hiding.NOT_RUNNING
     return window_hiding.MINIMIZED_NOW
