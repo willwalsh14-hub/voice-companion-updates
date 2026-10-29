@@ -156,7 +156,7 @@ class UpdateHandoffTests(unittest.TestCase):
             service.events.put(('install_failed',None));self.assertEqual(companion.poll_app_updates('update_download'),'email_draft')
     def test_installer_helper_does_not_force_restart_or_require_admin(self):
         root=Path(__file__).parent;helper=(root/'apply-update.ps1').read_text();installer=(root/'VoiceCompanion.iss').read_text()
-        for value in ('WaitForExit(30000)','Get-FileHash','/VERYSILENT','/NORESTART','/RESTARTEXITCODE=3010','/NORESTARTAPPLICATIONS','update-result.json'):self.assertIn(value,helper)
+        for value in ('WaitForExit(30000)','Hold-Installer','SHA256','/VERYSILENT','/NORESTART','/RESTARTEXITCODE=3010','/NORESTARTAPPLICATIONS','update-result.json'):self.assertIn(value,helper)
         self.assertIn('PrivilegesRequired=lowest',installer)
         self.assertNotIn('-Verb RunAs',helper)
 

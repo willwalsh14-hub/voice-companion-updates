@@ -79,6 +79,21 @@ public static class Launcher {
   $other.Refresh(); Assert (-not $other.HasExited) 'A program in a similar folder must never be closed.'
   Assert ([bool](Get-Process -Id $userChild.ProcessId -ErrorAction SilentlyContinue)) 'A program Voice Companion opened from outside its folder must never be closed.'
 
+  # Will's 0.2.173 update spent over three minutes finding nothing to close. The
+  # update and Setup run with their current folder on drive C (the update folder,
+  # Setup's temporary folder), and the long-name lookup went in circles from there.
+  Push-Location -LiteralPath $root
+  [Environment]::CurrentDirectory = $root
+  try {
+    $script:LongFolders = @{}
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    $long = Get-LongFolderPath $folder
+    [void](Select-CompanionProcesses (Get-CompanionProcessList) $folder $PID)
+    $timer.Stop()
+    Assert ($timer.Elapsed.TotalSeconds -lt 5) ('Finding Voice Companion''s programs must take seconds, not ' + [int]$timer.Elapsed.TotalSeconds + ' seconds.')
+    Assert ((Test-Path -LiteralPath $long) -and -not $long.Contains('~')) ('The long folder name must be found: ' + $long)
+  } finally { Pop-Location; [Environment]::CurrentDirectory = $PSScriptRoot }
+
   # Script mode, as Setup runs it: the reason is written and the browser manifest comes back.
   $reason = Join-Path $root 'reason.txt'
   $shell = Join-Path $system 'WindowsPowerShell\v1.0\powershell.exe'

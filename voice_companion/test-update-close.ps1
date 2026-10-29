@@ -55,7 +55,7 @@ Assert ($word.Closed -eq 0 -and $word.Kills -eq 0) 'The user''s Word must never 
 Assert (-not $word.Disposed) 'Word was never opened, so it is not touched at all.'
 Assert ($app.Disposed -and $node.Disposed -and $hostParent.Disposed -and $hostChild.Disposed) 'Every process handle must be released.'
 Assert ($app.Waits[0] -gt 9000 -and $app.Waits[0] -le 10000) 'The gentle wait must be 10 seconds.'
-Assert (($script:logged -join "`n") -match 'Closing VoiceCompanion-BrowserHost.exe \(process 201, program in the install folder\)') 'Each closed program must be logged with why.'
+Assert (($script:logged -join "`n").Contains('Closing VoiceCompanion-BrowserHost.exe (process 201, ' + $Folder + '\VoiceCompanion-BrowserHost.exe, program in the install folder)')) ('Each closed program must be logged with its path and why: ' + ($script:logged -join ' | '))
 
 # A program that only stops on the second try is retried; one that never stops is named.
 $script:killOrder = @()
@@ -110,43 +110,57 @@ $result = Wait-CompanionFilesFree $Folder @() 999 0
 Assert ($result.Code -eq 2 -and @($result.Names).Count -eq 1 -and $result.Names[0] -eq 'Microsoft Word') 'A program that stays open stops the update and is named.'
 Assert ($script:said.Count -eq 1) 'The user hears the reason even when time runs out at once.'
 
-# Chrome started the browser host again: it is closed again and nothing is said.
-$script:said = @()
+# Chrome started the browser host again: it is stopped and nothing is said.
+$script:stopped = @()
+function Stop-CompanionProcessById([int]$id, [string]$name) { $script:stopped += $id }
+$script:said = @(); $script:logged = @()
 $script:lockRounds = @(, @("$Folder\VoiceCompanion-BrowserHost.exe"))
 $script:users = @([pscustomobject]@{ ProcessId = 201; AppName = 'VoiceCompanion-BrowserHost.exe'; ServiceName = '' })
 $result = Wait-CompanionFilesFree $Folder @() 999 120
-Assert ($null -eq $result -and $script:closedAgain -eq 1 -and $script:said.Count -eq 0) 'A Voice Companion program that started again is closed again quietly.'
+Assert ($null -eq $result -and $script:stopped -contains 201 -and $script:said.Count -eq 0) 'A Voice Companion program that holds files is stopped quietly.'
 
-# The user cannot tell which program: a plain message, and a clear code when time runs out.
-$script:said = @(); $script:usersFail = $true
-$script:lockRounds = @(, @('a'))
-$result = Wait-CompanionFilesFree $Folder @() 999 0
-Assert ($result.Code -eq 2 -and $result.Names[0] -eq 'Another program') 'An unknown program still gives a reason.'
-Assert ($script:said[0].StartsWith('Another program is using')) 'An unknown program still tells the user what to do.'
+# Will's 0.2.173 update: Voice Companion's own runtime files were held by a Voice
+# Companion process, and he heard "Another program is using a Voice Companion file".
+$script:said = @(); $script:logged = @(); $script:stopped = @()
+Set-Running @(@(300, 10, 'C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE', $null), @(501, 10, "$Folder\VoiceCompanion.exe", $null))
+$script:lockRounds = @(, @("$Folder\base_library.zip", "$Folder\libcrypto-3.dll", "$Folder\libffi-8.dll", "$Folder\libssl-3.dll", "$Folder\msvcp140.dll"))
+$script:users = @([pscustomobject]@{ ProcessId = 501; AppName = 'Voice Companion'; ServiceName = '' })
+$result = Wait-CompanionFilesFree $Folder @() 999 120 1 1 0
+Assert ($null -eq $result) 'Voice Companion''s own files never stop the update.'
+Assert ($script:said.Count -eq 0) ('Voice Companion''s own process must never be called another program: ' + ($script:said -join ' | '))
+Assert ($script:stopped -contains 501) 'The Voice Companion process that holds the files is stopped.'
+Assert (($script:logged -join "`n").Contains('Held by Voice Companion (process 501, ' + $Folder + '\VoiceCompanion.exe): Voice Companion.')) ('The holder must be logged with name, id and path: ' + ($script:logged -join ' | '))
+
+# Windows names nobody (the holder just ended) or Restart Manager fails: wait
+# quietly, then go on. Setup replaces the files once they are free.
+foreach ($case in 'nobody', 'failed', 'ended') {
+  $script:said = @(); $script:logged = @()
+  $script:usersFail = ($case -eq 'failed')
+  $script:users = $(if ($case -eq 'ended') { @([pscustomobject]@{ ProcessId = 7777; AppName = ''; ServiceName = '' }) } else { @() })
+  $script:lockRounds = @(@('a'), @('a'), @('a'))
+  $result = Wait-CompanionFilesFree $Folder @() 999 120 1 1 0
+  Assert ($null -eq $result) ('An unknown lock must not stop the update (' + $case + ').')
+  Assert ($script:said.Count -eq 0) ('Nobody to name: nothing must be said (' + $case + '): ' + ($script:said -join ' | '))
+  Assert (($script:logged -join ' ').Contains('Going on with the update')) ('Going on must be logged (' + $case + ').')
+}
 $script:usersFail = $false
 
-# Our own program keeps coming back past the limit: code 1, not blamed on the user.
-$script:lockRounds = @(, @('a'))
-$script:users = @([pscustomobject]@{ ProcessId = 201; AppName = ''; ServiceName = '' })
-$result = Wait-CompanionFilesFree $Folder @() 999 0
-Assert ($result.Code -eq 1) 'Voice Companion programs that keep starting are not blamed on the user.'
-
-# An antivirus scan (a Windows service) is waited for quietly, and named only at the end.
+# An antivirus scan (a Windows service) is waited for quietly, then the update goes on.
 $script:said = @()
 $script:lockRounds = @(@('a'), @('a'))
 $script:users = @([pscustomobject]@{ ProcessId = 4000; AppName = 'Microsoft Defender Antivirus Service'; ServiceName = 'WinDefend' })
 $result = Wait-CompanionFilesFree $Folder @() 999 120
 Assert ($null -eq $result -and $script:said.Count -eq 0) 'A short antivirus scan must not be blamed on the user.'
-$script:lockRounds = @(, @('a'))
-$result = Wait-CompanionFilesFree $Folder @() 999 0
-Assert ($result.Code -eq 2 -and $result.Names[0] -eq 'Microsoft Defender Antivirus Service') 'A service that never lets go is still named at the end.'
+$script:lockRounds = @(@('a'), @('a'))
+$result = Wait-CompanionFilesFree $Folder @() 999 120 1 1 0
+Assert ($null -eq $result -and $script:said.Count -eq 0) 'A service that holds a file never stops the update.'
 
 # This script itself never counts as the user's program.
 $script:said = @()
 $script:lockRounds = @(, @('a'))
 $script:users = @([pscustomobject]@{ ProcessId = 999; AppName = 'Windows PowerShell'; ServiceName = '' })
-$result = Wait-CompanionFilesFree $Folder @() 999 0
-Assert (-not ($script:said -join ' ').Contains('PowerShell')) 'The update itself must never be named as the blocker.'
+$result = Wait-CompanionFilesFree $Folder @() 999 0 1 1 0
+Assert ($null -eq $result -and -not ($script:said -join ' ').Contains('PowerShell')) 'The update itself must never be named as the blocker.'
 
 # ---- Invoke-CompanionClose: retry once, then report ----
 $script:closeResults = @(@('node.exe'), @())
@@ -157,7 +171,7 @@ $outcome = Invoke-CompanionClose $Folder @() 999
 Assert ($outcome.Code -eq 0 -and $script:suspended) 'A program that closes on the second try lets the update go on.'
 $script:closeResults = @(@('node.exe'), @('node.exe'))
 $outcome = Invoke-CompanionClose $Folder @() 999
-Assert ($outcome.Code -eq 1 -and $outcome.Names[0] -eq 'node.exe') 'A program that never closes stops the update with its name.'
+Assert ($outcome.Code -eq 1 -and $outcome.Names[0] -eq 'node.exe') 'A program that never closes is named; the caller goes on and Setup closes it.'
 function Wait-CompanionFilesFree { return [pscustomobject]@{ Code = 2; Names = @('Microsoft Word') } }
 $script:closeResults = @(, @())
 $outcome = Invoke-CompanionClose $Folder @() 999

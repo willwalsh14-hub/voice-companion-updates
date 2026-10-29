@@ -5429,6 +5429,17 @@ def poll_app_updates(mode):
     return mode
 
 
+UPDATE_RUNNING_MESSAGE = 'Voice Companion is being updated. It will open by itself when the update is done.'
+
+
+def update_running_elsewhere():
+    """True when an update is installing and this start is not the one the update made."""
+    if '--resume-after-update' in sys.argv:
+        return False
+    from app_updates import update_running
+    return update_running(APP)
+
+
 def main():
     global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF, STARTUP_NOTICES, MICROPHONE_FAILED
     if '--check-browser-bookmarks' in sys.argv:
@@ -5552,6 +5563,12 @@ def main():
                 mode = handle(heard, mode)
             if mode == 'exit':
                 break
+        return 0
+    if update_running_elsewhere():
+        # Opened again while an update installs: it would hold the files Setup must
+        # replace. The update opens Voice Companion by itself when it is done.
+        speak(UPDATE_RUNNING_MESSAGE)
+        wait_for_speech(15000)
         return 0
     # Announce readiness once, after models and microphone are initialized.
     SetLogLevel(-1)
