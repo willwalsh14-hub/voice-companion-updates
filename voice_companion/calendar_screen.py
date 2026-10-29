@@ -669,6 +669,7 @@ def start_adding(m, raw=''):
     return add_step(m, 'when', original)
 
 
+NOT_A_NAME = ('no', 'no thanks', 'none', 'nothing', 'skip', 'no name', 'i don t know')
 FILLER = ('for', 'on', 'at', 'to', 'in', 'a', 'an', 'the', 'my', 'and', 'of')
 
 
@@ -690,7 +691,7 @@ def add_step(m, step, value):
         if found.day is None:
             return prompt(m, 'when', 'I did not catch a day or time. Say something like tomorrow at 3 PM, '
                                      'or October 30 all day. Escape cancels.')
-        DRAFT = {'when': found, 'title': title_from(found.rest)}
+        DRAFT = {'when': found, 'title': title_from(found.rest), 'said': value}
         if found.start is None and not found.all_day:
             return prompt(m, 'time', spoken_day(found.day, today(m)) + '. What time? Say a time like 3 PM, '
                                      'or say all day. Escape cancels.')
@@ -704,6 +705,10 @@ def add_step(m, step, value):
             return next_question(m)
         # A time alone ("3", "10:30") is read as "at 3".
         spoken = value if re.match(r'\s*(?:at|from|between|by)\b', value, re.I) else 'at ' + value
+        # "Friday evening", then "7": the evening still counts.
+        period = re.search(r'\b(?:morning|afternoon|evening|tonight|night)\b', DRAFT.get('said', ''), re.I)
+        if period and not re.search(r'\b(?:[ap]\.?\s?m\b|morning|afternoon|evening|night|noon|midnight)', value, re.I):
+            spoken += ' ' + {'tonight': 'in the evening', 'night': 'at night'}.get(period[0].lower(), 'in the ' + period[0].lower())
         found = parse_when(spoken, now, future=True, base=DRAFT['when'].day)
         if found.start is None and not found.all_day:
             return prompt(m, 'time', 'I did not catch a time. Say a time like 3 PM or 10:30 AM, or say all day.')
@@ -715,6 +720,8 @@ def add_step(m, step, value):
         title = ' '.join(value.split()).strip(' .,!?')
         if not title:
             return prompt(m, 'title', 'Type or say a name for the event, such as Doctor, then press Enter.')
+        if m.normalized_command(title) in NOT_A_NAME:
+            return prompt(m, 'title', 'An event needs a name. Type or say a name, such as Doctor, then press Enter. Escape cancels.')
         if len(title) > 200:
             return prompt(m, 'title', 'That name is too long. Say a shorter name.')
         DRAFT['title'] = title

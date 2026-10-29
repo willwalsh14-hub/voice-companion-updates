@@ -169,6 +169,25 @@ class CalendarScreenTests(CalendarHarness):
                 app.handle('yes', mode)
             self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
 
+    def test_the_part_of_the_day_said_first_counts_for_the_time_said_next(self):
+        mode = self.press('Ctrl+N', self.open())
+        mode = app.handle('Friday evening', mode)
+        self.assertEqual(self.said(), 'Friday, October 30. What time? Say a time like 3 PM, or say all day. Escape cancels.')
+        mode = app.handle('7', mode)
+        self.assertEqual(self.said(), 'What is it called? Type or say a name, such as Doctor, then press Enter.')
+        # "No" is not a name: ask again.
+        mode = app.handle('No.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'An event needs a name. Type or say a name, such as Doctor, '
+                                                             'then press Enter. Escape cancels.'))
+        mode = app.handle('Bingo', mode)
+        self.assertTrue(self.said().startswith('Add Bingo, Friday, October 30, seven PM to eight PM,'), self.said())
+        app.handle('no', mode)
+        # "In the afternoon" after the time is not the name.
+        mode = app.handle('add event', mode)
+        mode = app.handle('Friday', mode)
+        mode = app.handle('two thirty in the afternoon', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'What is it called? Type or say a name, such as Doctor, then press Enter.'))
+
     def test_a_day_without_a_time_asks_for_the_time_or_all_day(self):
         mode = self.press('Ctrl+N', self.open())
         mode = app.handle('next Friday', mode)
