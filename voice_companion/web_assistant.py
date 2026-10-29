@@ -438,6 +438,18 @@ class BrowserBackend:
                 try:action()
                 except Exception:pass
 
+    def open_cookies(self):
+        """Cookies a site keeps only while the browser is open (sign-in, a shopping cart).
+        Chrome drops them when it closes, so they are carried when it starts again."""
+        try:return [c for c in self.context.cookies() if c.get('expires') is None or c.get('expires')<0]
+        except Exception:return []
+
+    def restore_cookies(self,cookies):
+        if not cookies:return
+        self.start()
+        try:self.context.add_cookies([{k:v for k,v in c.items() if k!='expires'} for c in cookies])
+        except Exception:pass
+
     def refocus(self):
         if getattr(self,'_embedded',None):return self._embedded.refocus()
         if not self.page or self.page.is_closed():return False
@@ -2031,6 +2043,8 @@ class WebSession:
         if self.snapshot:self._remember_place()
         self.progress(WINDOW_SWITCHING)
         backend.window_reason=reason
+        # Chrome drops cookies kept only while it is open; carry them, or you are signed out.
+        cookies=backend.open_cookies() if hasattr(backend,'open_cookies') and getattr(backend,'context',None) else []
         backend.close()
         if not url or not self.address_allowed(url):
             # No web page to open again, such as "This page could not open": Chrome is
@@ -2039,6 +2053,7 @@ class WebSession:
             self.reading.set_text('',reset=True)
             return WINDOW_SHOWN['asked']+WINDOW_NEXT_SITE if reason is not None else said
         try:
+            if cookies:backend.restore_cookies(cookies)
             backend.goto(url)
             result=self._refresh_page(False if read is None else read)
         except Exception:

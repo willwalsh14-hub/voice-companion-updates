@@ -589,6 +589,48 @@ class BackgroundFileBoxTests(unittest.TestCase):
         self.session.keyboard('Quick:b');self.session.keyboard('Activate')
         self.assertIsNone(getattr(self.backend,'file_box_page',None))
 
+class BackgroundRelaunchTests(unittest.TestCase):
+    """Guided Chrome in the background starts again with its window when a page needs it
+    or when asked. Playwright's Chromium stands in for Chrome here."""
+    setUpClass=classmethod(LiveWebTests.setUpClass.__func__)
+    tearDownClass=classmethod(LiveWebTests.tearDownClass.__func__)
+
+    def setUp(self):
+        import web_assistant
+        driver=self.driver
+        def shop(route):
+            cookie=route.request.headers.get('cookie','')
+            if route.request.url.endswith('/login'):
+                route.fulfill(content_type='text/html',body='<title>Signed in</title><p>Welcome back.</p>',headers={'Set-Cookie':'shop_session=abc; Path=/; Secure'})
+            else:
+                route.fulfill(content_type='text/html',body='<title>Cart</title><p>'+('Your cart has 2 items.' if 'shop_session=abc' in cookie else 'You are signed out.')+'</p>')
+        class Guided(BrowserBackend):
+            def start(self):
+                if self.page and not self.page.is_closed():return
+                self.context=driver.chromium.launch_persistent_context(str(self.folder),headless=True)
+                self.context.route('https://shop.test/**',shop)
+                self.launched_hidden=self.runs_hidden()
+                self.page=self.context.pages[0] if self.context.pages else self.context.new_page()
+            def close(self):
+                context,self.context,self.page=self.context,None,None
+                if context:context.close()
+            def bring_window_forward(self):return True
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        patcher=patch.object(web_assistant,'CHROME_IN_BACKGROUND',True);patcher.start();self.addCleanup(patcher.stop)
+        self.backend=Guided(self.temp.name+'/profile','chrome');self.addCleanup(self.backend.close)
+        self.session=WebSession(self.temp.name,self.backend,progress=lambda text:None);self.session.auto_read=False
+
+    def test_show_browser_window_keeps_you_signed_in(self):
+        """Starting Chrome again dropped the cookies a site keeps only while the browser is open,
+        so after Show browser window, or a payment page, you were signed out and the cart was empty."""
+        self.session.open('https://shop.test/login')
+        self.session.open('https://shop.test/cart')
+        self.assertIn('2 items',self.session.reading.text)
+        self.session.browser_window(True)
+        self.assertIn('2 items',self.session.reading.text)
+        self.session.browser_window(False)
+        self.assertIn('2 items',self.session.reading.text)
+
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):
     browser_name='chrome'
