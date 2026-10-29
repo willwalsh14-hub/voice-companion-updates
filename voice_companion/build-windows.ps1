@@ -151,7 +151,7 @@ if ($webviewExit -ne 0) {
   throw 'The embedded Edge host could not be built.'
 }
 $env:VOICE_COMPANION_REQUIRE_WEBVIEW2 = '1'
-$embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests')
+$embeddedResult = Invoke-UnitTests 'Embedded Edge checks' @('-q','-f','test_webview2.EmbeddedLiveTests','test_webview2.EmbeddedConsumerTests','test_webview2.EmbeddedSemanticTests','test_webview2.EmbeddedPerformanceTests','test_youtube_webview2')
 if ($embeddedResult -ne 0) { throw 'Embedded Edge voice and keyboard browser parity checks failed.' }
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEBVIEW2
 $extensionTestRuntime = Join-Path $buildEnv 'extension-test-browser'
@@ -183,7 +183,7 @@ if ($releaseTests.ExitCode -ne 0) {
   throw "The document, email, or browser release checks failed. See $releaseErrors"
 }
 Remove-Item Env:VOICE_COMPANION_WINDOW_TESTS_APART
-foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests','test_alt_keys_window.AltKeyWindowTests','test_save_as_window.SaveAsKeyWindowTests','test_now_playing_window.WindowNowPlayingKeyTests','test_header_keys_window.HeaderKeyWindowTests')) {
+foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests','test_alt_keys_window.AltKeyWindowTests','test_save_as_window.SaveAsKeyWindowTests','test_now_playing_window.WindowNowPlayingKeyTests','test_header_keys_window.HeaderKeyWindowTests','test_youtube_window.YouTubeWindowKeyTests')) {
   if ((Invoke-UnitTests ('Window key tests ' + $windowTests) @('-v', $windowTests)) -ne 0) { throw ('The real window key tests failed: ' + $windowTests + '. See the annotation.') }
 }
 & $python prepare_espeak.py (Join-Path $PSScriptRoot 'espeak')
