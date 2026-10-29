@@ -118,8 +118,6 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
     # A Yes or No question owns the keyboard until it is answered.
     if context.get('confirmation') is not None or context.get('named_list'):
         return None
-    if mode == 'youtube' and key == 'F1' and context.get('task_input'):
-        return key  # help from the YouTube search box
     # Private and naming boxes keep their typed text until Enter or Escape.
     if any(context.get(name) for name in ('web_private', 'media_input', 'browser_name_input', 'file_name_input', 'task_input')):
         return None

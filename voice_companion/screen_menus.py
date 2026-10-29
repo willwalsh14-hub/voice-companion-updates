@@ -310,11 +310,13 @@ MENUS = {
             ('Add a comment', '', 'post comment {value}'),
             ('Sign in', '', 'sign in'),
             ('Sign out', '', 'sign out')]),
+        ('Search', [
+            ('Search', 'Ctrl+F', 'search youtube'),
+            ('Search filters', 'Ctrl+Shift+F', 'search filters'),
+            ('Clear filters', '', 'clear filters')]),
         ('Go to', [
             ('YouTube menu', '', 'youtube menu'),
             ('Home', '', 'youtube home'),
-            ('Search', 'Ctrl+F', 'search youtube'),
-            ('Search filters', 'Ctrl+Shift+F', 'search filters'),
             ('New from subscriptions', '', 'subscriptions'),
             ('Subscribed channels', '', 'my subscriptions'),
             ('History', '', 'history'),
