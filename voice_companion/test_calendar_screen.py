@@ -109,6 +109,39 @@ class CalendarScreenTests(CalendarHarness):
         self.assertTrue(self.said().startswith('Saved doctor in the Home calendar.'))
         self.assertIn(('doctor', datetime(2026, 10, 27, 15), 'Home'), self.events_on(date(2026, 10, 27)))
 
+    def test_natural_words_for_adding_name_the_event_or_ask_for_its_name(self):
+        # A word between "a" and "appointment", and "reminder", from the main menu.
+        mode = app.handle('Schedule a doctor appointment for tomorrow at 3 PM.', 'awake')
+        self.assertEqual(mode, 'calendar')
+        self.assertTrue(self.said().startswith('Add doctor appointment, Tomorrow, Tuesday, October 27, three PM to four PM,'), self.said())
+        app.handle('no', mode)
+        # "for" alone is not a name: ask for one.
+        mode = app.handle('Make an appointment for Friday at 10 AM.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'What is it called? Type or say a name, such as Doctor, then press Enter.'))
+        mode = app.handle('Dentist', mode)
+        self.assertTrue(self.said().startswith('Add Dentist, Friday, October 30, ten AM to eleven AM,'), self.said())
+        app.handle('no', mode)
+        mode = app.handle('Add a reminder for tomorrow at 9.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'What is it called? Type or say a name, such as Doctor, then press Enter.'))
+        self.press('Escape', mode)
+        # Not a calendar request: a note about a meeting stays a note.
+        self.assertIsNone(calendar_screen.ADD_START.match('make a note about the meeting'))
+        self.assertIsNone(calendar_screen.ADD_START.match('add a note about meeting'))
+        # A day is not part of the name ("Schedule tomorrow's meeting" is not called "'s meeting").
+        app.handle("Schedule tomorrow's meeting at 2 PM.", 'calendar')
+        self.assertTrue(self.said().startswith('Add meeting, Tomorrow, Tuesday, October 27, two PM to three PM,'), self.said())
+        app.handle('no', 'calendar')
+
+    def test_delete_it_deletes_the_event(self):
+        mode = self.open()
+        app.handle('Delete it.', mode)
+        self.assertEqual(self.said(), 'Delete Doctor appointment, Today, Monday, October 26, ten thirty AM to eleven AM? Say Yes or No. Escape keeps it.')
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'Deleted Doctor appointment. Today, Monday, October 26. No events.')
+        self.press('Right', mode)
+        app.handle('cancel my appointment', mode)
+        self.assertTrue(self.said().startswith('Group meeting repeats.'), self.said())
+
     def test_a_day_without_a_time_asks_for_the_time_or_all_day(self):
         mode = self.press('Ctrl+N', self.open())
         mode = app.handle('next Friday', mode)

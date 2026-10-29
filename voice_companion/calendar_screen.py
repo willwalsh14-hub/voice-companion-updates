@@ -41,7 +41,12 @@ PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to slee
 OPEN = ('calendar', 'open calendar', 'my calendar', 'show calendar', 'show my calendar', 'open my calendar', 'calendar app')
 ADD_WORDS = r'(?:add|new|create|make|schedule|set up|book|put)(?: an?| new)?(?: (?:event|appointment|meeting|reminder))?'
 ADD = re.compile(r'(?:' + ADD_WORDS + r')(?:(?: to| on)(?: my)? calendar)?')
-ADD_START = re.compile(r'(?:add|new|create|make|schedule|book)(?: an?| new)? (?:event|appointment|meeting)\b')
+# "Add an appointment", "schedule a doctor appointment", "add a reminder": up to two words may name it,
+# but a note, email or list about a meeting is not an event.
+ADD_START = re.compile(r'(?:add|new|create|make|schedule|book)(?: an?| new)? (?:event|appointment|meeting|reminder)\b|'
+                       r'(?:add|create|make|schedule|book)(?: an?| new| my)?'
+                       r'(?: (?!(?:notes?|e ?mails?|messages?|lists?|contacts?|documents?|files?|letters?|about|for|to)\b)\w+){1,2}'
+                       r' (?:appointment|meeting)\b')
 ASK = re.compile(r"(?:(?:what s|what is|whats) on (?:my )?(?:calendar|schedule)|(?:what s|what is|whats) on|"
                  r"what do i have(?: on| going on)?|what s happening|read (?:my )?calendar(?: for)?|"
                  r"(?:my )?(?:calendar|schedule) for)(?: for)?(?: (?P<day>.+))?")
@@ -389,7 +394,9 @@ def command_here(m, raw, command):
     if phrase is not None:
         return start_editing(m, *phrase)
     if command in ('delete event', 'remove event', 'delete this event', 'delete appointment', 'cancel event',
-                   'cancel appointment', 'delete', 'remove'):
+                   'cancel appointment', 'delete', 'remove', 'delete it', 'remove it', 'delete the event', 'delete the appointment',
+                   'delete this appointment', 'cancel the appointment', 'cancel this appointment', 'cancel my appointment',
+                   'delete my appointment', 'cancel the event', 'cancel this event'):
         event = current()
         if event is None:
             m.speak('No events on this day.')
@@ -650,8 +657,13 @@ def start_adding(m, raw=''):
     return add_step(m, 'when', original)
 
 
+FILLER = ('for', 'on', 'at', 'to', 'in', 'a', 'an', 'the', 'my', 'and', 'of')
+
+
 def title_from(rest):
-    rest = rest.strip(' .,!?')
+    rest = re.sub(r"^['’]s\b", '', rest.strip(' .,!?')).strip(' .,!?')     # "tomorrow's meeting": the day is gone
+    if all(word.casefold() in FILLER for word in rest.split()):
+        return ''       # "make an appointment for Friday at 10": "for" is not a name; ask for one
     called = re.search(r'\b(?:called|named|titled|about)\s+(.+)$', rest, re.I)
     if called:
         return called[1].strip(' .,!?')
