@@ -328,9 +328,10 @@ class Upgrade:
     started(relay) is called once the updated Thunderbird is connected (Voice Companion then puts its
     window where the person chose)."""
 
-    def __init__(self, system, package, relay, progress, data_folder, started=None, clock=time.time):
+    def __init__(self, system, package, relay, progress, data_folder, started=None, clock=time.time, hint=''):
         self.system, self.package, self.relay, self.progress = system, Path(package), relay, progress
         self.data_folder, self.started, self.clock = Path(data_folder), started, clock
+        self.hint = hint     # said after "no" and after a finished update (the automatic question: what to do next)
         self.info = None
         self.report = {}    # what was checked, for tests and the error log (never addresses)
 
@@ -365,7 +366,7 @@ class Upgrade:
             return Step('', None)
         if not yes:
             _remember(self.data_folder, declined=self.clock())
-            return Step(NOT_NOW, None)
+            return Step((NOT_NOW + ' ' + self.hint).strip(), None)
         _remember(self.data_folder, declined=None)
         if self.info is None:
             self.info = installed(self.system)
@@ -510,7 +511,9 @@ class Upgrade:
                 self.started(self._relay())
             except Exception:
                 pass
-        return Step((DONE if connected else NOT_CONNECTED).format(version=after.version), None)
+        if connected:
+            return Step((DONE.format(version=after.version) + ' ' + self.hint).strip(), None)
+        return Step(NOT_CONNECTED.format(version=after.version), None)
 
     def _verify(self, profile, before, connected):
         problems = []

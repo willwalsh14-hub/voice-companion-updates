@@ -163,6 +163,7 @@ class UpgradeSystem(FakeSystem):
         if self.install_works:
             self.installs.append(self.release)
             self.case.write_program(self.release, 'release')
+            self.values.update(registered(self.release + ' (x64 en-US)', str(self.case.program_folder / 'thunderbird.exe')))
 
     def latest_release(self):
         return self.latest
@@ -487,6 +488,63 @@ class CheckingAndPuttingBackTests(UpgradeCase):
                          ["x: account2 changed from ('ews', ('will@work.example',)) to ('imap', ('will@work.example',))"])
 
 
+class SetupFlowTests(UpgradeCase):
+    """The question inside "add Thunderbird account", and for a Thunderbird too old for the add-on."""
+
+    def setup_flow(self, system, adding=True):
+        ready = lambda flow: thunderbird_setup.Step('What email address should be added?', 'address')
+        return thunderbird_setup.Setup(system, self.package, lambda: 'x', lambda: self.thunderbird, self.progress.append,
+                                       ready=ready, adding=adding, upgrader=lambda: self.flow(system))
+
+    def test_adding_an_account_to_esr_offers_the_update_first_and_no_carries_on(self):
+        system = self.system()
+        flow = self.setup_flow(system)
+        step = flow.start()
+        self.assertEqual(step.message, upgrade.QUESTION)
+        self.assertEqual(step.question, 'upgrade')
+        step = flow.answer('upgrade', False)
+        self.assertTrue(step.message.startswith(upgrade.NOT_NOW + ' '))
+        self.assertTrue(step.message.endswith('What email address should be added?'))
+        self.assertEqual(step.question, 'address')
+        self.assertEqual(upgrade.installed(system).channel, 'esr')
+        # Asked once: the next add goes straight on.
+        self.assertEqual(self.setup_flow(system).start().question, 'address')
+
+    def test_yes_updates_then_carries_on_adding(self):
+        system = self.system()
+        flow = self.setup_flow(system)
+        flow.start()
+        step = flow.answer('upgrade', True)
+        self.assertEqual(step.message, 'Thunderbird is updated to version 155.0. All your email accounts are here, as before. '
+                                       'What email address should be added?')
+        self.assertEqual(step.question, 'address')
+        self.assertEqual(flow.version, 155)
+
+    def test_a_failed_update_stops_with_its_reason(self):
+        system = self.system()
+        system.install_works = False
+        flow = self.setup_flow(system)
+        flow.start()
+        step = flow.answer('upgrade', True)
+        self.assertEqual(step.message, upgrade.FAILED)
+        self.assertIsNone(step.question)
+
+    def test_too_old_for_the_add_on_is_offered_the_update(self):
+        self.write_program('115.16.0', 'esr')
+        system = self.system(version='115.16.0')
+        flow = self.setup_flow(system, adding=False)
+        step = flow.start()
+        self.assertEqual(step.question, 'upgrade')
+        step = flow.answer('upgrade', False)
+        self.assertIn('too old', step.message)
+        self.assertIn('say update Thunderbird', step.message)
+        self.assertIsNone(step.question)
+
+    def test_a_current_release_is_not_asked_about(self):
+        self.write_program('155.0', 'release')
+        self.assertEqual(self.setup_flow(self.system(version='155.0', channel='release')).start().question, 'address')
+
+
 class FreshInstallTests(UpgradeCase):
     def test_an_esr_copy_found_after_winget_is_moved_to_release_in_its_folder(self):
         system = self.system()
@@ -496,6 +554,96 @@ class FreshInstallTests(UpgradeCase):
         self.assertEqual(system.commands[0][:4], ['winget', 'install', '--id', 'Mozilla.Thunderbird'])
         self.assertIn('/InstallDirectoryPath=', system.commands[-1])
         self.assertEqual(upgrade.installed(system).channel, 'release')
+
+
+class CompanionTests(UpgradeCase):
+    """ "Update Thunderbird", the answers, and when the question may come by itself."""
+
+    def run_commands(self, flow, *commands, mode='awake'):
+        import companion
+        from unittest import mock
+        spoken = []
+        with mock.patch.object(companion, 'new_thunderbird_upgrade', lambda hint='': flow), \
+             mock.patch.object(companion, 'speak', spoken.append), mock.patch.object(companion, 'speak_status', spoken.append), \
+             mock.patch.object(companion, 'TEXT_MODE', True), mock.patch.object(companion, 'APP_WINDOW', None), \
+             mock.patch.object(companion, 'APP', self.data), mock.patch.object(companion, 'THUNDERBIRD_SETUP', None), \
+             mock.patch.object(companion, 'account_setup', False):
+            for command in commands:
+                spoken.append('>' + command)
+                mode = companion.handle(command, mode)
+            return spoken, companion.THUNDERBIRD_SETUP
+
+    def test_update_thunderbird_asks_and_no_changes_nothing(self):
+        system = self.system()
+        spoken, pending = self.run_commands(self.flow(system), 'Update Thunderbird.', 'No, thanks.')
+        self.assertIn(upgrade.QUESTION, spoken)
+        self.assertIn(upgrade.NOT_NOW, spoken)
+        self.assertIsNone(pending)
+        self.assertEqual(system.__dict__.get('commands'), None)
+
+    def test_yes_updates(self):
+        system = self.system()
+        spoken, pending = self.run_commands(self.flow(system), 'update thunderbird', 'Yes, please.')
+        self.assertIn('Thunderbird is updated to version 155.0. All your email accounts are here, as before.', spoken)
+        self.assertIsNone(pending)
+
+    def test_another_command_is_not_an_answer_and_runs(self):
+        system = self.system()
+        spoken, pending = self.run_commands(self.flow(system), 'update thunderbird', 'what time is it')
+        self.assertIsNone(pending)
+        self.assertNotIn(upgrade.NOT_NOW, spoken)
+        after = spoken[spoken.index('>what time is it') + 1:]
+        self.assertTrue(after and 'Thunderbird' not in ' '.join(after), after)
+        self.assertEqual(system.__dict__.get('commands'), None)
+        self.assertFalse((self.data / upgrade.OFFER_FILE).exists(), 'not remembered as a no')
+
+    def test_up_to_date_says_so(self):
+        self.write_program('155.0', 'release')
+        spoken, pending = self.run_commands(self.flow(self.system()), 'update thunderbird')
+        self.assertIn('Thunderbird is up to date. It is version 155.0, and it works with Microsoft 365. It keeps itself up to date.',
+                      spoken)
+        self.assertIsNone(pending)
+
+    def test_the_question_comes_by_itself_only_at_a_sensible_time(self):
+        import companion
+        from unittest import mock
+        system = self.system()
+        relay = self.thunderbird
+        with mock.patch.object(companion, 'new_thunderbird_upgrade', lambda hint='': self.flow(system)), \
+             mock.patch.object(companion, 'THUNDERBIRD_SETUP', None), mock.patch.object(companion, 'ACCOUNT_ENTRY', None), \
+             mock.patch.object(companion, 'email_draft', None):
+            # Not from a background check (no command running), and not while writing.
+            self.assertIsNone(companion.thunderbird_update_offer(relay))
+            with mock.patch.object(companion, '_HANDLE_DEPTH', 1):
+                for mode in ('document', 'email_draft', 'note'):
+                    with mock.patch.object(companion.TRANSCRIPT, 'mode', mode):
+                        self.assertIsNone(companion.thunderbird_update_offer(relay), mode)
+                found = []
+                worker = threading.Thread(target=lambda: found.append(companion.thunderbird_update_offer(relay)))
+                worker.start(); worker.join()
+                self.assertEqual(found, [None], 'never from another thread')
+                with mock.patch.object(companion.TRANSCRIPT, 'mode', 'mailbox'):
+                    self.thunderbird.connected.set()
+                    self.assertIsNone(companion.thunderbird_update_offer(relay), 'Thunderbird already connected')
+                    self.thunderbird.connected.clear()
+                    flow, step = companion.thunderbird_update_offer(relay)
+                    self.assertEqual(step.question, 'upgrade')
+                    self.assertIsNone(companion.thunderbird_update_offer(relay), 'once a session')
+
+    def test_first_email_use_asks_instead_of_starting_thunderbird(self):
+        import companion
+        from unittest import mock
+        from mailbox_access import MailboxError
+        system = self.system()
+        flow = self.flow(system)
+        with mock.patch.object(companion, 'thunderbird_update_offer', lambda relay=None: (flow, flow.check())), \
+             mock.patch.object(companion, 'mail_relay', lambda: self.thunderbird), \
+             mock.patch.object(companion, 'THUNDERBIRD_SETUP', None), mock.patch.object(companion, 'CONFIRM_CHOICE', 'no'):
+            with self.assertRaises(MailboxError) as raised:
+                companion.thunderbird_starter(system)
+            self.assertEqual(str(raised.exception), upgrade.QUESTION)
+            self.assertEqual(companion.THUNDERBIRD_SETUP['question'], 'upgrade')
+        self.assertFalse(self.thunderbird.running, 'Thunderbird is not started before the answer')
 
 
 if __name__ == '__main__':

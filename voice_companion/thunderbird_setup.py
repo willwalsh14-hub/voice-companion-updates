@@ -85,8 +85,8 @@ OPENING_SITE = ('Opening thunderbird dot net in your web browser. Ask a helper t
                 'and add your email account there. ' + AGAIN)
 NOT_OPENING_SITE = 'Okay. Nothing was opened. When Thunderbird is installed, say add account and choose Thunderbird.'
 SITE_FAILED = 'The website did not open. Ask a helper to go to thunderbird dot net and install Thunderbird. ' + AGAIN
-TOO_OLD = ('Thunderbird on this computer is too old for Voice Companion. Ask a helper to update it to version 128 or newer. '
-           'In Thunderbird, open Help, then About Thunderbird. ' + AGAIN)
+TOO_OLD = ('Thunderbird on this computer is too old for Voice Companion. It needs version 128 or newer. '
+           'To update it, say update Thunderbird. ' + AGAIN)
 NO_ACCOUNT = ('Thunderbird is installed, but no email account is set up in it yet. A helper needs to add your email account '
               'in Thunderbird. Start Thunderbird now so they can do that? Say yes or no.')
 NO_ACCOUNT_OPEN = ('Thunderbird is open, but no email account is set up in it yet. Ask a helper to add your email account '
@@ -590,13 +590,15 @@ def _until(system, check, seconds):
 class Setup:
     """start() and answer() each return a Step: what to say, and the yes or no question now waiting."""
 
-    def __init__(self, system, package, connect, relay, progress, ready=None, adding=False):
+    def __init__(self, system, package, connect, relay, progress, ready=None, adding=False, upgrader=None):
         self.system, self.package = system, Path(package)
         self.connect, self.relay, self.progress = connect, relay, progress
         # ready(setup) -> Step: what happens once Thunderbird is connected (default: connect its accounts).
         self.ready, self.adding = ready, adding
         self.program = self.profile = None
         self.version = None    # Thunderbird's major version, when Windows records it
+        # upgrader() -> thunderbird_upgrade.Upgrade: offers the move to the Release channel (154 or newer).
+        self.upgrader, self.upgrade = upgrader, None
 
     def _step(self, message, question):
         """While adding an account, "say add account and choose Thunderbird" becomes "say add Thunderbird account"."""
@@ -649,11 +651,20 @@ class Setup:
     def start(self):
         self.program, version = find_program(self.system)
         self.version = major_version(version)
+        if self.program:
+            # The program folder's own version (application.ini) is right even when the registry lags.
+            from thunderbird_upgrade import installed
+            info = installed(self.system, self.program, version)
+            if info is not None and info.major is not None:
+                self.version = info.major
         if self._connected():
             return self._finish()
         if not self.program:
             return self._step(NOT_INSTALLED, 'install_program')
         major = self.version
+        offered = self._offer_upgrade(major is not None and major < MIN_VERSION)
+        if offered is not None:
+            return offered
         if major is not None and major < MIN_VERSION:
             return self._step(TOO_OLD, None)
         running = self.system.running()
@@ -727,7 +738,33 @@ class Setup:
             return self._step(START_FAILED, None)
         return self._wait(STARTING)
 
+    def _offer_upgrade(self, too_old):
+        """Too old for the add-on: always offer the update. Adding an account to ESR or a Thunderbird
+        before 154: offer it once (Microsoft 365 needs it), when it is due. None: go on as before."""
+        if self.upgrader is None or self.upgrade is not None or not (too_old or self.adding):
+            return None
+        try:
+            self.upgrade = self.upgrader()
+            step = self.upgrade.check() if too_old else self.upgrade.offer()
+        except Exception:
+            return None
+        return step if step is not None and step.question == 'upgrade' else None
+
+    def _after_upgrade(self, yes):
+        import thunderbird_upgrade
+        step = self.upgrade.answer('upgrade', yes)
+        updated = yes and not self.upgrade.report.get('problems') and \
+            thunderbird_upgrade.is_current(thunderbird_upgrade.installed(self.system))
+        if not (updated or not yes):
+            return step                    # it did not work: say so, and stop here
+        rest = self.start()
+        if self.version is not None and self.version < MIN_VERSION and not updated:
+            return rest
+        return Step((step.message + ' ' + rest.message).strip(), rest.question)
+
     def answer(self, question, yes):
+        if question == 'upgrade' and self.upgrade is not None:
+            return self._after_upgrade(yes)
         if question == 'install_program':
             if not yes: return self._step(NOT_INSTALLING, None)
             return self._install_everything()
