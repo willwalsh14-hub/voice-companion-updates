@@ -19,6 +19,9 @@
  *    else about Thunderbird's sign-in changes, and outside that time nothing is
  *    touched.
  *
+ *  - keepPromptsInView: while Voice Companion keeps Thunderbird off the taskbar, bring up
+ *    the window that holds any question Thunderbird asks, so it can be reached.
+ *
  *  - getNewMail: ask Thunderbird to check the mail server for one folder now, the
  *    same as when a person opens that folder, so Voice Companion lists the newest
  *    mail. Thunderbird's add-on interface has no way to ask for this.
@@ -330,10 +333,64 @@ function quitThunderbird() {
   return {quit: true};
 }
 
+// ---- Questions kept in view ("Hidden from the taskbar" in Voice Companion) --------------
+
+// Voice Companion keeps Thunderbird's minimized main window off the taskbar. A question
+// Thunderbird shows inside that window (a password prompt, an add-on permission) would then
+// be out of reach. While this is on, the window holding any question is brought up (never
+// given the keyboard: Voice Companion does that, and says what it is). Windows writing a
+// message, which the add-on opens itself to send, are left alone.
+const PROMPT_TOPICS = ['common-dialog-loaded', 'tabmodal-dialog-loaded', 'webextension-permission-prompt'];
+const QUIET_WINDOWS = ['msgcompose', 'alert:alert'];
+let promptWatch = null;
+
+function bringUp(win) {
+  if (win && win.windowState === win.STATE_MINIMIZED && typeof win.restore === 'function') win.restore();
+}
+
+function holdingWindow(subject) {
+  try {
+    const top = subject && subject.browsingContext && subject.browsingContext.topChromeWindow;
+    if (top) return top;
+  } catch (error) { /* a closed prompt */ }
+  return mailWindow();
+}
+
+function keepPromptsInView(on) {
+  if (on && !promptWatch) {
+    promptWatch = {
+      observe(subject, topic) {
+        try {
+          if (topic === 'domwindowopened') {
+            subject.addEventListener('load', () => {
+              try {
+                const type = subject.document.documentElement.getAttribute('windowtype') || '';
+                if (!QUIET_WINDOWS.includes(type)) bringUp(mailWindow());
+              } catch (error) { /* only a courtesy */ }
+            }, {once: true});
+            return;
+          }
+          bringUp(holdingWindow(topic === 'webextension-permission-prompt' ? null : subject));
+        } catch (error) { /* never stop Thunderbird */ }
+      },
+    };
+    for (const topic of PROMPT_TOPICS) Services.obs.addObserver(promptWatch, topic);
+    Services.ww.registerNotification(promptWatch);
+  } else if (!on && promptWatch) {
+    for (const topic of PROMPT_TOPICS) {
+      try { Services.obs.removeObserver(promptWatch, topic); } catch (error) { /* already gone */ }
+    }
+    try { Services.ww.unregisterNotification(promptWatch); } catch (error) { /* already gone */ }
+    promptWatch = null;
+  }
+  return {watching: Boolean(promptWatch)};
+}
+
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     armedUntil = 0; captured = null; pending = null;
     unhook();
+    keepPromptsInView(false);
   }
 
   getAPI(context) {
@@ -416,6 +473,10 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
 
         async outgoingServer(identityKey) {
           try { return outgoingServer(identityKey); } catch (error) { return null; }
+        },
+
+        async keepPromptsInView(on) {
+          try { return keepPromptsInView(Boolean(on)); } catch (error) { return {watching: false}; }
         },
 
         async quitThunderbird() {

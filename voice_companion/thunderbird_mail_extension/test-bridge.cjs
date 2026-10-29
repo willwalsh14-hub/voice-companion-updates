@@ -201,6 +201,7 @@ function load(api) {
   await mailCheckChecks();
   await experimentChecks();
   await quitChecks();
+  await promptChecks();
   await identityChecks();
   await outgoingServerChecks();
   await attachmentChecks();
@@ -442,6 +443,64 @@ async function quitChecks() {
   assert.deepEqual(plain((await bridge.handle({id: 4, method: 'quit', params: {}})).result), {quit: false, reason: 'unavailable'});
 }
 
+// "Hidden from the taskbar" (window_hiding.py): Thunderbird's main window is minimized and off
+// the taskbar. A question Thunderbird shows inside it (a password prompt) would then be out of
+// reach, so while this is on, the window holding any prompt is brought up. Windows then shows it,
+// and Voice Companion brings it to the front and says so.
+async function promptChecks() {
+  const app = {composing: 0, quits: []};
+  const main = fakeWindow();
+  const api = loadExperiment(main, fakeOAuth(), fakeMailServices(), app);
+  assert.equal(app.observers.size, 0, 'nothing is watched until asked');
+  assert.deepEqual(plain(await api.keepPromptsInView(true)), {watching: true});
+  assert.deepEqual([...app.observers.keys()].sort(), ['common-dialog-loaded', 'tabmodal-dialog-loaded', 'webextension-permission-prompt']);
+  assert.equal(app.watchers.size, 1);
+  // A password prompt inside the minimized main window: the main window comes up.
+  const prompt = {browsingContext: {topChromeWindow: main}};
+  app.observers.get('common-dialog-loaded').observe(prompt, 'common-dialog-loaded', null);
+  assert.equal(main.restored, 1);
+  assert.equal(main.focused, 0, 'Voice Companion gives it the keyboard, not Thunderbird');
+  // Already up: nothing more.
+  app.observers.get('tabmodal-dialog-loaded').observe(prompt, 'tabmodal-dialog-loaded', null);
+  assert.equal(main.restored, 1);
+  // An add-on permission question (not a window): the main window comes up.
+  main.windowState = main.STATE_MINIMIZED;
+  app.observers.get('webextension-permission-prompt').observe({wrappedJSObject: {}}, 'webextension-permission-prompt', null);
+  assert.equal(main.restored, 2);
+  // A new window of any kind but a message being written: the main window comes up too, so a
+  // window it owns is not kept hidden with it.
+  const opened = (type) => {
+    let loaded = null;
+    const win = {document: {documentElement: {getAttribute: name => (name === 'windowtype' ? type : null)}},
+      addEventListener: (event, handler) => { if (event === 'load') loaded = handler; }};
+    for (const watcher of app.watchers) watcher.observe(win, 'domwindowopened', null);
+    loaded();
+  };
+  main.windowState = main.STATE_MINIMIZED;
+  opened('msgcompose');
+  assert.equal(main.restored, 2, 'writing windows the add-on opens to send are not questions');
+  opened('mail:browserRequest');
+  assert.equal(main.restored, 3);
+  // A broken prompt never stops Thunderbird.
+  app.observers.get('common-dialog-loaded').observe({get browsingContext() { throw new Error('gone'); }}, 'common-dialog-loaded', null);
+  // Turned off: every observer is removed, and nothing is brought up any more.
+  assert.deepEqual(plain(await api.keepPromptsInView(false)), {watching: false});
+  assert.equal(app.observers.size, 0); assert.equal(app.watchers.size, 0);
+  assert.deepEqual(plain(await api.keepPromptsInView(true)), {watching: true});
+  api.shutdown();
+  assert.equal(app.observers.size, 0, 'the add-on stopping removes them too');
+  // The add-on's request: on and off, and "not available" with an older Experiment.
+  const {api: messenger} = createFakeMessenger();
+  const bridge = load(messenger);
+  const asked = [];
+  messenger.voiceCompanionSetup.keepPromptsInView = async on => { asked.push(on); return {watching: on}; };
+  assert.deepEqual(plain((await bridge.handle({id: 5, method: 'background', params: {on: true}})).result), {watching: true});
+  assert.deepEqual(plain((await bridge.handle({id: 6, method: 'background', params: {on: 'yes'}})).result), {watching: true});
+  assert.deepEqual(asked, [true, true]);
+  delete messenger.voiceCompanionSetup.keepPromptsInView;
+  assert.deepEqual(plain((await bridge.handle({id: 7, method: 'background', params: {on: true}})).result), {watching: false});
+}
+
 // Will, 0.2.163: his work account was added to Thunderbird twice. Voice Companion kept the first
 // identity, whose outgoing server still timed out; Thunderbird itself used the fixed one.
 async function identityChecks() {
@@ -675,7 +734,8 @@ function fakeOAuth() {
   return {OAuth2, ExternalRequest, InternalRequest, signIn};
 }
 
-function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app = {composing: 0, quits: []}) {
+function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app = {composing: 0, quits: [], observers: new Map(), watchers: new Set()}) {
+  app.observers = app.observers || new Map(); app.watchers = app.watchers || new Set();
   const modules = url => (url.includes('OAuth2') ? {OAuth2: oauth.OAuth2} : url.includes('MailServices') ? {MailServices: mail.MailServices}
     : {ExtensionCommon: {ExtensionAPI: class {}}});
   const context = vm.createContext({
@@ -683,7 +743,11 @@ function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app
     Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null),
                     getEnumerator: type => ({hasMoreElements: () => type === 'msgcompose' && app.composing > 0})},
                io: mail.io, tm: {dispatchToMainThread: run => setTimeout(run, 0)},
-               startup: {quit: how => app.quits.push(how)}},
+               startup: {quit: how => app.quits.push(how)},
+               // Thunderbird's notifications: observers by topic, and windows opening (Services.ww).
+               obs: {addObserver: (observer, topic) => app.observers.set(topic, observer),
+                     removeObserver: (observer, topic) => { if (app.observers.get(topic) === observer) app.observers.delete(topic); }},
+               ww: {registerNotification: observer => app.watchers.add(observer), unregisterNotification: observer => app.watchers.delete(observer)}},
     Ci: {nsIAppStartup: {eAttemptQuit: 2}, nsISmtpServer: {}},
     setTimeout, WeakRef, Symbol, Object, URL,
   });

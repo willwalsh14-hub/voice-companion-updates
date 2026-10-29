@@ -11,6 +11,16 @@ from menu_navigation import boundary_notice, next_match,menu_label
 def choice_feedback(value,index,count):
     return str(value)
 
+def settings_bottom(fields,step):
+    """The lowest pixel the settings use, laid out step pixels apart (as render does)."""
+    y=-17;bottom=0
+    for field in fields:
+        y+=step
+        if field.kind=='headers':y+=90;bottom=y+49
+        else:bottom=y+50
+    return bottom
+
+
 class NativeSettings:
     def __init__(self,session,announce,save,action,interrupt=None,preview=None,keyboard=None):
         self.last_notice=""
@@ -111,9 +121,15 @@ class NativeSettings:
                 close_button=control('BUTTON','Close settings',0x10000,595,530,100,32,2)
                 children.append(close_button);buttons[close_button]='Close settings.'
                 focus(category[0]);return
+            # Settings sit 62 pixels apart. A long category (Email gained a Thunderbird window
+            # setting in 0.2.174) packs them closer, so the last one never lands on the
+            # OK and Cancel row at 530 and stays reachable.
+            fields=self.session.current_fields()
+            step=62
+            while step>48 and settings_bottom(fields,step)>510:step-=2
             y=-17
-            for index,field in enumerate(self.session.current_fields()):
-                y+=62
+            for index,field in enumerate(fields):
+                y+=step
                 if field.kind not in ('check','action'):
                     children.append(control('STATIC',field.label,0,225,y,470,22,0))
                 value=self.session.values.get(field.key,False if field.kind=='check' else '')

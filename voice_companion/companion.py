@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.173-test'
+APP_VERSION = '0.2.174-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -122,6 +122,8 @@ try:
     PREFERENCES = DEFAULTS | json.loads((APP/'preferences.json').read_text(encoding='utf-8'))
 except (OSError,ValueError,TypeError): PREFERENCES = dict(DEFAULTS)
 VERBOSITY = PREFERENCES.get('verbosity','high')
+# Options, Web browser, "Guided Chrome window" (see web_assistant.CHROME_IN_BACKGROUND).
+__import__('web_assistant').CHROME_IN_BACKGROUND = PREFERENCES.get('browser_window') == 'Run the browser in the background'
 INPUT_MODE = 'mixed'
 VOICE_PICK_INDEX = None
 VOICE_PICK_ORIGINAL = None
@@ -416,6 +418,7 @@ def app_context(mode):
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
     if logical=='contacts':__import__('contacts_screen').context(sys.modules[__name__],context)
     if logical=='calendar':__import__('calendar_screen').context(sys.modules[__name__],context)
+    if logical=='youtube':__import__('youtube_screen').context(sys.modules[__name__],context)
     if logical=='draft_leave':__import__('draft_leave').context(sys.modules[__name__],context)
     if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
@@ -767,6 +770,7 @@ def menu_state(mode):
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
     if mode=='downloads':return __import__('download_screen').menu_state(sys.modules[__name__])
+    if mode=='youtube':return __import__('youtube_screen').menu_state(sys.modules[__name__])
     if mode=='contacts':return __import__('contacts_screen').menu_state(sys.modules[__name__])
     if mode=='attachments':return __import__('attachment_screen').menu_state(sys.modules[__name__])
     task_state=task_navigation().state(mode)
@@ -865,6 +869,8 @@ def clock_text_entry(mode, typed=False):
 
 def now_playing():
     """What plays now, for "What's playing?" and F3."""
+    video=__import__('youtube_screen').now_playing(sys.modules[__name__])  # a YouTube video, when it is what plays
+    if video:return video
     if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
     try:return MEDIA_HUB.now_playing()
     except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
@@ -875,17 +881,18 @@ def now_playing_asked(text,mode,typed=False):
     while something plays, and not on the Calendar, where it reads the event."""
     asked=__import__('media_hub').now_playing_request(text)
     if not asked or clock_text_entry(mode,typed):return False
-    return asked=='clear' or mode!='calendar' and MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind)
+    return asked=='clear' or mode!='calendar' and (MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind) or __import__('youtube_screen').active(sys.modules[__name__]))
 
 
 # Screens where "play" keeps its own meaning, or where words are typed.
-STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings',
+STATION_PLAY_ELSEWHERE=('media','youtube','web','browser_menu','search','document_name','task_input','podcast','help','settings',
                         'tutorial','sleep','exit_confirm','power_confirm','document_save','document_replace','update_offer','update_download')
 
 
 def station_asked(text,mode,typed=False):
     """The station name in "Play WGN" on a screen where words are commands, else None."""
     if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed) or NAMED_LIST or screen_question(mode):return None
+    if __import__('youtube_screen').claims(text):return None  # "Play cats on YouTube", "Play the next video"
     return __import__('media_hub').station_request(text)
 
 
@@ -993,6 +1000,7 @@ def _navigation_key(key,mode):
         return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
     from input_parity import screen_command,MAIL_HEADER_KEYS
     if mode=='mailbox' and key in MAIL_HEADER_KEYS:return MAIL_HEADER_KEYS[key]
+    if mode=='youtube':return __import__('youtube_screen').navigation_key(sys.modules[__name__],key)  # youtube_screen.py
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
@@ -1150,7 +1158,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.','draft_leave':'Back to the question about your email.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.','draft_leave':'Back to the question about your email.','youtube':'Back to YouTube.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -1204,7 +1212,7 @@ def save_options(values,mode):
     if mode=='sleep' and SLEEP_RETURN_MODE=='settings':SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
     elif mode=='settings':mode=SETTINGS_RETURN_MODE
     sync_app_context(mode,True)
-    speak('Options saved. '+options_return_notice(mode))
+    speak('Options saved. '+take_window_option_notice()+options_return_notice(mode))
     return mode
 
 def apply_document_defaults(document):
@@ -1909,6 +1917,48 @@ def web_dictation_feedback(result):
 CLOSE_BROWSER_COMMANDS=('close browser','close the browser','close browser window','close the browser window','close web browser',
                         'close web browser window','close the web browser','exit browser','exit web browser','quit browser')
 
+# Guided Chrome with or without its window (Options, Web browser, "Guided Chrome window").
+SHOW_BROWSER_COMMANDS=('show browser window','show the browser window','show browser','show the browser','show chrome',
+                       'show the chrome window','show chrome window')
+HIDE_BROWSER_COMMANDS=('hide browser window','hide the browser window','hide browser','hide the browser','hide chrome',
+                       'hide the chrome window','hide chrome window')
+
+WINDOW_OPTION_NOTICE=''
+THUNDERBIRD_HIDDEN_OPTION=('Thunderbird window: hidden from the taskbar. When Voice Companion starts Thunderbird for your email, '
+                           'it stays off the taskbar and out of Alt+Tab. Any window it opens, such as a sign-in, still comes to the front.')
+THUNDERBIRD_MINIMIZED_OPTION='Thunderbird window: minimized, as before.'
+CHROME_BACKGROUND_OPTION=('Guided Chrome window: run the browser in the background. Chrome opens with no window. '
+                          'A page that needs you, such as a sign-in or a check that you are a person, opens its window.')
+CHROME_SHOWN_OPTION='Guided Chrome window: show the browser window, as before.'
+
+
+def window_options_changed(before):
+    """Options saved: follow the Thunderbird and guided Chrome window options now. What to say."""
+    import web_assistant
+    said=[]
+    choice=PREFERENCES.get('thunderbird_window','Minimized, as before')
+    if choice!=before.get('thunderbird_window','Minimized, as before'):
+        try:apply_thunderbird_window()
+        except Exception:pass
+        said.append(THUNDERBIRD_HIDDEN_OPTION if choice=='Hidden from the taskbar' else THUNDERBIRD_MINIMIZED_OPTION)
+    choice=PREFERENCES.get('browser_window','Show the browser window, as before')
+    if choice!=before.get('browser_window','Show the browser window, as before'):
+        background=choice=='Run the browser in the background'
+        web_assistant.CHROME_IN_BACKGROUND=background
+        said.append(CHROME_BACKGROUND_OPTION if background else CHROME_SHOWN_OPTION)
+        if web_session is not None:
+            try:changed=web_session.window_option_changed()
+            except Exception:changed=''
+            if changed:said.append(changed)
+    return ' '.join(said)
+
+
+def take_window_option_notice():
+    global WINDOW_OPTION_NOTICE
+    notice,WINDOW_OPTION_NOTICE=WINDOW_OPTION_NOTICE,''
+    return notice+' ' if notice else ''
+
+
 def close_browser_window():
     """Close the browser even when Keep browser window open is on, then go to the main menu."""
     global MAIN_MENU_LEAD
@@ -2420,6 +2470,10 @@ def remember_thunderbird_identity(account, identity_id, account_id):
 def close_started_thunderbird(relay_source=None):
     """On exit: close Thunderbird if Voice Companion started it (never one the user opened).
     Thunderbird stays open while a message is being written."""
+    if THUNDERBIRD_WINDOWS is not None:
+        # Its taskbar place back first: a question as it closes ("unsent messages") can be found.
+        try: THUNDERBIRD_WINDOWS.stop()
+        except Exception: pass
     if not THUNDERBIRD_STARTED:
         return None
     relay = (relay_source or mail_relay)()
@@ -2445,10 +2499,77 @@ def quiet_thunderbird(relay):
         pass
     if APP_WINDOW is not None and hasattr(APP_WINDOW, 'reclaim_focus'):
         APP_WINDOW.reclaim_focus()
+    if PREFERENCES.get('thunderbird_window') == 'Hidden from the taskbar':
+        apply_thunderbird_window(relay)
+
+
+# Options, Email, "Thunderbird window" (window_hiding.py). "Minimized, as before" is the
+# default and runs none of this. "Hidden from the taskbar" keeps the main window of a
+# Thunderbird Voice Companion started off the taskbar, and shows every window it opens.
+THUNDERBIRD_WINDOWS = None
+
+
+def thunderbird_signing_in():
+    """An account is being added or signed in to: every Thunderbird window stays as before."""
+    return bool(THUNDERBIRD_WATCH is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_SIGN_IN
+                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird')
+
+
+def thunderbird_desktop():
+    """Windows' window calls, or None where there are none (tests replace this)."""
+    if os.name != 'nt':
+        return None
+    import window_hiding
+    return window_hiding.Win32Desktop()
+
+
+def apply_thunderbird_window(relay=None):
+    """Follow the Thunderbird window option now. Returns True when Thunderbird is hidden."""
+    global THUNDERBIRD_WINDOWS
+    hidden = PREFERENCES.get('thunderbird_window') == 'Hidden from the taskbar' and THUNDERBIRD_STARTED
+    if THUNDERBIRD_WINDOWS is None and hidden:
+        desktop = thunderbird_desktop()
+        if desktop is None:
+            return False
+        import window_hiding
+        THUNDERBIRD_WINDOWS = window_hiding.ThunderbirdWindows(desktop, thunderbird_signing_in).start()
+    if THUNDERBIRD_WINDOWS is None:
+        return False
+    if hidden:
+        THUNDERBIRD_WINDOWS.enable()
+    else:
+        THUNDERBIRD_WINDOWS.disable()
+    # The add-on brings up the window holding any question Thunderbird asks inside it, so the
+    # question is never left in a window that is off the taskbar (an older add-on cannot).
+    try:
+        (relay or mail_relay()).request('background', {'on': hidden}, timeout=10)
+    except Exception:
+        pass
+    return hidden
+
+
+def hide_thunderbird_window():
+    """ "Hide Thunderbird": minimized as before, or out of the way with the option on."""
+    import window_hiding
+    if THUNDERBIRD_WINDOWS is not None:
+        return THUNDERBIRD_WINDOWS.hide(THUNDERBIRD_STARTED)
+    try:
+        from thunderbird_mailbox import relay
+        relay().request('minimize', {}, timeout=10)
+    except Exception:
+        return window_hiding.NOT_RUNNING
+    return window_hiding.MINIMIZED_NOW
 
 
 def start_thunderbird_quietly():
     """At startup, when the selected account is a Thunderbird account: start Thunderbird so mail is ready. Silent."""
+    try:
+        # A Thunderbird left off the taskbar when Voice Companion last ended suddenly gets its place back.
+        desktop = thunderbird_desktop()
+        if desktop is not None:
+            __import__('window_hiding').restore_left_hidden(desktop)
+    except Exception:
+        pass
     try:
         selected = ProtectedStore(APP).selected()
     except Exception:
@@ -2632,6 +2753,9 @@ def thunderbird_setup_command(command, mode):
                            r'(?: in (chrome|embedded edge|edge webview2|webview2|webview 2))?', command)
     if sign_in and not (THUNDERBIRD_SIGN_IN or waiting):
         return None    # nothing from Thunderbird: the words mean something else here
+    if command in words.HIDE_COMMANDS:
+        speak(hide_thunderbird_window())
+        return mode
     if not (command in words.CONTINUE_COMMANDS + words.READ_COMMANDS + words.SHOW_COMMANDS + words.PASSWORD_COMMANDS or sign_in):
         return None
     if sign_in:
@@ -2640,6 +2764,9 @@ def thunderbird_setup_command(command, mode):
             return mode
         return open_thunderbird_sign_in(mode, sign_in[1])
     from thunderbird_bridge import current
+    if command in words.SHOW_COMMANDS and THUNDERBIRD_WINDOWS is not None:
+        speak(THUNDERBIRD_WINDOWS.show())   # "Hidden from the taskbar": its taskbar place back, and in front
+        return mode
     if command in words.SHOW_COMMANDS:
         try:
             from thunderbird_mailbox import relay
@@ -2750,6 +2877,9 @@ def stop_thunderbird_watch():
 def poll_thunderbird_watch(mode):
     """On the main loop: read Thunderbird's page, open its sign-in page, and say when the account is ready."""
     global THUNDERBIRD_WATCH, THUNDERBIRD_SIGN_IN, mail_session, pending_send
+    shown = THUNDERBIRD_WINDOWS.take_message() if THUNDERBIRD_WINDOWS is not None else None
+    if shown:
+        speak_status(shown)   # a Thunderbird window came up while it was out of the way
     waiting = THUNDERBIRD_WATCH
     if waiting is None:
         return mode
@@ -3413,6 +3543,8 @@ def _handle(text, mode, typed=False):
     if THUNDERBIRD_SETUP is not None:
         return thunderbird_setup_answer(command, mode)
     if command=='toggle audio':
+        video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
+        if video:speak(video);return mode
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
     # "What time is it?" works on every screen. Where people write, "Time." alone is text.
@@ -3474,6 +3606,9 @@ def _handle(text, mode, typed=False):
         # Email attachments: the Attachments list, attaching, saving (attachment_screen.py).
         attachment_result=__import__('attachment_screen').handle(sys.modules[__name__],text,mode,typed)
         if attachment_result is not None:return attachment_result
+        # The YouTube screen, and "YouTube" or "search YouTube for ..." from other screens (youtube_screen.py).
+        youtube_result=__import__('youtube_screen').handle(sys.modules[__name__],text,mode,typed)
+        if youtube_result is not None:return youtube_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
     # A whole command only; in a document, email or note these words are text.
@@ -3493,6 +3628,9 @@ def _handle(text, mode, typed=False):
         return open_browser_menu()
     if command in CLOSE_BROWSER_COMMANDS and web_session and (mode in ('web','browser_menu') or mode=='awake' and web_session.snapshot):
         return close_browser_window()
+    if command in SHOW_BROWSER_COMMANDS+HIDE_BROWSER_COMMANDS and web_session and (mode in ('web','browser_menu') or mode=='awake' and web_session.snapshot):
+        speak(web_session.browser_window(command in SHOW_BROWSER_COMMANDS))
+        return mode
     if mode == 'tutorial':
         if change_speech_setting(text) or use_synthesizer(text) or voice_menu(command):return mode
         control=speech_control(text)
@@ -5124,6 +5262,7 @@ def handle(text, mode, typed=False):
         result=open_email_link(url)
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
+        __import__('youtube_screen').main_menu(sys.modules[__name__])
         if MAIN_MENU_ANNOUNCED==announced:announce_main_menu()
     if result!=mode:DICTATION_ECHO.clear()
     if _HANDLE_DEPTH==0 and result!='exit':sync_app_context(result,result!=mode)
@@ -5407,6 +5546,7 @@ def main():
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
             mode = __import__('download_screen').poll(sys.modules[__name__], mode)
+            mode = __import__('youtube_screen').poll(sys.modules[__name__], mode)
             if CHROME_SETUP is not None:
                 mode = __import__('chrome_setup').poll(sys.modules[__name__],mode)
             update_audio_ducking()

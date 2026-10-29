@@ -191,7 +191,14 @@ class NativeSettingsTests(unittest.TestCase):
         self.panel.action_callback=actions.append
         self.panel.command('Email');self.wait(lambda:self.session.category_name()=='Email options')
         self.wait(lambda:bool(self.u.GetDlgItem(hwnd,205)))
-        for _ in range(7):self.panel.command('next setting')
+        # Move to the button by name, not by a count: a new Email option (0.2.174) moved it one step.
+        # One step at a time: wait for each step to be spoken before the next, or the
+        # commands queue up faster than the dialog answers and skip past the button.
+        for _ in range(20):
+            if any('Add an email account. Button.' in n for n in self.notices):break
+            before=len(self.notices);self.panel.command('next setting')
+            until=time.monotonic()+3
+            while len(self.notices)==before and time.monotonic()<until:time.sleep(.02)
         self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,205),0x100,0x0D,0)
         self.assertTrue(self.panel.closed.wait(5),self.notices)

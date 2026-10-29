@@ -99,6 +99,21 @@ pull requests. Update this file as items are finished.
       private diagnostic file (version, last commands, error) that a tester
       can attach to a bug report. No document or email contents.
 
+### YouTube screen (branch claude/youtube-player, not released yet)
+- [ ] **Will or a tester, on the real youtube.com:** the page reader was built
+      and tested on saved pages shaped like youtube.com, because the live site
+      cannot be reached from the build machine. Check on a real PC, signed out
+      in embedded Edge and signed in with Chrome: Home, search with a filter
+      (This week, Only channels), a channel, Watch later, History, playing a
+      video, K, J, L, C and R (captions), Q (quality), N (next video), ads
+      (said, and Skip offered when allowed), T, U and W (each asks first), and
+      reading comments. If a list says "YouTube changed its page", note which
+      list; the reader then needs the new page shape added (youtube_page.py).
+- [ ] **Will:** Google may refuse sign-in in guided Chrome too, because a
+      program controls it ("This browser or app may not be secure"). If it
+      does, sign in with your own Chrome and the extension instead; tell Claude
+      so the spoken offer can say that first.
+
 ## Should do before launch
 
 Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests:
@@ -153,3 +168,7 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.173: real window tests crashed with Tcl_AsyncDelete on Windows (October 28, 2026)
 - The new hint line widget was kept as self.hint_label and never released at close, so another thread freed it.
 - Fixed by releasing it on the window thread. test_window_widget_release now checks that every widget kept on the window is released.
+
+## 0.2.174: Thunderbird stand-in tests passed on a try branch but failed in the build (October 29, 2026)
+- The stand-in was a copy of sys.executable named thunderbird.exe. In the build, sys.executable is a virtual environment's python.exe, which only launches the real Python as another program, so the windows belonged to python.exe.
+- Fixed by copying sys._base_executable. Lesson: a try branch must run tests the way the build does (same Python, same order).

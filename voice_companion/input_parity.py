@@ -51,6 +51,8 @@ SCREEN_KEYS = {
     'reader_menu': {'F1': 'help with document reader'},
     'reader_recent': {'F1': 'help with document reader'},
     'local_media': {'F1': 'help with media player'},
+    # YouTube (youtube_screen.py): one key per action, most as on YouTube itself (K, J, L, M, C, F).
+    'youtube': dict(__import__('youtube_screen').KEYS),
     # Sentences in an open help topic (Up and Down move by paragraph).
     'help': {'Ctrl+Down': 'next sentence', 'Ctrl+Up': 'previous sentence'},
     'tutorial': {'Ctrl+R': 'repeat', 'F1': 'list commands', 'Ctrl+L': 'lesson list',
@@ -85,7 +87,7 @@ OLD_KEYS = {
 # F12 alone, or Insert+F12, says the time (twice quickly, the date) on every screen; see time_date.py.
 for _mode in ('awake', 'note', 'email_draft', 'mailbox', 'file_reader', 'web', 'browser_menu', 'media', 'word_processor',
               'recent_documents', 'media_menu', 'local_media', 'notepad_menu', 'reader_menu', 'reader_recent', 'help', 'tutorial', 'document', 'files', 'document_menu', 'downloads',
-              'contacts', 'calendar', 'attachments'):
+              'contacts', 'calendar', 'attachments', 'youtube'):
     SCREEN_KEYS.setdefault(_mode, {})['Ctrl+F12'] = 'go to sleep'
 # Keys that work only in one part of a screen.
 HELP_ARTICLE_ONLY = {'Ctrl+Down', 'Ctrl+Up'}
@@ -99,6 +101,8 @@ def chord(keysym, state):
     control, shift, alt = modifiers(state)  # Num Lock is not Alt on Windows.
     if alt or keysym in ('Control_L', 'Control_R', 'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R'):
         return None
+    # Some keyboards report the comma and period keys by their characters, not their names.
+    keysym = {',': 'comma', '.': 'period'}.get(keysym, keysym)
     name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior', 'space': 'Space'}.get(keysym, keysym)
     if control:
         return 'Ctrl+' + ('Shift+' if shift else '') + name
@@ -120,6 +124,8 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
     # takes letters to jump through its names.
     if mode == 'mailbox' and len(key) == 1 and (typed_text or context.get('menu_letters')):
         return None
+    if mode == 'youtube' and typed_text and not key.startswith(('Ctrl+', 'F')):
+        return None  # letters, Space and digits edit a typed command
     if mode == 'awake' and typed_text and key.startswith('Ctrl+'):
         return None  # Control+V pastes into a typed command; the main menu keys wait.
     if mode == 'downloads' and key == 'Space' and typed_text:

@@ -96,6 +96,18 @@
         ]
       },
       {
+        "name": "keepPromptsInView",
+        "type": "function",
+        "async": true,
+        "description": "While Voice Companion keeps Thunderbird off the taskbar, bring up the window holding any question Thunderbird asks. Resolves to {watching}.",
+        "parameters": [
+          {
+            "name": "on",
+            "type": "boolean"
+          }
+        ]
+      },
+      {
         "name": "quitThunderbird",
         "type": "function",
         "async": true,

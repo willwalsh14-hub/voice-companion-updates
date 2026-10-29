@@ -123,6 +123,9 @@ class ScreenMenuTests(unittest.TestCase):
             app.email_draft = draft
             attachment_screen.PENDING = None
             self.assertEqual(attachment_screen.open_for_draft(app, 'email_draft'), 'attachments')
+        elif mode == 'youtube':
+            import youtube_screen
+            youtube_screen.SCREEN = None   # a fresh screen, with no page and no video
         elif mode == 'file_reader':
             from document_reader import open_document
             from file_manager import FileManager
@@ -396,7 +399,8 @@ class ScreenMenuTests(unittest.TestCase):
         import re
         html = re.sub(r'</?kbd>', '', GUIDE_HTML.read_text(encoding='utf-8'))
         for mode, (title, groups) in MENUS.items():
-            sentence = 'Press Alt to open the ' + title[0].lower() + title[1:] + '.'
+            # "the email menu", but "the YouTube menu": a name keeps its capital letters.
+            sentence = 'Press Alt to open the ' + (title if title.startswith('YouTube') else title[0].lower() + title[1:]) + '.'
             with self.subTest(mode=mode):
                 self.assertIn(sentence, text)
                 self.assertIn(sentence, html)

@@ -55,6 +55,8 @@ CONTINUE_COMMANDS = ('continue in thunderbird', 'thunderbird continue', 'continu
 READ_COMMANDS = ('what does thunderbird say', 'read thunderbird', 'read the thunderbird page', 'read thunderbird page',
                  'thunderbird status', 'what is thunderbird doing')
 SHOW_COMMANDS = ('show thunderbird', 'go to thunderbird', 'bring thunderbird forward', 'show the thunderbird window')
+HIDE_COMMANDS = ('hide thunderbird', 'hide the thunderbird window', 'put thunderbird away', 'put thunderbird in the background',
+                 'send thunderbird to the background', 'minimize thunderbird')
 PASSWORD_COMMANDS = ('enter thunderbird password', 'type thunderbird password', 'thunderbird password',
                      'enter the thunderbird password', 'enter password for thunderbird')
 NOT_ADDING = 'Voice Companion is not adding a Thunderbird account right now. Say add Thunderbird account to start.'

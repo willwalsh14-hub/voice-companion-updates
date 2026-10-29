@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 671
-- Already had both ways: 536
-- Gaps found: 135
-- Gaps fixed (Added): 127
+- Actions inventoried: 726
+- Already had both ways: 571
+- Gaps found: 155
+- Gaps fixed (Added): 147
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1025,6 +1025,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: First letter, arrows, Enter
 - Status: Both
 
+### YouTube
+
+- Voice: "Youtube"
+- Keyboard: First letter, arrows, Enter
+- Status: Both
+
 ## Local Media
 
 ### Open a media file
@@ -1309,6 +1315,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Thunderbird window
+
+- Voice: "Set Thunderbird window to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Add an email account
 
 - Voice: "Add account"
@@ -1388,6 +1400,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Guided browser
 
 - Voice: "Set Guided browser to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Guided Chrome window
+
+- Voice: "Set Guided Chrome window to ..."
 - Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -2075,6 +2093,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 8, 2
 - Status: Added: Alt menu path
 
+### Show Thunderbird
+
+- Voice: "Show thunderbird"
+- Keyboard: Alt, 8, 3
+- Status: Added: Alt menu path
+
+### Hide Thunderbird
+
+- Voice: "Hide thunderbird"
+- Keyboard: Alt, 8, 4
+- Status: Added: Alt menu path
+
 ### Email help
 
 - Voice: "Help with email"
@@ -2084,7 +2114,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Main menu
 
 - Voice: "Main menu"
-- Keyboard: Alt, 8, 4
+- Keyboard: Alt, 8, 6
 - Status: Added: Alt menu path
 
 ## Alt menu, Email: Header and attachments
@@ -2445,6 +2475,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Set up chrome"
 - Keyboard: Alt, 4, 2
+- Status: Added: Alt menu path
+
+### Show browser window
+
+- Voice: "Show browser window"
+- Keyboard: Alt, 4, 3
+- Status: Added: Alt menu path
+
+### Hide browser window
+
+- Voice: "Hide browser window"
+- Keyboard: Alt, 4, 4
 - Status: Added: Alt menu path
 
 ### Web help
@@ -2966,6 +3008,310 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Help with document reader"
 - Keyboard: F1
 - Status: Both
+
+## Alt menu, YouTube: Play
+
+### Play or pause
+
+- Voice: "Play or pause video"
+- Keyboard: Space
+- Status: Both
+
+### Skip back
+
+- Voice: "Skip back"
+- Keyboard: J
+- Status: Both
+
+### Skip forward
+
+- Voice: "Skip forward"
+- Keyboard: L
+- Status: Both
+
+### Restart the video
+
+- Voice: "Restart video"
+- Keyboard: 0
+- Status: Both
+
+### Next video
+
+- Voice: "Next video"
+- Keyboard: N
+- Status: Both
+
+### Previous video
+
+- Voice: "Previous video"
+- Keyboard: P
+- Status: Both
+
+### Skip ad
+
+- Voice: "Skip ad"
+- Keyboard: S
+- Status: Both
+
+### Stop video
+
+- Voice: "Stop video"
+- Keyboard: Alt, 1, 8
+- Status: Added: Alt menu path
+
+### Skip amount
+
+- Voice: "Skip amount ..."
+- Keyboard: Alt, 1, 9
+- Status: Added: Alt menu path
+
+## Alt menu, YouTube: Sound and speed
+
+### Volume up
+
+- Voice: "Video volume up"
+- Keyboard: Ctrl+Up
+- Status: Both
+
+### Volume down
+
+- Voice: "Video volume down"
+- Keyboard: Ctrl+Down
+- Status: Both
+
+### Sound on or off
+
+- Voice: "Mute or unmute"
+- Keyboard: M
+- Status: Both
+
+### Slower
+
+- Voice: "Slower video"
+- Keyboard: comma
+- Status: Both
+
+### Faster
+
+- Voice: "Faster video"
+- Keyboard: period
+- Status: Both
+
+### Normal speed
+
+- Voice: "Normal speed"
+- Keyboard: Alt, 2, 6
+- Status: Added: Alt menu path
+
+## Alt menu, YouTube: Captions and picture
+
+### Captions on or off
+
+- Voice: "Captions on or off"
+- Keyboard: C
+- Status: Both
+
+### Read the caption
+
+- Voice: "Read caption"
+- Keyboard: R
+- Status: Both
+
+### Video quality
+
+- Voice: "Video quality"
+- Keyboard: Q
+- Status: Both
+
+### Video full screen
+
+- Voice: "Video full screen"
+- Keyboard: F
+- Status: Both
+
+### Autoplay on or off
+
+- Voice: "Autoplay on or off"
+- Keyboard: A
+- Status: Both
+
+## Alt menu, YouTube: Chapters
+
+### List chapters
+
+- Voice: "List chapters"
+- Keyboard: H
+- Status: Both
+
+### Next chapter
+
+- Voice: "Next chapter"
+- Keyboard: Ctrl+Right
+- Status: Both
+
+### Previous chapter
+
+- Voice: "Previous chapter"
+- Keyboard: Ctrl+Left
+- Status: Both
+
+## Alt menu, YouTube: This video
+
+### Video details
+
+- Voice: "Video details"
+- Keyboard: I
+- Status: Both
+
+### Description
+
+- Voice: "Read description"
+- Keyboard: D
+- Status: Both
+
+### Comments
+
+- Voice: "Read comments"
+- Keyboard: O
+- Status: Both
+
+### Up next
+
+- Voice: "Up next"
+- Keyboard: X
+- Status: Both
+
+### Go to channel
+
+- Voice: "Go to channel"
+- Keyboard: G
+- Status: Both
+
+### Open in browser
+
+- Voice: "Open in browser"
+- Keyboard: Alt, 5, 6
+- Status: Added: Alt menu path
+
+## Alt menu, YouTube: Your account
+
+### Like
+
+- Voice: "Like video"
+- Keyboard: T
+- Status: Both
+
+### Subscribe or unsubscribe
+
+- Voice: "Subscribe or unsubscribe"
+- Keyboard: U
+- Status: Both
+
+### Save to Watch later
+
+- Voice: "Save to watch later"
+- Keyboard: Alt, 6, 3
+- Status: Added: Alt menu path
+
+### Save to a playlist
+
+- Voice: "Save video"
+- Keyboard: W
+- Status: Both
+
+### Add a comment
+
+- Voice: "Post comment ..."
+- Keyboard: Alt, 6, 5
+- Status: Added: Alt menu path
+
+### Sign in
+
+- Voice: "Sign in"
+- Keyboard: Alt, 6, 6
+- Status: Added: Alt menu path
+
+## Alt menu, YouTube: Go to
+
+### Home
+
+- Voice: "Youtube home"
+- Keyboard: Alt, 7, 1
+- Status: Added: Alt menu path
+
+### Search
+
+- Voice: "Search youtube"
+- Keyboard: Ctrl+F
+- Status: Both
+
+### New from subscriptions
+
+- Voice: "Subscriptions"
+- Keyboard: Alt, 7, 3
+- Status: Added: Alt menu path
+
+### Subscribed channels
+
+- Voice: "My subscriptions"
+- Keyboard: Alt, 7, 4
+- Status: Added: Alt menu path
+
+### History
+
+- Voice: "History"
+- Keyboard: Alt, 7, 5
+- Status: Added: Alt menu path
+
+### Watch later
+
+- Voice: "Watch later"
+- Keyboard: Alt, 7, 6
+- Status: Added: Alt menu path
+
+### Liked videos
+
+- Voice: "Liked videos"
+- Keyboard: Alt, 7, 7
+- Status: Added: Alt menu path
+
+### Your playlists
+
+- Voice: "My playlists"
+- Keyboard: Alt, 7, 8
+- Status: Added: Alt menu path
+
+### Load the list again
+
+- Voice: "Refresh youtube"
+- Keyboard: F5
+- Status: Both
+
+## Alt menu, YouTube: Leave and help
+
+### Go back
+
+- Voice: "Go back"
+- Keyboard: Escape
+- Status: Both
+
+### YouTube help
+
+- Voice: "Help with youtube"
+- Keyboard: F1
+- Status: Both
+
+### Media menu
+
+- Voice: "Media menu"
+- Keyboard: Alt, 8, 3
+- Status: Added: Alt menu path
+
+### Main menu
+
+- Voice: "Main menu"
+- Keyboard: Alt, 8, 4
+- Status: Added: Alt menu path
 
 ## Browser menu
 
