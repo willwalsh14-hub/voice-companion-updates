@@ -149,6 +149,26 @@ class SwitchingTests(unittest.TestCase):
                   'controls': [{'key': '2', 'role': 'field', 'label': 'Photo', 'type': 'file', 'tag': 'input', 'href': ''}]}
         self.assertEqual(window_need(upload), 'file')
 
+    def test_a_sign_in_code_or_an_id_date_is_not_a_payment(self):
+        """A sign-in step that asks for the "Security code" sent by text, or a form that asks for
+        an ID's "Expiration date", was called a card payment, and Chrome was started again, which
+        can end the sign-in."""
+        code = {'title': 'Verify', 'text': 'We sent a code.', 'url': 'https://login.example/verify', 'controls': [
+            {'key': '1', 'role': 'field', 'label': 'Security code', 'type': 'text', 'tag': 'input', 'href': '', 'autocomplete': 'one-time-code'}]}
+        license = {'title': 'Your ID', 'text': 'Tell us about your ID.', 'url': 'https://forms.example/id', 'controls': [
+            {'key': '1', 'role': 'field', 'label': 'Expiration date', 'type': 'date', 'tag': 'input', 'href': ''}]}
+        self.assertIsNone(window_need(code))
+        self.assertIsNone(window_need(license))
+        checkout = {'title': 'Checkout', 'text': 'Pay.', 'url': 'https://shop.example/pay', 'controls': [
+            {'key': '1', 'role': 'field', 'label': 'Card number', 'type': 'text', 'tag': 'input', 'href': ''},
+            {'key': '2', 'role': 'field', 'label': 'Security code', 'type': 'text', 'tag': 'input', 'href': ''}]}
+        self.assertEqual(window_need(checkout), 'payment')
+        self.assertEqual(window_need({'url': 'https://shop.example/pay', 'controls': [
+            {'label': 'CVV', 'type': 'text'}]}), 'payment')
+        # A site may put a section name first: "section-checkout cc-number".
+        self.assertEqual(window_need({'url': 'https://shop.example/pay', 'controls': [
+            {'label': 'Number', 'type': 'text', 'autocomplete': 'section-checkout billing cc-number'}]}), 'payment')
+
     def test_show_and_hide_keep_the_page_and_reading_place(self):
         self.session.open('https://news.example/')
         self.session.reading.position = 11

@@ -311,7 +311,9 @@ WINDOW_SWITCHING = 'Opening Chrome again in the same place. This takes a moment.
 # A button opened a box for choosing a file, but Chrome runs in the background with no window to show it.
 FILE_BOX_HIDDEN = ('This button opens a box for choosing a file. That box needs Chrome\'s window. '
                    'Say show browser window, then choose the button again.')
-PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc|security code|expiration date|expiry date)\b')
+# Only words that name a card. "Security code" is also the code a sign-in sends by text,
+# and "Expiration date" is also asked for an ID; a card page has a card number too.
+PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc|cvv2|csc)\b')
 
 
 def window_need(snapshot):
@@ -324,7 +326,7 @@ def window_need(snapshot):
     if snapshot.get('challenge'):
         return 'check'            # CAPTCHA and "are you human" pages often refuse headless browsers
     for control in snapshot.get('controls') or ():
-        if str(control.get('autocomplete') or '').lower().startswith('cc-') or PAYMENT_LABEL.search(str(control.get('label') or '')):
+        if any(token.startswith('cc-') for token in str(control.get('autocomplete') or '').lower().split()) or PAYMENT_LABEL.search(str(control.get('label') or '')):
             return 'payment'
     if any(control.get('type') == 'file' for control in snapshot.get('controls') or ()):
         return 'file'             # choosing a file opens Windows' own file box, which needs a window
