@@ -1013,6 +1013,9 @@ class MailSession:
                     return 'Nothing is awaiting that confirmation.'
                 _, ids, destination = self.pending
                 self.pending = None
+                # The message you were on: afterwards you are on the one that took its place.
+                place = (self.current if self.current and 1 <= self.current <= len(self.rows) and
+                         ids == [self.rows[self.current - 1]['id']] else None)
                 self._clear_marks()
                 try:
                     if action == 'move':
@@ -1037,6 +1040,10 @@ class MailSession:
                     refreshed = self.list_messages(self.page_cursor)
                     if not self.rows and self.previous_cursors:
                         refreshed = self.list_messages(self.previous_cursors.pop())
+                    elif place and place > 1 and self.rows:
+                        first = self._summary(1)
+                        self.current = min(place, len(self.rows))
+                        refreshed = refreshed.replace(first, self._summary(self.current), 1)
                     return result + ' ' + refreshed
                 except Exception:
                     self.rows = []

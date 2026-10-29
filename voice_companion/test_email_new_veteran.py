@@ -171,6 +171,53 @@ class DraftFieldTests(CompanionCase):
         self.assertEqual([p.text for p in draft.paragraphs if p.text], ['Sounds good. Subject is on my mind too.'])
 
 
+class ShrinkingInbox(FakeClient):
+    ids = ['1', '2', '3']
+    def list_messages(self, folder, cursor=None, limit=10):
+        return ([{'id': n, 'from': 'Person %s <p%s@example.com>' % (n, n), 'subject': 'Subject ' + n,
+                  'date': 'October 2, 2026'} for n in self.ids], None)
+    def trash(self, ids, folder=None):
+        type(self).ids = [n for n in self.ids if n not in ids]
+    def move(self, ids, source, destination):
+        self.trash(ids)
+
+
+class DeleteKeepsYourPlaceTests(unittest.TestCase):
+    def session(self):
+        ShrinkingInbox.ids = ['1', '2', '3']
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        p = patch('mail_voice.account_token', return_value=('me@example.com', 'token')); p.start(); self.addCleanup(p.stop)
+        session = MailSession('thunderbird', folder.name, ShrinkingInbox)
+        session.process('list messages')
+        return session
+
+    def test_deleting_the_message_you_are_on_goes_to_the_next_one(self):
+        # Before: after deleting message 2 you were back on message 1.
+        session = self.session()
+        session.process('next message')
+        session.process('open current message')
+        session.process('delete')
+        said = session.process('yes')
+        self.assertEqual(said, '1 message moved to Trash or Deleted Items. Inbox. Person 3. Subject 3. October 2, 2026. 2 of 2.')
+        self.assertEqual(session.current, 2)
+        session.process('delete')
+        said = session.process('yes')
+        self.assertTrue(said.endswith('Inbox. Person 1. Subject 1. October 2, 2026. 1 of 1.'), said)
+
+    def test_moving_the_message_you_are_on_goes_to_the_next_one(self):
+        session = self.session()
+        session.process('next message')
+        session.process('move to Receipts')
+        self.assertTrue(session.process('yes').endswith('Person 3. Subject 3. October 2, 2026. 2 of 2.'))
+
+    def test_deleting_marked_messages_starts_at_the_top(self):
+        session = self.session()
+        session.process('mark')
+        session.process('last message')
+        session.process('delete')
+        self.assertTrue(session.process('yes').endswith('Person 2. Subject 2. October 2, 2026. 1 of 2.'))
+
+
 class InboxWordsTests(CompanionCase):
     def setUp(self):
         super().setUp()
