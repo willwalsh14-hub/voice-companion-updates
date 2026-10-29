@@ -269,6 +269,48 @@ STAND_IN_BOX="e=>!e.isContentEditable&&!e.matches('input,textarea,select')&&!e.q
 STAND_IN_TARGET="()=>{let a=document.activeElement;while(a?.shadowRoot?.activeElement)a=a.shadowRoot.activeElement;if(!a||!(a.isContentEditable||a.matches('input,textarea')))return false;for(const old of document.querySelectorAll('[data-voice-companion-typing]'))old.removeAttribute('data-voice-companion-typing');a.setAttribute('data-voice-companion-typing','1');return true;}"
 
 
+# Options, Web browser, "Guided Chrome window" (companion sets this from the preference).
+# False, "Show the browser window, as before", is the default: guided Chrome starts as it
+# always did. True, "Run the browser in the background": guided Chrome runs headless, with
+# no window, and opens a real window only when a page needs a person (window_need).
+CHROME_IN_BACKGROUND = False
+# Headless Chrome is started muted by Playwright; in the background it must still play
+# radio, podcasts and video aloud.
+BACKGROUND_LAUNCH = {'ignore_default_args': ['--mute-audio']}
+WINDOW_SHOWN = {
+    'sign-in': 'Google sign-in needs a browser window, so Chrome now shows its window.',
+    'check': 'This site wants to check that you are a person, so Chrome now shows its window.',
+    'payment': 'This page asks for a card or payment, so Chrome now shows its window in case a helper needs to look.',
+    'asked': 'Chrome now shows its window.'}
+WINDOW_BACK = (' It is in front. Press Alt+Tab to come back to Voice Companion. '
+               'To run Chrome in the background again, say hide browser window.')
+WINDOW_HIDDEN = 'Chrome runs in the background again, with no window.'
+WINDOW_ALREADY_SHOWN = 'Chrome is in front. Press Alt+Tab to come back to Voice Companion.'
+WINDOW_ALREADY_HIDDEN = 'Chrome is already running in the background.'
+WINDOW_STILL_NEEDED = 'This page still needs Chrome\'s window, so it stays open. Say hide browser window after you leave this page.'
+WINDOW_AS_BEFORE = ('Chrome is set to show its window, as before. To run it in the background, open Options, '
+                    'Web browser, and choose Run the browser in the background.')
+WINDOW_NOT_CHROME = 'Only guided Chrome can run in the background. Embedded Edge is part of the Voice Companion window.'
+WINDOW_FAILED = 'Chrome could not open again. Say open website to try again.'
+WINDOW_SWITCHING = 'Opening Chrome again in the same place. This takes a moment.'
+PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc|security code|expiration date|expiry date)\b')
+
+
+def window_need(snapshot):
+    """Why a page needs guided Chrome's real window: 'sign-in', 'check', 'payment', or None."""
+    if not snapshot:
+        return None
+    host = (urlsplit(str(snapshot.get('url') or '')).hostname or '').lower()
+    if host == 'accounts.google.com':
+        return 'sign-in'          # Google refuses sign-in in a browser with no window
+    if snapshot.get('challenge'):
+        return 'check'            # CAPTCHA and "are you human" pages often refuse headless browsers
+    for control in snapshot.get('controls') or ():
+        if str(control.get('autocomplete') or '').lower().startswith('cc-') or PAYMENT_LABEL.search(str(control.get('label') or '')):
+            return 'payment'
+    return None
+
+
 class BrowserBackend:
     """Playwright uses a dedicated profile, never the user's normal one.
 
@@ -284,6 +326,15 @@ class BrowserBackend:
         if self.browser not in self.BROWSERS and not getattr(self, 'regular', False):
             raise WebError(BROWSER_CHOICES)
         self.playwright = self.context = self.page = None
+        # Why guided Chrome shows its window although it runs in the background (WINDOW_SHOWN), or None.
+        self.window_reason = None
+
+    def guided_chrome(self):
+        return self.browser == 'chrome' and not getattr(self, 'regular', False) and not getattr(self, '_embedded', None)
+
+    def runs_hidden(self):
+        """Guided Chrome is running, or will start, with no window."""
+        return self.guided_chrome() and CHROME_IN_BACKGROUND and getattr(self, 'window_reason', None) is None
 
     def start(self):
         if self.browser=='webview2':
@@ -298,9 +349,16 @@ class BrowserBackend:
             from browser_process import browser_process_environment
             import shared_playwright
             self.playwright = shared_playwright.start(self.folder)
+            hidden = not self.headless and self.runs_hidden()
             with browser_process_environment(self.folder):
-                self.context = self.playwright.chromium.launch_persistent_context(
-                    str(self.folder), headless=self.headless, accept_downloads=False, channel='chrome')
+                if hidden:
+                    self.context = self.playwright.chromium.launch_persistent_context(
+                        str(self.folder), headless=True, accept_downloads=False, channel='chrome', **BACKGROUND_LAUNCH)
+                else:
+                    self.context = self.playwright.chromium.launch_persistent_context(
+                        str(self.folder), headless=self.headless, accept_downloads=False, channel='chrome')
+            self.launched_hidden = hidden
+            if hidden: self._plain_identity()
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.set_default_timeout(10000)
         except Exception as exc:
@@ -310,6 +368,43 @@ class BrowserBackend:
             except OSError:pass
             raise WebError('The guided ' + browser_name(self.browser) +
                            ' browser could not start. If Chrome is not installed, say set up Chrome.') from exc
+
+    def _plain_identity(self):
+        """Headless Chrome names itself HeadlessChrome to websites, and many then refuse the
+        page. In the background it gives its usual name, as Chrome with a window does."""
+        try:
+            page = self.context.pages[0] if self.context.pages else self.context.new_page()
+            agent = page.evaluate('navigator.userAgent')
+        except Exception:
+            return
+        if 'HeadlessChrome' not in str(agent):
+            return
+        plain = str(agent).replace('HeadlessChrome', 'Chrome')
+        try:
+            self.context.set_extra_http_headers({'User-Agent': plain})
+            self.context.add_init_script(
+                "(()=>{const a=" + json.dumps(plain) + ";Object.defineProperty(Navigator.prototype,'userAgent',{get:()=>a,configurable:true});"
+                "Object.defineProperty(Navigator.prototype,'appVersion',{get:()=>a.replace(/^Mozilla\\//,''),configurable:true});"
+                "const d=navigator.userAgentData;if(d&&d.brands){const b=d.brands.map(x=>({brand:x.brand.replace('HeadlessChrome','Google Chrome'),version:x.version}));"
+                "Object.defineProperty(Object.getPrototypeOf(d),'brands',{get:()=>b,configurable:true});}})();")
+        except Exception:
+            pass
+
+    def bring_window_forward(self):
+        """Guided Chrome's window in front, with the keyboard. Voice Companion has the
+        keyboard now, so it lets Chrome take it (Windows allows only that)."""
+        import sys
+        if sys.platform == 'win32':
+            try:
+                import ctypes
+                ctypes.windll.user32.AllowSetForegroundWindow(-1)   # ASFW_ANY
+            except (AttributeError, OSError):
+                pass
+        try:
+            self.page.bring_to_front()
+            return True
+        except Exception:
+            return False
 
     def close(self):
         if getattr(self,'_embedded',None):
@@ -1892,8 +1987,74 @@ class WebSession:
             else:
                 self.close_after_downloads=False
                 self.backend.close()
+                # Guided Chrome opens in the background again next time ("Run the browser in the background").
+                if hasattr(self.backend,'window_reason'):self.backend.window_reason=None
             self.snapshot=None;self.browse=None;self.document_state=None
             self.reading.set_text('',reset=True)
+
+    def _show_window(self,reason,read=None):
+        """Guided Chrome runs in the background, and a page needs its window (or the user asked):
+        start it again with a window, on the same page and at the same place. What to say."""
+        return self._relaunch(reason,read,WINDOW_SHOWN[reason]+WINDOW_BACK)
+
+    def _relaunch(self,reason,read,said):
+        backend=self.backend
+        url=(self.snapshot or {}).get('url','')
+        if self.snapshot:self._remember_place()
+        self.progress(WINDOW_SWITCHING)
+        backend.window_reason=reason
+        backend.close()
+        if not url or not self.address_allowed(url):
+            return said
+        try:
+            backend.goto(url)
+            result=self._refresh_page(False if read is None else read)
+        except Exception:
+            self.snapshot=None
+            return WINDOW_FAILED
+        place=self._restore_place()
+        if reason is not None:backend.bring_window_forward()
+        return said+' '+result+((' '+place) if place else '')
+
+    def window_option_changed(self):
+        """The Guided Chrome window option changed: an open guided Chrome starts again the new
+        way now, on the same page and at the same place. What to say, or ''."""
+        backend=self.backend
+        if not getattr(backend,'guided_chrome',lambda:False)():return ''
+        backend.window_reason=None
+        if getattr(backend,'page',None) is None or not self.snapshot:return ''
+        if bool(getattr(backend,'launched_hidden',False))==bool(CHROME_IN_BACKGROUND):return ''
+        need=window_need(self.snapshot) if CHROME_IN_BACKGROUND else None
+        if need:
+            backend.window_reason=need
+            return 'This page needs Chrome\'s window, so it stays open. Say hide browser window after you leave this page.'
+        result=self._relaunch(None,False,'')
+        return WINDOW_FAILED if result==WINDOW_FAILED else 'Chrome opened again the new way, on the same page.'
+
+    def browser_window(self,show):
+        """ "Show browser window" and "hide browser window". Returns what to say."""
+        backend=self.backend
+        if not getattr(backend,'guided_chrome',lambda:False)():
+            return WINDOW_NOT_CHROME
+        if not CHROME_IN_BACKGROUND:
+            if show and self.snapshot and backend.bring_window_forward():return WINDOW_ALREADY_SHOWN
+            return WINDOW_AS_BEFORE
+        if show:
+            if backend.window_reason is not None:
+                backend.bring_window_forward()
+                return WINDOW_ALREADY_SHOWN
+            if not self.snapshot:
+                backend.window_reason='asked'
+                return WINDOW_SHOWN['asked']+' It opens when you open a website.'
+            return self._show_window('asked')
+        if backend.window_reason is None:
+            return WINDOW_ALREADY_HIDDEN
+        if window_need(self.snapshot):
+            return WINDOW_STILL_NEEDED
+        if not self.snapshot:
+            backend.window_reason=None
+            return WINDOW_HIDDEN
+        return self._relaunch(None,None,WINDOW_HIDDEN)
 
     def resume(self):
         if not self.snapshot or not hasattr(self.backend,'refocus') or not self.backend.refocus():
@@ -2000,6 +2161,8 @@ class WebSession:
         if read is None and self.app_mode:read=False
         self.slider_field=None
         result=self._refresh_page(read,preserve,wait)
+        need=window_need(self.snapshot) if self.snapshot and getattr(self.backend,'runs_hidden',lambda:False)() else None
+        if need:result=self._show_window(need,read)
         if self.app_mode!=self.mode_announced and self.snapshot:
             # Each site keeps its own mode; say which one this page uses.
             self.mode_announced=self.app_mode

@@ -94,6 +94,7 @@ def apply_settings(m,values):
     if (values.get('api_key') or values['engine']=='ai') and not values.get('ai_consent'):raise ValueError('Confirm permission to send narration text to OpenAI.')
     if values['radio_source']=='radio sure' and not read(m.APP/'radiosure-stations.json',[]):raise ValueError('Import a RadioSure station database first.')
     session=SettingsSession(*snapshot(m));session.values.update(values)
+    windows_before={key:m.PREFERENCES.get(key,DEFAULTS[key]) for key in ('thunderbird_window','browser_window')}
     # Validate every populated field before any preference is applied.
     from settings_model import CATEGORIES,fields
     for category in CATEGORIES:
@@ -126,6 +127,7 @@ def apply_settings(m,values):
     for key in DEFAULTS:m.PREFERENCES[key]=values[key]
     m.PREFERENCES['ai_consent']=bool(values.get('ai_consent'))
     save_preferences(m);m.save_speech_settings()
+    if hasattr(m,'window_options_changed'):m.WINDOW_OPTION_NOTICE=m.window_options_changed(windows_before)
     if hasattr(m,'apply_transcript'):m.apply_transcript()   # Startup and exit options: the speech transcript
     m.APP.mkdir(parents=True,exist_ok=True)
     from storage import write_text_atomic

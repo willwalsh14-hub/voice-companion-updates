@@ -68,6 +68,8 @@ MENUS = {
         ('Options and help', [
             ('Email options', '', '@options:Email'),
             ('Messages per page', '', 'email list size'),
+            ('Show Thunderbird', '', 'show thunderbird'),
+            ('Hide Thunderbird', '', 'hide thunderbird'),
             ('Email help', 'F1', 'help with email'),
             ('Main menu', '', 'main menu')]),
         # Last, so the Alt paths people learned for the groups above stay the same. A menu has
@@ -148,6 +150,8 @@ MENUS = {
         ('Options and help', [
             ('Web browser options', '', '@options:Web browser'),
             ('Set up Chrome', '', 'set up chrome'),
+            ('Show browser window', '', 'show browser window'),
+            ('Hide browser window', '', 'hide browser window'),
             ('Web help', 'F1', 'help with web')]),
     ]),
     'downloads': ('Downloads menu', [

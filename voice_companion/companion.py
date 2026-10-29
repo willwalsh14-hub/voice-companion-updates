@@ -122,6 +122,8 @@ try:
     PREFERENCES = DEFAULTS | json.loads((APP/'preferences.json').read_text(encoding='utf-8'))
 except (OSError,ValueError,TypeError): PREFERENCES = dict(DEFAULTS)
 VERBOSITY = PREFERENCES.get('verbosity','high')
+# Options, Web browser, "Guided Chrome window" (see web_assistant.CHROME_IN_BACKGROUND).
+__import__('web_assistant').CHROME_IN_BACKGROUND = PREFERENCES.get('browser_window') == 'Run the browser in the background'
 INPUT_MODE = 'mixed'
 VOICE_PICK_INDEX = None
 VOICE_PICK_ORIGINAL = None
@@ -1204,7 +1206,7 @@ def save_options(values,mode):
     if mode=='sleep' and SLEEP_RETURN_MODE=='settings':SLEEP_RETURN_MODE=SETTINGS_RETURN_MODE
     elif mode=='settings':mode=SETTINGS_RETURN_MODE
     sync_app_context(mode,True)
-    speak('Options saved. '+options_return_notice(mode))
+    speak('Options saved. '+take_window_option_notice()+options_return_notice(mode))
     return mode
 
 def apply_document_defaults(document):
@@ -1909,6 +1911,48 @@ def web_dictation_feedback(result):
 CLOSE_BROWSER_COMMANDS=('close browser','close the browser','close browser window','close the browser window','close web browser',
                         'close web browser window','close the web browser','exit browser','exit web browser','quit browser')
 
+# Guided Chrome with or without its window (Options, Web browser, "Guided Chrome window").
+SHOW_BROWSER_COMMANDS=('show browser window','show the browser window','show browser','show the browser','show chrome',
+                       'show the chrome window','show chrome window')
+HIDE_BROWSER_COMMANDS=('hide browser window','hide the browser window','hide browser','hide the browser','hide chrome',
+                       'hide the chrome window','hide chrome window')
+
+WINDOW_OPTION_NOTICE=''
+THUNDERBIRD_HIDDEN_OPTION=('Thunderbird window: hidden from the taskbar. When Voice Companion starts Thunderbird for your email, '
+                           'it stays off the taskbar and out of Alt+Tab. Any window it opens, such as a sign-in, still comes to the front.')
+THUNDERBIRD_MINIMIZED_OPTION='Thunderbird window: minimized, as before.'
+CHROME_BACKGROUND_OPTION=('Guided Chrome window: run the browser in the background. Chrome opens with no window. '
+                          'A page that needs you, such as a sign-in or a check that you are a person, opens its window.')
+CHROME_SHOWN_OPTION='Guided Chrome window: show the browser window, as before.'
+
+
+def window_options_changed(before):
+    """Options saved: follow the Thunderbird and guided Chrome window options now. What to say."""
+    import web_assistant
+    said=[]
+    choice=PREFERENCES.get('thunderbird_window','Minimized, as before')
+    if choice!=before.get('thunderbird_window','Minimized, as before'):
+        try:apply_thunderbird_window()
+        except Exception:pass
+        said.append(THUNDERBIRD_HIDDEN_OPTION if choice=='Hidden from the taskbar' else THUNDERBIRD_MINIMIZED_OPTION)
+    choice=PREFERENCES.get('browser_window','Show the browser window, as before')
+    if choice!=before.get('browser_window','Show the browser window, as before'):
+        background=choice=='Run the browser in the background'
+        web_assistant.CHROME_IN_BACKGROUND=background
+        said.append(CHROME_BACKGROUND_OPTION if background else CHROME_SHOWN_OPTION)
+        if web_session is not None:
+            try:changed=web_session.window_option_changed()
+            except Exception:changed=''
+            if changed:said.append(changed)
+    return ' '.join(said)
+
+
+def take_window_option_notice():
+    global WINDOW_OPTION_NOTICE
+    notice,WINDOW_OPTION_NOTICE=WINDOW_OPTION_NOTICE,''
+    return notice+' ' if notice else ''
+
+
 def close_browser_window():
     """Close the browser even when Keep browser window open is on, then go to the main menu."""
     global MAIN_MENU_LEAD
@@ -2420,6 +2464,10 @@ def remember_thunderbird_identity(account, identity_id, account_id):
 def close_started_thunderbird(relay_source=None):
     """On exit: close Thunderbird if Voice Companion started it (never one the user opened).
     Thunderbird stays open while a message is being written."""
+    if THUNDERBIRD_WINDOWS is not None:
+        # Its taskbar place back first: a question as it closes ("unsent messages") can be found.
+        try: THUNDERBIRD_WINDOWS.stop()
+        except Exception: pass
     if not THUNDERBIRD_STARTED:
         return None
     relay = (relay_source or mail_relay)()
@@ -2445,10 +2493,71 @@ def quiet_thunderbird(relay):
         pass
     if APP_WINDOW is not None and hasattr(APP_WINDOW, 'reclaim_focus'):
         APP_WINDOW.reclaim_focus()
+    if PREFERENCES.get('thunderbird_window') == 'Hidden from the taskbar':
+        apply_thunderbird_window(relay)
+
+
+# Options, Email, "Thunderbird window" (window_hiding.py). "Minimized, as before" is the
+# default and runs none of this. "Hidden from the taskbar" keeps the main window of a
+# Thunderbird Voice Companion started off the taskbar, and shows every window it opens.
+THUNDERBIRD_WINDOWS = None
+
+
+def thunderbird_signing_in():
+    """An account is being added or signed in to: every Thunderbird window stays as before."""
+    return bool(THUNDERBIRD_WATCH is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_SIGN_IN
+                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird')
+
+
+def thunderbird_desktop():
+    """Windows' window calls, or None where there are none (tests replace this)."""
+    if os.name != 'nt':
+        return None
+    import window_hiding
+    return window_hiding.Win32Desktop()
+
+
+def apply_thunderbird_window(relay=None):
+    """Follow the Thunderbird window option now. Returns True when Thunderbird is hidden."""
+    global THUNDERBIRD_WINDOWS
+    hidden = PREFERENCES.get('thunderbird_window') == 'Hidden from the taskbar' and THUNDERBIRD_STARTED
+    if THUNDERBIRD_WINDOWS is None and hidden:
+        desktop = thunderbird_desktop()
+        if desktop is None:
+            return False
+        import window_hiding
+        THUNDERBIRD_WINDOWS = window_hiding.ThunderbirdWindows(desktop, thunderbird_signing_in).start()
+    if THUNDERBIRD_WINDOWS is None:
+        return False
+    if hidden:
+        THUNDERBIRD_WINDOWS.enable()
+    else:
+        THUNDERBIRD_WINDOWS.disable()
+    return hidden
+
+
+def hide_thunderbird_window():
+    """ "Hide Thunderbird": minimized as before, or out of the way with the option on."""
+    import window_hiding
+    if THUNDERBIRD_WINDOWS is not None:
+        return THUNDERBIRD_WINDOWS.hide(THUNDERBIRD_STARTED)
+    try:
+        from thunderbird_mailbox import relay
+        relay().request('minimize', {}, timeout=10)
+    except Exception:
+        return window_hiding.NOT_RUNNING
+    return window_hiding.MINIMIZED_NOW
 
 
 def start_thunderbird_quietly():
     """At startup, when the selected account is a Thunderbird account: start Thunderbird so mail is ready. Silent."""
+    try:
+        # A Thunderbird left off the taskbar when Voice Companion last ended suddenly gets its place back.
+        desktop = thunderbird_desktop()
+        if desktop is not None:
+            __import__('window_hiding').restore_left_hidden(desktop)
+    except Exception:
+        pass
     try:
         selected = ProtectedStore(APP).selected()
     except Exception:
@@ -2632,6 +2741,9 @@ def thunderbird_setup_command(command, mode):
                            r'(?: in (chrome|embedded edge|edge webview2|webview2|webview 2))?', command)
     if sign_in and not (THUNDERBIRD_SIGN_IN or waiting):
         return None    # nothing from Thunderbird: the words mean something else here
+    if command in words.HIDE_COMMANDS:
+        speak(hide_thunderbird_window())
+        return mode
     if not (command in words.CONTINUE_COMMANDS + words.READ_COMMANDS + words.SHOW_COMMANDS + words.PASSWORD_COMMANDS or sign_in):
         return None
     if sign_in:
@@ -2640,6 +2752,9 @@ def thunderbird_setup_command(command, mode):
             return mode
         return open_thunderbird_sign_in(mode, sign_in[1])
     from thunderbird_bridge import current
+    if command in words.SHOW_COMMANDS and THUNDERBIRD_WINDOWS is not None:
+        speak(THUNDERBIRD_WINDOWS.show())   # "Hidden from the taskbar": its taskbar place back, and in front
+        return mode
     if command in words.SHOW_COMMANDS:
         try:
             from thunderbird_mailbox import relay
@@ -2750,6 +2865,9 @@ def stop_thunderbird_watch():
 def poll_thunderbird_watch(mode):
     """On the main loop: read Thunderbird's page, open its sign-in page, and say when the account is ready."""
     global THUNDERBIRD_WATCH, THUNDERBIRD_SIGN_IN, mail_session, pending_send
+    shown = THUNDERBIRD_WINDOWS.take_message() if THUNDERBIRD_WINDOWS is not None else None
+    if shown:
+        speak_status(shown)   # a Thunderbird window came up while it was out of the way
     waiting = THUNDERBIRD_WATCH
     if waiting is None:
         return mode
@@ -3493,6 +3611,9 @@ def _handle(text, mode, typed=False):
         return open_browser_menu()
     if command in CLOSE_BROWSER_COMMANDS and web_session and (mode in ('web','browser_menu') or mode=='awake' and web_session.snapshot):
         return close_browser_window()
+    if command in SHOW_BROWSER_COMMANDS+HIDE_BROWSER_COMMANDS and web_session and (mode in ('web','browser_menu') or mode=='awake' and web_session.snapshot):
+        speak(web_session.browser_window(command in SHOW_BROWSER_COMMANDS))
+        return mode
     if mode == 'tutorial':
         if change_speech_setting(text) or use_synthesizer(text) or voice_menu(command):return mode
         control=speech_control(text)

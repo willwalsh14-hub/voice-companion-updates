@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 671
-- Already had both ways: 536
-- Gaps found: 135
-- Gaps fixed (Added): 127
+- Actions inventoried: 677
+- Already had both ways: 538
+- Gaps found: 139
+- Gaps fixed (Added): 131
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1309,6 +1309,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Thunderbird window
+
+- Voice: "Set Thunderbird window to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Add an email account
 
 - Voice: "Add account"
@@ -1388,6 +1394,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Guided browser
 
 - Voice: "Set Guided browser to ..."
+- Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Guided Chrome window
+
+- Voice: "Set Guided Chrome window to ..."
 - Keyboard: Alt+O, arrows to Web browser options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -2075,6 +2087,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 8, 2
 - Status: Added: Alt menu path
 
+### Show Thunderbird
+
+- Voice: "Show thunderbird"
+- Keyboard: Alt, 8, 3
+- Status: Added: Alt menu path
+
+### Hide Thunderbird
+
+- Voice: "Hide thunderbird"
+- Keyboard: Alt, 8, 4
+- Status: Added: Alt menu path
+
 ### Email help
 
 - Voice: "Help with email"
@@ -2084,7 +2108,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Main menu
 
 - Voice: "Main menu"
-- Keyboard: Alt, 8, 4
+- Keyboard: Alt, 8, 6
 - Status: Added: Alt menu path
 
 ## Alt menu, Email: Header and attachments
@@ -2445,6 +2469,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 - Voice: "Set up chrome"
 - Keyboard: Alt, 4, 2
+- Status: Added: Alt menu path
+
+### Show browser window
+
+- Voice: "Show browser window"
+- Keyboard: Alt, 4, 3
+- Status: Added: Alt menu path
+
+### Hide browser window
+
+- Voice: "Hide browser window"
+- Keyboard: Alt, 4, 4
 - Status: Added: Alt menu path
 
 ### Web help
