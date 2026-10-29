@@ -135,6 +135,50 @@ if ($blocked.Count) { exit 1 }
         return 0
 
 
+UPDATE_RUNNING_FILE = 'update-running.json'
+UPDATE_RUNNING_LIMIT = 30 * 60   # a helper never runs this long; older marks are left over
+
+
+def process_alive(pid):
+    """True while the process with this id runs."""
+    if not isinstance(pid, int) or isinstance(pid, bool) or pid <= 0:
+        return False
+    if os.name == 'nt':
+        import ctypes
+        kernel = ctypes.windll.kernel32
+        handle = kernel.OpenProcess(0x1000, False, pid)   # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        try:
+            code = ctypes.c_ulong()
+            return bool(kernel.GetExitCodeProcess(handle, ctypes.byref(code))) and code.value == 259   # STILL_ACTIVE
+        finally:
+            kernel.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def update_running(folder):
+    """True while the update helper (apply-update.ps1) is installing an update.
+
+    The helper writes update-running.json with its process id when it starts and
+    removes it just before it starts Voice Companion again."""
+    try:
+        state = json.loads((Path(folder) / UPDATE_RUNNING_FILE).read_text(encoding='utf-8-sig'))
+        started = float(state['started'])
+        pid = state['pid']
+    except (OSError, ValueError, TypeError, KeyError):
+        return False
+    return 0 <= time.time() - started < UPDATE_RUNNING_LIMIT and process_alive(pid)
+
+
 class AppUpdates:
     def __init__(self, data_folder, current, resource_folder=None):
         self.folder = Path(data_folder); self.current = current
@@ -160,6 +204,10 @@ class AppUpdates:
         megabytes. The update result and log live in the data folder, so nothing
         in these folders is needed once the app starts again. Files still in use
         are skipped and retried next start."""
+        # Voice Companion started again while an update installs (someone reopened
+        # it): the installer and the update voice in Updates are in use. Will's
+        # 0.2.173 update stopped with "The update speech files are missing."
+        if update_running(self.folder): return
         updates=self.folder/'Updates'
         try: folders=[entry for entry in updates.iterdir() if entry.is_dir()]
         except OSError: return

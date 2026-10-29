@@ -1,5 +1,5 @@
 #define AppName "Voice Companion"
-#define AppVersion "0.2.175-test"
+#define AppVersion "0.2.176-test"
 [Setup]
 AppId={{9DFB48ED-1D99-4230-A78D-FD727536AC40}
 AppName={#AppName}
@@ -138,19 +138,15 @@ begin
   if LoadStringsFromFile(LogFile, Lines) then
     for Index := 0 to GetArrayLength(Lines) - 1 do Log(Lines[Index]);
   Log('The close step ended with code ' + IntToStr(ResultCode) + '.');
-  if ResultCode = 0 then Exit;
+  // Only a program of the user's that holds a file (code 2) stops Setup. Anything
+  // else goes on: Restart Manager below closes Voice Companion's own programs.
+  if ResultCode <> 2 then Exit;
   Names := CloseStepNames(ReasonFile, Count);
-  if ResultCode = 2 then
-  begin
-    if (Count = 0) or (Names = 'Another program') then
-      Result := 'Another program is using a Voice Companion file. Save your work and close your other programs. Then run the update again.'
-    else if Count = 1 then
-      Result := Names + ' is using a Voice Companion file. Save your work in ' + Names + ' and close it. Then run the update again.'
-    else
-      Result := 'These programs are using Voice Companion files: ' + Names + '. Save your work and close them. Then run the update again.';
-  end
+  if Count = 0 then Exit;
+  if Count = 1 then
+    Result := Names + ' is using a Voice Companion file. Save your work in ' + Names + ' and close it. Then run the update again.'
   else
-    Result := 'Part of Voice Companion would not close. Restart the computer. Then run the update again.';
+    Result := 'These programs are using Voice Companion files: ' + Names + '. Save your work and close them. Then run the update again.';
 end;
 
 // Browsers find the browser host again. Setup's last step writes new manifests;

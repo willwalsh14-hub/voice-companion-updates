@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.175-test'
+APP_VERSION = '0.2.176-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -5429,6 +5429,17 @@ def poll_app_updates(mode):
     return mode
 
 
+UPDATE_RUNNING_MESSAGE = 'Voice Companion is being updated. It will open by itself when the update is done.'
+
+
+def update_running_elsewhere():
+    """True when an update is installing and this start is not the one the update made."""
+    if '--resume-after-update' in sys.argv:
+        return False
+    from app_updates import update_running
+    return update_running(APP)
+
+
 def main():
     global AI_SPEECH, UPDATES, SETTINGS_PANEL, SLEEP_RETURN_MODE, MICROPHONE_ANNOUNCED, MICROPHONE_OFF, STARTUP_NOTICES, MICROPHONE_FAILED
     if '--check-browser-bookmarks' in sys.argv:
@@ -5552,6 +5563,12 @@ def main():
                 mode = handle(heard, mode)
             if mode == 'exit':
                 break
+        return 0
+    if update_running_elsewhere():
+        # Opened again while an update installs: it would hold the files Setup must
+        # replace. The update opens Voice Companion by itself when it is done.
+        speak(UPDATE_RUNNING_MESSAGE)
+        wait_for_speech(15000)
         return 0
     # Announce readiness once, after models and microphone are initialized.
     SetLogLevel(-1)
