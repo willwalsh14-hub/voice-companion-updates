@@ -441,7 +441,7 @@ class MailBridge {
 
   async setupPage() {
     const closed = {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: [],
-      addressFilled: false, choices: []};
+      addressFilled: false, choices: [], noteShapes: []};
     const setup = this.setup();
     if (!setup) return closed;
     try {
@@ -451,7 +451,9 @@ class MailBridge {
         fields: (page.fields || []).map(String).slice(0, 12), addressFilled: Boolean(page.addressFilled),
         // How the account connects, when Thunderbird offers a choice (Microsoft Graph, Exchange, IMAP).
         choices: (page.choices || []).slice(0, 6).map(choice => ({label: String(choice && choice.label || '').slice(0, 80),
-          checked: Boolean(choice && choice.checked)}))};
+          checked: Boolean(choice && choice.checked)})),
+        // How each notice is built (element kinds only), for error reports.
+        noteShapes: (page.noteShapes || []).slice(0, 5).map(item => String(item).slice(0, 400))};
     } catch (error) {
       return closed;
     }

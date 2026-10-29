@@ -155,7 +155,7 @@ function load(api) {
   assert.equal(state.setupCalls.at(-1).show, true);
 
   // The page is read and driven; a password goes in once and is never answered back.
-  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: [], addressFilled: false, choices: []});
+  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: [], addressFilled: false, choices: [], noteShapes: []});
   assert.deepEqual(await call('setupContinue'), {pressed: true});
   state.setupPage.needsPassword = true;
   const filled = await bridge.handle({id: 7, method: 'fillPassword', params: {password: 'pw-123456'}});
@@ -371,7 +371,10 @@ async function noteWordsChecks() {
   const win = fakeWindow({hub: true, form: () => { const parts = setupForm(); parts.splice(3, 2, notice()); return parts; }});
   const api = loadExperiment(win);
   await api.openAccountSetup('will@outlook.com', '', false);
-  assert.deepEqual(plain(await api.setupPage()).notes, ['Looking up configuration']);
+  const page = plain(await api.setupPage());
+  assert.deepEqual(page.notes, ['Looking up configuration']);
+  // Its shape names the element kinds, never the words.
+  assert.deepEqual(page.noteShapes, ['div.notification-message span button button']);
 }
 
 // ---- Attachments: listed, saved in pieces, attached to new mail, replies and forwards ----
@@ -1017,7 +1020,7 @@ async function experimentChecks() {
   // The page is read: title, visible messages only, and the main button.
   assert.deepEqual(plain(await api.setupPage()), {open: true, title: 'Set up your existing email address',
     notes: ['Thunderbird failed to find the settings'], button: 'Continue', canContinue: true, needsPassword: false,
-    fields: ['text#realName', 'email'], addressFilled: true, choices: []});
+    fields: ['text#realName', 'email'], addressFilled: true, choices: [], noteShapes: ['span.error-message']});
   assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
   assert.equal(win.parts.at(-1).clicks, 1);
   assert.equal(win.parts.at(-2).clicks, 0, 'never Back');
@@ -1079,6 +1082,19 @@ async function experimentChecks() {
   win.parts[2].value = '';                     // the next step: nothing is filled in any more
   await api.setupPage();
   assert.equal(win.parts[2].value, '');
+
+  // The hub resets its form during Voice Companion's last short wait (seen as a test that failed only on a
+  // busy computer). The address is filled in again before the answer, so the person is never told to type it.
+  win = fakeWindow({hub: true});
+  let filledWaits = 0;
+  const tick = win.setTimeout;
+  win.setTimeout = fn => tick(() => {
+    if (win.parts && win.parts[2].value && ++filledWaits === 5) for (const part of win.parts) if (part.localName === 'input') part.value = '';
+    fn();
+  });
+  api = loadExperiment(win);
+  assert.deepEqual(plain(await api.openAccountSetup('late-reset@example.org', 'Late Reset', false)), {opened: true, prefilled: true});
+  assert.equal(win.parts[2].value, 'late-reset@example.org');
 
   // Thunderbird 158 turns Continue on only when the page sees typing: setUserInput is used
   // when present, and the email step is asked to check itself.
