@@ -5026,6 +5026,10 @@ def _handle(text, mode, typed=False):
         web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
+        if command in ('list favorites','my favorites') and not web_session.snapshot:
+            # No page open: the web browser menu's favorites list, where arrows, next and Enter work.
+            web_session.menu.start()
+            return handle_browser_menu('go to favorite')
         speak(web_session.command(text))
         return 'web' if web_session.snapshot else 'awake'
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):

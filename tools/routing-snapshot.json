@@ -2047,6 +2047,7 @@
 },
 "awake | list favorites": {
 "calls": [
+"call.snapshot.__bool__()",
 "call.command('list favorites')",
 "call.snapshot.__bool__()"
 ],
@@ -2273,6 +2274,7 @@
 },
 "awake | my favorites": {
 "calls": [
+"call.snapshot.__bool__()",
 "call.command('my favorites')",
 "call.snapshot.__bool__()"
 ],

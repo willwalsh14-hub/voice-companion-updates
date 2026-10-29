@@ -81,6 +81,24 @@ class WebsiteByVoiceTests(Journey):
                 session.open.assert_called_once_with('https://va.gov')
 
 
+class FavoritesFromMainMenuTests(Journey):
+    def test_list_favorites_on_the_main_menu_opens_a_list_you_can_move_through(self):
+        """"List favorites" on the main menu read the first favorite, but "next" then moved the
+        main menu and "that one" opened File manager."""
+        from web_assistant import Favorites
+        favorites=Favorites(self.root);favorites.add('News','https://news.example/');favorites.add('VA','https://va.gov/')
+        mode=self.say('List favorites.','awake')
+        self.assertEqual(mode,'browser_menu')
+        self.assertIn('News',' '.join(self.spoken))
+        app.web_session.open=Mock(return_value='Page loaded: VA.')
+        app.web_session.navigation_succeeded=True
+        mode=self.say('next',mode)
+        self.assertIn('VA',' '.join(self.spoken))
+        self.assertNotIn('File manager',' '.join(self.spoken))
+        self.say('that one',mode)
+        app.web_session.open.assert_called_once_with('https://va.gov/')
+
+
 class MainMenuSaidOnceTests(Journey):
     """The main menu prompt was said twice, or a closing message was cut off by it."""
     PROMPT=app.MAIN_MENU_PROMPT
