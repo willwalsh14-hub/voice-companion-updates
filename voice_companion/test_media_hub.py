@@ -180,7 +180,7 @@ class MediaHubTests(unittest.TestCase):
         player.set_ducked(False)
         self.assertEqual(player.page.values,[{'ducked':True,'factor':.18,'volume':.5},{'ducked':False,'factor':.18,'volume':.5}])
         player.set_ducked(True,.5)
-        self.assertEqual(player.page.values[-1],{'ducked':True,'factor':.5})
+        self.assertEqual(player.page.values[-1],{'ducked':True,'factor':.5,'volume':.5})
         player.set_ducked(False)
         import companion
         hub=MediaHub(self.temp.name,player=player)
