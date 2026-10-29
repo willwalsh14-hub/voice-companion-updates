@@ -2914,25 +2914,28 @@ class WebSession:
 
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
-        if spoken.lower() in ('skip','skip field'):
+        # Recognizers add punctuation: "Skip.", "Cancel form.", "Yes, please.".
+        said = ' '.join(re.sub(r'[^\w\s]', ' ', spoken.casefold()).split())
+        if said in ('skip','skip field','skip it'):
             if getattr(self,'review_edit_active',False):
                 self.review_edit_active=False;self.form_index=None
                 return 'Field unchanged. '+self.prepare_submit()
             self.form_index += 1
             return 'Skipped ' + _label(item) + '. ' + self._ask_field()
-        if spoken.lower() in ('repeat','repeat question','what field'):
+        if said in ('repeat','repeat question','what field'):
             return self._ask_field()
-        if spoken.lower() in ('cancel form','stop form'):
+        if said in ('cancel form','stop form'):
             self.review_edit_active=False
             self.form_index = None
             return 'Stopped filling the form. Entries already made remain on the page; nothing was submitted.'
         value = _plain(spoken)
         if kind(item) in ('checkbox','radio'):
-            if value.casefold() not in ('yes','no'):
+            value = {'yes':'yes','yes please':'yes','yeah':'yes','no':'no','no thanks':'no','no thank you':'no'}.get(said)
+            if value is None:
                 return 'Say yes or no for ' + _label(item) + ', or say skip.'
-            value = value.casefold()
         elif choice_field(item):
-            options = [o['label'] for o in item.get('options', []) if o['label'].casefold() == value.casefold() and not o.get('disabled')]
+            wanted = value.rstrip('.!?,;').strip().casefold()
+            options = [o['label'] for o in item.get('options', []) if o['label'].casefold() in (value.casefold(), wanted) and not o.get('disabled')]
             if len(options) != 1:
                 return 'I could not identify one choice. ' + self._ask_field()
             value = options[0]
