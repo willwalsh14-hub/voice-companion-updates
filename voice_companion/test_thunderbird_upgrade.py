@@ -364,6 +364,8 @@ class UpdatingTests(UpgradeCase):
         step = flow.answer('upgrade', True)
         self.assertEqual(step.message, upgrade.FAILED)
         self.assertEqual(system.__dict__.get('commands'), None)
+        self.assertEqual(flow.report['install']['stopped'], 'signature: HashMismatch CN=Someone Else, O=Someone Else',
+                         'the failure names itself')
         self.assertEqual(upgrade.installed(system).version, '153.6.0')
         self.assertTrue(self.thunderbird.running, 'the old Thunderbird is started again')
         self.assertEqual(self.key_files(), before)
