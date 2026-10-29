@@ -50,6 +50,19 @@ def normalize_recipient(spoken):
     return address
 
 
+REPLY_SUBJECT = ('This response keeps the original subject. To change it, start a new email. '
+                 'To keep writing your message, say go to body.')
+
+
+def spoken_subject(text):
+    """A subject as said: without the period speech recognizers put at the end ("Lunch plans.").
+    A question mark, an exclamation mark, or dots (...) stay."""
+    text = text.strip()
+    if text.endswith('.') and not text.endswith('..'):
+        text = text[:-1].rstrip()
+    return text
+
+
 def original_split(context):
     """(kept, dropped): the original message's files on a forward, and the ones taken off."""
     context = context or {}
@@ -387,7 +400,7 @@ class VoiceEmail(VoiceDocument):
         if field:
             if self.response_context and field == 'subject':
                 self.compose_step='subject'
-                return 'Subject field. '+self.subject+'. This response keeps the original subject. Start a new email to change it.'
+                return 'Subject field. '+self.subject+'. '+REPLY_SUBJECT
             if field in ('cc','bcc'): self.after_copy_step='body'
             self.compose_step=field
             if field=='recipient':
@@ -462,17 +475,19 @@ class VoiceEmail(VoiceDocument):
             self.recipient = recipient
             if self.response_context.get('action') in ('reply', 'reply_all'):
                 self.response_context['recipient_override'] = True
-            self.compose_step = 'body' if self.response_context else 'subject'
+            # A subject already given stays: the next words go to the message, never over the subject.
+            self.compose_step = 'body' if self.response_context or self.subject else 'subject'
             self.save()
-            if self.response_context:
+            if self.compose_step == 'body':
                 return 'Recipient recorded as ' + recipient + '. Back to the message body.'
             return 'Recipient recorded as ' + recipient + '. What is the subject? You can also say CC or BCC first.'
-        if command.startswith('subject is '):
+        if command.startswith('subject is ') and not (self.response_context and in_body):
             if self.response_context:
-                return 'This subject comes from the original message. Start a new email for a different subject.'
+                # A reply keeps its subject: in the message, "Subject is ..." is only words (above).
+                return REPLY_SUBJECT
             if '\n' in text or '\r' in text:
                 return 'Please say the subject on one line.'
-            subject = prepare_dictation(text[len('subject is '):], old_school_cleanup=False)
+            subject = spoken_subject(prepare_dictation(text[len('subject is '):], old_school_cleanup=False))
             if '\n' in subject or '\r' in subject:
                 return 'Please say the subject on one line.'
             self.checkpoint('the subject')
