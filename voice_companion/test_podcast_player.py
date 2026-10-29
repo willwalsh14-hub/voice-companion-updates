@@ -238,5 +238,81 @@ class ControlsTests(unittest.TestCase):
         self.assertEqual(nav.keyboard('Escape'), 'WGN (W), 1 of 1.')
 
 
+class KeyboardDuckingTests(unittest.TestCase):
+    """A screen reader's speech is not heard by Companion. While keys are pressed in
+    Companion's window, radio and podcasts get quieter, and come back after a pause."""
+    def setUp(self):
+        import companion
+        self.companion = companion
+        self.temp = tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.player, self.page = player_in(Path(self.temp.name))
+        self.player.open('https://pod.example/1.mp3', 'One', 'podcast')
+        self.window = type('Window', (), {'last_navigation': 0.0})()
+        self.now = 1000.0
+        self.prefs = dict(companion.PREFERENCES, duck_audio=True, duck_level='strong, 75 percent quieter', duck_while_keys=True)
+        for name, value in (('APP_WINDOW', self.window), ('MEDIA_HUB', type('Hub', (), {'player': self.player})()),
+                            ('PREFERENCES', self.prefs), ('SPEECH_PAUSED', False)):
+            patcher = patch.object(companion, name, value);patcher.start();self.addCleanup(patcher.stop)
+        for name, value in (('speech_busy', lambda: False),):
+            patcher = patch.object(companion, name, value);patcher.start();self.addCleanup(patcher.stop)
+        patcher = patch.object(companion.time, 'monotonic', lambda: self.now);patcher.start();self.addCleanup(patcher.stop)
+
+    def ducker(self, available):
+        ducker = type('Ducker', (), {'available': available, 'requests': [],
+                                     'request': lambda self, *args: self.requests.append(args)})()
+        patcher = patch.object(self.companion, 'AUDIO_DUCKER', ducker);patcher.start();self.addCleanup(patcher.stop)
+        return ducker
+
+    def press_key(self):
+        self.window.last_navigation = self.now
+
+    def test_on_by_default_in_radio_and_podcast_options(self):
+        from settings_model import DEFAULTS, fields
+        self.assertIs(DEFAULTS['duck_while_keys'], True)
+        for category in ('Radio', 'Podcasts'):
+            labels = {f.key: f.label for f in fields(category, {})}
+            self.assertEqual(labels['duck_while_keys'], 'Lower the volume while I use the keyboard')
+
+    def test_keys_lower_the_player_and_it_comes_back_after_a_quiet_moment(self):
+        self.ducker(False)   # Windows audio not reachable: the page is lowered
+        self.press_key();self.companion.update_audio_ducking()
+        self.assertAlmostEqual(self.page.audio['volume'], 0.125)
+        self.assertFalse(self.page.audio['paused'])   # never stopped
+        self.now += 1.0;self.companion.update_audio_ducking()
+        self.assertAlmostEqual(self.page.audio['volume'], 0.125)
+        self.now += 0.6;self.companion.update_audio_ducking()
+        self.assertEqual(self.page.audio['volume'], 0.5)
+
+    def test_with_windows_ducking_keys_lower_like_speech_and_never_twice(self):
+        ducker = self.ducker(True)
+        self.press_key();self.companion.update_audio_ducking()
+        self.assertEqual(ducker.requests[-1], (True, 0.25, False))
+        self.assertEqual(self.page.audio['volume'], 0.5)   # Windows lowers it; the page does not again
+        self.now += 2;self.companion.update_audio_ducking()
+        self.assertEqual(ducker.requests[-1], (False, 0.25, False))
+
+    def test_speech_never_waits_for_the_player_page(self):
+        self.ducker(True)
+        self.press_key()
+        before = len(self.page.scripts)
+        self.companion.update_audio_ducking(True)
+        self.assertEqual(len(self.page.scripts), before)
+
+    def test_option_off_or_nothing_loaded_or_audio_ducking_off(self):
+        self.ducker(False)
+        self.prefs['duck_while_keys'] = False
+        self.press_key();self.companion.update_audio_ducking()
+        self.assertEqual(self.page.audio['volume'], 0.5)
+        self.prefs['duck_while_keys'] = True
+        # Audio ducking (for Companion's voice) off: keys still lower the player, in the page.
+        ducker = self.ducker(True)
+        self.prefs['duck_audio'] = False
+        self.companion.update_audio_ducking()
+        self.assertEqual(ducker.requests[-1][0], False)
+        self.assertAlmostEqual(self.page.audio['volume'], 0.125)
+        self.player.kind = None
+        self.assertFalse(self.companion.keys_lowering())
+
+
 if __name__ == '__main__':
     unittest.main()
