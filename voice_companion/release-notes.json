@@ -1,40 +1,23 @@
 {
-  "version": "0.2.174-test",
+  "version": "0.2.175-test",
   "status": "Testing build",
-  "date": "October 28, 2026",
-  "baseline": "0.2.173-test",
-  "scope": "Watch YouTube in Voice Companion, and new choices to keep Thunderbird and Chrome out of your way.",
+  "date": "October 29, 2026",
+  "baseline": "0.2.174-test",
+  "scope": "Many fixes from a careful check of the whole app, done the way a new user would use it.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "YouTube",
+          "title": "More everyday words",
           "details": [
-            "Choose YouTube in the Media menu, or say YouTube.",
-            "Hear your Home videos and search with filters. You can also open your subscriptions, history and playlists.",
-            "Use simple keys to play, pause, skip, change speed and volume, turn captions on, and go to the next video.",
-            "Press Alt for the YouTube menu with every action and its key.",
-            "Like, subscribe and save ask Yes or No first.",
-            "To use your account, say sign in. It works in guided Chrome, where you type your own email and password."
-          ]
-        },
-        {
-          "title": "Thunderbird window choice",
-          "details": [
-            "In Options, Email, you can choose Minimized, as before, or Hidden from the taskbar.",
-            "Hidden from the taskbar keeps Thunderbird out of Alt+Tab.",
-            "Sign-in windows always come to the front, and you hear what they are.",
-            "While you add an account or sign in, nothing is hidden.",
-            "Say show Thunderbird or hide Thunderbird at any time."
-          ]
-        },
-        {
-          "title": "Guided Chrome window choice",
-          "details": [
-            "In Options, Web browser, you can choose to run guided Chrome in the background.",
-            "A window still opens for Google sign-in, a person check, payment or picking a file.",
-            "Say show browser window or hide browser window at any time."
+            "Companion now knows more of the words people say every day.",
+            "In email, try \"Go to the trash\", \"Open the first message\", \"Read the next message\" or \"Check my email\".",
+            "To hear your plans, say \"My schedule\". To add one, say \"Add a reminder for tomorrow at 9\".",
+            "For contacts, try \"Add a new contact\" or \"Phone book\".",
+            "For the radio, try \"Listen to the radio\". For shows, try \"Open podcasts\".",
+            "To hear the version, ask \"What version is this?\"",
+            "Say \"Start the tutorial\" or \"Start lessons\" to begin the lessons."
           ]
         }
       ]
@@ -43,10 +26,93 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "If something goes wrong",
+          "title": "Starting out, Help and the tutorial",
           "details": [
-            "The old way is still the first choice, and it is still what you get unless you change it.",
-            "If anything goes wrong, choose the first option to go back to how it was."
+            "Each input mode now has the same name as in the guide. They are Normal mode, Commands only and Dictation only.",
+            "Typing \"Wake up\" goes back to the screen you were on.",
+            "If you sleep while a Yes or No question is open, waking up asks it again.",
+            "\"Help with\" a topic it does not know now says so, then reads the topic list.",
+            "\"Help with\" now finds more topics, such as the microphone, keys, time and voices.",
+            "If the microphone cannot start, F9 no longer says voice commands are on.",
+            "The startup message says to wake Companion before you start the tutorial.",
+            "Long tutorial lessons are split in better places.",
+            "The guide no longer says that Pause makes Companion quiet."
+          ]
+        },
+        {
+          "title": "Email",
+          "details": [
+            "Saying \"Hide Thunderbird\" no longer starts Thunderbird when it is closed.",
+            "If you change who an email goes to, your subject stays as it was.",
+            "In a reply, Companion tells you how to get back to your message, and no words are lost.",
+            "A spoken subject no longer ends with an extra period.",
+            "When the inbox does not understand you, it says so.",
+            "After you delete or move a message, you land on the next message, not back at the top.",
+            "Escape now cancels the question about which kind of email account to add. Next and Previous work there too.",
+            "An email you wrote before you set up an account can now be sent.",
+            "The All messages setting says how to reach more mail.",
+            "In Yahoo, deleting a message that is already in Trash says that nothing changed.",
+            "Plural words are right, so you hear \"1 message\", not \"1 messages\"."
+          ]
+        },
+        {
+          "title": "Calendar and Contacts",
+          "details": [
+            "\"Make an appointment for Friday at 10 AM\" now asks for the event's name.",
+            "Words like \"in the evening\" or \"at night\" set the right time. They are not added to the name.",
+            "If you say \"Friday evening\" and then \"7\", the event is at 7 PM.",
+            "Saying \"No\" when asked for a name now asks again. It no longer saves a name of \"No\".",
+            "Saying \"No\" when asked for a contact's email address skips it.",
+            "\"Delete it\" and \"Cancel my appointment\" now work.",
+            "\"Show my Outlook calendar\" from the main menu says Calendar first, in one message.",
+            "\"Where am I?\" on the calendar now starts with \"Calendar\".",
+            "When Thunderbird cannot save an event, Companion tells you what to do next.",
+            "A contact with only a phone number is called \"No name\".",
+            "For an event that repeats, the question now says \"only this one, tomorrow\"."
+          ]
+        },
+        {
+          "title": "Documents, notes and files",
+          "details": [
+            "Leaving a document that Word has open no longer closes Companion. You hear that the file could not be saved.",
+            "Enter now opens the item you choose in List documents and in the Notes list.",
+            "A save that fails no longer leaves an extra document in your list.",
+            "Say \"Open document\" and a name to open a big Word file. It opens in the Document reader.",
+            "If you press Escape in Open a document, you go back to the one you were in.",
+            "Say \"Copy\" or \"Cut\" to copy or cut the text you picked.",
+            "In File manager, you can say a new name with \"dot\", such as \"letter dot t x t\".",
+            "Saying \"dot docx\" at the end of a document name no longer adds it to the name.",
+            "Companion tells you when you reach the end or the start of a document, a note or an email.",
+            "In an empty folder, File manager keys say the folder is empty."
+          ]
+        },
+        {
+          "title": "Web",
+          "details": [
+            "Saying a web address letter by letter, like \"v a dot gov\", now offers to open the site.",
+            "Your favorites and web history are safe. This is true even when a scan holds the file.",
+            "When Chrome starts again, you stay signed in to websites.",
+            "With Chrome in the background, a page that needs a file box or card box tells you to show the window. Your typing is kept.",
+            "A sign-in code box is no longer mistaken for a card payment.",
+            "In Fill out this form, \"Skip\" and \"Cancel form\" work. \"Yes, please\" checks a box.",
+            "\"List favorites\" and \"Web history\" on the main menu open lists you can move through.",
+            "\"Show browser window\" says the right thing when you use your own browser.",
+            "Pages with no links say \"No links on this page.\"",
+            "Items are read without extra commas and periods."
+          ]
+        },
+        {
+          "title": "Radio, podcasts, YouTube and the window",
+          "details": [
+            "Saying \"Play\" on a station, episode or video you chose now plays it.",
+            "On the YouTube screen, \"Stop\" and \"Resume\" stop and resume the video.",
+            "\"What video is this?\" tells you what is playing.",
+            "\"Play the radio\" no longer starts a random station.",
+            "A broken radio file no longer stops a radio search.",
+            "Saved stations keep their capital letters.",
+            "The list of planned recordings says the day and time in words.",
+            "Pressing Tab never moves the keyboard without telling you where it went.",
+            "At the largest text on a small screen, the command box always keeps its room."
           ]
         }
       ]

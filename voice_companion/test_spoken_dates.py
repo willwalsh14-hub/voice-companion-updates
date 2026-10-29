@@ -139,6 +139,22 @@ class SpokenTimeTests(unittest.TestCase):
         # A number that is not a time stays in the name.
         self.check('dinner for 3 people Friday at 7 pm', date(2026, 10, 30), time(19), rest='dinner for 3 people')
 
+    def test_the_part_of_the_day_sets_the_time_and_is_not_part_of_the_name(self):
+        friday, tomorrow = date(2026, 10, 30), date(2026, 10, 27)
+        self.check('Friday at 7 in the evening', friday, time(19))
+        self.check('Friday at 9 in the morning', friday, time(9))
+        self.check('at two thirty in the afternoon', TODAY, time(14, 30))
+        self.check('Friday evening at 7', friday, time(19))
+        self.check('Friday morning at 6', friday, time(6))
+        self.check('tomorrow at 8 at night', tomorrow, time(20))
+        self.check('tomorrow at 12 at night', tomorrow, time(0))
+        self.check('haircut Friday at 3 in the afternoon', friday, time(15), rest='haircut')
+        # A day with its part of the day, and no time yet.
+        found = parse_when('Friday evening', NOW)
+        self.assertEqual((found.day, found.start, found.rest), (friday, None, ''))
+        # A name that only starts with a part of the day keeps it.
+        self.check('Morning walk tomorrow at 7', tomorrow, time(7), rest='Morning walk')
+
     def test_nothing_found(self):
         found = parse_when('Doctor', NOW)
         self.assertEqual((found.day, found.start, found.rest), (None, None, 'Doctor'))

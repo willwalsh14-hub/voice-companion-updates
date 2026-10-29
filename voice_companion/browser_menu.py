@@ -20,28 +20,32 @@ class BrowserMenu:
         self.return_to_page = False
         self.history()
 
+    def _read_history(self):
+        """Saved pages and any damaged file text. Raises OSError when the file cannot be
+        read now, so it is never written over with a shorter list."""
+        from storage import read_saved_list, write_text_atomic
+        data, damaged = read_saved_list(self.path, [])
+        clean=[x for x in data if isinstance(x,dict) and x.get('name') and saved_address(x.get('url'))==x.get('url') and x.get('url')] if isinstance(data,list) else []
+        if clean!=data and damaged is None:
+            try:write_text_atomic(self.path,json.dumps(clean,ensure_ascii=False,indent=2))
+            except OSError:pass
+        return clean,damaged
+
     def history(self):
-        try:
-            data = json.loads(self.path.read_text(encoding='utf-8'))
-            clean=[x for x in data if isinstance(x,dict) and x.get('name') and saved_address(x.get('url'))==x.get('url') and x.get('url')] if isinstance(data,list) else []
-            if isinstance(data,list) and clean!=data:
-                temporary=self.path.with_suffix('.tmp');temporary.write_text(json.dumps(clean,ensure_ascii=False,indent=2),encoding='utf-8');temporary.replace(self.path)
-            return clean
-        except (OSError, ValueError):
-            return []
+        try:return self._read_history()[0]
+        except OSError:return []
 
     def record(self, snapshot):
+        from storage import keep_damaged, write_text_atomic
         url = snapshot.get('url', '')
         if not url or saved_address(url)!=url:
             return
-        data = self.history()
+        data, damaged = self._read_history()
         if data and data[0]['url'] == url:
             return
         data.insert(0, {'url': url, 'name': snapshot.get('title') or url})
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix('.tmp')
-        temporary.write_text(json.dumps(data[:200], ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
+        if damaged is not None:keep_damaged(self.path,damaged)
+        write_text_atomic(self.path,json.dumps(data[:200],ensure_ascii=False,indent=2))
 
     def choices(self, session, keep_open):
         items = [('Search or enter address', 'search'), ('Go to favorite', 'open'),

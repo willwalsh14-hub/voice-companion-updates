@@ -98,6 +98,31 @@ class WebBrowseTests(unittest.TestCase):
                 app.apply_keyboard_edit(dict(source=ctx['source'],before='Page text',after='Page text',caret=4,readonly=True,seq=1),'web')
                 self.assertEqual(session.reading.position,4);self.assertEqual(session.browse.position,4)
 
+class SentencePunctuationTests(unittest.TestCase):
+    def test_a_sentence_name_does_not_say_period_comma(self):
+        """A paragraph or list item is a sentence: "Just one line of text., paragraph." was said,
+        and with punctuation on that is heard as "period comma"."""
+        self.assertEqual(describe({'role':'paragraph','label':'Just one line of text.'}),'Just one line of text, paragraph.')
+        self.assertEqual(describe({'role':'listitem','label':'Buy milk.','position':1,'set_size':2}),'Buy milk, list item 1 of 2.')
+        self.assertEqual(describe({'role':'button','label':'Next:'}),'Next, button.')
+        self.assertEqual(describe({'role':'link','label':'Read more.'}),'Link Read more.')
+        self.assertEqual(describe({'role':'edit','label':'Add a comment...'}),'Add a comment..., edit.')
+        self.assertEqual(describe({'role':'heading','level':2,'label':'Are you a veteran?'}),'Are you a veteran?, heading level 2.')
+
+
+class EmptyListTests(unittest.TestCase):
+    def test_a_page_with_no_links_says_so_plainly(self):
+        """On a page with no links, List links said the links "may be inaccessible to this
+        browser helper" and to ask a helper, unlike List headings ("No headings on this page.")."""
+        with tempfile.TemporaryDirectory() as folder:
+            backend=Mock();backend.snapshot.return_value={'url':'https://plain.example/','title':'Plain','text':'Just text.','controls':[]}
+            session=WebSession(folder,backend)
+            session.snapshot={'url':'https://plain.example/','title':'Plain','text':'Just text.','controls':[],'elements':[]}
+            said=session.list_links()
+        self.assertTrue(said.startswith('No links on this page.'),said)
+        self.assertNotIn('helper',said)
+
+
 class EditableComboTests(unittest.TestCase):
     """Search boxes such as YouTube's are combo boxes you type into, with suggestions."""
     SEARCH=dict(key='s',role='combobox',tag='input',type='text',label='Search',value='',start=0,end=20,href='')

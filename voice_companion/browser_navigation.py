@@ -12,6 +12,10 @@ def spoken_address(spoken):
     address = str(spoken).strip()
     # "Amazon dot com, please." The polite word is not part of the address.
     address = re.sub(r'^please[\s,]+|[\s,]+please[.!?]*$', '', address, flags=re.I)
+    # "V.A. dot gov": an abbreviation written with periods is one name.
+    address = re.sub(r'\b(?:[A-Za-z]\.){2,}(?=\s)', lambda m: m[0].replace('.', ''), address)
+    # "v a dot gov", "w w w dot ...": offline speech spells short names letter by letter.
+    address = re.sub(r'\b[A-Za-z](?:\s+[A-Za-z]\b)+', lambda m: re.sub(r'\s+', '', m[0]), address)
     address = re.sub(r'\s*\b(?:forward\s+)?slash\b\s*', '/', address, flags=re.I)
     address = re.sub(r'\s*\bunderscore\b\s*', '_', address, flags=re.I)
     address = re.sub(r'\s*\bdot\b\s*', '.', address, flags=re.I)
@@ -65,7 +69,7 @@ def spoken_address_request(spoken):
 
     "VA dot gov.", "Open website VA dot gov" and "go to VA dot gov" are
     addresses; "what is a dot com company" is a search."""
-    value=re.sub(r'^(?:(?:open|go to|visit)(?: the)? (?:website|web site|site|page)|open|go to|visit)\s+','',str(spoken).strip(),flags=re.I)
+    value=re.sub(r'^(?:(?:open|go to|visit)(?: the)? (?:website|web site|site|page)|open|go to|visit)[\s,]+','',str(spoken).strip(),flags=re.I)
     address=spoken_address(value)
     if not looks_like_address(address):return None
     try:return prepare_address(address)[0]

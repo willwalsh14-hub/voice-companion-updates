@@ -127,23 +127,37 @@ def match_choices(items, request):
 
 
 class Favorites:
+    UNREADABLE = 'Your favorites could not be opened just now. Try again in a moment.'
+
     def __init__(self, folder):
         self.path = Path(folder) / 'web-favorites.json'
 
+    def _read(self):
+        """The saved favorites and any damaged file text. Raises OSError when the
+        file cannot be read now, so it is never written over with a shorter list."""
+        from storage import read_saved_list
+        data, damaged = read_saved_list(self.path, {})
+        if not isinstance(data,dict):data={}
+        clean={}
+        for key,item in data.items():
+            if not isinstance(item,dict) or not item.get('name'):continue
+            address=saved_address(item.get('url'))
+            if address:clean[key]=dict(item,url=address)
+        if clean!=data and damaged is None:
+            # Old entries with sign-in data are dropped. If that cannot be written now,
+            # the list is still read; the cleaning is tried again next time.
+            try:write_text_atomic(self.path,json.dumps(clean,ensure_ascii=False,indent=2))
+            except OSError:pass
+        return clean,damaged
+
     def all(self):
-        try:
-            data = json.loads(self.path.read_text(encoding='utf-8'))
-            if not isinstance(data,dict):return {}
-            clean={}
-            for key,item in data.items():
-                if not isinstance(item,dict) or not item.get('name'):continue
-                address=saved_address(item.get('url'))
-                if address:clean[key]=dict(item,url=address)
-            if clean!=data:
-                temporary=self.path.with_suffix('.tmp');temporary.write_text(json.dumps(clean,ensure_ascii=False,indent=2),encoding='utf-8');temporary.replace(self.path)
-            return clean
-        except (OSError, ValueError):
-            return {}
+        try:return self._read()[0]
+        except OSError:return {}
+
+    def _write(self, data, damaged):
+        from storage import keep_damaged
+        if damaged is not None:keep_damaged(self.path,damaged)
+        write_text_atomic(self.path,json.dumps(data,ensure_ascii=False,indent=2))
 
     def add(self, name, url):
         name = _plain(name)
@@ -154,12 +168,10 @@ class Favorites:
             raise WebError('Only HTTP and HTTPS pages can be saved.')
         if saved_address(url)!=url:
             raise WebError('This address contains private sign-in data. Open and save the site main page instead.')
-        data = self.all()
+        try:data,damaged = self._read()
+        except OSError as exc:raise WebError(self.UNREADABLE) from exc
         data[name.casefold()] = {'name': name, 'url': url}
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix('.tmp')
-        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
+        self._write(data,damaged)
 
     def get(self, name):
         data=self.all();key=_plain(name).casefold()
@@ -168,12 +180,11 @@ class Favorites:
         return matches[0] if len(matches)==1 else None
 
     def delete(self, name):
-        data = self.all()
+        try:data,damaged = self._read()
+        except OSError as exc:raise ValueError(self.UNREADABLE) from exc
         if data.pop(_plain(name).casefold(), None) is None:
             raise ValueError('That favorite no longer exists.')
-        temporary = self.path.with_suffix('.tmp')
-        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
+        self._write(data,damaged)
 
     def rename(self, name, replacement):
         item = self.get(name)
@@ -292,9 +303,24 @@ WINDOW_STILL_NEEDED = 'This page still needs Chrome\'s window, so it stays open.
 WINDOW_AS_BEFORE = ('Chrome is set to show its window, as before. To run it in the background, open Options, '
                     'Web browser, and choose Run the browser in the background.')
 WINDOW_NOT_CHROME = 'Only guided Chrome can run in the background. Embedded Edge is part of the Voice Companion window.'
+WINDOW_OWN_BROWSER = ('You are using your own browser, and it keeps its own window. Press Alt+Tab to find it. '
+                      'Only guided Chrome can run in the background.')
 WINDOW_FAILED = 'Chrome could not open again. Say open website to try again.'
+WINDOW_NEXT_SITE = ' It opens when you open a website.'
+WINDOW_NEEDED_HERE = {
+    'sign-in': 'This page now shows a Google sign-in.',
+    'check': 'This page now wants to check that you are a person.',
+    'payment': 'This page now asks for a card or payment.',
+    'file': 'This page now has a box for choosing a file.'}
+WINDOW_NEEDED_HOW = (' Chrome\'s window may be needed. To show it, say show browser window. '
+                     'Chrome then opens this page again, and you may need to enter your answers again.')
 WINDOW_SWITCHING = 'Opening Chrome again in the same place. This takes a moment.'
-PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc|security code|expiration date|expiry date)\b')
+# A button opened a box for choosing a file, but Chrome runs in the background with no window to show it.
+FILE_BOX_HIDDEN = ('This button opens a box for choosing a file. That box needs Chrome\'s window. '
+                   'Say show browser window, then choose the button again.')
+# Only words that name a card. "Security code" is also the code a sign-in sends by text,
+# and "Expiration date" is also asked for an ID; a card page has a card number too.
+PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc|cvv2|csc)\b')
 
 
 def window_need(snapshot):
@@ -307,7 +333,7 @@ def window_need(snapshot):
     if snapshot.get('challenge'):
         return 'check'            # CAPTCHA and "are you human" pages often refuse headless browsers
     for control in snapshot.get('controls') or ():
-        if str(control.get('autocomplete') or '').lower().startswith('cc-') or PAYMENT_LABEL.search(str(control.get('label') or '')):
+        if any(token.startswith('cc-') for token in str(control.get('autocomplete') or '').lower().split()) or PAYMENT_LABEL.search(str(control.get('label') or '')):
             return 'payment'
     if any(control.get('type') == 'file' for control in snapshot.get('controls') or ()):
         return 'file'             # choosing a file opens Windows' own file box, which needs a window
@@ -418,6 +444,18 @@ class BrowserBackend:
             if action:
                 try:action()
                 except Exception:pass
+
+    def open_cookies(self):
+        """Cookies a site keeps only while the browser is open (sign-in, a shopping cart).
+        Chrome drops them when it closes, so they are carried when it starts again."""
+        try:return [c for c in self.context.cookies() if c.get('expires') is None or c.get('expires')<0]
+        except Exception:return []
+
+    def restore_cookies(self,cookies):
+        if not cookies:return
+        self.start()
+        try:self.context.add_cookies([{k:v for k,v in c.items() if k!='expires'} for c in cookies])
+        except Exception:pass
 
     def refocus(self):
         if getattr(self,'_embedded',None):return self._embedded.refocus()
@@ -902,6 +940,12 @@ class BrowserBackend:
 
     def _watch_dialogs(self):
         if not hasattr(self.page,'on'):return
+        if getattr(self,'launched_hidden',False) and getattr(self,'file_box_page',None) is not self.page:
+            # Guided Chrome in the background has no window to show a file box in, so a
+            # button that opens one would seem to do nothing. Catch it and say what to do.
+            # With a window, Chrome shows its own file box, so nothing is caught there.
+            def file_box(chooser):self.dialog_notice=FILE_BOX_HIDDEN
+            self.page.on('filechooser',file_box);self.file_box_page=self.page
         if getattr(self,'dialog_page',None) is self.page:return
         self.dialog_page=self.page
         def dialog_notice(dialog):
@@ -1028,7 +1072,7 @@ class BrowserBackend:
                 if kind(item)=='link':raise WebError((dialog_notice+' ' if dialog_notice else '')+'The link did not finish opening. The current page remains available; the link was not clicked again.')
                 # A page's own message ("Item added to cart") says what happened. A question
                 # Companion canceled still says the website did not move on.
-                if dialog_notice.startswith(('Page message:','The page showed a message')) and not request_errors:return {'unchanged':True,'notice':dialog_notice}
+                if (dialog_notice.startswith(('Page message:','The page showed a message')) or dialog_notice==FILE_BOX_HIDDEN) and not request_errors:return {'unchanged':True,'notice':dialog_notice}
                 return {'unchanged':True,'notice':(dialog_notice+' ' if dialog_notice else '')+(request_errors[-1]+' ' if request_errors else '')+'The website has not moved to another step.'}
             if request_errors and self.page is before_page and frame.url==before_url:
                 try:
@@ -2006,10 +2050,17 @@ class WebSession:
         if self.snapshot:self._remember_place()
         self.progress(WINDOW_SWITCHING)
         backend.window_reason=reason
+        # Chrome drops cookies kept only while it is open; carry them, or you are signed out.
+        cookies=backend.open_cookies() if hasattr(backend,'open_cookies') and getattr(backend,'context',None) else []
         backend.close()
         if not url or not self.address_allowed(url):
-            return said
+            # No web page to open again, such as "This page could not open": Chrome is
+            # closed now, so its old page view is gone, and it opens the new way next time.
+            self.snapshot=None;self.browse=None;self.document_state=None
+            self.reading.set_text('',reset=True)
+            return WINDOW_SHOWN['asked']+WINDOW_NEXT_SITE if reason is not None else said
         try:
+            if cookies:backend.restore_cookies(cookies)
             backend.goto(url)
             result=self._refresh_page(False if read is None else read)
         except Exception:
@@ -2032,11 +2083,14 @@ class WebSession:
             backend.window_reason=need
             return 'This page needs Chrome\'s window, so it stays open. Say hide browser window after you leave this page.'
         result=self._relaunch(None,False,'')
-        return WINDOW_FAILED if result==WINDOW_FAILED else 'Chrome opened again the new way, on the same page.'
+        if result==WINDOW_FAILED:return WINDOW_FAILED
+        return 'Chrome opened again the new way, on the same page.' if self.snapshot else 'Chrome opens the new way when you open a website.'
 
     def browser_window(self,show):
         """ "Show browser window" and "hide browser window". Returns what to say."""
         backend=self.backend
+        if getattr(backend,'regular',False):
+            return WINDOW_OWN_BROWSER
         if not getattr(backend,'guided_chrome',lambda:False)():
             return WINDOW_NOT_CHROME
         if not CHROME_IN_BACKGROUND:
@@ -2048,7 +2102,7 @@ class WebSession:
                 return WINDOW_ALREADY_SHOWN
             if not self.snapshot:
                 backend.window_reason='asked'
-                return WINDOW_SHOWN['asked']+' It opens when you open a website.'
+                return WINDOW_SHOWN['asked']+WINDOW_NEXT_SITE
             return self._show_window('asked')
         if backend.window_reason is None:
             return WINDOW_ALREADY_HIDDEN
@@ -2163,9 +2217,18 @@ class WebSession:
         # In app mode the page is in use, not being read: say only its title.
         if read is None and self.app_mode:read=False
         self.slider_field=None
+        before_url=(self.snapshot or {}).get('url');before_epoch=(self.document_state or {}).get('epoch')
         result=self._refresh_page(read,preserve,wait)
         need=window_need(self.snapshot) if self.snapshot and getattr(self.backend,'runs_hidden',lambda:False)() else None
-        if need:result=self._show_window(need,read)
+        if need:
+            epoch=(self.document_state or {}).get('epoch')
+            if before_url==self.snapshot.get('url') and before_epoch is not None and before_epoch==epoch:
+                # The same page changed (a one-page checkout, a form step). Starting Chrome
+                # again would load it again and lose what was typed, so only say so, once.
+                if getattr(self,'window_need_said',None)!=(before_url,epoch,need):
+                    self.window_need_said=(before_url,epoch,need)
+                    result=WINDOW_NEEDED_HERE[need]+WINDOW_NEEDED_HOW+' '+result
+            else:result=self._show_window(need,read)
         if self.app_mode!=self.mode_announced and self.snapshot:
             # Each site keeps its own mode; say which one this page uses.
             self.mode_announced=self.app_mode
@@ -2639,7 +2702,7 @@ class WebSession:
                 links = self.link_items()
                 if links: break
         if not links:
-            return 'I could not identify links on this page. They may be loading or inaccessible to this browser helper. Ask your helper to inspect the page.'
+            return 'No links on this page. If it is still loading, say list links again in a moment.'
         if direction != 'first': return self.move_link(1 if direction == 'next' else -1)
         self.link_position = 0
         self.list_focus = 'links'
@@ -2867,25 +2930,28 @@ class WebSession:
 
     def _answer_field(self, spoken):
         item = self.form_fields[self.form_index]
-        if spoken.lower() in ('skip','skip field'):
+        # Recognizers add punctuation: "Skip.", "Cancel form.", "Yes, please.".
+        said = ' '.join(re.sub(r'[^\w\s]', ' ', spoken.casefold()).split())
+        if said in ('skip','skip field','skip it'):
             if getattr(self,'review_edit_active',False):
                 self.review_edit_active=False;self.form_index=None
                 return 'Field unchanged. '+self.prepare_submit()
             self.form_index += 1
             return 'Skipped ' + _label(item) + '. ' + self._ask_field()
-        if spoken.lower() in ('repeat','repeat question','what field'):
+        if said in ('repeat','repeat question','what field'):
             return self._ask_field()
-        if spoken.lower() in ('cancel form','stop form'):
+        if said in ('cancel form','stop form'):
             self.review_edit_active=False
             self.form_index = None
             return 'Stopped filling the form. Entries already made remain on the page; nothing was submitted.'
         value = _plain(spoken)
         if kind(item) in ('checkbox','radio'):
-            if value.casefold() not in ('yes','no'):
+            value = {'yes':'yes','yes please':'yes','yeah':'yes','no':'no','no thanks':'no','no thank you':'no'}.get(said)
+            if value is None:
                 return 'Say yes or no for ' + _label(item) + ', or say skip.'
-            value = value.casefold()
         elif choice_field(item):
-            options = [o['label'] for o in item.get('options', []) if o['label'].casefold() == value.casefold() and not o.get('disabled')]
+            wanted = value.rstrip('.!?,;').strip().casefold()
+            options = [o['label'] for o in item.get('options', []) if o['label'].casefold() in (value.casefold(), wanted) and not o.get('disabled')]
             if len(options) != 1:
                 return 'I could not identify one choice. ' + self._ask_field()
             value = options[0]

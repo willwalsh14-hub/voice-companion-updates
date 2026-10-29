@@ -181,7 +181,7 @@ class MediaTests(unittest.TestCase):
         said = nav.command('list scheduled recordings')
         self.assertIn('WGN', said)
         names, index, _ = nav.state()
-        self.assertEqual(names, ['A damaged schedule entry', 'A damaged schedule entry', 'WGN at 2026-10-28T08:00:00'])
+        self.assertEqual(names, ['A damaged schedule entry', 'A damaged schedule entry', 'WGN, Wednesday, October 28 at eight AM'])
         nav.keyboard('Down')
         self.assertIn('Remove A damaged schedule entry?', nav.keyboard('Delete'))
         self.assertEqual(nav.command('yes'), 'Removed.')

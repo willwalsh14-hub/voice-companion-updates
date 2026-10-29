@@ -24,6 +24,29 @@ DOCUMENT_FONTS = ('Aptos', 'Arial', 'Calibri', 'Cambria', 'Candara', 'Comic Sans
                   'Georgia', 'Segoe UI', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana')
 
 
+# Input modes: saved as mixed, commands or dictation; shown and said with the names the guide
+# and the mode commands use ("Normal mode", "Commands only", "Dictation only").
+INPUT_MODES = {'mixed': 'Normal', 'commands': 'Commands only', 'dictation': 'Dictation only'}
+_INPUT_MODE_WORDS = {'normal mode': 'mixed', 'normal': 'mixed', 'mixed mode': 'mixed', 'command': 'commands',
+                     'command mode': 'commands', 'commands mode': 'commands', 'command only': 'commands',
+                     'dictation mode': 'dictation'}
+
+
+def input_mode_value(value):
+    """The saved word for a shown or spoken input mode, or None."""
+    words = ' '.join(str(value).casefold().replace('.', ' ').split())
+    for stored, label in INPUT_MODES.items():
+        if words in (stored, label.casefold()):
+            return stored
+    return _INPUT_MODE_WORDS.get(words)
+
+
+def input_mode_label(value):
+    """The name shown in Options for a saved or spoken input mode."""
+    stored = input_mode_value(value)
+    return INPUT_MODES[stored] if stored else str(value)
+
+
 def font_choices(context):
     names = list(DOCUMENT_FONTS) + [str(x).strip() for x in context.get('document_fonts', ()) if str(x).strip()]
     unique = {name.casefold(): name for name in reversed(names)}
@@ -48,7 +71,7 @@ def fields(category, context):
         'Verbosity':[Field('verbosity','Verbosity','choice',('high','medium','low')),Field('punctuation','Spoken punctuation','choice',('none','some','most','all')),Field('dictation_echo','Echo dictated text','choice',('phrase by phrase','at the end of a sentence','do not echo dictated text')),Field('typing_echo','Typing echo','choice',('words','characters','characters and words','none')),Field('phonetic_enabled','Delayed phonetic pronunciation','check'),Field('phonetic_delay','Phonetic delay in seconds','choice',('0.5','1','2')),Field('capital_letters','When encountering capital letters','choice',('raise pitch','lower pitch','play a sound','do nothing'))],
         'Voice':[Field('pitch','Voice pitch','choice',tuple(str(x) for x in range(-10,11))),Field('rate','Speech rate','choice',tuple(str(x) for x in range(-10,11))),Field('volume','Speech volume','choice',tuple(str(x) for x in range(101))),Field('duck_audio','Audio ducking','check'),Field('duck_level','Ducking level','choice',DUCK_LEVELS),Field('duck_other_apps','Also lower other apps while Companion speaks','check')],
         'Synthesizer':[Field('engine','Synthesizer','choice',tuple(context.get('engines',('SAPI',)))),Field('windows_voice','SAPI voice','choice',tuple(context.get('windows_voices',()))),Field('espeak_voice','eSpeak voice','choice',tuple(context.get('espeak_voices',()))),Field('ai_voice','AI voice','choice',tuple(context.get('ai_voices',()))),Field('api_key','AI API key; blank keeps the saved key','password'),Field('ai_consent','Allow narration text to be sent to OpenAI','check'),Field('remove_ai','Remove saved AI key','check')],
-        'Input':[Field('input_mode','Command and dictation mode','choice',('mixed','commands','dictation')),Field('dictation_type','Dictation type','choice',('old school','ai-based')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition; Old school only','check')],
+        'Input':[Field('input_mode','Command and dictation mode','choice',tuple(INPUT_MODES.values())),Field('dictation_type','Dictation type','choice',('old school','ai-based')),Field('cloud_consent','Allow microphone audio to be sent to Azure for recognition; Old school only','check')],
         'Email':[Field('email_format','Email format','choice',('plain text','html')),Field('email_account','Sending account','choice',tuple(context.get('accounts',()))),Field('email_list_size','Messages per list','choice',('10','20','30','40','50','100','1000','all')),Field('email_header_names','Announce email header names','check'),Field('email_header_order','Spoken email headers; Space toggles; Alt+Up or Alt+Down moves','headers'),Field('thunderbird_window','Thunderbird window','choice',('Minimized, as before','Hidden from the taskbar')),Field('add_account','Add an email account','action')],
         'Notepad':[Field('open_notepad','Open Notepad','action')],
         'Display':[Field('display_colors','Color scheme','choice',display_options.SCHEMES),Field('display_text_size','Text size','choice',display_options.SIZE_CHOICES),Field('display_font','Screen font','choice',display_options.font_choices(context.get('display_fonts'),context.get('display_font'))),Field('display_bold','Bold text','check'),Field('display_highlight','Highlight color','choice',display_options.HIGHLIGHTS),Field('display_spacing','Line spacing on screen','choice',display_options.SPACING),Field('display_full_screen','Show the window full screen','check')],
@@ -65,6 +88,7 @@ def fields(category, context):
 
 class SettingsSession:
     def __init__(self, values, context):
+        if 'input_mode' in values:values = dict(values, input_mode=input_mode_label(values['input_mode']))
         self.original = copy.deepcopy(DEFAULTS | values)
         self.values = copy.deepcopy(DEFAULTS | values)
         # Keep the saved font in the list, even when it is not a common one.
@@ -94,6 +118,7 @@ class SettingsSession:
                    'firefox':'embedded Edge','chrome':'Chrome','google chrome':'Chrome'}.get(str(value).strip().lower(),value)
         if key=='web_search_engine':value={'brave search':'brave','duck duck go':'duckduckgo','google search':'google','bing search':'bing'}.get(str(value).lower(),str(value).lower())
         if key=='duck_level':value=spoken_level(value) or value
+        if key=='input_mode':value=input_mode_label(value)
         if key=='display_text_size':value=display_options.size_choice(value) or value
         if key=='display_colors' and str(value).strip().casefold() in ('windows colours','windows','system colors','system colours'):value='Windows colors'
         if key in ('duck_audio','duck_other_apps') and isinstance(value,str):

@@ -74,12 +74,38 @@ COURSES += (('files','File manager',('file manager','files','file manager lesson
  ('Read documents', 'Enter on a supported file opens the reader. Use arrows or say "Read document". Say "Next paragraph" or "Find" followed by words. Escape returns to the file list. The reader does not edit the source file. PDF images need OCR, which is not included.'),
  ),('FILE MANAGER','DOCUMENT READER')),)
 
+_SENTENCE_END=r'(?:(?<=[.!?])|(?<=[.!?]["”]))\s+'
+
+
+def _units(block,limit):
+    """A paragraph as whole steps ("3. Choose the folder. ..."), or as sentences when a step is
+    too long. A step number always stays with its step."""
+    if len(block)<=limit:return [block]
+    units=[]
+    for step in re.split(_SENTENCE_END+r'(?=\d+\.\s)',block):
+        if len(step)<=limit:units.append(step);continue
+        for sentence in re.split(_SENTENCE_END+r'(?=[A-Z"“0-9])',step):
+            if units and re.fullmatch(r'\d+\.',units[-1]):units[-1]+=' '+sentence   # "4." and its words
+            else:units.append(sentence)
+    return units
+
+
 def split_instruction(text,limit=1000):
-    pieces=re.split(r'(?:(?<=[.!?])|(?<=[.!?]["”]))\s+(?=[A-Z"“0-9])',text)
+    """Long lesson text in parts of about `limit` characters. Parts break between paragraphs and
+    list items, so none starts in the middle of a thought ("It has the lesson list..."); a
+    paragraph longer than a part breaks between steps, then between sentences."""
+    blocks=[]
+    for block in (b.strip() for b in re.split(r'\n\s*\n',text)):
+        if not block:continue
+        # "To remove an account:" stays with the list or steps that follow it.
+        if blocks and blocks[-1].endswith(':'):blocks[-1]+='\n\n'+block
+        else:blocks.append(block)
     result=[];current=''
-    for piece in pieces:
-        if current and len(current)+len(piece)+1>limit:result.append(current);current=''
-        current=(current+' '+piece).strip()
+    for block in blocks:
+        for index,unit in enumerate(_units(block,limit)):
+            joiner=' ' if index else '\n\n'
+            if current and len(current)+len(joiner)+len(unit)>limit:result.append(current);current=''
+            current=current+joiner+unit if current else unit
     if current:result.append(current)
     return result
 

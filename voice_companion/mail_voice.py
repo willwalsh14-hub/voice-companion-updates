@@ -18,6 +18,8 @@ NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'nine': 9, 'ninth': 9, 'ten': 10, 'tenth': 10}
 NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
+# "All": pages of 10. The arrows stop at the end of a page, as in every list.
+ALL_MESSAGES = 'All messages, 10 at a time. For more, press Page Down, or say next page.'
 # Commands about "the message you are on". In an empty folder each says the list is empty.
 EMPTY_LIST_COMMANDS = ('next', 'previous', 'next message', 'previous message', 'first message', 'last message',
                        'start of list', 'beginning of list', 'end of list', 'first message on page',
@@ -49,11 +51,33 @@ HEADER_REQUESTS = {
 }
 HEADER_COMMANDS = {phrase: name for name, phrases in HEADER_REQUESTS.items() for phrase in phrases}
 
+# Everyday words for the inbox's own commands (sweep, October 2026): a new user says
+# "next email", "close message" or "check my email", not the command names.
+EVERYDAY_COMMANDS = {
+    'next email': 'next message', 'previous email': 'previous message',
+    'read this message': 'read current message', 'open this message': 'open current message',
+    'read this email': 'read current message', 'open this email': 'open current message',
+    'read the message': 'read current message', 'open the message': 'open current message',
+    'read the email': 'read current message', 'open the email': 'open current message',
+    'close message': 'back to folder', 'close this message': 'back to folder', 'close the message': 'back to folder',
+    'close email': 'back to folder', 'close this email': 'back to folder', 'close the email': 'back to folder',
+    'check email': 'refresh messages', 'check my email': 'refresh messages', 'check mail': 'refresh messages',
+    'check my mail': 'refresh messages', 'check for new mail': 'refresh messages', 'check for new email': 'refresh messages',
+    'check for new messages': 'refresh messages', 'check for mail': 'refresh messages', 'refresh': 'refresh messages',
+    'refresh inbox': 'refresh messages', 'refresh the inbox': 'refresh messages', 'refresh the list': 'refresh messages',
+}
+INBOX_WORDS = re.compile(r'(?:open|go to|back to|return to) (?:the |my )?inbox(?: folder)?')
+
 
 def header_request(text):
     """'from', 'to', 'cc', 'subject', 'date', 'attachments', or None for other words."""
     command = ' '.join(re.sub(r"[^a-z' ]", ' ', str(text).casefold()).split())
     return HEADER_COMMANDS.get(command)
+
+
+def plural(count, word):
+    """'1 message', '2 messages'."""
+    return str(count) + ' ' + word + ('' if count == 1 else 's')
 
 
 def spoken_people(people):
@@ -177,12 +201,28 @@ class MailSession:
             return ('I see ' + str(len(folders)) + ' folders named ' + ambiguous_name +
                     '. First choice: ' + menu_label(self._spoken_folder(folders[0][0])) +
                     '. Say next or previous to hear another, then that one to ' + verb + '.')
-        return ('Found '+str(len(folders))+' folders. Folder 1: '+menu_label(self._spoken_folder(folders[0][0]))+
+        return ('Found '+plural(len(folders), 'folder')+'. Folder 1: '+menu_label(self._spoken_folder(folders[0][0]))+
                 '. Say next or previous, then that one to ' + verb + '. Say cancel to leave this list.')
 
     def _open_named_folder(self, spoken):
         self.folders = self.client().folders()
         name = spoken.strip().replace(' slash ', '/').casefold()
+        matches = self._named_folders(name)
+        # "Go to the trash", "go to my sent folder": the name without the everyday words.
+        plain = re.sub(r' folder$', '', re.sub(r'^(?:the|my) ', '', name)).strip()
+        if not matches and plain and plain != name:
+            matches = self._named_folders(plain)
+        if not matches:
+            return 'I could not find that folder. Say go to folder to hear the list.'
+        if len(matches) > 1:
+            return self._choose_folder('open', candidates=matches, ambiguous_name=spoken)
+        self.folder_name, self.folder_id = matches[0]
+        self.previous_cursors.clear()
+        self._clear_marks()
+        return self.list_messages()
+
+    def _named_folders(self, name):
+        """The folders a spoken name means: a full place, the last part of one, or a standard folder."""
         if '/' in name:
             matches = [item for item in self.folders if item[0].casefold() == name]
         else:
@@ -198,14 +238,7 @@ class MailSession:
                         'spam': spam, 'junk': spam, 'junk mail': spam, 'junk email': spam, 'bulk': spam,
                         'bulk mail': spam, 'sent': ('sent', 'sentitems')}.get(name, ())
             matches = [item for item in self.folders if item[1].casefold() in standard]
-        if not matches:
-            return 'I could not find that folder. Say go to folder to hear the list.'
-        if len(matches) > 1:
-            return self._choose_folder('open', candidates=matches, ambiguous_name=spoken)
-        self.folder_name, self.folder_id = matches[0]
-        self.previous_cursors.clear()
-        self._clear_marks()
-        return self.list_messages()
+        return matches
 
     def _clear_marks(self):
         self.selected.clear()
@@ -560,7 +593,8 @@ class MailSession:
 
     def response_context(self, action):
         if self.current is None or self.view != 'message':
-            raise MailboxError('Open and read a numbered message first.')
+            said = {'reply': 'reply', 'reply_all': 'reply all', 'forward': 'forward'}.get(action, 'it again')
+            raise MailboxError('Open the message first. Press Enter, or say open message. Then say ' + said + '.')
         address, _ = account_token(self.provider, self.folder)
         row = self.rows[self.current - 1]
         context = self.client().response_context(row['id'], action, address, self.folder_id)
@@ -573,6 +607,9 @@ class MailSession:
         spoken = text.strip().rstrip('.!?')
         # Recognizers add inner punctuation ("Yes, please."), as companion.handle allows for.
         command = re.sub(r'\s+', ' ', re.sub(r'\s*[,;!?]+\s*', ' ', spoken.lower())).strip()
+        command = EVERYDAY_COMMANDS.get(command, command)
+        if INBOX_WORDS.fullmatch(command):
+            command = 'open inbox'
         size = re.fullmatch(r'(?:set |change |show )?(?:email |mail |message )?(?:list size|page size|messages per page|emails per page)(?: to)? (all|\d+|one thousand)', command)
         size = size or re.fullmatch(r'(?:set|change) (?:list )?to (all|\d+|one thousand)', command)
         size = size or re.fullmatch(r'(?:list |list of |list to |show |show me )(all|\d+|one thousand)(?: (?:number of )?(?:messages|emails))?', command)
@@ -590,10 +627,10 @@ class MailSession:
                 return 'I could not save that email list setting. Try again.'
             self.previous_cursors.clear()
             result = self.list_messages()
-            return ('All messages are available; I load 10 at a time as you say next message. ' if self.all_messages else
+            return (ALL_MESSAGES + ' ' if self.all_messages else
                     'Showing ' + value + ' messages at a time. ') + result
         if command in ('email list size', 'mail list size', 'how many emails', 'how many messages per page'):
-            return ('All messages, loaded 10 at a time.' if self.all_messages else
+            return (ALL_MESSAGES if self.all_messages else
                     str(self.list_size) + ' messages at a time.') + ' Say set to 20, set list to 1000, or set to all.'
         open_selection = ('that one', 'okay', 'ok', 'confirm', 'confirm that')
         if self.pending and command in open_selection and command not in ('okay', 'ok'):
@@ -644,8 +681,7 @@ class MailSession:
             if (not self.rows and self.view == 'folder' and command in EMPTY_LIST_COMMANDS and
                     not (self.marked_ids and command in ('delete', 'move', 'move to folder'))):
                 # An empty folder is an empty list, the same for every key and command.
-                return ('Empty list. No messages on this page of ' + self.folder_name +
-                        '. Press F5 or say list messages to check again.')
+                return self._empty_list()
             if command in ('first message on page','last message on page') and self.rows and not self.folder_picker:
                 return self.page_edge(command.startswith('last'))
             if command in ('newest message','first message in folder','oldest message','last message in folder') and self.rows and not self.folder_picker:
@@ -702,6 +738,13 @@ class MailSession:
                 self.previous_cursors.clear()
                 self._clear_marks()
                 return self.list_messages()
+            # "Go to message 2", "go to the next message": a message on this page, not a folder.
+            match = re.fullmatch(r'go to (?:the )?(next|previous|first|last|newest|oldest) (?:message|email)', command)
+            if match:
+                return self.process(match[1] + ' message')
+            match = re.fullmatch(r'go to (?:message|email) (' + NUMBER + r')', command)
+            if match:
+                return self._focus(match[1]) if self.rows else self._empty_list()
             if command.startswith('go to ') and command not in ('go to main menu',):
                 return self._open_named_folder(command[len('go to '):])
             if command in ('list messages', 'read message list', 'refresh messages'):
@@ -727,6 +770,19 @@ class MailSession:
             match = re.fullmatch(r'(?:read|open) message (' + NUMBER + r')', command)
             if match:
                 return self._read(match[1])
+            # "Open the first message", "read the last email".
+            match = re.fullmatch(r'(?:read|open) (?:the )?(' + NUMBER + r'|last) (?:message|email)', command)
+            if match:
+                if not self.rows:
+                    return self._empty_list()
+                return self._read(len(self.rows) if match[1] == 'last' else match[1])
+            # "Read the next message": the next one, opened. At the start or end of the page, said as Up and Down say it.
+            match = re.fullmatch(r'(?:read|open) (?:the )?(next|previous) (?:message|email|one)', command)
+            if match:
+                target = (self.current or 0) + (1 if match[1] == 'next' else -1)
+                if not self.rows or self.current is None or not 1 <= target <= len(self.rows):
+                    return self.process(match[1] + ' message')
+                return self._read(target)
             if command in ('read current message', 'open current message', 'repeat message',
                            'read message', 'open message', 'open that', 'read that',
                            'open it', 'read email', 'open email'):
@@ -778,7 +834,7 @@ class MailSession:
                 return 'Marked message '+str(self.current)+'.'
             if command=='select all messages':
                 for number in range(1,len(self.rows)+1):self._mark(number)
-                return str(len(self.rows))+' messages on this page selected.'
+                return plural(len(self.rows), 'message')+' on this page selected.'
             if command in ('select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message'):
                 self._current_ids()
                 self._mark(self.current)
@@ -803,7 +859,7 @@ class MailSession:
                 self._clear_marks()
                 return 'Selection cleared.'
             if command in ('what is selected', 'read selection'):
-                return ('Marked ' + str(len(self.marked_ids)) + ' messages across this folder.'
+                return ('Marked ' + plural(len(self.marked_ids), 'message') + ' across this folder.'
                         if self.marked_ids else 'No messages selected.')
             if command in ('move selected', 'move selected to folder', 'move selected to'):
                 return self._choose_folder('message_move', self._selected_ids())
@@ -959,6 +1015,9 @@ class MailSession:
                     return 'Nothing is awaiting that confirmation.'
                 _, ids, destination = self.pending
                 self.pending = None
+                # The message you were on: afterwards you are on the one that took its place.
+                place = (self.current if self.current and 1 <= self.current <= len(self.rows) and
+                         ids == [self.rows[self.current - 1]['id']] else None)
                 self._clear_marks()
                 try:
                     if action == 'move':
@@ -983,6 +1042,10 @@ class MailSession:
                     refreshed = self.list_messages(self.page_cursor)
                     if not self.rows and self.previous_cursors:
                         refreshed = self.list_messages(self.previous_cursors.pop())
+                    elif place and place > 1 and self.rows:
+                        first = self._summary(1)
+                        self.current = min(place, len(self.rows))
+                        refreshed = refreshed.replace(first, self._summary(self.current), 1)
                     return result + ' ' + refreshed
                 except Exception:
                     self.rows = []
@@ -991,7 +1054,7 @@ class MailSession:
             if command in ('cancel', 'cancel move', 'cancel delete'):
                 self.pending = None
                 return 'Canceled. Nothing was changed.'
-            return ('Say go to folder to choose from a list, next folder, previous folder, okay, back to inbox, '
+            return ('I did not understand that. Say go to folder to choose from a list, next folder, previous folder, okay, back to inbox, '
                     'list messages, read message 1, next message, previous message, '
                     'reply, reply all, forward, mark message, move, delete, '
                     'create folder, rename folder, move folder, or delete empty folder.')
@@ -1018,6 +1081,10 @@ class MailSession:
             except OSError:
                 pass
             return 'Email could not complete that request. Ask your helper to check Email-Error.txt in the Voice Companion settings folder. If you were moving or deleting messages, check the mailbox before trying again.'
+
+    def _empty_list(self):
+        return ('Empty list. No messages on this page of ' + self.folder_name +
+                '. Press F5 or say list messages to check again.')
 
     def _current_list(self):
         if not self.rows:

@@ -9,7 +9,7 @@ from xml.etree import ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from storage import keep_previous
-from reading_navigation import ReadingCursor, reading_request
+from reading_navigation import ReadingCursor, reading_request, edge_notice
 from dictation_text import clean_dictation
 from ai_dictation import prepare_dictation
 
@@ -176,6 +176,8 @@ def document_filename(title):
 def checked_document_name(text):
     """(file name without .docx, None), or (None, what to say) when Windows cannot use the name."""
     proposed = ' '.join(str(text).split()).strip(' .')
+    # Said aloud, the file type comes as words: "My letter dot docx" (or "dot d o c x").
+    proposed = re.sub(r'\s+dot\s+d\s?o\s?c\s?x$', '', proposed, flags=re.I).strip(' .')
     if not proposed: return None, 'Please say or type a document name.'
     if re.search(r'[<>:"/\\|?*]', proposed): return None, 'That file name contains a character Windows cannot use. Please choose another name.'
     proposed = document_filename(proposed)
@@ -190,6 +192,16 @@ def existing_document(folder, name):
         return next((p for p in Path(folder).glob('*.docx') if p.name.casefold() == wanted), None)
     except OSError:
         return None
+
+
+def find_document(folder, title):
+    """The .docx in folder that "open document" plus this title means, or None."""
+    name = document_filename(title)
+    legacy = re.sub(r'[^\w .-]+', '', title).strip(' .')[:80]
+    matches = [p for p in Path(folder).glob('*.docx') if p.stem.casefold() in (name.casefold(),legacy.casefold(),title.casefold())]
+    # "Letter.docx.docx" and "Letter.docx" both sanitize to "Letter"; open the exact one.
+    matches.sort(key=lambda p: (p.stem != title, p.stem.casefold() != title.casefold(), p.name))
+    return matches[0] if matches else None
 
 
 PARAGRAPH_ORDINALS = {'first':1, 'second':2, 'third':3, 'fourth':4, 'fifth':5,
@@ -316,6 +328,7 @@ class VoiceDocument:
 
     # Said when there is nothing to read; an email draft says "message body".
     EMPTY_NOTICE = 'The document is empty.'
+    EDGE_NAME = 'document'   # "End of document." when a move cannot go further
 
     def __setattr__(self, name, value):
         # A selection is a pair of paragraph/offset positions. Remember the text it
@@ -341,20 +354,15 @@ class VoiceDocument:
     @classmethod
     def open_existing(cls, folder: Path, title: str):
         folder.mkdir(parents=True, exist_ok=True)
-        name = document_filename(title)
-        legacy = re.sub(r'[^\w .-]+', '', title).strip(' .')[:80]
-        matches = [p for p in folder.glob('*.docx') if p.stem.casefold() in (name.casefold(),legacy.casefold(),title.casefold())]
-        if not matches:
+        path = find_document(folder, title)
+        if path is None:
             raise FileNotFoundError(title)
-        # "Letter.docx.docx" and "Letter.docx" both sanitize to "Letter"; open the exact one.
-        matches.sort(key=lambda p: (p.stem != title, p.stem.casefold() != title.casefold(), p.name))
-        path = matches[0]
         if path.stat().st_size > 10 * 1024 * 1024:
-            raise ValueError('This document is too large for this test editor.')
+            raise ValueError('This document is too large for the editor.')
         try:
             with zipfile.ZipFile(path) as archive:
                 if archive.getinfo('word/document.xml').file_size > 10 * 1024 * 1024:
-                    raise ValueError('This document is too large for this test editor.')
+                    raise ValueError('This document is too large for the editor.')
                 root = ET.fromstring(archive.read('word/document.xml'))
         except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
             # An empty "New Microsoft Word Document" or a damaged file is not a crash.
@@ -365,15 +373,15 @@ class VoiceDocument:
                    'gridCol', 'tr', 'tc', 'tcPr', 'tcW', 'tblW', 'tblBorders',
                    'top', 'bottom', 'left', 'right', 'insideH', 'insideV', 'jc', 'spacing', 'br')}
         if any(node.tag not in allowed for node in root.iter()):
-            raise ValueError('This document uses formatting this test editor cannot preserve.')
+            raise ValueError('This document uses formatting the editor cannot preserve.')
         # Attributes this editor would silently drop on save: space before/after
         # paragraphs and paragraph styles other than headings.
         if any(node.get(ns + side) is not None for node in root.iter(ns + 'spacing')
                for side in ('before', 'after', 'beforeLines', 'afterLines', 'beforeAutospacing', 'afterAutospacing')):
-            raise ValueError('This document uses formatting this test editor cannot preserve.')
+            raise ValueError('This document uses formatting the editor cannot preserve.')
         if any(not re.fullmatch(r'(?:Heading[1-6]|Normal)', node.get(ns + 'val', ''))
                for node in root.iter(ns + 'pStyle')):
-            raise ValueError('This document uses formatting this test editor cannot preserve.')
+            raise ValueError('This document uses formatting the editor cannot preserve.')
         document = cls(folder, title=path.stem, _opening=True, source_path=path)
         def switched_on(props, tag):
             # <w:b w:val="0"/> and <w:u w:val="none"/> mean the formatting is off.
@@ -495,11 +503,18 @@ class VoiceDocument:
             parts.append(table + '</w:tbl>')
         doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="' + XMLNS + '"><w:body>' + ''.join(parts) + '<w:sectPr/></w:body></w:document>'
         temporary = self.path.with_suffix('.writing.docx')
-        with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-            for name, value in [('[Content_Types].xml', CONTENT_TYPES), ('_rels/.rels', ROOT_RELS), ('word/document.xml', doc), ('word/styles.xml', STYLES), ('word/numbering.xml', NUMBERING), ('word/_rels/document.xml.rels', DOC_RELS)]:
-                z.writestr(name, value)
-        keep_previous(self.path)
-        temporary.replace(self.path)
+        try:
+            with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+                for name, value in [('[Content_Types].xml', CONTENT_TYPES), ('_rels/.rels', ROOT_RELS), ('word/document.xml', doc), ('word/styles.xml', STYLES), ('word/numbering.xml', NUMBERING), ('word/_rels/document.xml.rels', DOC_RELS)]:
+                    z.writestr(name, value)
+            keep_previous(self.path)
+            temporary.replace(self.path)
+        except BaseException:
+            # A file open in Word, or a full disk: the half-made copy must not stay
+            # behind, where it would be listed as one more document.
+            try: temporary.unlink()
+            except OSError: pass
+            raise
         return self.path
 
     def save_as(self, folder, title):
@@ -1258,6 +1273,10 @@ class VoiceDocument:
             return 'Deleted line: ' + (line or 'blank line') + '. Say undo to restore it.'
         if command == 'delete current word':
             command = 'delete word'
+        if command in ('copy', 'cut') and self.selection and self.selected_text():
+            # "Copy" alone right after "Select all" means the selection, as Control+C does.
+            # With nothing selected it stays text (see the caller).
+            return self._apply_selection_action(self.selection, command)
         current = re.fullmatch(r'(select|highlight|bold|underline|italicize|copy|cut|delete) (?:the )?(?:current |this )?(word|sentence|paragraph|line|selection|that)', command)
         if current and current.group(2) in ('selection','that'):
             if not self.selection:
@@ -1328,6 +1347,9 @@ class VoiceDocument:
                 current_end = current_base+len(self.paragraphs[self.cursor].text)
                 if not current_base <= self.reading.position <= current_end: self.reading.position = current_base
             result = self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            if unit != 'read':
+                # Repeating the last word alone sounded like a move, as at the last paragraph.
+                result = edge_notice(self.reading, self.EDGE_NAME) + result
             base = 0
             local = 0
             for i,p in enumerate(self.paragraphs):
@@ -1480,7 +1502,7 @@ class VoiceDocument:
             removed = self.paragraphs.pop(self.cursor)
             self.cursor = min(self.cursor, max(0, len(self.paragraphs) - 1))
             self.changed()
-            return 'Deleted paragraph: ' + removed.text
+            return ('Deleted paragraph: ' + removed.text) if removed.text.strip() else 'Deleted an empty paragraph. Say undo to restore it.'
         whole_paragraph = re.match(r'replace (?:the |current |this )?paragraph with (.+)$', text, re.I | re.S)
         if whole_paragraph:
             if not self.paragraphs:

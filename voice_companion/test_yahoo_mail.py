@@ -691,8 +691,11 @@ class YahooMovingTests(YahooTestCase):
                          [message(subject='N0'), message(subject='N1')])
         self.assertEqual(len(self.server.commands('UID MOVE')), 1)
         self.assertEqual(self.server.commands('EXPUNGE'), [])
-        # Deleting inside Trash leaves the message there, as Gmail does.
-        box.trash(['1'], 'Trash')
+        # Deleting inside Trash leaves the message there, as Gmail does, and says so
+        # (it said "1 message moved to Trash" while nothing moved).
+        with self.assertRaisesRegex(MailboxError, 'already in Trash') as said:
+            box.trash(['1'], 'Trash')
+        self.assertTrue(said.exception.unchanged)
         self.assertEqual(len(self.server.folders['Trash'].messages), 2)
 
     def test_without_move_only_the_chosen_messages_are_removed(self):

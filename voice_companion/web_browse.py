@@ -1,4 +1,5 @@
 """Screen-reader style browse cursor and logical table coordinates."""
+import re
 ACTIONABLE={'link','button','checkbox','radio','combobox','listbox','edit','switch','slider','menuitem','menuitemradio','menuitemcheckbox'}
 QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':'combobox','e':'edit','t':'table','r':'radio','a':'radio','l':'list','i':'listitem','d':'landmark','g':'graphic','m':'frame','p':'paragraph','s':'listbox'}
 
@@ -89,6 +90,9 @@ def describe(item,elements=None):
     """How an element is spoken. A heading that is a link says so after its level, like
     a screen reader: "JAWS downloads, heading level 3, link." (Will, October 2026)."""
     name=item.get('label') or 'Unlabeled';role=kind(item)
+    # A sentence's own period or colon is not said before ", paragraph" or the final period.
+    # An ellipsis ("Add a comment...") is kept: it is how the site names the box.
+    name=re.sub(r'(?<!\.)[.,;:]$','',name.rstrip()) or name
     if role=='landmark':return (name+', ' if name not in ('Unnamed','Unlabeled') else '')+{'contentinfo':'content information'}.get(item.get('landmark','region'),item.get('landmark','region'))+' region.'
     if role=='list':return (name+', ' if name not in ('List','Unlabeled') else '')+('Ordered list' if item.get('ordered') else 'List')+', '+str(item.get('item_count',0))+' items.'
     if role=='listitem':return name+', list item'+(' '+str(item['position'])+' of '+str(item['set_size']) if item.get('position') and item.get('set_size',0)>0 else '')+'.'

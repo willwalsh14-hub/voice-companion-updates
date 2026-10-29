@@ -56,6 +56,18 @@ class WebsiteByVoiceTests(Journey):
         session.open.assert_not_called()
         self.say('yes','awake');self.assertEqual(self.spoken,['Say next or previous to choose an option.'])
 
+    def test_go_to_a_spelled_address_on_a_page_offers_the_site(self):
+        """Offline speech hears "Go to VA dot gov" as "go to v a dot gov"; on a page it looked
+        for a link instead of offering the site."""
+        for said in ('go to v a dot gov','Go to, VA dot gov.','Go to V.A. dot gov.'):
+            with self.subTest(said=said):
+                session=self.web();app.pending_website=None
+                session.snapshot={'url':'https://example.com/','title':'Example','text':'Example'}
+                session.favorites.get.return_value=None
+                self.assertEqual(self.say(said,'web'),'web')
+                self.assertEqual(self.spoken,['I heard website va.gov. Is that right? Say yes or no.'])
+                session.command.assert_not_called()
+
     def test_open_website_works_on_the_web_browser_menu_and_on_a_page(self):
         """On the web browser menu, "Open website" said "Choose a web browser menu option."."""
         for mode in ('browser_menu','web'):
@@ -67,6 +79,42 @@ class WebsiteByVoiceTests(Journey):
                 self.assertEqual(self.spoken,['I heard website va.gov. Is that right? Say yes or no.'])
                 self.assertEqual(self.say('Yes, please.',mode),'web')
                 session.open.assert_called_once_with('https://va.gov')
+
+
+class FavoritesFromMainMenuTests(Journey):
+    def test_list_favorites_on_the_main_menu_opens_a_list_you_can_move_through(self):
+        """"List favorites" on the main menu read the first favorite, but "next" then moved the
+        main menu and "that one" opened File manager."""
+        from web_assistant import Favorites
+        favorites=Favorites(self.root);favorites.add('News','https://news.example/');favorites.add('VA','https://va.gov/')
+        mode=self.say('List favorites.','awake')
+        self.assertEqual(mode,'browser_menu')
+        self.assertIn('News',' '.join(self.spoken))
+        app.web_session.open=Mock(return_value='Page loaded: VA.')
+        app.web_session.navigation_succeeded=True
+        mode=self.say('next',mode)
+        self.assertIn('VA',' '.join(self.spoken))
+        self.assertNotIn('File manager',' '.join(self.spoken))
+        self.say('that one',mode)
+        app.web_session.open.assert_called_once_with('https://va.gov/')
+
+
+class WebListsFromMainMenuTests(Journey):
+    def test_web_history_and_favorite_commands_on_the_main_menu(self):
+        """On the main menu, "Web history." searched Google for "history.", and "Delete favorite"
+        and "Rename favorite" were not understood."""
+        from web_assistant import Favorites
+        from browser_menu import BrowserMenu
+        Favorites(self.root).add('News','https://news.example/')
+        BrowserMenu(self.root).record({'url':'https://va.gov/','title':'VA home'})
+        with patch('web_assistant.WebSession.search') as search:
+            for said,heard in (('Web history.','Web history. VA home'),('Go to favorite.','Favorites. News'),
+                               ('Delete favorite','Favorites. News'),('Rename favorite.','Favorites. News')):
+                with self.subTest(said=said):
+                    app.web_session=None
+                    self.assertEqual(self.say(said,'awake'),'browser_menu')
+                    self.assertTrue(' '.join(self.spoken).startswith(heard),self.spoken)
+            search.assert_not_called()
 
 
 class MainMenuSaidOnceTests(Journey):

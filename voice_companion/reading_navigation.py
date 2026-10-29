@@ -9,6 +9,8 @@ class ReadingCursor:
         self.position = 0
         self.continuation = 0
         self._cache={}
+        # 'start' or 'end' when the last move could not go further; screens say so.
+        self.edge = None
 
     def set_text(self, value, reset=False):
         value = str(value or '')
@@ -43,6 +45,7 @@ class ReadingCursor:
         elif self.position>=spans[index].end():
             if direction>=0:index+=1
         else:index+=direction
+        self.edge = 'end' if direction > 0 and index > len(spans)-1 else 'start' if direction < 0 and index < 0 else None
         index=max(0,min(len(spans)-1,index))
         self.position = spans[index].start()
         self.continuation = self.position
@@ -64,6 +67,12 @@ class ReadingCursor:
         self.position = self.continuation
         self.continuation = end
         return piece + (' Say continue reading for more.' if end < len(self.text) else ' End of text.')
+
+
+def edge_notice(cursor, name):
+    """'End of document. ' when the last move could not go further, else ''."""
+    edge = getattr(cursor, 'edge', None)
+    return (('End of ' if edge == 'end' else 'Beginning of ') + name + '. ') if edge else ''
 
 
 def reading_request(command):

@@ -339,4 +339,31 @@ class WebTests(unittest.TestCase):
         self.assertEqual(self.backend.activated, [])
 
 
+    def test_spoken_answers_with_recognizer_punctuation(self):
+        """"Skip." and "Cancel form." were typed into the field as answers, "Yes, please." was
+        refused for a checkbox, and "Oregon." matched no choice."""
+        self.backend.controls = [
+            {'key':'1','role':'field','label':'Nickname','tag':'input','type':'text','value':''},
+            {'key':'2','role':'field','label':'Agree to terms','tag':'input','type':'checkbox','checked':False},
+            {'key':'3','role':'field','label':'State','tag':'select','type':'select-one','selected_label':'Choose',
+             'options':[{'label':'Choose','value':''},{'label':'Oregon','value':'OR'}]},
+            {'key':'4','role':'field','label':'Comments','tag':'textarea','type':'textarea','value':''},
+            {'key':'5','role':'button','label':'Submit application','tag':'button','type':'submit','in_form':True},
+        ]
+        self.session.open('example.com')
+        self.session.command('fill out this form')
+        self.assertIn('Skipped Nickname', self.session.command('Skip.'))
+        self.assertIn('Choices:', self.session.command('Yes, please.'))
+        self.assertTrue(self.backend.controls[1]['checked'])
+        self.assertIn('Comments', self.session.command('Oregon.'))
+        self.assertEqual(self.backend.controls[2]['selected_label'], 'Oregon')
+        self.assertIn('Field 4', self.session.command('Repeat.'))
+        self.assertIn('Stopped filling the form', self.session.command('Cancel form.'))
+        self.assertEqual(self.backend.filled, [])
+        self.session.command('fill out this form')
+        self.session.command('Skip.')
+        self.assertIn('Choices:', self.session.command('No, thanks.'))
+        self.assertFalse(self.backend.controls[1]['checked'])
+
+
 if __name__ == '__main__': unittest.main()

@@ -57,7 +57,8 @@ class MediaNavigationTests(unittest.TestCase):
         self.nav.enter('radio');self.nav.keyboard('Ctrl+F')
         with patch.object(self.hub,'search_radio',return_value='Found stations') as search:
             self.nav.field_value('News & Music','Tab');self.assertEqual(self.nav.field_index,1)
-            self.nav.command('okay');search.assert_called_once_with('name','news & music')
+            # The name keeps its capitals; names are matched without regard to capitals.
+            self.nav.command('okay');search.assert_called_once_with('name','News & Music')
         self.nav.enter('podcast');self.nav.command('Search podcasts')
         with patch.object(self.hub,'search_podcasts',return_value='Found podcasts') as search:
             self.nav.command('History');search.assert_called_once_with('History');self.assertIsNone(self.nav.form)
@@ -67,7 +68,7 @@ class MediaNavigationTests(unittest.TestCase):
         for field in ('genre','country','state','city'):
             self.nav.open_form(field)
             with patch.object(self.hub,'search_radio',return_value='Found') as search:
-                self.nav.field_value('Jazz','Enter');search.assert_called_once_with(field,'jazz')
+                self.nav.field_value('Jazz','Enter');search.assert_called_once_with(field,'Jazz')
     def test_schedule_fields_validate_then_record_selected_station(self):
         self.nav.select_item(1);self.nav.open_form('schedule')
         self.nav.keyboard('Down');self.nav.keyboard('Tab');self.nav.field_value('25 PM','Tab');self.nav.field_value('45','Tab');self.nav.keyboard('Space')

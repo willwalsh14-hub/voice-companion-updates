@@ -80,9 +80,17 @@ def location_name(path):
 
 def valid_name(name):
     name=name.strip()
+    if name.endswith('.') and name not in ('.','..') and not re.search(r'[<>:"/\\|?*\x00-\x1f]',name):
+        raise ValueError('A name cannot end with a period or a space. Please choose another name.')
     if not name or name in ('.','..') or re.search(r'[<>:"/\\|?*\x00-\x1f]',name) or name.endswith(('.', ' ')) or name.split('.')[0].upper() in {'CON','PRN','AUX','NUL',*(f'COM{i}' for i in range(1,10)),*(f'LPT{i}' for i in range(1,10))}:
         raise ValueError('Use a file name without slashes or special Windows characters.')
     return name
+
+def spoken_name(heard):
+    """A new name said aloud: no period the recognizer added, and "letter dot t x t" is letter.txt."""
+    name=heard.strip().rstrip('.!?,;:').strip()
+    said=re.fullmatch(r'(.+?)\s+dot\s+((?:[a-z0-9]\s+){1,4}[a-z0-9]|[a-z0-9]{1,5})',name,re.I)
+    return said[1]+'.'+re.sub(r'\s+','',said[2]) if said else name
 
 def shell_thread(function):
     def call(*args,**kwargs):
@@ -270,7 +278,7 @@ class FileManager:
     def refresh_here(self):return self.refresh(self.location,preserve=self.current().path if self.current() else None)
     def targets(self):
         targets=[i for i in self.items if i.path in self.selected] or ([self.current()] if self.current() else [])
-        if not targets:raise ValueError('No item is selected.')
+        if not targets:raise ValueError('This folder is empty.' if self.location is not None and not self.items else 'No item is selected.')
         if self.location is None or any(i.drive or not i.filesystem for i in targets):raise ValueError('Choose files or folders inside a drive. Drives and virtual locations cannot be renamed, deleted, copied, or cut.')
         return targets
     def choose(self,name):
@@ -347,6 +355,7 @@ class FileManager:
         if cmd=='toggle selection' or match:
             if match and match[2]:self.choose(match[2])
             item=self.current()
+            if self.location is not None and not self.items:raise ValueError('This folder is empty.')
             if self.location is None or not item or item.drive or not item.filesystem:raise ValueError('Choose a file or folder inside a drive before selecting.')
             selected=item.path not in self.selected if cmd=='toggle selection' else match[1].lower() in ('select','mark','check')
             if selected:self.selected.add(item.path)

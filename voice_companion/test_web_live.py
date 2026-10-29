@@ -564,6 +564,73 @@ class LiveWebTests(unittest.TestCase):
         self.assertEqual(self.session.engine_choices[0],'brave')
         self.assertEqual(self.session.search_engine,'google')
 
+class BackgroundFileBoxTests(unittest.TestCase):
+    """Guided Chrome in the background has no window, so it cannot show a file box.
+    Headless Chromium stands in for it here (Playwright's own Chromium, as above)."""
+    setUpClass=classmethod(LiveWebTests.setUpClass.__func__)
+    tearDownClass=classmethod(LiveWebTests.tearDownClass.__func__)
+    setUp=LiveWebTests.setUp
+    UPLOAD='<title>Claim</title><h1>Your claim</h1><input id="f" type="file" hidden><button onclick="document.getElementById(\'f\').click()">Upload a photo</button>'
+
+    def test_upload_button_says_the_file_box_needs_the_window(self):
+        """A button that opens a hidden file box did nothing; only "The website has not moved to another step." was said."""
+        import web_assistant
+        self.page.set_content(self.UPLOAD);self.session._refresh(read=False)
+        self.backend.launched_hidden=True
+        self.session.keyboard('Quick:b')
+        said=self.session.keyboard('Activate')
+        self.assertIn(web_assistant.FILE_BOX_HIDDEN,said)
+        self.assertNotIn('not moved',said)
+
+    def test_with_a_window_the_file_box_is_left_to_chrome(self):
+        """Chrome with its window shows its own file box; Companion must not catch it."""
+        self.page.set_content(self.UPLOAD);self.session._refresh(read=False)
+        self.backend.launched_hidden=False
+        self.session.keyboard('Quick:b');self.session.keyboard('Activate')
+        self.assertIsNone(getattr(self.backend,'file_box_page',None))
+
+class BackgroundRelaunchTests(unittest.TestCase):
+    """Guided Chrome in the background starts again with its window when a page needs it
+    or when asked. Playwright's Chromium stands in for Chrome here."""
+    setUpClass=classmethod(LiveWebTests.setUpClass.__func__)
+    tearDownClass=classmethod(LiveWebTests.tearDownClass.__func__)
+
+    def setUp(self):
+        import web_assistant
+        driver=self.driver
+        def shop(route):
+            cookie=route.request.headers.get('cookie','')
+            if route.request.url.endswith('/login'):
+                route.fulfill(content_type='text/html',body='<title>Signed in</title><p>Welcome back.</p>',headers={'Set-Cookie':'shop_session=abc; Path=/; Secure'})
+            else:
+                route.fulfill(content_type='text/html',body='<title>Cart</title><p>'+('Your cart has 2 items.' if 'shop_session=abc' in cookie else 'You are signed out.')+'</p>')
+        class Guided(BrowserBackend):
+            def start(self):
+                if self.page and not self.page.is_closed():return
+                self.context=driver.chromium.launch_persistent_context(str(self.folder),headless=True)
+                self.context.route('https://shop.test/**',shop)
+                self.launched_hidden=self.runs_hidden()
+                self.page=self.context.pages[0] if self.context.pages else self.context.new_page()
+            def close(self):
+                context,self.context,self.page=self.context,None,None
+                if context:context.close()
+            def bring_window_forward(self):return True
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        patcher=patch.object(web_assistant,'CHROME_IN_BACKGROUND',True);patcher.start();self.addCleanup(patcher.stop)
+        self.backend=Guided(self.temp.name+'/profile','chrome');self.addCleanup(self.backend.close)
+        self.session=WebSession(self.temp.name,self.backend,progress=lambda text:None);self.session.auto_read=False
+
+    def test_show_browser_window_keeps_you_signed_in(self):
+        """Starting Chrome again dropped the cookies a site keeps only while the browser is open,
+        so after Show browser window, or a payment page, you were signed out and the cart was empty."""
+        self.session.open('https://shop.test/login')
+        self.session.open('https://shop.test/cart')
+        self.assertIn('2 items',self.session.reading.text)
+        self.session.browser_window(True)
+        self.assertIn('2 items',self.session.reading.text)
+        self.session.browser_window(False)
+        self.assertIn('2 items',self.session.reading.text)
+
 @unittest.skipUnless(sys.platform=='win32','Installed Windows Chrome browser')
 class ChromeLiveTests(LiveWebTests):
     browser_name='chrome'
