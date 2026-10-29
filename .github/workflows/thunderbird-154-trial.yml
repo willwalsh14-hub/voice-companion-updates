@@ -1,0 +1,77 @@
+name: Try Thunderbird ESR to Release update on Windows
+on:
+  push:
+    branches: ['claude/try-thunderbird-154']
+permissions:
+  contents: read
+concurrency:
+  group: thunderbird-154-trial-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  thunderbird:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: voice_companion
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Add-on against simulated Thunderbird
+        run: |
+          node thunderbird_mail_extension/test-bridge.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'The add-on checks failed.' }
+      - name: Python the way the build makes it (venv from py -3.12)
+        run: |
+          $buildEnv = Join-Path $env:LOCALAPPDATA 'VCBuild\py312'
+          py -3.12 -m venv $buildEnv
+          if ($LASTEXITCODE -ne 0) { throw 'Python 3.12 could not create the build environment.' }
+          $python = Join-Path $buildEnv 'Scripts\python.exe'
+          & $python -m pip install --disable-pip-version-check -r requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Test dependency installation failed.' }
+          "VC_PYTHON=$python" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Thunderbird unit tests with that Python
+        run: |
+          $output = & $env:VC_PYTHON -m unittest test_thunderbird_upgrade test_thunderbird_setup test_thunderbird_accounts test_thunderbird_mail 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Output $output
+          if ($code) {
+            $clean = $output -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+            if ($clean.Length -gt 3500) { $clean = $clean.Substring($clean.Length - 3500) }
+            Write-Output ('::error title=Thunderbird unit tests failed::' + $clean)
+            exit $code
+          }
+      - name: Real Thunderbird ESR updated to Release by Voice Companion
+        timeout-minutes: 30
+        run: |
+          $work = Join-Path $env:RUNNER_TEMP 'thunderbird-154-trial'
+          & $env:VC_PYTHON -u check_thunderbird_upgrade_live.py $work 2>&1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'live.txt')
+          $code = $LASTEXITCODE
+          $report = Join-Path $work 'report.json'
+          if (Test-Path $report) {
+            $data = Get-Content $report -Raw | ConvertFrom-Json
+            $checks = ($data.checks.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value }) -join '%0A'
+            Write-Output ('::notice title=Required checks::' + $checks)
+            foreach ($name in @('update_result','update_report','update_said','before_install','after_install','release_about','esr_about','installs_ini_before','installs_ini_after','release_accounts','folders')) {
+              $text = ($data.$name | ConvertTo-Json -Depth 8 -Compress) -replace '%','%25'
+              if ($text.Length -gt 3000) { $text = $text.Substring(0, 3000) }
+              Write-Output ('::notice title=' + $name + '::' + $text)
+            }
+            $best = $data.best_effort.PSObject.Properties
+            foreach ($item in $best) {
+              $text = ($item.Value | ConvertTo-Json -Depth 8 -Compress) -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+              if ($text.Length -gt 3000) { $text = $text.Substring(0, 3000) }
+              Write-Output ('::notice title=best ' + $item.Name + '::' + $text)
+            }
+          } else {
+            $tail = (Get-Content (Join-Path $env:RUNNER_TEMP 'live.txt') -Tail 60) -join '%0A'
+            $tail = $tail -replace '%(?!0A)','%25'
+            Write-Output ('::error title=Live check stopped before its report::' + $tail)
+          }
+          if ($code) { throw 'The real Thunderbird update check failed. The annotations name the failed checks.' }
