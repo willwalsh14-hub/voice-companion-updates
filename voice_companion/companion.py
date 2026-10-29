@@ -569,7 +569,10 @@ def _handle_keyboard(text,mode):
     if mode=='sleep' and (text=='@microphone' or normalized_command(text) in MICROPHONE_OFF_PHRASES+MICROPHONE_ON_PHRASES):
         # F9 while asleep: still asleep, so say how to wake up, not "Voice commands are on".
         return set_microphone(MICROPHONE_OFF if text=='@microphone' else normalized_command(text) in MICROPHONE_ON_PHRASES,'sleep')
-    if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
+    if mode=='sleep' and normalized_command(text) in ('wake up','wake companion'):
+        # Typed "Wake up." wakes to the screen behind sleep, as Control+F12 does.
+        return resume_from_sleep()
+    if mode=='sleep':
         result=handle_keyboard(text,SLEEP_RETURN_MODE)
         # "go to sleep" typed while asleep returns 'sleep'; keep the place to wake up to.
         if result!='sleep':SLEEP_RETURN_MODE=result
@@ -697,7 +700,10 @@ def resume_from_sleep():
         sync_app_context(mode,True)
         return mode
     # The same screen names as everywhere else ("Back to Word processor menu."), never the internal mode.
-    speak('I am listening. ' + options_return_notice(mode))
+    # Asleep during a question: ask it again, so the answer is not a guess.
+    question={'document_save':'Save this document? Yes or no.','document_name':'Back to naming your document.',
+              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None}.get(mode)
+    speak('I am listening. ' + (question or options_return_notice(mode)))
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
     return mode
@@ -2419,8 +2425,12 @@ def set_microphone(on, mode):
     try:save_preferences()
     except OSError:pass   # The switch still works now; it is only not remembered.
     if on:
-        speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
-                                   else 'Voice commands are on.'))
+        if MICROPHONE_FAILED:
+            # Never "Voice commands are on" when the microphone could not open.
+            speak('Microphone on. It could not start yet, so use the keys. Voice commands start by themselves when it works.')
+        else:
+            speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
+                                       else 'Voice commands are on.'))
     else:
         speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.')
     return mode
@@ -3954,7 +3964,9 @@ def _handle(text, mode, typed=False):
             speak('The user guide folder could not open or update. Say help for onboard instructions and ask your helper to check the installation.')
         return mode
     if voice_menu(command): return mode
-    if command in ('start tutorial', 'audio tutorial', 'practice tutorial', 'open tutorial'):
+    # "Tutorial" or "Lessons" alone only where words are commands; in a document they are text.
+    if command in ('start tutorial', 'audio tutorial', 'practice tutorial', 'open tutorial', 'start the tutorial',
+                   'open the tutorial', 'start lessons') or command in ('tutorial', 'lessons') and mode in ('awake', 'help'):
         if mode not in ('awake', 'help'):
             speak('Say main menu first, then start tutorial. This protects what you are working on.')
             return mode
@@ -4167,7 +4179,7 @@ def _handle(text, mode, typed=False):
         # "Help with the dishes tonight" while writing is text unless it names a guide topic.
         try:
             probe = HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
-            if probe.topic(help_topic[1]).startswith('I could not identify one help topic'): help_topic = None
+            if probe.topic(help_topic[1]).startswith(__import__('onboard_help').NOT_FOUND): help_topic = None
         except (OSError, ValueError): pass
     if command in ('help', 'user guide', 'open user guide', 'manual', 'open manual') or help_topic:
         try:
@@ -4211,7 +4223,8 @@ def _handle(text, mode, typed=False):
                'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
         return mode
     if command in ('what mode', 'which mode', 'what input mode'):
-        speak('Input mode: ' + INPUT_MODE + '.')
+        # The names the guide and the mode commands use, never the stored word ("mixed").
+        speak('Input mode: ' + {'mixed':'Normal mode','commands':'Commands only','dictation':'Dictation only'}.get(INPUT_MODE, INPUT_MODE) + '.')
         return mode
     if command in ('subscription list', 'subscriptions list', 'podcast list', 'podcasts list',
                    'list podcast', 'list podcasts', 'list subscriptions', 'my podcasts'):
