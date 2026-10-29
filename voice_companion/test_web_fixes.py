@@ -29,6 +29,29 @@ class SpokenAddressTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=spoken):
                 prepare_address(spoken)
 
+    def test_recognizer_spelling_and_commas_still_open_the_site(self):
+        """Offline speech spells short names letter by letter ("v a dot gov"), other
+        recognizers write "V.A." or add a comma ("Go to, VA dot gov."). These searched the web
+        or matched a link on the page instead of offering to open the site."""
+        from browser_navigation import spoken_address_request
+        cases = {
+            'v a dot gov': 'https://va.gov',
+            'Go to v a dot gov.': 'https://va.gov',
+            'V.A. dot gov.': 'https://va.gov',
+            'Go to V.A. dot gov.': 'https://va.gov',
+            'w w w dot google dot com': 'https://www.google.com',
+            'Go to, VA dot gov.': 'https://va.gov',
+            'Open website, VA dot gov.': 'https://va.gov',
+            'Open, VA dot gov.': 'https://va.gov',
+            'go to the VA dot gov': None,
+            'what is a dot com company': None,
+            'Go to my news': None,
+            'open the door': None,
+        }
+        for spoken, expected in cases.items():
+            self.assertEqual(spoken_address_request(spoken), expected, spoken)
+        self.assertEqual(prepare_address('V.A. dot gov.')[0], 'https://va.gov')
+
     def test_typed_search_box_text(self):
         for text in ('va.gov.', 'Example.com.', 'example.com/path', 'https://x.example', '192.168.1.1'):
             self.assertTrue(looks_like_address(text), text)

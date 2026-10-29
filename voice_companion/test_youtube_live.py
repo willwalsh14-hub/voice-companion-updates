@@ -261,6 +261,42 @@ class ScreenTests(LiveYouTube):
         self.assertEqual(self.say("What's playing?", 'awake'), 'awake')
         self.assertTrue(self.last().startswith('YouTube: Never Gonna Give You Up.'))
 
+    def test_play_plays_the_chosen_video_before_any_video_plays(self):
+        # A new veteran hears a video's name and says "Play", not "That one".
+        self.assertEqual(self.say('Search YouTube for bread.', 'awake'), 'youtube')
+        self.press('Down')
+        self.say('Play.')
+        self.assertEqual(self.last(), 'No video is playing. Choose a video and press Enter.')   # a channel, not a video
+        self.press('Up')
+        self.assertEqual(self.say('Play.'), 'youtube')
+        chosen = self.ys.SCREEN.current()
+        self.assertEqual(chosen['title'], 'Bread for beginners')
+        self.assertEqual(self.ys.SCREEN.played[-1]['id'], chosen['id'])   # the saved watch page names it as it likes
+        self.assertTrue(self.last().startswith('Playing '), self.last())
+        self.say('Pause.')
+        self.assertEqual(self.say('Play.'), 'youtube')
+        self.assertEqual(self.last(), 'Playing.')   # Play resumes the video; it does not start the chosen one
+
+    def test_stop_and_resume_mean_the_video_while_one_is_loaded(self):
+        # Said "Stop" and "Resume" were taken as Companion's voice: silence, and the video played on.
+        screen = self.playing()
+        self.say('Pause.')
+        self.assertEqual(self.say('Resume.'), 'youtube')
+        self.assertEqual(self.last(), 'Playing.')
+        self.assertEqual(self.say('Stop.'), 'youtube')
+        self.assertEqual(self.last(), 'Video stopped.')
+        self.assertFalse(screen.has_video())
+        before = len(self.said)
+        self.say('Stop.')   # nothing loaded: Stop silences Companion's voice, as on other screens
+        self.assertEqual(self.said[before:], [])
+        # With nothing playing, F3 and "What's playing?" here point to the videos, not to the radio.
+        self.press('F3')
+        self.assertEqual(self.last(), 'Nothing is playing. Choose a video and press Enter to play it.')
+        self.say("What's playing?")
+        self.assertEqual(self.last(), 'Nothing is playing. Choose a video and press Enter to play it.')
+        self.say("What's playing?", 'awake')
+        self.assertTrue(self.last().startswith('Nothing is playing. To start, say Play and a station name'))
+
     def test_the_keyboard_comes_back_after_a_browser_tab_opens(self):
         from unittest.mock import Mock
         window = Mock(); self.app.APP_WINDOW = window

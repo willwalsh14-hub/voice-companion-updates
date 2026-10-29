@@ -149,6 +149,45 @@ class SwitchingTests(unittest.TestCase):
                   'controls': [{'key': '2', 'role': 'field', 'label': 'Photo', 'type': 'file', 'tag': 'input', 'href': ''}]}
         self.assertEqual(window_need(upload), 'file')
 
+    def test_a_sign_in_code_or_an_id_date_is_not_a_payment(self):
+        """A sign-in step that asks for the "Security code" sent by text, or a form that asks for
+        an ID's "Expiration date", was called a card payment, and Chrome was started again, which
+        can end the sign-in."""
+        code = {'title': 'Verify', 'text': 'We sent a code.', 'url': 'https://login.example/verify', 'controls': [
+            {'key': '1', 'role': 'field', 'label': 'Security code', 'type': 'text', 'tag': 'input', 'href': '', 'autocomplete': 'one-time-code'}]}
+        license = {'title': 'Your ID', 'text': 'Tell us about your ID.', 'url': 'https://forms.example/id', 'controls': [
+            {'key': '1', 'role': 'field', 'label': 'Expiration date', 'type': 'date', 'tag': 'input', 'href': ''}]}
+        self.assertIsNone(window_need(code))
+        self.assertIsNone(window_need(license))
+        checkout = {'title': 'Checkout', 'text': 'Pay.', 'url': 'https://shop.example/pay', 'controls': [
+            {'key': '1', 'role': 'field', 'label': 'Card number', 'type': 'text', 'tag': 'input', 'href': ''},
+            {'key': '2', 'role': 'field', 'label': 'Security code', 'type': 'text', 'tag': 'input', 'href': ''}]}
+        self.assertEqual(window_need(checkout), 'payment')
+        self.assertEqual(window_need({'url': 'https://shop.example/pay', 'controls': [
+            {'label': 'CVV', 'type': 'text'}]}), 'payment')
+        # A site may put a section name first: "section-checkout cc-number".
+        self.assertEqual(window_need({'url': 'https://shop.example/pay', 'controls': [
+            {'label': 'Number', 'type': 'text', 'autocomplete': 'section-checkout billing cc-number'}]}), 'payment')
+
+    def test_a_card_box_that_appears_on_the_same_page_does_not_reload_it(self):
+        """A one-page checkout shows its card boxes after the address step, and a form can show
+        a file box after an answer. Chrome was started again and the page loaded again, which
+        lost what you had typed there."""
+        backend = self.backend
+        backend.document_stamp = lambda: {'url': backend.url, 'epoch': 7, 'revision': 1, 'ready': 'complete', 'busy': False, 'frames': []}
+        backend.pages['https://shop.example/checkout'] = {'title': 'Checkout', 'text': 'Your address.', 'controls': []}
+        self.session.open('https://shop.example/checkout')
+        backend.pages['https://shop.example/checkout'] = dict(PAYMENT)
+        said = self.session._refresh(read=False, preserve=True, wait=False)
+        self.assertEqual(backend.starts, [True])
+        self.assertIn(web_assistant.WINDOW_NEEDED_HERE['payment'], said)
+        self.assertIn('show browser window', said)
+        # Said once for this page, not on every update.
+        self.assertNotIn(web_assistant.WINDOW_NEEDED_HERE['payment'], self.session._refresh(read=False, preserve=True, wait=False))
+        # A new page that asks for a card still opens the window.
+        self.session.open('https://shop.example/pay')
+        self.assertEqual(backend.starts, [True, False])
+
     def test_show_and_hide_keep_the_page_and_reading_place(self):
         self.session.open('https://news.example/')
         self.session.reading.position = 11
@@ -163,6 +202,27 @@ class SwitchingTests(unittest.TestCase):
         self.assertEqual(self.backend.starts, [True, False, True])
         self.assertEqual(self.backend.url, 'https://news.example/')
         self.assertEqual(self.session.browser_window(False), web_assistant.WINDOW_ALREADY_HIDDEN)
+
+    def test_show_on_an_error_page_does_not_say_chrome_is_in_front(self):
+        """On "This page could not open", Show browser window closed Chrome, then said it was
+        in front; the old page text stayed and every command acted on a closed browser."""
+        self.backend.pages['chrome-error://chromewebdata/'] = {'title': 'news.example', 'text': 'This site cannot be reached.', 'controls': []}
+        self.session.open('https://news.example/')
+        self.backend.url = 'chrome-error://chromewebdata/'; self.session._refresh(read=False)
+        said = self.session.browser_window(True)
+        self.assertNotIn('It is in front', said)
+        self.assertEqual(said, web_assistant.WINDOW_SHOWN['asked'] + ' It opens when you open a website.')
+        self.assertIsNone(self.session.snapshot)
+        self.assertEqual(self.session.open('https://news.example/').count('Page'), 1)
+        self.assertEqual(self.backend.starts[-1], False)
+
+    def test_option_change_on_an_error_page_does_not_claim_the_same_page(self):
+        self.backend.pages['chrome-error://chromewebdata/'] = {'title': 'news.example', 'text': 'This site cannot be reached.', 'controls': []}
+        with mock.patch.object(web_assistant, 'CHROME_IN_BACKGROUND', False):
+            self.session.open('https://news.example/')
+            self.backend.url = 'chrome-error://chromewebdata/'; self.session._refresh(read=False)
+        self.assertEqual(self.session.window_option_changed(), 'Chrome opens the new way when you open a website.')
+        self.assertIsNone(self.session.snapshot)
 
     def test_hide_refused_while_the_page_still_needs_the_window(self):
         self.session.open('https://accounts.google.com/signin')
@@ -193,6 +253,16 @@ class SwitchingTests(unittest.TestCase):
             def guided_chrome(self): return False
         session = WebSession(self.temp.name, Edge(self.temp.name, {}))
         self.assertEqual(session.browser_window(False), web_assistant.WINDOW_NOT_CHROME)
+
+    def test_your_own_browser_is_not_called_embedded_edge(self):
+        """With your own Chrome linked by the extension, "Show browser window" said
+        "Embedded Edge is part of the Voice Companion window"."""
+        own = Guided(self.temp.name, {}); own.regular = True
+        session = WebSession(self.temp.name, own)
+        for show in (True, False):
+            said = session.browser_window(show)
+            self.assertEqual(said, web_assistant.WINDOW_OWN_BROWSER)
+            self.assertNotIn('Embedded Edge', said)
 
 
 if __name__ == '__main__':

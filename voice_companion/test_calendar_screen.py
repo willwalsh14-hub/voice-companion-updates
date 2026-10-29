@@ -44,6 +44,14 @@ class CalendarScreenTests(CalendarHarness):
         self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. 1 event. '
                          'Ten thirty AM to eleven AM, Doctor appointment, me@gmail.com, 1 of 1.')
 
+    def test_everyday_words_open_the_calendar_from_the_main_menu(self):
+        for words in ('Go to calendar.', 'go to my calendar', 'View my calendar', 'open the calendar', 'Show my schedule',
+                      'open my schedule', 'my appointments'):
+            with self.subTest(words=words):
+                self.assertEqual(app.handle(words, 'awake'), 'calendar')
+                self.assertTrue(self.said().startswith('Calendar. Today, Monday, October 26. 1 event.'), self.said())
+                calendar_screen.reset()
+
     def test_days_and_weeks_with_the_arrow_and_page_keys(self):
         mode = self.open()
         self.press('Right', mode)
@@ -109,6 +117,85 @@ class CalendarScreenTests(CalendarHarness):
         self.assertTrue(self.said().startswith('Saved doctor in the Home calendar.'))
         self.assertIn(('doctor', datetime(2026, 10, 27, 15), 'Home'), self.events_on(date(2026, 10, 27)))
 
+    def test_natural_words_for_adding_name_the_event_or_ask_for_its_name(self):
+        # A word between "a" and "appointment", and "reminder", from the main menu.
+        mode = app.handle('Schedule a doctor appointment for tomorrow at 3 PM.', 'awake')
+        self.assertEqual(mode, 'calendar')
+        self.assertTrue(self.said().startswith('Add doctor appointment, Tomorrow, Tuesday, October 27, three PM to four PM,'), self.said())
+        app.handle('no', mode)
+        # "for" alone is not a name: ask for one.
+        mode = app.handle('Make an appointment for Friday at 10 AM.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'What is it called? Type or say a name, such as Doctor, then press Enter.'))
+        mode = app.handle('Dentist', mode)
+        self.assertTrue(self.said().startswith('Add Dentist, Friday, October 30, ten AM to eleven AM,'), self.said())
+        app.handle('no', mode)
+        mode = app.handle('Add a reminder for tomorrow at 9.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'What is it called? Type or say a name, such as Doctor, then press Enter.'))
+        self.press('Escape', mode)
+        # Not a calendar request: a note about a meeting stays a note.
+        self.assertIsNone(calendar_screen.ADD_START.match('make a note about the meeting'))
+        self.assertIsNone(calendar_screen.ADD_START.match('add a note about meeting'))
+        # A day is not part of the name ("Schedule tomorrow's meeting" is not called "'s meeting").
+        app.handle("Schedule tomorrow's meeting at 2 PM.", 'calendar')
+        self.assertTrue(self.said().startswith('Add meeting, Tomorrow, Tuesday, October 27, two PM to three PM,'), self.said())
+        app.handle('no', 'calendar')
+
+    def test_delete_it_deletes_the_event(self):
+        mode = self.open()
+        app.handle('Delete it.', mode)
+        self.assertEqual(self.said(), 'Delete Doctor appointment, Today, Monday, October 26, ten thirty AM to eleven AM? Say Yes or No. Escape keeps it.')
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'Deleted Doctor appointment. Today, Monday, October 26. No events.')
+        self.press('Right', mode)
+        app.handle('cancel my appointment', mode)
+        self.assertTrue(self.said().startswith('Group meeting repeats.'), self.said())
+
+    def test_when_thunderbird_cannot_save_the_message_says_what_to_do_once(self):
+        import thunderbird_mailbox
+        from mailbox_access import MailboxError
+        real = thunderbird_mailbox.call
+
+        def failing(method, **params):
+            if method in ('addEvent', 'modifyEvent', 'deleteEvent'):
+                raise MailboxError({'addEvent': 'Thunderbird could not save the event.', 'modifyEvent': 'Thunderbird could not save the change.',
+                                    'deleteEvent': 'Thunderbird could not delete the event.'}[method])
+            return real(method, **params)
+        mode = self.open()
+        with mock.patch.object(thunderbird_mailbox, 'call', failing):
+            app.handle('add event tomorrow at 3 PM called Lunch', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not save the event. Close Thunderbird, then try again.')
+            app.handle('rename event to Dentist', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not save the change. Close Thunderbird, then try again.')
+            app.handle('delete event', mode)
+            app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not delete the event. Close Thunderbird, then try again.')
+            # A reason that is not about saving still says the event was not saved.
+            with mock.patch.object(thunderbird_pim, 'add_event', side_effect=thunderbird_pim.PimError('That calendar cannot be changed. Choose another calendar.')):
+                app.handle('add event tomorrow at 3 PM called Lunch', mode)
+                app.handle('yes', mode)
+            self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
+
+    def test_the_part_of_the_day_said_first_counts_for_the_time_said_next(self):
+        mode = self.press('Ctrl+N', self.open())
+        mode = app.handle('Friday evening', mode)
+        self.assertEqual(self.said(), 'Friday, October 30. What time? Say a time like 3 PM, or say all day. Escape cancels.')
+        mode = app.handle('7', mode)
+        self.assertEqual(self.said(), 'What is it called? Type or say a name, such as Doctor, then press Enter.')
+        # "No" is not a name: ask again.
+        mode = app.handle('No.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'An event needs a name. Type or say a name, such as Doctor, '
+                                                             'then press Enter. Escape cancels.'))
+        mode = app.handle('Bingo', mode)
+        self.assertTrue(self.said().startswith('Add Bingo, Friday, October 30, seven PM to eight PM,'), self.said())
+        app.handle('no', mode)
+        # "In the afternoon" after the time is not the name.
+        mode = app.handle('add event', mode)
+        mode = app.handle('Friday', mode)
+        mode = app.handle('two thirty in the afternoon', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'What is it called? Type or say a name, such as Doctor, then press Enter.'))
+
     def test_a_day_without_a_time_asks_for_the_time_or_all_day(self):
         mode = self.press('Ctrl+N', self.open())
         mode = app.handle('next Friday', mode)
@@ -165,7 +252,7 @@ class CalendarScreenTests(CalendarHarness):
         # A repeating event: this one only (the first choice), then the rest of the series stays.
         self.press('Right', mode)
         self.press('Delete', mode)
-        self.assertEqual(self.said(), 'Group meeting repeats. Delete only this one, on Tomorrow, Tuesday, October 27, nine AM to ten AM, '
+        self.assertEqual(self.said(), 'Group meeting repeats. Delete only this one, tomorrow, Tuesday, October 27, nine AM to ten AM, '
                                       'or all of them? Say this one, all, or no. Escape keeps it.')
         self.press('Down', mode)
         self.assertEqual(self.said(), 'All of them.')
@@ -430,7 +517,7 @@ class EditEventTests(CalendarHarness):
         mode = self.open()
         self.press('Right', mode)
         app.handle('Rename event to Team meeting.', mode)
-        self.assertEqual(self.said(), 'Rename Group meeting to Team meeting? Group meeting repeats. Change only this one, on Tomorrow, '
+        self.assertEqual(self.said(), 'Rename Group meeting to Team meeting? Group meeting repeats. Change only this one, tomorrow, '
                                       'Tuesday, October 27, or all of them? Say this one, all, or no. Escape cancels.')
         self.assertEqual(app.app_context(mode)['confirmation'], 'this one')
         self.press('Enter', mode)
@@ -551,9 +638,11 @@ class BrokenCalendarTests(CalendarHarness):
 
     def test_a_damaged_answer_is_said_plainly_and_the_screen_still_works(self):
         mode = self.open()
-        self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. No events. Thunderbird could not list its calendars.')
+        self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. No events. Thunderbird could not list its calendars. '
+                                      'Close Thunderbird, then try again.')
         self.press('Right', mode)
-        self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. No events. Thunderbird could not list its calendars.')
+        self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. No events. Thunderbird could not list its calendars. '
+                                      'Close Thunderbird, then try again.')
         self.press('Down', mode)
         self.assertEqual(self.said(), 'No events. Press Right Arrow for the next day.')
 

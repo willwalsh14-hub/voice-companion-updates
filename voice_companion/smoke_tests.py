@@ -396,7 +396,7 @@ class VoiceCompanionSmokeTests(unittest.TestCase):
             broken.write_bytes(contents)
             with patch.object(companion, 'speak') as spoken:
                 self.assertEqual(companion.handle('open document Broken', 'awake'), 'awake')
-            self.assertIn('could not safely open', spoken.call_args.args[0])
+            self.assertIn('empty or damaged, so it could not be opened', spoken.call_args.args[0])  # the same words as Open a document
             self.assertEqual(broken.read_bytes(), contents)
             self.assertIsNone(companion.document)
 

@@ -57,7 +57,7 @@ class MailboxTests(unittest.TestCase):
                 self.assertEqual(FakeClient.limits[-1], size)
             self.assertIn('Choose 10', session.process('set email list size 25'))
             self.assertEqual(FakeClient.limits[-1], 100)
-            self.assertIn('All messages are available', session.process('set email list size all'))
+            self.assertIn('All messages, 10 at a time', session.process('set email list size all'))
             self.assertEqual(FakeClient.limits[-1], 10)
             self.assertTrue(MailSession('thunderbird', folder, FakeClient).all_messages)
 

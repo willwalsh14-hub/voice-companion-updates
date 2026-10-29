@@ -17,6 +17,16 @@ NO_THUNDERBIRD = ('Contacts and calendars come from Thunderbird, and Thunderbird
                   'Say add Thunderbird account to set it up.')
 
 
+# What to do next, for the add-on's answers that say only what went wrong. Spoken messages say both.
+NEXT_STEPS = {
+    'Thunderbird could not list its calendars.': 'Close Thunderbird, then try again.',
+    'Thunderbird could not read its calendars.': 'Try again in a minute.',
+    'Thunderbird could not save the event.': 'Close Thunderbird, then try again.',
+    'Thunderbird could not save the change.': 'Close Thunderbird, then try again.',
+    'Thunderbird could not delete the event.': 'Close Thunderbird, then try again.',
+}
+
+
 class PimError(Exception):
     """Thunderbird could not give or change contacts or events. The text says why and what to do."""
 
@@ -47,6 +57,8 @@ def call(method, **params):
         return thunderbird_mailbox.call(method, **params)
     except MailboxError as exc:
         text = str(exc)
+        if text in NEXT_STEPS:
+            text += ' ' + NEXT_STEPS[text]
         raise PimError(UPDATE_NEEDED if text == UNSUPPORTED else text) from exc
 
 

@@ -390,9 +390,52 @@ class ContactsScreenTests(CompanionHarness):
         self.assertEqual(app.handle('Email John about the trip.', mode), 'note')
         self.assertEqual(app.email_draft, None)
 
+    def test_natural_words_for_adding_and_deleting_a_contact(self):
+        # A new user says "add a new contact", answers No to the email question, and says "delete it".
+        mode = app.handle('Add a new contact.', 'awake')
+        self.assertEqual((mode, self.said()), ('task_input', 'New contact. Type or say the name, then press Enter. Escape cancels.'))
+        mode = app.handle('Sue', mode)
+        mode = app.handle('No.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'Phone number? Type or say it, then press Enter. '
+                                                             'To leave it out, press Enter or say skip.'))
+        mode = app.handle('555 0123', mode)
+        self.assertEqual((mode, contacts_screen.current().name), ('contacts', 'Sue'))
+        app.handle('Delete it.', mode)
+        self.assertEqual(self.said(), 'Delete Sue from your contacts? It is also removed from Thunderbird. Say Yes or No. Escape keeps it.')
+        app.handle('yes', mode)
+        self.assertNotIn('Sue', [c.name for c in contacts_screen.CONTACTS])
+        mode = app.handle('add a new contact', mode)
+        self.assertEqual(mode, 'task_input')
+        # "No" is not a name: ask again.
+        mode = app.handle('No.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'A contact needs a name. Type or say the name, then press Enter. '
+                                                             'Escape cancels.'))
+        mode = app.handle('Tim', mode)
+        mode = app.handle('tim at example dot com', mode)
+        mode = app.handle('no thanks', mode)
+        self.assertEqual(self.said(), 'Saved Tim in Thunderbird, me@gmail.com. Tim, tim@example.com, 6 of 6.')
+
+    def test_everyday_words_open_contacts_from_the_main_menu(self):
+        for words in ('Go to contacts.', 'Show my address book', 'open my address book', 'View my contacts', 'open the contacts',
+                      'Phone book'):
+            with self.subTest(words=words):
+                self.assertEqual(app.handle(words, 'awake'), 'contacts')
+                self.assertTrue(self.said().startswith('Contacts. 5 contacts.'), self.said())
+                contacts_screen.reset()
+
     def test_old_google_contacts_command_points_to_thunderbird(self):
         app.handle('connect google contacts', 'awake')
         self.assertIn('Google contacts now come from Thunderbird.', self.said())
+
+
+class NamelessContactTests(unittest.TestCase):
+    def test_a_thunderbird_contact_with_only_a_phone_number_has_a_name_to_say(self):
+        # Google keeps contacts with only a phone number; every message names the contact.
+        contact = contacts_book.from_thunderbird({'id': 'c9', 'phones': ['555-0142'], 'book': 'Google'})
+        self.assertEqual(contact.name, 'No name')
+        self.assertEqual(contacts_screen.question(contact), 'Delete No name from your contacts? It is also removed from Thunderbird. '
+                                                            'Say Yes or No. Escape keeps it.')
+        self.assertEqual(contacts_book.from_thunderbird({'id': 'c8', 'emails': ['a@example.com']}).name, 'a@example.com')
 
 
 class NotStartedContactsTests(CompanionHarness):
@@ -434,6 +477,10 @@ class NoThunderbirdContactsTests(CompanionHarness):
         mode = app.handle('skip', mode)
         self.assertEqual(self.said(), 'Saved Lee on this computer. Lee, lee@example.com, 1 of 1.')
         self.assertEqual(AddressBook(self.root).get('lee')['address'], 'lee@example.com')
+        # The details say where it is in plain words, not "Saved in: Saved on this computer".
+        self.press('Enter', mode)
+        self.assertIn('Saved on this computer', [label for label, _ in contacts_screen.DETAILS])
+        self.press('Escape', mode)
         # A phone number alone is enough.
         mode = app.handle('add contact', mode)
         for answer in ('Plumber', '', '555 0199'):

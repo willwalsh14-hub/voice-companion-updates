@@ -777,15 +777,22 @@ class CompanionWindow:
             root.bind_all('<Alt-O>',settings_shortcut)
             route_alt_keys(root)
             button_row=tk.Frame(root)
-            flow(button_row,[tk.Button(button_row,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))),
-                             tk.Button(button_row, text='Enter typed command', command=submit_typed),
-                             tk.Button(button_row, text='AI voice setup (trainer)', command=self.setup_ai_voice)])
+            row_buttons=[tk.Button(button_row,text='Options (Alt+O)',command=lambda:self.commands.put(('keyboard','settings'))),
+                         tk.Button(button_row, text='Enter typed command', command=submit_typed),
+                         tk.Button(button_row, text='AI voice setup (trainer)', command=self.setup_ai_voice)]
+            for button in row_buttons:
+                # Tab can reach these buttons from the command box. Say where the keyboard went, so
+                # Enter never opens Options or a dialog by surprise.
+                button.bind('<FocusIn>',lambda event,name=button.cget('text'):self.feedback(name+' button. Enter activates. Shift+Tab goes back.'))
+            flow(button_row,row_buttons)
             self.current = tk.StringVar(root, value='Starting speech and microphone...')
             # The last thing spoken, in large text under the screen name. A few lines at most,
             # so a long message never pushes the list or text off the screen.
             message_view=tk.Text(root,wrap='word',font=fonts['message'],height=2,takefocus=0,borderwidth=0,cursor='arrow')
             message_view.insert('1.0',self.current.get());message_view.configure(state='disabled')
             history = scrolledtext.ScrolledText(root, wrap='word', font=fonts['body'], state='disabled', height=4)
+            # Its scroll bar never takes the keyboard: Tab there was silent, and keys went nowhere useful.
+            history.vbar.configure(takefocus=0)
             editor=tk.Text(root,wrap='word',font=fonts['body'],undo=True,exportselection=False,height=4)
             self.editor=editor
             # Lists and menus as lines, the selected one marked with an arrow, bold and highlighted;
@@ -816,6 +823,12 @@ class CompanionWindow:
                 if height<=1:return
                 line=fonts['body'].metrics('linespace')
                 toolbar=file_toolbar.winfo_reqheight()+8 if self.context.get('mode')=='files' else 0
+                # A long screen name at the largest text could take the whole window and leave the
+                # command box no room. Then it gives way: the message font, then one line.
+                width=max(1,root.winfo_width()-36)
+                for font,wrap in ((fonts['title'],width),(fonts['message'],width),(fonts['message'],0)):
+                    if str(heading.cget('font'))!=str(font) or int(heading.cget('wraplength'))!=wrap:heading.configure(font=font,wraplength=wrap)
+                    if height-heading.winfo_reqheight()-14-typed.winfo_reqheight()>=line+24+toolbar:break
                 # At very large text the title and last message alone could fill a short window;
                 # then the message, then the "Type a command" label, give way (display_options.fit_plan).
                 shown=int(message_view.cget('height'))
@@ -1117,7 +1130,10 @@ class CompanionWindow:
             def show_display(field,text_mode):
                 """Show the screen name, and the list, menu or note. Returns the view to show, or None."""
                 position=position_text(field)
-                heading.configure(text=(field.get('display_title') or 'Voice Companion')+('   '+position if position else ''))
+                title=(field.get('display_title') or 'Voice Companion')+('   '+position if position else '')
+                if heading.cget('text')!=title:
+                    # A longer or shorter screen name changes the room left for the list and the command box.
+                    heading.configure(text=title);fit_layout()
                 # The hint line fits the screen and the microphone (display_screen.hint).
                 if field.get('display_hint') and startup_label.cget('text')!=field['display_hint']:
                     startup_label.configure(text=field['display_hint']);fit_layout()

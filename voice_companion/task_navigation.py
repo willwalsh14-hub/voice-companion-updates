@@ -175,10 +175,12 @@ class TaskNavigation:
     def describe(self, item, index, count):
         return announce_item(item[0], index, count) + (' '+spoken_key(item[1])+'.' if item[1] else '')
 
-    def pick(self, kind):
+    def pick(self, kind, mode=None):
         m = self.app
-        if m.document is not None:
-            m.document.save()
+        # Escape from Open in a document goes back to that document (companion.py).
+        self.pick_return = 'document' if mode in ('document', 'document_menu') and m.document is not None else None
+        if m.document is not None and not m.save_document_before_leaving():
+            return 'document' if mode in (None, 'document', 'document_menu') else mode
         from file_manager import FileManager
         m.FILE_MANAGER = FileManager()
         m.FILE_MANAGER.pick_extensions = MEDIA_TYPES if kind == 'media' else DOCUMENT_TYPES
@@ -221,7 +223,7 @@ class TaskNavigation:
                 if 'cannot preserve' not in str(error):raise
                 from document_reader import open_document
                 m.FILE_READER=open_document(path);self.remember(path)
-                m.speak('Opened '+path.name+'. Document reader preserves this document structure. Editing is unavailable for this file. '+m.FILE_READER.reading.read(True))
+                m.speak('Opened '+path.name+'. This Word file has features the editor cannot keep, so it opened in the Document reader. You can read it, but not change it. '+m.FILE_READER.reading.read(True))
                 return 'file_reader'
             m.document = opened
             m.checkpoint_document()
@@ -306,7 +308,7 @@ class TaskNavigation:
 
     def action(self, command, mode):
         m = self.app
-        if command == '@open': return self.pick('document')
+        if command == '@open': return self.pick('document', mode)
         if command == '@reader_open': return self.pick('reader')
         if command == '@reader_recent':
             self.reader_recent = self.reader_list()
@@ -395,8 +397,10 @@ class TaskNavigation:
                                         'Enter':'enter','Tab':'next','ShiftTab':'previous','Escape':'escape','Alt':'@player_close'}.get(key))
             # Playing: only Alt opens the menu (Will, October 2026). Enter plays or pauses like
             # Space, Home goes back to the start, and Escape leaves the player.
+            # Tab and Shift+Tab are never silent: they say that Alt opens the player menu.
             return common.get(key, {'Left':'back 15 seconds','Right':'forward 15 seconds','Up':'volume up','Down':'volume down',
-                                    'Enter':'play or pause','Home':'start of file','Escape':'escape','Alt':'@player_menu'}.get(key))
+                                    'Enter':'play or pause','Home':'start of file','Escape':'escape','Alt':'@player_menu',
+                                    'Tab':'next','ShiftTab':'previous'}.get(key))
         if self.items(mode) is not None:
             if mode == 'word_processor' and key in ('Ctrl+N','Ctrl+O','Ctrl+R','Alt+O'):
                 return {'Ctrl+N':'create a document','Ctrl+O':'@open','Ctrl+R':'@recent','Alt+O':'@options'}[key]
@@ -449,9 +453,10 @@ class TaskNavigation:
             m.speak(editor.process(('remove '+attribute) if value else 'make this '+('underlined' if attribute=='underline' else attribute)))
             return mode
         if mode in ('awake','document','word_processor') and command in ('open a document','open document'):
-            return self.pick('document')
+            return self.pick('document', mode)
         if command in ('word processor','open word processor','word processor menu'):
-            if mode == 'document' and m.document:m.document.save()
+            if mode == 'document' and m.document:
+                if not m.save_document_before_leaving():return 'document'
             elif mode=='email_draft' and m.email_draft:m.email_draft.save()
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')

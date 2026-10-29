@@ -38,12 +38,20 @@ class MicrophoneOffStartupTests(CompanionTestCase):
         self.assertTrue(self.said[-1].endswith(companion.MAIN_MENU_PROMPT), self.said)
 
     def test_a_stalled_main_loop_writes_a_freeze_report_once(self):
-        with mock.patch.dict(companion.FREEZE_WATCH, {'beat': time.monotonic() - 100, 'reported': False}):
+        import faulthandler
+        real_dump = faulthandler.dump_traceback
+
+        def slow_dump(file, all_threads=True):
+            # A busy computer: the thread stacks take a while. The report must never be seen half written
+            # (it once failed in the full test run while other work was going on).
+            time.sleep(.4)
+            real_dump(file=file, all_threads=all_threads)
+        with mock.patch.dict(companion.FREEZE_WATCH, {'beat': time.monotonic() - 100, 'reported': False}), \
+                mock.patch.object(faulthandler, 'dump_traceback', slow_dump):
             companion.start_freeze_watch(limit=1, interval=.05)
             report = self.folder / 'freeze-report.txt'
-            end = time.monotonic() + 5
-            while not report.exists() and time.monotonic() < end: time.sleep(.05)
-            time.sleep(.2)
+            end = time.monotonic() + 10
+            while not report.exists() and time.monotonic() < end: time.sleep(.01)
             text = report.read_text(encoding='utf-8')
             self.assertIn('stopped responding', text)
             self.assertIn('File', text)   # the stacks of every thread follow

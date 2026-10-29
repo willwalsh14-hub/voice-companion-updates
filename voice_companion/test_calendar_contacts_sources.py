@@ -156,7 +156,8 @@ class CalendarSourceTests(CalendarHarness):
         self.assertTrue(self.said().startswith('Showing Family, Gmail, me@gmail.com. Today, Monday, October 26. 1 event. '
                                                'Five PM to six PM, Soccer practice, Family'))
         app.handle('Where am I?', mode)
-        self.assertTrue(self.said().startswith('Showing Family, Gmail, me@gmail.com. Today, Monday, October 26.'))
+        # The screen's name first, as on Contacts.
+        self.assertTrue(self.said().startswith('Calendar. Showing Family, Gmail, me@gmail.com. Today, Monday, October 26.'))
         app.handle('Show Outlook.', mode)
         self.assertTrue(self.said().startswith('Showing Calendar, Outlook, vet@outlook.com.'))
         app.handle('Show all calendars.', mode)
@@ -175,7 +176,14 @@ class CalendarSourceTests(CalendarHarness):
     def test_from_the_main_menu(self):
         mode = app.handle('Show my Outlook calendar.', 'awake')
         self.assertEqual(mode, 'calendar')
-        self.assertTrue(self.said().startswith('Showing Calendar, Outlook, vet@outlook.com. Today, Monday, October 26. 1 event.'))
+        # Said once, with the screen's name: a second message would cut off the first.
+        self.assertEqual(self.speech.call_count, 1, self.everything_said())
+        self.assertTrue(self.said().startswith('Calendar. Showing Calendar, Outlook, vet@outlook.com. Today, Monday, October 26. 1 event.'))
+        app.handle('main menu', mode)
+        self.speech.reset_mock()
+        app.handle('Show my Hotmail calendar.', 'awake')
+        self.assertEqual(self.speech.call_count, 1, self.everything_said())
+        self.assertTrue(self.said().startswith('Calendar. No calendar is called hotmail. Choose the calendars to show.'), self.said())
 
     def test_a_new_event_goes_to_the_calendar_shown(self):
         mode = self.open()
@@ -273,7 +281,7 @@ class CalendarOneAccountTests(CalendarHarness):
         app.handle('which calendar am I in', mode)
         self.assertEqual(self.said(), 'All your calendars are shown.')
         app.handle('where am i', mode)
-        self.assertTrue(self.said().startswith('Today, Monday, October 26.'))
+        self.assertTrue(self.said().startswith('Calendar. Today, Monday, October 26.'))
         self.press('Alt', mode)
         self.press('Letter:3', mode)
         self.assertNotIn('choose calendar', [entry[2] for entry in app.SCREEN_MENU.entries()])
@@ -351,7 +359,13 @@ class ContactsSourceTests(ContactsSourceHarness):
     def test_from_the_main_menu(self):
         mode = app.handle('show Outlook contacts', 'awake')
         self.assertEqual(mode, 'contacts')
-        self.assertTrue(self.said().startswith('Showing Contacts, Outlook, vet@outlook.com. 2 contacts.'))
+        self.assertEqual(self.speech.call_count, 1, self.everything_said())
+        self.assertTrue(self.said().startswith('Contacts. Showing Contacts, Outlook, vet@outlook.com. 2 contacts.'))
+        app.handle('main menu', mode)
+        self.speech.reset_mock()
+        app.handle('show Hotmail contacts', 'awake')
+        self.assertEqual(self.speech.call_count, 1, self.everything_said())
+        self.assertTrue(self.said().startswith('Contacts. No address book is called hotmail. Choose the address books to show.'), self.said())
 
     def test_a_new_contact_goes_into_the_address_book_shown(self):
         mode = self.open()

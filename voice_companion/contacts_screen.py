@@ -33,12 +33,19 @@ MODE = 'contacts'
 HELP_TOPIC = 'contacts'
 YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'yes delete it', 'delete it', 'enter')
 NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'keep it', 'do not delete')
-SKIP = ('', 'skip', 'none', 'no email', 'no phone', 'no phone number', 'leave it out', 'leave it blank', 'nothing')
+NOT_A_NAME = ('no', 'no thanks', 'none', 'nothing', 'skip', 'no name', 'i don t know')
+SKIP = ('', 'skip', 'none', 'no', 'no thanks', 'no email', 'no email address', 'no phone', 'no phone number', 'leave it out',
+        'leave it blank', 'nothing')
 PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'new email', 'contacts menu', 'menu', 'open menu')
+# "Add a new contact": the words a new user says first.
+ADD = ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact', 'create a contact', 'add a new contact',
+       'create a new contact', 'new contact please')
 OPEN = ('contacts', 'open contacts', 'my contacts', 'contact list', 'address book', 'open address book', 'show contacts',
-        'show my contacts')
+        'show my contacts', 'go to contacts', 'go to my contacts', 'open my contacts', 'open the contacts', 'view contacts',
+        'view my contacts', 'my address book', 'show address book', 'show my address book', 'open my address book',
+        'go to address book', 'phone book', 'my phone book', 'open phone book')
 # Names that are commands after "email", never a person ("email list size", "email the sender").
 RESERVED = ('commands', 'draft', 'drafts', 'help', 'list size', 'lists', 'sender', 'the sender', 'to sender', 'topics',
             'options', 'settings', 'menu', 'account', 'accounts', 'address', 'me', 'it', 'them', 'this person', 'contact',
@@ -268,12 +275,12 @@ def _handle(m, raw, command, mode, typed):
             return open_screen(m, mode)
         wanted = SHOW.fullmatch(command)
         if mode == 'awake' and wanted and wanted['verb'] and wanted['kind'] and wanted['what'] not in ('my', 'the'):
-            # "Show Gmail contacts" from the main menu: open Contacts on that address book.
-            opened = open_screen(m, mode)
-            if not choosing():
-                return opened
-            return show_source(m, wanted['what'], opening=True)
-        if mode == 'awake' and command in ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact'):
+            # "Show Gmail contacts" from the main menu: open Contacts on that address book, and say it once.
+            if not choosing_after_opening(m):
+                m.speak(summary(OPEN_NOTICE[0]))
+                return MODE
+            return show_source(m, wanted['what'], lead='Contacts. ')
+        if mode == 'awake' and command in ADD:
             open_screen(m, mode)
             return start_adding(m)
         if mode == 'awake':
@@ -339,7 +346,7 @@ def command_here(m, raw, command):
         notice = reload(m)
         m.speak(summary(notice))
         return MODE
-    if command in ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact', 'create a contact'):
+    if command in ADD:
         return start_adding(m)
     added = re.fullmatch(r'(?:add|save|create) contact (.+?) (?:as|at|email is) (.+)', raw.rstrip('.!?'), re.I)
     if added:
@@ -403,7 +410,8 @@ def command_here(m, raw, command):
     phrase = edit_phrase(raw)
     if phrase is not None:
         return start_editing(m, *phrase)
-    if command in ('delete contact', 'remove contact', 'delete this contact', 'delete', 'remove'):
+    if command in ('delete contact', 'remove contact', 'delete this contact', 'delete', 'remove', 'delete it', 'remove it',
+                   'delete the contact', 'remove this contact', 'remove the contact'):
         if contact is None:
             m.speak(describe())
             return MODE
@@ -525,21 +533,31 @@ def start_choosing(m, first=None, lead=''):
     return MODE
 
 
-def show_source(m, words, opening=False):
-    """'Show Gmail contacts': show them, or ask which when the words fit more than one."""
+OPEN_NOTICE = ['']     # why some contacts may be missing, from opening quietly
+
+
+def choosing_after_opening(m):
+    """Open the screen without a word; True when there is a choice of address books."""
+    reset()
+    OPEN_NOTICE[0] = reload(m)
+    return choosing()
+
+
+def show_source(m, words, lead=''):
+    """'Show Gmail contacts': show them, or ask which when the words fit more than one.
+    lead: 'Contacts. ' when the screen opens with this."""
     if not choosing():
-        if not opening:     # open_screen already said the list
-            m.speak(summary())
+        m.speak(summary())
         return MODE
     found = SOURCES.match(words)
     if len(found) == 1:
-        return use_source(m, found[0])
+        return use_source(m, found[0], lead)
     if found:
-        return start_choosing(m, found[0], 'More than one address book fits. ')
-    return start_choosing(m, None, 'No address book is called ' + words + '. ')
+        return start_choosing(m, found[0], lead + 'More than one address book fits. ')
+    return start_choosing(m, None, lead + 'No address book is called ' + words + '. ')
 
 
-def use_source(m, choice):
+def use_source(m, choice, lead=''):
     """Show these address books, keep the choice for next time, and say the list."""
     global SOURCE, PENDING, CONTACTS, VIEW
     PENDING, VIEW = None, 'list'
@@ -548,7 +566,7 @@ def use_source(m, choice):
     CONTACTS = BOOK.view(shown_ids())
     select(0)
     count = len(CONTACTS)
-    m.speak(showing() + ' ' + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe() +
+    m.speak(lead + showing() + ' ' + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe() +
             ('' if kept else ' This choice could not be saved for next time.'))
     return MODE
 
@@ -650,7 +668,8 @@ def details_for(contact):
         items.append(('No email address', ''))
     for phone in contact.phones:
         items.append(('Phone: ' + phone, ''))
-    items.append(('Saved in: ' + where(contact), ''))
+    place = where(contact)
+    items.append((place if place.startswith('Saved ') else 'Saved in: ' + place, ''))
     if not contact.read_only:
         items.append(('Edit contact', '@contacts:edit'))
         items.append(('Delete contact', '@contacts:delete'))
@@ -819,6 +838,8 @@ def add_step(m, step, value):
             return prompt(m, 'name', 'Type or say the name, then press Enter. Escape cancels.')
         if len(value) > 80 or re.search(r'[\r\n<>]', value):
             return prompt(m, 'name', 'Use a shorter name without symbols. Type or say the name, then press Enter.')
+        if m.normalized_command(value) in NOT_A_NAME:
+            return prompt(m, 'name', 'A contact needs a name. Type or say the name, then press Enter. Escape cancels.')
         ADDING = {'name': value}
         return prompt(m, 'email', 'Email address for ' + value + '? Type or say it, then press Enter. '
                                   'To leave it out, press Enter or say skip.')

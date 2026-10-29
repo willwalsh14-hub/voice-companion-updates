@@ -29,6 +29,10 @@ class HelpReadingCursor(ReadingCursor):
 
 
 
+# Said when "Help with ..." names no topic, before the topic list (the companion checks for it).
+NOT_FOUND = 'I did not find a help topic for '
+
+
 class HelpSession:
     def __init__(self, path, release_notes_path=None):
         from guide_text import read_guide
@@ -66,6 +70,8 @@ class HelpSession:
 
     def topic(self, name):
         wanted = name.casefold().strip()
+        # "Help with the microphone": people say the, my or a before the name.
+        wanted = re.sub(r'^(?:the|my|a|an) ', '', wanted)
         aliases = {
             'files':'file manager','file manager':'file manager','file commands':'file manager','reader':'document reader','document reader':'document reader',
             'what is new':"what's new", 'whats new':"what's new", 'what s new':"what's new", 'release notes':"what's new",
@@ -92,15 +98,35 @@ class HelpSession:
             'color scheme':'large text and colors', 'contrast':'large text and colors', 'high contrast':'large text and colors',
             'magnifier':'large text and colors', 'magnification':'large text and colors', 'zoom':'large text and colors',
             'low vision':'large text and colors', 'screen':'large text and colors', 'full screen':'large text and colors',
+            # What a new user asks about first (sweep, October 29, 2026); the part below opens the answer.
+            'main menu':'getting started', 'keys':'getting started', 'keyboard shortcuts':'getting started',
+            'shortcuts':'getting started', 'shortcut keys':'getting started', 'microphone':'getting started',
+            'mic':'getting started', 'time':'using voice commands', 'date':'using voice commands',
+            'time and date':'using voice commands', 'date and time':'using voice commands', 'clock':'using voice commands',
+            'yes or no':'using voice commands', 'lessons':'using help and lessons', 'voices':'speech and voices',
+            'exit':'sleep, exit, and computer power', 'wake up':'sleep, exit, and computer power',
+            'shut down':'sleep, exit, and computer power', 'restart':'sleep, exit, and computer power',
+            'transcript':'fix a problem', 'speech transcript':'fix a problem', 'problems':'fix a problem',
+            'troubleshooting':'fix a problem', 'guide files':'find your guide files', 'user guides':'find your guide files',
         }
         # Help on these screens opens their own part of a chapter, not its first part.
         part = {'attachments': 'open and save attachments', 'attachment': 'open and save attachments',
-                'email attachments': 'open and save attachments'}.get(wanted)
+                'email attachments': 'open and save attachments',
+                'main menu': 'use the main menu', 'keys': 'keys that work everywhere',
+                'keyboard shortcuts': 'keys that work everywhere', 'shortcuts': 'keys that work everywhere',
+                'shortcut keys': 'keys that work everywhere', 'microphone': 'set up your microphone',
+                'mic': 'set up your microphone', 'time': 'check the time and date', 'date': 'check the time and date',
+                'time and date': 'check the time and date', 'date and time': 'check the time and date',
+                'clock': 'check the time and date', 'yes or no': 'answer yes or no', 'lessons': 'start the audio tutorial',
+                'transcript': 'keep a transcript of what companion says',
+                'speech transcript': 'keep a transcript of what companion says'}.get(wanted)
         wanted = aliases.get(wanted, wanted)
         matches = [i for i, topic in enumerate(self.topics)
                    if topic['name'].casefold() == wanted or topic['name'].casefold().startswith(wanted)]
         if len(matches) != 1:
-            return 'I could not identify one help topic. Say back to topics to browse the list.'
+            # Say so in plain words, then where you are: the topic list, at the current chapter.
+            self.level = 'topics'
+            return NOT_FOUND + name.strip() + '. ' + self._item()
         self.topic_index = matches[0]
         subs = self._subtopics()
         found = [i for i, (name, _) in enumerate(subs) if part and name.casefold() == part]

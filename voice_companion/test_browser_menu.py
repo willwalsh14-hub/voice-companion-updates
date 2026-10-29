@@ -149,4 +149,61 @@ class BrowserMenuTests(unittest.TestCase):
         self.session.backend.scroll_to.assert_not_called()
         self.session.flush_scroll();self.session.backend.scroll_to.assert_called_once()
 
+
+class SavedListsKeptTests(unittest.TestCase):
+    """Favorites and web history must never be wiped because their file could not be
+    read for a moment (Windows: an antivirus scan or OneDrive holds it) or is damaged."""
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.root = Path(self.folder.name)
+        from web_assistant import Favorites
+        from browser_menu import BrowserMenu
+        self.favorites = Favorites(self.root)
+        self.menu = BrowserMenu(self.root)
+        for n in range(5):
+            self.favorites.add('Site ' + str(n), 'https://site' + str(n) + '.example/')
+            self.menu.record({'url': 'https://page' + str(n) + '.example/', 'title': 'Page ' + str(n)})
+
+    def locked(self, name):
+        real = Path.read_text
+        def read_text(path, *args, **kwargs):
+            if path.name == name:
+                raise PermissionError(13, 'The process cannot access the file because it is being used by another process')
+            return real(path, *args, **kwargs)
+        return patch.object(Path, 'read_text', read_text)
+
+    def test_a_locked_favorites_file_is_not_replaced_by_one_new_favorite(self):
+        from web_assistant import WebError
+        with self.locked('web-favorites.json'):
+            with self.assertRaises(WebError) as said:
+                self.favorites.add('New one', 'https://new.example/')
+        self.assertIn('try again', str(said.exception).lower())
+        self.assertEqual(len(self.favorites.all()), 5)
+
+    def test_a_locked_history_file_is_not_replaced_by_one_page(self):
+        with self.locked('web-history.json'):
+            with self.assertRaises(OSError):
+                self.menu.record({'url': 'https://new.example/', 'title': 'New'})
+        self.assertEqual(len(self.menu.history()), 5)
+
+    def test_a_damaged_file_is_kept_aside_before_a_new_one_is_written(self):
+        for name, write in (('web-favorites.json', lambda: self.favorites.add('New one', 'https://new.example/')),
+                            ('web-history.json', lambda: self.menu.record({'url': 'https://new.example/', 'title': 'New'}))):
+            with self.subTest(name=name):
+                damaged = (self.root / name).read_text(encoding='utf-8')[:-20]
+                (self.root / name).write_text(damaged, encoding='utf-8')
+                write()
+                kept = self.root / name.replace('.json', '.damaged.json')
+                self.assertEqual(kept.read_text(encoding='utf-8'), damaged)
+
+    def test_cleaning_that_cannot_be_written_still_lists_every_favorite(self):
+        import json
+        data = json.loads((self.root / 'web-favorites.json').read_text(encoding='utf-8'))
+        data['old'] = {'name': 'Old', 'url': 'https://user:secret@old.example/'}
+        (self.root / 'web-favorites.json').write_text(json.dumps(data), encoding='utf-8')
+        with patch('storage.os.replace', side_effect=PermissionError(13, 'in use')):
+            self.assertEqual(len(self.favorites.all()), 6)
+
+
 if __name__=='__main__':unittest.main()

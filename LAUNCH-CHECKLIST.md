@@ -143,6 +143,11 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
       which raced the first page reading on a busy computer. When the timer
       won, the button was already known and no news was said. The test now
       shows the button only after the page is read.
+- [x] test_a_stalled_main_loop_writes_a_freeze_report_once failed once in a
+      full Linux run (October 29, 2026) and passed alone. Cause: the freeze
+      report was written in two steps, and on a busy computer the test read it
+      before the thread stacks were in it. The report is now written whole,
+      then put in place, so it is never seen half written.
 - [ ] Known and kept by design: in Dictation only mode, a sentence starting
       with "find" still runs the editor's find command.
 - [ ] A volunteer tester group beyond the private beta, with a short weekly

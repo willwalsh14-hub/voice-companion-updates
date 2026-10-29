@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.174-test'
+APP_VERSION = '0.2.175-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -183,6 +183,9 @@ last_podcasts = []
 MEDIA_HUB = None
 MEDIA_NAV = None
 MEDIA_SECTION = 'radio'
+# Words that open Radio or Podcasts, from the main menu and from either screen.
+RADIO_OPEN = ('radio', 'internet radio', 'open radio', 'open internet radio', 'listen to radio', 'listen to the radio')
+PODCASTS_OPEN = ('podcasts', 'podcast', 'listen to podcasts', 'open podcasts', 'open podcast')
 MEDIA_NOTICES = queue.Queue()
 tutorial_session = None
 
@@ -248,7 +251,10 @@ def discard_document_changes():
         if data is None:path.unlink(missing_ok=True)
         else:
             temporary=path.with_suffix('.restore.docx')
-            temporary.write_bytes(data);temporary.replace(path)
+            try:temporary.write_bytes(data);temporary.replace(path)
+            except OSError:
+                # Open in Word: no half-made copy is left to be listed as a document.
+                temporary.unlink(missing_ok=True);raise
         if document.path!=path:document.path.unlink(missing_ok=True)
     elif re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):document.path.unlink(missing_ok=True)
     KEYBOARD_DIRTY.pop(id(document),None)
@@ -569,7 +575,10 @@ def _handle_keyboard(text,mode):
     if mode=='sleep' and (text=='@microphone' or normalized_command(text) in MICROPHONE_OFF_PHRASES+MICROPHONE_ON_PHRASES):
         # F9 while asleep: still asleep, so say how to wake up, not "Voice commands are on".
         return set_microphone(MICROPHONE_OFF if text=='@microphone' else normalized_command(text) in MICROPHONE_ON_PHRASES,'sleep')
-    if mode=='sleep' and normalized_command(text) not in ('wake up','wake companion'):
+    if mode=='sleep' and normalized_command(text) in ('wake up','wake companion'):
+        # Typed "Wake up." wakes to the screen behind sleep, as Control+F12 does.
+        return resume_from_sleep()
+    if mode=='sleep':
         result=handle_keyboard(text,SLEEP_RETURN_MODE)
         # "go to sleep" typed while asleep returns 'sleep'; keep the place to wake up to.
         if result!='sleep':SLEEP_RETURN_MODE=result
@@ -697,7 +706,10 @@ def resume_from_sleep():
         sync_app_context(mode,True)
         return mode
     # The same screen names as everywhere else ("Back to Word processor menu."), never the internal mode.
-    speak('I am listening. ' + options_return_notice(mode))
+    # Asleep during a question: ask it again, so the answer is not a guess.
+    question={'document_save':'Save this document? Yes or no.','document_name':'Back to naming your document.',
+              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None}.get(mode)
+    speak('I am listening. ' + (question or options_return_notice(mode)))
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
     return mode
@@ -867,11 +879,12 @@ def clock_text_entry(mode, typed=False):
     return mode=='web' and web_session is not None and bool(getattr(web_session,'keyboard_field',None))
 
 
-def now_playing():
+def now_playing(mode=None):
     """What plays now, for "What's playing?" and F3."""
     video=__import__('youtube_screen').now_playing(sys.modules[__name__])  # a YouTube video, when it is what plays
     if video:return video
-    if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
+    nothing=__import__('youtube_screen').NOTHING_PLAYING if mode=='youtube' else __import__('media_hub').NOTHING_PLAYING
+    if MEDIA_HUB is None or not MEDIA_HUB.player.kind:return nothing
     try:return MEDIA_HUB.now_playing()
     except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
 
@@ -946,7 +959,7 @@ def navigation_key(key,mode):
     if key=='F3':
         # F3 says what plays now, on every screen; it changes nothing (Will, October 2026).
         previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
-        try:interrupt_speech();speak(now_playing())
+        try:interrupt_speech();speak(now_playing(mode))
         finally:KEYBOARD_NAVIGATION=previous
         return None
     if key in time_date.KEY_REQUESTS:
@@ -987,10 +1000,15 @@ def _navigation_key(key,mode):
     if key=='Control':return None
     menu_key=screen_menu().keyboard(key,mode)
     if menu_key is not None:return menu_key
+    # "Add account" asks Thunderbird or Yahoo: Escape cancels it on every screen, as it says.
+    if account_setup and key=='Escape':return 'cancel account setup'
     if ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('mode')==mode and not ACCOUNT_PICKER.get('confirm'):
         request=account_picker_key(key)
         if request!='':return request
-    task_key=task_navigation().keyboard(key,mode)
+    # A list opened over a menu ("List documents", Open a note) owns the list keys,
+    # as its prompt says; the menu below it must not take Enter, Home or End.
+    list_over_menu=NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape','Home','End') and task_navigation().items(mode) is not None
+    task_key=None if list_over_menu else task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
     if mode=='draft_leave':
         # Leaving a written email: save it, throw it away, or keep writing (draft_leave.py).
@@ -2194,6 +2212,21 @@ def podcast_search(topic):
 
 UNSAVED_DOCUMENT = ('Your change is in the document, but the file could not be saved. It may be open in another program, '
                     'such as Word. Close it there, then say save document.')
+DOCUMENT_NOT_SAVED = ('Your document could not be saved, so it is still open. It may be open in another program, '
+                      'such as Word. Close it there, then try again.')
+
+
+def save_document_before_leaving():
+    """Save the open document before another screen opens. False, after saying why, when
+    the file could not be saved (open in Word): the person stays in the document."""
+    try:
+        document.save()
+        return True
+    except OSError:
+        speak(DOCUMENT_NOT_SAVED)
+        return False
+
+
 UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
                  'then say save draft.')
 
@@ -2414,13 +2447,18 @@ def set_microphone(on, mode):
     """Turn the microphone fully on or off, and say what happened and how to undo it."""
     global MICROPHONE_OFF, MICROPHONE_ANNOUNCED
     MICROPHONE_OFF = not on
-    MICROPHONE_ANNOUNCED = on
+    # Not when it still cannot open: "The microphone is on." is said once it really works.
+    MICROPHONE_ANNOUNCED = on and not MICROPHONE_FAILED
     PREFERENCES['microphone_off'] = not on
     try:save_preferences()
     except OSError:pass   # The switch still works now; it is only not remembered.
     if on:
-        speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
-                                   else 'Voice commands are on.'))
+        if MICROPHONE_FAILED:
+            # Never "Voice commands are on" when the microphone could not open.
+            speak('Microphone on. It could not start yet, so use the keys. Voice commands start by themselves when it works.')
+        else:
+            speak('Microphone on. ' + ('Say wake up, or press Control+F12, to give voice commands.' if mode == 'sleep'
+                                       else 'Voice commands are on.'))
     else:
         speak('Microphone off. Voice Companion is not listening at all. Press F9 to turn it back on.')
     return mode
@@ -2446,11 +2484,14 @@ def start_freeze_watch(limit=15.0, interval=5.0):
                 try:
                     import faulthandler
                     APP.mkdir(parents=True, exist_ok=True)
-                    with open(APP / 'freeze-report.txt', 'w', encoding='utf-8') as report:
+                    # Written whole, then put in place, so the report is never seen half written.
+                    partial = APP / 'freeze-report.tmp'
+                    with open(partial, 'w', encoding='utf-8') as report:
                         report.write('Voice Companion ' + APP_VERSION + ' stopped responding for ' + str(int(time.monotonic() - beat))
                                      + ' seconds at ' + time.strftime('%Y-%m-%d %H:%M:%S') + '.\n')
                         report.flush()
                         faulthandler.dump_traceback(file=report, all_threads=True)
+                    os.replace(partial, APP / 'freeze-report.txt')
                 except Exception:
                     pass
             elif not stalled:
@@ -2554,8 +2595,11 @@ def hide_thunderbird_window():
     if THUNDERBIRD_WINDOWS is not None:
         return THUNDERBIRD_WINDOWS.hide(THUNDERBIRD_STARTED)
     try:
-        from thunderbird_mailbox import relay
-        relay().request('minimize', {}, timeout=10)
+        # Never relay(): it starts Thunderbird, or asks a setup question, just to hide it.
+        import thunderbird_mailbox
+        if not thunderbird_mailbox.connected():
+            return window_hiding.NOT_RUNNING
+        thunderbird_mailbox.current().request('minimize', {}, timeout=10)
     except Exception:
         return window_hiding.NOT_RUNNING
     return window_hiding.MINIMIZED_NOW
@@ -3512,7 +3556,7 @@ def thunderbird_setup_answer(command, mode):
 
 def _handle(text, mode, typed=False):
     global DOCUMENT_NAMING_ACTION, THUNDERBIRD_SIGN_IN
-    global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
+    global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX, ACCOUNT_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE, SAVE_AS_TITLE, SAVE_AS_FOLDER
@@ -3553,7 +3597,7 @@ def _handle(text, mode, typed=False):
         speak_clock(clock);return mode
     # "What's playing?" works on every screen too, and is text where people write.
     if now_playing_asked(text,mode,typed):
-        speak(now_playing());return mode
+        speak(now_playing(mode));return mode
     # "Bigger text", "Change colors", "Full screen": the screen for low vision, from every screen
     # where words are commands. In a document, email, note or text box they are text.
     display=__import__('display_options').voice_request(text) if mode!='settings' and not clock_text_entry(mode,typed) else None
@@ -3570,6 +3614,8 @@ def _handle(text, mode, typed=False):
             return handled
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
+        if manager.pending[0]=='rename' and not typed and command not in ('cancel','escape','go back','no'):
+            text=__import__('file_manager').spoken_name(text)
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
@@ -3732,7 +3778,7 @@ def _handle(text, mode, typed=False):
                     document.save()
                     checkpoint_document()
                 except OSError:
-                    speak('I could not save the document. Your document is still open.');return 'document'
+                    speak(DOCUMENT_NOT_SAVED);return 'document'
                 filename=document.path.name
                 document=None
                 speak('Saved '+filename+'.')
@@ -3745,7 +3791,7 @@ def _handle(text, mode, typed=False):
         if command in ('no','no thanks'):
             try:discard_document_changes()
             except OSError:
-                speak('Could not discard changes safely. Your document is still open.');return 'document'
+                speak('Your changes could not be thrown away, so your document is still open. The file may be open in another program, such as Word. Close it there, then try again.');return 'document'
             document=None
             speak('Changes discarded.')
             return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_CLOSE_TARGET=='word_processor' else 'awake'
@@ -3954,7 +4000,9 @@ def _handle(text, mode, typed=False):
             speak('The user guide folder could not open or update. Say help for onboard instructions and ask your helper to check the installation.')
         return mode
     if voice_menu(command): return mode
-    if command in ('start tutorial', 'audio tutorial', 'practice tutorial', 'open tutorial'):
+    # "Tutorial" or "Lessons" alone only where words are commands; in a document they are text.
+    if command in ('start tutorial', 'audio tutorial', 'practice tutorial', 'open tutorial', 'start the tutorial',
+                   'open the tutorial', 'start lessons') or command in ('tutorial', 'lessons') and mode in ('awake', 'help'):
         if mode not in ('awake', 'help'):
             speak('Say main menu first, then start tutorial. This protects what you are working on.')
             return mode
@@ -4046,7 +4094,10 @@ def _handle(text, mode, typed=False):
         save_speech_settings()
         speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
         return mode
-    if command in ('version', 'what version', 'about voice companion'):
+    # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
+    if command in ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
+                   'what version am i using', 'what version do i have') or \
+            command in ('version', 'about voice companion') and not writing_dictation(mode, typed):
         # The two things a person most needs if a key press stopped the startup announcement.
         speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
         return mode
@@ -4064,7 +4115,7 @@ def _handle(text, mode, typed=False):
         if mode != 'sleep': SLEEP_RETURN_MODE = mode
         pending_send = None
         if mode == 'email_draft' and email_draft is not None: email_draft.save()
-        if mode == 'document' and document is not None: document.save()
+        if mode == 'document' and document is not None and not save_document_before_leaving(): return 'document'
         if mode == 'note': flush_note(mode)
         pending_website = None
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
@@ -4074,7 +4125,8 @@ def _handle(text, mode, typed=False):
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
-        if mode=='document' and document is not None:document.save()
+        if mode=='document' and document is not None:
+            if not save_document_before_leaving():return 'document'
         elif mode=='email_draft' and email_draft is not None:email_draft.save()
         else:flush_note(mode)
         pending_send=None
@@ -4095,6 +4147,7 @@ def _handle(text, mode, typed=False):
         if command.startswith('file letter '):
             state=menu_state(mode)
             if state:speak(FILE_MANAGER.command('file letters '+text[len('file letter '):]));sync_app_context(mode,True)
+            elif not FILE_MANAGER.busy and not FILE_MANAGER.pending and not FILE_MANAGER.items:speak('This folder is empty.')
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)
@@ -4112,6 +4165,8 @@ def _handle(text, mode, typed=False):
             if picker=='attach':return __import__('attachment_screen').picker_closed(sys.modules[__name__])
             # Escape from the drive list: Open a media file returns to the Media menu.
             if picker=='reader':return task_navigation().enter('reader_menu','Document reader menu')
+            if picker=='document' and getattr(task_navigation(),'pick_return',None)=='document' and document is not None:
+                speak('Canceled. Back to document.');return 'document'
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
             return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
@@ -4123,6 +4178,7 @@ def _handle(text, mode, typed=False):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader menu')
+            if task_navigation().reader_return=='word_processor' or FILE_MANAGER is None:return task_navigation().enter('word_processor','Word processor menu')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
                 if back:return back
@@ -4146,11 +4202,15 @@ def _handle(text, mode, typed=False):
             speak(FILE_READER.follow_link());return mode
         if request:
             unit,direction=request
-            speak(FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction))
+            result=FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction)
+            if unit!='read':result=__import__('reading_navigation').edge_notice(FILE_READER.reading,'document')+result
+            speak(result)
         elif command in ('beginning of document','top of document','go to beginning of document'):
             FILE_READER.reading.position=0;speak(FILE_READER.reading.move('line',0))
         elif command in ('end of document','go to end of document'):
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
+            # The place is the very end, as Control+End: Next word then says End of document.
+            FILE_READER.reading.position=max(0,len(FILE_READER.text)-1)
         elif command.startswith('find '):
             term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
             if position<0:position=FILE_READER.text.casefold().find(term.casefold())
@@ -4167,7 +4227,7 @@ def _handle(text, mode, typed=False):
         # "Help with the dishes tonight" while writing is text unless it names a guide topic.
         try:
             probe = HelpSession(GUIDE, release_notes_path=GUIDE.parent/'Voice Companion Release Notes.txt')
-            if probe.topic(help_topic[1]).startswith('I could not identify one help topic'): help_topic = None
+            if probe.topic(help_topic[1]).startswith(__import__('onboard_help').NOT_FOUND): help_topic = None
         except (OSError, ValueError): pass
     if command in ('help', 'user guide', 'open user guide', 'manual', 'open manual') or help_topic:
         try:
@@ -4211,7 +4271,8 @@ def _handle(text, mode, typed=False):
                'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
         return mode
     if command in ('what mode', 'which mode', 'what input mode'):
-        speak('Input mode: ' + INPUT_MODE + '.')
+        # The names the guide and the mode commands use, never the stored word ("mixed").
+        speak('Input mode: ' + {'mixed':'Normal mode','commands':'Commands only','dictation':'Dictation only'}.get(INPUT_MODE, INPUT_MODE) + '.')
         return mode
     if command in ('subscription list', 'subscriptions list', 'podcast list', 'podcasts list',
                    'list podcast', 'list podcasts', 'list subscriptions', 'my podcasts'):
@@ -4277,7 +4338,7 @@ def _handle(text, mode, typed=False):
         return 'media'
     if mode=='media' and MEDIA_HUB and (media_navigation().form or media_navigation().pending) and spoken_control(command) is None and command not in ('main menu','back to main menu','leave radio','leave podcasts'):
         speak(media_navigation().command(text));return 'media'
-    if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media')) or re.fullmatch(
+    if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media' and command != 'play')) or re.fullmatch(
             r'(?:play|resume|pause|stop) (?:radio|podcast|audio)',command) or
             re.fullmatch(r'(?:rewind|back|go back|fast forward|forward|skip ahead) (?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|fifty|sixty)\b.*(?:seconds?|minutes?|hours?)',command) or
             (mode != 'media' and command in ('next chapter','previous chapter','next episode','previous episode',
@@ -4289,7 +4350,7 @@ def _handle(text, mode, typed=False):
             # Only when something is scheduled, and with the main menu in one message.
             if media().has_scheduled_recordings():MAIN_MENU_LEAD='Scheduled recordings continue while the app runs.'
             return 'awake'
-        if command in ('radio','internet radio','podcasts','listen to podcasts'):
+        if command in RADIO_OPEN+PODCASTS_OPEN:
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
             if MEDIA_SECTION == 'podcast': media().awaiting_radio_search = False
             else: media().awaiting_podcast_search = False
@@ -4425,13 +4486,25 @@ def _handle(text, mode, typed=False):
         command = direct_connection[1]
     if command in ('add account', 'add another account', 'add email account', 'connect email account', 'set up email'):
         account_setup = True
+        ACCOUNT_MENU_INDEX = None
         speak(ACCOUNT_TYPE_PROMPT)
         return mode
     if account_setup:
-        if command in ('cancel', 'cancel account setup'):
+        if command in ('cancel', 'cancel account setup', 'escape', 'never mind', 'nevermind', 'go back', 'stop'):
             account_setup = False
             speak('Account setup canceled.')
             return mode
+        if command in ('next', 'previous'):
+            # By voice as with the arrows: a list with a start and an end.
+            step = 1 if command == 'next' else -1
+            if ACCOUNT_MENU_INDEX is not None and not 0 <= ACCOUNT_MENU_INDEX + step < len(ACCOUNT_TYPES):
+                speak('Start of list.' if step < 0 else 'End of list.')
+                return mode
+            ACCOUNT_MENU_INDEX = bounded_index(ACCOUNT_MENU_INDEX, step, len(ACCOUNT_TYPES))
+            speak(announce_item(ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][0], ACCOUNT_MENU_INDEX, len(ACCOUNT_TYPES)))
+            return mode
+        if command in PICK_CONFIRM and ACCOUNT_MENU_INDEX is not None:
+            command = ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][1]
         if command in THROUGH_THUNDERBIRD:
             account_setup = False
             return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
@@ -4591,7 +4664,7 @@ def _handle(text, mode, typed=False):
         pending_send = None
         if not email_request: mail_session = None
         if mode == 'document' and document is not None:
-            document.save()
+            if not save_document_before_leaving(): return 'document'
         elif mode == 'email_draft' and email_draft is not None:
             email_draft.save()
         else:
@@ -4698,8 +4771,18 @@ def _handle(text, mode, typed=False):
                     email_draft.move_to_account(chosen[0])
                     provider = email_draft.provider
                     recipient, subject, body = message_parts(email_draft)
+                if not provider:
+                    # Written before any account was set up: it goes from the account in use now.
+                    store = ProtectedStore(APP)
+                    chosen = store.selected()
+                    if not chosen:
+                        raise AccountError('No email account is selected. Say add account, or list email accounts.'
+                                           if connected_accounts(store) else
+                                           'No email account is set up yet. Say add account to set one up.')
+                    email_draft.provider = provider = chosen[0]
+                    email_draft.save()
                 if provider not in MAIL_PROVIDERS:
-                    raise AccountError('Choose a connected email account first. The draft has not been sent.')
+                    raise AccountError('Choose a connected email account first.')
                 address = ProtectedStore(APP).load(provider)['address']
                 if email_draft.response_context and email_draft.response_context.get('source_address') not in (None, address):
                     raise AccountError('This response belongs to a different mailbox.')
@@ -4810,7 +4893,7 @@ def _handle(text, mode, typed=False):
             speak('Email draft saved locally. Check whether it was sent before sending it again.')
             return 'awake'
         try:
-            dictation_feedback(email_draft.process(text))
+            dictation_feedback(email_draft.process(text, typed=typed))
         except OSError:
             # The change is made; only the save failed (a full disk, or the file in use).
             speak(UNSAVED_DRAFT)
@@ -4837,7 +4920,9 @@ def _handle(text, mode, typed=False):
         if request:
             note_reading.set_text(' '.join(note_buffer))
             unit, direction = request
-            speak(note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction))
+            result = note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction)
+            if unit != 'read': result = __import__('reading_navigation').edge_notice(note_reading, 'note') + result
+            speak(result)
             return mode
         if command in NOTE_LIST_COMMANDS:
             # Save the note in progress first, so switching notes never loses words.
@@ -4904,8 +4989,17 @@ def _handle(text, mode, typed=False):
             speak(unreadable(title, error))
             return mode
         except (ValueError, OSError, KeyError, zipfile.BadZipFile, ET.ParseError):
-            speak('I could not safely open that document in this test editor.')
-            return mode
+            # The same as choosing the file in Open a document: a Word file the editor
+            # cannot keep opens in the reader; a damaged one is named in plain words.
+            from document_editor import find_document
+            path = find_document(documents_folder(), title)
+            try:
+                if path is None: raise ValueError('That document could not be opened.')
+                task_navigation().reader_return = 'word_processor'
+                return task_navigation().open_document(path)
+            except ValueError as error:
+                speak(str(error))
+                return mode
         document.dictating = INPUT_MODE != 'commands'
         speak('Opened ' + document.title + '. Speak to add text, or say read document.')
         return 'document'
@@ -4977,7 +5071,7 @@ def _handle(text, mode, typed=False):
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
-            return 'awake'
+            return mode
         speak('Continuing ' + document.title + '. Say read paragraph to hear your place.')
         return 'document'
     if command in ('resume email', 'continue email', 'resume draft'):
@@ -5026,16 +5120,20 @@ def _handle(text, mode, typed=False):
         web_session = web_session or WebSession(APP,progress=speak_status)
         web_session.auto_read=PREFERENCES.get('web_auto_read',True)
         web_session.search_engine=PREFERENCES.get('web_search_engine','google')
+        if command in ('list favorites','my favorites') and not web_session.snapshot:
+            # No page open: the web browser menu's favorites list, where arrows, next and Enter work.
+            web_session.menu.start()
+            return handle_browser_menu('go to favorite')
         speak(web_session.command(text))
         return 'web' if web_session.snapshot else 'awake'
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):
         speak_prompt('Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft.')
         return 'awake'
-    if command in ('radio','internet radio'):
+    if command in RADIO_OPEN:
         MEDIA_SECTION = 'radio'
         speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
         return 'media'
-    if command in ('podcasts','listen to podcasts'):
+    if command in PODCASTS_OPEN:
         MEDIA_SECTION = 'podcast'
         media().awaiting_radio_search = False
         speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
@@ -5060,7 +5158,9 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError,IndexError,ET.ParseError): speak('Search for a podcast first.')
         return 'media'
     if 'podcast' in command:
-        topic = re.sub(r'^.*?podcasts?\s*(?:about|on|for|called)?\s*', '', text)
+        # Recognizers write "Podcasts about history." with a capital and a period.
+        topic = re.sub(r'^.*?podcasts?\s*(?:about|on|for|called)?\s*', '', text, flags=re.I).strip(' .!?')
+        MEDIA_SECTION = 'podcast'
         try: speak(media().search_podcasts(topic))
         except (OSError,ValueError): speak('Podcast search could not connect. Try later.')
         return 'media'
@@ -5074,6 +5174,12 @@ def _handle(text, mode, typed=False):
         revision=getattr(web_session,'page_revision',0)
         speak_web_result(web_session.command(text),revision)
         return 'web' if web_session.snapshot else 'awake'
+    if mode == 'awake' and command in ('web history','go to favorite','delete favorite','rename favorite','new favorite','add favorite',
+                                       'go to bookmark','list bookmarks','delete bookmark','rename bookmark','new bookmark','add bookmark'):
+        # The web browser menu's own lists, said on the main menu ("Web history." searched Google for "history.").
+        web_session = web_session or WebSession(APP,progress=speak_status)
+        web_session.menu.start()
+        return handle_browser_menu(text)
     if re.search(r'\b(search|look up|google|bing|find|web)\b', command):
         topic = re.sub(r'^.*?\b(?:search(?: the web)?(?: for)?|look up|google|bing|find(?: me)?|web(?: for)?)\b\s*', '', text)
         if topic:

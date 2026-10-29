@@ -111,7 +111,8 @@ NOW_PLAYING_PHRASES = ('what s playing', 'whats playing', 'what is playing', 'wh
                        'what is playing now', 'what am i listening to', 'what station is this',
                        'what station is playing', 'what station am i listening to', 'which station is this',
                        'what episode is this', 'what episode is playing', 'which episode is this',
-                       'what podcast is this', 'what podcast is playing', 'what file is playing', 'what song is this')
+                       'what podcast is this', 'what podcast is playing', 'what file is playing', 'what song is this',
+                       'what video is this', 'what is this video', 'what video is playing', 'which video is this')
 NOW_PLAYING_AMBIGUOUS = ('what is this', 'what s this', 'whats this')
 
 
@@ -134,6 +135,7 @@ NOT_STATION_NAMES = ('audio', 'radio', 'podcast', 'podcasts', 'the podcast', 'me
                      'next episode', 'previous episode', 'the next episode', 'the previous episode', 'station', 'a station',
                      'the station', 'radio station', 'a radio station', 'something', 'again', 'music', 'file', 'the file',
                      'a file', 'media file', 'a media file', 'my file', 'video', 'the video', 'all')
+STATION_FILLER_WORDS = ('the', 'a', 'an', 'my', 'some', 'it', 'again', 'me', 'this', 'that', 'something', 'anything')
 NOT_STATION_STARTS = ('episode', 'download', 'recording', 'preset', 'favorite', 'podcast ', 'the podcast ', 'number ',
                       'station number ', 'file ', 'the file ', 'media file ', 'chapter', 'next ', 'previous ')
 
@@ -144,8 +146,12 @@ def station_request(spoken):
     match = re.fullmatch(r'(?:please )?play (?:(?:the )?(?:radio station|station|radio) )?(.+?)(?: radio station| station| radio| on the radio)?(?: please)?', text, re.I)
     if not match:
         return None
-    name = match[1].strip(' .')
+    # Recognizers and typists may quote the name: "Play "WGN"".
+    name = match[1].strip(' .\'"\u201c\u201d\u2018\u2019')
     folded = name.casefold()
+    # "Play the radio", "Play it again": words that name no station.
+    if all(word in STATION_FILLER_WORDS for word in folded.split()):
+        return None
     if (not name or folded in NOT_STATION_NAMES or folded.startswith(NOT_STATION_STARTS)
             or _radio_number(folded) is not None or folded.isdigit()):
         return None
@@ -232,6 +238,16 @@ class MediaHub:
         try: return json.loads(self._path(name).read_text(encoding='utf-8'))
         except (OSError, ValueError): return default
 
+    def _load_as(self, name, default):
+        """Like _load, but a damaged file of the wrong shape (a list where settings
+        belong) reads as the default, so it never stops the app."""
+        value = self._load(name, default)
+        return value if isinstance(value, type(default)) else default
+
+    def _stations_file(self, name):
+        """A saved station list, without damaged entries."""
+        return [s for s in self._load_as(name, []) if isinstance(s, dict)]
+
     def _save(self, name, value):
         self.folder.mkdir(parents=True, exist_ok=True)
         temp = self._path(name+'.writing')
@@ -257,7 +273,7 @@ class MediaHub:
             index = self.preset_index if self.preset_index is not None else 0
         return (saved, index) if 0 <= index < len(saved) else (saved, None)
 
-    def radio_preset_command(self, cmd):
+    def radio_preset_command(self, cmd, text=None):
         if self.preset_delete_pending:
             name = self.preset_delete_pending
             if cmd in ('no', 'no thanks', 'cancel', 'cancel delete'):
@@ -298,7 +314,9 @@ class MediaHub:
                        else self.current_station)
             if not station or not _http_url(station.get('url', '')):
                 return 'Select or play a radio station first, then say save preset.'
-            name = (save[1] or station['name']).strip()
+            # The name as said or typed, with its capitals ("Jazz", not "jazz").
+            spoken = re.fullmatch(r'(?:save|add) (?:preset|favorite)(?: as (.+))?', ' '.join((text or '').split()), re.I)
+            name = ((spoken[1] if spoken else save[1]) or station['name']).strip()
             if not name or len(name) > 80 or any(char in name for char in '\r\n'):
                 return 'Choose a shorter preset name without line breaks.'
             saved = self.presets()
@@ -341,7 +359,7 @@ class MediaHub:
         raise OSError('Radio Browser mirrors are unavailable.')
 
     def source(self):
-        selected=self._load('radio-preferences.json',{}).get('source','all')
+        selected=self._load_as('radio-preferences.json',{}).get('source','all')
         return selected if selected in self.SOURCES.values() else 'all'
 
     def choose_source(self, name):
@@ -349,7 +367,7 @@ class MediaHub:
         if selected is None:
             return ('Available station databases are All, Radio Browser, IPRD, and RadioSure file. '
                     'TuneIn and ooTunes are not connected directory sources.')
-        if selected=='radiosure' and not self._load('radiosure-stations.json',[]):
+        if selected=='radiosure' and not self._stations_file('radiosure-stations.json'):
             return 'Import a RadioSure station file first. Your station database is still '+self.source()+'.'
         self._save('radio-preferences.json',{'source':selected})
         self.stations=[]
@@ -357,7 +375,7 @@ class MediaHub:
         return 'Station database set to '+labels[selected]+'.'
 
     def refresh_iprd(self, force=False):
-        stamp=self._load('radio-iprd-status.json',{})
+        stamp=self._load_as('radio-iprd-status.json',{})
         if not force and time.time()-stamp.get('checked',0)<24*3600:
             return 'IPRD catalog was checked in the last 24 hours.'
         catalog=self.fetch_json(IPRD_CATALOG)
@@ -378,14 +396,15 @@ class MediaHub:
         return f'IPRD station catalog refreshed with {len(normalized)} stations.'
 
     def _mark_bad(self, station):
-        bad=self._load('radio-failures.json',{})
+        bad=self._load_as('radio-failures.json',{})
         bad[station['url']] = time.time()
         self._save('radio-failures.json',bad)
 
     def _usable(self, station):
         if station.get('lastcheckok') in (0,False,'0'): return False
-        bad=self._load('radio-failures.json',{})
-        return time.time()-bad.get(station.get('url',''),0)>24*3600
+        bad=self._load_as('radio-failures.json',{})
+        try: return time.time()-float(bad.get(station.get('url',''),0))>24*3600
+        except (TypeError,ValueError): return True
 
     def import_radiosure(self, path):
         source = Path(path)
@@ -413,6 +432,8 @@ class MediaHub:
         countries = {'united states':'US','usa':'US','canada':'CA','united kingdom':'GB',
                      'uk':'GB','australia':'AU','germany':'DE','france':'FR'}
         query = countries.get(value.casefold(), value.upper() if param=='countrycode' and len(value)==2 else value)
+        # Radio Browser keeps its tags in small letters ("jazz"); a typed "Jazz" finds the same.
+        if param=='tag': query=query.casefold()
         options={param:query,'limit':60,'hidebroken':'true','order':'votes','reverse':'true'}
         online_error = ''
         source=self.source()
@@ -422,8 +443,8 @@ class MediaHub:
             except (OSError, ValueError, TimeoutError):
                 online_error = 'The live directory is unavailable. '
         local=[]
-        if source in ('all','radiosure'): local += self._load('radiosure-stations.json', [])
-        if source in ('all','iprd'): local += self._load('radio-iprd-stations.json', [])
+        if source in ('all','radiosure'): local += self._stations_file('radiosure-stations.json')
+        if source in ('all','iprd'): local += self._stations_file('radio-iprd-stations.json')
         key = {'name':'name','tag':'tags','countrycode':'country','state':'state'}[param]
         country_aliases = {'US':'united states', 'CA':'canada', 'GB':'united kingdom',
                            'AU':'australia', 'DE':'germany', 'FR':'france'}
@@ -621,6 +642,9 @@ class MediaHub:
     def schedule(self, station, when, minutes, repeat=False):
         if not 1<=minutes<=240 or when<=self.clock(): return 'Choose a future time and a length from 1 to 240 minutes.'
         jobs = self._load('radio-schedule.json', [])
+        if not isinstance(jobs, list):
+            # Kept for a helper to inspect; never replaced by a new list.
+            return 'The radio schedule is damaged, so nothing was scheduled. Ask your helper to check it.'
         jobs.append({'station':station,'when':when.isoformat(timespec='seconds'),'minutes':minutes,
                      'repeat':repeat,'id':str(time.time_ns())})
         self._save('radio-schedule.json',jobs)
@@ -789,6 +813,9 @@ class MediaHub:
         self.current_feed=show['feed']
         with self._lock:
             subs=self._load('podcast-subscriptions.json',[])
+            if not isinstance(subs,list):
+                # Kept for a helper to inspect; never replaced by a new list.
+                return 'Your podcast subscriptions file is damaged, so '+show['name']+' was not added. Ask your helper to check it.'
             if not any(isinstance(s,dict) and s.get('feed')==show['feed'] for s in subs):
                 subs.append({**show,'download_limit':'manual','episodes':[]})
                 self._save('podcast-subscriptions.json',subs)
@@ -888,7 +915,7 @@ class MediaHub:
                 selected=next((s.get('download_limit','manual') for s in (current if isinstance(current,list) else [])
                                if isinstance(s,dict) and s.get('feed')==feed),'manual')
                 if selected!=policy: return
-                manifest=self._load('podcast-auto-files.json',{})
+                manifest=self._load_as('podcast-auto-files.json',{})
                 existing=manifest.get(feed,{})
                 if url in existing and (folder/Path(existing[url]).name).is_file(): continue
             if shutil.disk_usage(folder).free<MAX_DOWNLOAD+100_000_000:
@@ -902,7 +929,7 @@ class MediaHub:
             else: success=self._download_worker(episode,target,target.with_suffix(ext+'.part'),announce=False)
             if success:
                 with self._lock:
-                    manifest=self._load('podcast-auto-files.json',{})
+                    manifest=self._load_as('podcast-auto-files.json',{})
                     manifest.setdefault(feed,{})[url]=target.name
                     self._save('podcast-auto-files.json',manifest)
                 completed+=1
@@ -917,7 +944,7 @@ class MediaHub:
 
     def _prune_auto(self, feed, desired):
         with self._lock:
-            manifest=self._load('podcast-auto-files.json',{})
+            manifest=self._load_as('podcast-auto-files.json',{})
             entries=manifest.get(feed,{})
             folder=self._path('Podcast Downloads')
             for url,name in list(entries.items()):
@@ -972,8 +999,11 @@ class MediaHub:
                 'play audio':'play','resume audio':'play','pause audio':'pause','stop audio':'stop'}.get(cmd)
         if action:
             if not self.player.kind: return 'No audio is playing. Choose a station or episode first.'
-            if 'radio' in cmd and self.player.kind!='radio': return 'A podcast is selected. Say '+action+' podcast.'
-            if 'podcast' in cmd and self.player.kind!='podcast': return 'A station is selected. Say '+action+' radio.'
+            if 'radio' in cmd and self.player.kind!='radio' or 'podcast' in cmd and self.player.kind!='podcast':
+                # Name what is really loaded: a media file is neither a station nor a podcast.
+                if self.player.kind=='local': return 'A media file is selected. Say '+action+' audio.'
+                if self.player.kind=='podcast': return 'A podcast is selected. Say '+action+' podcast.'
+                return 'A station is selected. Say '+action+' radio.'
             try: state=self.player.control(action)
             except Exception: return 'The audio player could not respond. Try opening that audio again.'
             if action=='toggle':return 'Audio paused.' if state else 'Playing audio.'
@@ -1089,14 +1119,34 @@ class MediaHub:
         self._remember(files[i].as_uri(), what='recording', name=files[i].stem)
         return 'Playing recording '+files[i].stem+'. Say pause audio or stop audio.'
 
+    def play_chosen(self, section):
+        """"Play" with nothing loaded yet: play the station, preset or episode the
+        lists have chosen, as "that one" does. None when nothing is chosen."""
+        if getattr(self.player, 'kind', None): return None
+        if section == 'radio':
+            if self.preset_browsing and self.presets(): return self.radio_preset_command('play preset')
+            if self.station_choices: return self.play_station(self.station_choices[self.station_choice_index]+1)
+            if self.stations and self.station_index is not None: return self.play_station(self.station_index+1)
+        if section == 'podcast':
+            if self.browsing_episodes and self.episodes and self.episode_index is not None:
+                return self.play_episode(self.episode_index+1)
+            if self.shows and self.show_index is not None:
+                return (self.shows[self.show_index]['name']+' is chosen. Say that one to hear its episodes, '
+                        'then choose one to play.')
+        return None
+
     def command(self, spoken, section=None):
         text=spoken.strip().rstrip('.!?').strip(); cmd=text.casefold().replace('auto-download','auto download')
+        if section in ('radio', 'podcast') and cmd in ('play', 'play it', 'play this'):
+            chosen = self.play_chosen(section)
+            if chosen is not None: return chosen
         if section == 'radio':
-            preset_response = self.radio_preset_command(cmd)
+            preset_response = self.radio_preset_command(cmd, text)
             if preset_response is not None: return preset_response
         if section == 'radio':
             cmd=re.sub(r'^(?:please\s+)|(?:\s+please)$','',cmd).strip()
-            text=cmd
+            # Station names keep their capitals in what is said and shown ("WQXR", not "wqxr").
+            text=re.sub(r'^(?:please\s+)|(?:\s+please)$','',text,flags=re.I).strip()
             if self.station_choices:
                 if cmd in ('next','next station','go forward','forward','previous','previous station','go back','back'):
                     step=-1 if cmd.startswith(('previous','go back','back')) else 1
@@ -1133,7 +1183,9 @@ class MediaHub:
                     return self.play_station(number) if self.stations else 'Search for stations first.'
             named=re.fullmatch(r'(?:play|open|listen to|tune to)\s+(?:station\s+)?(.+)',text,re.I)
             if named and cmd not in ('play radio','play audio','play podcast') and not cmd.startswith(('play recording ','play download ','play episode ')):
-                return self.play_station_named(station_request(text) or named[1])
+                wanted = station_request(text) or named[1]
+                if not all(word in STATION_FILLER_WORDS for word in re.sub(r'\b(?:radio|station)\b', ' ', wanted.casefold()).split()):
+                    return self.play_station_named(wanted)
             if cmd in ('search','search for','search stations','search radio','find stations','find radio'):
                 self.awaiting_radio_search=True
                 return 'What station would you like to find? Say its name.'

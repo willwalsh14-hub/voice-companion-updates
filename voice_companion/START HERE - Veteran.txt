@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.174-test.
+Guide version: 0.2.175-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -400,7 +400,7 @@ Press Alt to open the lessons menu. It has the lesson list, Repeat, Find lesson,
 4.1 Stop or pause speech
 To silence Companion, press Control. This works while the microphone is asleep too.
 Control stops speech. It does not pause it. To hear the text again, use a reading key, such as Down Arrow.
-By voice, say "Be quiet", "Stop talking", "Pause", or "Shut up". Say "Resume" or "Keep talking" to go on with paused speech.
+By voice, say "Be quiet", "Stop talking", or "Shut up". Say "Resume" or "Keep talking" to go on with paused speech.
 A new command stops the old speech and does the new task. For example, say "Next" or "Previous" to move while a menu item is read. Or say "Next message" while mail is read.
 For radio or podcasts, say "Pause audio" or "Stop audio" to make clear you mean the sound. Or press Control+P to pause or resume.
 
@@ -754,7 +754,7 @@ Companion saves as you write.
 - To rename the file, say "Name document", followed by the new name, such as "Name document My Letter". Say "Undo" right after a rename to get the old name back.
 To close the document:
 1. Say "Leave document" or "Go back", or press Control+W or Escape.
-2. Companion asks whether to save. Listen to the file name it reads.
+2. Companion asks, "Save this document?"
 3. Say "Yes" to keep the current name, or to name an untitled file. Say "No" to throw away the changes since you last opened, saved, or named the file. Press Escape to keep editing.
 To save a copy with Save As:
 1. Say "Save as", or press F12. Control+Shift+S also works. It is also on the File menu: press Alt, then 1.
@@ -1646,7 +1646,7 @@ Audio stops when you leave, unless Keep audio playing in the background is on.
 2. Say "Search radio", or press Control+F.
 3. Give a station name, such as WGN, or a type of music.
 4. To hear the results, say "Next" and "Previous", or press Down Arrow and Up Arrow.
-5. To play the chosen station, say "That one", or press Enter.
+5. To play the chosen station, say "That one" or "Play", or press Enter.
 - To search in one command, say "Search radio for", followed by the station or music type, such as "Search radio for jazz".
 - To browse a genre, say "Browse genre", followed by its name, such as "Browse genre jazz".
 - To play a result by number, say "Play station", followed by the number, such as "Play station 1".
@@ -1761,7 +1761,7 @@ Then check the list again. Other plans and saved recordings stay in place.
 3. To hear show names, say "Next" and "Previous", or use the arrows.
 4. To open the show, say "That one", or press Enter.
 5. To hear episode names, say "Next episode" and "Previous episode", or use the arrows.
-6. To play the selected episode, say "That one", or press Enter.
+6. To play the selected episode, say "That one" or "Play", or press Enter.
 - Say "Search podcast" to be asked for a show name.
 - To browse a category, say "Browse podcasts category", followed by its name, such as "Browse podcasts category science".
 - To open a show by number, say "Open podcast", followed by its number, such as "Open podcast 2". Say "Open feed" to open the selected show.
@@ -1954,6 +1954,7 @@ In the background, some pages need a real window. These are a Google sign-in, a 
 - Say "Hide browser window" to run Chrome in the background again.
 - Both are also in the web page menu, under Options and help.
 When Chrome opens again, the page loads again. Text you typed on the page is not kept, so switch before you fill in a form.
+Sometimes a card box or a file box shows up on a page you are already using. Then Companion does not open Chrome again by itself, so your answers stay. It tells you, and you can say "Show browser window" when you are ready. A button that opens a box for choosing a file also tells you to show the window first.
 If anything goes wrong, choose the first option to go back to how it was.
 A site may ask you to sign in again, even if you are signed in on your usual browser.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To ask for HTTP, type the full address, such as http://example.com. HTTP does not protect the connection. The guided voice review still needs HTTPS before it sends a form.
@@ -2186,6 +2187,7 @@ These keys work on the YouTube screen. Many are the same as YouTube's own keys.
 - To play the next video, say "Next video", or press N.
 - To play the video before it, say "Previous video", or press P.
 - To hear what is playing and where you are, say "What's playing?", or press F3.
+- To stop the video, say "Stop". To start it again, say "Resume".
 "Faster", "Slower", and "Volume up" alone change Companion's voice, not the video.
 You can still move through lists while a video plays. Up Arrow and Down Arrow never change the video.
 
