@@ -990,7 +990,10 @@ def _navigation_key(key,mode):
     if ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('mode')==mode and not ACCOUNT_PICKER.get('confirm'):
         request=account_picker_key(key)
         if request!='':return request
-    task_key=task_navigation().keyboard(key,mode)
+    # A list opened over a menu ("List documents", Open a note) owns the list keys,
+    # as its prompt says; the menu below it must not take Enter, Home or End.
+    list_over_menu=NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape','Home','End') and task_navigation().items(mode) is not None
+    task_key=None if list_over_menu else task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
     if mode=='draft_leave':
         # Leaving a written email: save it, throw it away, or keep writing (draft_leave.py).

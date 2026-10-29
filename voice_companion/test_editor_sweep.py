@@ -92,5 +92,42 @@ class OpenDocumentByName(DocumentFlowCase):
         self.assertEqual(self.last(), 'This document is empty or damaged, so it could not be opened.')
 
 
+class ListsOverAMenu(DocumentFlowCase):
+    """A list opened over the Word processor or Notepad menu owns the keys, as its prompt says."""
+    def setUp(self):
+        super().setUp(); self.default.mkdir(parents=True, exist_ok=True)
+        for name in ('Alpha', 'Bravo'):
+            made = VoiceDocument(self.default, title=name); made.paragraphs = [Paragraph(name + ' text.')]; made.save()
+
+    def test_enter_on_list_documents_opens_the_document(self):
+        mode = app.handle('list documents', 'word_processor')
+        mode = self.press('Down', mode)
+        self.assertIn('Bravo', self.last())
+        self.assertEqual(self.press('Enter', mode), 'document')
+        self.assertEqual(app.document.title, 'Bravo')
+
+    def test_home_and_end_move_in_the_list(self):
+        mode = app.handle('list documents', 'word_processor')
+        mode = self.press('End', mode)
+        self.assertIn('Bravo', self.last())
+        mode = self.press('Home', mode)
+        self.assertIn('Alpha', self.last())
+        self.assertEqual(self.press('Enter', mode), 'document')
+        self.assertEqual(app.document.title, 'Alpha')
+
+    def test_escape_closes_the_list_and_stays_on_the_menu(self):
+        mode = app.handle('list documents', 'word_processor')
+        self.assertEqual(self.press('Escape', mode), 'word_processor')
+        self.assertIsNone(app.NAMED_LIST)
+
+    def test_enter_on_the_notes_list_opens_the_note(self):
+        import notepad
+        notepad.add(app.APP, 'Buy milk.')
+        mode = self.press('Ctrl+O', app.handle('notepad', 'awake'))
+        self.assertIn('Buy milk', self.last())
+        self.assertEqual(self.press('Enter', mode), 'note')
+        self.assertIn('Buy milk.', ' '.join(self.said[-2:]))
+
+
 if __name__ == '__main__':
     unittest.main()
