@@ -364,6 +364,8 @@ class UpdatingTests(UpgradeCase):
         step = flow.answer('upgrade', True)
         self.assertEqual(step.message, upgrade.FAILED)
         self.assertEqual(system.__dict__.get('commands'), None)
+        self.assertEqual(flow.report['install']['stopped'], 'signature: HashMismatch CN=Someone Else, O=Someone Else',
+                         'the failure names itself')
         self.assertEqual(upgrade.installed(system).version, '153.6.0')
         self.assertTrue(self.thunderbird.running, 'the old Thunderbird is started again')
         self.assertEqual(self.key_files(), before)
@@ -374,6 +376,15 @@ class UpdatingTests(UpgradeCase):
         flow = self.flow(system)
         flow.check()
         self.assertEqual(flow.answer('upgrade', True).message, upgrade.FAILED)
+
+    def test_a_failure_does_not_leave_open_a_thunderbird_that_was_closed_and_never_checked(self):
+        system = self.system()
+        self.thunderbird.addon = False       # cannot be checked first, so it is not started first
+        system.install_works = False
+        flow = self.flow(system)
+        flow.check()
+        self.assertEqual(flow.answer('upgrade', True).message, upgrade.FAILED)
+        self.assertFalse(self.thunderbird.running)
 
     def test_a_download_a_step_behind_is_installed_again_once(self):
         system = self.system()

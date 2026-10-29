@@ -154,6 +154,10 @@ def main():
     installer = work / 'Thunderbird ESR Setup.exe'
     system.download(ESR_URL, installer)
     checks['esr_installer_signed_by_mozilla'] = thunderbird_setup.signed_by_mozilla(system, installer)
+    best['esr_signature'] = {'result': getattr(system, 'last_signature', None), 'problem': system.signer_problem}
+    # For comparison: the same check from a PowerShell that inherits this process's module path.
+    best['signature_inherited_environment'] = run(['powershell', '-NoProfile', '-NonInteractive', '-Command',
+                                                   "(Get-AuthenticodeSignature -LiteralPath '%s') | Format-List Status,StatusMessage,SignerCertificate" % installer])
     print(run([str(installer), '/S'], timeout=600) or 'ESR installer finished', flush=True)
     program, version = thunderbird_setup.find_program(system)
     before_info = thunderbird_upgrade.installed(system, program, version)

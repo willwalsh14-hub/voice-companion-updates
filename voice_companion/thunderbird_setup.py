@@ -199,17 +199,27 @@ class WindowsSystem:
                 if not block: break
                 handle.write(block)
 
+    signer_problem = ''    # why the last signature check did not say Valid, in Windows' words (for error reports)
+
     def signer(self, path):
-        """(signature status, signer subject) from Windows' own Authenticode check."""
+        """(signature status, signer subject) from Windows' own Authenticode check.
+
+        Windows PowerShell is run by its full path, without PSModulePath: started from PowerShell 7,
+        it would inherit 7's module path and fail to load Get-AuthenticodeSignature."""
         script = ('$s = Get-AuthenticodeSignature -LiteralPath $env:VC_FILE; '
-                  '"$($s.Status)|$($s.SignerCertificate.Subject)"')
+                  '"$($s.Status)|$($s.SignerCertificate.Subject)|$($s.StatusMessage)"')
+        powershell = str(Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe')
+        env = {key: value for key, value in os.environ.items() if key.upper() != 'PSMODULEPATH'}
+        env['VC_FILE'] = str(path)
         try:
-            found = subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
-                                   text=True, timeout=60, env={**os.environ, 'VC_FILE': str(path)},
-                                   creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.strip()
-        except (OSError, subprocess.SubprocessError):
+            done = subprocess.run([powershell, '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
+                                  text=True, timeout=60, env=env, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        except (OSError, subprocess.SubprocessError) as exc:
+            self.signer_problem = type(exc).__name__ + ': ' + str(exc)
             return '', ''
-        status, _, subject = found.partition('|')
+        status, _, rest = done.stdout.strip().partition('|')
+        subject, _, message = rest.rpartition('|') if rest.count('|') else (rest, '', '')
+        self.signer_problem = '' if status.strip() == 'Valid' else (message.strip() + ' ' + done.stderr.strip())[-600:]
         return status.strip(), subject.strip()
 
     def latest_release(self):
@@ -537,6 +547,10 @@ def _run(system, command, timeout, progress, every=PROGRESS_SECONDS, message=STI
 def signed_by_mozilla(system, path):
     """Only Mozilla's own signed installer runs: Windows' Authenticode check, organization Mozilla Corporation."""
     status, subject = system.signer(path)
+    try:
+        system.last_signature = (status, subject)
+    except AttributeError:
+        pass
     return status == 'Valid' and bool(re.search(r'(?:^|,\s*)O="?' + re.escape(SIGNER) + r'"?(?:,|$)', subject))
 
 

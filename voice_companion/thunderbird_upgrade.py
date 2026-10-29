@@ -296,23 +296,32 @@ def offer_due(system, data_folder, now=None):
 
 # ---- Installing the Release ------------------------------------------------------
 
-def install_release(system, folder, progress):
-    """Mozilla's signed Release installer, run into the folder Thunderbird is in now. True when it ran."""
+def install_release(system, folder, progress, report=None):
+    """Mozilla's signed Release installer, run into the folder Thunderbird is in now. True when it ran.
+    report, when given, gets why it did not (a failure names itself)."""
+    report = {} if report is None else report
     temporary = Path(tempfile.mkdtemp(prefix='voice-companion-thunderbird-'))
     installer = temporary / 'Thunderbird Setup.exe'
     try:
         try:
             system.download(RELEASE_URL, installer)
-        except OSError:
+        except OSError as exc:
+            report['stopped'] = 'download: ' + type(exc).__name__ + ': ' + str(exc)[:200]
             return False
         if not setup.signed_by_mozilla(system, installer):
+            status, subject = getattr(system, 'last_signature', ('', ''))
+            report['stopped'] = ('signature: ' + str(status) + ' ' + str(subject) + ' ' +
+                                 str(getattr(system, 'signer_problem', ''))).strip()[:700]
             return False
         target = str(folder)
         if '"' in target:
+            report['stopped'] = 'folder name'
             return False
         # One command line, so the folder (with spaces) reaches the installer as one quoted value.
         command = '"' + str(installer) + '" /S /InstallDirectoryPath="' + target.rstrip('\\/') + '"'
         code = setup._run(system, command, setup.INSTALL_SECONDS, progress, message=STILL_UPDATING)
+        if code != 0:
+            report['stopped'] = 'installer: ' + ('took too long' if code is None else 'exit code ' + str(code))
         return code == 0
     finally:
         for item in (installer, temporary):
@@ -455,6 +464,7 @@ class Upgrade:
         profile, _ = setup.choose_profile(self.system)
         before = {'prefs': prefs_accounts(profile) if profile else {}}
         launched_for_check = False
+        was_open = self.system.running()
         if profile is not None and not self._connected() and not self.system.running() and \
                 setup.addon_state(profile) in ('active', 'waiting'):
             # Started quietly first, so its accounts and Inboxes can be compared afterwards.
@@ -482,10 +492,12 @@ class Upgrade:
                 try:
                     saved = backup(profile, profile_root(self.system, profile))
                 except OSError:
-                    self._start(profile)
+                    if was_open or launched_for_check:
+                        self._start(profile)
                     return Step(BACKUP_FAILED, None)
             self.progress(UPDATING)
-            ran = install_release(self.system, info.folder, self.progress)
+            self.report['install'] = {}
+            ran = install_release(self.system, info.folder, self.progress, self.report['install'])
             after = installed(self.system, info.program)
             if ran and after is not None and is_current(after):
                 latest = _latest(self.system)
@@ -497,7 +509,8 @@ class Upgrade:
                                             'channel': after.channel if after else ''}
             if not ran or after is None or not is_current(after) or \
                     setup.version_tuple(after.version) < setup.version_tuple(info.version):
-                self._start(profile)
+                if was_open or launched_for_check:
+                    self._start(profile)    # the old Thunderbird, as it was
                 return Step(FAILED, None)
             self.info = after
         self.progress(CHECKING)
