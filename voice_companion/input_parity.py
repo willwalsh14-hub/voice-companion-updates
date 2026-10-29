@@ -101,6 +101,8 @@ def chord(keysym, state):
     control, shift, alt = modifiers(state)  # Num Lock is not Alt on Windows.
     if alt or keysym in ('Control_L', 'Control_R', 'Shift_L', 'Shift_R', 'Alt_L', 'Alt_R'):
         return None
+    # Some keyboards report the comma and period keys by their characters, not their names.
+    keysym = {',': 'comma', '.': 'period'}.get(keysym, keysym)
     name = keysym.upper() if len(keysym) == 1 else {'Page_Down': 'Next', 'Page_Up': 'Prior', 'space': 'Space'}.get(keysym, keysym)
     if control:
         return 'Ctrl+' + ('Shift+' if shift else '') + name

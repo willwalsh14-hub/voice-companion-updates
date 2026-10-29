@@ -143,6 +143,9 @@ class ScreenWordTests(unittest.TestCase):
         from input_parity import screen_key
         self.assertEqual(screen_key('youtube', 'k', 0, context), 'K')
         self.assertEqual(screen_key('youtube', 'comma', 0, context), 'comma')
+        # Some keyboards name the key by its character (seen with Tk on X11).
+        self.assertEqual(screen_key('youtube', ',', 0, context), 'comma')
+        self.assertEqual(screen_key('youtube', '.', 0, context), 'period')
         self.assertIsNone(screen_key('youtube', 'k', 0, context, typed_text='search'))   # a typed command keeps its letters
         self.assertEqual(screen_key('youtube', 'f', 4, context, typed_text='search'), 'Ctrl+F')
 
