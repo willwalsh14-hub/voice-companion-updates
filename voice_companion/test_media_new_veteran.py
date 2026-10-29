@@ -238,5 +238,14 @@ class OpenRadioAndPodcastsTests(NewVeteranMediaTestCase):
         self.assertEqual(companion.MEDIA_SECTION, 'podcast')
 
 
+
+class StationNamesKeepCapitalsTests(NewVeteranMediaTestCase):
+    def test_a_name_not_found_on_the_radio_screen_is_said_as_given(self):
+        self.say('Media', 'Radio')
+        self.assertEqual(self.say('Play WQXR, please.'), 'I could not find a station called WQXR. Check the name, or say Radio to search for stations.')
+        self.say('Search radio for jazz')
+        self.assertEqual(self.say('Play WQXR'), 'I did not find WQXR in these results. Say search followed by the station name to search again.')
+
+
 if __name__ == '__main__':
     unittest.main()

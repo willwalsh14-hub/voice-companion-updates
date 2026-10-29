@@ -1142,7 +1142,8 @@ class MediaHub:
             if preset_response is not None: return preset_response
         if section == 'radio':
             cmd=re.sub(r'^(?:please\s+)|(?:\s+please)$','',cmd).strip()
-            text=cmd
+            # Station names keep their capitals in what is said and shown ("WQXR", not "wqxr").
+            text=re.sub(r'^(?:please\s+)|(?:\s+please)$','',text,flags=re.I).strip()
             if self.station_choices:
                 if cmd in ('next','next station','go forward','forward','previous','previous station','go back','back'):
                     step=-1 if cmd.startswith(('previous','go back','back')) else 1
