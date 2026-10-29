@@ -275,11 +275,11 @@ MENUS = {
             ('Stop video', '', 'stop video'),
             ('Skip amount', '', 'skip amount {value}')]),
         ('Sound and speed', [
-            ('Volume up', 'Ctrl+Up', 'volume up'),
-            ('Volume down', 'Ctrl+Down', 'volume down'),
+            ('Volume up', 'Ctrl+Up', 'video volume up'),
+            ('Volume down', 'Ctrl+Down', 'video volume down'),
             ('Sound on or off', 'M', 'mute or unmute'),
-            ('Slower', 'comma', 'slower'),
-            ('Faster', 'period', 'faster'),
+            ('Slower', 'comma', 'slower video'),
+            ('Faster', 'period', 'faster video'),
             ('Normal speed', '', 'normal speed')]),
         ('Captions and picture', [
             ('Captions on or off', 'C', 'captions on or off'),

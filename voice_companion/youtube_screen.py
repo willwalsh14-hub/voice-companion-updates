@@ -53,8 +53,8 @@ HELP = ('YouTube. Up and Down Arrow move through the list. Enter plays a video o
 KEYS = {
     'F1': 'help with youtube', 'Ctrl+F': 'search youtube', 'F5': 'refresh youtube',
     'Space': 'play or pause video', 'K': 'play or pause video', 'J': 'skip back', 'L': 'skip forward',
-    '0': 'restart video', 'M': 'mute or unmute', 'Ctrl+Up': 'volume up', 'Ctrl+Down': 'volume down',
-    'comma': 'slower', 'period': 'faster', 'C': 'captions on or off', 'R': 'read caption', 'Q': 'video quality',
+    '0': 'restart video', 'M': 'mute or unmute', 'Ctrl+Up': 'video volume up', 'Ctrl+Down': 'video volume down',
+    'comma': 'slower video', 'period': 'faster video', 'C': 'captions on or off', 'R': 'read caption', 'Q': 'video quality',
     'N': 'next video', 'P': 'previous video', 'A': 'autoplay on or off', 'F': 'video full screen',
     'H': 'list chapters', 'Ctrl+Left': 'previous chapter', 'Ctrl+Right': 'next chapter', 'S': 'skip ad',
     'I': 'video details', 'D': 'read description', 'O': 'read comments', 'G': 'go to channel', 'X': 'up next',
@@ -82,7 +82,8 @@ def screen(m):
 
 
 def normalized(text):
-    words = ' '.join(re.sub(r"[^\w\s']", ' ', str(text).casefold()).split())
+    words = re.sub(r"[^\w\s'.]", ' ', str(text).casefold())
+    words = ' '.join(re.sub(r'(?<!\d)\.|\.(?!\d)', ' ', words).split())   # 1.5 keeps its point
     return re.sub(r'^(?:please |hey |ok |okay )|(?: please| now)$', '', words).replace("'", '')
 
 
@@ -963,15 +964,15 @@ class YouTubeScreen:
         self.list_page = self.video_page = None
         self.single_tab = False
         said = 'YouTube now uses Chrome. ' if notice.startswith('Selected') else notice + ' '
+        view = self.view()
         try:
+            # The list first, in the new browser's first tab; then the video in a tab of its own.
+            result = self.go(view['url'] if view and view.get('url') else yp.feed_url('home'))
             if resume:
-                result = self.play(dict(resume, kind='video'))
-            else:
-                view = self.view()
-                result = self.go(view['url']) if view and view.get('url') else self.go(yp.feed_url('home'))
+                result += self.play(dict(resume, kind='video'))
         except YouTubeError as exc:
             return said + str(exc)
-        return said + 'To sign in, say sign in. ' + (result if isinstance(result, str) else '')
+        return said + 'To sign in, say sign in. ' + result
 
     def sign_in(self):
         """Open Google's sign-in page on the web screen, where you type your own email and password."""
@@ -1154,13 +1155,15 @@ def open_screen(m, mode, lead=''):
 COMMANDS = {
     # playback
     'play or pause video': 'toggle', 'play or pause': 'toggle', 'toggle video': 'toggle',
-    'play': 'play', 'play video': 'play', 'resume': 'play', 'resume video': 'play', 'continue video': 'play',
+    'play': 'play', 'play video': 'play', 'resume video': 'play', 'continue video': 'play',
     'pause': 'pause', 'pause video': 'pause', 'pause youtube': 'pause', 'stop video': 'stop', 'stop youtube': 'stop',
     'skip back': 'skip back', 'rewind': 'skip back', 'skip forward': 'skip forward', 'fast forward': 'skip forward',
     'restart video': 'restart', 'restart': 'restart', 'start over': 'restart', 'play from the start': 'restart',
-    'faster': 'faster', 'speed up': 'faster', 'slower': 'slower', 'slow down': 'slower',
-    'normal speed': 'normal speed', 'reset speed': 'normal speed',
-    'volume up': 'volume up', 'louder': 'volume up', 'volume down': 'volume down', 'quieter': 'volume down', 'softer': 'volume down',
+    # Faster, slower, louder and volume alone change Companion's own voice; these name the video.
+    'faster video': 'faster', 'video faster': 'faster', 'slower video': 'slower', 'video slower': 'slower',
+    'normal speed': 'normal speed', 'reset speed': 'normal speed', 'normal video speed': 'normal speed',
+    'video volume up': 'volume up', 'louder video': 'volume up', 'video louder': 'volume up',
+    'video volume down': 'volume down', 'quieter video': 'volume down', 'video quieter': 'volume down',
     'mute or unmute': 'mute', 'mute': 'mute on', 'mute video': 'mute on', 'unmute': 'mute off', 'unmute video': 'mute off',
     'captions on or off': 'captions', 'toggle captions': 'captions', 'captions on': 'captions on', 'turn on captions': 'captions on',
     'subtitles on': 'captions on', 'captions off': 'captions off', 'turn off captions': 'captions off', 'subtitles off': 'captions off',
@@ -1338,10 +1341,10 @@ def parse(command, raw):
     match = re.fullmatch(r'(?:set )?(?:the )?skip (?:amount|time|length|seconds)(?: to)? (.+)', command)
     if match:
         return 'skip amount', match[1]
-    match = re.fullmatch(r'(?:set )?(?:playback )?speed(?: to)? (.+)', command)
+    match = re.fullmatch(r'(?:set )?(?:the )?(?:video|playback) speed(?: to)? (.+)', command)
     if match:
         return 'speed', match[1]
-    match = re.fullmatch(r'(?:set )?volume(?: to)? (\d+)(?: percent)?', command)
+    match = re.fullmatch(r'(?:set )?(?:the )?video volume(?: to)? (\d+)(?: percent)?', command)
     if match:
         return 'volume to', match[1]
     match = re.fullmatch(r'(?:jump|go|skip|move) to (\d+) percent', command)

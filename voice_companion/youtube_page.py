@@ -453,9 +453,15 @@ DETAILS_JS = HELPERS + r'''
 ()=>{
   const more=document.querySelector('#description-inline-expander #expand,ytd-text-inline-expander #expand,#description #expand,tp-yt-paper-button#expand');
   if(more&&shown(more)){try{more.click();}catch(e){}}
-  const candidates=[...document.querySelectorAll('#description-inline-expander #expanded yt-attributed-string,#description-inline-expander yt-attributed-string,'+
-    '#description-inline-expander,ytd-text-inline-expander,#description .content,#description yt-formatted-string,#description')].map(e=>txt(e)).filter(Boolean);
-  let description=candidates.sort((a,b)=>b.length-a.length)[0]||'';
+  // Most exact place first: the full text, then the short one, then older layouts. Line breaks are kept.
+  const lines=e=>String(e.innerText||e.textContent||'').split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean).join('\n');
+  let description='';
+  for(const sel of ['#description-inline-expander #expanded yt-attributed-string,ytd-text-inline-expander #expanded yt-attributed-string',
+                    '#description-inline-expander yt-attributed-string,ytd-text-inline-expander yt-attributed-string',
+                    '#description .content,#description yt-formatted-string#description-text,#description yt-formatted-string']){
+    const found=[...document.querySelectorAll(sel)].map(lines).filter(Boolean).sort((a,b)=>b.length-a.length);
+    if(found.length){description=found[0];break;}
+  }
   description=description.replace(/\s*(?:…|\.\.\.)\s*more\s*$/i,'').replace(/\s*Show less\s*$/i,'');
   if(!description){const meta=document.querySelector('meta[name="description"]');description=meta?meta.content:'';}
   const info=[...document.querySelectorAll('ytd-watch-info-text #info span,#info-container #info span,#info-strings yt-formatted-string,#count .view-count,ytd-video-view-count-renderer span')].map(txt).filter(Boolean);
