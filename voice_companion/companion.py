@@ -4125,6 +4125,7 @@ def _handle(text, mode, typed=False):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader menu')
+            if task_navigation().reader_return=='word_processor' or FILE_MANAGER is None:return task_navigation().enter('word_processor','Word processor menu')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
                 if back:return back
@@ -4906,8 +4907,17 @@ def _handle(text, mode, typed=False):
             speak(unreadable(title, error))
             return mode
         except (ValueError, OSError, KeyError, zipfile.BadZipFile, ET.ParseError):
-            speak('I could not safely open that document in this test editor.')
-            return mode
+            # The same as choosing the file in Open a document: a Word file the editor
+            # cannot keep opens in the reader; a damaged one is named in plain words.
+            from document_editor import find_document
+            path = find_document(documents_folder(), title)
+            try:
+                if path is None: raise ValueError('That document could not be opened.')
+                task_navigation().reader_return = 'word_processor'
+                return task_navigation().open_document(path)
+            except ValueError as error:
+                speak(str(error))
+                return mode
         document.dictating = INPUT_MODE != 'commands'
         speak('Opened ' + document.title + '. Speak to add text, or say read document.')
         return 'document'

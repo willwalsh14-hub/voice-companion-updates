@@ -61,5 +61,36 @@ class SpokenRenameInFileManager(DocumentFlowCase):
         self.assertIn('cannot end with a period or a space', self.last())
 
 
+class ComplexWordFileOpensInTheReader(DocumentFlowCase):
+    def test_the_reason_is_said_in_plain_words(self):
+        from docx import Document
+        made = Document(); made.add_paragraph('Body text.'); made.sections[0].header.paragraphs[0].text = 'Top'
+        path = self.elsewhere / 'Complex.docx'; made.save(path)
+        self.assertEqual(app.task_navigation().open_document(path), 'file_reader')
+        self.assertIn('Opened Complex.docx. This Word file has features the editor cannot keep, '
+                      'so it opened in the Document reader. You can read it, but not change it.', self.last())
+
+
+class OpenDocumentByName(DocumentFlowCase):
+    """"Open document" followed by a name does what choosing the file in Open a document does."""
+    def setUp(self):
+        super().setUp(); self.default.mkdir(parents=True, exist_ok=True)
+
+    def test_a_complex_word_file_opens_in_the_reader(self):
+        from docx import Document
+        made = Document(); made.add_paragraph('Body text.'); made.sections[0].header.paragraphs[0].text = 'Top'
+        made.save(self.default / 'Complex.docx')
+        self.assertEqual(app.handle('Open document Complex.', 'word_processor'), 'file_reader')
+        self.assertIn('features the editor cannot keep', self.last())
+        self.assertNotIn('test editor', ' '.join(self.said))
+        self.assertEqual(self.press('Escape', 'file_reader'), 'word_processor')
+        self.assertTrue(self.last().startswith('Word processor menu.'))
+
+    def test_a_damaged_file_is_named_in_plain_words(self):
+        (self.default / 'Broken.docx').write_bytes(b'PK not really')
+        self.assertEqual(app.handle('open document Broken', 'word_processor'), 'word_processor')
+        self.assertEqual(self.last(), 'This document is empty or damaged, so it could not be opened.')
+
+
 if __name__ == '__main__':
     unittest.main()

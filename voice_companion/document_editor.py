@@ -192,6 +192,16 @@ def existing_document(folder, name):
         return None
 
 
+def find_document(folder, title):
+    """The .docx in folder that "open document" plus this title means, or None."""
+    name = document_filename(title)
+    legacy = re.sub(r'[^\w .-]+', '', title).strip(' .')[:80]
+    matches = [p for p in Path(folder).glob('*.docx') if p.stem.casefold() in (name.casefold(),legacy.casefold(),title.casefold())]
+    # "Letter.docx.docx" and "Letter.docx" both sanitize to "Letter"; open the exact one.
+    matches.sort(key=lambda p: (p.stem != title, p.stem.casefold() != title.casefold(), p.name))
+    return matches[0] if matches else None
+
+
 PARAGRAPH_ORDINALS = {'first':1, 'second':2, 'third':3, 'fourth':4, 'fifth':5,
                       'sixth':6, 'seventh':7, 'eighth':8, 'ninth':9, 'tenth':10}
 
@@ -341,20 +351,15 @@ class VoiceDocument:
     @classmethod
     def open_existing(cls, folder: Path, title: str):
         folder.mkdir(parents=True, exist_ok=True)
-        name = document_filename(title)
-        legacy = re.sub(r'[^\w .-]+', '', title).strip(' .')[:80]
-        matches = [p for p in folder.glob('*.docx') if p.stem.casefold() in (name.casefold(),legacy.casefold(),title.casefold())]
-        if not matches:
+        path = find_document(folder, title)
+        if path is None:
             raise FileNotFoundError(title)
-        # "Letter.docx.docx" and "Letter.docx" both sanitize to "Letter"; open the exact one.
-        matches.sort(key=lambda p: (p.stem != title, p.stem.casefold() != title.casefold(), p.name))
-        path = matches[0]
         if path.stat().st_size > 10 * 1024 * 1024:
-            raise ValueError('This document is too large for this test editor.')
+            raise ValueError('This document is too large for the editor.')
         try:
             with zipfile.ZipFile(path) as archive:
                 if archive.getinfo('word/document.xml').file_size > 10 * 1024 * 1024:
-                    raise ValueError('This document is too large for this test editor.')
+                    raise ValueError('This document is too large for the editor.')
                 root = ET.fromstring(archive.read('word/document.xml'))
         except (zipfile.BadZipFile, KeyError, ET.ParseError, EOFError) as error:
             # An empty "New Microsoft Word Document" or a damaged file is not a crash.
@@ -365,15 +370,15 @@ class VoiceDocument:
                    'gridCol', 'tr', 'tc', 'tcPr', 'tcW', 'tblW', 'tblBorders',
                    'top', 'bottom', 'left', 'right', 'insideH', 'insideV', 'jc', 'spacing', 'br')}
         if any(node.tag not in allowed for node in root.iter()):
-            raise ValueError('This document uses formatting this test editor cannot preserve.')
+            raise ValueError('This document uses formatting the editor cannot preserve.')
         # Attributes this editor would silently drop on save: space before/after
         # paragraphs and paragraph styles other than headings.
         if any(node.get(ns + side) is not None for node in root.iter(ns + 'spacing')
                for side in ('before', 'after', 'beforeLines', 'afterLines', 'beforeAutospacing', 'afterAutospacing')):
-            raise ValueError('This document uses formatting this test editor cannot preserve.')
+            raise ValueError('This document uses formatting the editor cannot preserve.')
         if any(not re.fullmatch(r'(?:Heading[1-6]|Normal)', node.get(ns + 'val', ''))
                for node in root.iter(ns + 'pStyle')):
-            raise ValueError('This document uses formatting this test editor cannot preserve.')
+            raise ValueError('This document uses formatting the editor cannot preserve.')
         document = cls(folder, title=path.stem, _opening=True, source_path=path)
         def switched_on(props, tag):
             # <w:b w:val="0"/> and <w:u w:val="none"/> mean the formatting is off.

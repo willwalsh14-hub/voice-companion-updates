@@ -221,7 +221,7 @@ class TaskNavigation:
                 if 'cannot preserve' not in str(error):raise
                 from document_reader import open_document
                 m.FILE_READER=open_document(path);self.remember(path)
-                m.speak('Opened '+path.name+'. Document reader preserves this document structure. Editing is unavailable for this file. '+m.FILE_READER.reading.read(True))
+                m.speak('Opened '+path.name+'. This Word file has features the editor cannot keep, so it opened in the Document reader. You can read it, but not change it. '+m.FILE_READER.reading.read(True))
                 return 'file_reader'
             m.document = opened
             m.checkpoint_document()
