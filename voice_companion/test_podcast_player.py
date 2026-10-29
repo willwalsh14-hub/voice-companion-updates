@@ -205,6 +205,9 @@ class ControlsTests(unittest.TestCase):
         self.nav.keyboard('End');self.nav.keyboard('Up');self.nav.keyboard('Up');self.nav.keyboard('Up')
         self.assertEqual(self.nav.announce(), 'Next episode (N), 8 of 11.')
         self.assertTrue(self.nav.keyboard('Enter').startswith('Playing Second.'))
+        self.assertEqual(self.nav.view, 'controls')
+        self.assertEqual(self.nav.keyboard('Escape'), 'Second (S), 2 of 2.')   # back on the one playing now
+        self.nav.command('player controls');self.nav.keyboard('End');self.nav.keyboard('Up');self.nav.keyboard('Up');self.nav.keyboard('Up')
         self.assertEqual(self.page.audio['src'], 'https://pod.example/2.mp3')
         self.assertEqual(self.nav.view, 'controls')
         self.assertEqual(self.nav.keyboard('Enter'), 'There is no next episode.')

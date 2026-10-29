@@ -490,13 +490,13 @@
 },
 "awake | auto download": {
 "said": [
-"Say search podcasts for a name, list podcasts, or list subscriptions."
+"Say browse podcasts to choose a category, search podcasts for a name, or list subscriptions."
 ],
 "screen_after": "media"
 },
 "awake | automatically download": {
 "said": [
-"Say search podcasts for a name, list podcasts, or list subscriptions."
+"Say browse podcasts to choose a category, search podcasts for a name, or list subscriptions."
 ],
 "screen_after": "media"
 },
@@ -622,7 +622,7 @@
 },
 "awake | browse podcasts": {
 "said": [
-"Say browse podcasts category science, or search followed by a podcast name."
+"Browse podcasts. Choose a category to hear its top podcasts. Top podcasts (T), 1 of 17. Say next or previous to move, and that one to open it."
 ],
 "screen_after": "media"
 },
@@ -1936,7 +1936,7 @@
 },
 "awake | internet radio": {
 "said": [
-"Radio menu. Search stations (S), 1 of 21. Tab switches between actions and results. Enter opens the selected item."
+"Radio menu. Search stations (S), 1 of 22. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2166,7 +2166,7 @@
 },
 "awake | listen to podcasts": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2773,7 +2773,7 @@
 },
 "awake | open podcast": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2998,13 +2998,19 @@
 },
 "awake | podcast": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
+],
+"screen_after": "media"
+},
+"awake | podcast categories": {
+"said": [
+"Browse podcasts. Choose a category to hear its top podcasts. Top podcasts (T), 1 of 17. Say next or previous to move, and that one to open it."
 ],
 "screen_after": "media"
 },
 "awake | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -3016,7 +3022,7 @@
 },
 "awake | podcasts": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -3142,7 +3148,7 @@
 },
 "awake | radio": {
 "said": [
-"Radio menu. Search stations (S), 1 of 21. Tab switches between actions and results. Enter opens the selected item."
+"Radio menu. Search stations (S), 1 of 22. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -4142,6 +4148,12 @@
 "No document is open. Say create a document, or say open a document."
 ],
 "screen_after": "awake"
+},
+"awake | top podcast": {
+"said": [
+"The top podcasts list is not available right now. Check the internet connection, then try again. You can also search for a podcast by name."
+],
+"screen_after": "media"
 },
 "awake | turn off auto downloads": {
 "said": [
@@ -9076,9 +9088,18 @@
 "Hello world. Second sentence. podcast"
 ]
 },
+"document | podcast categories": {
+"said": [
+"podcast categories"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. podcast categories"
+]
+},
 "document | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -10758,6 +10779,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. top of document"
+]
+},
+"document | top podcast": {
+"said": [
+"top podcast"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. top podcast"
 ]
 },
 "document | turn off auto downloads": {
@@ -16075,9 +16105,18 @@
 "Hello world. podcast"
 ]
 },
+"email_draft | podcast categories": {
+"said": [
+"podcast categories"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. podcast categories"
+]
+},
 "email_draft | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -16787,7 +16826,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 405. It has not been sent."
+"Email draft saved locally as Routing check 406. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16805,7 +16844,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 406. It has not been sent."
+"Email draft saved locally as Routing check 407. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16823,7 +16862,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 407. It has not been sent."
+"Email draft saved locally as Routing check 408. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16850,7 +16889,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 409. It has not been sent."
+"Email draft saved locally as Routing check 410. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16859,7 +16898,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 410. It has not been sent."
+"Email draft saved locally as Routing check 411. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17762,6 +17801,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. top of document"
+]
+},
+"email_draft | top podcast": {
+"said": [
+"top podcast"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. top podcast"
 ]
 },
 "email_draft | turn off auto downloads": {
@@ -21468,6 +21516,12 @@
 ],
 "screen_after": "help"
 },
+"help | podcast categories": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | podcast help": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22587,6 +22641,12 @@
 "screen_after": "help"
 },
 "help | top of document": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | top podcast": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -27072,9 +27132,18 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | podcast categories": {
+"calls": [
+"call.process('podcast categories')"
+],
+"said": [
+"session handled: podcast categories"
+],
+"screen_after": "mailbox"
+},
 "mailbox | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -28581,6 +28650,15 @@
 ],
 "said": [
 "session handled: top of document"
+],
+"screen_after": "mailbox"
+},
+"mailbox | top podcast": {
+"calls": [
+"call.process('top podcast')"
+],
+"said": [
+"session handled: top podcast"
 ],
 "screen_after": "mailbox"
 },
@@ -32171,9 +32249,15 @@
 ],
 "screen_after": "note"
 },
+"note | podcast categories": {
+"said": [
+"podcast categories"
+],
+"screen_after": "note"
+},
 "note | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -33292,6 +33376,12 @@
 "note | top of document": {
 "said": [
 "top of document"
+],
+"screen_after": "note"
+},
+"note | top podcast": {
+"said": [
+"top podcast"
 ],
 "screen_after": "note"
 },
@@ -38171,9 +38261,19 @@
 ],
 "screen_after": "web"
 },
+"web | podcast categories": {
+"calls": [
+"call.command('podcast categories')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: podcast categories"
+],
+"screen_after": "web"
+},
 "web | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -39811,6 +39911,16 @@
 ],
 "said": [
 "session handled: top of document"
+],
+"screen_after": "web"
+},
+"web | top podcast": {
+"calls": [
+"call.command('top podcast')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: top podcast"
 ],
 "screen_after": "web"
 },

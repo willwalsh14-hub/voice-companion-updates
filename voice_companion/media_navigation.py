@@ -197,6 +197,7 @@ class MediaNavigation:
     def leave_controls(self):
         view,index=getattr(self,'controls_return',None) or ('',0)
         self.controls_return=None;self.revision+=1
+        if view=='episodes' and self.hub.episode_index is not None:index=self.hub.episode_index   # the one playing now
         if view and view!='controls':
             self.view=view;self.item_index=index;self.focus='items'
             if self.items():self.item_index=max(0,min(index,len(self.items())-1));self.select_item(self.item_index);return self.announce()

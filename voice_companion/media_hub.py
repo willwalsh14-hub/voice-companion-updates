@@ -1557,6 +1557,7 @@ class MediaHub:
         if cmd in ('list podcast shows','list shows'):
             if self.shows:
                 self.browsing_episodes=False
+                self.browsing_categories=False
                 i=self.show_index or 0
                 return name_first('Podcast '+str(i+1)+' of '+str(len(self.shows))+': '+self.shows[i]['name']+'. Say next or previous, then that one to open episodes.')
             return self.subscriptions()
