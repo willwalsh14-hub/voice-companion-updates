@@ -232,6 +232,16 @@ class MediaHub:
         try: return json.loads(self._path(name).read_text(encoding='utf-8'))
         except (OSError, ValueError): return default
 
+    def _load_as(self, name, default):
+        """Like _load, but a damaged file of the wrong shape (a list where settings
+        belong) reads as the default, so it never stops the app."""
+        value = self._load(name, default)
+        return value if isinstance(value, type(default)) else default
+
+    def _stations_file(self, name):
+        """A saved station list, without damaged entries."""
+        return [s for s in self._load_as(name, []) if isinstance(s, dict)]
+
     def _save(self, name, value):
         self.folder.mkdir(parents=True, exist_ok=True)
         temp = self._path(name+'.writing')
@@ -343,7 +353,7 @@ class MediaHub:
         raise OSError('Radio Browser mirrors are unavailable.')
 
     def source(self):
-        selected=self._load('radio-preferences.json',{}).get('source','all')
+        selected=self._load_as('radio-preferences.json',{}).get('source','all')
         return selected if selected in self.SOURCES.values() else 'all'
 
     def choose_source(self, name):
@@ -351,7 +361,7 @@ class MediaHub:
         if selected is None:
             return ('Available station databases are All, Radio Browser, IPRD, and RadioSure file. '
                     'TuneIn and ooTunes are not connected directory sources.')
-        if selected=='radiosure' and not self._load('radiosure-stations.json',[]):
+        if selected=='radiosure' and not self._stations_file('radiosure-stations.json'):
             return 'Import a RadioSure station file first. Your station database is still '+self.source()+'.'
         self._save('radio-preferences.json',{'source':selected})
         self.stations=[]
@@ -359,7 +369,7 @@ class MediaHub:
         return 'Station database set to '+labels[selected]+'.'
 
     def refresh_iprd(self, force=False):
-        stamp=self._load('radio-iprd-status.json',{})
+        stamp=self._load_as('radio-iprd-status.json',{})
         if not force and time.time()-stamp.get('checked',0)<24*3600:
             return 'IPRD catalog was checked in the last 24 hours.'
         catalog=self.fetch_json(IPRD_CATALOG)
@@ -380,14 +390,15 @@ class MediaHub:
         return f'IPRD station catalog refreshed with {len(normalized)} stations.'
 
     def _mark_bad(self, station):
-        bad=self._load('radio-failures.json',{})
+        bad=self._load_as('radio-failures.json',{})
         bad[station['url']] = time.time()
         self._save('radio-failures.json',bad)
 
     def _usable(self, station):
         if station.get('lastcheckok') in (0,False,'0'): return False
-        bad=self._load('radio-failures.json',{})
-        return time.time()-bad.get(station.get('url',''),0)>24*3600
+        bad=self._load_as('radio-failures.json',{})
+        try: return time.time()-float(bad.get(station.get('url',''),0))>24*3600
+        except (TypeError,ValueError): return True
 
     def import_radiosure(self, path):
         source = Path(path)
@@ -424,8 +435,8 @@ class MediaHub:
             except (OSError, ValueError, TimeoutError):
                 online_error = 'The live directory is unavailable. '
         local=[]
-        if source in ('all','radiosure'): local += self._load('radiosure-stations.json', [])
-        if source in ('all','iprd'): local += self._load('radio-iprd-stations.json', [])
+        if source in ('all','radiosure'): local += self._stations_file('radiosure-stations.json')
+        if source in ('all','iprd'): local += self._stations_file('radio-iprd-stations.json')
         key = {'name':'name','tag':'tags','countrycode':'country','state':'state'}[param]
         country_aliases = {'US':'united states', 'CA':'canada', 'GB':'united kingdom',
                            'AU':'australia', 'DE':'germany', 'FR':'france'}
@@ -623,6 +634,9 @@ class MediaHub:
     def schedule(self, station, when, minutes, repeat=False):
         if not 1<=minutes<=240 or when<=self.clock(): return 'Choose a future time and a length from 1 to 240 minutes.'
         jobs = self._load('radio-schedule.json', [])
+        if not isinstance(jobs, list):
+            # Kept for a helper to inspect; never replaced by a new list.
+            return 'The radio schedule is damaged, so nothing was scheduled. Ask your helper to check it.'
         jobs.append({'station':station,'when':when.isoformat(timespec='seconds'),'minutes':minutes,
                      'repeat':repeat,'id':str(time.time_ns())})
         self._save('radio-schedule.json',jobs)
@@ -791,6 +805,9 @@ class MediaHub:
         self.current_feed=show['feed']
         with self._lock:
             subs=self._load('podcast-subscriptions.json',[])
+            if not isinstance(subs,list):
+                # Kept for a helper to inspect; never replaced by a new list.
+                return 'Your podcast subscriptions file is damaged, so '+show['name']+' was not added. Ask your helper to check it.'
             if not any(isinstance(s,dict) and s.get('feed')==show['feed'] for s in subs):
                 subs.append({**show,'download_limit':'manual','episodes':[]})
                 self._save('podcast-subscriptions.json',subs)
@@ -890,7 +907,7 @@ class MediaHub:
                 selected=next((s.get('download_limit','manual') for s in (current if isinstance(current,list) else [])
                                if isinstance(s,dict) and s.get('feed')==feed),'manual')
                 if selected!=policy: return
-                manifest=self._load('podcast-auto-files.json',{})
+                manifest=self._load_as('podcast-auto-files.json',{})
                 existing=manifest.get(feed,{})
                 if url in existing and (folder/Path(existing[url]).name).is_file(): continue
             if shutil.disk_usage(folder).free<MAX_DOWNLOAD+100_000_000:
@@ -904,7 +921,7 @@ class MediaHub:
             else: success=self._download_worker(episode,target,target.with_suffix(ext+'.part'),announce=False)
             if success:
                 with self._lock:
-                    manifest=self._load('podcast-auto-files.json',{})
+                    manifest=self._load_as('podcast-auto-files.json',{})
                     manifest.setdefault(feed,{})[url]=target.name
                     self._save('podcast-auto-files.json',manifest)
                 completed+=1
@@ -919,7 +936,7 @@ class MediaHub:
 
     def _prune_auto(self, feed, desired):
         with self._lock:
-            manifest=self._load('podcast-auto-files.json',{})
+            manifest=self._load_as('podcast-auto-files.json',{})
             entries=manifest.get(feed,{})
             folder=self._path('Podcast Downloads')
             for url,name in list(entries.items()):

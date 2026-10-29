@@ -95,5 +95,47 @@ class PresetNameTests(NewVeteranMediaTestCase):
         self.assertEqual(nav.field_value('Chicago WGN'), 'Saved preset Chicago WGN. Say play preset Chicago WGN later.')
 
 
+class DamagedMediaFilesTests(NewVeteranMediaTestCase):
+    """A radio or podcast file of the wrong shape (a list where settings belong) stopped
+    every station search, "Play WGN" and "Station database" with an error."""
+
+    def damage(self, **files):
+        for name, value in files.items():
+            (self.folder / name).write_text(json.dumps(value), encoding='utf-8')
+
+    def test_station_search_and_play_by_name_still_work(self):
+        self.damage(**{'radio-failures.json': ['x'], 'radio-preferences.json': ['x'],
+                       'radiosure-stations.json': ['bad', None, {'name': 'WGN Local', 'url': 'https://radio.test/local'}],
+                       'radio-iprd-stations.json': {'stations': 1}})
+        self.assertTrue(self.say('Media', 'Radio', 'Search radio for jazz').startswith('Found 1 station. Station 1: Jazz 24.'))
+        self.assertTrue(self.say('Station database').startswith('Station database. all.'))
+        self.say('Cancel')
+        self.assertEqual(self.say('Main menu', 'Play WGN'), 'Playing WGN. Say pause or stop.')
+
+    def test_a_failure_time_that_is_not_a_number_is_ignored(self):
+        self.damage(**{'radio-failures.json': {'https://radio.test/jazz': 'yesterday'}})
+        self.assertTrue(self.say('Media', 'Radio', 'Search radio for jazz').startswith('Found 1 station.'))
+
+    def test_a_damaged_schedule_is_kept_and_nothing_is_scheduled(self):
+        self.damage(**{'radio-schedule.json': {'broken': True}})
+        self.say('Media', 'Radio', 'Search radio for jazz')
+        said = self.say('Schedule station 1 tomorrow at 8 PM for 30 minutes')
+        self.assertEqual(said, 'The radio schedule is damaged, so nothing was scheduled. Ask your helper to check it.')
+        self.assertEqual(json.loads((self.folder / 'radio-schedule.json').read_text()), {'broken': True})
+
+    def test_a_damaged_subscription_file_is_kept(self):
+        self.damage(**{'podcast-subscriptions.json': {'broken': True}})
+        said = self.say('Media', 'Podcasts', 'Search podcasts for history', 'Subscribe')
+        self.assertEqual(said, 'Your podcast subscriptions file is damaged, so History Hour was not added. Ask your helper to check it.')
+        self.assertEqual(json.loads((self.folder / 'podcast-subscriptions.json').read_text()), {'broken': True})
+
+    def test_damaged_status_and_download_records_do_not_stop_the_checks(self):
+        self.damage(**{'radio-iprd-status.json': ['x'], 'podcast-auto-files.json': [1]})
+        self.hub.fetch_json = lambda url: {'stations': [{'name': 'IPRD One', 'streams': [{'url': 'https://radio.test/i'}]}]}
+        self.assertEqual(self.hub.refresh_iprd(), 'IPRD station catalog refreshed with 1 stations.')
+        self.hub._prune_auto('https://pod.test/h', set())
+        self.assertEqual(json.loads((self.folder / 'podcast-auto-files.json').read_text()), {})
+
+
 if __name__ == '__main__':
     unittest.main()
