@@ -1954,6 +1954,7 @@ In the background, some pages need a real window. These are a Google sign-in, a 
 - Say "Hide browser window" to run Chrome in the background again.
 - Both are also in the web page menu, under Options and help.
 When Chrome opens again, the page loads again. Text you typed on the page is not kept, so switch before you fill in a form.
+Sometimes a card box or a file box shows up on a page you are already using. Then Companion does not open Chrome again by itself, so your answers stay. It tells you, and you can say "Show browser window" when you are ready. A button that opens a box for choosing a file also tells you to show the window first.
 If anything goes wrong, choose the first option to go back to how it was.
 A site may ask you to sign in again, even if you are signed in on your usual browser.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To ask for HTTP, type the full address, such as http://example.com. HTTP does not protect the connection. The guided voice review still needs HTTPS before it sends a form.
