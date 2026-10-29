@@ -67,6 +67,7 @@ CERTIFICATE = 'Thunderbird is asking about a security certificate. Its window is
 UNSENT = 'Thunderbird is asking about messages that were not sent. Its window is open now. ' + BACK
 UPDATE = 'Thunderbird has a message about an update. Its window is open now. ' + BACK
 OTHER = 'Thunderbird opened a window that may need you{title}. It is open now. ' + BACK
+MAIN_UP = 'Thunderbird brought its window up. It may be asking you something. Its window is open now. ' + BACK
 NOT_IN_FRONT = ' If you do not hear it, press Alt+Tab to find it.'
 SHOWN = 'Thunderbird is in front now. Press Alt+Tab to come back to Voice Companion. To put it away again, say hide Thunderbird.'
 SHOWN_NOT_FRONT = 'Thunderbird is open, but it could not come to the front. Press Alt+Tab to find it.'
@@ -321,7 +322,10 @@ class ThunderbirdWindows:
             for window in showing:
                 self.seen.setdefault(window.handle, now)
             if self.waiting == 'none':
-                settled = [w for w in showing if now - self.seen[w.handle] >= SETTLE_SECONDS or w.kind in QUESTIONS]
+                # Questions and a hidden main window coming up count at once; any other
+                # window once it has stayed on screen (it may be a writing window about to minimize).
+                settled = [w for w in showing if w.kind in QUESTIONS or w.handle in self.mains
+                           or now - self.seen[w.handle] >= SETTLE_SECONDS]
                 if settled:
                     self._attention(sorted(settled, key=lambda w: (w.kind not in QUESTIONS, w.handle in self.mains))[0])
                     return
@@ -351,7 +355,10 @@ class ThunderbirdWindows:
             in_front = self.desktop.bring_forward(window.handle)
         except OSError:
             in_front = False
-        self.messages.put(attention_message(window.title, in_front))
+        if window.handle in self.mains and window.kind not in QUESTIONS:
+            self.messages.put(MAIN_UP + ('' if in_front else NOT_IN_FRONT))
+        else:
+            self.messages.put(attention_message(window.title, in_front))
 
     # ---- what the user asks for ---------------------------------------------------
 

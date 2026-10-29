@@ -156,10 +156,10 @@ class HiddenThunderbirdTests(unittest.TestCase):
     def test_thunderbird_restoring_its_own_hidden_window_brings_it_forward(self):
         self.windows.enable()
         self.desktop.restore(self.main)
-        self.wait(3.5)
+        self.wait(0.5)
         self.assertEqual(self.desktop.foreground, self.main)
         self.assertTrue(self.desktop.taskbar(self.main))
-        self.assertTrue(self.windows.take_message().startswith('Thunderbird opened a window that may need you'))
+        self.assertEqual(self.windows.take_message(), hiding.MAIN_UP)
 
     def test_a_window_that_cannot_take_the_front_says_how_to_find_it(self):
         self.desktop.allow_foreground = False
