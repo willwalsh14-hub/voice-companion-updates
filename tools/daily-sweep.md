@@ -26,6 +26,7 @@ Follow CLAUDE.md first; it overrides anything here.
   and 2 means the publish build failed. Both print the annotations.
 
 ## Steps
+0. Before starting, check for an open release pull request (`gh api repos/willwalsh14-hub/voice-companion-updates/pulls --jq '.[]|.title'`). Also check for an unfinished publish build on main. If one is in progress, wait for it to publish, then branch from the new main. Never ship two releases at the same time.
 1. Make sure the repository is cloned and up to date with main. Read CLAUDE.md
    and LAUNCH-CHECKLIST.md. Read the last few releases' notes and git log to see
    what changed recently. New code is where bugs hide.
