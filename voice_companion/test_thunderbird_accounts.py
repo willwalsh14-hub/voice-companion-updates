@@ -217,6 +217,17 @@ class WatchTests(unittest.TestCase):
         self.assertEqual(thunderbird_accounts.page_words({'open': True, 'button': 'Continue', 'canContinue': False}),
                          'Continue is not available yet.')
 
+    def test_page_words_say_how_a_microsoft_365_account_connects(self):
+        # Thunderbird 154 and newer offer Microsoft Graph, Exchange and IMAP; Graph is chosen for a new account.
+        page = {'open': True, 'title': 'Choose how to connect', 'button': 'Continue', 'canContinue': True,
+                'choices': [{'label': 'Exchange (EWS)', 'checked': False}, {'label': 'Microsoft Graph API', 'checked': True},
+                            {'label': 'IMAP', 'checked': False}]}
+        self.assertEqual(thunderbird_accounts.page_words(page),
+                         'Thunderbird shows: Choose how to connect. It will connect with Microsoft Graph API. '
+                         'Say continue in Thunderbird to choose Continue.')
+        page['choices'] = [{'label': 'IMAP', 'checked': False}]
+        self.assertNotIn('connect with', thunderbird_accounts.page_words(page))
+
     def test_sign_in_words_by_provider_and_version(self):
         self.assertIn('Google asks you to sign in. The sign-in page opens in your web browser',
                       thunderbird_accounts.sign_in_words('a@gmail.com', 153))
@@ -651,8 +662,8 @@ class InstallTests(StarterCase):
         step = flow.start()
         self.assertEqual(step.question, 'install_program')
         step = flow.answer('install_program', True)
-        self.assertEqual(system.commands[0], ['winget', 'install', '--id', 'Mozilla.Thunderbird', '-e', '--silent',
-                                              '--accept-package-agreements', '--accept-source-agreements'])
+        self.assertEqual(system.commands, [['winget', 'install', '--id', 'Mozilla.Thunderbird', '-e', '--silent',
+                                            '--accept-package-agreements', '--accept-source-agreements']])
         self.assertEqual(self.said[0], thunderbird_setup.INSTALLING)
         self.assertEqual(self.said.count(thunderbird_setup.STILL_INSTALLING), 2)   # 40 seconds: at 15 and 30
         self.assertIn('Thunderbird is installed. Starting Thunderbird for the first time.', self.said)

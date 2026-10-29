@@ -290,9 +290,13 @@ class WindowsChrome:
         """Same check the build uses for the WebView2 installer: a valid Authenticode signature."""
         script = ("$s = Get-AuthenticodeSignature -LiteralPath $env:VC_SIGNED_FILE; "
                   "if ($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'O=Google LLC') { exit 0 } else { exit 1 }")
+        # Without PSModulePath: started from PowerShell 7, Windows PowerShell would inherit 7's module
+        # path and fail to load Get-AuthenticodeSignature, refusing a good installer.
+        environment = {key: value for key, value in self.environ.items() if key.upper() != 'PSMODULEPATH'}
+        environment['VC_SIGNED_FILE'] = str(path)
         try:
             result = self.run([self.powershell(), '-NoProfile', '-NonInteractive', '-Command', script],
-                              env=dict(self.environ, VC_SIGNED_FILE=str(path)), capture_output=True, timeout=60,
+                              env=environment, capture_output=True, timeout=60,
                               creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         except (OSError, subprocess.SubprocessError):
             return False

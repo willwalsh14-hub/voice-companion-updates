@@ -286,6 +286,10 @@ def page_words(page):
         words.append('Thunderbird shows: ' + page['title'].rstrip('.') + '.')
     for note in page.get('notes') or []:
         words.append(note.rstrip('.') + '.')
+    # How the new account connects, when Thunderbird offers a choice (Microsoft Graph, Exchange, IMAP).
+    chosen = [c.get('label', '') for c in page.get('choices') or [] if isinstance(c, dict) and c.get('checked') and c.get('label')]
+    if chosen:
+        words.append('It will connect with ' + chosen[0].rstrip('.') + '.')
     if page.get('needsPassword'):
         words.append('It needs the password for this account.')
     if page.get('canContinue') and page.get('button'):
