@@ -49,14 +49,23 @@ $script:LongFolders = @{}
 function Get-LongFolderPath([string]$folder) {
   # Windows can name a folder by its short 8.3 name (C:\Users\RUNNER~1\...), while
   # running programs are listed by the long one. Directory listings give long names.
+  # Built one folder at a time from the drive's root, with no recursion: the old
+  # version trimmed "C:\" to "C:", which Windows reads as "the current folder on
+  # drive C". From the update folder that led back into itself until PowerShell's
+  # call depth ran out: about a minute on a test computer, over three minutes on Will's.
   if ($script:LongFolders.ContainsKey($folder)) { return $script:LongFolders[$folder] }
   $long = $folder
   try {
-    $item = New-Object IO.DirectoryInfo $folder
-    if ($item.Exists -and $item.Parent) {
-      $parent = Get-LongFolderPath $item.Parent.FullName.TrimEnd('\')
-      $match = @((New-Object IO.DirectoryInfo $item.Parent.FullName).GetDirectories($item.Name))
-      if ($match.Count -eq 1) { $long = $parent.TrimEnd('\') + '\' + $match[0].Name }
+    $full = [IO.Path]::GetFullPath($folder)
+    $root = [IO.Path]::GetPathRoot($full)
+    if ($root -and [IO.Path]::IsPathRooted($folder)) {
+      $current = $root
+      foreach ($part in ($full.Substring($root.Length) -split '[\\/]' | Where-Object { $_ })) {
+        $match = @((New-Object IO.DirectoryInfo $current).GetDirectories($part))
+        $name = $(if ($match.Count -eq 1) { $match[0].Name } else { $part })
+        $current = [IO.Path]::Combine($current, $name)
+      }
+      $long = $current
     }
   } catch {}
   $script:LongFolders[$folder] = $long
