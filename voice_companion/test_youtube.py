@@ -350,6 +350,10 @@ class MenuAndSearchTests(NoBrowser):
         self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 8.')
         self.assertEqual(self.app.handle('YouTube menu', 'youtube'), 'youtube')
         self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 8.')
+        # F5 on the menu has no list to load again; it never opens Home by itself.
+        self.press('F5')
+        self.assertEqual(self.said[-1], 'There is no list here to load again. Home (H), 2 of 8.')
+        self.assertEqual(self.loaded, [])
 
 
 class FilterTests(unittest.TestCase):

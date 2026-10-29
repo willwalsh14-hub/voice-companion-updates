@@ -1767,6 +1767,8 @@ def run(m, s, action, raw, command):
         if view and view.get('name') == 'related':
             s.views.pop()
             return s.up_next()
+        if view and view['kind'] in MENU_KINDS:
+            return 'There is no list here to load again. ' + s.describe()
         if not view or view['kind'] != 'list' or not view.get('url'):
             return s.load('home')
         if view.get('name') in yp.FEEDS:
