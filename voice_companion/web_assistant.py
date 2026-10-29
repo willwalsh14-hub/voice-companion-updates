@@ -2658,7 +2658,7 @@ class WebSession:
                 links = self.link_items()
                 if links: break
         if not links:
-            return 'I could not identify links on this page. They may be loading or inaccessible to this browser helper. Ask your helper to inspect the page.'
+            return 'No links on this page. If it is still loading, say list links again in a moment.'
         if direction != 'first': return self.move_link(1 if direction == 'next' else -1)
         self.link_position = 0
         self.list_focus = 'links'
