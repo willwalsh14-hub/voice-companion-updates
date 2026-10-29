@@ -207,6 +207,13 @@ function shape(element) {
 
 // What a notice says, without the words of buttons inside it (Thunderbird 159: "Show more", "Show less").
 function noteText(element) {
+  // Thunderbird 159's notice bar: icons, the title, a Show more and Show less toggle, then the description.
+  // Only the title and the description are what it says.
+  const parts = descendants(element, [], 0).filter(e => /(?:^|\s)notification-(?:title|text)(?:\s|$)/.test(String(e.className || '')));
+  if (parts.length) {
+    const words = parts.map(text).filter(Boolean);
+    if (words.length) return words.map((part, i) => (i < words.length - 1 ? part.replace(/[.\s]+$/, '') + '.' : part)).join(' ');
+  }
   let said = text(element);
   for (const button of descendants(element, [], 0).filter(e => e.localName === 'button')) {
     const words = text(button);
@@ -233,7 +240,8 @@ function page(win) {
     const kind = (element.getAttribute('role') || '') + ' ' + String(element.className || '') + ' ' + element.id;
     if (/\balert\b|error|warning|notification|status/i.test(kind)) {
       const said = noteText(element).slice(0, 200);
-      if (said && !notes.includes(said) && notes.length < 5) {
+      // A part of a notice already read (its title, its description) is not read again.
+      if (said && !notes.some(note => note.includes(said)) && notes.length < 5) {
         notes.push(said);
         noteShapes.push(shape(element));
       }
