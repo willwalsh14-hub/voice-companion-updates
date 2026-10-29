@@ -140,6 +140,7 @@ class YouTubeScreen:
         self.single_tab = False
         self.return_mode = 'media_menu'
         self.signing_in = False   # Google's sign-in page is open; coming back loads YouTube again
+        self.opened_window = False  # a browser window or tab opened; the keyboard comes back to Companion
         self.lists = yp.YouTubePage(lambda: self.list_page)
         self.player = yp.YouTubePage(lambda: self.video_page)
 
@@ -175,6 +176,14 @@ class YouTubeScreen:
         if not self.alive(self.list_page):
             if self.single_tab and self.alive(self.video_page):
                 self.list_page = self.video_page
+            elif self.alive(self.video_page):
+                # The list tab was closed but the video plays on: a new tab for the lists.
+                try:
+                    self.list_page = self.video_page.context.new_page()
+                    self.list_page.set_default_timeout(10000)
+                except Exception:
+                    self.list_page = self.video_page
+                    self.single_tab = True
             else:
                 try:
                     if not self.injected(web):
@@ -190,6 +199,7 @@ class YouTubeScreen:
                 except Exception as exc:
                     raise YouTubeError(yp.NOT_LOADED) from exc
                 self.list_page = web.backend.page
+                self.opened_window = True
                 web.snapshot = None   # the web screen reads the page again when you open it
                 self.lists.wait_ready()
                 return notice
@@ -216,14 +226,14 @@ class YouTubeScreen:
         if not self.alive(self.video_page):
             self.video_page = None
             if not self.alive(self.list_page):
-                self.go(url)
-                self.video_page = self.list_page
-                self.single_tab = True
-                return
+                # The browser was closed (or never opened): open the list tab first, then the video's own tab.
+                view = self.view()
+                self.go(view['url'] if view and view.get('url') else yp.feed_url('home'))
             try:
                 self.video_page = self.list_page.context.new_page()
                 self.video_page.set_default_timeout(10000)
                 self.single_tab = False
+                self.opened_window = True
             except Exception:
                 self.video_page = self.list_page
                 self.single_tab = True
@@ -1262,8 +1272,28 @@ def claims(text):
     return bool(SEARCH.fullmatch(command)) or command in ANYWHERE or 'youtube' in command.split()
 
 
+def keep_keyboard(m, s):
+    """A new browser window or tab may take the keyboard; give it back to Companion's window."""
+    if s.opened_window:
+        s.opened_window = False
+        window = getattr(m, 'APP_WINDOW', None)
+        if window is not None and hasattr(window, 'reclaim_focus'):
+            try:
+                window.reclaim_focus()
+            except Exception:
+                pass
+
+
 def handle(m, text, mode, typed=False):
     """Commands for the YouTube screen, and the phrases that open it. None: not ours."""
+    try:
+        return _handle(m, text, mode, typed)
+    finally:
+        if SCREEN is not None and SCREEN.m is m:
+            keep_keyboard(m, SCREEN)
+
+
+def _handle(m, text, mode, typed=False):
     raw = text.strip()
     command = normalized(raw)
     s = screen(m)
@@ -1589,6 +1619,15 @@ def main_menu(m):
         SCREEN.stop()
     except Exception:
         SCREEN.stopped()
+    web = getattr(m, 'web_session', None)
+    if web is not None and SCREEN.alive(SCREEN.list_page) and not m.PREFERENCES.get('web_keep_open', False):
+        # As when you leave a web page: the browser window closes unless Keep browser open is on.
+        try:
+            web.leave(False)
+        except Exception:
+            pass
+        SCREEN.list_page = SCREEN.video_page = None
+        SCREEN.single_tab = False
 
 
 def poll(m, mode):

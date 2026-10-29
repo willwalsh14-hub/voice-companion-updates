@@ -99,6 +99,21 @@ pull requests. Update this file as items are finished.
       private diagnostic file (version, last commands, error) that a tester
       can attach to a bug report. No document or email contents.
 
+### YouTube screen (branch claude/youtube-player, not released yet)
+- [ ] **Will or a tester, on the real youtube.com:** the page reader was built
+      and tested on saved pages shaped like youtube.com, because the live site
+      cannot be reached from the build machine. Check on a real PC, signed out
+      in embedded Edge and signed in with Chrome: Home, search with a filter
+      (This week, Only channels), a channel, Watch later, History, playing a
+      video, K, J, L, C and R (captions), Q (quality), N (next video), ads
+      (said, and Skip offered when allowed), T, U and W (each asks first), and
+      reading comments. If a list says "YouTube changed its page", note which
+      list; the reader then needs the new page shape added (youtube_page.py).
+- [ ] **Will:** Google may refuse sign-in in guided Chrome too, because a
+      program controls it ("This browser or app may not be secure"). If it
+      does, sign in with your own Chrome and the extension instead; tell Claude
+      so the spoken offer can say that first.
+
 ## Should do before launch
 
 Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests:
