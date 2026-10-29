@@ -390,6 +390,27 @@ class ContactsScreenTests(CompanionHarness):
         self.assertEqual(app.handle('Email John about the trip.', mode), 'note')
         self.assertEqual(app.email_draft, None)
 
+    def test_natural_words_for_adding_and_deleting_a_contact(self):
+        # A new user says "add a new contact", answers No to the email question, and says "delete it".
+        mode = app.handle('Add a new contact.', 'awake')
+        self.assertEqual((mode, self.said()), ('task_input', 'New contact. Type or say the name, then press Enter. Escape cancels.'))
+        mode = app.handle('Sue', mode)
+        mode = app.handle('No.', mode)
+        self.assertEqual((mode, self.said()), ('task_input', 'Phone number? Type or say it, then press Enter. '
+                                                             'To leave it out, press Enter or say skip.'))
+        mode = app.handle('555 0123', mode)
+        self.assertEqual((mode, contacts_screen.current().name), ('contacts', 'Sue'))
+        app.handle('Delete it.', mode)
+        self.assertEqual(self.said(), 'Delete Sue from your contacts? It is also removed from Thunderbird. Say Yes or No. Escape keeps it.')
+        app.handle('yes', mode)
+        self.assertNotIn('Sue', [c.name for c in contacts_screen.CONTACTS])
+        mode = app.handle('add a new contact', mode)
+        self.assertEqual(mode, 'task_input')
+        mode = app.handle('Tim', mode)
+        mode = app.handle('tim at example dot com', mode)
+        mode = app.handle('no thanks', mode)
+        self.assertEqual(self.said(), 'Saved Tim in Thunderbird, me@gmail.com. Tim, tim@example.com, 6 of 6.')
+
     def test_old_google_contacts_command_points_to_thunderbird(self):
         app.handle('connect google contacts', 'awake')
         self.assertIn('Google contacts now come from Thunderbird.', self.said())

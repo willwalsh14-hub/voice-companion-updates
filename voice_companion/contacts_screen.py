@@ -33,10 +33,14 @@ MODE = 'contacts'
 HELP_TOPIC = 'contacts'
 YES = ('yes', 'yes please', 'okay', 'ok', 'confirm', 'yes delete it', 'delete it', 'enter')
 NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'keep it', 'do not delete')
-SKIP = ('', 'skip', 'none', 'no email', 'no phone', 'no phone number', 'leave it out', 'leave it blank', 'nothing')
+SKIP = ('', 'skip', 'none', 'no', 'no thanks', 'no email', 'no email address', 'no phone', 'no phone number', 'leave it out',
+        'leave it blank', 'nothing')
 PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'new email', 'contacts menu', 'menu', 'open menu')
+# "Add a new contact": the words a new user says first.
+ADD = ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact', 'create a contact', 'add a new contact',
+       'create a new contact', 'new contact please')
 OPEN = ('contacts', 'open contacts', 'my contacts', 'contact list', 'address book', 'open address book', 'show contacts',
         'show my contacts')
 # Names that are commands after "email", never a person ("email list size", "email the sender").
@@ -273,7 +277,7 @@ def _handle(m, raw, command, mode, typed):
             if not choosing():
                 return opened
             return show_source(m, wanted['what'], opening=True)
-        if mode == 'awake' and command in ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact'):
+        if mode == 'awake' and command in ADD:
             open_screen(m, mode)
             return start_adding(m)
         if mode == 'awake':
@@ -339,7 +343,7 @@ def command_here(m, raw, command):
         notice = reload(m)
         m.speak(summary(notice))
         return MODE
-    if command in ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact', 'create a contact'):
+    if command in ADD:
         return start_adding(m)
     added = re.fullmatch(r'(?:add|save|create) contact (.+?) (?:as|at|email is) (.+)', raw.rstrip('.!?'), re.I)
     if added:
@@ -403,7 +407,8 @@ def command_here(m, raw, command):
     phrase = edit_phrase(raw)
     if phrase is not None:
         return start_editing(m, *phrase)
-    if command in ('delete contact', 'remove contact', 'delete this contact', 'delete', 'remove'):
+    if command in ('delete contact', 'remove contact', 'delete this contact', 'delete', 'remove', 'delete it', 'remove it',
+                   'delete the contact', 'remove this contact', 'remove the contact'):
         if contact is None:
             m.speak(describe())
             return MODE
