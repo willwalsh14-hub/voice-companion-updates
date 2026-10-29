@@ -4058,7 +4058,10 @@ def _handle(text, mode, typed=False):
         save_speech_settings()
         speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
         return mode
-    if command in ('version', 'what version', 'about voice companion'):
+    # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
+    if command in ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
+                   'what version am i using', 'what version do i have') or \
+            command in ('version', 'about voice companion') and not writing_dictation(mode, typed):
         # The two things a person most needs if a key press stopped the startup announcement.
         speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
         return mode

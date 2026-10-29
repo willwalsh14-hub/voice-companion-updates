@@ -24,6 +24,27 @@ class WhatModeTests(CompanionTestCase):
                 self.assertEqual(companion.navigation_key('Ctrl+M', 'awake'), 'what mode')
 
 
+class VersionWordsTests(CompanionTestCase):
+    """"What version is this?" was not understood, and "Version." alone in a document was taken
+    as a command and never written, unlike "Time." (time_date.py)."""
+
+    def test_natural_questions_say_the_version(self):
+        for words in ('What version?', 'What version is this?', 'Which version is this?', 'What version am I using?'):
+            with self.subTest(words=words):
+                self.said.clear()
+                self.assertEqual(companion.handle(words, 'awake'), 'awake')
+                self.assertEqual(self.said, ['Voice Companion version ' + companion.APP_VERSION + '. The microphone is on.'])
+
+    def test_the_single_word_is_text_in_a_document_but_the_question_is_not(self):
+        document = self.open_document()
+        companion.handle('Version.', 'document')
+        self.assertEqual(companion.document_text(document), 'Version.')
+        self.said.clear()
+        companion.handle('What version is this?', 'document')
+        self.assertEqual(companion.document_text(document), 'Version.')
+        self.assertIn(companion.APP_VERSION, self.said[-1])
+
+
 class OptionsInputModeNamesTests(CompanionTestCase):
     """Options, Input options showed and said "mixed", "commands" and "dictation". The guide says
     "you can choose Normal, Commands only, or Dictation only"."""
