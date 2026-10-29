@@ -144,5 +144,37 @@ class SpokenDocumentNames(DocumentFlowCase):
         self.assertEqual(app.document.path.name, 'Third.docx')
 
 
+class OpenFromADocumentThenEscape(DocumentFlowCase):
+    """Control+O in a document, then Escape: back to the document, as when a new document is canceled."""
+    def setUp(self):
+        super().setUp()
+        import file_manager, regular_browser
+        from test_file_manager import FakeFiles, settle
+        self.settle = settle
+        disk = self.root / 'Disk'; disk.mkdir()
+        self.stack.enter_context(patch.object(file_manager, 'ShellFiles', lambda: FakeFiles(disk)))
+        self.stack.enter_context(patch.object(regular_browser, 'data_folder', lambda: self.root))
+
+    def escape_out(self, mode):
+        for _ in range(5):
+            while app.FILE_MANAGER.busy:
+                import time; time.sleep(.01); mode = app.poll_file_manager(mode)
+            if mode != 'files': return mode
+            mode = self.press('Escape', mode)
+        return mode
+
+    def test_escape_from_open_returns_to_the_document(self):
+        app.document = VoiceDocument(self.default, title='Letter'); app.document.append_text('Dear Bob.')
+        mode = self.press('Ctrl+O', 'document')
+        self.assertEqual(mode, 'files')
+        self.assertEqual(self.escape_out(mode), 'document')
+        self.assertEqual(self.last(), 'Canceled. Back to document.')
+        self.assertEqual(app.document.title, 'Letter')
+
+    def test_escape_from_open_on_the_menu_still_returns_to_the_menu(self):
+        mode = self.press('Ctrl+O', 'word_processor')
+        self.assertEqual(self.escape_out(mode), 'word_processor')
+
+
 if __name__ == '__main__':
     unittest.main()

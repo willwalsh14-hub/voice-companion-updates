@@ -175,8 +175,10 @@ class TaskNavigation:
     def describe(self, item, index, count):
         return announce_item(item[0], index, count) + (' '+spoken_key(item[1])+'.' if item[1] else '')
 
-    def pick(self, kind):
+    def pick(self, kind, mode=None):
         m = self.app
+        # Escape from Open in a document goes back to that document (companion.py).
+        self.pick_return = 'document' if mode in ('document', 'document_menu') and m.document is not None else None
         if m.document is not None:
             m.document.save()
         from file_manager import FileManager
@@ -306,7 +308,7 @@ class TaskNavigation:
 
     def action(self, command, mode):
         m = self.app
-        if command == '@open': return self.pick('document')
+        if command == '@open': return self.pick('document', mode)
         if command == '@reader_open': return self.pick('reader')
         if command == '@reader_recent':
             self.reader_recent = self.reader_list()
@@ -449,7 +451,7 @@ class TaskNavigation:
             m.speak(editor.process(('remove '+attribute) if value else 'make this '+('underlined' if attribute=='underline' else attribute)))
             return mode
         if mode in ('awake','document','word_processor') and command in ('open a document','open document'):
-            return self.pick('document')
+            return self.pick('document', mode)
         if command in ('word processor','open word processor','word processor menu'):
             if mode == 'document' and m.document:m.document.save()
             elif mode=='email_draft' and m.email_draft:m.email_draft.save()
