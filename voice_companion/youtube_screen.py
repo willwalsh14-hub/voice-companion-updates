@@ -521,7 +521,7 @@ class YouTubeScreen:
             return (choice['label'] + ' is not offered with the filters that are on. '
                     'Choose another, or say clear filters.')
         if choice['on']:
-            return choice['label'] + ' is already chosen. ' + self.describe()
+            return choice['label'] + ' is already chosen.'
         if 'sp' in choice:
             self.sp = choice['sp'] or ''
         else:
@@ -532,7 +532,24 @@ class YouTubeScreen:
             label = yp.FILTERS[group_name][0] if group_name in yp.FILTERS else group_name
             return label + ': ' + choice['label'] + '. Now press Control+F, or say search for, and your words.'
         self.m.speak_status('Searching YouTube.')
-        return self.search()
+        said = self.search()
+        self.refresh_filter_lists()
+        return said
+
+    def refresh_filter_lists(self):
+        """After a search that found nothing, the filter lists stay open: show them as they are now,
+        so the next choice combines with the filters that are on, not the ones before."""
+        groups = None
+        for view in self.views:
+            if view['kind'] not in ('filters', 'choices'):
+                continue
+            groups = groups if groups is not None else self.filter_groups()
+            if view['kind'] == 'filters':
+                view['items'] = groups + ['clear']
+            else:
+                group = next((g for g in groups if g['name'] == view.get('group')), None)
+                if group is not None:
+                    view['items'] = group['choices']
 
     def spoken_filter(self, name, key):
         """A filter said aloud, such as "This week": the page's own link when it lists one."""
@@ -1421,6 +1438,8 @@ def navigation_key(m, key):
             return '@youtube:search:enter'
         if key == 'Escape':
             return '@youtube:search:cancel'
+        if key == 'F1':
+            return 'help with youtube'
         if key in ('Up', 'Down', 'Left', 'Right', 'Home', 'End', 'Tab', 'ShiftTab'):
             m.speak('Type what to search for, then press Enter. Escape cancels.')
         return None
@@ -1616,8 +1635,8 @@ def here(m, s, raw, command, typed=False):
         return MODE
     if s.asking:
         # The search box: every word is a search word, except help, Companion's voice and the main menu.
-        if command in ('help', 'help with youtube', 'youtube help', 'what mode') or m.speech_control(raw):
-            return None
+        if command in ('help', 'help with youtube', 'youtube help', 'what mode') or m.speech_control(raw) or m.spoken_control(raw):
+            return None   # help, Companion's voice, sleep and exit work here, as in the document name box
         if command in ('main menu', 'back to main menu'):
             s.end_asking()
             return 'awake'

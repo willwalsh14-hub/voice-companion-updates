@@ -580,6 +580,13 @@ class ScreenTests(LiveYouTube):
         self.say('Movies')
         self.assertEqual(self.last(), 'No results for bread with these filters: This week, Movies, Live, 4K, sorted by popularity. '
                                       'Say clear filters, or press Control+Shift+F to change them.')
+        # The lists show the filters as they are after a search that found nothing.
+        self.press('Ctrl+Shift+F')
+        self.assertEqual(self.last(), 'Filters. On now: This week, Movies, Live, 4K, sorted by popularity. Upload date: This week (U), 1 of 6.')
+        self.press('Down'); self.press('Down'); self.press('Enter'); self.press('Down'); self.press('Enter')
+        self.assertTrue(self.last().startswith('No results for bread with these filters: This week, Movies, Under 3 minutes,'), self.last())
+        self.press('Escape'); self.press('Up'); self.press('Enter'); self.press('Letter:v'); self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: This week, Videos, Under 3 minutes, Live, 4K, sorted by popularity.'), self.last())
         self.say('Clear filters.')
         self.assertTrue(self.last().startswith('Results for bread. 2 items.'), self.last())
         self.assertEqual(state(), {})
