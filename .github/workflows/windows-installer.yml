@@ -13,6 +13,9 @@ on:
       - '.github/workflows/windows-installer.yml'
 permissions:
   contents: write
+  # Signs in to the Chrome Web Store without a stored key. Google accepts only
+  # main of this repository (tools/chrome-store-publishing.md).
+  id-token: write
 concurrency:
   group: voice-companion-release-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -30,6 +33,12 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+      - name: Check the browser extension version was raised
+        if: github.event_name == 'pull_request'
+        run: |
+          # The Chrome Web Store refuses a changed extension without a higher version.
+          git fetch --no-tags --depth=1 origin main
+          python ./tools/extension_version_guard.py --base FETCH_HEAD
       - name: Check experimental regular-browser message handling
         run: node ./voice_companion/regular_browser_extension/test-worker.cjs
       - name: Check Thunderbird mail add-on
@@ -113,6 +122,18 @@ jobs:
         run: |
           & python -u ./voice_companion/publish_release.py --setup ./voice_companion/VoiceCompanion-Setup.exe --gh gh
           if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. Read the progress log.' }
+      - name: Send the browser extension to the Chrome Web Store
+        # Uploads only a higher extension version, then submits it for review; Chrome updates users on its own.
+        # Its annotation says what happened. It never fails the release, which is already public.
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+          CWS_SERVICE_ACCOUNT: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
+        run: python -u ./tools/chrome_store_publish.py --extension ./voice_companion/regular_browser_extension
       - name: Save build and publishing logs
         if: always()
         uses: actions/upload-artifact@v6

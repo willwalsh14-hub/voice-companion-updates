@@ -2003,6 +2003,8 @@ def open_browser_menu(regular=False):
         speak('The regular browser tab could not be read. Reconnect it using the extension, then open this menu again.')
     notice=web_session.take_browser_notice()
     if not isinstance(notice,str):notice=''
+    # Said once for each new extension version, while Chrome fetches it from the store.
+    notice=(__import__('browser_cdp_relay').extension_update_notice()+' '+notice).strip()
     linked=getattr(web_session.backend,'regular',False) is True
     if not linked and getattr(web_session,'chrome_offer_declined',False) is not True:
         # Chrome chosen but not ready (or your own Chrome not linked): offer setup right here.

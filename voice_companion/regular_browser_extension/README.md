@@ -30,6 +30,15 @@ unpacked installations need Reload after this update. Disconnecting leaves
 normal browser tabs open. A lost extension never silently falls back to a
 controlled browser. Live PayPal sign-in remains unverified.
 
+Updates (0.4.3 and later): the extension tells Companion its version when it
+links. If Companion shipped a newer one, Companion asks once per run. A store
+copy then calls chrome.runtime.requestUpdateCheck(); an unpacked copy reloads,
+which loads the installer's new files. When Chrome has the update
+(runtime.onUpdateAvailable) the extension reloads at once, because the
+Companion link keeps its worker busy and Chrome would otherwise wait. The user
+hears one sentence about it, once for each new version. New versions reach the
+store from the release workflow (tools/chrome_store_publish.py).
+
 check_extension_browser.py launches a disposable browser without a debugging
 port, adds a fixture-only startup harness to a temporary extension copy, then
 runs the existing navigation, consumer and semantic suites through the real
