@@ -419,6 +419,10 @@ class ScreenTests(LiveYouTube):
         self.assertEqual(self.say('Sign in.'), 'web')
         self.assertTrue(self.last().startswith('Google sign-in page. Type your own email and password.'), self.last())
         self.assertTrue(any(url.startswith('https://accounts.google.com/') for url in [self.page.url]), self.page.url)
+        # Back from Google's page, the list and the video load again with the account.
+        self.assertEqual(self.say('Back to YouTube.', 'web'), 'youtube')
+        self.assertTrue(self.last().startswith('You are still signed out. YouTube. Home. 5 items.'), self.last())
+        self.assertTrue(screen.has_video())
 
     def test_search_filters_and_channels(self):
         self.say('YouTube', 'awake')
@@ -444,6 +448,33 @@ class ScreenTests(LiveYouTube):
         # From any screen, in one sentence.
         self.assertEqual(self.say('Play cats on YouTube', 'awake'), 'youtube')
         self.assertTrue(self.last().startswith('Results for cats.'), self.last())
+
+    def test_an_empty_home_says_to_search(self):
+        self.context.unroute('https://www.youtube.com/**')
+        fixtures.routes(self.context, {'/': fixtures.home_empty})
+        self.assertEqual(self.say('YouTube', 'awake'), 'youtube')
+        self.assertEqual(self.last(), 'YouTube. Home. YouTube shows no Home videos yet. It picks them from what you watch. '
+                                      'Say search for, and your words, such as search for jazz.')
+        self.press('Down')
+        self.assertEqual(self.last(), self.ys.HOME_EMPTY)
+
+    def test_more_videos_never_come_from_another_list(self):
+        self.say('YouTube', 'awake')
+        self.say('Search for bread')
+        self.press('Escape')
+        self.assertTrue(self.last().startswith('Back to Home.'))
+        self.press('End'); self.press('Down')
+        self.assertTrue(self.last().startswith('End of list. Short. Cat jumps'), self.last())
+
+    def test_open_in_browser_shows_the_page_you_are_on(self):
+        screen = self.playing()
+        self.press('O')
+        self.assertEqual(self.say('Open in browser'), 'web')
+        self.assertIs(self.web.backend.page, screen.video_page)
+        self.assertEqual(self.say('Back to YouTube', 'web'), 'youtube')
+        self.press('Escape')
+        self.assertEqual(self.say('Open in browser'), 'web')
+        self.assertIs(self.web.backend.page, screen.list_page)
 
     def test_a_changed_page_says_so_and_offers_the_page(self):
         self.context.unroute('https://www.youtube.com/**')

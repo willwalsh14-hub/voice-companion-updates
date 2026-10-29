@@ -32,7 +32,7 @@ from youtube_page import YouTubeError
 MODE = 'youtube'
 SCREEN = None
 
-NOT_HERE = ('settings', 'task_input', 'document_name', 'search', 'chrome_setup', 'sleep', 'tutorial', 'exit_confirm',
+NOT_HERE = ('help', 'settings', 'task_input', 'document_name', 'search', 'chrome_setup', 'sleep', 'tutorial', 'exit_confirm',
             'power_confirm', 'document_save', 'document_replace', 'update_offer', 'update_download', 'draft_leave')
 OPEN = ('youtube', 'open youtube', 'go to youtube', 'start youtube', 'watch youtube', 'youtube app', 'youtube screen',
         'back to youtube', 'return to youtube', 'show youtube')
@@ -62,6 +62,8 @@ KEYS = {
 }
 KEYS.update({str(n): 'jump to ' + str(n * 10) + ' percent' for n in range(1, 10)})
 
+HOME_EMPTY = ('YouTube shows no Home videos yet. It picks them from what you watch. '
+              'Say search for, and your words, such as search for jazz.')
 UNEXPECTED = ('YouTube did not answer as expected, so that could not be done. '
               'Try again, or say open in browser to use the page itself.')
 NO_VIDEO = 'No video is playing. Choose a video and press Enter.'
@@ -137,6 +139,7 @@ class YouTubeScreen:
         self.next_check = 0.0
         self.single_tab = False
         self.return_mode = 'media_menu'
+        self.signing_in = False   # Google's sign-in page is open; coming back loads YouTube again
         self.lists = yp.YouTubePage(lambda: self.list_page)
         self.player = yp.YouTubePage(lambda: self.video_page)
 
@@ -264,7 +267,7 @@ class YouTubeScreen:
     def describe(self, lead=''):
         view = self.view()
         if not view:
-            return lead + 'No list is open.'
+            return lead + 'No list is open. Say search for, and your words, or press Alt for the YouTube menu.'
         items = view['items']
         if not items:
             return lead + (view.get('empty') or 'This list is empty.')
@@ -296,6 +299,10 @@ class YouTubeScreen:
         if not items:
             if facts.get('promoSignIn') or name in yp.ACCOUNT_FEEDS and facts.get('signedIn') is False:
                 return notice + SIGN_IN_NEEDED.format(action='see ' + title.lower())
+            if name == 'home' and (facts.get('empty') or facts.get('promo')):
+                # Signed out with no watch history, YouTube shows no Home videos, only a hint to search.
+                return notice + self.push({'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': [],
+                                           'empty': HOME_EMPTY}, lead)
             if facts.get('empty') and name != 'home':
                 return notice + self.push({'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': [],
                                            'empty': title + ' is empty.'}, lead)
@@ -362,8 +369,8 @@ class YouTubeScreen:
     def more(self, view):
         """At the end of a long list, ask the site for more. True when more came."""
         page = self.list_page
-        if not self.alive(page) or page.url.split('#')[0] != view['url'] and yp.video_id(page.url):
-            return False
+        if not self.alive(page) or not yp.same_address(page.url, view['url']):
+            return False   # the tab shows another list now; its videos must not join this one
         try:
             if not self.lists.load_more():
                 return False
@@ -425,7 +432,8 @@ class YouTubeScreen:
         if not item.get('id'):
             return 'This item cannot be played. Say open in browser to use the page itself.'
         self.pause_other_media()
-        self.open_video_page(yp.watch_url(item['id']) if item['kind'] != 'short' else yp.BASE + '/shorts/' + item['id'])
+        # Shorts play in the normal player too, so every key works the same.
+        self.open_video_page(yp.watch_url(item['id']))
         self.video = {'id': item['id'], 'title': item['title'], 'channel': item.get('channel', ''), 'live': item.get('live')}
         if not self.played or self.played[-1]['id'] != item['id']:
             self.played.append(dict(self.video))
@@ -983,13 +991,41 @@ class YouTubeScreen:
         if page is not None:
             web.backend.page = page
         result = web.open(yp.SIGN_IN_URL)
+        self.signing_in = True
         return ('@web', 'Google sign-in page. Type your own email and password. Voice Companion does not save them. '
                 'When you are done, say back to YouTube. ' + result)
+
+    def after_sign_in(self):
+        """Back from Google's page: load the list and the video again, so they use your account."""
+        self.signing_in = False
+        said = ''
+        if self.has_video():
+            try:
+                at = int(self.player.state().get('time') or 0)
+                self.video_page.goto(yp.watch_url(self.video['id']) + '&t=' + str(at) + 's', wait_until='domcontentloaded', timeout=30000)
+                self.player.wait_for_player()
+            except Exception:
+                pass
+        view = self.view()
+        if view and view['kind'] == 'list' and view.get('name') in yp.FEEDS:
+            self.views.pop()
+            said = self.load(view['name'], 'YouTube. ')
+        elif view:
+            said = self.describe('YouTube, ' + view['title'] + '. ')
+        else:
+            said = self.load('home', 'YouTube. ')
+        try:
+            signed = self.lists.signed_in()
+        except YouTubeError:
+            signed = None
+        return ('You are signed in. ' if signed else 'You are still signed out. ' if signed is False else '') + said
 
     # ------------------------------------------------------------ leaving and the browser view
     def open_in_browser(self):
         web = self.web()
-        page = self.video_page if self.has_video() and self.view() is None else None
+        view = self.view()
+        about_video = view is None or view['kind'] in ('comments', 'chapters', 'quality', 'save') or view.get('name') == 'related'
+        page = self.video_page if self.has_video() and about_video else None
         page = page or (self.list_page if self.alive(self.list_page) else self.video_page if self.alive(self.video_page) else None)
         if page is None:
             return None
@@ -1059,6 +1095,8 @@ class YouTubeScreen:
                 except YouTubeError:
                     pass
                 return 'YouTube paused.' if mode == MODE else ''
+        if not self.owner:
+            return ''   # paused for other audio; nothing to say until you play it again
         try:
             state = self.player.state()
         except YouTubeError:
@@ -1147,6 +1185,8 @@ def open_screen(m, mode, lead=''):
     s = screen(m)
     if mode not in (MODE, 'web'):
         s.return_mode = 'media_menu' if mode in ('media_menu', 'awake', 'media') else mode
+    if getattr(s, 'signing_in', False):
+        return s.after_sign_in()
     if s.views:
         return s.describe('YouTube, ' + s.view()['title'] + '. ')
     return s.load('home', lead or 'YouTube. ')
@@ -1235,7 +1275,8 @@ def handle(m, text, mode, typed=False):
         if mode == 'web' and getattr(m.web_session, 'keyboard_field', None):
             return None
         match = SEARCH.fullmatch(command)
-        if command in (OPEN_ON_WEB if mode == 'web' else OPEN) or match and mode != 'web':
+        # On a web page and the Web browser menu, "YouTube" alone may be a link or a favorite's name.
+        if command in (OPEN_ON_WEB if mode in ('web', 'browser_menu') else OPEN) or match and mode != 'web':
             try:
                 if match:
                     s.return_mode = 'media_menu' if mode in ('media_menu', 'awake') else mode
@@ -1396,6 +1437,9 @@ def run(m, s, action, raw, command):
         return s.load(action)
     if action == 'refresh':
         view = s.view()
+        if view and view.get('name') == 'related':
+            s.views.pop()
+            return s.up_next()
         if not view or view['kind'] != 'list' or not view.get('url'):
             return s.load('home')
         if view.get('name') in yp.FEEDS:

@@ -174,6 +174,13 @@ def video_id(url):
     return (parse_qs(parts.query).get('v') or [''])[0]
 
 
+def same_address(first, second):
+    """True when two YouTube addresses show the same list (spelling of the search words aside)."""
+    a, b = urlsplit(str(first or '')), urlsplit(str(second or ''))
+    return (a.path.rstrip('/') == b.path.rstrip('/') and
+            {k: sorted(v) for k, v in parse_qs(a.query).items()} == {k: sorted(v) for k, v in parse_qs(b.query).items()})
+
+
 def watch_url(ident):
     return BASE + '/watch?v=' + quote_plus(ident)
 
@@ -404,7 +411,7 @@ READY_JS = r'''
   if(!/youtube\.com$/.test(location.hostname))return true;
   const page=[...document.querySelectorAll('ytd-page-manager > *')].find(e=>!e.hasAttribute('hidden'))||document;
   if(page.querySelector('ytd-rich-item-renderer,ytd-video-renderer,ytd-playlist-video-renderer,ytd-channel-renderer,ytd-grid-video-renderer,yt-lockup-view-model,ytd-reel-item-renderer,ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2'))return true;
-  if(page.querySelector('ytd-background-promo-renderer,ytd-message-renderer,yt-empty-state-view-model'))return true;
+  if(page.querySelector('ytd-background-promo-renderer,ytd-message-renderer,yt-empty-state-view-model,ytd-feed-nudge-renderer'))return true;
   if(location.pathname==='/watch'&&document.querySelector('#movie_player'))return true;
   return false;
 }

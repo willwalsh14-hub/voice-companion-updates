@@ -144,6 +144,13 @@ def watch_later():
                 '</div></ytd-playlist-video-list-renderer></ytd-browse>', signed_in=True)
 
 
+def home_empty():
+    """Signed out with watch history off: YouTube shows no videos on Home, only a hint."""
+    return page('<ytd-browse page-subtype="home"><ytd-rich-grid-renderer><div id="contents"><ytd-feed-nudge-renderer>'
+                '<div id="title">Try searching to get started</div><div id="subtitle">Start watching videos to help us build a feed of videos you\'ll love.</div>'
+                '</ytd-feed-nudge-renderer></div></ytd-rich-grid-renderer></ytd-browse>')
+
+
 def changed():
     """YouTube after a redesign this code does not know: no list can be read."""
     return page('<ytd-browse page-subtype="home"><new-grid-of-the-future><div class="card">Something new</div></new-grid-of-the-future></ytd-browse>')

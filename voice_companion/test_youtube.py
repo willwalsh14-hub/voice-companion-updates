@@ -122,6 +122,13 @@ class ScreenWordTests(unittest.TestCase):
         self.assertIsNone(ys.handle(self.app, 'YouTube', 'web'))
         self.assertEqual(self.app.handle('youtube', 'youtube'), 'youtube')   # on its own screen it says where you are
 
+    def test_youtube_alone_is_a_favorite_or_help_topic_name_on_those_screens(self):
+        self.app.web_session = Mock(keyboard_field=None)
+        self.app.web_session.menu.level = 'menu'
+        self.assertIsNone(ys.handle(self.app, 'YouTube', 'browser_menu'))
+        self.assertIsNone(ys.handle(self.app, 'Watch YouTube', 'help'))
+        self.started.assert_not_called()
+
     def test_video_keys_without_a_video_say_what_to_do(self):
         for key in ('K', 'Space', 'J', 'L', 'Right', '5', 'C', 'R', 'Q', 'N', 'P', 'A', 'F', 'H', 'S', 'I', 'D', 'O', 'T', 'U', 'W',
                     'Ctrl+Up', 'comma', 'M'):
