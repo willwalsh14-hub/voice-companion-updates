@@ -272,11 +272,11 @@ def _handle(m, raw, command, mode, typed):
             return open_screen(m, mode)
         wanted = SHOW.fullmatch(command)
         if mode == 'awake' and wanted and wanted['verb'] and wanted['kind'] and wanted['what'] not in ('my', 'the'):
-            # "Show Gmail contacts" from the main menu: open Contacts on that address book.
-            opened = open_screen(m, mode)
-            if not choosing():
-                return opened
-            return show_source(m, wanted['what'], opening=True)
+            # "Show Gmail contacts" from the main menu: open Contacts on that address book, and say it once.
+            if not choosing_after_opening(m):
+                m.speak(summary(OPEN_NOTICE[0]))
+                return MODE
+            return show_source(m, wanted['what'], lead='Contacts. ')
         if mode == 'awake' and command in ADD:
             open_screen(m, mode)
             return start_adding(m)
@@ -530,21 +530,31 @@ def start_choosing(m, first=None, lead=''):
     return MODE
 
 
-def show_source(m, words, opening=False):
-    """'Show Gmail contacts': show them, or ask which when the words fit more than one."""
+OPEN_NOTICE = ['']     # why some contacts may be missing, from opening quietly
+
+
+def choosing_after_opening(m):
+    """Open the screen without a word; True when there is a choice of address books."""
+    reset()
+    OPEN_NOTICE[0] = reload(m)
+    return choosing()
+
+
+def show_source(m, words, lead=''):
+    """'Show Gmail contacts': show them, or ask which when the words fit more than one.
+    lead: 'Contacts. ' when the screen opens with this."""
     if not choosing():
-        if not opening:     # open_screen already said the list
-            m.speak(summary())
+        m.speak(summary())
         return MODE
     found = SOURCES.match(words)
     if len(found) == 1:
-        return use_source(m, found[0])
+        return use_source(m, found[0], lead)
     if found:
-        return start_choosing(m, found[0], 'More than one address book fits. ')
-    return start_choosing(m, None, 'No address book is called ' + words + '. ')
+        return start_choosing(m, found[0], lead + 'More than one address book fits. ')
+    return start_choosing(m, None, lead + 'No address book is called ' + words + '. ')
 
 
-def use_source(m, choice):
+def use_source(m, choice, lead=''):
     """Show these address books, keep the choice for next time, and say the list."""
     global SOURCE, PENDING, CONTACTS, VIEW
     PENDING, VIEW = None, 'list'
@@ -553,7 +563,7 @@ def use_source(m, choice):
     CONTACTS = BOOK.view(shown_ids())
     select(0)
     count = len(CONTACTS)
-    m.speak(showing() + ' ' + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe() +
+    m.speak(lead + showing() + ' ' + (str(count) + (' contact. ' if count == 1 else ' contacts. ') if count else '') + describe() +
             ('' if kept else ' This choice could not be saved for next time.'))
     return MODE
 

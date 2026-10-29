@@ -210,10 +210,15 @@ def open_screen(m, mode=None, day=None, quiet=False):
     if not thunderbird_pim.usable(m.APP):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode or 'awake'
+    global OPENED
     words = show(m, day or today(m), opening=True)
+    OPENED = 'Calendar. ' + with_showing(words)
     if not quiet:
-        m.speak('Calendar. ' + with_showing(words))
+        m.speak(OPENED)
     return MODE
+
+
+OPENED = ''            # what opening the screen says, kept when it opened quietly
 
 
 def with_showing(words):
@@ -296,11 +301,14 @@ def handle(m, text, mode, typed=False):
             return open_screen(m, mode)
         wanted = SHOW.fullmatch(command)
         if mode == 'awake' and wanted and wanted['verb'] and wanted['kind'] and wanted['what'] not in ('my', 'the'):
-            # "Show Gmail calendar" from the main menu: open Calendar on that calendar.
-            opened = open_screen(m, mode)
-            if opened != MODE or not choosing():
+            # "Show Gmail calendar" from the main menu: open Calendar on that calendar, and say it once.
+            opened = open_screen(m, mode, quiet=True)
+            if opened != MODE:
                 return opened
-            return show_source(m, wanted['what'], opening=True)
+            if not choosing():
+                m.speak(OPENED)
+                return MODE
+            return show_source(m, wanted['what'], lead='Calendar. ')
         if mode == 'awake' and (ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule')
                                 and command not in ('add', 'new', 'create', 'schedule') or ADD_START.match(command)):
             opened = open_screen(m, mode, quiet=True)
@@ -477,28 +485,28 @@ def start_choosing(m, first=None, lead=''):
     return MODE
 
 
-def show_source(m, words, opening=False):
-    """'Show Gmail calendar': show it, or ask which when the words fit more than one."""
+def show_source(m, words, lead=''):
+    """'Show Gmail calendar': show it, or ask which when the words fit more than one.
+    lead: 'Calendar. ' when the screen opens with this."""
     if not choosing():
-        if not opening:     # open_screen already said the day
-            m.speak(show(m, DAY or today(m)))
+        m.speak(show(m, DAY or today(m)))
         return MODE
     found = SOURCES.match(words)
     if len(found) == 1:
-        return use_source(m, found[0])
+        return use_source(m, found[0], lead)
     if found:
-        return start_choosing(m, found[0], 'More than one calendar fits. ')
-    return start_choosing(m, None, 'No calendar is called ' + words + '. ')
+        return start_choosing(m, found[0], lead + 'More than one calendar fits. ')
+    return start_choosing(m, None, lead + 'No calendar is called ' + words + '. ')
 
 
-def use_source(m, choice):
+def use_source(m, choice, lead=''):
     """Show these calendars, keep the choice for next time, and say the day."""
     global SOURCE, PENDING
     PENDING = None
     SOURCE = choice
     kept = pim_sources.remember(m.APP, 'calendar', choice, SOURCES.words(choice))
     words = show(m, DAY or today(m))
-    m.speak(showing() + ' ' + words + ('' if kept else ' This choice could not be saved for next time.'))
+    m.speak(lead + showing() + ' ' + words + ('' if kept else ' This choice could not be saved for next time.'))
     return MODE
 
 
