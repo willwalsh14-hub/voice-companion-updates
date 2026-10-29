@@ -11,12 +11,12 @@
         {
           "title": "More everyday words",
           "details": [
-            "Companion now understands more of the words people say without thinking.",
+            "Companion now knows more of the words people say every day.",
             "In email, try \"Go to the trash\", \"Open the first message\", \"Read the next message\" or \"Check my email\".",
-            "For the calendar, try \"Schedule a doctor appointment for tomorrow at 3 PM\" or \"My appointments\".",
+            "To hear your plans, say \"My schedule\". To add one, say \"Add a reminder for tomorrow at 9\".",
             "For contacts, try \"Add a new contact\" or \"Phone book\".",
-            "For radio, try \"Listen to the radio\" or \"Open podcasts\".",
-            "Say \"What version is this?\" to hear the version.",
+            "For the radio, try \"Listen to the radio\". For shows, try \"Open podcasts\".",
+            "To hear the version, ask \"What version is this?\"",
             "Say \"Start the tutorial\" or \"Start lessons\" to begin the lessons."
           ]
         }
@@ -28,7 +28,7 @@
         {
           "title": "Starting out, Help and the tutorial",
           "details": [
-            "Input modes now use the guide's names: Normal mode, Commands only and Dictation only.",
+            "Each input mode now has the same name as in the guide. They are Normal mode, Commands only and Dictation only.",
             "Typing \"Wake up\" goes back to the screen you were on.",
             "If you sleep while a Yes or No question is open, waking up asks it again.",
             "\"Help with\" a topic it does not know now says so, then reads the topic list.",
@@ -68,7 +68,7 @@
             "\"Where am I?\" on the calendar now starts with \"Calendar\".",
             "When Thunderbird cannot save an event, Companion tells you what to do next.",
             "A contact with only a phone number is called \"No name\".",
-            "For repeating events, the question now says \"only this one, tomorrow\"."
+            "For an event that repeats, the question now says \"only this one, tomorrow\"."
           ]
         },
         {
@@ -77,9 +77,9 @@
             "Leaving a document that Word has open no longer closes Companion. You hear that the file could not be saved.",
             "Enter now opens the item you choose in List documents and in the Notes list.",
             "A save that fails no longer leaves an extra document in your list.",
-            "\"Open document\" and a name now opens a complex Word file in the Document reader.",
-            "Escape from Open a document takes you back to the document you were writing.",
-            "\"Copy\" and \"Cut\" now work on the text you selected.",
+            "Say \"Open document\" and a name to open a big Word file. It opens in the Document reader.",
+            "If you press Escape in Open a document, you go back to the one you were in.",
+            "Say \"Copy\" or \"Cut\" to copy or cut the text you picked.",
             "In File manager, you can say a new name with \"dot\", such as \"letter dot t x t\".",
             "Saying \"dot docx\" at the end of a document name no longer adds it to the name.",
             "Companion tells you when you reach the end or the start of a document, a note or an email.",
@@ -90,7 +90,7 @@
           "title": "Web",
           "details": [
             "Saying a web address letter by letter, like \"v a dot gov\", now offers to open the site.",
-            "Your favorites and web history are safe if another program holds the file for a moment.",
+            "Your favorites and web history are safe. This is true even when a scan holds the file.",
             "When Chrome starts again, you stay signed in to websites.",
             "With Chrome in the background, a page that needs a file box or card box tells you to show the window. Your typing is kept.",
             "A sign-in code box is no longer mistaken for a card payment.",
@@ -108,7 +108,7 @@
             "On the YouTube screen, \"Stop\" and \"Resume\" stop and resume the video.",
             "\"What video is this?\" tells you what is playing.",
             "\"Play the radio\" no longer starts a random station.",
-            "A damaged radio file no longer stops radio searches.",
+            "A broken radio file no longer stops a radio search.",
             "Saved stations keep their capital letters.",
             "The list of planned recordings says the day and time in words.",
             "Pressing Tab never moves the keyboard without telling you where it went.",
