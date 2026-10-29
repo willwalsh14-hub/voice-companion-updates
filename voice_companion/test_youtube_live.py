@@ -220,15 +220,24 @@ class ScreenTests(LiveYouTube):
         self.ys.poll(self.app, mode)
         return self.said[before:]
 
-    def playing(self):
+    def home(self):
         self.assertEqual(self.say('YouTube.', 'awake'), 'youtube')
+        self.assertEqual(self.say('Home.'), 'youtube')
+        self.assertTrue(self.last().startswith('Home. 5 items.'), self.last())
+
+    def playing(self):
+        self.home()
         self.assertEqual(self.press('Enter'), 'youtube')
         self.assertEqual(self.last(), 'Playing Never Gonna Give You Up.')
         return self.ys.SCREEN
 
     def test_youtube_opens_from_the_main_menu_and_the_media_menu(self):
         self.assertEqual(self.say('YouTube.', 'awake'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube. Home. 5 items. Never Gonna Give You Up. Rick Astley. 3 minutes 33 seconds. '
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.press('Down')
+        self.assertEqual(self.last(), 'Home (H), 2 of 8.')
+        self.assertEqual(self.press('Enter'), 'youtube')
+        self.assertEqual(self.last(), 'Home. 5 items. Never Gonna Give You Up. Rick Astley. 3 minutes 33 seconds. '
                                       '1.6 billion views. 15 years ago, 1 of 5.')
         self.press('Down')
         self.assertEqual(self.last(), 'How to bake bread. Kitchen Basics. 10 minutes 5 seconds. 12 thousand views. 2 days ago, 2 of 5.')
@@ -237,14 +246,19 @@ class ScreenTests(LiveYouTube):
         # The window shows the same list, with the selected line.
         names, index, _ = self.app.menu_state('youtube')
         self.assertEqual((len(names), index), (5, 0))
-        # Escape goes to the Media menu, on YouTube.
+        # Escape goes to the YouTube menu, on Home; then to the Media menu, on YouTube.
+        self.assertEqual(self.press('Escape'), 'youtube')
+        self.assertEqual(self.last(), 'YouTube menu. Home (H), 2 of 8.')
         self.assertEqual(self.press('Escape'), 'media_menu')
         self.assertEqual(self.last(), 'Media menu. YouTube (Y), 4 of 4.')
         self.assertEqual(self.press('Enter', 'media_menu'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube, Home. Never Gonna Give You Up. Rick Astley. 3 minutes 33 seconds. 1.6 billion views. 15 years ago, 1 of 5.')
+        self.assertEqual(self.last(), 'YouTube menu. Home (H), 2 of 8.')
+        # Signed out, the last item signs in.
+        self.press('End')
+        self.assertEqual(self.last(), 'Sign in (S), 8 of 8.')
 
     def test_end_of_the_list_loads_more_videos(self):
-        self.say('YouTube.', 'awake')
+        self.home()
         self.press('End')
         self.press('Down')
         self.assertEqual(self.last(), 'Garden tour. Green Thumb. 1 hour 2 minutes 3 seconds. 800 views. 1 month ago, 6 of 6.')
@@ -301,6 +315,8 @@ class ScreenTests(LiveYouTube):
         from unittest.mock import Mock
         window = Mock(); self.app.APP_WINDOW = window
         self.say('YouTube.', 'awake')
+        self.assertEqual(window.reclaim_focus.call_count, 0)   # the menu opens no browser
+        self.say('Home.')
         self.assertEqual(window.reclaim_focus.call_count, 1)
         self.press('Down')
         self.assertEqual(window.reclaim_focus.call_count, 1)   # moving in a list opens nothing
@@ -473,46 +489,156 @@ class ScreenTests(LiveYouTube):
         self.assertTrue(screen.has_video())
 
     def test_search_filters_and_channels(self):
+        # This results page lists no filters of its own, so the screen builds YouTube's codes.
         self.say('YouTube', 'awake')
         self.say('Search for bread.')
-        self.assertEqual(self.last(), 'Results for bread. 3 items. Bread for beginners. Kitchen Basics. 12 minutes. 1,234 views. 3 weeks ago, 1 of 3.')
+        self.assertEqual(self.last(), 'Results for bread. 3 items. Bread for beginners. Kitchen Basics. 12 minutes. 1,234 views. '
+                                      '3 weeks ago, 1 of 3. Press Control+Shift+F for filters.')
         self.say('This week.')
         self.assertTrue(self.last().startswith('Results for bread. Filters: This week. 3 items.'), self.last())
         self.assertIn('sp=EgIIAw%3D%3D', self.served[-1])
-        self.say('Sort by view count')
-        self.assertIn('Filters: This week, sorted by view count.', self.last())
-        self.press('Ctrl+F')
-        self.assertEqual(self.last(), 'Search. Search words: bread, 1 of 7. Press Enter to type your search words. Left and Right Arrow change a filter. Escape goes back.')
-        self.press('Down'); self.press('Right')
-        self.assertEqual(self.last(), 'This month.')
-        self.press('End'); self.press('Enter')
-        self.assertTrue(self.last().startswith('Results for bread. Filters: This month, sorted by view count.'), self.last())
-        self.say('Clear filters.')
-        self.assertTrue(self.last().startswith('Results for bread. 3 items.'))
+        self.say('Sort by popularity')
+        self.assertIn('Filters: This week, sorted by popularity.', self.last())
+        self.assertIn('sp=CAMSAggD', self.served[-1])
+        self.say('Sort by upload date')   # YouTube took this away in 2026
+        self.assertEqual(self.last(), 'YouTube no longer sorts results by upload date. To find new videos, say Today or This week.')
+        self.press('Ctrl+Shift+F')
+        self.assertEqual(self.last(), 'Filters. On now: This week, sorted by popularity. Upload date: This week (U), 1 of 6.')
+        self.press('Enter')
+        self.assertEqual(self.last(), 'Upload date. This week, on (T), 3 of 5.')
+        self.press('Down')
+        self.assertEqual(self.last(), 'This month (T), 4 of 5.')
+        self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: This month, sorted by popularity. 3 items.'), self.last())
+        self.assertIn('sp=CAMSAggE', self.served[-1])
+        self.press('Ctrl+Shift+F'); self.press('Down'); self.press('Enter')
+        self.assertEqual(self.last(), 'Type. Any type, on (A), 1 of 6.')
+        self.press('Letter:s')
+        self.assertEqual(self.last(), 'Shorts (S), 3 of 6.')
+        self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: This month, Shorts, sorted by popularity.'), self.last())
+        self.press('Ctrl+Shift+F'); self.press('End')
+        self.assertEqual(self.last(), 'Clear filters (C), 6 of 6.')
+        self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. 3 items.'), self.last())
+        self.assertTrue(self.served[-1].endswith('search_query=bread'), self.served[-1])
         self.press('Down'); self.press('Enter')
         self.assertTrue(self.last().startswith('Channel: Kitchen Basics. 5 items.'), self.last())
         self.press('Escape')
         self.assertTrue(self.last().startswith('Back to Results for bread.'))
+        self.press('Escape')
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
         # From any screen, in one sentence.
         self.assertEqual(self.say('Play cats on YouTube', 'awake'), 'youtube')
         self.assertTrue(self.last().startswith('Results for cats.'), self.last())
+
+    def test_filters_the_results_page_lists_are_used_as_youtube_combines_them(self):
+        self.context.unroute('https://www.youtube.com/**')
+        self.served = fixtures.routes(self.context, listed_filters=True)
+        state = lambda: fixtures.filter_state(__import__('urllib.parse').parse.parse_qs(
+            __import__('urllib.parse').parse.urlsplit(self.served[-1]).query).get('sp', [''])[0])
+        self.say('YouTube', 'awake')
+        self.press('Ctrl+F')
+        self.app.handle_keyboard('bread', 'youtube')
+        self.assertTrue(self.last().startswith('Results for bread. 2 items.'), self.last())
+        self.press('Ctrl+Shift+F')
+        # YouTube's own groups, in the screen's order and names: Duration is Length, Prioritize is Sort.
+        self.assertEqual(self.last(), 'Filters. No filters are on. Upload date: Any time (U), 1 of 6.')
+        self.assertEqual(self.app.menu_state('youtube')[0], ['Upload date: Any time', 'Type: Any type', 'Length: Any length',
+                                                             'Features: No features', 'Sort: Relevance', 'Clear filters'])
+        self.press('Enter')
+        self.assertEqual(self.app.menu_state('youtube')[0], ['Any time, on', 'Today', 'This week', 'This month', 'This year'])
+        self.press('Down'); self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: Today. 2 items.'), self.last())
+        self.assertEqual(state(), {'d': 'today'})
+        # A second filter joins the first, through the page's own link.
+        self.press('Ctrl+Shift+F'); self.press('Down'); self.press('Enter')
+        self.assertEqual(self.app.menu_state('youtube')[0], ['Any type, on', 'Videos', 'Shorts', 'Channels', 'Playlists', 'Movies'])
+        self.press('Letter:s'); self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: Today, Shorts.'), self.last())
+        self.assertEqual(state(), {'d': 'today', 't': 'shorts'})
+        self.say('Sort by popularity.')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: Today, Shorts, sorted by popularity.'), self.last())
+        self.assertEqual(state(), {'d': 'today', 't': 'shorts', 's': 'popularity'})
+        self.say('This week.')   # one choice per group: This week takes the place of Today
+        self.assertEqual(state(), {'d': 'week', 't': 'shorts', 's': 'popularity'})
+        # Channels: YouTube does not allow a length with it.
+        self.say('Only channels.')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: This week, Channels, sorted by popularity. 1 item. Channel:'), self.last())
+        self.press('Ctrl+Shift+F'); self.press('Down'); self.press('Down'); self.press('Enter')
+        self.press('Down')
+        self.assertEqual(self.last(), 'Under 3 minutes, not offered with the filters that are on (U), 2 of 4.')
+        self.press('Enter')
+        self.assertEqual(self.last(), 'Under 3 minutes is not offered with the filters that are on. Choose another, or say clear filters.')
+        # Taking one filter away: its group's first choice.
+        self.press('Escape'); self.press('Up'); self.press('Enter'); self.press('Home'); self.press('Enter')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: This week, sorted by popularity. 2 items.'), self.last())
+        self.assertEqual(state(), {'d': 'week', 's': 'popularity'})
+        # Several features can be on together, as on YouTube.
+        self.say('Live.'); self.say('4K.')
+        self.assertTrue(self.last().startswith('Results for bread. Filters: This week, Live, 4K, sorted by popularity.'), self.last())
+        self.say('Movies')
+        self.assertEqual(self.last(), 'No results for bread with these filters: This week, Movies, Live, 4K, sorted by popularity. '
+                                      'Say clear filters, or press Control+Shift+F to change them.')
+        self.say('Clear filters.')
+        self.assertTrue(self.last().startswith('Results for bread. 2 items.'), self.last())
+        self.assertEqual(state(), {})
+
+    def test_a_search_typed_with_keys_or_said_and_confirmed(self):
+        self.say('YouTube', 'awake')
+        self.assertEqual(self.press('Enter'), 'youtube')   # Search, first in the menu
+        self.assertEqual(self.last(), self.ys.SEARCH_PROMPT)
+        self.assertEqual(self.app.handle_keyboard('bread', 'youtube'), 'youtube')
+        self.assertTrue(self.last().startswith('Results for bread. 3 items.'), self.last())
+        self.press('Escape')
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        # Said: the words come back, then Confirm searches.
+        self.press('Ctrl+F')
+        self.say('Bread recipes.')
+        self.assertEqual(self.last(), 'Bread recipes. Press Enter or say confirm to search.')
+        self.assertFalse(any('recipes' in url for url in self.served))
+        self.say('Confirm.')
+        self.assertTrue(self.last().startswith('Results for Bread recipes. 3 items.'), self.last())
+        self.assertIn('search_query=Bread+recipes', self.served[-1])
+        # From a video list, Control+F asks too, and Escape goes back to the list.
+        self.press('Ctrl+F'); self.press('Escape')
+        self.assertTrue(self.last().startswith('Search canceled. Results for Bread recipes. Bread for beginners.'), self.last())
+
+    def test_sign_out_asks_first_and_uses_googles_page(self):
+        signed = {'in': True}
+        self.context.unroute('https://www.youtube.com/**')
+        fixtures.routes(self.context, {'/': lambda: fixtures.home(signed_in=signed['in'])})
+        self.context.route('https://accounts.google.com/**', lambda route: (signed.update({'in': False}), route.fulfill(
+            content_type='text/html', body='<title>Signed out</title><p>You are signed out.</p>'))[-1])
+        self.home()
+        self.press('Escape'); self.press('End')
+        self.assertEqual(self.last(), 'Sign out (S), 8 of 8.')
+        self.press('Enter')
+        self.assertEqual(self.last(), 'Sign out of YouTube? This browser is signed out of your Google account too. Say Yes or No.')
+        self.say('No.')
+        self.assertTrue(signed['in'])
+        self.press('Enter'); self.say('Yes.')
+        self.assertFalse(signed['in'])
+        self.assertEqual(self.last(), 'You are signed out of YouTube. YouTube menu. Sign in (S), 8 of 8.')
 
     def test_an_empty_home_says_to_search(self):
         self.context.unroute('https://www.youtube.com/**')
         fixtures.routes(self.context, {'/': fixtures.home_empty})
         self.assertEqual(self.say('YouTube', 'awake'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube. Home. YouTube shows no Home videos yet. It picks them from what you watch. '
-                                      'Say search for, and your words, such as search for jazz.')
+        self.say('Home')
+        self.assertEqual(self.last(), 'Home. YouTube shows no Home videos yet. It picks them from what you watch. '
+                                      'Press Control+F to search, or say search for, and your words, such as search for jazz.')
         self.press('Down')
         self.assertEqual(self.last(), self.ys.HOME_EMPTY)
 
     def test_more_videos_never_come_from_another_list(self):
         self.say('YouTube', 'awake')
         self.say('Search for bread')
+        self.press('Down'); self.press('Enter')   # the channel opens in the list tab
         self.press('Escape')
-        self.assertTrue(self.last().startswith('Back to Home.'))
+        self.assertTrue(self.last().startswith('Back to Results for bread.'))
         self.press('End'); self.press('Down')
-        self.assertTrue(self.last().startswith('End of list. Short. Cat jumps'), self.last())
+        self.assertTrue(self.last().startswith('End of list. Playlist: Bread recipes'), self.last())
 
     def test_open_in_browser_shows_the_page_you_are_on(self):
         screen = self.playing()
@@ -535,7 +661,8 @@ class ScreenTests(LiveYouTube):
         # Back on YouTube, the lists are kept and a video plays in its own tab again.
         self.backend.start = lambda: setattr(self.backend, 'page', self.context.new_page())
         self.assertEqual(self.say('YouTube', 'awake'), 'youtube')
-        self.assertTrue(self.last().startswith('YouTube, Home.'), self.last())
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.say('Home')
         self.press('Enter')
         self.assertEqual(self.last(), 'Playing Never Gonna Give You Up.')
         self.assertIsNot(screen.video_page, screen.list_page)
@@ -544,6 +671,7 @@ class ScreenTests(LiveYouTube):
         self.context.unroute('https://www.youtube.com/**')
         fixtures.routes(self.context, {'/': fixtures.changed})
         self.assertEqual(self.say('YouTube', 'awake'), 'youtube')
+        self.say('Home')
         self.assertEqual(self.last(), CHANGED)
         self.assertEqual(self.say('Open in browser'), 'web')
         self.assertTrue(self.last().startswith('Web page. Page loaded: YouTube.'), self.last())
@@ -553,7 +681,7 @@ class ScreenTests(LiveYouTube):
         player = Mock(kind='radio', session=5); player.status.return_value = {'paused': False}
         hub = Mock(player=player); hub.now_playing.return_value = 'Station: WGN. Playing.'
         self.app.MEDIA_HUB = hub
-        self.say('YouTube.', 'awake'); self.press('Enter')
+        self.home(); self.press('Enter')
         self.assertEqual(self.last(), 'Playing Never Gonna Give You Up. The radio is paused.')
         player.control.assert_called_with('pause')
         # The radio started again: the video pauses, and F3 tells about the radio.
@@ -578,7 +706,7 @@ class ScreenTests(LiveYouTube):
         self.assertFalse(screen.has_video())
         self.assertEqual(self.app.now_playing(), __import__('media_hub').NOTHING_PLAYING)
         # A browser that closes under the video is said once.
-        self.say('YouTube', 'awake'); self.press('Enter')
+        self.home(); self.press('Enter')
         screen.video_page.close()
         self.assertEqual(self.poll(), ['The browser closed, so the video stopped.'])
         self.press('K')
