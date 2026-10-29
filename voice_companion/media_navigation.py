@@ -117,7 +117,10 @@ class MediaNavigation:
             shortcuts={'Ctrl+F':'search','Ctrl+Shift+P':'list presets' if self.section=='radio' else 'list subscriptions','F5':'refresh stations' if self.section=='radio' else 'refresh subscriptions','Space':'toggle audio', 'Ctrl+R':'resume','Ctrl+S':'stop','Ctrl+Left':'rewind 15 seconds','Ctrl+Right':'forward 15 seconds','Ctrl+D':'download this episode' if self.section=='podcast' else 'save preset','Delete':'delete preset' if self.view=='presets' else 'cancel selected scheduled recording' if self.view=='scheduled' else 'remove selected subscription' if self.section=='podcast' and self.view=='shows' else ''}
             if key in shortcuts:
                 if key=='Ctrl+F':return self.open_form('search')
-                return self.run(shortcuts[key]) if shortcuts[key] else 'Choose an item first.'
+                if shortcuts[key]:return self.run(shortcuts[key])
+                # Delete on an item it cannot remove: say what it removes, not "Choose an item first".
+                return ('Delete removes a saved show, a preset, or a scheduled recording. It does nothing here.'
+                        if self.focus=='items' and self.items() else 'Choose an item first.')
         state=self.state()
         if not state:return self.announce() if key in ('Home','End','Up','Down') and not self.form else ''
         names,index,select=state;index=index or 0

@@ -157,5 +157,22 @@ class AudioWordsNameWhatIsLoadedTests(unittest.TestCase):
             self.assertEqual(hub.command('pause podcast'), 'A station is selected. Say pause radio.')
 
 
+
+class DeleteKeyTests(NewVeteranMediaTestCase):
+    """Delete on an episode or a station result said "Choose an item first.", though one was chosen."""
+
+    def test_delete_on_an_item_it_cannot_remove_says_what_it_removes(self):
+        self.say('Media', 'Podcasts', 'Search podcasts for history', 'That one')
+        nav = companion.media_navigation()
+        self.assertEqual(nav.keyboard('Delete'), 'Delete removes a saved show, a preset, or a scheduled recording. It does nothing here.')
+        self.say('Main menu', 'Media', 'Radio', 'Search radio for jazz')
+        nav = companion.media_navigation()
+        self.assertEqual(nav.keyboard('Delete'), 'Delete removes a saved show, a preset, or a scheduled recording. It does nothing here.')
+
+    def test_delete_still_asks_before_removing_a_preset(self):
+        self.say('Media', 'Radio', 'Play WGN', 'Save preset', 'List presets')
+        self.assertEqual(companion.media_navigation().keyboard('Delete'), 'Delete preset WGN? Say yes or no.')
+
+
 if __name__ == '__main__':
     unittest.main()
