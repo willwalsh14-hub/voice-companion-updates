@@ -129,5 +129,20 @@ class ListsOverAMenu(DocumentFlowCase):
         self.assertIn('Buy milk.', ' '.join(self.said[-2:]))
 
 
+class SpokenDocumentNames(DocumentFlowCase):
+    """People say the file type: "My letter dot docx" is My letter.docx, not My letter dot docx.docx."""
+    def test_new_document(self):
+        app.handle('create a document', 'awake'); app.handle('My letter dot docx.', 'document_name')
+        self.assertEqual(app.handle('confirm', 'document_name'), 'document')
+        self.assertEqual(app.document.path.name, 'My letter.docx')
+
+    def test_rename_and_save_as(self):
+        app.document = VoiceDocument(self.default, title='First'); app.document.append_text('Words.')
+        app.handle('name document Second dot d o c x', 'document')
+        self.assertEqual(app.document.path.name, 'Second.docx')
+        app.handle('save as Third dot docx', 'document'); app.handle('confirm', 'document_name')
+        self.assertEqual(app.document.path.name, 'Third.docx')
+
+
 if __name__ == '__main__':
     unittest.main()

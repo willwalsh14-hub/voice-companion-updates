@@ -176,6 +176,8 @@ def document_filename(title):
 def checked_document_name(text):
     """(file name without .docx, None), or (None, what to say) when Windows cannot use the name."""
     proposed = ' '.join(str(text).split()).strip(' .')
+    # Said aloud, the file type comes as words: "My letter dot docx" (or "dot d o c x").
+    proposed = re.sub(r'\s+dot\s+d\s?o\s?c\s?x$', '', proposed, flags=re.I).strip(' .')
     if not proposed: return None, 'Please say or type a document name.'
     if re.search(r'[<>:"/\\|?*]', proposed): return None, 'That file name contains a character Windows cannot use. Please choose another name.'
     proposed = document_filename(proposed)
