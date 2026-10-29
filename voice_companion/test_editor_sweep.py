@@ -285,5 +285,11 @@ class LeavingADocumentThatCannotBeSaved(DocumentFlowCase):
                 self.assertIn('Word', ' '.join(self.said))
 
 
+class ResumeWithNoDocument(DocumentFlowCase):
+    def test_stays_on_the_word_processor_menu(self):
+        self.assertEqual(app.handle('resume document', 'word_processor'), 'word_processor')
+        self.assertEqual(self.said, ['There is no document open. Say create a document.'])
+
+
 if __name__ == '__main__':
     unittest.main()

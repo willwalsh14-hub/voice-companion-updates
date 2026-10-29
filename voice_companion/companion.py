@@ -5017,7 +5017,7 @@ def _handle(text, mode, typed=False):
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
-            return 'awake'
+            return mode
         speak('Continuing ' + document.title + '. Say read paragraph to hear your place.')
         return 'document'
     if command in ('resume email', 'continue email', 'resume draft'):
