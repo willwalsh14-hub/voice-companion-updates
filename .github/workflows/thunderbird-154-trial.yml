@@ -58,16 +58,21 @@ jobs:
             $data = Get-Content $report -Raw | ConvertFrom-Json
             $checks = ($data.checks.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value }) -join '%0A'
             Write-Output ('::notice title=Required checks::' + $checks)
-            foreach ($name in @('update_result','update_report','update_said','before_install','after_install','release_about','esr_about','installs_ini_before','installs_ini_after','release_accounts','folders')) {
+            # GitHub keeps 10 notices and 10 warnings per step: required results as notices, the rest as warnings.
+            foreach ($name in @('update_result','update_report','before_install','after_install','release_about','esr_about','installs_ini_after','release_accounts','folders')) {
               $text = ($data.$name | ConvertTo-Json -Depth 8 -Compress) -replace '%','%25'
               if ($text.Length -gt 3000) { $text = $text.Substring(0, 3000) }
               Write-Output ('::notice title=' + $name + '::' + $text)
             }
-            $best = $data.best_effort.PSObject.Properties
-            foreach ($item in $best) {
-              $text = ($item.Value | ConvertTo-Json -Depth 8 -Compress) -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
-              if ($text.Length -gt 3000) { $text = $text.Substring(0, 3000) }
-              Write-Output ('::notice title=best ' + $item.Name + '::' + $text)
+            $groups = @(@('download_links','latest_release_from_mozilla'), @('choco_thunderbird','winget_version'), @('winget_after'),
+                        @('esr_signature'), @('signature_inherited_environment'), @('connection_choices'), @('graph_account_listed','graph_inbox','about_with_graph'),
+                        @('graph_folders','quit'), @('add_account_pages'))
+            foreach ($group in $groups) {
+              $part = [ordered]@{}
+              foreach ($name in $group) { $part[$name] = $data.best_effort.$name }
+              $text = ($part | ConvertTo-Json -Depth 8 -Compress) -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+              if ($text.Length -gt 4000) { $text = $text.Substring(0, 4000) }
+              Write-Output ('::warning title=best ' + ($group -join ' ') + '::' + $text)
             }
           } else {
             $tail = (Get-Content (Join-Path $env:RUNNER_TEMP 'live.txt') -Tail 60) -join '%0A'
