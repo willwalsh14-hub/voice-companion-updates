@@ -231,7 +231,7 @@ class MediaTests(unittest.TestCase):
         self.assertIsNone(app.navigation_key('Escape', 'media'))   # shows to actions
         self.assertEqual(app.navigation_key('Escape', 'media'), 'media menu')
         guide = (Path(__file__).parent / 'START HERE - Veteran.txt').read_text(encoding='utf-8')
-        self.assertIn('Escape goes from episodes to shows, then to actions, then to the Media menu.', guide)
+        self.assertIn('Escape goes from player controls to episodes, then to shows, then to categories if you browsed, then to actions, then to the Media menu.', guide)
 
     def test_damaged_subscriptions_are_skipped_not_fatal(self):
         subs = ['text', {'feed': 'https://a.example/feed'}, {'name': 'Good show', 'feed': 'https://b.example/feed', 'episodes': []}]

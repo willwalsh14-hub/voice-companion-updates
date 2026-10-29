@@ -199,3 +199,7 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 - Thunderbird lists a Microsoft Graph account to add-ons as type "extension:graph" (prefs.js says "graph"). The fakes now use the real type.
 - GitHub keeps only 10 notices and 10 warnings per step, and job logs cannot be read from Claude's session. Try workflows report results in grouped annotations.
 
+## Podcast player without a window (October 29, 2026, branch claude/podcast-feedback)
+- The radio and podcast player's Firefox now runs headless, so no window takes the keyboard.
+- On Windows (try branch, PR 86) it showed no window, kept the focus, and played forward, three runs out of three.
+- [ ] Build computers have no sound device. A person must listen once to confirm the sound reaches the speakers. If it does not, start Firefox with a window again, minimized and off the taskbar.

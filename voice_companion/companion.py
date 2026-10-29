@@ -1557,16 +1557,41 @@ def audio_ducking_request(command):
     return None
 
 
+# Options, Radio and Podcasts: "Lower the volume while I use the keyboard". A screen
+# reader's speech is not heard by Companion, so radio and podcasts are lowered while
+# keys are pressed in Companion's window, and come back after this many quiet seconds.
+KEY_DUCK_SECONDS = 1.5
+
+
+def keys_lowering(now=None):
+    """True while keys are being pressed in Companion's window and Companion's own
+    radio, podcast or media file is loaded, with the option on."""
+    if not PREFERENCES.get('duck_while_keys', True) or APP_WINDOW is None or MEDIA_HUB is None:
+        return False
+    last = getattr(APP_WINDOW, 'last_navigation', 0)
+    if isinstance(last, bool) or not isinstance(last, (int, float)) or last <= 0:
+        return False
+    now = time.monotonic() if now is None else now
+    if not 0 <= now - last < KEY_DUCK_SECONDS:
+        return False
+    try:
+        return bool(getattr(MEDIA_HUB.player, 'kind', None))
+    except Exception:
+        return False
+
+
 def update_audio_ducking(active=None):
     from audio_ducking import level_factor
     enabled = bool(PREFERENCES.get('duck_audio', True))
     lowered = enabled and bool((not SPEECH_PAUSED and speech_busy()) if active is None else active)
+    keys = keys_lowering()
     factor = level_factor(PREFERENCES.get('duck_level'))
     ducker = None
     try:
         ducker = audio_ducker()
         if ducker is not None:
-            ducker.request(lowered, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
+            # Keys lower the sound the same way speech does, so it does not dip and rise between them.
+            ducker.request(lowered or keys and enabled, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
         ducker = None
@@ -1574,10 +1599,12 @@ def update_audio_ducking(active=None):
         return
     # The radio player runs in a Firefox that Companion started, so Windows session
     # ducking already lowers it. Lower it inside the page only when that is not
-    # working, so it is never lowered twice.
+    # working (or audio ducking is off and only keys lower it), so it is never lowered twice.
     session_ducking = ducker is not None and ducker.available is not False
+    if active is not None and session_ducking:
+        return   # Speech is starting: it never waits for the player page.
     try:
-        MEDIA_HUB.player.set_ducked(lowered and not session_ducking, factor)
+        MEDIA_HUB.player.set_ducked((lowered or keys) and not (session_ducking and enabled), factor)
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
@@ -5217,7 +5244,7 @@ def _handle(text, mode, typed=False):
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',
                            'search radio','find station','find radio','browse genre','browse country','browse state','browse city',
-                           'search podcast','find podcast','browse podcasts','list podcasts','list subscriptions','refresh subscriptions',
+                           'search podcast','find podcast','browse podcasts','top podcast','podcast categories','list podcasts','list subscriptions','refresh subscriptions',
                            'check podcasts','update subscribed podcasts','auto download','automatically download',
                            'manual downloads','turn off auto downloads','set podcast ','set show ',
                            'open podcast ','subscribe to podcast ','subscribe podcast ',

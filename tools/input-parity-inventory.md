@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 730
-- Already had both ways: 572
-- Gaps found: 158
-- Gaps fixed (Added): 150
+- Actions inventoried: 731
+- Already had both ways: 576
+- Gaps found: 155
+- Gaps fixed (Added): 147
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1429,6 +1429,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Lower the volume while I use the keyboard
+
+- Voice: "Set Lower the volume while I use the keyboard to ..."
+- Keyboard: Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Station database
 
 - Voice: "Set Station database to ..."
@@ -1452,6 +1458,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Keep audio playing in the background
 
 - Voice: "Set Keep audio playing in the background to ..."
+- Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Lower the volume while I use the keyboard
+
+- Voice: "Set Lower the volume while I use the keyboard to ..."
 - Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -1581,6 +1593,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
+### Player controls
+
+- Voice: "Player controls"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
 ### Pause audio
 
 - Voice: "Pause audio"
@@ -1693,15 +1711,21 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Podcasts
 
-### Search podcasts
+### Browse podcasts
 
-- Voice: "Search podcasts"
+- Voice: "Browse podcasts"
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
-### Browse podcast category
+### Top podcasts
 
-- Voice: "Browse podcast category"
+- Voice: "Top podcasts"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Search podcasts
+
+- Voice: "Search podcasts"
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
@@ -1762,6 +1786,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Refresh subscriptions
 
 - Voice: "Refresh subscriptions"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Player controls
+
+- Voice: "Player controls"
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
@@ -3009,7 +3039,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: F1
 - Status: Both
 
-## Alt menu, YouTube actions: Play
+## Alt menu, YouTube: Play
 
 ### Play or pause
 
@@ -3065,7 +3095,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 1, 9
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube actions: Sound and speed
+## Alt menu, YouTube: Sound and speed
 
 ### Volume up
 
@@ -3103,7 +3133,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 2, 6
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube actions: Captions and picture
+## Alt menu, YouTube: Captions and picture
 
 ### Captions on or off
 
@@ -3135,7 +3165,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: A
 - Status: Both
 
-## Alt menu, YouTube actions: Chapters
+## Alt menu, YouTube: Chapters
 
 ### List chapters
 
@@ -3155,7 +3185,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+Left
 - Status: Both
 
-## Alt menu, YouTube actions: This video
+## Alt menu, YouTube: This video
 
 ### Video details
 
@@ -3193,7 +3223,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 5, 6
 - Status: Added: Alt menu path
 
-## Alt menu, YouTube actions: Your account
+## Alt menu, YouTube: Your account
 
 ### Like
 
@@ -3231,13 +3261,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt, 6, 6
 - Status: Added: Alt menu path
 
-### Sign out
+## Alt menu, YouTube: Go to
 
-- Voice: "Sign out"
-- Keyboard: Alt, 6, 7
+### Home
+
+- Voice: "Youtube home"
+- Keyboard: Alt, 7, 1
 - Status: Added: Alt menu path
-
-## Alt menu, YouTube actions: Search
 
 ### Search
 
@@ -3245,66 +3275,40 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Ctrl+F
 - Status: Both
 
-### Search filters
-
-- Voice: "Search filters"
-- Keyboard: Ctrl+Shift+F
-- Status: Both
-
-### Clear filters
-
-- Voice: "Clear filters"
-- Keyboard: Alt, 7, 3
-- Status: Added: Alt menu path
-
-## Alt menu, YouTube actions: Go to
-
-### YouTube menu
-
-- Voice: "Youtube menu"
-- Keyboard: Alt, 8, 1
-- Status: Added: Alt menu path
-
-### Home
-
-- Voice: "Youtube home"
-- Keyboard: Alt, 8, 2
-- Status: Added: Alt menu path
-
 ### New from subscriptions
 
 - Voice: "Subscriptions"
-- Keyboard: Alt, 8, 3
+- Keyboard: Alt, 7, 3
 - Status: Added: Alt menu path
 
 ### Subscribed channels
 
 - Voice: "My subscriptions"
-- Keyboard: Alt, 8, 4
+- Keyboard: Alt, 7, 4
 - Status: Added: Alt menu path
 
 ### History
 
 - Voice: "History"
-- Keyboard: Alt, 8, 5
+- Keyboard: Alt, 7, 5
 - Status: Added: Alt menu path
 
 ### Watch later
 
 - Voice: "Watch later"
-- Keyboard: Alt, 8, 6
+- Keyboard: Alt, 7, 6
 - Status: Added: Alt menu path
 
 ### Liked videos
 
 - Voice: "Liked videos"
-- Keyboard: Alt, 8, 7
+- Keyboard: Alt, 7, 7
 - Status: Added: Alt menu path
 
 ### Your playlists
 
 - Voice: "My playlists"
-- Keyboard: Alt, 8, 8
+- Keyboard: Alt, 7, 8
 - Status: Added: Alt menu path
 
 ### Load the list again
@@ -3313,7 +3317,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: F5
 - Status: Both
 
-## Alt menu, YouTube actions: Leave and help
+## Alt menu, YouTube: Leave and help
 
 ### Go back
 
@@ -3330,13 +3334,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Media menu
 
 - Voice: "Media menu"
-- Keyboard: Alt, 9, 3
+- Keyboard: Alt, 8, 3
 - Status: Added: Alt menu path
 
 ### Main menu
 
 - Voice: "Main menu"
-- Keyboard: Alt, 9, 4
+- Keyboard: Alt, 8, 4
 - Status: Added: Alt menu path
 
 ## Browser menu
