@@ -770,7 +770,7 @@ def save_draft(m):
     try:
         added = thunderbird_pim.add_event(calendar['id'], title, start, end, all_day=when.all_day)
     except thunderbird_pim.PimError as exc:
-        m.speak(str(exc) + ' The event was not saved.')
+        m.speak(not_saved(exc, 'The event was not saved.'))
         return MODE
     LAST_CALENDAR = calendar['id']
     words = show(m, when.day)
@@ -786,6 +786,12 @@ def save_draft(m):
         words += ' ' + not_shown_words(calendar)
     m.speak('Saved ' + title + ' in ' + calendar_words(calendar) + '. ' + words)
     return MODE
+
+
+def not_saved(exc, words):
+    """Why saving failed, and that nothing was saved, unless the reason already says so."""
+    text = str(exc)
+    return text if 'could not save' in text else text + ' ' + words
 
 
 def not_shown(calendar_id):
@@ -1281,7 +1287,7 @@ def save_edit(m, scope):
         answer_ = thunderbird_pim.modify_event(event.calendar_id, event.id, changes,
                                                occurrence=event.occurrence if scope == 'one' else '', all_of_them=scope == 'all')
     except thunderbird_pim.PimError as exc:
-        m.speak(str(exc) + ' The change was not saved.')
+        m.speak(not_saved(exc, 'The change was not saved.'))
         return MODE
     ids = {event.id, str((answer_ or {}).get('id') or '') if isinstance(answer_, dict) else ''}
     words = show(m, day)
