@@ -11,6 +11,7 @@ profiles.ini names for its install folder, lists accounts from prefs.js, asks be
 quitting while a message is being written, and its add-on connects when it starts.
 """
 import json
+import re
 import tempfile
 import threading
 import unittest
@@ -313,8 +314,7 @@ class UpdatingTests(UpgradeCase):
         self.assertEqual(system.downloads, [upgrade.RELEASE_URL])
         self.assertEqual(len(system.checked), 1)
         [command] = system.commands
-        self.assertRegex(command, r'^"[^"]+Thunderbird Setup\.exe" /S /InstallDirectoryPath="' +
-                         str(self.program_folder).replace('\\', '\\\\') + '"$')
+        self.assertRegex(command, r'^"[^"]+Thunderbird Setup\.exe" /S /InstallDirectoryPath="' + re.escape(str(self.program_folder)) + '"$')
         self.assertEqual(upgrade.installed(system).channel, 'release')
         # The same profile opened; no account, password, sign-in or setting changed.
         self.assertEqual(self.thunderbird.profile, self.profile_folder)
