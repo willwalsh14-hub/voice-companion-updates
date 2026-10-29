@@ -56,6 +56,18 @@ class WebsiteByVoiceTests(Journey):
         session.open.assert_not_called()
         self.say('yes','awake');self.assertEqual(self.spoken,['Say next or previous to choose an option.'])
 
+    def test_go_to_a_spelled_address_on_a_page_offers_the_site(self):
+        """Offline speech hears "Go to VA dot gov" as "go to v a dot gov"; on a page it looked
+        for a link instead of offering the site."""
+        for said in ('go to v a dot gov','Go to, VA dot gov.','Go to V.A. dot gov.'):
+            with self.subTest(said=said):
+                session=self.web();app.pending_website=None
+                session.snapshot={'url':'https://example.com/','title':'Example','text':'Example'}
+                session.favorites.get.return_value=None
+                self.assertEqual(self.say(said,'web'),'web')
+                self.assertEqual(self.spoken,['I heard website va.gov. Is that right? Say yes or no.'])
+                session.command.assert_not_called()
+
     def test_open_website_works_on_the_web_browser_menu_and_on_a_page(self):
         """On the web browser menu, "Open website" said "Choose a web browser menu option."."""
         for mode in ('browser_menu','web'):
