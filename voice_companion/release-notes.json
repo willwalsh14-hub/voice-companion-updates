@@ -1,18 +1,35 @@
 {
-  "version": "0.2.176-test",
+  "version": "0.2.177-test",
   "status": "Testing build",
   "date": "October 29, 2026",
-  "baseline": "0.2.175-test",
-  "scope": "Updates install again, quickly and without blaming your other programs.",
+  "baseline": "0.2.176-test",
+  "scope": "The newest Thunderbird with Microsoft 365, a new YouTube menu, podcast browsing, and an extension that updates itself.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Updates you can hear",
+          "title": "The newest Thunderbird",
           "details": [
-            "While an update gets ready, you hear Closing Voice Companion. Please wait.",
-            "If you open it during an update, it tells you and closes again."
+            "Voice Companion can move Thunderbird to the newest version with one yes. It works with Microsoft 365.",
+            "Your accounts, mail and settings stay as they are. A copy is saved first, just in case.",
+            "Say update Thunderbird at any time to hear your version."
+          ]
+        },
+        {
+          "title": "YouTube menu",
+          "details": [
+            "YouTube now opens to a menu. It has Search, Home, your lists and more.",
+            "Press Control+F, then type or say what to find. Press Enter or say confirm.",
+            "After a search, press Control+Shift+F for filters."
+          ]
+        },
+        {
+          "title": "Browse podcasts",
+          "details": [
+            "Browse podcasts now lists categories, like News, Comedy and History. Choose one to hear its top shows.",
+            "Top podcasts lists the most popular shows.",
+            "Player controls let you play, pause, skip and change the volume, all in Voice Companion."
           ]
         }
       ]
@@ -21,12 +38,25 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Updates",
+          "title": "Sound",
           "details": [
-            "Updates no longer stop after they download. They go on to install.",
-            "An update now gets ready in seconds.",
-            "Voice Companion no longer says another program is using its files when it is its own files.",
-            "If the update voice is missing, Windows reads the progress, and the update still installs."
+            "Podcasts and the radio now play in Voice Companion. No other window opens.",
+            "They start at half volume, and remember the volume you choose.",
+            "The sound gets quieter while you press keys, so you can hear your screen reader."
+          ]
+        },
+        {
+          "title": "YouTube",
+          "details": [
+            "You can now type a search. Letters no longer act as video keys while you type.",
+            "Filters work again with the filters YouTube offers now."
+          ]
+        },
+        {
+          "title": "Chrome extension",
+          "details": [
+            "The Chrome extension now asks Chrome for its updates on its own.",
+            "Testers need to choose Reload on the extension card one last time."
           ]
         }
       ]

@@ -872,6 +872,12 @@
 ],
 "screen_after": "media"
 },
+"awake | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
 "awake | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -1686,6 +1692,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
+"awake | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
 "awake | gmail": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -2224,6 +2242,12 @@
 ],
 "screen_after": "media"
 },
+"awake | maybe later": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -2519,7 +2543,19 @@
 ],
 "screen_after": "awake"
 },
+"awake | no thank you": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | no thanks": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | nope": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -2532,6 +2568,12 @@
 "screen_after": "awake"
 },
 "awake | not now": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | not yet": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -4179,6 +4221,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
 "awake | update status": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -4191,9 +4239,39 @@
 ],
 "screen_after": "media"
 },
+"awake | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
+"awake | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
 "awake | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "awake"
+},
+"awake | upgrade": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
+"awake | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "awake"
 },
@@ -4561,6 +4639,12 @@
 "Station database is all. Choices: All, Radio Browser, IPRD, or an imported RadioSure file. Say choose station database followed by its name."
 ],
 "screen_after": "media"
+},
+"awake | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
 },
 "awake | which version": {
 "said": [
@@ -5999,6 +6083,15 @@
 "Hello world. Second sentence. check podcasts"
 ]
 },
+"document | check thunderbird version": {
+"said": [
+"check thunderbird version"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check thunderbird version"
+]
+},
 "document | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -7183,6 +7276,24 @@
 "Hello world. Second sentence. get more messages"
 ]
 },
+"document | get the new thunderbird": {
+"said": [
+"get the new thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. get the new thunderbird"
+]
+},
+"document | get the newest thunderbird": {
+"said": [
+"get the newest thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. get the newest thunderbird"
+]
+},
 "document | gmail": {
 "said": [
 "gmail"
@@ -7957,6 +8068,15 @@
 "Hello world. Second sentence. manual downloads"
 ]
 },
+"document | maybe later": {
+"said": [
+"maybe later"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. maybe later"
+]
+},
 "document | media": {
 "said": [
 "media"
@@ -8381,6 +8501,15 @@
 "Hello world. Second sentence. no subject"
 ]
 },
+"document | no thank you": {
+"said": [
+"no thank you"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. no thank you"
+]
+},
 "document | no thanks": {
 "said": [
 "no thanks"
@@ -8388,6 +8517,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. no thanks"
+]
+},
+"document | nope": {
+"said": [
+"nope"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. nope"
 ]
 },
 "document | normal mode": {
@@ -8406,6 +8544,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. not now"
+]
+},
+"document | not yet": {
+"said": [
+"not yet"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. not yet"
 ]
 },
 "document | note": {
@@ -10826,6 +10973,15 @@
 "Hello world. Second sentence. new line"
 ]
 },
+"document | update my thunderbird": {
+"said": [
+"update my thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. update my thunderbird"
+]
+},
 "document | update status": {
 "said": [
 "update status"
@@ -10844,6 +11000,24 @@
 "Hello world. Second sentence. update subscribed podcasts"
 ]
 },
+"document | update thunderbird": {
+"said": [
+"update thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. update thunderbird"
+]
+},
+"document | update thunderbird now": {
+"said": [
+"update thunderbird now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. update thunderbird now"
+]
+},
 "document | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
@@ -10851,6 +11025,33 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | upgrade": {
+"said": [
+"upgrade"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. upgrade"
+]
+},
+"document | upgrade my thunderbird": {
+"said": [
+"upgrade my thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. upgrade my thunderbird"
+]
+},
+"document | upgrade thunderbird": {
+"said": [
+"upgrade thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. upgrade thunderbird"
 ]
 },
 "document | use ai voice": {
@@ -11346,6 +11547,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. which station database"
+]
+},
+"document | which thunderbird do i have": {
+"said": [
+"which thunderbird do i have"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. which thunderbird do i have"
 ]
 },
 "document | which version": {
@@ -12946,6 +13156,15 @@
 "Hello world. check podcasts"
 ]
 },
+"email_draft | check thunderbird version": {
+"said": [
+"check thunderbird version"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check thunderbird version"
+]
+},
 "email_draft | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -14163,6 +14382,24 @@
 "Hello world. get more messages"
 ]
 },
+"email_draft | get the new thunderbird": {
+"said": [
+"get the new thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. get the new thunderbird"
+]
+},
+"email_draft | get the newest thunderbird": {
+"said": [
+"get the newest thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. get the newest thunderbird"
+]
+},
 "email_draft | gmail": {
 "said": [
 "gmail"
@@ -14964,6 +15201,15 @@
 "Hello world. manual downloads"
 ]
 },
+"email_draft | maybe later": {
+"said": [
+"maybe later"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. maybe later"
+]
+},
 "email_draft | media": {
 "said": [
 "media"
@@ -15398,6 +15644,15 @@
 "Hello world."
 ]
 },
+"email_draft | no thank you": {
+"said": [
+"no thank you"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. no thank you"
+]
+},
 "email_draft | no thanks": {
 "said": [
 "no thanks"
@@ -15405,6 +15660,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. no thanks"
+]
+},
+"email_draft | nope": {
+"said": [
+"nope"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. nope"
 ]
 },
 "email_draft | normal mode": {
@@ -15423,6 +15687,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. not now"
+]
+},
+"email_draft | not yet": {
+"said": [
+"not yet"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. not yet"
 ]
 },
 "email_draft | note": {
@@ -16826,7 +17099,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 406. It has not been sent."
+"Email draft saved locally as Routing check 413. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16844,7 +17117,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 407. It has not been sent."
+"Email draft saved locally as Routing check 414. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16862,7 +17135,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 408. It has not been sent."
+"Email draft saved locally as Routing check 415. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16889,7 +17162,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 410. It has not been sent."
+"Email draft saved locally as Routing check 417. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16898,7 +17171,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 411. It has not been sent."
+"Email draft saved locally as Routing check 418. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17848,6 +18121,15 @@
 "Hello world. new line"
 ]
 },
+"email_draft | update my thunderbird": {
+"said": [
+"update my thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. update my thunderbird"
+]
+},
 "email_draft | update status": {
 "said": [
 "update status"
@@ -17866,6 +18148,24 @@
 "Hello world. update subscribed podcasts"
 ]
 },
+"email_draft | update thunderbird": {
+"said": [
+"update thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. update thunderbird"
+]
+},
+"email_draft | update thunderbird now": {
+"said": [
+"update thunderbird now"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. update thunderbird now"
+]
+},
 "email_draft | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
@@ -17873,6 +18173,33 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | upgrade": {
+"said": [
+"upgrade"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. upgrade"
+]
+},
+"email_draft | upgrade my thunderbird": {
+"said": [
+"upgrade my thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. upgrade my thunderbird"
+]
+},
+"email_draft | upgrade thunderbird": {
+"said": [
+"upgrade thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. upgrade thunderbird"
 ]
 },
 "email_draft | use ai voice": {
@@ -18368,6 +18695,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. which station database"
+]
+},
+"email_draft | which thunderbird do i have": {
+"said": [
+"which thunderbird do i have"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. which thunderbird do i have"
 ]
 },
 "email_draft | which version": {
@@ -19453,6 +19789,12 @@
 ],
 "screen_after": "help"
 },
+"help | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -20244,6 +20586,18 @@
 ],
 "screen_after": "help"
 },
+"help | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
+"help | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | gmail": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -20760,6 +21114,12 @@
 ],
 "screen_after": "help"
 },
+"help | maybe later": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -21043,7 +21403,19 @@
 ],
 "screen_after": "help"
 },
+"help | no thank you": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | no thanks": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | nope": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -21056,6 +21428,12 @@
 "screen_after": "help"
 },
 "help | not now": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | not yet": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -22676,6 +23054,12 @@
 ],
 "screen_after": "help"
 },
+"help | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | update status": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22688,9 +23072,39 @@
 ],
 "screen_after": "help"
 },
+"help | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
+"help | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "help"
+},
+"help | upgrade": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
+"help | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "help"
 },
@@ -23021,6 +23435,12 @@
 "help | which station database": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "help"
 },
@@ -24352,6 +24772,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -25414,6 +25840,18 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | gmail": {
 "calls": [
 "call.process('gmail')"
@@ -26108,6 +26546,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | maybe later": {
+"calls": [
+"call.process('maybe later')"
+],
+"said": [
+"session handled: maybe later"
+],
+"screen_after": "mailbox"
+},
 "mailbox | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -26497,12 +26944,30 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | no thank you": {
+"calls": [
+"call.process('no thank you')"
+],
+"said": [
+"session handled: no thank you"
+],
+"screen_after": "mailbox"
+},
 "mailbox | no thanks": {
 "calls": [
 "call.process('no thanks')"
 ],
 "said": [
 "session handled: no thanks"
+],
+"screen_after": "mailbox"
+},
+"mailbox | nope": {
+"calls": [
+"call.process('nope')"
+],
+"said": [
+"session handled: nope"
 ],
 "screen_after": "mailbox"
 },
@@ -26518,6 +26983,15 @@
 ],
 "said": [
 "session handled: not now"
+],
+"screen_after": "mailbox"
+},
+"mailbox | not yet": {
+"calls": [
+"call.process('not yet')"
+],
+"said": [
+"session handled: not yet"
 ],
 "screen_after": "mailbox"
 },
@@ -28698,6 +29172,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | update status": {
 "calls": [
 "call.process('update status')"
@@ -28716,9 +29196,42 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "mailbox"
+},
+"mailbox | upgrade": {
+"calls": [
+"call.process('upgrade')"
+],
+"said": [
+"session handled: upgrade"
+],
+"screen_after": "mailbox"
+},
+"mailbox | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "mailbox"
 },
@@ -29124,6 +29637,12 @@
 ],
 "said": [
 "session handled: which station database"
+],
+"screen_after": "mailbox"
+},
+"mailbox | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "mailbox"
 },
@@ -30185,6 +30704,12 @@
 ],
 "screen_after": "note"
 },
+"note | check thunderbird version": {
+"said": [
+"check thunderbird version"
+],
+"screen_after": "note"
+},
 "note | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -30978,6 +31503,18 @@
 ],
 "screen_after": "note"
 },
+"note | get the new thunderbird": {
+"said": [
+"get the new thunderbird"
+],
+"screen_after": "note"
+},
+"note | get the newest thunderbird": {
+"said": [
+"get the newest thunderbird"
+],
+"screen_after": "note"
+},
 "note | gmail": {
 "said": [
 "gmail"
@@ -31494,6 +32031,12 @@
 ],
 "screen_after": "note"
 },
+"note | maybe later": {
+"said": [
+"maybe later"
+],
+"screen_after": "note"
+},
 "note | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -31776,9 +32319,21 @@
 ],
 "screen_after": "note"
 },
+"note | no thank you": {
+"said": [
+"no thank you"
+],
+"screen_after": "note"
+},
 "note | no thanks": {
 "said": [
 "no thanks"
+],
+"screen_after": "note"
+},
+"note | nope": {
+"said": [
+"nope"
 ],
 "screen_after": "note"
 },
@@ -31791,6 +32346,12 @@
 "note | not now": {
 "said": [
 "not now"
+],
+"screen_after": "note"
+},
+"note | not yet": {
+"said": [
+"not yet"
 ],
 "screen_after": "note"
 },
@@ -33409,6 +33970,12 @@
 ],
 "screen_after": "note"
 },
+"note | update my thunderbird": {
+"said": [
+"update my thunderbird"
+],
+"screen_after": "note"
+},
 "note | update status": {
 "said": [
 "update status"
@@ -33421,9 +33988,39 @@
 ],
 "screen_after": "note"
 },
+"note | update thunderbird": {
+"said": [
+"update thunderbird"
+],
+"screen_after": "note"
+},
+"note | update thunderbird now": {
+"said": [
+"update thunderbird now"
+],
+"screen_after": "note"
+},
 "note | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "note"
+},
+"note | upgrade": {
+"said": [
+"upgrade"
+],
+"screen_after": "note"
+},
+"note | upgrade my thunderbird": {
+"said": [
+"upgrade my thunderbird"
+],
+"screen_after": "note"
+},
+"note | upgrade thunderbird": {
+"said": [
+"upgrade thunderbird"
 ],
 "screen_after": "note"
 },
@@ -33754,6 +34351,12 @@
 "note | which station database": {
 "said": [
 "which station database"
+],
+"screen_after": "note"
+},
+"note | which thunderbird do i have": {
+"said": [
+"which thunderbird do i have"
 ],
 "screen_after": "note"
 },
@@ -35205,6 +35808,12 @@
 ],
 "screen_after": "web"
 },
+"web | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -36351,6 +36960,18 @@
 ],
 "screen_after": "web"
 },
+"web | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
+"web | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | gmail": {
 "calls": [
 "call.command('gmail')",
@@ -37138,6 +37759,16 @@
 ],
 "screen_after": "web"
 },
+"web | maybe later": {
+"calls": [
+"call.command('maybe later')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: maybe later"
+],
+"screen_after": "web"
+},
 "web | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -37568,6 +38199,16 @@
 ],
 "screen_after": "web"
 },
+"web | no thank you": {
+"calls": [
+"call.command('no thank you')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: no thank you"
+],
+"screen_after": "web"
+},
 "web | no thanks": {
 "calls": [
 "call.command('no thanks')",
@@ -37575,6 +38216,16 @@
 ],
 "said": [
 "session handled: no thanks"
+],
+"screen_after": "web"
+},
+"web | nope": {
+"calls": [
+"call.command('nope')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: nope"
 ],
 "screen_after": "web"
 },
@@ -37591,6 +38242,16 @@
 ],
 "said": [
 "session handled: not now"
+],
+"screen_after": "web"
+},
+"web | not yet": {
+"calls": [
+"call.command('not yet')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: not yet"
 ],
 "screen_after": "web"
 },
@@ -39964,6 +40625,12 @@
 ],
 "screen_after": "web"
 },
+"web | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | update status": {
 "calls": [
 "call.command('update status')",
@@ -39984,9 +40651,43 @@
 ],
 "screen_after": "web"
 },
+"web | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
+"web | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "web"
+},
+"web | upgrade": {
+"calls": [
+"call.command('upgrade')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: upgrade"
+],
+"screen_after": "web"
+},
+"web | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
+"web | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "web"
 },
@@ -40410,6 +41111,12 @@
 ],
 "said": [
 "session handled: which station database"
+],
+"screen_after": "web"
+},
+"web | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "web"
 },
