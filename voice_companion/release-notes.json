@@ -1,33 +1,29 @@
 {
-  "version": "0.2.173-test",
+  "version": "0.2.174-test",
   "status": "Testing build",
   "date": "October 28, 2026",
-  "baseline": "0.2.172-test",
-  "scope": "Your answers to the design questions: What's playing, Undo and Redo, message details, safer email, and more.",
+  "baseline": "0.2.173-test",
+  "scope": "New choices to keep Thunderbird and guided Chrome out of your way. Nothing changes unless you choose it.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "What's playing",
+          "title": "Thunderbird window choice",
           "details": [
-            "Press F3, or say what's playing, to hear the station, episode or file.",
-            "If a radio station stops, you hear it once, with what to do next.",
-            "Say play WGN from almost any screen to play a station."
+            "In Options, Email, you can choose Minimized, as before, or Hidden from the taskbar.",
+            "Hidden from the taskbar keeps Thunderbird out of Alt+Tab.",
+            "Sign-in windows always come to the front, and you hear what they are.",
+            "While you add an account or sign in, nothing is hidden.",
+            "Say show Thunderbird or hide Thunderbird at any time."
           ]
         },
         {
-          "title": "Undo and Redo",
+          "title": "Guided Chrome window choice",
           "details": [
-            "Control+Z and Control+Y undo and redo up to 100 steps in documents and email.",
-            "You can also say undo or redo. Each one says what changed."
-          ]
-        },
-        {
-          "title": "Message details",
-          "details": [
-            "Alt+1 says who a message is from. Alt+2 is To, Alt+3 is CC, Alt+4 is the subject, Alt+5 is the date, and Alt+6 is the number of files.",
-            "You can also say who sent this, or when was it sent."
+            "In Options, Web browser, you can choose to run guided Chrome in the background.",
+            "A window still opens for Google sign-in, a person check, payment or picking a file.",
+            "Say show browser window or hide browser window at any time."
           ]
         }
       ]
@@ -36,36 +32,10 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Email",
+          "title": "If something goes wrong",
           "details": [
-            "Leaving an email you wrote now asks if you want to save it, throw it away, or keep writing.",
-            "Opening a message now says Message opened."
-          ]
-        },
-        {
-          "title": "Help and the main menu",
-          "details": [
-            "Help now tells you when it did not understand you.",
-            "On the main menu, words it does not know get a reply that says where you are and to press F1."
-          ]
-        },
-        {
-          "title": "Saving and favorites",
-          "details": [
-            "Say save to save your document or email.",
-            "Deleting a web favorite asks first. After you save a favorite, you go back to the page."
-          ]
-        },
-        {
-          "title": "The hint line",
-          "details": [
-            "The line at the bottom of the window now fits the screen you are on."
-          ]
-        },
-        {
-          "title": "Radio",
-          "details": [
-            "After a station that would not play, the next station now plays."
+            "The old way is still the first choice, and it is still what you get unless you change it.",
+            "If anything goes wrong, choose the first option to go back to how it was."
           ]
         }
       ]
