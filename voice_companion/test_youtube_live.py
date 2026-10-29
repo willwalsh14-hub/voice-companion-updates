@@ -201,6 +201,8 @@ class ScreenTests(LiveYouTube):
             self.stack.enter_context(patch.object(app, name, side_effect=speak))
         self.stack.enter_context(patch.object(app, 'interrupt_speech'))
         self.stack.enter_context(patch.object(youtube_screen, 'SCREEN', None))
+        # The browser stays open between steps, unless a test checks closing it.
+        app.PREFERENCES['web_keep_open'] = True
 
     def press(self, key, mode='youtube'):
         request = self.app.navigation_key(key, mode)
@@ -475,6 +477,22 @@ class ScreenTests(LiveYouTube):
         self.press('Escape')
         self.assertEqual(self.say('Open in browser'), 'web')
         self.assertIs(self.web.backend.page, screen.list_page)
+
+    def test_the_main_menu_closes_the_browser_and_youtube_starts_again(self):
+        screen = self.playing()
+        self.app.PREFERENCES['web_keep_open'] = False
+        closed = []
+        self.backend.close = lambda: closed.append(True) or [p.close() for p in list(self.context.pages)]
+        self.assertEqual(self.say('main menu'), 'awake')
+        self.assertEqual(closed, [True])
+        self.assertFalse(screen.alive(screen.list_page))
+        # Back on YouTube, the lists are kept and a video plays in its own tab again.
+        self.backend.start = lambda: setattr(self.backend, 'page', self.context.new_page())
+        self.assertEqual(self.say('YouTube', 'awake'), 'youtube')
+        self.assertTrue(self.last().startswith('YouTube, Home.'), self.last())
+        self.press('Enter')
+        self.assertEqual(self.last(), 'Playing Never Gonna Give You Up.')
+        self.assertIsNot(screen.video_page, screen.list_page)
 
     def test_a_changed_page_says_so_and_offers_the_page(self):
         self.context.unroute('https://www.youtube.com/**')

@@ -175,6 +175,14 @@ class YouTubeScreen:
         if not self.alive(self.list_page):
             if self.single_tab and self.alive(self.video_page):
                 self.list_page = self.video_page
+            elif self.alive(self.video_page):
+                # The list tab was closed but the video plays on: a new tab for the lists.
+                try:
+                    self.list_page = self.video_page.context.new_page()
+                    self.list_page.set_default_timeout(10000)
+                except Exception:
+                    self.list_page = self.video_page
+                    self.single_tab = True
             else:
                 try:
                     if not self.injected(web):
@@ -216,10 +224,9 @@ class YouTubeScreen:
         if not self.alive(self.video_page):
             self.video_page = None
             if not self.alive(self.list_page):
-                self.go(url)
-                self.video_page = self.list_page
-                self.single_tab = True
-                return
+                # The browser was closed (or never opened): open the list tab first, then the video's own tab.
+                view = self.view()
+                self.go(view['url'] if view and view.get('url') else yp.feed_url('home'))
             try:
                 self.video_page = self.list_page.context.new_page()
                 self.video_page.set_default_timeout(10000)
@@ -1589,6 +1596,15 @@ def main_menu(m):
         SCREEN.stop()
     except Exception:
         SCREEN.stopped()
+    web = getattr(m, 'web_session', None)
+    if web is not None and SCREEN.alive(SCREEN.list_page) and not m.PREFERENCES.get('web_keep_open', False):
+        # As when you leave a web page: the browser window closes unless Keep browser open is on.
+        try:
+            web.leave(False)
+        except Exception:
+            pass
+        SCREEN.list_page = SCREEN.video_page = None
+        SCREEN.single_tab = False
 
 
 def poll(m, mode):
