@@ -843,7 +843,7 @@ To fix the address, say "Change address". To stop, say "Cancel", or press Escape
 Thunderbird is a free email program. It keeps your sign-in, so Companion does not need its own. When you choose Thunderbird, Companion checks what is missing. It fixes each thing when you say yes. Say yes or no, or press Y or N.
 - If Thunderbird is not on the computer, Companion offers to install it. This takes a few minutes. If Windows asks whether to allow changes, press Alt+Y.
 - If Thunderbird has no email account yet, Companion helps you add one. See part 10.4.
-- You never need to open Thunderbird yourself. Companion starts it in the background and keeps it minimized. Your keys stay in Companion. If it takes more than a moment, you hear "Starting Thunderbird". Then your command goes on by itself.
+- You never need to open Thunderbird yourself. Companion starts it in the background and keeps it minimized. Your keys stay in Companion. If it takes more than a moment, you hear "Starting Thunderbird". Then your command goes on by itself. To also keep it off the taskbar, see Thunderbird window in part 25.5.
 Enter passwords and codes privately. Do not read them aloud to someone you do not trust.
 If account setup is not available, ask your helper to check the app's email setup.
 
@@ -1904,7 +1904,17 @@ In Email options:
 - Messages per list sets how many messages load at once.
 - Announce email header names sets whether Companion says From, Subject, or another header name before its value.
 - Spoken email headers chooses which details you hear: From, Subject, Date, or Size. Keep at least one. Press Space to add or remove one. Alt+Up Arrow and Alt+Down Arrow change its place in the order.
+- Thunderbird window chooses what happens to Thunderbird when Companion starts it for your email. See below.
 - Add an email account starts the setup steps in chapter 10.
+Thunderbird window has two choices:
+- Minimized, as before. This is the first choice, and how it always worked. Thunderbird runs minimized. It shows on the taskbar and in Alt+Tab.
+- Hidden from the taskbar. Thunderbird still runs, but it is not on the taskbar or in Alt+Tab. So it is not in your way.
+With either choice, Companion never hides a window Thunderbird opens by itself. When you add an account or sign in, Thunderbird works just as before. When Thunderbird opens a window, such as a sign-in or a password box, it comes to the front. Companion tells you what it is. Press Alt+Tab to come back to Companion.
+- Say "Show Thunderbird" to bring Thunderbird to the front.
+- Say "Hide Thunderbird" to put it back out of the way.
+- Both are also in the email menu, under Options and help.
+If you opened Thunderbird yourself, Companion leaves it alone.
+If anything goes wrong, choose the first option to go back to how it was.
 
 25.6 Word processor and Notepad options
 In Word processor options, you can set the font, size, line spacing, and alignment for new documents. These do not change a document or draft you already have.
@@ -1926,6 +1936,15 @@ The Guided browser setting chooses the browser Companion uses for its pages. It 
 - Edge, Brave, and Firefox are no longer guided browsers. If you chose one of them before, Companion now uses embedded Edge and tells you once.
 Embedded Edge needs the Microsoft WebView2 part of Windows. If it cannot start, Companion uses Chrome and tells you. If Chrome is not installed either, Companion tells you to say "Set up Chrome".
 Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Chrome", or use your own browser with the extension.
+Guided Chrome window has two choices. It only changes guided Chrome. Embedded Edge and your own browser stay the same.
+- Show the browser window, as before. This is the first choice, and how it always worked.
+- Run the browser in the background. Chrome runs with no window. Companion still reads every page to you, and sound still plays.
+In the background, some pages need a real window. These are a Google sign-in, a check that you are a person, and a page that asks for a card or payment. Then Companion opens Chrome again with its window, on the same page. It comes to the front, and Companion tells you why. Press Alt+Tab to come back to Companion.
+- Say "Show browser window" to see Chrome's window.
+- Say "Hide browser window" to run Chrome in the background again.
+- Both are also in the web page menu, under Options and help.
+When Chrome opens again, the page loads again. Text you typed on the page is not kept, so switch before you fill in a form.
+If anything goes wrong, choose the first option to go back to how it was.
 A site may ask you to sign in again, even if you are signed in on your usual browser.
 Companion can open HTTP links and save them in favorites and history. A bare address such as example.com still starts with HTTPS. To ask for HTTP, type the full address, such as http://example.com. HTTP does not protect the connection. The guided voice review still needs HTTPS before it sends a form.
 
