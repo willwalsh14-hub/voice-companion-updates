@@ -2380,9 +2380,6 @@ def thunderbird_starter(system=None):
 
 
 THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it closes it on exit
-THUNDERBIRD_UPDATE_COMMANDS = ('update thunderbird', 'upgrade thunderbird', 'update my thunderbird', 'upgrade my thunderbird',
-                               'update thunderbird now', 'get the new thunderbird', 'get the newest thunderbird',
-                               'check thunderbird version', 'which thunderbird do i have', 'what version of thunderbird do i have')
 
 
 def new_thunderbird_upgrade(hint=''):
@@ -3571,6 +3568,10 @@ def new_thunderbird_setup(adding=False):
 
 
 THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok', 'do it', 'go ahead')
+# "Update Thunderbird": works wherever Thunderbird commands work, never while writing.
+THUNDERBIRD_UPDATE_COMMANDS = ('update thunderbird', 'upgrade thunderbird', 'update my thunderbird', 'upgrade my thunderbird',
+                               'update thunderbird now', 'get the new thunderbird', 'get the newest thunderbird',
+                               'check thunderbird version', 'which thunderbird do i have', 'what version of thunderbird do i have')
 THUNDERBIRD_NO = ('no', 'no thanks', 'no thank you', 'n', 'nope', 'not now', 'later', 'not yet', 'cancel', 'maybe later')
 THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
 
