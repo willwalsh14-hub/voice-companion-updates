@@ -157,9 +157,10 @@ Contents
   22.2 Schedule a recording
   22.3 Cancel a scheduled recording
 23 Listen To Podcasts
-  23.1 Find a show and play an episode
+  23.1 Browse or search for a show
   23.2 Use the podcast menus and keys
   23.3 Pause, seek, or move by chapter
+  23.4 Player controls and volume
 24 Saved Podcasts And Downloads
   24.1 Subscribe to a show
   24.2 Download and play an episode
@@ -1681,6 +1682,7 @@ For radio help, say "Help with radio", or press F1.
 - Control+P pauses or resumes radio and podcasts from any screen in Companion, even Options.
 - In Radio or Podcasts, Space pauses or resumes. Control+R resumes. Control+S stops.
 - Control+Left Arrow moves back 15 seconds. Control+Right Arrow moves forward 15 seconds. Some streams cannot do this.
+- Say "Player controls" for a short list: play or pause, louder, quieter, what's playing, and stop. See part 23.4.
 Going back to the main menu stops audio at first. To keep listening, turn on Keep audio playing in the background in Radio or Podcasts options. The same setting is used for both. You can also say "Keep audio playing in the background on" or "Keep audio playing in the background off".
 Companion can lower the sound of media while it speaks. See part 25.4, Audio ducking.
 
@@ -1755,15 +1757,26 @@ Then check the list again. Other plans and saved recordings stay in place.
 
 23. LISTEN TO PODCASTS
 
-23.1 Find a show and play an episode
+23.1 Browse or search for a show
+To look through shows without a name in mind, browse:
 1. Say "Podcasts". Or choose Media on the main menu, then Podcasts.
-2. Say "Search podcasts for", followed by a topic or show name, such as "Search podcasts for history". Or press Control+F and type the words.
-3. To hear show names, say "Next" and "Previous", or use the arrows.
-4. To open the show, say "That one", or press Enter.
-5. To hear episode names, say "Next episode" and "Previous episode", or use the arrows.
-6. To play the selected episode, say "That one" or "Play", or press Enter.
+2. Say "Browse podcasts", or press Enter on Browse podcasts. You hear a list of categories, such as News, Comedy, True crime, Sports, and History.
+3. To move through the list, use the arrows, or say "Next" and "Previous". The first item, Top podcasts, has the most popular shows of all.
+4. To open a category, press Enter, or say "That one". You hear its top shows.
+5. Choose a show the same way. Press Enter to hear its episodes.
+6. Press Enter on an episode to play it.
+- Escape goes back up one list, from shows to categories.
+- While the categories are open, you can say a category name, such as "Comedy".
+- Say "Top podcasts" for the most popular shows.
+- Say "Browse podcasts category", then a name, such as "Browse podcasts category science".
+The lists come from the Apple Podcasts charts. They need internet access.
+To find a show by its name, search:
+1. Say "Search podcasts for", followed by a topic or show name, such as "Search podcasts for history". Or press Control+F and type the words.
+2. To hear show names, say "Next" and "Previous", or use the arrows.
+3. To open the show, say "That one", or press Enter.
+4. To hear episode names, say "Next episode" and "Previous episode", or use the arrows.
+5. To play the selected episode, say "That one" or "Play", or press Enter.
 - Say "Search podcast" to be asked for a show name.
-- To browse a category, say "Browse podcasts category", followed by its name, such as "Browse podcasts category science".
 - To open a show by number, say "Open podcast", followed by its number, such as "Open podcast 2". Say "Open feed" to open the selected show.
 - To play an episode by number, say "Play episode" or "Play", followed by its number, such as "Play episode 2" or "Play 2".
 - To go from episodes back to the show results, say "Back to podcasts", or press Escape.
@@ -1772,7 +1785,7 @@ Then check the list again. Other plans and saved recordings stay in place.
 The podcast screen has an actions list and a results list. Tab and Shift+Tab move between them.
 - Use the arrows, Home, End, and first letters to choose.
 - Enter on a show opens its episodes. Enter on an episode or downloaded file plays it.
-- Escape goes from episodes to shows, then to actions, then to the Media menu.
+- Escape goes from player controls to episodes, then to shows, then to categories if you browsed, then to actions, then to the Media menu.
 - Control+F searches. Control+Shift+P lists subscriptions. Control+D downloads the selected episode. F5 refreshes your saved shows.
 - Alt moves you to the podcasts menu, which is the actions list. Press Alt again to go back to the results.
 - To move by voice, say "Podcasts menu", "Actions", "Results", "Next action", or "Previous action".
@@ -1789,6 +1802,22 @@ For podcast help, say "Help with podcasts", or press F1.
 At the main menu, audio stops unless Keep audio playing in the background is on. This checkbox is in Radio and Podcasts options. It is off at first.
 A new voice request stops the app's spoken message so it can answer you.
 
+23.4 Player controls and volume
+Podcasts and radio play inside Companion. No other window opens, so you never need to Tab or Alt+Tab to find the player.
+When you press Enter on an episode, it starts, and the Player controls list opens. Use the arrows to choose, and press Enter.
+- Play or pause.
+- Back 30 seconds, or Forward 30 seconds.
+- Faster, or Slower. Each step is a quarter of normal speed.
+- Louder, or Quieter. Each step is 10 percent.
+- Next episode, or Previous episode.
+- What's playing. F3 does the same on any screen.
+- Stop.
+Escape goes back to the episodes. The episode keeps playing.
+To open the list at another time, say "Player controls", or choose Player controls in the actions list. Radio has a short list too.
+By voice, say "Audio volume up", "Audio volume down", "Faster audio", "Slower audio", or "Normal audio speed". "Louder" and "Faster" alone change Companion's voice, not the audio.
+Audio starts at half volume, so your screen reader is easy to hear. Companion keeps the volume you choose for next time.
+When you use the keyboard, Companion makes the audio quieter so you can hear your screen reader. It comes back up a moment after you stop. To turn this off, see part 25.8.
+
 24. SAVED PODCASTS AND DOWNLOADS
 
 24.1 Subscribe to a show
@@ -1796,7 +1825,7 @@ A subscription saves a show and checks for its new episodes.
 - To subscribe, open a show, then say "Subscribe". Or choose Subscribe to selected podcast in the actions list.
 - To subscribe by number, say "Subscribe to podcast", followed by its list number, such as "Subscribe to podcast 1".
 - To hear your saved shows, say "List subscriptions" or "List podcasts", or press Control+Shift+P. Choose a show with "Next", "Previous", and "That one".
-- "Browse podcasts" goes back to the current search results.
+- "List podcast shows" goes back to the shows you found last.
 Companion checks saved shows when it starts and about every six hours while it runs. To check now, say "Refresh subscriptions", or press F5.
 If a show cannot be reached, its last saved episode list is still there.
 
@@ -1961,6 +1990,7 @@ Companion can open HTTP links and save them in favorites and history. A bare add
 
 25.8 Radio and Podcasts options
 Both categories have Keep audio playing in the background. It is off at first. When it is on, audio keeps playing when you go back to the main menu.
+Both categories also have Lower the volume while I use the keyboard. It is on at first. While you press keys in Companion, radio and podcasts get quieter, so you can hear your screen reader. The sound comes back about one and a half seconds after your last key. It uses the Ducking level from Voice options. The audio never stops.
 In Radio options, you can choose a Station database, List radio presets, or List scheduled recordings. Station database chooses which station lists to search. Presets are saved stations. Scheduled recordings are recordings planned for later.
 In Podcasts options, choose a Podcast subscription, then set Automatic downloads for this subscription. Choose manual, all, or a whole number. The limit applies only to that show. List subscriptions opens the saved-show list.
 
