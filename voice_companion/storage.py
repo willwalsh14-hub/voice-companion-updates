@@ -38,3 +38,27 @@ def write_text_atomic(path, text, encoding='utf-8', encoding_errors=None):
         file.flush()
         os.fsync(file.fileno())
     os.replace(temporary, path)
+
+
+def read_saved_list(path, empty):
+    """A small saved JSON list (web favorites, web history): (data, damaged text).
+
+    A missing file is empty. A file that cannot be read now (Windows: an antivirus
+    scan or OneDrive holds it) raises OSError, so a caller never writes over it with
+    a short list. A damaged file gives `empty` and its text, for keep_damaged."""
+    import json
+    path = Path(path)
+    try:
+        text = path.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return empty, None
+    try:
+        return json.loads(text), None
+    except ValueError:
+        return empty, text
+
+
+def keep_damaged(path, text):
+    """Keep a damaged saved list beside it ("web-history.damaged.json") before it is replaced."""
+    path = Path(path)
+    write_text_atomic(path.with_name(path.stem + '.damaged' + path.suffix), text)

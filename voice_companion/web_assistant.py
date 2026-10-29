@@ -127,23 +127,37 @@ def match_choices(items, request):
 
 
 class Favorites:
+    UNREADABLE = 'Your favorites could not be opened just now. Try again in a moment.'
+
     def __init__(self, folder):
         self.path = Path(folder) / 'web-favorites.json'
 
+    def _read(self):
+        """The saved favorites and any damaged file text. Raises OSError when the
+        file cannot be read now, so it is never written over with a shorter list."""
+        from storage import read_saved_list
+        data, damaged = read_saved_list(self.path, {})
+        if not isinstance(data,dict):data={}
+        clean={}
+        for key,item in data.items():
+            if not isinstance(item,dict) or not item.get('name'):continue
+            address=saved_address(item.get('url'))
+            if address:clean[key]=dict(item,url=address)
+        if clean!=data and damaged is None:
+            # Old entries with sign-in data are dropped. If that cannot be written now,
+            # the list is still read; the cleaning is tried again next time.
+            try:write_text_atomic(self.path,json.dumps(clean,ensure_ascii=False,indent=2))
+            except OSError:pass
+        return clean,damaged
+
     def all(self):
-        try:
-            data = json.loads(self.path.read_text(encoding='utf-8'))
-            if not isinstance(data,dict):return {}
-            clean={}
-            for key,item in data.items():
-                if not isinstance(item,dict) or not item.get('name'):continue
-                address=saved_address(item.get('url'))
-                if address:clean[key]=dict(item,url=address)
-            if clean!=data:
-                temporary=self.path.with_suffix('.tmp');temporary.write_text(json.dumps(clean,ensure_ascii=False,indent=2),encoding='utf-8');temporary.replace(self.path)
-            return clean
-        except (OSError, ValueError):
-            return {}
+        try:return self._read()[0]
+        except OSError:return {}
+
+    def _write(self, data, damaged):
+        from storage import keep_damaged
+        if damaged is not None:keep_damaged(self.path,damaged)
+        write_text_atomic(self.path,json.dumps(data,ensure_ascii=False,indent=2))
 
     def add(self, name, url):
         name = _plain(name)
@@ -154,12 +168,10 @@ class Favorites:
             raise WebError('Only HTTP and HTTPS pages can be saved.')
         if saved_address(url)!=url:
             raise WebError('This address contains private sign-in data. Open and save the site main page instead.')
-        data = self.all()
+        try:data,damaged = self._read()
+        except OSError as exc:raise WebError(self.UNREADABLE) from exc
         data[name.casefold()] = {'name': name, 'url': url}
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix('.tmp')
-        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
+        self._write(data,damaged)
 
     def get(self, name):
         data=self.all();key=_plain(name).casefold()
@@ -168,12 +180,11 @@ class Favorites:
         return matches[0] if len(matches)==1 else None
 
     def delete(self, name):
-        data = self.all()
+        try:data,damaged = self._read()
+        except OSError as exc:raise ValueError(self.UNREADABLE) from exc
         if data.pop(_plain(name).casefold(), None) is None:
             raise ValueError('That favorite no longer exists.')
-        temporary = self.path.with_suffix('.tmp')
-        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-        temporary.replace(self.path)
+        self._write(data,damaged)
 
     def rename(self, name, replacement):
         item = self.get(name)
