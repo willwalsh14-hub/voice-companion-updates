@@ -1646,7 +1646,7 @@ Audio stops when you leave, unless Keep audio playing in the background is on.
 2. Say "Search radio", or press Control+F.
 3. Give a station name, such as WGN, or a type of music.
 4. To hear the results, say "Next" and "Previous", or press Down Arrow and Up Arrow.
-5. To play the chosen station, say "That one", or press Enter.
+5. To play the chosen station, say "That one" or "Play", or press Enter.
 - To search in one command, say "Search radio for", followed by the station or music type, such as "Search radio for jazz".
 - To browse a genre, say "Browse genre", followed by its name, such as "Browse genre jazz".
 - To play a result by number, say "Play station", followed by the number, such as "Play station 1".
@@ -1761,7 +1761,7 @@ Then check the list again. Other plans and saved recordings stay in place.
 3. To hear show names, say "Next" and "Previous", or use the arrows.
 4. To open the show, say "That one", or press Enter.
 5. To hear episode names, say "Next episode" and "Previous episode", or use the arrows.
-6. To play the selected episode, say "That one", or press Enter.
+6. To play the selected episode, say "That one" or "Play", or press Enter.
 - Say "Search podcast" to be asked for a show name.
 - To browse a category, say "Browse podcasts category", followed by its name, such as "Browse podcasts category science".
 - To open a show by number, say "Open podcast", followed by its number, such as "Open podcast 2". Say "Open feed" to open the selected show.
@@ -2187,6 +2187,7 @@ These keys work on the YouTube screen. Many are the same as YouTube's own keys.
 - To play the next video, say "Next video", or press N.
 - To play the video before it, say "Previous video", or press P.
 - To hear what is playing and where you are, say "What's playing?", or press F3.
+- To stop the video, say "Stop". To start it again, say "Resume".
 "Faster", "Slower", and "Volume up" alone change Companion's voice, not the video.
 You can still move through lists while a video plays. Up Arrow and Down Arrow never change the video.
 
