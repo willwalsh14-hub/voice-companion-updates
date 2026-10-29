@@ -11810,7 +11810,7 @@
 },
 "email_draft | Subject is closed for now.": {
 "said": [
-"Subject recorded as closed for now.. What would you like the message to say?"
+"Subject recorded as closed for now. What would you like the message to say?"
 ],
 "screen_after": "email_draft",
 "text": [

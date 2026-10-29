@@ -330,7 +330,7 @@ class ScreenMenuTests(unittest.TestCase):
         mode = self.screen('email_draft')
         self.press('Alt', mode); self.press('Letter:1', mode)
         self.assertEqual(self.press('Letter:1', mode), 'email_draft')
-        self.assertIn('Choose a connected email account first', ' '.join(self.said))
+        self.assertIn('No email account is set up yet', ' '.join(self.said))
         self.assertIn('Thank you.', str(app.email_draft.paragraphs))
 
     def test_radio_alt_moves_between_actions_and_results(self):

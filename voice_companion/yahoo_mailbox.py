@@ -646,8 +646,12 @@ class YahooMailbox:
             trash = self._special(conn, 'trash')
             if not trash:
                 raise MailboxError('Yahoo Trash folder could not be found. Nothing was deleted. Ask your helper to check the account.')
-            if not uids or self._same(source_id, trash['raw']):
-                return  # Already in Trash, as on Gmail.
+            if not uids:
+                return
+            if self._same(source_id, trash['raw']):
+                # Left in Trash, as on Gmail, and said: never "moved to Trash" when nothing moved.
+                raise MailboxError(('This is' if len(uids) == 1 else 'These are') + ' already in Trash. '
+                                   'Yahoo empties Trash on its own. Nothing was changed.', unchanged=True)
             self._select(conn, source_id, readonly=False)
             self._move(conn, uids, trash['raw'])
         return self._with(operation, retry=False)

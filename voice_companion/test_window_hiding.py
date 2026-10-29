@@ -380,7 +380,7 @@ class CompanionWiringTests(unittest.TestCase):
     def test_hide_thunderbird_as_before_asks_thunderbird_to_minimize(self):
         said = []
         with self.mock.patch.object(self.companion, 'speak', said.append), \
-             self.mock.patch('thunderbird_mailbox.relay', lambda: self.relay):
+             self.mock.patch('thunderbird_mailbox.current', lambda: self.relay):
             self.companion.thunderbird_setup_command('hide thunderbird', 'awake')
         self.relay.request.assert_called_with('minimize', {}, timeout=10)
         self.assertEqual(said, [hiding.MINIMIZED_NOW])
