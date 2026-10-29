@@ -269,5 +269,21 @@ class DeletingAnEmptyParagraph(DocumentFlowCase):
         self.assertEqual(self.last(), 'Deleted an empty paragraph. Say undo to restore it.')
 
 
+class LeavingADocumentThatCannotBeSaved(DocumentFlowCase):
+    """The file is open in Word: going to another screen must not stop the app or lose the words."""
+    def test_every_way_out_keeps_the_document_and_says_why(self):
+        for way in ('file manager', 'go to sleep', 'create a document', 'write a note', 'word processor',
+                    'new email', 'Ctrl+O'):
+            with self.subTest(way=way):
+                app.document = VoiceDocument(self.default, title='Letter'); app.document.append_text('Dear Bob.')
+                self.said.clear()
+                with patch.object(Path, 'replace', side_effect=PermissionError('open in Word')):
+                    mode = self.press(way, 'document') if way.startswith('Ctrl+') else app.handle(way, 'document')
+                self.assertEqual(mode, 'document')
+                self.assertEqual(app.document.paragraphs[0].text, 'Dear Bob.')
+                self.assertIn('could not be saved', ' '.join(self.said))
+                self.assertIn('Word', ' '.join(self.said))
+
+
 if __name__ == '__main__':
     unittest.main()

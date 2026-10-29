@@ -179,8 +179,8 @@ class TaskNavigation:
         m = self.app
         # Escape from Open in a document goes back to that document (companion.py).
         self.pick_return = 'document' if mode in ('document', 'document_menu') and m.document is not None else None
-        if m.document is not None:
-            m.document.save()
+        if m.document is not None and not m.save_document_before_leaving():
+            return 'document' if mode in (None, 'document', 'document_menu') else mode
         from file_manager import FileManager
         m.FILE_MANAGER = FileManager()
         m.FILE_MANAGER.pick_extensions = MEDIA_TYPES if kind == 'media' else DOCUMENT_TYPES
@@ -453,7 +453,8 @@ class TaskNavigation:
         if mode in ('awake','document','word_processor') and command in ('open a document','open document'):
             return self.pick('document', mode)
         if command in ('word processor','open word processor','word processor menu'):
-            if mode == 'document' and m.document:m.document.save()
+            if mode == 'document' and m.document:
+                if not m.save_document_before_leaving():return 'document'
             elif mode=='email_draft' and m.email_draft:m.email_draft.save()
             else:m.flush_note(mode)
             return self.enter('word_processor', 'Word processor menu')

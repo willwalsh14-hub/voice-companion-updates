@@ -2197,6 +2197,21 @@ def podcast_search(topic):
 
 UNSAVED_DOCUMENT = ('Your change is in the document, but the file could not be saved. It may be open in another program, '
                     'such as Word. Close it there, then say save document.')
+DOCUMENT_NOT_SAVED = ('Your document could not be saved, so it is still open. It may be open in another program, '
+                      'such as Word. Close it there, then try again.')
+
+
+def save_document_before_leaving():
+    """Save the open document before another screen opens. False, after saying why, when
+    the file could not be saved (open in Word): the person stays in the document."""
+    try:
+        document.save()
+        return True
+    except OSError:
+        speak(DOCUMENT_NOT_SAVED)
+        return False
+
+
 UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
                  'then say save draft.')
 
@@ -3737,7 +3752,7 @@ def _handle(text, mode, typed=False):
                     document.save()
                     checkpoint_document()
                 except OSError:
-                    speak('I could not save the document. Your document is still open.');return 'document'
+                    speak(DOCUMENT_NOT_SAVED);return 'document'
                 filename=document.path.name
                 document=None
                 speak('Saved '+filename+'.')
@@ -4069,7 +4084,7 @@ def _handle(text, mode, typed=False):
         if mode != 'sleep': SLEEP_RETURN_MODE = mode
         pending_send = None
         if mode == 'email_draft' and email_draft is not None: email_draft.save()
-        if mode == 'document' and document is not None: document.save()
+        if mode == 'document' and document is not None and not save_document_before_leaving(): return 'document'
         if mode == 'note': flush_note(mode)
         pending_website = None
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
@@ -4079,7 +4094,8 @@ def _handle(text, mode, typed=False):
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
-        if mode=='document' and document is not None:document.save()
+        if mode=='document' and document is not None:
+            if not save_document_before_leaving():return 'document'
         elif mode=='email_draft' and email_draft is not None:email_draft.save()
         else:flush_note(mode)
         pending_send=None
@@ -4604,7 +4620,7 @@ def _handle(text, mode, typed=False):
         pending_send = None
         if not email_request: mail_session = None
         if mode == 'document' and document is not None:
-            document.save()
+            if not save_document_before_leaving(): return 'document'
         elif mode == 'email_draft' and email_draft is not None:
             email_draft.save()
         else:
