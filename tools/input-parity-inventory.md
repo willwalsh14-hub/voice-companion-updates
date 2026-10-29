@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 726
-- Already had both ways: 571
+- Actions inventoried: 731
+- Already had both ways: 576
 - Gaps found: 155
 - Gaps fixed (Added): 147
 - Not applicable (N/A, with reason): 8
@@ -1429,6 +1429,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Lower the volume while I use the keyboard
+
+- Voice: "Set Lower the volume while I use the keyboard to ..."
+- Keyboard: Alt+O, arrows to Radio options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Station database
 
 - Voice: "Set Station database to ..."
@@ -1452,6 +1458,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Keep audio playing in the background
 
 - Voice: "Set Keep audio playing in the background to ..."
+- Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
+### Lower the volume while I use the keyboard
+
+- Voice: "Set Lower the volume while I use the keyboard to ..."
 - Keyboard: Alt+O, arrows to Podcasts options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
@@ -1581,6 +1593,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
+### Player controls
+
+- Voice: "Player controls"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
 ### Pause audio
 
 - Voice: "Pause audio"
@@ -1693,15 +1711,21 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Podcasts
 
-### Search podcasts
+### Browse podcasts
 
-- Voice: "Search podcasts"
+- Voice: "Browse podcasts"
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
-### Browse podcast category
+### Top podcasts
 
-- Voice: "Browse podcast category"
+- Voice: "Top podcasts"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Search podcasts
+
+- Voice: "Search podcasts"
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 
@@ -1762,6 +1786,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Refresh subscriptions
 
 - Voice: "Refresh subscriptions"
+- Keyboard: Actions list: arrows to the action, Enter
+- Status: Both
+
+### Player controls
+
+- Voice: "Player controls"
 - Keyboard: Actions list: arrows to the action, Enter
 - Status: Both
 

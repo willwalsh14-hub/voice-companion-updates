@@ -222,7 +222,10 @@ class ControlsTests(unittest.TestCase):
 
     def test_controls_by_voice_and_from_the_actions(self):
         self.assertEqual(self.nav.command('player controls'), 'Nothing is playing. Choose an episode first.')
-        self.nav.command('that one')
+        # By voice, the episode plays and the spoken commands are said; the list stays.
+        self.assertEqual(self.nav.command('that one'), 'Playing First. Say pause, back 15 seconds, or next episode.')
+        self.assertEqual(self.nav.view, 'episodes')
+        self.nav.command('player controls')
         self.assertEqual(self.nav.view, 'controls')
         self.assertEqual(self.nav.command('next'), 'Back 30 seconds (B), 2 of 11.')
         self.assertIn('Moved back', self.nav.command('that one'))

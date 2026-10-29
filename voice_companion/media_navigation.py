@@ -181,7 +181,8 @@ class MediaNavigation:
         if not cmd:return self.announce()
         h=self.hub;before=self.view,self.item_index
         result=self.run(cmd)
-        if self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith('Playing '):
+        # By keyboard, the controls list opens at once. By voice, the spoken commands are said instead.
+        if self.keyboard_mode and self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith('Playing '):
             # The episode plays here, and its controls come up at once: no other window.
             title=str(result).split('. Say ')[0].rstrip('.')
             return self.show_controls(title+'. ',before)
