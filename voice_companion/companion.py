@@ -416,6 +416,7 @@ def app_context(mode):
     if logical=='downloads':__import__('download_screen').context(sys.modules[__name__],context)
     if logical=='contacts':__import__('contacts_screen').context(sys.modules[__name__],context)
     if logical=='calendar':__import__('calendar_screen').context(sys.modules[__name__],context)
+    if logical=='youtube':__import__('youtube_screen').context(sys.modules[__name__],context)
     if logical=='draft_leave':__import__('draft_leave').context(sys.modules[__name__],context)
     if logical=='attachments':__import__('attachment_screen').context(sys.modules[__name__],context)
     if logical=='browser_menu' and web_session:
@@ -767,6 +768,7 @@ def menu_state(mode):
         attribute='menu_index' if FILE_MANAGER.menu else 'index'
         return state(names,FILE_MANAGER,attribute)
     if mode=='downloads':return __import__('download_screen').menu_state(sys.modules[__name__])
+    if mode=='youtube':return __import__('youtube_screen').menu_state(sys.modules[__name__])
     if mode=='contacts':return __import__('contacts_screen').menu_state(sys.modules[__name__])
     if mode=='attachments':return __import__('attachment_screen').menu_state(sys.modules[__name__])
     task_state=task_navigation().state(mode)
@@ -865,6 +867,8 @@ def clock_text_entry(mode, typed=False):
 
 def now_playing():
     """What plays now, for "What's playing?" and F3."""
+    video=__import__('youtube_screen').now_playing(sys.modules[__name__])  # a YouTube video, when it is what plays
+    if video:return video
     if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
     try:return MEDIA_HUB.now_playing()
     except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
@@ -875,17 +879,18 @@ def now_playing_asked(text,mode,typed=False):
     while something plays, and not on the Calendar, where it reads the event."""
     asked=__import__('media_hub').now_playing_request(text)
     if not asked or clock_text_entry(mode,typed):return False
-    return asked=='clear' or mode!='calendar' and MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind)
+    return asked=='clear' or mode!='calendar' and (MEDIA_HUB is not None and bool(MEDIA_HUB.player.kind) or __import__('youtube_screen').active(sys.modules[__name__]))
 
 
 # Screens where "play" keeps its own meaning, or where words are typed.
-STATION_PLAY_ELSEWHERE=('media','web','browser_menu','search','document_name','task_input','podcast','help','settings',
+STATION_PLAY_ELSEWHERE=('media','youtube','web','browser_menu','search','document_name','task_input','podcast','help','settings',
                         'tutorial','sleep','exit_confirm','power_confirm','document_save','document_replace','update_offer','update_download')
 
 
 def station_asked(text,mode,typed=False):
     """The station name in "Play WGN" on a screen where words are commands, else None."""
     if mode in STATION_PLAY_ELSEWHERE or clock_text_entry(mode,typed) or NAMED_LIST or screen_question(mode):return None
+    if __import__('youtube_screen').claims(text):return None  # "Play cats on YouTube", "Play the next video"
     return __import__('media_hub').station_request(text)
 
 
@@ -993,6 +998,7 @@ def _navigation_key(key,mode):
         return __import__('calendar_screen').navigation_key(sys.modules[__name__],key)
     from input_parity import screen_command,MAIL_HEADER_KEYS
     if mode=='mailbox' and key in MAIL_HEADER_KEYS:return MAIL_HEADER_KEYS[key]
+    if mode=='youtube':return __import__('youtube_screen').navigation_key(sys.modules[__name__],key)  # youtube_screen.py
     direct=screen_command(key,mode)
     if direct=='help with radio' and MEDIA_SECTION=='podcast':direct='help with podcasts'
     if key=='Ctrl+T' and mode in ('email_draft','attachments','files') and direct:
@@ -1150,7 +1156,7 @@ def task_navigation():
 
 def options_return_notice(mode):
     logical=SLEEP_RETURN_MODE if mode=='sleep' else mode
-    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.','draft_leave':'Back to the question about your email.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
+    return {'awake':'Main menu.','document':'Back to document.','email_draft':'Back to email draft.','mailbox':'Back to email.','web':'Back to web page.','browser_menu':'Back to web browser menu.','note':'Back to your note.','notepad_menu':'Back to Notepad menu.','reader_menu':'Back to Document reader menu.','files':'Back to file manager.','word_processor':'Back to Word processor menu.','document_menu':'Back to document menu.','media_menu':'Back to Media menu.','local_media':'Back to Media player.','recent_documents':'Back to recent documents list.','reader_recent':'Back to recent documents list.','file_reader':'Back to document reader.','help':'Back to help.','media':'Back to media.','attachments':'Back to attachments.','draft_leave':'Back to the question about your email.','youtube':'Back to YouTube.'}.get(logical,'Back to '+logical.replace('_',' ')+'.')
 
 def poll_file_manager(mode):
     global FILE_READER,SLEEP_RETURN_MODE
@@ -3413,6 +3419,8 @@ def _handle(text, mode, typed=False):
     if THUNDERBIRD_SETUP is not None:
         return thunderbird_setup_answer(command, mode)
     if command=='toggle audio':
+        video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
+        if video:speak(video);return mode
         speak(MEDIA_HUB.command(command) if MEDIA_HUB else 'No audio is playing. Open a media file, station or episode first.')
         return mode
     # "What time is it?" works on every screen. Where people write, "Time." alone is text.
@@ -3474,6 +3482,9 @@ def _handle(text, mode, typed=False):
         # Email attachments: the Attachments list, attaching, saving (attachment_screen.py).
         attachment_result=__import__('attachment_screen').handle(sys.modules[__name__],text,mode,typed)
         if attachment_result is not None:return attachment_result
+        # The YouTube screen, and "YouTube" or "search YouTube for ..." from other screens (youtube_screen.py).
+        youtube_result=__import__('youtube_screen').handle(sys.modules[__name__],text,mode,typed)
+        if youtube_result is not None:return youtube_result
     except (ValueError,OSError) as exc:
         speak(str(exc));return mode
     # A whole command only; in a document, email or note these words are text.
@@ -5124,6 +5135,7 @@ def handle(text, mode, typed=False):
         result=open_email_link(url)
     if result == 'awake' and mode not in ('awake', 'sleep') and _HANDLE_DEPTH == 0:
         if MEDIA_HUB and not PREFERENCES.get('keep_audio_playing',False):MEDIA_HUB.audio_command('stop audio')
+        __import__('youtube_screen').main_menu(sys.modules[__name__])
         if MAIN_MENU_ANNOUNCED==announced:announce_main_menu()
     if result!=mode:DICTATION_ECHO.clear()
     if _HANDLE_DEPTH==0 and result!='exit':sync_app_context(result,result!=mode)
@@ -5407,6 +5419,7 @@ def main():
             mode = poll_app_updates(mode)
             if mode == 'exit': return 0
             mode = __import__('download_screen').poll(sys.modules[__name__], mode)
+            mode = __import__('youtube_screen').poll(sys.modules[__name__], mode)
             if CHROME_SETUP is not None:
                 mode = __import__('chrome_setup').poll(sys.modules[__name__],mode)
             update_audio_ducking()

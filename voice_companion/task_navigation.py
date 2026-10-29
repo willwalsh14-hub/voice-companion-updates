@@ -141,7 +141,7 @@ class TaskNavigation:
             return [('Create a note', 'Ctrl+N', 'write a note'), ('Open a note', 'Ctrl+O', 'list notes'),
                     ('Options', 'Alt+O', '@options:Notepad'), ('Main menu', 'Ctrl+F1', 'main menu')]
         if mode == 'media_menu':
-            return [('Radio', '', 'radio'), ('Podcasts', '', 'podcasts'), ('Media player', '', 'media player')]
+            return [('Radio', '', 'radio'), ('Podcasts', '', 'podcasts'), ('Media player', '', 'media player'), ('YouTube', '', 'youtube')]
         if mode == 'recent_documents':
             return [(Path(p).name, '', '@recent:'+p) for p in self.recent]
         if mode == 'document_menu':
@@ -360,7 +360,10 @@ class TaskNavigation:
                     'find contact {value}':'Find contact. Type or say a name, then press Enter.',
                     'go to {value}':'Go to a day. Type or say a day, such as Friday or October 30, then press Enter.',
                     'find lesson {value}':'Find lesson. Type or say a subject, then press Enter.',
-                    'explain command {value}':'Explain command. Type or say the command, then press Enter.'}.get(command)
+                    'explain command {value}':'Explain command. Type or say the command, then press Enter.',
+                    'skip amount {value}':'Skip amount. Type or say a time, such as 30 seconds, then press Enter.',
+                    'search youtube for {value}':'Search YouTube. Type or say what to find, then press Enter.',
+                    'post comment {value}':'Comment. Type or say your comment, then press Enter. You are asked before it is posted.'}.get(command)
             m.speak((prompt or command.replace('{value}', '').strip()+'. Type or say the value, then Enter.')+' Escape cancels.')
             return 'task_input'
         if mode == 'reader_menu':

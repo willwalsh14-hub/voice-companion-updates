@@ -127,7 +127,8 @@ class TaskMenuTests(unittest.TestCase):
 
     def test_media_menu_routes_radio_and_podcasts_without_recursing(self):
         self.assertEqual(app.handle('media menu','awake'),'media_menu')
-        self.assertEqual(app.menu_state('media_menu')[0],['Radio','Podcasts','Media player'])
+        # YouTube is last, so Radio, Podcasts and Media player keep their places (Will, October 2026).
+        self.assertEqual(app.menu_state('media_menu')[0],['Radio','Podcasts','Media player','YouTube'])
         self.assertIn(('Media','media menu'),app.MAIN_MENU_CHOICES)
         self.assertNotIn(('Radio','radio'),app.MAIN_MENU_CHOICES)
         self.assertEqual(app.handle('media player','media_menu'),'local_media')

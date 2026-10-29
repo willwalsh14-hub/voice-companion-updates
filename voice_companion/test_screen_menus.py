@@ -123,6 +123,9 @@ class ScreenMenuTests(unittest.TestCase):
             app.email_draft = draft
             attachment_screen.PENDING = None
             self.assertEqual(attachment_screen.open_for_draft(app, 'email_draft'), 'attachments')
+        elif mode == 'youtube':
+            import youtube_screen
+            youtube_screen.SCREEN = None   # a fresh screen, with no page and no video
         elif mode == 'file_reader':
             from document_reader import open_document
             from file_manager import FileManager

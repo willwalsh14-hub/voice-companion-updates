@@ -22,7 +22,7 @@ def next_match(names, current, letter):
 KEY_WORDS = {'Ctrl': 'Control', 'Esc': 'Escape', 'PgUp': 'Page Up', 'PgDn': 'Page Down', 'Prior': 'Page Up',
              'Next': 'Page Down', 'PageUp': 'Page Up', 'PageDown': 'Page Down', 'Del': 'Delete', 'Ins': 'Insert',
              'ShiftTab': 'Shift+Tab', 'BackSpace': 'Backspace', 'Return': 'Enter', 'Up': 'Up Arrow',
-             'Down': 'Down Arrow', 'Left': 'Left Arrow', 'Right': 'Right Arrow'}
+             'Down': 'Down Arrow', 'Left': 'Left Arrow', 'Right': 'Right Arrow', 'comma': 'Comma', 'period': 'Period'}
 
 
 def spoken_key(key):
