@@ -168,3 +168,7 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.173: real window tests crashed with Tcl_AsyncDelete on Windows (October 28, 2026)
 - The new hint line widget was kept as self.hint_label and never released at close, so another thread freed it.
 - Fixed by releasing it on the window thread. test_window_widget_release now checks that every widget kept on the window is released.
+
+## 0.2.174: Thunderbird stand-in tests passed on a try branch but failed in the build (October 29, 2026)
+- The stand-in was a copy of sys.executable named thunderbird.exe. In the build, sys.executable is a virtual environment's python.exe, which only launches the real Python as another program, so the windows belonged to python.exe.
+- Fixed by copying sys._base_executable. Lesson: a try branch must run tests the way the build does (same Python, same order).

@@ -151,8 +151,12 @@ class StandInThunderbirdTests(unittest.TestCase):
         cls.script = os.path.join(cls.folder, 'stand_in.py')
         with open(cls.script, 'w', encoding='utf-8') as handle: handle.write(STAND_IN)
         # A copy of Python named thunderbird.exe, next to Python's own files so it starts.
-        cls.program = os.path.join(os.path.dirname(sys.executable), 'thunderbird.exe')
-        shutil.copyfile(sys.executable, cls.program)
+        # Copy the real Python, not a virtual environment's python.exe: that one is only a
+        # launcher that starts the real Python as a separate program, so the windows would
+        # belong to python.exe, not thunderbird.exe (the Windows build uses a virtual environment).
+        real = getattr(sys, '_base_executable', None) or sys.executable
+        cls.program = os.path.join(os.path.dirname(real), 'thunderbird.exe')
+        shutil.copyfile(real, cls.program)
 
     @classmethod
     def tearDownClass(cls):
