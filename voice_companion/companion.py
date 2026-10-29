@@ -4155,11 +4155,15 @@ def _handle(text, mode, typed=False):
             speak(FILE_READER.follow_link());return mode
         if request:
             unit,direction=request
-            speak(FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction))
+            result=FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction)
+            if unit!='read' and FILE_READER.reading.edge:result=('End' if FILE_READER.reading.edge=='end' else 'Beginning')+' of document. '+result
+            speak(result)
         elif command in ('beginning of document','top of document','go to beginning of document'):
             FILE_READER.reading.position=0;speak(FILE_READER.reading.move('line',0))
         elif command in ('end of document','go to end of document'):
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
+            # The place is the very end, as Control+End: Next word then says End of document.
+            FILE_READER.reading.position=max(0,len(FILE_READER.text)-1)
         elif command.startswith('find '):
             term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
             if position<0:position=FILE_READER.text.casefold().find(term.casefold())
@@ -4846,7 +4850,9 @@ def _handle(text, mode, typed=False):
         if request:
             note_reading.set_text(' '.join(note_buffer))
             unit, direction = request
-            speak(note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction))
+            result = note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction)
+            if unit != 'read' and note_reading.edge: result = ('End' if note_reading.edge == 'end' else 'Beginning') + ' of note. ' + result
+            speak(result)
             return mode
         if command in NOTE_LIST_COMMANDS:
             # Save the note in progress first, so switching notes never loses words.

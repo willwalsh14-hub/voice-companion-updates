@@ -226,5 +226,40 @@ class CopyOrCutWhatIsSelected(DocumentFlowCase):
         self.assertEqual(self.clip, [])
 
 
+class MovingPastTheEnds(DocumentFlowCase):
+    """Next word, sentence or line at the end says so, as Next paragraph does; a repeated word sounded like a move."""
+    def test_document(self):
+        app.document = VoiceDocument(self.default, title='Ends')
+        app.document.paragraphs = [Paragraph('First one.'), Paragraph('Second one.')]
+        app.handle('go to end of document', 'document')
+        for unit in ('word', 'sentence', 'line'):
+            with self.subTest(unit=unit):
+                app.handle('go to end of document', 'document')
+                app.handle('next ' + unit, 'document')
+                self.assertTrue(self.last().startswith('End of document. '), self.last())
+                app.handle('go to beginning of document', 'document')
+                app.handle('previous ' + unit, 'document')
+                self.assertTrue(self.last().startswith('Beginning of document. '), self.last())
+                app.handle('next ' + unit, 'document')
+                self.assertFalse(self.last().startswith(('End of', 'Beginning of')), self.last())
+
+    def test_document_reader(self):
+        from document_reader import DocumentReader
+        reader = DocumentReader('notes.txt', 'Dear Bob. See you soon.')
+        self.stack.enter_context(patch.object(app, 'FILE_READER', reader))
+        app.handle('go to end of document', 'file_reader')
+        app.handle('next word', 'file_reader')
+        self.assertEqual(self.last(), 'End of document. soon.')
+        app.handle('go to beginning of document', 'file_reader')
+        app.handle('previous sentence', 'file_reader')
+        self.assertEqual(self.last(), 'Beginning of document. Dear Bob.')
+
+    def test_note(self):
+        app.note_buffer[:] = ['Buy milk. Call Bob.']
+        app.handle('next sentence', 'note')
+        app.handle('next sentence', 'note')
+        self.assertEqual(self.last(), 'End of note. Call Bob.')
+
+
 if __name__ == '__main__':
     unittest.main()
