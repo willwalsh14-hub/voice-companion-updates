@@ -1,4 +1,5 @@
 """Reviewable command inventory from the same menus used by the application."""
+import re
 from pathlib import Path
 
 # Direct keys for actions that used to need a typed command (Alt+T).
@@ -124,8 +125,10 @@ def screen_key(mode, keysym, state, context, email_field=None, typed_text=''):
     # takes letters to jump through its names.
     if mode == 'mailbox' and len(key) == 1 and (typed_text or context.get('menu_letters')):
         return None
-    if mode == 'youtube' and typed_text and not key.startswith(('Ctrl+', 'F')):
-        return None  # letters, Space and digits edit a typed command
+    if mode == 'youtube' and typed_text and not (key.startswith('Ctrl+') or re.fullmatch(r'F\d+', key)):
+        return None  # letters, Space and digits edit a typed command (F is a letter; F1 to F12 are not)
+    if mode == 'youtube' and context.get('menu_letters') and len(key) == 1 and key.isalpha():
+        return None  # in the YouTube menu and the filter lists, letters move to the next name
     if mode == 'awake' and typed_text and key.startswith('Ctrl+'):
         return None  # Control+V pastes into a typed command; the main menu keys wait.
     if mode == 'downloads' and key == 'Space' and typed_text:

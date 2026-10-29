@@ -267,7 +267,7 @@ MENUS = {
             ('Document reader help', 'F1', 'help with document reader')]),
     ]),
     # YouTube (youtube_screen.py). Each key is the same on the screen without the menu.
-    'youtube': ('YouTube menu', [
+    'youtube': ('YouTube actions menu', [
         ('Play', [
             ('Play or pause', 'Space', 'play or pause video'),
             ('Skip back', 'J', 'skip back'),
@@ -308,10 +308,13 @@ MENUS = {
             ('Save to Watch later', '', 'save to watch later'),
             ('Save to a playlist', 'W', 'save video'),
             ('Add a comment', '', 'post comment {value}'),
-            ('Sign in', '', 'sign in')]),
+            ('Sign in', '', 'sign in'),
+            ('Sign out', '', 'sign out')]),
         ('Go to', [
+            ('YouTube menu', '', 'youtube menu'),
             ('Home', '', 'youtube home'),
             ('Search', 'Ctrl+F', 'search youtube'),
+            ('Search filters', 'Ctrl+Shift+F', 'search filters'),
             ('New from subscriptions', '', 'subscriptions'),
             ('Subscribed channels', '', 'my subscriptions'),
             ('History', '', 'history'),
@@ -335,7 +338,7 @@ OPEN_PHRASES = {'mailbox': ('menu', 'open menu', 'mail menu'), 'file_reader': ('
                 'email_draft': ('draft menu',), 'web': ('page menu',), 'help': (), 'note': ('notepad menu',),
                 'tutorial': ('tutorial menu', 'lesson menu'), 'downloads': ('menu', 'open menu', 'download menu'),
                 'contacts': ('menu', 'open menu', 'contact menu'), 'calendar': ('menu', 'open menu'),
-                'attachments': ('menu', 'open menu', 'attachment menu'), 'youtube': ('menu', 'open menu')}
+                'attachments': ('menu', 'open menu', 'attachment menu'), 'youtube': ('menu', 'open menu', 'actions menu')}
 NUMBER_WORDS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'}
 # Context flags that mean a text box, list or question owns the keyboard.
 BUSY_CONTEXT = ('named_list', 'task_input', 'account_entry', 'browser_name_input', 'file_name_input', 'media_input',

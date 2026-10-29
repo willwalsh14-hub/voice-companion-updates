@@ -873,6 +873,7 @@ def clock_text_entry(mode, typed=False):
     if writing_dictation(mode, typed):return True
     if mode=='note' and typed and INPUT_MODE!='commands':return True  # Words typed into the note box.
     if mode in ('search','document_name','task_input','podcast'):return True
+    if mode=='youtube' and __import__('youtube_screen').typing(sys.modules[__name__]):return True  # the YouTube search box
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):return True
     if mode=='media' and MEDIA_NAV is not None and getattr(MEDIA_NAV,'form',None):return True
