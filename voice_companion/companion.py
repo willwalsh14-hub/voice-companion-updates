@@ -248,7 +248,10 @@ def discard_document_changes():
         if data is None:path.unlink(missing_ok=True)
         else:
             temporary=path.with_suffix('.restore.docx')
-            temporary.write_bytes(data);temporary.replace(path)
+            try:temporary.write_bytes(data);temporary.replace(path)
+            except OSError:
+                # Open in Word: no half-made copy is left to be listed as a document.
+                temporary.unlink(missing_ok=True);raise
         if document.path!=path:document.path.unlink(missing_ok=True)
     elif re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):document.path.unlink(missing_ok=True)
     KEYBOARD_DIRTY.pop(id(document),None)
@@ -3765,7 +3768,7 @@ def _handle(text, mode, typed=False):
         if command in ('no','no thanks'):
             try:discard_document_changes()
             except OSError:
-                speak('Could not discard changes safely. Your document is still open.');return 'document'
+                speak('Your changes could not be thrown away, so your document is still open. The file may be open in another program, such as Word. Close it there, then try again.');return 'document'
             document=None
             speak('Changes discarded.')
             return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_CLOSE_TARGET=='word_processor' else 'awake'

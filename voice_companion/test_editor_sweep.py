@@ -291,5 +291,17 @@ class ResumeWithNoDocument(DocumentFlowCase):
         self.assertEqual(self.said, ['There is no document open. Say create a document.'])
 
 
+class DiscardWhenTheFileIsLocked(DocumentFlowCase):
+    def test_no_stray_restore_file_is_left(self):
+        made = VoiceDocument(self.default, title='Letter'); made.paragraphs = [Paragraph('Old.')]; made.save()
+        app.task_navigation().open_document(made.path)
+        app.handle('More words.', 'document')
+        app.handle('leave document', 'document')
+        with patch.object(Path, 'replace', side_effect=PermissionError('open in Word')):
+            self.assertEqual(app.handle('no', 'document_save'), 'document')
+        self.assertEqual(sorted(p.name for p in self.default.glob('*.docx')), ['Letter.docx'])
+        self.assertIn('such as Word', self.last())
+
+
 if __name__ == '__main__':
     unittest.main()
