@@ -101,6 +101,15 @@ class MediaPlayerMenuTests(unittest.TestCase):
         self.key('Home',mode);self.assertEqual(self.player.position,0);self.assertEqual(self.said[-1],'Start of file.')
         self.assertEqual(app.handle('next',mode),mode);self.assertEqual(self.said[-1],'Press Alt for the player menu.')
 
+    def test_tab_while_playing_is_never_silent(self):
+        # A new veteran presses Tab to find the controls. It said nothing; now it points to Alt.
+        mode=self.open_from_file_manager()
+        for key in ('Tab','ShiftTab'):
+            self.said.clear()
+            self.assertEqual(self.key(key,mode),'local_media')
+            self.assertEqual(self.said[-1:],['Press Alt for the player menu.'],key)
+        self.assertFalse(app.task_navigation().player_menu)
+
     def test_escape_while_playing_leaves_the_player_in_one_press(self):
         mode=self.key('Escape',self.open_from_file_manager())
         self.assertEqual(mode,'media_menu')
