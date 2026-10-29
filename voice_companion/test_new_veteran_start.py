@@ -132,6 +132,37 @@ class TutorialWordsTests(CompanionTestCase):
                 self.assertEqual(companion.document_text(document), words)
 
 
+class LessonPartsTests(unittest.TestCase):
+    """Long lessons were cut in the middle of a paragraph. A part began "It has the lesson list..."
+    with nothing before it, and another ended on a lone step number: "...each time. 4."."""
+
+    def test_parts_break_between_paragraphs_and_never_leave_a_step_number_alone(self):
+        from tutorial_curriculum import split_instruction
+        bullets = '\n\n'.join('- Bullet number %d says what to press and what you hear after it.' % n for n in range(20))
+        text = bullets + '\n\nPress Alt to open the lessons menu. It has the lesson list.'
+        parts = split_instruction(text, limit=1000)
+        self.assertGreater(len(parts), 1)
+        self.assertTrue(parts[-1].endswith('\n\nPress Alt to open the lessons menu. It has the lesson list.'), parts[-1])
+        self.assertTrue(all(part.startswith('- Bullet') for part in parts), parts)
+        steps = ' '.join('%d. Press the key for step %d and listen to what Companion says.' % (n, n) for n in range(1, 30))
+        for part in split_instruction(steps, limit=300):
+            with self.subTest(part=part[-30:]):
+                self.assertNotRegex(part, r'[.!?"]\s+\d+\.$')
+                self.assertRegex(part, r'^\d+\. Press')
+        self.assertEqual(split_instruction('One. Two.'), ['One. Two.'])
+        # An introduction that ends with a colon stays with what it introduces.
+        intro = 'x' * 960 + '.\n\nTo remove an account:\n\n1. Say "Remove email account".'
+        self.assertTrue(split_instruction(intro)[-1].startswith('To remove an account:'), split_instruction(intro))
+
+    def test_no_real_lesson_starts_with_a_dangling_word_or_ends_on_a_step_number(self):
+        from tutorial_curriculum import build_courses
+        for course in build_courses(companion.GUIDE):
+            for lesson in course['lessons']:
+                with self.subTest(course=course['name'], lesson=lesson['title']):
+                    self.assertNotRegex(lesson['text'], r'[.!?"]\s+\d+\.$')
+                    self.assertFalse(lesson['text'].startswith(('It has ', 'Then ', 'Everyone can see it.')), lesson['text'][:60])
+
+
 class MicrophoneThatCannotStartTests(CompanionTestCase):
     """With no working microphone, F9 twice said "Microphone on. Voice commands are on." They were not."""
 
