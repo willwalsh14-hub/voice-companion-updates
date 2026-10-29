@@ -248,7 +248,10 @@ def discard_document_changes():
         if data is None:path.unlink(missing_ok=True)
         else:
             temporary=path.with_suffix('.restore.docx')
-            temporary.write_bytes(data);temporary.replace(path)
+            try:temporary.write_bytes(data);temporary.replace(path)
+            except OSError:
+                # Open in Word: no half-made copy is left to be listed as a document.
+                temporary.unlink(missing_ok=True);raise
         if document.path!=path:document.path.unlink(missing_ok=True)
     elif re.fullmatch(r'Untitled(?: \d+)?',document.title,re.I):document.path.unlink(missing_ok=True)
     KEYBOARD_DIRTY.pop(id(document),None)
@@ -998,7 +1001,10 @@ def _navigation_key(key,mode):
     if ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('mode')==mode and not ACCOUNT_PICKER.get('confirm'):
         request=account_picker_key(key)
         if request!='':return request
-    task_key=task_navigation().keyboard(key,mode)
+    # A list opened over a menu ("List documents", Open a note) owns the list keys,
+    # as its prompt says; the menu below it must not take Enter, Home or End.
+    list_over_menu=NAMED_LIST and key in ('Up','Down','Left','Right','Enter','Escape','Home','End') and task_navigation().items(mode) is not None
+    task_key=None if list_over_menu else task_navigation().keyboard(key,mode)
     if task_key is not None:return task_key
     if mode=='draft_leave':
         # Leaving a written email: save it, throw it away, or keep writing (draft_leave.py).
@@ -2202,6 +2208,21 @@ def podcast_search(topic):
 
 UNSAVED_DOCUMENT = ('Your change is in the document, but the file could not be saved. It may be open in another program, '
                     'such as Word. Close it there, then say save document.')
+DOCUMENT_NOT_SAVED = ('Your document could not be saved, so it is still open. It may be open in another program, '
+                      'such as Word. Close it there, then try again.')
+
+
+def save_document_before_leaving():
+    """Save the open document before another screen opens. False, after saying why, when
+    the file could not be saved (open in Word): the person stays in the document."""
+    try:
+        document.save()
+        return True
+    except OSError:
+        speak(DOCUMENT_NOT_SAVED)
+        return False
+
+
 UNSAVED_DRAFT = ('Your change is in the draft, but the draft could not be saved. Check that the disk has space, '
                  'then say save draft.')
 
@@ -3589,6 +3610,8 @@ def _handle(text, mode, typed=False):
             return handled
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
+        if manager.pending[0]=='rename' and not typed and command not in ('cancel','escape','go back','no'):
+            text=__import__('file_manager').spoken_name(text)
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
@@ -3751,7 +3774,7 @@ def _handle(text, mode, typed=False):
                     document.save()
                     checkpoint_document()
                 except OSError:
-                    speak('I could not save the document. Your document is still open.');return 'document'
+                    speak(DOCUMENT_NOT_SAVED);return 'document'
                 filename=document.path.name
                 document=None
                 speak('Saved '+filename+'.')
@@ -3764,7 +3787,7 @@ def _handle(text, mode, typed=False):
         if command in ('no','no thanks'):
             try:discard_document_changes()
             except OSError:
-                speak('Could not discard changes safely. Your document is still open.');return 'document'
+                speak('Your changes could not be thrown away, so your document is still open. The file may be open in another program, such as Word. Close it there, then try again.');return 'document'
             document=None
             speak('Changes discarded.')
             return handle({'exit':'exit companion','restart':'restart computer','shutdown':'shut down computer'}[DOCUMENT_CLOSE_TARGET],'awake',typed) if DOCUMENT_CLOSE_TARGET in ('exit','restart','shutdown') else task_navigation().enter('word_processor','Word processor menu') if DOCUMENT_CLOSE_TARGET=='word_processor' else 'awake'
@@ -4088,7 +4111,7 @@ def _handle(text, mode, typed=False):
         if mode != 'sleep': SLEEP_RETURN_MODE = mode
         pending_send = None
         if mode == 'email_draft' and email_draft is not None: email_draft.save()
-        if mode == 'document' and document is not None: document.save()
+        if mode == 'document' and document is not None and not save_document_before_leaving(): return 'document'
         if mode == 'note': flush_note(mode)
         pending_website = None
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
@@ -4098,7 +4121,8 @@ def _handle(text, mode, typed=False):
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
-        if mode=='document' and document is not None:document.save()
+        if mode=='document' and document is not None:
+            if not save_document_before_leaving():return 'document'
         elif mode=='email_draft' and email_draft is not None:email_draft.save()
         else:flush_note(mode)
         pending_send=None
@@ -4119,6 +4143,7 @@ def _handle(text, mode, typed=False):
         if command.startswith('file letter '):
             state=menu_state(mode)
             if state:speak(FILE_MANAGER.command('file letters '+text[len('file letter '):]));sync_app_context(mode,True)
+            elif not FILE_MANAGER.busy and not FILE_MANAGER.pending and not FILE_MANAGER.items:speak('This folder is empty.')
             return mode
         try:result=FILE_MANAGER.command(text)
         except (ValueError,OSError) as exc:result=str(exc)
@@ -4136,6 +4161,8 @@ def _handle(text, mode, typed=False):
             if picker=='attach':return __import__('attachment_screen').picker_closed(sys.modules[__name__])
             # Escape from the drive list: Open a media file returns to the Media menu.
             if picker=='reader':return task_navigation().enter('reader_menu','Document reader menu')
+            if picker=='document' and getattr(task_navigation(),'pick_return',None)=='document' and document is not None:
+                speak('Canceled. Back to document.');return 'document'
             if picker:return task_navigation().enter('media_menu' if picker=='media' else 'word_processor','Media menu' if picker=='media' else 'Word processor menu')
             return 'awake'
         if FILE_MANAGER.pending and FILE_MANAGER.pending[0]=='delete':CONFIRM_CHOICE='no'
@@ -4147,6 +4174,7 @@ def _handle(text, mode, typed=False):
         if command in ('back to files','go back','back','close document','leave document','escape'):
             if task_navigation().reader_return=='recent_documents':return task_navigation().enter('recent_documents','Recent documents')
             if task_navigation().reader_return=='reader_menu':return task_navigation().enter('reader_menu','Document reader menu')
+            if task_navigation().reader_return=='word_processor' or FILE_MANAGER is None:return task_navigation().enter('word_processor','Word processor menu')
             if task_navigation().reader_return=='downloads':
                 back=__import__('download_screen').reader_back(sys.modules[__name__])
                 if back:return back
@@ -4170,11 +4198,15 @@ def _handle(text, mode, typed=False):
             speak(FILE_READER.follow_link());return mode
         if request:
             unit,direction=request
-            speak(FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction))
+            result=FILE_READER.reading.read(direction=='top') if unit=='read' else FILE_READER.reading.move(unit,direction)
+            if unit!='read':result=__import__('reading_navigation').edge_notice(FILE_READER.reading,'document')+result
+            speak(result)
         elif command in ('beginning of document','top of document','go to beginning of document'):
             FILE_READER.reading.position=0;speak(FILE_READER.reading.move('line',0))
         elif command in ('end of document','go to end of document'):
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
+            # The place is the very end, as Control+End: Next word then says End of document.
+            FILE_READER.reading.position=max(0,len(FILE_READER.text)-1)
         elif command.startswith('find '):
             term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
             if position<0:position=FILE_READER.text.casefold().find(term.casefold())
@@ -4628,7 +4660,7 @@ def _handle(text, mode, typed=False):
         pending_send = None
         if not email_request: mail_session = None
         if mode == 'document' and document is not None:
-            document.save()
+            if not save_document_before_leaving(): return 'document'
         elif mode == 'email_draft' and email_draft is not None:
             email_draft.save()
         else:
@@ -4884,7 +4916,9 @@ def _handle(text, mode, typed=False):
         if request:
             note_reading.set_text(' '.join(note_buffer))
             unit, direction = request
-            speak(note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction))
+            result = note_reading.read(direction == 'top') if unit == 'read' else note_reading.move(unit, direction)
+            if unit != 'read': result = __import__('reading_navigation').edge_notice(note_reading, 'note') + result
+            speak(result)
             return mode
         if command in NOTE_LIST_COMMANDS:
             # Save the note in progress first, so switching notes never loses words.
@@ -4951,8 +4985,17 @@ def _handle(text, mode, typed=False):
             speak(unreadable(title, error))
             return mode
         except (ValueError, OSError, KeyError, zipfile.BadZipFile, ET.ParseError):
-            speak('I could not safely open that document in this test editor.')
-            return mode
+            # The same as choosing the file in Open a document: a Word file the editor
+            # cannot keep opens in the reader; a damaged one is named in plain words.
+            from document_editor import find_document
+            path = find_document(documents_folder(), title)
+            try:
+                if path is None: raise ValueError('That document could not be opened.')
+                task_navigation().reader_return = 'word_processor'
+                return task_navigation().open_document(path)
+            except ValueError as error:
+                speak(str(error))
+                return mode
         document.dictating = INPUT_MODE != 'commands'
         speak('Opened ' + document.title + '. Speak to add text, or say read document.')
         return 'document'
@@ -5024,7 +5067,7 @@ def _handle(text, mode, typed=False):
     if command in ('resume document', 'continue document', 'open current document'):
         if document is None:
             speak_prompt('There is no document open. Say create a document.')
-            return 'awake'
+            return mode
         speak('Continuing ' + document.title + '. Say read paragraph to hear your place.')
         return 'document'
     if command in ('resume email', 'continue email', 'resume draft'):

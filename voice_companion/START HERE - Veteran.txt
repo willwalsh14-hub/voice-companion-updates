@@ -754,7 +754,7 @@ Companion saves as you write.
 - To rename the file, say "Name document", followed by the new name, such as "Name document My Letter". Say "Undo" right after a rename to get the old name back.
 To close the document:
 1. Say "Leave document" or "Go back", or press Control+W or Escape.
-2. Companion asks whether to save. Listen to the file name it reads.
+2. Companion asks, "Save this document?"
 3. Say "Yes" to keep the current name, or to name an untitled file. Say "No" to throw away the changes since you last opened, saved, or named the file. Press Escape to keep editing.
 To save a copy with Save As:
 1. Say "Save as", or press F12. Control+Shift+S also works. It is also on the File menu: press Alt, then 1.
