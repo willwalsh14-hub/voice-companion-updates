@@ -294,6 +294,8 @@ class MediaNavigation:
             return self.voice_key('Enter' if cmd in ('ok','okay','that one','confirm') else 'Down' if cmd=='next' else 'Up')
         if cmd in ('first item','last item','first action','last action'):return self.voice_key('Home' if cmd.startswith('first') else 'End')
         if cmd in ('search','search stations','search radio','search podcasts','search podcast'):return self.open_form('search')
+        # "Play" with nothing loaded plays what the list has chosen (MediaHub.play_chosen).
+        if cmd=='play' and not getattr(self.hub.player,'kind',None):return self.run(text)
         # Station actions (the short list after choosing a station) can be spoken by name too.
         action=next((a for a in ((*RADIO,*RADIO_STATION) if self.section=='radio' else PODCASTS) if cmd==a.label.casefold()),None)
         if action:return self.open_form(action.form) if action.form else self.run(action.command)

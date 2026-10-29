@@ -257,7 +257,7 @@ class MediaHub:
             index = self.preset_index if self.preset_index is not None else 0
         return (saved, index) if 0 <= index < len(saved) else (saved, None)
 
-    def radio_preset_command(self, cmd):
+    def radio_preset_command(self, cmd, text=None):
         if self.preset_delete_pending:
             name = self.preset_delete_pending
             if cmd in ('no', 'no thanks', 'cancel', 'cancel delete'):
@@ -298,7 +298,9 @@ class MediaHub:
                        else self.current_station)
             if not station or not _http_url(station.get('url', '')):
                 return 'Select or play a radio station first, then say save preset.'
-            name = (save[1] or station['name']).strip()
+            # The name as said or typed, with its capitals ("Jazz", not "jazz").
+            spoken = re.fullmatch(r'(?:save|add) (?:preset|favorite)(?: as (.+))?', ' '.join((text or '').split()), re.I)
+            name = ((spoken[1] if spoken else save[1]) or station['name']).strip()
             if not name or len(name) > 80 or any(char in name for char in '\r\n'):
                 return 'Choose a shorter preset name without line breaks.'
             saved = self.presets()
@@ -1089,10 +1091,29 @@ class MediaHub:
         self._remember(files[i].as_uri(), what='recording', name=files[i].stem)
         return 'Playing recording '+files[i].stem+'. Say pause audio or stop audio.'
 
+    def play_chosen(self, section):
+        """"Play" with nothing loaded yet: play the station, preset or episode the
+        lists have chosen, as "that one" does. None when nothing is chosen."""
+        if getattr(self.player, 'kind', None): return None
+        if section == 'radio':
+            if self.preset_browsing and self.presets(): return self.radio_preset_command('play preset')
+            if self.station_choices: return self.play_station(self.station_choices[self.station_choice_index]+1)
+            if self.stations and self.station_index is not None: return self.play_station(self.station_index+1)
+        if section == 'podcast':
+            if self.browsing_episodes and self.episodes and self.episode_index is not None:
+                return self.play_episode(self.episode_index+1)
+            if self.shows and self.show_index is not None:
+                return (self.shows[self.show_index]['name']+' is chosen. Say that one to hear its episodes, '
+                        'then choose one to play.')
+        return None
+
     def command(self, spoken, section=None):
         text=spoken.strip().rstrip('.!?').strip(); cmd=text.casefold().replace('auto-download','auto download')
+        if section in ('radio', 'podcast') and cmd in ('play', 'play it', 'play this'):
+            chosen = self.play_chosen(section)
+            if chosen is not None: return chosen
         if section == 'radio':
-            preset_response = self.radio_preset_command(cmd)
+            preset_response = self.radio_preset_command(cmd, text)
             if preset_response is not None: return preset_response
         if section == 'radio':
             cmd=re.sub(r'^(?:please\s+)|(?:\s+please)$','',cmd).strip()

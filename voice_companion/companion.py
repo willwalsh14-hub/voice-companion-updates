@@ -4277,7 +4277,7 @@ def _handle(text, mode, typed=False):
         return 'media'
     if mode=='media' and MEDIA_HUB and (media_navigation().form or media_navigation().pending) and spoken_control(command) is None and command not in ('main menu','back to main menu','leave radio','leave podcasts'):
         speak(media_navigation().command(text));return 'media'
-    if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media')) or re.fullmatch(
+    if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media' and command != 'play')) or re.fullmatch(
             r'(?:play|resume|pause|stop) (?:radio|podcast|audio)',command) or
             re.fullmatch(r'(?:rewind|back|go back|fast forward|forward|skip ahead) (?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|fifty|sixty)\b.*(?:seconds?|minutes?|hours?)',command) or
             (mode != 'media' and command in ('next chapter','previous chapter','next episode','previous episode',
