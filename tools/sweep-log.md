@@ -9,7 +9,7 @@ The format for each night:
 
 ## October 29, 2026 (night 1, a new veteran): version 0.2.175-test
 
-Release pull request 81. All three GitHub checks were run. Merging was held for Will's permission (see below).
+Release pull request 81. All three checks passed. The session could not merge it, so Will merged it; 0.2.175-test was published on October 29.
 
 ### Fixed
 
