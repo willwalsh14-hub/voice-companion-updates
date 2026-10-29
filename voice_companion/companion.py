@@ -3570,6 +3570,8 @@ def _handle(text, mode, typed=False):
             return handled
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):
+        if manager.pending[0]=='rename' and not typed and command not in ('cancel','escape','go back','no'):
+            text=__import__('file_manager').spoken_name(text)
         try:speak(manager.command(text))
         except (OSError,ValueError) as error:speak(str(error))
         sync_app_context(mode,True);return mode
