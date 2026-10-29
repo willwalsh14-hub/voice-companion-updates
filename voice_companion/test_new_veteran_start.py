@@ -24,6 +24,35 @@ class WhatModeTests(CompanionTestCase):
                 self.assertEqual(companion.navigation_key('Ctrl+M', 'awake'), 'what mode')
 
 
+class OptionsInputModeNamesTests(CompanionTestCase):
+    """Options, Input options showed and said "mixed", "commands" and "dictation". The guide says
+    "you can choose Normal, Commands only, or Dictation only"."""
+
+    def test_options_show_the_guide_names_and_save_the_mode(self):
+        import app_settings
+        from settings_model import SettingsSession, fields
+        field = next(f for f in fields('Input options', {}) if f.key == 'input_mode')
+        self.assertEqual(field.choices, ('Normal', 'Commands only', 'Dictation only'))
+        guide = companion.GUIDE.read_text(encoding='utf-8')
+        self.assertIn('you can choose Normal, Commands only, or Dictation only', guide)
+        # An older saved word is shown with its guide name, and spoken names are understood.
+        session = SettingsSession({'input_mode': 'mixed'}, {})
+        self.assertEqual(session.values['input_mode'], 'Normal')
+        for spoken, label in (('commands', 'Commands only'), ('Dictation only', 'Dictation only'),
+                              ('normal mode', 'Normal'), ('mixed', 'Normal')):
+            with self.subTest(spoken=spoken):
+                self.assertEqual(session.set('input_mode', spoken), 'Command and dictation mode ' + label)
+        preferences = dict(companion.PREFERENCES)
+        self.addCleanup(lambda: (companion.PREFERENCES.clear(), companion.PREFERENCES.update(preferences)))
+        with patch('windows_actions.startup_enabled', return_value=False), patch.object(companion, 'save_preferences'), \
+                patch.object(companion, 'media'):
+            values, _ = app_settings.snapshot(companion)
+            self.assertEqual(values['input_mode'], 'Normal')
+            values['input_mode'] = 'Commands only'
+            app_settings.apply_settings(companion, values)
+        self.assertEqual(companion.INPUT_MODE, 'commands')
+
+
 class TypedWakeUpTests(CompanionTestCase):
     """Typing "Wake up." in the command box while asleep left the screen the user was on,
     said a general list of things the app can do, and went to the main menu."""

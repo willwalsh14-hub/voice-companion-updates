@@ -32,7 +32,7 @@ def snapshot(m):
              # Fonts installed on this computer, found by the window; None lists every screen font.
              'display_fonts':getattr(m.APP_WINDOW,'font_families',None)}
     from windows_actions import startup_enabled
-    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':m.INPUT_MODE,'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':__import__('web_assistant').browser_setting(m.APP),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
+    values=DEFAULTS|m.PREFERENCES|{'start_with_windows':startup_enabled()}|{'verbosity':m.VERBOSITY,'pitch':str(m.SPEECH_PITCH),'rate':str(m.SPEECH_RATE),'volume':str(m.SPEECH_VOLUME),'punctuation':m.PUNCTUATION_LEVEL,'input_mode':__import__('settings_model').input_mode_label(m.INPUT_MODE),'engine':engine,'windows_voice':m.voice.Voice.GetDescription() if not m.TEXT_MODE else '', 'espeak_voice':next((v[1] for v in voices if v[0]=='espeak' and v[2]==m.ESPEAK_VOICE_NAME),''),'ai_voice':m.AI_VOICE_NAME,'api_key':'','ai_consent':m.PREFERENCES.get('ai_consent',__import__('ai_voice_settings').load(m.APP).get('consent',False)),'remove_ai':False,'email_account':(' '.join(selected) if selected else ''),'email_list_size':read_text(m.APP/'email-list-size.txt','10'),'browser':__import__('web_assistant').browser_setting(m.APP),'radio_source':{'radio-browser':'radio browser','radiosure':'radio sure'}.get(read(m.APP/'radio-preferences.json',{}).get('source','all'),read(m.APP/'radio-preferences.json',{}).get('source','all')),'podcast_feed':next(iter(podcast_names),''),'podcast_limit':str(next(iter(podcast_limits.values()),'manual'))}
     return values,context
 
 def open_settings(m,mode):
@@ -114,7 +114,7 @@ def apply_settings(m,values):
     if not values.get('ai_consent') and m.AI_SPEECH:
         m.AI_SPEECH.close();m.AI_SPEECH=None
     if values['engine']=='ai' and m.AI_SPEECH is None:m.configure_ai_speech()
-    m.SPEECH_PITCH=pitch;m.SPEECH_RATE=rate;m.SPEECH_VOLUME=volume;m.PUNCTUATION_LEVEL=values['punctuation'];m.VERBOSITY=values['verbosity'];m.INPUT_MODE=values['input_mode']
+    m.SPEECH_PITCH=pitch;m.SPEECH_RATE=rate;m.SPEECH_VOLUME=volume;m.PUNCTUATION_LEVEL=values['punctuation'];m.VERBOSITY=values['verbosity'];m.INPUT_MODE=__import__('settings_model').input_mode_value(values['input_mode']) or m.INPUT_MODE
     if not m.TEXT_MODE:
         m.voice.Rate=rate;m.voice.Volume=volume
     m.AI_VOICE_NAME=values['ai_voice']
