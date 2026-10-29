@@ -246,7 +246,7 @@ class StandInThunderbirdTests(unittest.TestCase):
         self.watch.enable()
         self.ask('restore')
         self.assertTrue(self.poll_for(6, lambda: not self.watch.messages.empty()))
-        self.assertTrue(self.watch.take_message().startswith('Thunderbird opened a window that may need you'))
+        self.assertEqual(self.watch.take_message(), hiding.MAIN_UP)
         self.assertEqual(ctypes.windll.user32.GetForegroundWindow(), self.main)
         self.assertFalse(self.style(self.main) & 0x80)
 
