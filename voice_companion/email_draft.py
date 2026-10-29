@@ -378,7 +378,8 @@ class VoiceEmail(VoiceDocument):
         if self.response_context: self.response_context['recipient_override'] = True
         self.save()
 
-    def process(self, raw):
+    def process(self, raw, typed=False):
+        """typed: from the keyboard. Enter in the To box goes on to the Subject box, as in a form."""
         if selection_command(raw) and self.compose_step in ('recipient','subject','cc','bcc'):
             field = self.compose_step
             value = self.recipient if field == 'recipient' else self.subject if field == 'subject' else ', '.join(getattr(self,field))
@@ -475,8 +476,9 @@ class VoiceEmail(VoiceDocument):
             self.recipient = recipient
             if self.response_context.get('action') in ('reply', 'reply_all'):
                 self.response_context['recipient_override'] = True
-            # A subject already given stays: the next words go to the message, never over the subject.
-            self.compose_step = 'body' if self.response_context or self.subject else 'subject'
+            # Said: a subject already given stays, and the next words go to the message, never
+            # over the subject. Typed: on to the Subject box, which shows the subject to edit.
+            self.compose_step = 'body' if self.response_context or self.subject and not typed else 'subject'
             self.save()
             if self.compose_step == 'body':
                 return 'Recipient recorded as ' + recipient + '. Back to the message body.'
@@ -496,7 +498,7 @@ class VoiceEmail(VoiceDocument):
             self.compose_step = 'body'
             return 'Subject recorded as ' + self.subject + '. What would you like the message to say?'
         if self.compose_step == 'recipient' and text and command not in UNDO_REQUESTS and not command.startswith(('read ', 'help ', 'save ', 'name ', 'use ', 'start dictation', 'pause dictation', 'undo')):
-            return self.process('email to ' + text)
+            return self.process('email to ' + text, typed)
         if self.compose_step == 'subject' and text and command not in UNDO_REQUESTS and not command.startswith(('read ', 'help ', 'save ', 'name ', 'use ', 'start dictation', 'pause dictation', 'undo')):
             return self.process('subject is ' + text)
         if command in ('read recipient', 'who is this to'):

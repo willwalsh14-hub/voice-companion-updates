@@ -160,6 +160,15 @@ class DraftFieldTests(CompanionCase):
         self.assertEqual(draft.subject, 'Lunch plans')
         self.assertEqual([p.text for p in draft.paragraphs if p.text], ['Hello Bob. I will be late.'])
 
+    def test_typed_address_goes_on_to_the_subject_box(self):
+        # The keyboard works as a form: Enter in the To box goes to the Subject box,
+        # which shows the subject to edit.
+        draft = self.new_email()
+        draft.subject = 'Lunch plans'
+        companion.handle('sam@example.com', 'email_draft', typed=True)
+        self.assertEqual(draft.compose_step, 'subject')
+        self.assertEqual(draft.subject, 'Lunch plans')
+
     def test_a_new_address_without_a_subject_still_asks_for_one(self):
         draft = self.new_email()
         companion.handle('bob at example dot com.', 'email_draft')

@@ -4837,7 +4837,7 @@ def _handle(text, mode, typed=False):
             speak('Email draft saved locally. Check whether it was sent before sending it again.')
             return 'awake'
         try:
-            dictation_feedback(email_draft.process(text))
+            dictation_feedback(email_draft.process(text, typed=typed))
         except OSError:
             # The change is made; only the save failed (a full disk, or the file in use).
             speak(UNSAVED_DRAFT)
