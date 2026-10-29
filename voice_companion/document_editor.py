@@ -495,11 +495,18 @@ class VoiceDocument:
             parts.append(table + '</w:tbl>')
         doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="' + XMLNS + '"><w:body>' + ''.join(parts) + '<w:sectPr/></w:body></w:document>'
         temporary = self.path.with_suffix('.writing.docx')
-        with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-            for name, value in [('[Content_Types].xml', CONTENT_TYPES), ('_rels/.rels', ROOT_RELS), ('word/document.xml', doc), ('word/styles.xml', STYLES), ('word/numbering.xml', NUMBERING), ('word/_rels/document.xml.rels', DOC_RELS)]:
-                z.writestr(name, value)
-        keep_previous(self.path)
-        temporary.replace(self.path)
+        try:
+            with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+                for name, value in [('[Content_Types].xml', CONTENT_TYPES), ('_rels/.rels', ROOT_RELS), ('word/document.xml', doc), ('word/styles.xml', STYLES), ('word/numbering.xml', NUMBERING), ('word/_rels/document.xml.rels', DOC_RELS)]:
+                    z.writestr(name, value)
+            keep_previous(self.path)
+            temporary.replace(self.path)
+        except BaseException:
+            # A file open in Word, or a full disk: the half-made copy must not stay
+            # behind, where it would be listed as one more document.
+            try: temporary.unlink()
+            except OSError: pass
+            raise
         return self.path
 
     def save_as(self, folder, title):
