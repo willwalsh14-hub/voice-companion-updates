@@ -246,10 +246,15 @@ def main():
     checks['add_account_page_opened'] = isinstance(opened, dict) and opened.get('opened') is True
     time.sleep(3)
     pages = [ask('setupPage')]
-    for _ in range(4):
+    for _ in range(3):
         ask('setupContinue')
-        time.sleep(8)
-        pages.append(ask('setupPage'))
+        # Thunderbird looks up the settings for the address: wait up to 90 seconds for that to finish.
+        for _ in range(18):
+            time.sleep(5)
+            page = ask('setupPage')
+            if not (isinstance(page, dict) and any('Looking up' in n for n in page.get('notes') or [])):
+                break
+        pages.append(page)
         if any(isinstance(p, dict) and p.get('choices') for p in pages):
             break
     best['add_account_pages'] = pages
@@ -272,6 +277,9 @@ def main():
         if relay.connected.wait(120):
             found = ask('accounts')
             best['graph_account_listed'] = [a for a in found if isinstance(a, dict) and a.get('id') == 'account4'] if isinstance(found, list) else found
+            # The update's account check must see this account as the same type as prefs.js says ("graph").
+            listed = thunderbird_upgrade.addon_accounts(found if isinstance(found, list) else [])
+            checks['graph_account_type_understood'] = listed.get('account4', ('', ()))[0] == 'graph'
             best['graph_inbox'] = ask('inbox', {'accountId': 'account4'})
             best['graph_folders'] = ask('folders', {'accountId': 'account4'})
             best['about_with_graph'] = ask('about')

@@ -111,7 +111,8 @@ class FakeThunderbird:
             found = []
             for key, (kind, addresses) in upgrade.prefs_accounts(self.profile).items():
                 if addresses:
-                    found.append({'id': key, 'type': kind, 'name': key,
+                    # As Thunderbird 159 lists them to an add-on: Microsoft Graph as "extension:graph".
+                    found.append({'id': key, 'type': 'extension:graph' if kind == 'graph' else kind, 'name': key,
                                   'identities': [{'id': 'id' + key, 'email': a} for a in addresses]})
             return found
         if method == 'inbox':
@@ -554,6 +555,73 @@ class SetupFlowTests(UpgradeCase):
     def test_a_current_release_is_not_asked_about(self):
         self.write_program('155.0', 'release')
         self.assertEqual(self.setup_flow(self.system(version='155.0', channel='release')).start().question, 'address')
+
+
+class GraphAccountTests(UpgradeCase):
+    """A Microsoft 365 account already added with Graph (Thunderbird 154 or newer) is kept and recognized."""
+
+    def test_extension_graph_from_thunderbird_matches_graph_in_the_settings(self):
+        found = upgrade.addon_accounts([{'id': 'account4', 'type': 'extension:graph',
+                                         'identities': [{'id': 'id4', 'email': 'Will@Contoso.onmicrosoft.com'}]}])
+        self.assertEqual(found, {'account4': ('graph', ('will@contoso.onmicrosoft.com',))})
+        self.assertEqual(upgrade.differences({'account4': ('graph', ('will@contoso.onmicrosoft.com',))}, found, 'accounts'), [])
+
+    def test_an_update_with_a_graph_account_and_no_add_on_check_before_is_not_mistaken_for_a_change(self):
+        prefs = self.profile_folder / 'prefs.js'
+        prefs.write_text(prefs.read_text(encoding='utf-8').replace('"account1,account2,account3"', '"account1,account2,account3,account4"') +
+                         'user_pref("mail.account.account4.identities", "id4");\n'
+                         'user_pref("mail.account.account4.server", "server4");\n'
+                         'user_pref("mail.identity.id4.useremail", "will@contoso.onmicrosoft.com");\n'
+                         'user_pref("mail.server.server4.type", "graph");\n', encoding='utf-8')
+        self.write_program('150.0', 'release')     # a Release from before Graph was turned on
+        system = self.system(version='150.0', channel='release')
+        flow = self.flow(system)
+        self.assertEqual(flow.check().question, 'upgrade')
+        # Not checked in Thunderbird first (its first start does not connect): the settings decide.
+        original = self.thunderbird.start
+        calls = []
+
+        def start():
+            calls.append(1)
+            original()
+            if len(calls) == 1:
+                self.thunderbird.connected.clear()     # the first start does not connect
+        self.thunderbird.start = start
+        step = flow.answer('upgrade', True)
+        self.assertEqual(flow.report['problems'], [], flow.report)
+        self.assertTrue(step.message.startswith('Thunderbird is updated to version 155.0.'))
+
+
+class SignatureCheckTests(unittest.TestCase):
+    """Seen on a Windows runner (try PR 82): Windows PowerShell started from PowerShell 7 inherits its module
+    path, cannot load Get-AuthenticodeSignature, and Mozilla's good installer was refused with no reason."""
+
+    def test_runs_windows_powershell_without_the_inherited_module_path_and_names_a_failure(self):
+        import subprocess
+        from unittest import mock
+        seen = []
+
+        def run(args, **kw):
+            seen.append((args, kw['env']))
+            return subprocess.CompletedProcess(args, 0, 'NotSigned||The file is not digitally signed.\n', '')
+        with mock.patch.dict('os.environ', {'PSModulePath': r'C:\Program Files\PowerShell\7\Modules', 'SystemRoot': r'C:\Windows'}), \
+             mock.patch('subprocess.run', run):
+            system = thunderbird_setup.WindowsSystem()
+            self.assertEqual(system.signer('setup.exe'), ('NotSigned', ''))
+        args, env = seen[0]
+        self.assertTrue(args[0].replace('\\', '/').lower().endswith('system32/windowspowershell/v1.0/powershell.exe'))
+        self.assertNotIn('PSModulePath', env)
+        self.assertEqual(env['VC_FILE'], 'setup.exe')
+        self.assertEqual(system.signer_problem, 'The file is not digitally signed.')
+
+    def test_a_valid_mozilla_subject_is_read_whole(self):
+        import subprocess
+        from unittest import mock
+        subject = 'CN=Mozilla Corporation, OU=Firefox Engineering Operations, O=Mozilla Corporation, L=San Francisco, S=California, C=US'
+        with mock.patch('subprocess.run', lambda args, **kw: subprocess.CompletedProcess(args, 0, 'Valid|' + subject + '|Signature verified.', '')):
+            system = thunderbird_setup.WindowsSystem()
+            self.assertTrue(thunderbird_setup.signed_by_mozilla(system, 'setup.exe'))
+        self.assertEqual(system.signer_problem, '')
 
 
 class FreshInstallTests(UpgradeCase):

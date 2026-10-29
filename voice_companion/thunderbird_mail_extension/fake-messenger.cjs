@@ -422,8 +422,9 @@ function addSecondAccount(state) {
     {id: 'o2', parentId: 'book-outlook', type: 'contact', readOnly: false, properties: {vCard: card('John Smith', 'john@example.com')}});
 }
 
-// Microsoft 365 added in Thunderbird 154 or newer with Microsoft Graph (account type "graph"), and an
-// Exchange account (type "ews", Thunderbird 145 and newer), beside Gmail. Thunderbird keeps their mail in
+// Microsoft 365 added in Thunderbird 154 or newer with Microsoft Graph, and an Exchange account, beside Gmail.
+// Types as real Thunderbird 159 reports them to an add-on (seen on Windows, try PR 82): Graph is
+// "extension:graph" (its server type is "graph"), Exchange is "ews". Thunderbird keeps their mail in
 // folders like any other account, with Microsoft's folder names; the add-on interface treats them the same.
 // Thunderbird has no calendars or address books for these accounts yet (Thunderbird blog, September 2026).
 function addMicrosoftAccounts(state) {
@@ -437,7 +438,7 @@ function addMicrosoftAccounts(state) {
       {id: id + '://Archive', accountId: id, path: '/Archive', name: 'Archive', specialUse: ['archives']});
     state.servers = Object.assign(state.servers || {}, {[id]: server});
   };
-  add('account5', 'graph', 'will@contoso.onmicrosoft.com', 'graph.microsoft.com');
+  add('account5', 'extension:graph', 'will@contoso.onmicrosoft.com', 'graph.microsoft.com');
   add('account6', 'ews', 'will@work.example', 'outlook.office365.com');
   const at = day => new Date(Date.UTC(2026, 9, day, 12));
   state.messages.push(

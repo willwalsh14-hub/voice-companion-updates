@@ -219,7 +219,7 @@ class WindowsSystem:
             return '', ''
         status, _, rest = done.stdout.strip().partition('|')
         subject, _, message = rest.rpartition('|') if rest.count('|') else (rest, '', '')
-        self.signer_problem = '' if status.strip() == 'Valid' else (message.strip() + ' ' + done.stderr.strip())[-600:]
+        self.signer_problem = '' if status.strip() == 'Valid' else (message.strip() + ' ' + done.stderr.strip()).strip()[-600:]
         return status.strip(), subject.strip()
 
     def latest_release(self):
