@@ -1,0 +1,25 @@
+name: Try - update probe
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/try/**', '.github/workflows/try-update-probe.yml', 'voice_companion/**']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set Will's time zone
+        run: tzutil /s "Eastern Standard Time"
+      - name: Update 0.2.173 to 0.2.174 with the 0.2.173 helper
+        shell: powershell
+        run: |
+          $out = & .\.github\try\update-probe.ps1 2>&1 | Out-String
+          Write-Output $out
+          $out | Set-Content probe-output.txt
+          $clean = $out -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
+          for ($i = 0; $i -lt [Math]::Min(8, [Math]::Ceiling($clean.Length / 3500)); $i++) {
+            Write-Output ('::warning title=Probe part ' + ($i + 1) + '::' + $clean.Substring($i * 3500, [Math]::Min(3500, $clean.Length - $i * 3500)))
+          }
