@@ -156,7 +156,8 @@ class CalendarSourceTests(CalendarHarness):
         self.assertTrue(self.said().startswith('Showing Family, Gmail, me@gmail.com. Today, Monday, October 26. 1 event. '
                                                'Five PM to six PM, Soccer practice, Family'))
         app.handle('Where am I?', mode)
-        self.assertTrue(self.said().startswith('Showing Family, Gmail, me@gmail.com. Today, Monday, October 26.'))
+        # The screen's name first, as on Contacts.
+        self.assertTrue(self.said().startswith('Calendar. Showing Family, Gmail, me@gmail.com. Today, Monday, October 26.'))
         app.handle('Show Outlook.', mode)
         self.assertTrue(self.said().startswith('Showing Calendar, Outlook, vet@outlook.com.'))
         app.handle('Show all calendars.', mode)
@@ -280,7 +281,7 @@ class CalendarOneAccountTests(CalendarHarness):
         app.handle('which calendar am I in', mode)
         self.assertEqual(self.said(), 'All your calendars are shown.')
         app.handle('where am i', mode)
-        self.assertTrue(self.said().startswith('Today, Monday, October 26.'))
+        self.assertTrue(self.said().startswith('Calendar. Today, Monday, October 26.'))
         self.press('Alt', mode)
         self.press('Letter:3', mode)
         self.assertNotIn('choose calendar', [entry[2] for entry in app.SCREEN_MENU.entries()])

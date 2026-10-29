@@ -358,7 +358,11 @@ def command_here(m, raw, command):
         return 'awake'      # handle() says Main menu when the screen changes
     if command in OPEN + ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'refresh', 'refresh calendar'):
         words = show(m, DAY or today(m), opening=command.startswith('refresh'))
-        m.speak(with_showing(words) if command in OPEN + ('where am i', 'refresh', 'refresh calendar') else words)
+        if command in OPEN + ('where am i',):
+            words = 'Calendar. ' + with_showing(words)      # the screen's name first, as on Contacts
+        elif command in ('refresh', 'refresh calendar'):
+            words = with_showing(words)
+        m.speak(words)
         return MODE
     if command in CHOOSE:
         return start_choosing(m)
