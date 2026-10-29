@@ -244,6 +244,15 @@ class DeleteKeepsYourPlaceTests(unittest.TestCase):
         session.process('move to Receipts')
         self.assertTrue(session.process('yes').endswith('Person 3. Subject 3. October 2, 2026. 2 of 2.'))
 
+    def test_deleting_in_yahoo_trash_says_nothing_moved(self):
+        from mailbox_access import MailboxError
+        session = self.session()
+        session.provider = 'yahoo'
+        with patch.object(ShrinkingInbox, 'trash', side_effect=MailboxError(
+                'This is already in Trash. Yahoo empties Trash on its own. Nothing was changed.', unchanged=True)):
+            session.process('delete')
+            self.assertEqual(session.process('yes'), 'This is already in Trash. Yahoo empties Trash on its own. Nothing was changed.')
+
     def test_deleting_marked_messages_starts_at_the_top(self):
         session = self.session()
         session.process('mark')
