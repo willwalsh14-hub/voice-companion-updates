@@ -140,6 +140,7 @@ class YouTubeScreen:
         self.single_tab = False
         self.return_mode = 'media_menu'
         self.signing_in = False   # Google's sign-in page is open; coming back loads YouTube again
+        self.opened_window = False  # a browser window or tab opened; the keyboard comes back to Companion
         self.lists = yp.YouTubePage(lambda: self.list_page)
         self.player = yp.YouTubePage(lambda: self.video_page)
 
@@ -198,6 +199,7 @@ class YouTubeScreen:
                 except Exception as exc:
                     raise YouTubeError(yp.NOT_LOADED) from exc
                 self.list_page = web.backend.page
+                self.opened_window = True
                 web.snapshot = None   # the web screen reads the page again when you open it
                 self.lists.wait_ready()
                 return notice
@@ -231,6 +233,7 @@ class YouTubeScreen:
                 self.video_page = self.list_page.context.new_page()
                 self.video_page.set_default_timeout(10000)
                 self.single_tab = False
+                self.opened_window = True
             except Exception:
                 self.video_page = self.list_page
                 self.single_tab = True
@@ -1269,8 +1272,28 @@ def claims(text):
     return bool(SEARCH.fullmatch(command)) or command in ANYWHERE or 'youtube' in command.split()
 
 
+def keep_keyboard(m, s):
+    """A new browser window or tab may take the keyboard; give it back to Companion's window."""
+    if s.opened_window:
+        s.opened_window = False
+        window = getattr(m, 'APP_WINDOW', None)
+        if window is not None and hasattr(window, 'reclaim_focus'):
+            try:
+                window.reclaim_focus()
+            except Exception:
+                pass
+
+
 def handle(m, text, mode, typed=False):
     """Commands for the YouTube screen, and the phrases that open it. None: not ours."""
+    try:
+        return _handle(m, text, mode, typed)
+    finally:
+        if SCREEN is not None and SCREEN.m is m:
+            keep_keyboard(m, SCREEN)
+
+
+def _handle(m, text, mode, typed=False):
     raw = text.strip()
     command = normalized(raw)
     s = screen(m)

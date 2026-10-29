@@ -261,6 +261,16 @@ class ScreenTests(LiveYouTube):
         self.assertEqual(self.say("What's playing?", 'awake'), 'awake')
         self.assertTrue(self.last().startswith('YouTube: Never Gonna Give You Up.'))
 
+    def test_the_keyboard_comes_back_after_a_browser_tab_opens(self):
+        from unittest.mock import Mock
+        window = Mock(); self.app.APP_WINDOW = window
+        self.say('YouTube.', 'awake')
+        self.assertEqual(window.reclaim_focus.call_count, 1)
+        self.press('Down')
+        self.assertEqual(window.reclaim_focus.call_count, 1)   # moving in a list opens nothing
+        self.press('Enter')
+        self.assertEqual(window.reclaim_focus.call_count, 2)   # the video's own tab
+
     def test_player_keys(self):
         self.playing()
         steps = [('K', 'Paused.'), ('Space', 'Playing.'), ('Right', 'Forward 10 seconds. 10 seconds of 3 minutes 33 seconds.'),
