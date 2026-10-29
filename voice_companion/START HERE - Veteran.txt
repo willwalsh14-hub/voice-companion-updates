@@ -1939,7 +1939,7 @@ Google does not allow signing in to a Google account in embedded Edge. For a sit
 Guided Chrome window has two choices. It only changes guided Chrome. Embedded Edge and your own browser stay the same.
 - Show the browser window, as before. This is the first choice, and how it always worked.
 - Run the browser in the background. Chrome runs with no window. Companion still reads every page to you, and sound still plays.
-In the background, some pages need a real window. These are a Google sign-in, a check that you are a person, and a page that asks for a card or payment. Then Companion opens Chrome again with its window, on the same page. It comes to the front, and Companion tells you why. Press Alt+Tab to come back to Companion.
+In the background, some pages need a real window. These are a Google sign-in, a check that you are a person, a page that asks for a card or payment, and a page where you choose a file to send. Then Companion opens Chrome again with its window, on the same page. It comes to the front, and Companion tells you why. Press Alt+Tab to come back to Companion.
 - Say "Show browser window" to see Chrome's window.
 - Say "Hide browser window" to run Chrome in the background again.
 - Both are also in the web page menu, under Options and help.

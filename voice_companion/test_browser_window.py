@@ -145,6 +145,9 @@ class SwitchingTests(unittest.TestCase):
         self.assertTrue(self.session.open('https://shop.example/check').startswith(web_assistant.WINDOW_SHOWN['check']))
         self.assertEqual(window_need(dict(PAYMENT, url='https://shop.example/pay')), 'payment')
         self.assertIsNone(window_need(dict(ARTICLE, url='https://news.example/')))
+        upload = {'title': 'Upload', 'text': 'Send a photo.', 'url': 'https://shop.example/up',
+                  'controls': [{'key': '2', 'role': 'field', 'label': 'Photo', 'type': 'file', 'tag': 'input', 'href': ''}]}
+        self.assertEqual(window_need(upload), 'file')
 
     def test_show_and_hide_keep_the_page_and_reading_place(self):
         self.session.open('https://news.example/')

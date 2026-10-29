@@ -281,6 +281,7 @@ WINDOW_SHOWN = {
     'sign-in': 'Google sign-in needs a browser window, so Chrome now shows its window.',
     'check': 'This site wants to check that you are a person, so Chrome now shows its window.',
     'payment': 'This page asks for a card or payment, so Chrome now shows its window in case a helper needs to look.',
+    'file': 'This page has a box for choosing a file, and that needs a window, so Chrome now shows its window.',
     'asked': 'Chrome now shows its window.'}
 WINDOW_BACK = (' It is in front. Press Alt+Tab to come back to Voice Companion. '
                'To run Chrome in the background again, say hide browser window.')
@@ -297,7 +298,7 @@ PAYMENT_LABEL = re.compile(r'(?i)\b(?:card number|credit card|debit card|cvv|cvc
 
 
 def window_need(snapshot):
-    """Why a page needs guided Chrome's real window: 'sign-in', 'check', 'payment', or None."""
+    """Why a page needs guided Chrome's real window: 'sign-in', 'check', 'payment', 'file', or None."""
     if not snapshot:
         return None
     host = (urlsplit(str(snapshot.get('url') or '')).hostname or '').lower()
@@ -308,6 +309,8 @@ def window_need(snapshot):
     for control in snapshot.get('controls') or ():
         if str(control.get('autocomplete') or '').lower().startswith('cc-') or PAYMENT_LABEL.search(str(control.get('label') or '')):
             return 'payment'
+    if any(control.get('type') == 'file' for control in snapshot.get('controls') or ()):
+        return 'file'             # choosing a file opens Windows' own file box, which needs a window
     return None
 
 
