@@ -375,6 +375,29 @@ async function noteWordsChecks() {
   assert.deepEqual(page.notes, ['Looking up configuration']);
   // Its shape names the element kinds, never the words.
   assert.deepEqual(page.noteShapes, ['div.notification-message span button button']);
+
+  // The notice exactly as Thunderbird 159 builds it (its shape, reported from Windows): a details bar whose
+  // summary holds icons, the title, and a toggle whose plain spans say Show more and Show less, then the
+  // description. Read: the title, then the description. Never the toggle.
+  const bar = (title, description) => {
+    const titleText = new FakeElement('p', {class: 'notification-title', text: title},
+      [new FakeElement('span', {class: 'localized-title', text: title}), new FakeElement('span', {class: 'raw-title'})]);
+    const toggle = new FakeElement('div', {text: 'Show more Show less'}, [new FakeElement('span', {text: 'Show more'}), new FakeElement('span', {text: 'Show less'})]);
+    const summary = new FakeElement('summary', {class: 'notification-title-container', role: 'alert', text: title + ' Show more Show less'},
+      [new FakeElement('img', {class: 'form-icon icon-warning'}), titleText, toggle]);
+    const text = new FakeElement('p', {class: 'notification-text', text: description},
+      [new FakeElement('span', {class: 'localized-description', text: description}), new FakeElement('span', {class: 'raw-description'})]);
+    return new FakeElement('details', {class: 'notification-bar info', text: title + ' Show more Show less ' + description}, [summary, text]);
+  };
+  for (const [title, description, expected] of [
+    ['Looking up configuration', '', ['Looking up configuration']],
+    ['Thunderbird failed to find the settings for your email account', 'Check the address, or set it up by hand.',
+     ['Thunderbird failed to find the settings for your email account. Check the address, or set it up by hand.']]]) {
+    const hub = fakeWindow({hub: true, form: () => { const parts = setupForm(); parts.splice(3, 2, bar(title, description)); return parts; }});
+    const experiment = loadExperiment(hub);
+    await experiment.openAccountSetup('will@outlook.com', '', false);
+    assert.deepEqual(plain(await experiment.setupPage()).notes, expected);
+  }
 }
 
 // ---- Attachments: listed, saved in pieces, attached to new mail, replies and forwards ----
