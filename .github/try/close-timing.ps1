@@ -13,6 +13,6 @@ foreach ($version in 'old', 'new') {
                "`$t = [Diagnostics.Stopwatch]::StartNew(); `$long = Get-LongFolderPath '$folder'; `$a = `$t.Elapsed.TotalSeconds; " +
                "`$all = @(Get-CompanionProcessList); [void](Select-CompanionProcesses `$all '$folder' `$PID); " +
                "'$version close step, current folder $where : long name ' + [Math]::Round(`$a, 2) + ' s, finding programs ' + [Math]::Round(`$t.Elapsed.TotalSeconds, 2) + ' s -> ' + `$long"
-    & $shell -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1 | Out-String
+    $line = (& $shell -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1 | Out-String).Trim(); if ($line.Length -gt 260) { $line = $line.Substring(0, 260) + " ... (" + $line.Length + " characters)" }; $line
   }
 }
