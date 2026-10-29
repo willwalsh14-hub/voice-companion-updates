@@ -1502,7 +1502,7 @@ class VoiceDocument:
             removed = self.paragraphs.pop(self.cursor)
             self.cursor = min(self.cursor, max(0, len(self.paragraphs) - 1))
             self.changed()
-            return 'Deleted paragraph: ' + removed.text
+            return ('Deleted paragraph: ' + removed.text) if removed.text.strip() else 'Deleted an empty paragraph. Say undo to restore it.'
         whole_paragraph = re.match(r'replace (?:the |current |this )?paragraph with (.+)$', text, re.I | re.S)
         if whole_paragraph:
             if not self.paragraphs:

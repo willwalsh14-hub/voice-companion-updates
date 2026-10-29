@@ -261,5 +261,13 @@ class MovingPastTheEnds(DocumentFlowCase):
         self.assertEqual(self.last(), 'End of note. Call Bob.')
 
 
+class DeletingAnEmptyParagraph(DocumentFlowCase):
+    def test_it_is_named_as_empty(self):
+        app.document = VoiceDocument(self.default, title='Gaps')
+        app.document.paragraphs = [Paragraph('Text.'), Paragraph('')]; app.document.cursor = 1
+        app.handle('delete paragraph', 'document')
+        self.assertEqual(self.last(), 'Deleted an empty paragraph. Say undo to restore it.')
+
+
 if __name__ == '__main__':
     unittest.main()
