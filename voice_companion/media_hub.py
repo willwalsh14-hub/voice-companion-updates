@@ -180,6 +180,17 @@ def station_request(spoken):
     return name
 
 
+# Spoken changes to the audio itself. "Louder", "faster" and "volume up" alone change
+# Companion's voice, so these always name the audio (as YouTube's say "video").
+MEDIA_LEVEL_WORDS = {}
+for _words, _change in ((('audio volume up', 'audio louder', 'louder audio', 'media volume up', 'turn the audio up'), ('volume', 0.1)),
+                        (('audio volume down', 'audio quieter', 'quieter audio', 'audio softer', 'media volume down', 'turn the audio down'), ('volume', -0.1)),
+                        (('faster audio', 'audio faster', 'speed up audio', 'speed up the audio'), ('speed', 0.25)),
+                        (('slower audio', 'audio slower', 'slow down audio', 'slow down the audio'), ('speed', -0.25)),
+                        (('normal audio speed', 'audio normal speed', 'normal speed audio'), ('speed', 0))):
+    for _word in _words:
+        MEDIA_LEVEL_WORDS[_word] = _change
+
 # "Browse podcasts" lists the categories; these name the overall chart.
 BROWSE_CATEGORIES = ('browse podcasts', 'browse podcast', 'browse podcast categories', 'browse categories',
                      'podcast categories', 'list podcast categories', 'browse for a podcast', 'browse for podcasts')
@@ -1163,6 +1174,11 @@ class MediaHub:
             except Exception: return 'The audio player could not respond. Try opening that audio again.'
             if action=='toggle':return 'Audio paused.' if state else 'Playing audio.'
             return {'play':'Playing audio.','pause':'Audio paused.','stop':'Audio stopped.'}[action]
+        change=MEDIA_LEVEL_WORDS.get(cmd)
+        if change:
+            # "Louder" and "faster" alone change Companion's own voice; these name the audio.
+            if not self.player.kind: return 'No audio is playing. Choose a station or episode first.'
+            return self.change_level(*change)
         match=re.fullmatch(r'(rewind|back|go back|fast forward|forward|skip ahead) (.+)',cmd)
         if match:
             amount=_interval_seconds(match[2])
@@ -1183,6 +1199,32 @@ class MediaHub:
             index=current+(1 if cmd.startswith('next') else -1)
             return self.open_podcast(index+1) if 0<=index<len(self.shows) else 'There is no '+cmd+'.'
         return None
+
+    def change_level(self, setting, step):
+        """Audio volume up or down by a tenth, or speed by a quarter (0.5 to 3)."""
+        player=self.player
+        try:
+            if setting=='volume':
+                before=getattr(player,'volume',None)
+                if step>0 and isinstance(before,(int,float)) and before>=1: return 'Loudest. Volume 100 percent.'
+                if step<0 and isinstance(before,(int,float)) and before<=0: return 'Volume 0 percent. The audio is silent.'
+                value=player.adjust('volume',step)
+                return 'Volume '+str(int(round(float(value)*100)))+' percent.'
+            if player.kind=='radio' and self.player.streaming():
+                return 'A live station always plays at normal speed.'
+            current=getattr(player,'rate',1)
+            current=float(current) if isinstance(current,(int,float)) and not isinstance(current,bool) else 1.0
+            if step==0: target=1.0
+            else:
+                target=round((current+step)*4)/4
+                if target>3: return 'Fastest speed. Speed 3.'
+                if target<.5: return 'Slowest speed. Speed 0.5.'
+            rate=player.adjust('speed',target)
+            return 'Normal speed.' if abs(float(rate)-1)<.01 else 'Speed '+('%g' % float(rate))+'.'
+        except ValueError as exc:
+            return str(exc)
+        except Exception:
+            return 'The audio player could not respond. Try opening that audio again.'
 
     def download_episode(self, number):
         i=int(number)-1

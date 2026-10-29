@@ -13,14 +13,24 @@ class Action:
     command:str=''
     form:str=''
 
-RADIO=(Action('Search stations',form='search'),Action('Browse genre',form='genre'),Action('Browse country',form='country'),Action('Browse state',form='state'),Action('Browse city',form='city'),Action('Station database',form='source'),Action('List stations','list stations'),Action('List presets','list presets'),Action('Save preset',form='preset'),Action('Delete preset','delete preset'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Record selected station',form='record'),Action('Schedule selected station',form='schedule'),Action('Stop recording','stop recording'),Action('List scheduled recordings','list scheduled recordings'),Action('Cancel selected scheduled recording','cancel selected scheduled recording'),Action('List saved recordings','list recordings'),Action('Refresh station directories','refresh stations'),Action('Import RadioSure stations',form='import'))
+RADIO=(Action('Search stations',form='search'),Action('Browse genre',form='genre'),Action('Browse country',form='country'),Action('Browse state',form='state'),Action('Browse city',form='city'),Action('Station database',form='source'),Action('List stations','list stations'),Action('List presets','list presets'),Action('Save preset',form='preset'),Action('Delete preset','delete preset'),Action('Player controls','player controls'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Record selected station',form='record'),Action('Schedule selected station',form='schedule'),Action('Stop recording','stop recording'),Action('List scheduled recordings','list scheduled recordings'),Action('Cancel selected scheduled recording','cancel selected scheduled recording'),Action('List saved recordings','list recordings'),Action('Refresh station directories','refresh stations'),Action('Import RadioSure stations',form='import'))
 RADIO_STATION=(Action('Add to favorites',form='preset'),Action('Record current station',form='record'),Action('Schedule recording',form='schedule'),Action('Pause audio','pause'),Action('Play','resume'),Action('Stop recording','stop recording'),Action('Cancel scheduled recordings','list scheduled recordings'))
 # Browse means looking through lists; Search asks for a name (tester, October 2026).
-PODCASTS=(Action('Browse podcasts','browse podcasts'),Action('Top podcasts','top podcasts'),Action('Search podcasts',form='search'),Action('List podcast shows','list shows'),Action('List subscriptions','list subscriptions'),Action('Open selected podcast','open selected feed'),Action('Subscribe to selected podcast','subscribe'),Action('Remove selected subscription','remove selected subscription'),Action('Download selected episode','download this episode'),Action('List downloaded episodes','list downloads'),Action('Automatic downloads',form='automatic'),Action('Manual downloads','manual downloads'),Action('Refresh subscriptions','refresh subscriptions'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Rewind audio',form='rewind'),Action('Forward audio',form='forward'),Action('Next chapter','next chapter'),Action('Previous chapter','previous chapter'),Action('Play next episode','next episode'),Action('Play previous episode','previous episode'),Action('Open next podcast','next podcast'),Action('Open previous podcast','previous podcast'))
+PODCASTS=(Action('Browse podcasts','browse podcasts'),Action('Top podcasts','top podcasts'),Action('Search podcasts',form='search'),Action('List podcast shows','list shows'),Action('List subscriptions','list subscriptions'),Action('Open selected podcast','open selected feed'),Action('Subscribe to selected podcast','subscribe'),Action('Remove selected subscription','remove selected subscription'),Action('Download selected episode','download this episode'),Action('List downloaded episodes','list downloads'),Action('Automatic downloads',form='automatic'),Action('Manual downloads','manual downloads'),Action('Refresh subscriptions','refresh subscriptions'),Action('Player controls','player controls'),Action('Pause audio','pause'),Action('Resume audio','resume'),Action('Stop audio','stop'),Action('Rewind audio',form='rewind'),Action('Forward audio',form='forward'),Action('Next chapter','next chapter'),Action('Previous chapter','previous chapter'),Action('Play next episode','next episode'),Action('Play previous episode','previous episode'),Action('Open next podcast','next podcast'),Action('Open previous podcast','previous podcast'))
+
+# Player controls: a short list on the Radio or Podcasts screen, so playing never needs
+# another window (tester, October 2026). Each item is (label, command).
+NOW_PLAYING='@now playing'
+CONTROLS={'podcast':(('Play or pause','toggle audio'),('Back 30 seconds','back 30 seconds'),('Forward 30 seconds','forward 30 seconds'),
+                     ('Faster','faster audio'),('Slower','slower audio'),('Louder','audio volume up'),('Quieter','audio volume down'),
+                     ('Next episode','next episode'),('Previous episode','previous episode'),("What's playing",NOW_PLAYING),('Stop','stop audio')),
+          'radio':(('Play or pause','toggle audio'),('Louder','audio volume up'),('Quieter','audio volume down'),
+                   ("What's playing",NOW_PLAYING),('Stop','stop audio'))}
+CONTROL_WORDS=('player controls','playback controls','audio controls','show player controls','open player controls')
 
 class MediaNavigation:
     def __init__(self,hub,section='radio'):
-        self.hub=hub;self.section=section;self.focus='actions';self.index=0;self.view='stations' if section=='radio' else 'shows';self.item_index=0;self.form=None;self.field_index=0;self.pending=None;self.confirm_choice='no';self.revision=0;self.audio_paused=False;self.keyboard_mode=False;self.full_radio_actions=False
+        self.hub=hub;self.section=section;self.focus='actions';self.index=0;self.view='stations' if section=='radio' else 'shows';self.item_index=0;self.form=None;self.field_index=0;self.pending=None;self.confirm_choice='no';self.revision=0;self.audio_paused=False;self.keyboard_mode=False;self.full_radio_actions=False;self.controls_return=None
         if hub.browsing_episodes:self.view='episodes';self.focus='items';self.item_index=hub.episode_index or 0
         elif section=='podcast' and getattr(hub,'browsing_categories',False):self.view='categories';self.focus='items';self.item_index=hub.category_index or 0
         elif section=='radio' and hub.preset_browsing:self.view='presets';self.focus='items';self.item_index=hub.preset_index or 0
@@ -45,6 +55,7 @@ class MediaNavigation:
         if self.view=='presets':return h.presets()
         if self.view=='shows':return h.shows
         if self.view=='categories':return [{'name':name} for name in h.podcast_categories()]
+        if self.view=='controls':return [{'name':label} for label,_ in CONTROLS[self.section]]
         if self.view=='episodes':return h.episodes
         if self.view=='downloads':return [{'title':p.stem} for p in h.downloads()]
         if self.view=='recordings':
@@ -112,6 +123,7 @@ class MediaNavigation:
         else:
             if key in ('Tab','ShiftTab'):self.focus='items' if self.focus=='actions' else 'actions';return ('Results. ' if self.focus=='items' else 'Actions. ')+self.announce()
             if key=='Escape':
+                if self.focus=='items' and self.view=='controls':return self.leave_controls()
                 if self.focus=='items' and self.view=='episodes':return self.run('back to podcasts')
                 # A category's podcasts: Escape goes back up to the categories.
                 if self.focus=='items' and self.view=='shows' and getattr(self.hub,'shows_category',None):return self.run('back to categories')
@@ -164,8 +176,39 @@ class MediaNavigation:
         self.item_index=max(0,min(self.item_index,len(self.items())-1));self.select_item(self.item_index)
         if self.view=='scheduled':return self.run('cancel selected scheduled recording')
         if self.view=='categories':return self.run('browse podcasts category '+self.items()[self.item_index]['name'])
+        if self.view=='controls':return self.control(self.item_index)
         cmd={'stations':f'play station {self.item_index+1}','station_choices':f'choose {self.item_index+1}','presets':'play preset','shows':'open selected feed','episodes':f'play episode {self.item_index+1}','downloads':f'play download {self.item_index+1}','recordings':f'play recording {self.item_index+1}'}.get(self.view)
-        return self.run(cmd) if cmd and self.items() else self.announce()
+        if not cmd:return self.announce()
+        h=self.hub;before=self.view,self.item_index
+        result=self.run(cmd)
+        if self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith('Playing '):
+            # The episode plays here, and its controls come up at once: no other window.
+            title=str(result).split('. Say ')[0].rstrip('.')
+            return self.show_controls(title+'. ',before)
+        return result
+    def show_controls(self,lead='',back=None):
+        """The player controls list. Escape goes back to the list it came from."""
+        if not getattr(self.hub.player,'kind',None):
+            return 'Nothing is playing. Choose '+('a station' if self.section=='radio' else 'an episode')+' first.'
+        if self.view!='controls':self.controls_return=back or (self.view,self.item_index)
+        self.form=None;self.pending=None;self.view='controls';self.focus='items';self.item_index=0;self.revision+=1
+        back_to={'episodes':'the episodes','downloads':'the downloads','stations':'the stations','presets':'the presets','shows':'the podcasts'}.get((self.controls_return or ('',))[0],'the menu')
+        return lead+'Player controls. '+self.announce()+' Escape goes back to '+back_to+'.'
+    def leave_controls(self):
+        view,index=getattr(self,'controls_return',None) or ('',0)
+        self.controls_return=None;self.revision+=1
+        if view and view!='controls':
+            self.view=view;self.item_index=index;self.focus='items'
+            if self.items():self.item_index=max(0,min(index,len(self.items())-1));self.select_item(self.item_index);return self.announce()
+        self.view='stations' if self.section=='radio' else 'shows';self.focus='actions'
+        return self.announce()
+    def control(self,index):
+        label,command=CONTROLS[self.section][max(0,min(index,len(CONTROLS[self.section])-1))]
+        h=self.hub
+        if command==NOW_PLAYING:return h.now_playing()
+        if not getattr(h.player,'kind',None):return 'No audio is playing. Choose a station or episode first.'
+        self.revision+=1
+        return h.command(command,section=self.section)
     def open_form(self,name):
         def field(label,value='',choices=()):return {'label':label,'value':value,'choices':choices}
         selected=self.items()[self.item_index] if self.focus=='items' and self.items() and self.item_index<len(self.items()) else {}
@@ -222,6 +265,7 @@ class MediaNavigation:
     def run(self,text):
         if not text:return ''
         cmd=text.strip().casefold().rstrip('.!?');h=self.hub
+        if cmd in CONTROL_WORDS:return self.show_controls()
         if cmd in ('cancel selected scheduled recording','remove selected subscription'):
             if cmd.startswith('cancel'):
                 if self.view!='scheduled' or not self.items():return 'List scheduled recordings and select one first.'
