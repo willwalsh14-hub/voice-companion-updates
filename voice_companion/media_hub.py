@@ -134,6 +134,7 @@ NOT_STATION_NAMES = ('audio', 'radio', 'podcast', 'podcasts', 'the podcast', 'me
                      'next episode', 'previous episode', 'the next episode', 'the previous episode', 'station', 'a station',
                      'the station', 'radio station', 'a radio station', 'something', 'again', 'music', 'file', 'the file',
                      'a file', 'media file', 'a media file', 'my file', 'video', 'the video', 'all')
+STATION_FILLER_WORDS = ('the', 'a', 'an', 'my', 'some', 'it', 'again', 'me', 'this', 'that', 'something', 'anything')
 NOT_STATION_STARTS = ('episode', 'download', 'recording', 'preset', 'favorite', 'podcast ', 'the podcast ', 'number ',
                       'station number ', 'file ', 'the file ', 'media file ', 'chapter', 'next ', 'previous ')
 
@@ -144,8 +145,12 @@ def station_request(spoken):
     match = re.fullmatch(r'(?:please )?play (?:(?:the )?(?:radio station|station|radio) )?(.+?)(?: radio station| station| radio| on the radio)?(?: please)?', text, re.I)
     if not match:
         return None
-    name = match[1].strip(' .')
+    # Recognizers and typists may quote the name: "Play "WGN"".
+    name = match[1].strip(' .\'"\u201c\u201d\u2018\u2019')
     folded = name.casefold()
+    # "Play the radio", "Play it again": words that name no station.
+    if all(word in STATION_FILLER_WORDS for word in folded.split()):
+        return None
     if (not name or folded in NOT_STATION_NAMES or folded.startswith(NOT_STATION_STARTS)
             or _radio_number(folded) is not None or folded.isdigit()):
         return None
@@ -1174,7 +1179,9 @@ class MediaHub:
                     return self.play_station(number) if self.stations else 'Search for stations first.'
             named=re.fullmatch(r'(?:play|open|listen to|tune to)\s+(?:station\s+)?(.+)',text,re.I)
             if named and cmd not in ('play radio','play audio','play podcast') and not cmd.startswith(('play recording ','play download ','play episode ')):
-                return self.play_station_named(station_request(text) or named[1])
+                wanted = station_request(text) or named[1]
+                if not all(word in STATION_FILLER_WORDS for word in re.sub(r'\b(?:radio|station)\b', ' ', wanted.casefold()).split()):
+                    return self.play_station_named(wanted)
             if cmd in ('search','search for','search stations','search radio','find stations','find radio'):
                 self.awaiting_radio_search=True
                 return 'What station would you like to find? Say its name.'

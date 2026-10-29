@@ -174,5 +174,34 @@ class DeleteKeyTests(NewVeteranMediaTestCase):
         self.assertEqual(companion.media_navigation().keyboard('Delete'), 'Delete preset WGN? Say yes or no.')
 
 
+
+class PlayWordsThatNameNoStationTests(unittest.TestCase):
+    """"Play the radio" searched for a station called "the", which matches hundreds of
+    stations. A quoted name was searched with its quotes."""
+
+    def test_filler_words_are_not_a_station(self):
+        from media_hub import station_request
+        for words in ('Play the radio.', 'Play it again.', 'Play something.', 'Play the station.', 'Play a radio station'):
+            self.assertIsNone(station_request(words), words)
+
+    def test_real_names_still_work(self):
+        from media_hub import station_request
+        self.assertEqual(station_request('Play "WGN".'), 'WGN')
+        self.assertEqual(station_request('Play \u201cThe Breeze\u201d radio.'), 'The Breeze')
+        self.assertEqual(station_request('Play the Breeze.'), 'the Breeze')
+        self.assertEqual(station_request('Play WGN on the radio.'), 'WGN')
+
+
+class PlayTheRadioOnTheRadioScreenTests(NewVeteranMediaTestCase):
+    def test_play_the_radio_is_not_a_search_for_the(self):
+        self.say('Media', 'Radio')
+        searched = []
+        search = self.hub.search_radio
+        self.hub.search_radio = lambda kind, value: (searched.append(value), search(kind, value))[1]
+        self.say('Play the radio.')
+        self.assertEqual(searched, [])
+        self.assertEqual(self.say('Listen to WGN.'), 'Playing WGN. Say pause or stop.')
+
+
 if __name__ == '__main__':
     unittest.main()
