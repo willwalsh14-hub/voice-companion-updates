@@ -49,7 +49,8 @@ class MediaNavigation:
         if self.view=='scheduled':
             jobs=h._load('radio-schedule.json',[])
             # A damaged entry is listed so it can be removed; it never stops the app.
-            return [{'job':j,'name':(name+' at '+j['when']) if (name:=h._scheduled_name(j)) else 'A damaged schedule entry'}
+            # In words, as "List scheduled recordings" says it: never an ISO date.
+            return [{'job':j,'name':(name+', '+h._scheduled_when(j)) if (name:=h._scheduled_name(j)) else 'A damaged schedule entry'}
                     for j in (jobs if isinstance(jobs,list) else [])]
         return []
     def state(self):
