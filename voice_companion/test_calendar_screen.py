@@ -252,7 +252,7 @@ class CalendarScreenTests(CalendarHarness):
         # A repeating event: this one only (the first choice), then the rest of the series stays.
         self.press('Right', mode)
         self.press('Delete', mode)
-        self.assertEqual(self.said(), 'Group meeting repeats. Delete only this one, on Tomorrow, Tuesday, October 27, nine AM to ten AM, '
+        self.assertEqual(self.said(), 'Group meeting repeats. Delete only this one, tomorrow, Tuesday, October 27, nine AM to ten AM, '
                                       'or all of them? Say this one, all, or no. Escape keeps it.')
         self.press('Down', mode)
         self.assertEqual(self.said(), 'All of them.')
@@ -517,7 +517,7 @@ class EditEventTests(CalendarHarness):
         mode = self.open()
         self.press('Right', mode)
         app.handle('Rename event to Team meeting.', mode)
-        self.assertEqual(self.said(), 'Rename Group meeting to Team meeting? Group meeting repeats. Change only this one, on Tomorrow, '
+        self.assertEqual(self.said(), 'Rename Group meeting to Team meeting? Group meeting repeats. Change only this one, tomorrow, '
                                       'Tuesday, October 27, or all of them? Say this one, all, or no. Escape cancels.')
         self.assertEqual(app.app_context(mode)['confirmation'], 'this one')
         self.press('Enter', mode)

@@ -828,12 +828,21 @@ def ask_delete(m, event):
     return MODE
 
 
+def on_day(day, m):
+    """'on Friday, October 30', or 'tomorrow, Tuesday, October 27' (never "on Tomorrow")."""
+    words = spoken_day(day, today(m))
+    first, _, rest = words.partition(', ')
+    if first in ('Today', 'Tomorrow', 'Yesterday') and rest:
+        return first.lower() + ', ' + rest
+    return 'on ' + words
+
+
 def delete_question(m, event):
-    when = spoken_day(DAY, today(m)) + ', ' + event.when(DAY)[0].lower() + event.when(DAY)[1:]
+    hours = event.when(DAY)[0].lower() + event.when(DAY)[1:]
     if event.recurring:
-        return (event.name + ' repeats. Delete only this one, on ' + when + ', or all of them? '
+        return (event.name + ' repeats. Delete only this one, ' + on_day(DAY, m) + ', ' + hours + ', or all of them? '
                 'Say this one, all, or no. Escape keeps it.')
-    return 'Delete ' + event.name + ', ' + when + '? Say Yes or No. Escape keeps it.'
+    return 'Delete ' + event.name + ', ' + spoken_day(DAY, today(m)) + ', ' + hours + '? Say Yes or No. Escape keeps it.'
 
 
 def answer(m, command):
@@ -1219,7 +1228,7 @@ def confirm_edit(m):
                 ' Say this one, or no. Escape cancels.')
     else:
         CHOICES = ('this one', 'all', 'no')
-        tail = (' ' + name + ' repeats. Change only this one, on ' + spoken_day(event.start.date(), today(m)) +
+        tail = (' ' + name + ' repeats. Change only this one, ' + on_day(event.start.date(), m) +
                 ', or all of them? Say this one, all, or no. Escape cancels.')
     PENDING, CHOICE = ('edit', EDIT), CHOICES[0]
     m.speak(edit_question(m) + passed + tail)
