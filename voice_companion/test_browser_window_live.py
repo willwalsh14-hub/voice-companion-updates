@@ -86,11 +86,24 @@ class BackgroundChromeLiveTests(unittest.TestCase):
         self.addCleanup(self.backend.close)
 
     def command_line(self):
-        session = self.backend.context.browser.new_browser_cdp_session()
+        """Chrome's own command line: from Chrome when it gives it, else from Windows."""
         try:
-            return session.send('Browser.getBrowserCommandLine')['arguments']
-        finally:
-            session.detach()
+            session = self.backend.context.browser.new_browser_cdp_session()
+            try:
+                return session.send('Browser.getBrowserCommandLine')['arguments']
+            finally:
+                session.detach()
+        except Exception:
+            if sys.platform != 'win32':
+                raise
+        import subprocess
+        script = ("Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | "
+                  "Where-Object { $_.CommandLine -like ('*' + $env:VC_PROFILE + '*') -and $_.CommandLine -notlike '*--type=*' } | "
+                  "Select-Object -First 1 -ExpandProperty CommandLine")
+        found = subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True, text=True,
+                               timeout=60, env={**os.environ, 'VC_PROFILE': self.folder}).stdout.strip()
+        self.assertTrue(found, 'Chrome\'s command line was not found')
+        return found.split()
 
     def test_runs_headless_with_sound_and_its_usual_name(self):
         self.backend.goto(self.url)
