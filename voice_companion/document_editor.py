@@ -1272,6 +1272,10 @@ class VoiceDocument:
             return 'Deleted line: ' + (line or 'blank line') + '. Say undo to restore it.'
         if command == 'delete current word':
             command = 'delete word'
+        if command in ('copy', 'cut') and self.selection and self.selected_text():
+            # "Copy" alone right after "Select all" means the selection, as Control+C does.
+            # With nothing selected it stays text (see the caller).
+            return self._apply_selection_action(self.selection, command)
         current = re.fullmatch(r'(select|highlight|bold|underline|italicize|copy|cut|delete) (?:the )?(?:current |this )?(word|sentence|paragraph|line|selection|that)', command)
         if current and current.group(2) in ('selection','that'):
             if not self.selection:

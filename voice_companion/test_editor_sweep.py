@@ -195,5 +195,36 @@ class EmptyFolderKeys(DocumentFlowCase):
                 self.assertEqual(self.said, ['This folder is empty.'])
 
 
+class CopyOrCutWhatIsSelected(DocumentFlowCase):
+    """With text selected, "Copy" or "Cut" alone acts on it, as Control+C and Control+X do.
+    With nothing selected, the word is still written."""
+    def setUp(self):
+        super().setUp()
+        import document_editor
+        self.clip = []
+        self.stack.enter_context(patch.object(document_editor, 'copy_to_clipboard', self.clip.append))
+        app.document = VoiceDocument(self.default, title='Sel'); app.document.append_text('The quick brown fox.')
+
+    def text(self):
+        return ' '.join(p.text for p in app.document.paragraphs)
+
+    def test_copy(self):
+        app.handle('select all', 'document'); app.handle('Copy.', 'document')
+        self.assertEqual(self.text(), 'The quick brown fox.')
+        self.assertEqual(self.clip, ['The quick brown fox.'])
+
+    def test_cut(self):
+        app.handle('select all', 'document'); app.handle('cut', 'document')
+        self.assertEqual(self.text(), '')
+        self.assertEqual(self.clip, ['The quick brown fox.'])
+        app.handle('undo', 'document')
+        self.assertEqual(self.text(), 'The quick brown fox.')
+
+    def test_without_a_selection_the_word_is_text(self):
+        app.handle('go to end of document', 'document'); app.handle('Copy', 'document')
+        self.assertIn('Copy', self.text())
+        self.assertEqual(self.clip, [])
+
+
 if __name__ == '__main__':
     unittest.main()
