@@ -197,6 +197,14 @@ function choices(win) {
     .filter(choice => choice.label).slice(0, 6);
 }
 
+// How a notice is built, by element kind, class and role only (never its words), so a wrongly read
+// notice can be named and fixed.
+function shape(element) {
+  const one = e => String(e.localName || '') + (e.className ? '.' + String(e.className).trim().split(/\s+/).join('.') : '') +
+    (e.getAttribute && e.getAttribute('role') ? '[' + e.getAttribute('role') + ']' : '') + (e.shadowRoot ? '#shadow' : '');
+  return [one(element)].concat(descendants(element, [], 0).slice(0, 20).map(one)).join(' ').slice(0, 400);
+}
+
 // What a notice says, without the words of buttons inside it (Thunderbird 159: "Show more", "Show less").
 function noteText(element) {
   let said = text(element);
@@ -220,12 +228,15 @@ function page(win) {
   const elements = descendants(roots[0], [], 0).filter(visible);
   // The last visible heading is the current step's; the first is Thunderbird's own banner.
   const title = elements.filter(e => /^h[1-3]$/.test(e.localName || '')).pop() || {textContent: ''};
-  const notes = [];
+  const notes = [], noteShapes = [];
   for (const element of elements) {
     const kind = (element.getAttribute('role') || '') + ' ' + String(element.className || '') + ' ' + element.id;
     if (/\balert\b|error|warning|notification|status/i.test(kind)) {
       const said = noteText(element).slice(0, 200);
-      if (said && !notes.includes(said) && notes.length < 5) notes.push(said);
+      if (said && !notes.includes(said) && notes.length < 5) {
+        notes.push(said);
+        noteShapes.push(shape(element));
+      }
     }
   }
   const button = mainButton(win);
@@ -235,7 +246,7 @@ function page(win) {
     .map(e => String(e.getAttribute('type') || 'text') + (e.id ? '#' + e.id : '')).slice(0, 12);
   return {open: true, title: text(title).slice(0, 200), notes, button: button ? text(button).slice(0, 60) : '',
     canContinue: Boolean(button && !button.disabled), needsPassword: passwords.some(p => !p.value), fields,
-    addressFilled: addressFilled(win), choices: choices(win)};
+    addressFilled: addressFilled(win), choices: choices(win), noteShapes};
 }
 
 // ---- Sign-in in Voice Companion's browser -------------------------------------
@@ -496,6 +507,8 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
               steady = prefilled ? steady + 1 : 0;
               await wait(win, FILL_WAIT_MS);
             }
+            // The hub may have reset its form during the last wait: fill it in again before answering.
+            fillPending(win);
             prefilled = Boolean(pending) && addressFilled(win);
           } catch (error) { prefilled = false; }
           return {opened: true, prefilled};
