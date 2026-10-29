@@ -44,6 +44,14 @@ class CalendarScreenTests(CalendarHarness):
         self.assertEqual(self.said(), 'Calendar. Today, Monday, October 26. 1 event. '
                          'Ten thirty AM to eleven AM, Doctor appointment, me@gmail.com, 1 of 1.')
 
+    def test_everyday_words_open_the_calendar_from_the_main_menu(self):
+        for words in ('Go to calendar.', 'go to my calendar', 'View my calendar', 'open the calendar', 'Show my schedule',
+                      'open my schedule', 'my appointments'):
+            with self.subTest(words=words):
+                self.assertEqual(app.handle(words, 'awake'), 'calendar')
+                self.assertTrue(self.said().startswith('Calendar. Today, Monday, October 26. 1 event.'), self.said())
+                calendar_screen.reset()
+
     def test_days_and_weeks_with_the_arrow_and_page_keys(self):
         mode = self.open()
         self.press('Right', mode)

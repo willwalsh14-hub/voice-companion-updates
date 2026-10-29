@@ -415,6 +415,14 @@ class ContactsScreenTests(CompanionHarness):
         mode = app.handle('no thanks', mode)
         self.assertEqual(self.said(), 'Saved Tim in Thunderbird, me@gmail.com. Tim, tim@example.com, 6 of 6.')
 
+    def test_everyday_words_open_contacts_from_the_main_menu(self):
+        for words in ('Go to contacts.', 'Show my address book', 'open my address book', 'View my contacts', 'open the contacts',
+                      'Phone book'):
+            with self.subTest(words=words):
+                self.assertEqual(app.handle(words, 'awake'), 'contacts')
+                self.assertTrue(self.said().startswith('Contacts. 5 contacts.'), self.said())
+                contacts_screen.reset()
+
     def test_old_google_contacts_command_points_to_thunderbird(self):
         app.handle('connect google contacts', 'awake')
         self.assertIn('Google contacts now come from Thunderbird.', self.said())

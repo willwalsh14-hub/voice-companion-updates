@@ -43,7 +43,9 @@ PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to slee
 ADD = ('add contact', 'new contact', 'add a contact', 'create contact', 'add new contact', 'create a contact', 'add a new contact',
        'create a new contact', 'new contact please')
 OPEN = ('contacts', 'open contacts', 'my contacts', 'contact list', 'address book', 'open address book', 'show contacts',
-        'show my contacts')
+        'show my contacts', 'go to contacts', 'go to my contacts', 'open my contacts', 'open the contacts', 'view contacts',
+        'view my contacts', 'my address book', 'show address book', 'show my address book', 'open my address book',
+        'go to address book', 'phone book', 'my phone book', 'open phone book')
 # Names that are commands after "email", never a person ("email list size", "email the sender").
 RESERVED = ('commands', 'draft', 'drafts', 'help', 'list size', 'lists', 'sender', 'the sender', 'to sender', 'topics',
             'options', 'settings', 'menu', 'account', 'accounts', 'address', 'me', 'it', 'them', 'this person', 'contact',

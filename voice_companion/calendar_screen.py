@@ -38,7 +38,9 @@ NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'do not save', '
 PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'calendar menu', 'menu', 'open menu')
-OPEN = ('calendar', 'open calendar', 'my calendar', 'show calendar', 'show my calendar', 'open my calendar', 'calendar app')
+OPEN = ('calendar', 'open calendar', 'my calendar', 'show calendar', 'show my calendar', 'open my calendar', 'calendar app',
+        'go to calendar', 'go to my calendar', 'open the calendar', 'view calendar', 'view my calendar', 'my schedule',
+        'show my schedule', 'open my schedule', 'my appointments', 'show my appointments')
 ADD_WORDS = r'(?:add|new|create|make|schedule|set up|book|put)(?: an?| new)?(?: (?:event|appointment|meeting|reminder))?'
 ADD = re.compile(r'(?:' + ADD_WORDS + r')(?:(?: to| on)(?: my)? calendar)?')
 # "Add an appointment", "schedule a doctor appointment", "add a reminder": up to two words may name it,
