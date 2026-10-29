@@ -271,7 +271,7 @@ class RealThunderbirdTests(unittest.TestCase):
         with open(os.path.join(profile, 'user.js'), 'w') as handle:
             handle.write('user_pref("mail.shell.checkDefaultClient", false);\n')
         info = subprocess.STARTUPINFO(); info.dwFlags |= subprocess.STARTF_USESHOWWINDOW; info.wShowWindow = 7
-        subprocess.Popen([program, '-profile', profile, '-no-remote'], startupinfo=info, close_fds=True,
+        subprocess.Popen([program, '-profile', profile], startupinfo=info, close_fds=True,
                          creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
         desktop = hiding.Win32Desktop()
         watch = hiding.ThunderbirdWindows(desktop)
