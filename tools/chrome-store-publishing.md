@@ -15,7 +15,7 @@ You do this setup once. It takes about 20 minutes. A helper can do it with you.
 - Use the Google account that owns the Voice Companion Browser Connection in the Chrome Web Store.
 - The commands below run in Google Cloud Shell. It is a command line inside the browser, already signed in to your Google account. Nothing needs to be installed.
 - Paste one command at a time and press Enter. Wait for it to finish before the next one.
-- If Cloud Shell restarts, run the three lines in step 2 of Part 1 again. They set names the later commands use.
+- If Cloud Shell restarts, run the three lines in step 2 of Part 1 again. They set names the later commands use. If you are past step 3 of Part 4, run that step again too.
 - Links:
   - [Google Cloud Shell](https://shell.cloud.google.com/?show=terminal)
   - [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole)
