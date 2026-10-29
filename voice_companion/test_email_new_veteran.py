@@ -66,6 +66,40 @@ class HideThunderbirdTests(CompanionCase):
         self.assertEqual(self.last(), window_hiding.MINIMIZED_NOW)
 
 
+class SendWithoutAccountTests(CompanionCase):
+    """An email written before any account was set up."""
+    def store(self, selected):
+        store = Mock(); store.load.return_value = {'address': 'me@gmail.com'}
+        store.selected.return_value = selected
+        store.accounts.return_value = [selected] if selected else []
+        return Mock(return_value=store)
+
+    def draft(self):
+        companion.email_draft = VoiceEmail(self.folder / 'Email Drafts', recipient='bob@example.com', subject='Hi',
+                                           provider='', compose_step='body')
+        companion.email_draft.process('See you soon.')
+        return companion.email_draft
+
+    def test_no_account_says_how_to_add_one_once(self):
+        # Before: "Choose a connected email account first. The draft has not been sent.
+        # The draft is saved locally. It has not been sent." There was none to choose.
+        self.draft()
+        with patch.object(companion, 'ProtectedStore', self.store(None)):
+            companion.handle('send it', 'email_draft')
+        self.assertEqual(self.last(), 'No email account is set up yet. Say add account to set one up. '
+                                      'The draft is saved locally. It has not been sent.')
+        self.assertIsNone(companion.pending_send)
+
+    def test_an_account_added_later_sends_the_draft(self):
+        # Before: the draft could never be sent: no command chooses an account for it.
+        draft = self.draft()
+        with patch.object(companion, 'ProtectedStore', self.store(('thunderbird', 'me@gmail.com'))):
+            companion.handle('send it', 'email_draft')
+        self.assertTrue(self.last().startswith('Review before sending. From Thunderbird, me@gmail.com. To bob@example.com.'), self.last())
+        self.assertEqual(draft.provider, 'thunderbird')
+        self.assertEqual(companion.pending_send, (draft.send_hash(), 'thunderbird', 'me@gmail.com'))
+
+
 class AccountTypeQuestionTests(CompanionCase):
     """'Add account' asks Thunderbird or Yahoo, as a list."""
     def setUp(self):

@@ -4715,8 +4715,18 @@ def _handle(text, mode, typed=False):
                     email_draft.move_to_account(chosen[0])
                     provider = email_draft.provider
                     recipient, subject, body = message_parts(email_draft)
+                if not provider:
+                    # Written before any account was set up: it goes from the account in use now.
+                    store = ProtectedStore(APP)
+                    chosen = store.selected()
+                    if not chosen:
+                        raise AccountError('No email account is selected. Say add account, or list email accounts.'
+                                           if connected_accounts(store) else
+                                           'No email account is set up yet. Say add account to set one up.')
+                    email_draft.provider = provider = chosen[0]
+                    email_draft.save()
                 if provider not in MAIL_PROVIDERS:
-                    raise AccountError('Choose a connected email account first. The draft has not been sent.')
+                    raise AccountError('Choose a connected email account first.')
                 address = ProtectedStore(APP).load(provider)['address']
                 if email_draft.response_context and email_draft.response_context.get('source_address') not in (None, address):
                     raise AccountError('This response belongs to a different mailbox.')
