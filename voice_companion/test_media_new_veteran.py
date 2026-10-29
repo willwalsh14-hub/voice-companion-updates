@@ -203,5 +203,40 @@ class PlayTheRadioOnTheRadioScreenTests(NewVeteranMediaTestCase):
         self.assertEqual(self.say('Listen to WGN.'), 'Playing WGN. Say pause or stop.')
 
 
+
+class OpenRadioAndPodcastsTests(NewVeteranMediaTestCase):
+    """"Open radio" and "Listen to the radio" were not understood, though "Open YouTube" and
+    "Open media player" work. "Podcast", said with a capital as recognizers write it,
+    searched for podcasts named "Podcast". "Open podcasts" asked for a show name, but the
+    answer then went to Radio."""
+
+    def test_natural_ways_to_open_radio(self):
+        for words in ('Open radio.', 'Listen to the radio.', 'Listen to radio', 'Open internet radio'):
+            with self.subTest(words=words):
+                self.mode = 'awake'
+                self.assertTrue(self.say(words).startswith('Radio menu.'), self.said)
+                self.assertEqual((self.mode, companion.MEDIA_SECTION), ('media', 'radio'))
+
+    def test_natural_ways_to_open_podcasts(self):
+        for words in ('Podcast.', 'Open podcasts.', 'Open podcast', 'Podcasts'):
+            with self.subTest(words=words):
+                self.mode = 'awake'
+                self.assertTrue(self.say(words).startswith('Podcasts menu.'), self.said)
+                self.assertEqual((self.mode, companion.MEDIA_SECTION), ('media', 'podcast'))
+
+    def test_the_same_words_switch_between_radio_and_podcasts(self):
+        self.say('Radio')
+        self.assertTrue(self.say('Open podcasts.').startswith('Podcasts menu.'))
+        self.assertTrue(self.say('Listen to the radio.').startswith('Radio menu.'))
+
+    def test_a_podcast_topic_with_capitals_is_searched_without_the_word_podcast(self):
+        searched = []
+        search = self.hub.search_podcasts
+        self.hub.search_podcasts = lambda term: (searched.append(term), search(term))[1]
+        self.say('Podcasts about history.')
+        self.assertEqual(searched, ['history'])
+        self.assertEqual(companion.MEDIA_SECTION, 'podcast')
+
+
 if __name__ == '__main__':
     unittest.main()

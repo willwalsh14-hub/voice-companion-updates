@@ -183,6 +183,9 @@ last_podcasts = []
 MEDIA_HUB = None
 MEDIA_NAV = None
 MEDIA_SECTION = 'radio'
+# Words that open Radio or Podcasts, from the main menu and from either screen.
+RADIO_OPEN = ('radio', 'internet radio', 'open radio', 'open internet radio', 'listen to radio', 'listen to the radio')
+PODCASTS_OPEN = ('podcasts', 'podcast', 'listen to podcasts', 'open podcasts', 'open podcast')
 MEDIA_NOTICES = queue.Queue()
 tutorial_session = None
 
@@ -4290,7 +4293,7 @@ def _handle(text, mode, typed=False):
             # Only when something is scheduled, and with the main menu in one message.
             if media().has_scheduled_recordings():MAIN_MENU_LEAD='Scheduled recordings continue while the app runs.'
             return 'awake'
-        if command in ('radio','internet radio','podcasts','listen to podcasts'):
+        if command in RADIO_OPEN+PODCASTS_OPEN:
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
             if MEDIA_SECTION == 'podcast': media().awaiting_radio_search = False
             else: media().awaiting_podcast_search = False
@@ -5032,11 +5035,11 @@ def _handle(text, mode, typed=False):
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):
         speak_prompt('Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft.')
         return 'awake'
-    if command in ('radio','internet radio'):
+    if command in RADIO_OPEN:
         MEDIA_SECTION = 'radio'
         speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
         return 'media'
-    if command in ('podcasts','listen to podcasts'):
+    if command in PODCASTS_OPEN:
         MEDIA_SECTION = 'podcast'
         media().awaiting_radio_search = False
         speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
@@ -5061,7 +5064,9 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError,IndexError,ET.ParseError): speak('Search for a podcast first.')
         return 'media'
     if 'podcast' in command:
-        topic = re.sub(r'^.*?podcasts?\s*(?:about|on|for|called)?\s*', '', text)
+        # Recognizers write "Podcasts about history." with a capital and a period.
+        topic = re.sub(r'^.*?podcasts?\s*(?:about|on|for|called)?\s*', '', text, flags=re.I).strip(' .!?')
+        MEDIA_SECTION = 'podcast'
         try: speak(media().search_podcasts(topic))
         except (OSError,ValueError): speak('Podcast search could not connect. Try later.')
         return 'media'
