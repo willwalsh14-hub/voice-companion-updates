@@ -2173,7 +2173,7 @@ Escape cancels the search. While the search box is open, the letters you type go
 To search in one step, say "Search for", then your words, such as "Search for jazz piano". From any screen, say "Search YouTube for", then your words.
 
 Filters narrow your results. Companion uses the filters YouTube offers now. To choose one:
-1. After a search, press Control+Shift+F, or say "Filters".
+1. After a search, say "Search filters", or press Control+Shift+F.
 2. You hear which filters are on. Then you hear the list: Upload date, Type, Length, Features, Sort, and Clear filters.
 3. Press Enter on a filter. You hear its choices. The one in use says "on".
 4. Press Enter on a choice. The search runs again with it. You hear the filters that are on.

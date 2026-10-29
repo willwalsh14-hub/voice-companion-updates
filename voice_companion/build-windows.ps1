@@ -183,7 +183,7 @@ if ($releaseTests.ExitCode -ne 0) {
   throw "The document, email, or browser release checks failed. See $releaseErrors"
 }
 Remove-Item Env:VOICE_COMPANION_WINDOW_TESTS_APART
-foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests','test_alt_keys_window.AltKeyWindowTests','test_save_as_window.SaveAsKeyWindowTests','test_now_playing_window.WindowNowPlayingKeyTests','test_header_keys_window.HeaderKeyWindowTests','test_youtube_window.YouTubeWindowKeyTests','test_large_heading_window.LargeHeadingWindowTests')) {
+foreach ($windowTests in @('test_keyboard_text.WindowKeyboardTests','test_input_parity.WindowScreenKeyTests','test_time_date_windows.WindowClockKeyTests','test_alt_keys_window.AltKeyWindowTests','test_save_as_window.SaveAsKeyWindowTests','test_now_playing_window.WindowNowPlayingKeyTests','test_header_keys_window.HeaderKeyWindowTests','test_youtube_window.YouTubeWindowKeyTests','test_large_heading_window.LargeHeadingWindowTests','test_youtube_window.YouTubeSearchCustomerTests')) {
   if ((Invoke-UnitTests ('Window key tests ' + $windowTests) @('-v', $windowTests)) -ne 0) { throw ('The real window key tests failed: ' + $windowTests + '. See the annotation.') }
 }
 # Real windows from a stand-in Thunderbird: in their own process, like the window key tests,

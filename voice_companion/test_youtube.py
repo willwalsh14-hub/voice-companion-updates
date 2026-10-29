@@ -327,10 +327,8 @@ class MenuAndSearchTests(NoBrowser):
                 self.app.handle('Cancel', 'youtube')
         self.assertEqual(self.loaded, [])
         # Help, sleep and Escape still work while the box is open.
-        from input_parity import screen_key
         self.app.handle('Search.', 'youtube')
-        self.assertEqual(screen_key('youtube', 'F1', 0, self.app.app_context('youtube')), 'F1')
-        self.assertEqual(self.press('F1'), 'help')
+        self.assertEqual(self.app.handle('Help with YouTube', 'youtube'), 'help')
         self.app.handle('Search.', 'youtube')
         with patch.object(self.app, 'speech_control', return_value=None):
             self.assertEqual(self.app.handle('Go to sleep.', 'youtube'), 'sleep')

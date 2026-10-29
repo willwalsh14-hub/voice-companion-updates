@@ -61,7 +61,7 @@ class ListReadingTests(LiveYouTube):
         self.assertEqual(items[-1]['duration'], 3723)
 
     def test_search_results_with_a_channel_and_a_playlist_and_filters_in_the_address(self):
-        url = search_url('bread', {'upload date': 'week', 'type': 'video', 'sort': 'view count'})
+        url = search_url('bread', {'upload date': 'week', 'type': 'video', 'sort': 'popularity'})
         yt = self.open(url)
         self.assertEqual(self.page.evaluate('window.searchFilter'), 'CAMSBAgDEAE=')
         from youtube_page import spoken_item
