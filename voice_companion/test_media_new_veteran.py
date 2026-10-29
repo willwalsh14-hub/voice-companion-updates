@@ -137,5 +137,25 @@ class DamagedMediaFilesTests(NewVeteranMediaTestCase):
         self.assertEqual(json.loads((self.folder / 'podcast-auto-files.json').read_text()), {})
 
 
+
+class AudioWordsNameWhatIsLoadedTests(unittest.TestCase):
+    """"Pause radio" while a file from the Media player plays said "A podcast is selected"."""
+
+    def test_radio_and_podcast_words_with_a_media_file(self):
+        import tempfile
+        from test_media_web_answers import StreamPlayer
+        from media_hub import MediaHub
+        with tempfile.TemporaryDirectory() as folder:
+            hub = MediaHub(folder, player=StreamPlayer())
+            hub.player.open('file:///C:/Music/song.mp3', 'song.mp3', 'local')
+            self.assertEqual(hub.command('pause radio'), 'A media file is selected. Say pause audio.')
+            self.assertEqual(hub.command('stop podcast'), 'A media file is selected. Say stop audio.')
+            self.assertFalse(hub.player.element['paused'])
+            hub.player.open('https://pod.test/1.mp3', 'Rome', 'podcast')
+            self.assertEqual(hub.command('pause radio'), 'A podcast is selected. Say pause podcast.')
+            hub.player.open('https://radio.test/wgn', 'WGN', 'radio')
+            self.assertEqual(hub.command('pause podcast'), 'A station is selected. Say pause radio.')
+
+
 if __name__ == '__main__':
     unittest.main()

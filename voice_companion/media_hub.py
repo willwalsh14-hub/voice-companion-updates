@@ -991,8 +991,11 @@ class MediaHub:
                 'play audio':'play','resume audio':'play','pause audio':'pause','stop audio':'stop'}.get(cmd)
         if action:
             if not self.player.kind: return 'No audio is playing. Choose a station or episode first.'
-            if 'radio' in cmd and self.player.kind!='radio': return 'A podcast is selected. Say '+action+' podcast.'
-            if 'podcast' in cmd and self.player.kind!='podcast': return 'A station is selected. Say '+action+' radio.'
+            if 'radio' in cmd and self.player.kind!='radio' or 'podcast' in cmd and self.player.kind!='podcast':
+                # Name what is really loaded: a media file is neither a station nor a podcast.
+                if self.player.kind=='local': return 'A media file is selected. Say '+action+' audio.'
+                if self.player.kind=='podcast': return 'A podcast is selected. Say '+action+' podcast.'
+                return 'A station is selected. Say '+action+' radio.'
             try: state=self.player.control(action)
             except Exception: return 'The audio player could not respond. Try opening that audio again.'
             if action=='toggle':return 'Audio paused.' if state else 'Playing audio.'
