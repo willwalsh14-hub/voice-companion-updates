@@ -66,6 +66,48 @@ class HideThunderbirdTests(CompanionCase):
         self.assertEqual(self.last(), window_hiding.MINIMIZED_NOW)
 
 
+class AccountTypeQuestionTests(CompanionCase):
+    """'Add account' asks Thunderbird or Yahoo, as a list."""
+    def setUp(self):
+        super().setUp()
+        for name, value in (('account_setup', False), ('ACCOUNT_MENU_INDEX', None), ('ACCOUNT_ENTRY', None)):
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+
+    def press(self, key, mode):
+        request = companion.navigation_key(key, mode)
+        return companion.handle(request, mode) if isinstance(request, str) else mode
+
+    def test_escape_cancels_the_question_on_every_screen(self):
+        # Before: Escape on the main menu asked "Exit Voice Companion?", and in the inbox it
+        # left the question waiting, so later commands heard "Say Thunderbird, Yahoo, or cancel."
+        for mode in ('awake', 'mailbox'):
+            companion.mail_session = MailSession('thunderbird', self.folder, FakeClient) if mode == 'mailbox' else None
+            companion.handle('add account', mode)
+            self.assertEqual(self.press('Escape', mode), mode)
+            self.assertEqual(self.last(), 'Account setup canceled.')
+            self.assertFalse(companion.account_setup)
+
+    def test_next_previous_and_that_one_by_voice(self):
+        # Before: "Next" said "Say Thunderbird, Yahoo, or cancel" while Down Arrow moved.
+        companion.handle('add account', 'awake')
+        companion.handle('next', 'awake')
+        self.assertTrue(self.last().startswith('Thunderbird'), self.last())
+        companion.handle('next', 'awake')
+        self.assertTrue(self.last().startswith('Yahoo'), self.last())
+        companion.handle('next', 'awake')
+        self.assertEqual(self.last(), 'End of list.')
+        companion.handle('previous', 'awake')
+        self.assertTrue(self.last().startswith('Thunderbird'), self.last())
+        companion.handle('cancel', 'awake')
+        # A new question starts at the top again.
+        companion.handle('add account', 'awake')
+        companion.handle('next', 'awake')
+        companion.handle('next', 'awake')
+        companion.handle('that one', 'awake')
+        self.assertFalse(companion.account_setup)
+        self.assertEqual(companion.ACCOUNT_ENTRY, {'provider': 'yahoo', 'step': 'address'})
+
+
 class DraftFieldTests(CompanionCase):
     def new_email(self):
         companion.email_draft = VoiceEmail(self.folder / 'Email Drafts', provider='thunderbird')

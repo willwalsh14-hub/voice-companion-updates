@@ -987,6 +987,8 @@ def _navigation_key(key,mode):
     if key=='Control':return None
     menu_key=screen_menu().keyboard(key,mode)
     if menu_key is not None:return menu_key
+    # "Add account" asks Thunderbird or Yahoo: Escape cancels it on every screen, as it says.
+    if account_setup and key=='Escape':return 'cancel account setup'
     if ACCOUNT_PICKER is not None and ACCOUNT_PICKER.get('mode')==mode and not ACCOUNT_PICKER.get('confirm'):
         request=account_picker_key(key)
         if request!='':return request
@@ -3515,7 +3517,7 @@ def thunderbird_setup_answer(command, mode):
 
 def _handle(text, mode, typed=False):
     global DOCUMENT_NAMING_ACTION, THUNDERBIRD_SIGN_IN
-    global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX
+    global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX, ACCOUNT_MENU_INDEX
     global SLEEP_RETURN_MODE, document, email_draft, pending_website, pending_send, mail_session, web_session, account_setup, INPUT_MODE, VOICE_PICK_INDEX, VOICE_PICK_ORIGINAL, VOICE_PICK_CONFIRM, MEDIA_SECTION, help_session, help_return_mode, tutorial_session, AI_VOICE_NAME
     text = text.strip()
     global UPDATE_MANUAL, UPDATE_LAST_PERCENT, SETTINGS_PANEL, SETTINGS_RETURN_MODE, VERBOSITY, PENDING_DOCUMENT_NAME, DOCUMENT_NAME_RETURN, DOCUMENT_CLOSE_TARGET, CONFIRM_CHOICE, SAVE_AS_TITLE, SAVE_AS_FOLDER
@@ -4428,13 +4430,25 @@ def _handle(text, mode, typed=False):
         command = direct_connection[1]
     if command in ('add account', 'add another account', 'add email account', 'connect email account', 'set up email'):
         account_setup = True
+        ACCOUNT_MENU_INDEX = None
         speak(ACCOUNT_TYPE_PROMPT)
         return mode
     if account_setup:
-        if command in ('cancel', 'cancel account setup'):
+        if command in ('cancel', 'cancel account setup', 'escape', 'never mind', 'nevermind', 'go back', 'stop'):
             account_setup = False
             speak('Account setup canceled.')
             return mode
+        if command in ('next', 'previous'):
+            # By voice as with the arrows: a list with a start and an end.
+            step = 1 if command == 'next' else -1
+            if ACCOUNT_MENU_INDEX is not None and not 0 <= ACCOUNT_MENU_INDEX + step < len(ACCOUNT_TYPES):
+                speak('Start of list.' if step < 0 else 'End of list.')
+                return mode
+            ACCOUNT_MENU_INDEX = bounded_index(ACCOUNT_MENU_INDEX, step, len(ACCOUNT_TYPES))
+            speak(announce_item(ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][0], ACCOUNT_MENU_INDEX, len(ACCOUNT_TYPES)))
+            return mode
+        if command in PICK_CONFIRM and ACCOUNT_MENU_INDEX is not None:
+            command = ACCOUNT_TYPES[ACCOUNT_MENU_INDEX][1]
         if command in THROUGH_THUNDERBIRD:
             account_setup = False
             return start_thunderbird_add(mode, THROUGH_THUNDERBIRD[command] + ' works through Thunderbird.')
