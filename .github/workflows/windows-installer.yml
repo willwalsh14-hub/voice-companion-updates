@@ -30,6 +30,12 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+      - name: Check the browser extension version was raised
+        if: github.event_name == 'pull_request'
+        run: |
+          # The Chrome Web Store refuses a changed extension without a higher version.
+          git fetch --no-tags --depth=1 origin main
+          python ./tools/extension_version_guard.py --base FETCH_HEAD
       - name: Check experimental regular-browser message handling
         run: node ./voice_companion/regular_browser_extension/test-worker.cjs
       - name: Check Thunderbird mail add-on
