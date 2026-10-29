@@ -183,6 +183,9 @@ last_podcasts = []
 MEDIA_HUB = None
 MEDIA_NAV = None
 MEDIA_SECTION = 'radio'
+# Words that open Radio or Podcasts, from the main menu and from either screen.
+RADIO_OPEN = ('radio', 'internet radio', 'open radio', 'open internet radio', 'listen to radio', 'listen to the radio')
+PODCASTS_OPEN = ('podcasts', 'podcast', 'listen to podcasts', 'open podcasts', 'open podcast')
 MEDIA_NOTICES = queue.Queue()
 tutorial_session = None
 
@@ -876,11 +879,12 @@ def clock_text_entry(mode, typed=False):
     return mode=='web' and web_session is not None and bool(getattr(web_session,'keyboard_field',None))
 
 
-def now_playing():
+def now_playing(mode=None):
     """What plays now, for "What's playing?" and F3."""
     video=__import__('youtube_screen').now_playing(sys.modules[__name__])  # a YouTube video, when it is what plays
     if video:return video
-    if MEDIA_HUB is None:return __import__('media_hub').NOTHING_PLAYING
+    nothing=__import__('youtube_screen').NOTHING_PLAYING if mode=='youtube' else __import__('media_hub').NOTHING_PLAYING
+    if MEDIA_HUB is None or not MEDIA_HUB.player.kind:return nothing
     try:return MEDIA_HUB.now_playing()
     except Exception:return 'The audio player did not answer. Choose the station, episode or file again.'
 
@@ -955,7 +959,7 @@ def navigation_key(key,mode):
     if key=='F3':
         # F3 says what plays now, on every screen; it changes nothing (Will, October 2026).
         previous=KEYBOARD_NAVIGATION;KEYBOARD_NAVIGATION=True
-        try:interrupt_speech();speak(now_playing())
+        try:interrupt_speech();speak(now_playing(mode))
         finally:KEYBOARD_NAVIGATION=previous
         return None
     if key in time_date.KEY_REQUESTS:
@@ -3593,7 +3597,7 @@ def _handle(text, mode, typed=False):
         speak_clock(clock);return mode
     # "What's playing?" works on every screen too, and is text where people write.
     if now_playing_asked(text,mode,typed):
-        speak(now_playing());return mode
+        speak(now_playing(mode));return mode
     # "Bigger text", "Change colors", "Full screen": the screen for low vision, from every screen
     # where words are commands. In a document, email, note or text box they are text.
     display=__import__('display_options').voice_request(text) if mode!='settings' and not clock_text_entry(mode,typed) else None
@@ -4334,7 +4338,7 @@ def _handle(text, mode, typed=False):
         return 'media'
     if mode=='media' and MEDIA_HUB and (media_navigation().form or media_navigation().pending) and spoken_control(command) is None and command not in ('main menu','back to main menu','leave radio','leave podcasts'):
         speak(media_navigation().command(text));return 'media'
-    if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media')) or re.fullmatch(
+    if MEDIA_HUB is not None and ((command in ('pause','stop','play','resume') and (MEDIA_HUB.player.kind or mode == 'media' and command != 'play')) or re.fullmatch(
             r'(?:play|resume|pause|stop) (?:radio|podcast|audio)',command) or
             re.fullmatch(r'(?:rewind|back|go back|fast forward|forward|skip ahead) (?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|fifty|sixty)\b.*(?:seconds?|minutes?|hours?)',command) or
             (mode != 'media' and command in ('next chapter','previous chapter','next episode','previous episode',
@@ -4346,7 +4350,7 @@ def _handle(text, mode, typed=False):
             # Only when something is scheduled, and with the main menu in one message.
             if media().has_scheduled_recordings():MAIN_MENU_LEAD='Scheduled recordings continue while the app runs.'
             return 'awake'
-        if command in ('radio','internet radio','podcasts','listen to podcasts'):
+        if command in RADIO_OPEN+PODCASTS_OPEN:
             MEDIA_SECTION = 'podcast' if 'podcast' in command else 'radio'
             if MEDIA_SECTION == 'podcast': media().awaiting_radio_search = False
             else: media().awaiting_podcast_search = False
@@ -5125,11 +5129,11 @@ def _handle(text, mode, typed=False):
     if 'email' in command or 'inbox' in command or re.search(r'\bmail\b', command):
         speak_prompt('Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft.')
         return 'awake'
-    if command in ('radio','internet radio'):
+    if command in RADIO_OPEN:
         MEDIA_SECTION = 'radio'
         speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
         return 'media'
-    if command in ('podcasts','listen to podcasts'):
+    if command in PODCASTS_OPEN:
         MEDIA_SECTION = 'podcast'
         media().awaiting_radio_search = False
         speak_prompt(media_navigation().enter(MEDIA_SECTION,keyboard=KEYBOARD_NAVIGATION))
@@ -5154,7 +5158,9 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError,IndexError,ET.ParseError): speak('Search for a podcast first.')
         return 'media'
     if 'podcast' in command:
-        topic = re.sub(r'^.*?podcasts?\s*(?:about|on|for|called)?\s*', '', text)
+        # Recognizers write "Podcasts about history." with a capital and a period.
+        topic = re.sub(r'^.*?podcasts?\s*(?:about|on|for|called)?\s*', '', text, flags=re.I).strip(' .!?')
+        MEDIA_SECTION = 'podcast'
         try: speak(media().search_podcasts(topic))
         except (OSError,ValueError): speak('Podcast search could not connect. Try later.')
         return 'media'

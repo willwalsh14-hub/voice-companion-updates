@@ -28,7 +28,7 @@ class MediaHubTests(unittest.TestCase):
         self.assertIn('WJLB', self.hub.command('list presets', section='radio'))
         for phrase in ('preset list', 'list favorites', 'favorites list', 'favorite list'):
             self.assertIn('WJLB', self.hub.command(phrase, section='radio'))
-        self.assertIn('news', self.hub.command('next', section='radio'))
+        self.assertIn('News', self.hub.command('next', section='radio'))
         self.hub.player.open = lambda *args: None
         self.assertIn('Playing preset', self.hub.command('that one', section='radio'))
         self.assertEqual(self.hub.current_station['url'], 'https://radio.example/wgn')
@@ -37,9 +37,9 @@ class MediaHubTests(unittest.TestCase):
         self.assertEqual(len(self.hub.presets()), 2)
         self.hub.command('delete preset WJLB 97.9', section='radio')
         self.assertIn('Deleted preset', self.hub.command('yes', section='radio'))
-        self.assertEqual([p['name'] for p in self.hub.presets()], ['news'])
+        self.assertEqual([p['name'] for p in self.hub.presets()], ['News'])
         reopened = MediaHub(self.temp.name, player=self.hub.player)
-        self.assertIn('news', reopened.command('list presets', section='radio'))
+        self.assertIn('News', reopened.command('list presets', section='radio'))
 
     def test_all_save_phrases_use_same_radio_preset_action(self):
         self.hub.stations = [{'name':'First','url':'https://radio.example/one'}]
@@ -48,7 +48,7 @@ class MediaHubTests(unittest.TestCase):
                        'save preset as Three', 'save favorite as Four'):
             self.assertIn('Saved preset', self.hub.command(phrase, section='radio'))
         self.assertEqual([item['name'] for item in self.hub.presets()],
-                         ['one','two','three','four'])
+                         ['One','Two','Three','Four'])
         self.assertIn('Saved preset', self.hub.command('add preset', section='radio'))
         for phrase in ('add favorite', 'save preset', 'save favorite'):
             self.assertIn('already exists', self.hub.command(phrase, section='radio'))

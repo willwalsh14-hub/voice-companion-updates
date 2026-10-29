@@ -67,6 +67,8 @@ HOME_EMPTY = ('YouTube shows no Home videos yet. It picks them from what you wat
 UNEXPECTED = ('YouTube did not answer as expected, so that could not be done. '
               'Try again, or say open in browser to use the page itself.')
 NO_VIDEO = 'No video is playing. Choose a video and press Enter.'
+# "What's playing?" and F3 on this screen when nothing at all plays; not the radio hint.
+NOTHING_PLAYING = 'Nothing is playing. Choose a video and press Enter to play it.'
 SIGN_IN_NEEDED = ('You are not signed in to YouTube. To {action}, say sign in. '
                   'You type your own email and password on Google\'s page.')
 EMBEDDED_EDGE = ('Google does not allow signing in inside embedded Edge, so YouTube is signed out here. '
@@ -1361,6 +1363,11 @@ def here(m, s, raw, command):
     if raw.startswith('@youtube:filter:'):
         m.speak(s.change_filter(int(raw.rsplit(':', 1)[1])))
         return MODE
+    if command in ('stop', 'resume') and s.has_video():
+        # As with radio: while a video is loaded, "Stop" and "Resume" mean the video,
+        # not Companion's voice ("Stop talking" still silences the voice).
+        m.speak(run(m, s, 'stop' if command == 'stop' else 'play', raw, command))
+        return MODE
     if command in PASS_THROUGH or command.startswith(('help with ', 'help for ')) or m.speech_control(raw) \
             or m.speech_setting_request(raw) is not None or command in m.VOICE_LIST_COMMANDS:
         return None
@@ -1460,6 +1467,11 @@ def run(m, s, action, raw, command):
         'next item': lambda: s.move(1), 'previous item': lambda: s.move(-1), 'first': lambda: s.move(to='first'),
         'last': lambda: s.move(to='last'), 'enter': s.enter,
     }
+    if action == 'play' and not s.has_video():
+        # "Play" on a chosen video, before any video plays: play it, as Enter does.
+        view, item = s.view(), s.current()
+        if view and view['kind'] == 'list' and item and item.get('kind') in ('video', 'short') and item.get('id'):
+            return s.enter()
     if action in simple:
         return simple[action]()
     if action in yp.FEEDS:

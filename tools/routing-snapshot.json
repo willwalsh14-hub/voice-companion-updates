@@ -2773,7 +2773,7 @@
 },
 "awake | open podcast": {
 "said": [
-"What podcast would you like to find? Say its name."
+"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2998,7 +2998,7 @@
 },
 "awake | podcast": {
 "said": [
-"What podcast would you like to find? Say its name."
+"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
