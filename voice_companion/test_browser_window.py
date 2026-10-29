@@ -164,6 +164,27 @@ class SwitchingTests(unittest.TestCase):
         self.assertEqual(self.backend.url, 'https://news.example/')
         self.assertEqual(self.session.browser_window(False), web_assistant.WINDOW_ALREADY_HIDDEN)
 
+    def test_show_on_an_error_page_does_not_say_chrome_is_in_front(self):
+        """On "This page could not open", Show browser window closed Chrome, then said it was
+        in front; the old page text stayed and every command acted on a closed browser."""
+        self.backend.pages['chrome-error://chromewebdata/'] = {'title': 'news.example', 'text': 'This site cannot be reached.', 'controls': []}
+        self.session.open('https://news.example/')
+        self.backend.url = 'chrome-error://chromewebdata/'; self.session._refresh(read=False)
+        said = self.session.browser_window(True)
+        self.assertNotIn('It is in front', said)
+        self.assertEqual(said, web_assistant.WINDOW_SHOWN['asked'] + ' It opens when you open a website.')
+        self.assertIsNone(self.session.snapshot)
+        self.assertEqual(self.session.open('https://news.example/').count('Page'), 1)
+        self.assertEqual(self.backend.starts[-1], False)
+
+    def test_option_change_on_an_error_page_does_not_claim_the_same_page(self):
+        self.backend.pages['chrome-error://chromewebdata/'] = {'title': 'news.example', 'text': 'This site cannot be reached.', 'controls': []}
+        with mock.patch.object(web_assistant, 'CHROME_IN_BACKGROUND', False):
+            self.session.open('https://news.example/')
+            self.backend.url = 'chrome-error://chromewebdata/'; self.session._refresh(read=False)
+        self.assertEqual(self.session.window_option_changed(), 'Chrome opens the new way when you open a website.')
+        self.assertIsNone(self.session.snapshot)
+
     def test_hide_refused_while_the_page_still_needs_the_window(self):
         self.session.open('https://accounts.google.com/signin')
         self.assertEqual(self.session.browser_window(False), web_assistant.WINDOW_STILL_NEEDED)

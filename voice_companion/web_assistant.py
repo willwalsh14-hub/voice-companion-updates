@@ -295,6 +295,7 @@ WINDOW_NOT_CHROME = 'Only guided Chrome can run in the background. Embedded Edge
 WINDOW_OWN_BROWSER = ('You are using your own browser, and it keeps its own window. Press Alt+Tab to find it. '
                       'Only guided Chrome can run in the background.')
 WINDOW_FAILED = 'Chrome could not open again. Say open website to try again.'
+WINDOW_NEXT_SITE = ' It opens when you open a website.'
 WINDOW_SWITCHING = 'Opening Chrome again in the same place. This takes a moment.'
 # A button opened a box for choosing a file, but Chrome runs in the background with no window to show it.
 FILE_BOX_HIDDEN = ('This button opens a box for choosing a file. That box needs Chrome\'s window. '
@@ -2019,7 +2020,11 @@ class WebSession:
         backend.window_reason=reason
         backend.close()
         if not url or not self.address_allowed(url):
-            return said
+            # No web page to open again, such as "This page could not open": Chrome is
+            # closed now, so its old page view is gone, and it opens the new way next time.
+            self.snapshot=None;self.browse=None;self.document_state=None
+            self.reading.set_text('',reset=True)
+            return WINDOW_SHOWN['asked']+WINDOW_NEXT_SITE if reason is not None else said
         try:
             backend.goto(url)
             result=self._refresh_page(False if read is None else read)
@@ -2043,7 +2048,8 @@ class WebSession:
             backend.window_reason=need
             return 'This page needs Chrome\'s window, so it stays open. Say hide browser window after you leave this page.'
         result=self._relaunch(None,False,'')
-        return WINDOW_FAILED if result==WINDOW_FAILED else 'Chrome opened again the new way, on the same page.'
+        if result==WINDOW_FAILED:return WINDOW_FAILED
+        return 'Chrome opened again the new way, on the same page.' if self.snapshot else 'Chrome opens the new way when you open a website.'
 
     def browser_window(self,show):
         """ "Show browser window" and "hide browser window". Returns what to say."""
@@ -2061,7 +2067,7 @@ class WebSession:
                 return WINDOW_ALREADY_SHOWN
             if not self.snapshot:
                 backend.window_reason='asked'
-                return WINDOW_SHOWN['asked']+' It opens when you open a website.'
+                return WINDOW_SHOWN['asked']+WINDOW_NEXT_SITE
             return self._show_window('asked')
         if backend.window_reason is None:
             return WINDOW_ALREADY_HIDDEN
