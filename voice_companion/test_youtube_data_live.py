@@ -163,6 +163,17 @@ class ScreenTests(DataPages):
         self.press('End'); self.press('Down')
         self.assertTrue(self.last().startswith('Rye bread. Baker.'), self.last())
 
+    def test_signed_out_your_own_lists_say_to_sign_in(self):
+        # Real youtube.com sends a signed-out browser from /feed/channels to Google's sign-in page.
+        self.context.route('https://accounts.google.com/**', lambda route: route.fulfill(
+            status=200, content_type='text/html', body='<title>Sign in - Google Accounts</title><h1>Sign in</h1>'))
+        self.context.route('https://www.youtube.com/feed/channels', lambda route: route.fulfill(
+            status=200, content_type='text/html',
+            body='<script>location.replace("https://accounts.google.com/ServiceLogin?service=youtube")</script>'))
+        self.say('YouTube.', 'awake'); self.say('Subscriptions.')
+        self.assertEqual(self.last(), self.ys.SIGN_IN_NEEDED.format(action='see subscriptions'))
+        self.assertIs(self.ys.SCREEN.signed_in, False)
+
     def test_the_account_item_reads_sign_out_when_signed_in(self):
         self.say('YouTube.', 'awake')
         self.assertEqual(self.app.menu_state('youtube')[0][-1], 'Sign in or sign out')

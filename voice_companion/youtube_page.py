@@ -58,6 +58,10 @@ class YouTubeError(Exception):
     """A plain message for the user. Never a crash."""
 
 
+class SignedOut(YouTubeError):
+    """YouTube sent the browser to Google's sign-in page instead of your list."""
+
+
 # ---------------------------------------------------------------- search filters
 # YouTube keeps search filters in the "sp" part of the address. It is a small
 # protocol-buffer message: field 1 is the sort order; field 2 holds the filters.
@@ -352,6 +356,18 @@ ARIA = re.compile(r'^(?P<title>.+?) by (?P<channel>.+?) (?P<views>(?:[\d,.]+\s?[
                   r'(?P<age>(?:Streamed )?\d+ \w+ ago)(?: (?P<duration>.+?))?$')
 
 
+SHORT_AGE = {'y': 'year', 'yr': 'year', 'mo': 'month', 'w': 'week', 'wk': 'week', 'd': 'day', 'h': 'hour', 'hr': 'hour',
+             'm': 'minute', 'min': 'minute', 's': 'second', 'sec': 'second'}
+
+
+def spoken_age(text):
+    """YouTube's short ages in words: '2w ago' is '2 weeks ago', '1mo ago' is '1 month ago'."""
+    def word(match):
+        number, unit = match[1], SHORT_AGE[match[2].lower()]
+        return number + ' ' + unit + ('' if number == '1' else 's') + ' ago'
+    return re.sub(r'\b(\d+)\s?(yr|mo|wk|min|sec|hr|y|w|d|h|m|s)\s+ago\b', word, str(text or ''), flags=re.I)
+
+
 def _clean(text):
     text = ' '.join(str(text or '').replace('​', ' ').split())
     return text.strip(' •·|')
@@ -368,6 +384,10 @@ def _parts(raw):
     return parts
 
 
+def container_is_lockup(raw):
+    return 'lockup' in str(raw.get('container') or '')
+
+
 def item_from_raw(raw):
     """One list item in plain fields, from what the page reader found. None when it has no title."""
     title = _clean(raw.get('title'))
@@ -380,7 +400,14 @@ def item_from_raw(raw):
         return None
     parts = _parts(raw)
     channel = _clean(raw.get('channel'))
+    parts = [spoken_age(p) for p in parts]
     views = next((p for p in parts if VIEWS.match(p)), '')
+    if not views and container_is_lockup(raw):
+        # A channel's own video list gives the count alone ("960K"): it is the views.
+        bare = next((p for p in parts if re.fullmatch(r'[\d,.]+\s?[KMB]?', p)), '')
+        if bare:
+            parts = [p + ' views' if p == bare else p for p in parts]
+            views = bare + ' views'
     watching = next((p for p in parts if WATCHING.match(p)), '')
     age = next((p for p in parts if AGE.search(p)), '')
     if not channel:
@@ -950,6 +977,8 @@ class YouTubePage:
             raise YouTubeError('YouTube asks you to accept or reject cookies first. Say open in browser to answer it. '
                                'Then say YouTube to come back.')
         if not is_youtube(raw.get('url')):
+            if (urlsplit(str(raw.get('url') or '')).hostname or '').endswith('accounts.google.com'):
+                raise SignedOut('You are not signed in to YouTube.')
             raise YouTubeError('The browser is not on YouTube now. Press F5 to load the list again.')
         if raw.get('signedIn') is None:
             raw['signedIn'] = self.signed_in()

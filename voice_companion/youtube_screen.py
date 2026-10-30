@@ -437,10 +437,15 @@ class YouTubeScreen:
             return self.ask_switch('library')
         title, _ = yp.FEEDS[name]
         notice = self.go(yp.feed_url(name))
-        items, facts = self.lists.read_list()
+        try:
+            items, facts = self.lists.read_list()
+        except yp.SignedOut:
+            # Signed out, YouTube sends your own lists to Google's sign-in page.
+            self.signed_in = False
+            return notice + SIGN_IN_NEEDED.format(action='see ' + title.lower())
         self.note_signed(facts)
         view = {'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': items,
-                'token': facts.get('token') or ''}
+                'token': facts.get('token') or '', 'data': facts.get('source') == 'data'}
         if not items:
             if facts.get('promoSignIn') or name in yp.ACCOUNT_FEEDS and facts.get('signedIn') is False:
                 return notice + SIGN_IN_NEEDED.format(action='see ' + title.lower())
@@ -526,7 +531,7 @@ class YouTubeScreen:
         self.to_menu()
         title = 'Results for ' + query + ('. Filters: ' + summary if summary else '')
         said = self.push({'kind': 'list', 'name': 'search', 'title': title, 'url': url, 'items': items,
-                          'token': facts.get('token') or '', 'search': True}, notice)
+                          'token': facts.get('token') or '', 'search': True, 'data': facts.get('source') == 'data'}, notice)
         if not self.hinted:
             self.hinted = True
             said += FILTER_KEY_HINT
@@ -695,6 +700,8 @@ class YouTubeScreen:
                 if not token:
                     return False
             return False
+        if view.get('data'):
+            return False   # YouTube sent the whole list: there is no next part
         page = self.list_page
         if not self.alive(page) or not yp.same_address(page.url, view['url']):
             return False   # the tab shows another list now; its videos must not join this one
@@ -753,7 +760,7 @@ class YouTubeScreen:
         if not items:
             return notice + (title + ' has no videos to show.' if facts.get('empty') else yp.CHANGED)
         return self.push({'kind': 'list', 'name': name, 'title': title, 'url': url, 'items': items,
-                          'token': facts.get('token') or ''}, notice)
+                          'token': facts.get('token') or '', 'data': facts.get('source') == 'data'}, notice)
 
     # ------------------------------------------------------------ playing
     def play(self, item, lead=''):

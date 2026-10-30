@@ -63,6 +63,15 @@ class SpokenWordTests(unittest.TestCase):
         self.assertEqual(yp.spoken_item(item), 'Cats. Pets. 3 minutes 5 seconds. 1,234 views. 2 days ago')
         self.assertIsNone(yp.item_from_raw({'container': 'link', 'href': '/watch?v=x'}))   # no name: left out, no crash
 
+    def test_youtubes_short_ages_and_a_bare_count_are_said_in_words(self):
+        # Real youtube.com, October 2026: a channel's videos say "960K" and "2w ago".
+        item = yp.item_from_raw({'container': 'yt-lockup-view-model video', 'title': 'Moon base', 'href': '/watch?v=abc',
+                                 'rows': [['960K', '2w ago']], 'badge': '9:01'})
+        self.assertEqual(yp.spoken_item(item), 'Moon base. 9 minutes 1 second. 960 thousand views. 2 weeks ago')
+        self.assertEqual([yp.spoken_age(t) for t in ('1mo ago', '9y ago', '3d ago', '1h ago', 'Streamed 5h ago')],
+                         ['1 month ago', '9 years ago', '3 days ago', '1 hour ago', 'Streamed 5 hours ago'])
+        self.assertEqual(yp.spoken_age('2 weeks ago'), '2 weeks ago')
+
     def test_chapters_written_in_a_description(self):
         self.assertEqual(yp.chapters_from_description('Hello\n0:00 Intro\n1:10 - Part one\n12:30 The end'),
                          [{'title': 'Intro', 'time': 0}, {'title': 'Part one', 'time': 70}, {'title': 'The end', 'time': 750}])
@@ -256,7 +265,7 @@ class MenuAndSearchTests(NoBrowser):
         self.press('Down'); self.press('Enter')
         self.assertEqual(self.loaded, ['home'])
         for name, feed in (('Watch later', 'watch_later'), ('My playlists', 'playlists'), ('Liked videos', 'liked'),
-                           ('History', 'history'), ('Subscriptions', 'subscriptions')):
+                           ('History', 'history'), ('Subscriptions', 'channels'), ('New from subscriptions', 'subscriptions')):
             with self.subTest(name=name):
                 self.assertEqual(self.app.handle(name, 'youtube'), 'youtube')
                 self.assertEqual(self.loaded[-1], feed)

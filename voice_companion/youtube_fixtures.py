@@ -423,11 +423,11 @@ def routes(context, overrides=None, listed_filters=False):
 import json as _json
 
 
-def _text(value):
+def d_text(value):
     return {'simpleText': value}
 
 
-def lockup(ident, title, channel, views, age, length, kind='VIDEO'):
+def d_lockup(ident, title, channel, views, age, length, kind='VIDEO'):
     rows = [{'metadataParts': [{'text': {'content': channel}}]},
             {'metadataParts': [{'text': {'content': views}}, {'text': {'content': age}}]}]
     badge = {'thumbnailOverlayBadgeViewModel': {'thumbnailBadges': [{'thumbnailBadgeViewModel': {'text': length}}]}}
@@ -442,67 +442,67 @@ def lockup(ident, title, channel, views, age, length, kind='VIDEO'):
                                 'rendererContext': {'commandContext': {'onTap': {'innertubeCommand': command}}}}}
 
 
-def video_renderer(ident, title, channel, views, age, length):
+def d_video(ident, title, channel, views, age, length):
     return {'videoRenderer': {'videoId': ident, 'title': {'runs': [{'text': title}]}, 'ownerText': {'runs': [{'text': channel}]},
-                              'viewCountText': _text(views), 'publishedTimeText': _text(age), 'lengthText': _text(length),
+                              'viewCountText': d_text(views), 'publishedTimeText': d_text(age), 'lengthText': d_text(length),
                               'navigationEndpoint': {'commandMetadata': {'webCommandMetadata': {'url': '/watch?v=' + ident}},
                                                      'watchEndpoint': {'videoId': ident}}}}
 
 
-def channel_renderer(ident, name, handle, subscribers):
+def d_channel(ident, name, handle, subscribers):
     # YouTube now puts the handle where the subscriber count was, and the count where the video count was.
-    return {'channelRenderer': {'channelId': ident, 'title': _text(name), 'subscriberCountText': _text(handle),
-                                'videoCountText': _text(subscribers),
+    return {'channelRenderer': {'channelId': ident, 'title': d_text(name), 'subscriberCountText': d_text(handle),
+                                'videoCountText': d_text(subscribers),
                                 'navigationEndpoint': {'browseEndpoint': {'browseId': ident, 'canonicalBaseUrl': '/' + handle},
                                                        'commandMetadata': {'webCommandMetadata': {'url': '/' + handle}}}}}
 
 
-def more(token):
+def d_more(token):
     return {'continuationItemRenderer': {'continuationEndpoint': {'continuationCommand': {'token': token}}}}
 
 
-def home_videos(start, count):
-    return [{'richItemRenderer': {'content': lockup('home%07d' % n, 'Home video %d' % n, 'Channel %d' % n,
+def d_home_videos(start, count):
+    return [{'richItemRenderer': {'content': d_lockup('home%07d' % n, 'Home video %d' % n, 'Channel %d' % n,
                                                     '%d views' % (n * 10), '%d day%s ago' % (n, '' if n == 1 else 's'), '%d:0%d' % (n, n % 10))}}
             for n in range(start, start + count)]
 
 
 def data_home():
-    contents = home_videos(1, 3) + [
-        {'richSectionRenderer': {'content': {'richShelfRenderer': {'title': _text('Shorts'), 'contents': [
+    contents = d_home_videos(1, 3) + [
+        {'richSectionRenderer': {'content': {'richShelfRenderer': {'title': d_text('Shorts'), 'contents': [
             {'richItemRenderer': {'content': {'shortsLockupViewModel': {
                 'overlayMetadata': {'primaryText': {'content': 'Dog surfs'}, 'secondaryText': {'content': '3M views'}},
                 'onTap': {'innertubeCommand': {'reelWatchEndpoint': {'videoId': 'shortdata1'}}}}}}}]}}}},
         {'richItemRenderer': {'content': {'adSlotRenderer': {'fulfillmentContent': {'fulfilledLayout': {'inFeedAdLayoutRenderer': {
-            'renderingContent': {'promotedVideoRenderer': {'title': _text('Try Brand Tea'), 'longBylineText': _text('Brand Tea')}}}}}}}}},
-        more('home-2')]
+            'renderingContent': {'promotedVideoRenderer': {'title': d_text('Try Brand Tea'), 'longBylineText': d_text('Brand Tea')}}}}}}}}},
+        d_more('home-2')]
     return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
         'richGridRenderer': {'contents': contents}}}}]}}}
 
 
 def data_search():
-    section = [video_renderer('srch000001', 'Bread for beginners', 'Kitchen Basics', '1.2M views', '2 years ago', '12:01'),
-               channel_renderer('UCbread', 'Bread Channel', '@breadchannel', '45.6K subscribers'),
-               lockup('PLbread', 'Bread recipes', 'Kitchen Basics', '', '', '12 videos', kind='PLAYLIST'),
-               video_renderer('srch000002', 'Sourdough starter', 'Baker', '3K views', '1 month ago', '8:15')]
+    section = [d_video('srch000001', 'Bread for beginners', 'Kitchen Basics', '1.2M views', '2 years ago', '12:01'),
+               d_channel('UCbread', 'Bread Channel', '@breadchannel', '45.6K subscribers'),
+               d_lockup('PLbread', 'Bread recipes', 'Kitchen Basics', '', '', '12 videos', kind='PLAYLIST'),
+               d_video('srch000002', 'Sourdough starter', 'Baker', '3K views', '1 month ago', '8:15')]
     return {'contents': {'twoColumnSearchResultsRenderer': {'primaryContents': {'sectionListRenderer': {'contents': [
-        {'itemSectionRenderer': {'contents': section}}, more('search-2')]}}}}}
+        {'itemSectionRenderer': {'contents': section}}, d_more('search-2')]}}}}}
 
 
 def data_history():
     days = [('Today', ['hist000001', 'hist000002']), ('Yesterday', ['hist000003']), ('Monday', ['hist000004', 'hist000005'])]
-    sections = [{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': _text(day)}},
-                                         'contents': [lockup(v, 'Watched ' + v[-1], 'Somebody', '5 views', '', '1:00') for v in ids]}}
+    sections = [{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': d_text(day)}},
+                                         'contents': [d_lockup(v, 'Watched ' + v[-1], 'Somebody', '5 views', '', '1:00') for v in ids]}}
                 for day, ids in days]
     return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
-        'sectionListRenderer': {'contents': sections + [more('hist-2')]}}}}]}}}
+        'sectionListRenderer': {'contents': sections + [d_more('hist-2')]}}}}]}}}
 
 
 def data_channels():
-    channels = [channel_renderer('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n) for n in range(1, 4)]
+    channels = [d_channel('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n) for n in range(1, 4)]
     return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
         'sectionListRenderer': {'contents': [{'itemSectionRenderer': {'contents': [{'shelfRenderer': {'content': {
-            'expandedShelfContentsRenderer': {'items': channels}}}}]}}, more('ch-2')]}}}}]}}}
+            'expandedShelfContentsRenderer': {'items': channels}}}}]}}, d_more('ch-2')]}}}}]}}}
 
 
 def data_signed_out_library():
@@ -512,21 +512,21 @@ def data_signed_out_library():
             'bodyText': {'runs': [{'text': 'Watch history isn\'t viewable when signed out. Sign in to see it.'}]}}}]}}]}}}}]}}}
 
 
-def append(items):
+def d_append(items):
     return {'onResponseReceivedActions': [{'appendContinuationItemsAction': {'continuationItems': items}}]}
 
 
 # The continuation answers: token -> the next part.
 PARTS = {
-    'home-2': lambda: append(home_videos(4, 20) + [more('home-3')]),
-    'home-3': lambda: append(home_videos(24, 5)),
+    'home-2': lambda: d_append(d_home_videos(4, 20) + [d_more('home-3')]),
+    'home-3': lambda: d_append(d_home_videos(24, 5)),
     'search-2': lambda: {'onResponseReceivedCommands': [{'appendContinuationItemsAction': {'continuationItems': [
-        {'itemSectionRenderer': {'contents': [video_renderer('srch000003', 'Rye bread', 'Baker', '900 views', '3 days ago', '4:44')]}}]}}]},
-    'hist-2': lambda: append([{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': _text('Last week')}},
-                                                       'contents': [lockup('hist000006', 'Watched 6', 'Somebody', '5 views', '', '1:00')]}}]),
-    'ch-2': lambda: append([channel_renderer('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
-                            for n in range(4, 54)] + [more('ch-3')]),
-    'ch-3': lambda: append([channel_renderer('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
+        {'itemSectionRenderer': {'contents': [d_video('srch000003', 'Rye bread', 'Baker', '900 views', '3 days ago', '4:44')]}}]}}]},
+    'hist-2': lambda: d_append([{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': d_text('Last week')}},
+                                                       'contents': [d_lockup('hist000006', 'Watched 6', 'Somebody', '5 views', '', '1:00')]}}]),
+    'ch-2': lambda: d_append([d_channel('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
+                            for n in range(4, 54)] + [d_more('ch-3')]),
+    'ch-3': lambda: d_append([d_channel('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
                             for n in range(54, 61)]),
 }
 
