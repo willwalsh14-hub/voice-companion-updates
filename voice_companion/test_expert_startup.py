@@ -144,12 +144,13 @@ class HelpListWordsTests(KeyTestCase):
     def test_moves_say_the_item_and_opening_a_list_says_how_to_choose(self):
         mode = self.keys('awake', 'F1')
         self.assertEqual(mode, 'help')
-        self.assertTrue(self.said[0].endswith('1 of 32. Say next or previous, then that one. Say help with followed by '
+        count = str(len(companion.help_session.topics))  # 33 on Windows, where What's new is built
+        self.assertTrue(self.said[0].endswith('1 of ' + count + '. Say next or previous, then that one. Say help with followed by '
                                               'a topic name to jump there.'), self.said)
         self.keys(mode, 'Down')
-        self.assertEqual(self.said, ['Getting Started (G), 2 of 32.'])
+        self.assertEqual(self.said, ['Getting Started (G), 2 of ' + count + '.'])
         companion.handle('next', mode)
-        self.assertEqual(self.said[-1], 'Using Voice Commands (U), 3 of 32.')
+        self.assertEqual(self.said[-1], 'Using Voice Commands (U), 3 of ' + count + '.')
         self.keys(mode, 'Up', 'Enter')
         self.assertTrue(self.said[0].startswith('Getting Started. Install Voice Companion (I), 1 of 5. Say next or previous'),
                         self.said)
@@ -257,7 +258,8 @@ class WhereAmIInHelpTests(CompanionTestCase):
     def test_where_am_i_names_the_help_level_and_item(self):
         companion.handle('help', 'awake')
         companion.handle('next', 'help')
-        for words, expected in (('Where am I?', 'Help topics. Getting Started (G), 2 of 32.'),
+        count = str(len(companion.help_session.topics))  # 33 on Windows, where What's new is built
+        for words, expected in (('Where am I?', 'Help topics. Getting Started (G), 2 of ' + count + '.'),
                                 ('that one', None),
                                 ('where am i', 'Help. Getting Started. Install Voice Companion (I), 1 of 5.'),
                                 ('next', None), ('that one', None),
