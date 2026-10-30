@@ -7,6 +7,131 @@ The format for each night:
 - a heading with the date and the version
 - under it, a "Fixed" list and a "Questions for Will" list
 
+## October 30, 2026 (night 2, an expert screen reader user): version 0.2.181-test
+
+Release pull request 99. Try run for new Windows-only window tests: pull request 98.
+
+### Fixed
+
+#### Startup, sleep, Help and the tutorial
+- Waking at the Exit, Restart or Shut down question asks it again, not "Back to exit confirm."
+- Sleep with the microphone off says to press Control+F12 to wake; waking leaves out "I am listening." The tutorial uses the same words.
+- "Canceled." is joined to the next message, so it is heard.
+- Control+F1 or "Main menu" in Help says "Help closed."
+- An update offer answered No while asleep goes back to the screen you slept on.
+- The transcript notice at startup says to wake Companion first, or how to turn it off with no microphone.
+- Mode phrases, "What mode?", "What version?" and "Where am I?" work in Help.
+- Moving in Help and the tutorial says only the item; the hint is said once.
+- The tutorial names all 12 courses; the guide names YouTube.
+- "Switch to normal mode / commands only / dictation only" and "What mode am I in?" forms work.
+- A test that relied on leftover sleep state now sets its own (passed alone, failed in the full run).
+
+#### Email
+- One period after a subject; a blank subject says "No subject".
+- Escape from Attachments says the message you are on.
+- Canceling a reply or new email goes back to the message or your place in the same folder.
+- Closing a saved draft says it is still saved.
+- Delete in Thunderbird Trash and Yahoo Trash says nothing changed before asking.
+- Moving a message to its own folder says nothing changed.
+- Marking wording is the same by key and by voice.
+- An empty folder gives one message to every key.
+- Spoken numbers up to one hundred work ("read message fifteen").
+- "What folder am I in?" and "Go to the message list" work.
+
+#### Calendar and Contacts
+- An event or contact removed elsewhere leaves the list; the day or list is read again.
+- "Where am I?" and "Repeat" keep your place; both screens know next item, previous item, top and bottom of list.
+- Y and N no longer close the Calendar change list or calendar list.
+- "Schedule lunch with Bob tomorrow at noon" and "Add dinner Friday at 6 PM" add the event on Calendar.
+- "What's on my calendar today?" from another screen names a calendar that failed.
+- "Email John" says Thunderbird's reason when contacts cannot be read.
+
+#### Documents and files
+- Reading a paragraph, line or word no longer moves your place; delete word and sentence act on the current one.
+- Deleting or cutting a word or sentence leaves no extra spaces.
+- No doubled periods in Cut, Deleted, Pasted, Replaced and Insert messages, or reader notes.
+- Formatting is said in plain words (Italic, Heading 2, Font Arial).
+- "Make it quick." and similar are written; only "make it" plus a number sets the size.
+- Redo goes to the paragraph it changes; delete paragraph starts at the next paragraph.
+- Reader Find drops the period speech adds; Find with no words asks for them.
+- Save As suggests Documents when Desktop is missing.
+- File manager says "1 item"; "What is selected" works.
+
+#### Web
+- Tab and F reach tabs, switches and spin buttons; Enter selects a tab, toggles a switch, or lets arrows change a spin button.
+- Role words are the same on the page line and with quick keys ("spin button", "progress bar"; switches say on or off).
+- Unlabeled controls no longer say their type twice.
+- "Top of page." and "Bottom of page." at the ends.
+- Fields say their value, "invalid entry", and the site's hint; passwords are never spoken.
+- Saving a favorite by voice never replaces another favorite (lost data).
+- "List form fields" and similar open the fields list.
+- T says a table's rows and columns.
+
+#### Media
+- YouTube Page Down and Page Up reach the screen in the real window.
+- Space and other player keys on the controls list keep your place.
+- Keys in an empty Radio or Podcasts list say the list is empty.
+- YouTube Down at the end says why the next part did not load; fewer repeat requests.
+- End in the Media player says how to reach the player menu.
+- A slow-starting podcast episode still opens the player controls.
+- "browse feeds" is now "browse podcasts".
+
+#### Found while shipping
+- A release-note sentence was over the reading level.
+- Two new Help tests expected 32 topics; Windows has 33 because What's new is built there. They now count the topics.
+
+### Open items for the next sweep
+- test_web_media_live LiveDialogTests.test_unsaved_changes_keep_the_page_and_a_second_try_leaves is still flaky (failed once on main's side tonight). Make it report which step failed and how long each took.
+- Many test files set companion.SLEEP_RETURN_MODE and never restore it.
+- Stopped run_checks runs leave /tmp/vc-compare-* worktrees behind.
+- Helpers should each get their own scratch subfolder.
+- tools/helper-rules.md has an old Claude-Session footer.
+
+### Questions for Will (not answered yet)
+
+#### Startup and Help
+- Should Control+F12 in a Yes or No question do what "Go to sleep" does?
+- Should Verbosity Low also shorten list hints?
+- Should "Update status" and "Cancel update" with no update say "No update is downloading."?
+- "What version?" mid-session says "The microphone is off, as you left it." Keep that?
+
+#### Email
+- Should "Back to inbox" from a reply go to the Inbox list, not the message?
+- Name new drafts by subject instead of "Untitled 2"?
+- Folder list wording differs between the first item and the rest.
+- Rename folder lists standard folders that cannot be renamed.
+- Reply to a message with no subject sends "Re: (no subject)".
+- Drafts list Escape says only "List closed."; "Where am I" in a draft does not say "Email draft".
+- The Delete question says "Trash or Deleted Items" instead of the real folder.
+- From the main menu, "Email John", Escape, then "yes" saves the draft and opens the Inbox.
+
+#### Calendar
+- Should End go to the day's last event?
+- A week summary ("What's on my calendar next week?") would be a new feature.
+
+#### Documents
+- Control+S in a note goes to the main menu; in a document it keeps you writing.
+- No way to delete a saved note.
+- "Recent documents" works only in the Word processor menu.
+- The reader has no "spell word" or "where am I"; its Find wording differs from the editor's.
+- Renaming a document leaves its old backup file behind.
+
+#### Web
+- Tab past the last control: stay put, or wrap like a browser?
+- Heading list says "Chapter 2 2" for a level-2 heading named Chapter 2.
+- One word for each role: "edit" or "edit field", "combo box" or "choice box"?
+- Should Control+F jump to page text before matching links and buttons?
+- Add lists for landmarks, buttons and tables?
+
+#### Media
+- Should "Where am I?" and "Repeat" work on Radio, Podcasts and the Media player?
+- After Stop, should "What's playing?" say "Stopped"?
+- Page Down and Page Up on Radio and Podcasts?
+- Should Enter on a station open the player controls, as on Podcasts?
+- Key presses still read spoken-command hints.
+- Podcasts skip 15 seconds by key but the controls list says 30.
+- A wording pass to replace "feed" in podcast messages.
+
 ## October 29, 2026 (night 1, a new veteran): version 0.2.175-test
 
 Release pull request 81. All three checks passed. The session could not merge it, so Will merged it; 0.2.175-test was published on October 29.
