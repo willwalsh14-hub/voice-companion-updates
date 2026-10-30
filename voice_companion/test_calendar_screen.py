@@ -372,6 +372,21 @@ class GoToDateTests(CalendarHarness):
 
 
 class EditEventTests(CalendarHarness):
+    def test_y_and_n_answer_only_yes_or_no_questions_not_the_lists(self):
+        # In the list of what to change, N (as in Name or Notes) must not cancel; Contacts does the same.
+        mode = self.open()
+        self.press('F2', mode)
+        for key in ('N', 'n', 'Y', 'Alt+N'):
+            with self.subTest(key=key):
+                self.assertIsNone(app.navigation_key(key, mode))
+        self.assertEqual(calendar_screen.PENDING[0], 'edit-field')
+        self.press('Escape', mode)
+        # A Yes or No question still takes them.
+        self.press('Delete', mode)
+        self.assertEqual(app.navigation_key('N', mode), 'no')
+        self.assertEqual(app.navigation_key('Y', mode), 'yes')
+        self.press('Escape', mode)
+
     def test_f2_lists_what_to_change_and_renames_with_a_question(self):
         mode = self.open()
         self.assertEqual(app.navigation_key('F2', mode), 'edit event')

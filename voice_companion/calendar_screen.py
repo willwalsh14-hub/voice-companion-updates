@@ -240,6 +240,8 @@ def context(m, value):
 def navigation_key(m, key):
     global CHOICE
     if PENDING is not None:
+        if key.lower() in ('y', 'alt+y', 'n', 'alt+n') and PENDING[0] in ('edit-field', 'source'):
+            return None     # a list, not a Yes or No question: N (Name, Notes) must not cancel it, as on Contacts
         if key.lower() in ('y', 'alt+y'):
             return 'this one' if CHOICES[0] == 'this one' else 'yes'
         if key.lower() in ('n', 'alt+n'):
