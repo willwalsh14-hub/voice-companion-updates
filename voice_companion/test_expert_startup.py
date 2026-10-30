@@ -243,6 +243,23 @@ class UpdateOfferWhileAsleepTests(CompanionTestCase):
         self.assertEqual(self.said, ['Okay. You can keep using this version. ' + companion.MAIN_MENU_PROMPT])
 
 
+class WhereAmIInHelpTests(CompanionTestCase):
+    """"Where am I?" says the place on the main menu and most screens. In Help it said "I did
+    not understand that.", at every level."""
+
+    def test_where_am_i_names_the_help_level_and_item(self):
+        companion.handle('help', 'awake')
+        companion.handle('next', 'help')
+        for words, expected in (('Where am I?', 'Help topics. Getting Started (G), 2 of 32.'),
+                                ('that one', None),
+                                ('where am i', 'Help. Getting Started. Install Voice Companion (I), 1 of 5.'),
+                                ('next', None), ('that one', None),
+                                ('Where am I?', 'Help. Getting Started, Open the app and wake it.')):
+            self.said.clear()
+            self.assertEqual(companion.handle(words, 'help'), 'help')
+            if expected:self.assertEqual(self.said, [expected])
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""

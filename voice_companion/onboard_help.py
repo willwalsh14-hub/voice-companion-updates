@@ -145,6 +145,16 @@ class HelpSession:
         return self._open_article(self.topics[self.topic_index]['paragraphs'],
                                   self.topics[self.topic_index]['name'])
 
+    def where(self):
+        """For "Where am I?": Help, the chapter and the part you are in."""
+        if self.level == 'topics':
+            return 'Help topics. ' + self._item(hint=False)
+        name = self.topics[self.topic_index]['name']
+        if self.level == 'subtopics':
+            return 'Help. ' + name + '. ' + self._item(hint=False)
+        subs = self._subtopics()
+        return 'Help. ' + name + (', ' + subs[self.subtopic_index][0] if subs else '') + '.'
+
     def _open_article(self, paragraphs, title):
         self.level = 'article'
         self.reading.set_text('\n\n'.join(paragraphs), reset=True)
@@ -158,6 +168,8 @@ class HelpSession:
         if command in ('close help', 'exit help', 'leave help', 'back to app'):
             self.closed = True
             return 'Help closed. Back where you were.'
+        if command in ('where am i', 'where am i now'):
+            return self.where()
         if command in ('back to topics', 'help topics', 'list help topics', 'list topics'):
             self.level = 'topics'
             return self._item()
@@ -223,7 +235,7 @@ class HelpSession:
     def accepts(text):
         command=text.casefold().strip().rstrip('.!?')
         return bool(reading_request(command) or command.startswith(('help with ','help for ','go to help topic ','open help topic ')) or command in (
-            'main menu','back to main menu','close help','exit help','leave help','back to app',
+            'main menu','back to main menu','close help','exit help','leave help','back to app','where am i','where am i now',
             'back to topics','help topics','list help topics','list topics','back to email topics','email topics',
             'back to subsections','list subsections','subsections','go back','back',
             'read topic','read this topic','repeat topic','first block','last block',
