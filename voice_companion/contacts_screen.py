@@ -303,7 +303,15 @@ def command_here(m, raw, command):
         _, contact = PENDING
         if command in YES:
             PENDING = None
-            BOOK.delete(contact)
+            try:
+                BOOK.delete(contact)
+            except ValueError as exc:
+                if not thunderbird_pim.gone(exc):
+                    raise
+                VIEW = 'list'       # removed meanwhile: read the list again, so it is not said any more
+                reload(m)
+                m.speak(str(exc) + ' ' + describe())
+                return MODE
             name = contact.name
             VIEW = 'list'       # the deleted contact's details are gone
             reload(m)
@@ -1050,6 +1058,10 @@ def edit_answer(m, command):
     try:
         name = BOOK.update(contact, **{field: value})
     except ValueError as exc:
+        if thunderbird_pim.gone(exc):
+            reload(m)       # removed meanwhile: read the list again, so it is not said any more
+            m.speak(str(exc) + ' The change was not saved. ' + describe())
+            return MODE
         m.speak(str(exc) + ' The change was not saved.')
         return MODE
     reload(m, keep=contact.key)

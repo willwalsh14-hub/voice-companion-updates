@@ -253,6 +253,22 @@ class ContactsScreenTests(CompanionHarness):
         self.press('Delete', mode)
         self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be deleted.')
 
+    def test_a_contact_removed_in_thunderbird_meanwhile_leaves_the_list(self):
+        # Deleted in Thunderbird while Contacts was open: the list is read again, so Down and Up
+        # never reach a contact that is gone.
+        mode = self.open()
+        self.press('Letter:j', mode)
+        contacts_screen.BOOK.delete(contacts_screen.current())
+        self.press('Delete', mode); self.press('Up', mode); self.press('Enter', mode)
+        self.assertEqual(self.said(), 'That contact is no longer in Thunderbird. Mary Jones, mary@example.com, 3 of 4.')
+        self.assertNotIn('John Smith', [c.name for c in contacts_screen.CONTACTS])
+        # Editing one that is gone: the same.
+        contacts_screen.BOOK.delete(contacts_screen.current())
+        self.say('rename contact to Mary Smith', mode)
+        self.say('yes', mode)
+        self.assertEqual(self.said(), 'That contact is no longer in Thunderbird. The change was not saved. Plumber, 555-0199, 3 of 3.')
+        self.assertNotIn('Mary Jones', [c.name for c in contacts_screen.CONTACTS])
+
     def test_f2_edits_a_contact_with_a_question(self):
         mode = self.open()
         self.press('Letter:j', mode)

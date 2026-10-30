@@ -797,6 +797,17 @@ def save_draft(m):
     return MODE
 
 
+def read_again(m):
+    """The day on screen read again, near the same place, after an event was found gone."""
+    global INDEX
+    keep = INDEX
+    words = show(m, DAY or today(m))
+    if EVENTS:
+        INDEX = min(keep, len(EVENTS) - 1)
+        words = spoken_day(DAY, today(m)) + '. ' + describe()
+    return words
+
+
 def not_saved(exc, words):
     """Why saving failed, and that nothing was saved, unless the reason already says so."""
     text = str(exc)
@@ -879,9 +890,9 @@ def answer(m, command):
         try:
             thunderbird_pim.delete_event(event.calendar_id, event.id, event.occurrence if one else '', all_of_them=every or not event.recurring)
         except thunderbird_pim.PimError as exc:
-            m.speak(str(exc))
+            m.speak(str(exc) + (' ' + read_again(m) if thunderbird_pim.gone(exc) else ''))
             return MODE
-        what = ('Deleted all of ' + event.name + '. ') if every else ('Deleted ' + event.name + ' on this day. ') if one else ('Deleted ' + event.name + '. ')
+        what =('Deleted all of ' + event.name + '. ') if every else ('Deleted ' + event.name + ' on this day. ') if one else ('Deleted ' + event.name + '. ')
         keep = INDEX
         words = show(m, DAY)
         if EVENTS:
@@ -1305,7 +1316,7 @@ def save_edit(m, scope):
         answer_ = thunderbird_pim.modify_event(event.calendar_id, event.id, changes,
                                                occurrence=event.occurrence if scope == 'one' else '', all_of_them=scope == 'all')
     except thunderbird_pim.PimError as exc:
-        m.speak(not_saved(exc, 'The change was not saved.'))
+        m.speak(not_saved(exc, 'The change was not saved.') + (' ' + read_again(m) if thunderbird_pim.gone(exc) else ''))
         return MODE
     ids = {event.id, str((answer_ or {}).get('id') or '') if isinstance(answer_, dict) else ''}
     words = show(m, day)

@@ -31,6 +31,12 @@ class PimError(Exception):
     """Thunderbird could not give or change contacts or events. The text says why and what to do."""
 
 
+def gone(exc):
+    """True when the contact or event was removed meanwhile (in Thunderbird, on a phone), so the
+    list on screen must be read again: "That event is no longer in the calendar."."""
+    return 'is no longer in' in str(exc)
+
+
 def connected():
     import thunderbird_mailbox
     return thunderbird_mailbox.connected()

@@ -177,6 +177,24 @@ class CalendarScreenTests(CalendarHarness):
                 app.handle('yes', mode)
             self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
 
+    def test_an_event_removed_in_thunderbird_meanwhile_leaves_the_list(self):
+        # Deleted on the phone or in Thunderbird while Calendar was open: the day is read again,
+        # so Down and F2 never reach an event that is gone.
+        mode = self.open()
+        thunderbird_pim.delete_event('cal-google', 'e1')
+        app.handle('delete event', mode)
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'That event is no longer in the calendar. Today, Monday, October 26. No events.')
+        self.assertEqual(calendar_screen.EVENTS, [])
+        # Editing one that is gone: the same.
+        self.press('Right', mode)
+        thunderbird_pim.delete_event('cal-google', 'e3', all_of_them=True)
+        app.handle('rename event to Dentist', mode)
+        app.handle('this one', mode)
+        self.assertEqual(self.said(), 'That event is no longer in the calendar. The change was not saved. '
+                                      'Tomorrow, Tuesday, October 27. No events.')
+        self.assertEqual(calendar_screen.EVENTS, [])
+
     def test_the_part_of_the_day_said_first_counts_for_the_time_said_next(self):
         mode = self.press('Ctrl+N', self.open())
         mode = app.handle('Friday evening', mode)
