@@ -1471,7 +1471,10 @@ class WebSession:
             column=getattr(self,'preferred_column',None)
             if column is None:column=position-starts[index]
             self.preferred_column=column
-            index=max(0,min(len(starts)-1,index+direction*(20 if key in ('Prior','Next') else 1)))
+            moved=max(0,min(len(starts)-1,index+direction*(20 if key in ('Prior','Next') else 1)))
+            # Moving past the first or last line says so, as the page keys do.
+            edge=('Top of page. ' if direction<0 else 'Bottom of page. ') if moved==index else ''
+            index=moved
             end=text.find('\n',starts[index]);end=len(text) if end<0 else end
             # Browse blocks start at their first character, so a short control
             # remains the active target after a longer paragraph.
@@ -1486,8 +1489,9 @@ class WebSession:
             if item and item.get('start',0)<=self.reading.position<item.get('end',0):
                 role=kind(item)
                 if role=='link':message='Link '+message
-                elif role=='heading':message+=' heading level '+str(item.get('level',1))+(', link' if heading_link(item,self.browse.elements) else '')+'.'
+                elif role=='heading':message=(re.sub(r'(?<!\.)[.,;:]$','',message.rstrip()) or message)+', heading level '+str(item.get('level',1))+(', link' if heading_link(item,self.browse.elements) else '')+'.'
             self.auto_focus_position()
+            if not control:message=edge+message
         return message
 
     def focus_current(self):
@@ -3275,6 +3279,7 @@ class WebSession:
             unit, direction = request
             self.reading.set_text(self.snapshot.get('text', ''))
             result=self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            if unit=='line' and self.reading.edge:result=('Bottom of page. ' if self.reading.edge=='end' else 'Top of page. ')+result
             if self.browse:self.browse.set_position(self.reading.position)
             self.auto_focus_position();self.cursor_changed()
             return result

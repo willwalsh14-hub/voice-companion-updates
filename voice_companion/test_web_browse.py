@@ -225,3 +225,35 @@ class EditableComboTests(unittest.TestCase):
                     app.apply_keyboard_edit(dict(source=ctx['source'],before='c',after='ca',caret=2,seq=2),'web')
                 spoken.assert_called_once_with('The page changed. Refresh it before continuing.')
 if __name__=='__main__':unittest.main()
+
+
+class PageEdgeAndHeadingLineTests(unittest.TestCase):
+    """Arrowing through a page, as a screen reader user does (sweep, October 30, 2026)."""
+    TEXT='Intro text.\nResults\nLast line'
+    def session(self,folder):
+        session=WebSession(folder,Mock())
+        snapshot={'url':'https://example.com/','title':'Example','text':self.TEXT,
+                  'elements':[dict(key='h',role='heading',tag='h2',type='',label='Results',level=2,start=12,end=19)]}
+        session.snapshot=snapshot;session.reading.set_text(self.TEXT);session.browse=BrowseCursor(snapshot)
+        return session
+
+    def test_a_heading_line_says_its_level_as_the_quick_key_does(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=self.session(folder)
+            self.assertEqual(session.keyboard('Read:Down'),'Results, heading level 2.')
+            session.keyboard('PageTop')
+            self.assertEqual(session.keyboard('Quick:h'),'Results, heading level 2.')
+
+    def test_down_on_the_last_line_and_up_on_the_first_say_so(self):
+        """Down on the last line read it again with no sign the page had ended."""
+        with tempfile.TemporaryDirectory() as folder:
+            session=self.session(folder)
+            session.keyboard('PageBottom')
+            self.assertEqual(session.keyboard('Read:Down'),'Bottom of page. Last line')
+            self.assertEqual(session.keyboard('Read:Next'),'Bottom of page. Last line')
+            self.assertEqual(session.keyboard('Read:Up'),'Results, heading level 2.')
+            self.assertEqual(session.keyboard('Read:Up'),'Intro text.')
+            self.assertEqual(session.keyboard('Read:Up'),'Top of page. Intro text.')
+            self.assertEqual(session.command('previous line'),'Top of page. Intro text.')
+            session.keyboard('PageBottom')
+            self.assertEqual(session.command('next line'),'Bottom of page. Last line')
