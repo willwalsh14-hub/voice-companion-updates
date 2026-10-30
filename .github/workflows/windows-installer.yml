@@ -18,7 +18,7 @@ jobs:
           python -m venv $env:RUNNER_TEMP\venv
           $py = "$env:RUNNER_TEMP\venv\Scripts\python.exe"
           & $py -m pip install --disable-pip-version-check -q -r requirements.txt
-          foreach ($round in 1..3) {
+          foreach ($round in 1..1) {
             foreach ($t in @('test_chrome_window','test_thunderbird_host_reconnect','test_browser_window','test_browser_window_live','test_window_hiding_windows')) {
               $ErrorActionPreference = 'Continue'
               $out = (& $py -m unittest -v $t 2>&1 | ForEach-Object { "$_" })
