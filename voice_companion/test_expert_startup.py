@@ -260,6 +260,26 @@ class WhereAmIInHelpTests(CompanionTestCase):
             if expected:self.assertEqual(self.said, [expected])
 
 
+class GlobalCommandsInHelpTests(CompanionTestCase):
+    """Help reads 'To change mode, say "Normal mode", "Commands only", or "Dictation only".'
+    Saying them in Help gave "I did not understand that.", as did "What mode?" and
+    "What version?". The time, the transcript and the microphone already worked there."""
+
+    def test_mode_and_version_commands_work_in_help(self):
+        companion.handle('help', 'awake')
+        for words, mode, said in (('Commands only.', 'commands', 'Commands only. Ordinary speech will not be added as text.'),
+                                  ('What mode?', 'commands', 'Input mode: Commands only.'),
+                                  ('Switch to normal mode', 'mixed', 'Normal mode. Commands and ordinary dictation are available.'),
+                                  ('What version is this?', 'mixed',
+                                   'Voice Companion version ' + companion.APP_VERSION + '. The microphone is on.')):
+            with self.subTest(words=words):
+                self.said.clear()
+                self.assertEqual(companion.handle(words, 'help'), 'help')
+                self.assertEqual(companion.INPUT_MODE, mode)
+                self.assertEqual(self.said, [said])
+        self.assertIsNotNone(companion.help_session)
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""

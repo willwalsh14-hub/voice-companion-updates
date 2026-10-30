@@ -719,6 +719,23 @@ def resume_from_sleep():
     return mode
 
 
+# Spoken names for the input modes, and questions about the mode and version. They work on
+# every screen, Help too, where the guide tells you to say them.
+INPUT_MODE_COMMANDS = {
+    'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
+    'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
+    'switch to command mode':'commands', 'switch to commands mode':'commands',
+    'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
+    'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
+    # "Switch to" works with every name the guide uses.
+    'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
+}
+MODE_QUESTIONS = ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
+                  'what mode is on', 'what mode is it')
+VERSION_QUESTIONS = ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
+                     'what version am i using', 'what version do i have')
+
+
 def canceled_to(mode):
     """Say Canceled with the main menu in one message (two would cut each other off), or alone."""
     global MAIN_MENU_LEAD
@@ -4151,7 +4168,8 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError):speak('Release notes could not open. Ask your helper to check the installation.');return mode
     if mode == 'help' and not spoken_control(command) and command not in (
             'faster', 'slower', 'speak faster', 'speak slower', 'louder', 'quieter',
-            'list voices', 'next voice', 'previous voice'):
+            'list voices', 'next voice', 'previous voice') and command not in INPUT_MODE_COMMANDS \
+            and command not in MODE_QUESTIONS + VERSION_QUESTIONS:   # the guide in Help says to use these
         if command in ('main menu', 'back to main menu'):
             returning = help_return_mode
             help_session = None
@@ -4216,8 +4234,7 @@ def _handle(text, mode, typed=False):
         speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
         return mode
     # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
-    if command in ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
-                   'what version am i using', 'what version do i have') or \
+    if command in VERSION_QUESTIONS or \
             command in ('version', 'about voice companion') and not writing_dictation(mode, typed):
         # The two things a person most needs if a key press stopped the startup announcement.
         speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
@@ -4372,15 +4389,7 @@ def _handle(text, mode, typed=False):
         except (OSError, ValueError):
             speak('The user guide could not open. Ask your helper to reinstall Voice Companion.')
             return mode
-    requested_mode = {
-        'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
-        'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
-        'switch to command mode':'commands', 'switch to commands mode':'commands',
-        'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
-        'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
-        # "Switch to" works with every name the guide uses.
-        'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
-    }.get(command)
+    requested_mode = INPUT_MODE_COMMANDS.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
         save_speech_settings()
@@ -4393,8 +4402,7 @@ def _handle(text, mode, typed=False):
                'commands':'Commands only. Ordinary speech will not be added as text.',
                'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
         return mode
-    if command in ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
-                   'what mode is on', 'what mode is it'):
+    if command in MODE_QUESTIONS:
         # The names the guide and the mode commands use, never the stored word ("mixed").
         speak('Input mode: ' + {'mixed':'Normal mode','commands':'Commands only','dictation':'Dictation only'}.get(INPUT_MODE, INPUT_MODE) + '.')
         return mode
