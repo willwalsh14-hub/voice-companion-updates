@@ -426,7 +426,7 @@ def command_here(m, raw, command):
             return MODE
         return ask_delete(m, event)
     if ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule', 'make', 'book', 'put', 'set') \
-            or ADD_START.match(command):
+            or ADD_START.match(command) or said_with_a_day(m, command, raw):
         return start_adding(m, raw)
     wanted = SHOW.fullmatch(command)
     if wanted and wanted['what'] not in ('my', 'the') and (wanted['verb'] and wanted['kind'] or
@@ -444,6 +444,18 @@ def command_here(m, raw, command):
     m.speak('Calendar. Say next event, next day, today, read event, add event, edit event, or delete event. '
             'Press F1 for help, or Escape for the main menu.')
     return MODE
+
+
+NAMED_DAY = re.compile(r'\b(?:today|tomorrow|tonight|' + '|'.join(WEEKDAYS) + r')\b')
+
+
+def said_with_a_day(m, command, raw):
+    """On Calendar, "Schedule lunch with Bob tomorrow at noon" or "Add dinner Friday at 6 PM": any name
+    with a time, or a named day, adds an event. "Add the second one" is not one (no time, no day name)."""
+    if not re.match(r'(?:schedule|add|book) \w', command):
+        return False
+    found = parse_when(raw, m.CLOCK(), future=True, base=DAY)
+    return found.day is not None and (found.start is not None or found.all_day or bool(NAMED_DAY.search(command)))
 
 
 def whole_day(words, m):

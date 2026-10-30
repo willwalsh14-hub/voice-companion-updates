@@ -140,6 +140,19 @@ class CalendarScreenTests(CalendarHarness):
         self.assertTrue(self.said().startswith('Add meeting, Tomorrow, Tuesday, October 27, two PM to three PM,'), self.said())
         app.handle('no', 'calendar')
 
+    def test_on_calendar_schedule_or_add_any_name_with_a_day_adds_it(self):
+        mode = self.open()
+        for words, start in (('Schedule lunch with Bob tomorrow at noon.', 'Add lunch with Bob, Tomorrow, Tuesday, October 27, twelve PM to one PM,'),
+                             ('Add dinner Friday at 6 PM', 'Add dinner, Friday, October 30, six PM to seven PM,'),
+                             ('Book a haircut on Friday at 10 AM.', 'Add haircut, Friday, October 30, ten AM to eleven AM,')):
+            with self.subTest(words=words):
+                self.assertEqual(app.handle(words, mode), 'calendar')
+                self.assertTrue(self.said().startswith(start), self.said())
+                app.handle('no', mode)
+        # Without a day or time it is not an event.
+        app.handle('add Bob', mode)
+        self.assertTrue(self.said().startswith('Calendar. Say next event'), self.said())
+
     def test_delete_it_deletes_the_event(self):
         mode = self.open()
         app.handle('Delete it.', mode)
