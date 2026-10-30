@@ -200,8 +200,8 @@ class MediaPlayer:
                 # close. It holds nothing of yours (the volume is kept beside it), so it is set
                 # aside and the player starts once more with a new one.
                 self.last_start_error='The player could not start: '+type(first).__name__+': '+str(first)[:200]
-                if not self._set_profile_aside():
-                    raise
+                if "doesn't exist" in str(first) or 'Executable' in str(first) or not self._set_profile_aside():
+                    raise   # the player's Firefox itself is missing: a new profile cannot help
                 self.context=self._launch()
             self.page=self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.goto(html.as_uri())
