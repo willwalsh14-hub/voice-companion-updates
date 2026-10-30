@@ -719,6 +719,14 @@ def resume_from_sleep():
     return mode
 
 
+def canceled_to(mode):
+    """Say Canceled with the main menu in one message (two would cut each other off), or alone."""
+    global MAIN_MENU_LEAD
+    if mode=='awake':MAIN_MENU_LEAD='Canceled.'
+    else:speak('Canceled.')
+    return mode
+
+
 def sleep_message():
     """The same words on every screen; "Say wake up" only when the microphone can hear it."""
     if microphone_state() == 'on':return 'Going to sleep. Say wake up when you need me.'
@@ -3845,13 +3853,13 @@ def _handle(text, mode, typed=False):
         command=CONFIRM_CHOICE
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
-            speak('Canceled.');return EXIT_RETURN_MODE
+            return canceled_to(EXIT_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             return finish_exit(EXIT_RETURN_MODE)
         speak('Exit Voice Companion? Are you sure? Yes or no.');return mode
     if mode=='power_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
-            POWER_ACTION=None;speak('Canceled.');return POWER_RETURN_MODE
+            POWER_ACTION=None;return canceled_to(POWER_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             try:
                 if email_draft is not None:email_draft.save()
@@ -4148,7 +4156,7 @@ def _handle(text, mode, typed=False):
             returning = help_return_mode
             help_session = None
             if returning == 'awake':
-                pass
+                MAIN_MENU_LEAD = 'Help closed.'   # said with Main menu, as Escape and the tutorial do
                 return 'awake'
             return handle('main menu', returning)
         if help_session is None:

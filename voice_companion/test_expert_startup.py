@@ -182,6 +182,33 @@ class InputModeWordsTests(CompanionTestCase):
                 self.assertEqual(self.said, ['Input mode: Normal mode.'])
 
 
+class ClosedThenMainMenuTests(KeyTestCase):
+    """Two messages in a row cut each other off; after a key only the last one is said. Escape at
+    the exit question said "Canceled." and then "Main menu...", so "Canceled." was never heard.
+    Control+F1 or "Main menu" in Help said only "Main menu...", while the tutorial and Options
+    say "Tutorial closed." and "Options closed." first."""
+
+    def test_canceling_the_exit_or_power_question_is_one_message(self):
+        mode = self.keys('awake', 'Escape')
+        self.assertEqual(mode, 'exit_confirm')
+        mode = self.keys(mode, 'Escape')
+        self.assertEqual(mode, 'awake')
+        self.assertEqual(self.said, ['Canceled. ' + companion.MAIN_MENU_PROMPT])
+        self.assertEqual(companion.handle('restart computer', 'awake'), 'power_confirm')
+        self.said.clear()
+        self.assertEqual(companion.handle('No.', 'power_confirm'), 'awake')
+        self.assertEqual(self.said, ['Canceled. ' + companion.MAIN_MENU_PROMPT])
+
+    def test_leaving_help_for_the_main_menu_says_help_closed(self):
+        for how in ('Ctrl+F1', 'main menu'):
+            with self.subTest(how=how):
+                mode = self.keys('awake', 'F1')
+                self.said.clear()
+                mode = self.keys(mode, how) if how.startswith('Ctrl') else companion.handle(how, mode)
+                self.assertEqual(mode, 'awake')
+                self.assertEqual(self.said, ['Help closed. ' + companion.MAIN_MENU_PROMPT])
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""
