@@ -78,6 +78,24 @@ class EverydayWordsTests(CompanionCase):
         self.assertEqual(mail.view, 'folder')
 
 
+class SpokenNumberTests(CompanionCase):
+    def test_numbers_above_ten_said_as_words_reach_the_message(self):
+        # The recognizer writes "fifteen", not 15. Before: "I did not understand that." with 20 or
+        # more messages a page, and "go to message twenty" looked for a folder.
+        class Long(Mailbox):
+            def list_messages(self, folder, cursor=None, limit=10):
+                return ([{'id': str(n), 'from': 'Person %d <p%d@example.com>' % (n, n), 'subject': 'Note %d' % n,
+                          'date': 'October 2, 2026'} for n in range(1, 31)], None)
+        mail = MailSession('thunderbird', self.folder, Long)
+        mail.process('set list size to 30')
+        self.assertTrue(mail.process('Read message fifteen.').startswith('Message opened. This is message 15.'))
+        self.assertTrue(mail.process('go to message twenty-one').startswith('Person 21. Note 21.'))
+        self.assertTrue(mail.process('go to message twenty one').startswith('Person 21. Note 21.'))
+        self.assertTrue(mail.process('go to message twenty').startswith('Person 20. Note 20.'))
+        self.assertEqual(mail.process('select messages twelve through fourteen'), 'Marked messages 12 through 14. 3 selected.')
+        self.assertEqual(mail.process('mark message thirty'), 'Marked message 30. 4 selected.')
+
+
 class NothingMovedTests(CompanionCase):
     def test_moving_to_the_folder_you_are_in_says_nothing_changed(self):
         # Before: "1 message moved." while the message stayed where it was.

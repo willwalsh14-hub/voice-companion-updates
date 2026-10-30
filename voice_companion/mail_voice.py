@@ -16,7 +16,16 @@ NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'five': 5, 'fifth': 5, 'six': 6, 'sixth': 6,
                 'seven': 7, 'seventh': 7, 'eight': 8, 'eighth': 8,
                 'nine': 9, 'ninth': 9, 'ten': 10, 'tenth': 10}
-NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
+# A page holds up to 100 messages, and the recognizer writes numbers as words:
+# "read message fifteen", "go to message twenty-one" (sweep, October 30, 2026).
+NUMBER_WORDS.update(zip('eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'.split(), range(11, 20)))
+for _tens, _name in enumerate('twenty thirty forty fifty sixty seventy eighty ninety'.split(), 2):
+    NUMBER_WORDS[_name] = _tens * 10
+    for _one, _word in enumerate('one two three four five six seven eight nine'.split(), 1):
+        NUMBER_WORDS[_name + ' ' + _word] = NUMBER_WORDS[_name + '-' + _word] = _tens * 10 + _one
+NUMBER_WORDS.update({'one hundred': 100, 'a hundred': 100})
+# Longest first, so "twenty one" is never read as "twenty".
+NUMBER = r'(?:\d+|' + '|'.join(sorted(NUMBER_WORDS, key=len, reverse=True)) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
 # "All": pages of 10. The arrows stop at the end of a page, as in every list.
 ALL_MESSAGES = 'All messages, 10 at a time. For more, press Page Down, or say next page.'
