@@ -938,6 +938,17 @@ class VoiceDocument:
         self.selection = None
         self.changed()
 
+    def _cursors_from_reading(self):
+        """Point the word and sentence that delete word and delete sentence use at the
+        reading position, the place "read current word" reads."""
+        if not self.paragraphs:
+            return
+        text = self.paragraphs[self.cursor].text
+        local = max(0, min(len(text), self.reading.position - sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])))
+        words = [m for m in re.finditer(r'\S+', text)]
+        self.word_cursor = max(0, min(len(words) - 1, sum(1 for m in words if m.end() <= local)))
+        self.sentence_cursor = len(re.findall(r'\S.*?[.!?](?=\s|$)', text[:local]))
+
     def _with_one_space(self, selected):
         """Whole words being deleted take one space with them, as Word does, so no double
         space or leading space is left behind. Part of a word is deleted exactly."""
@@ -1385,7 +1396,7 @@ class VoiceDocument:
             # sentence you moved to stay, so "delete sentence" next acts on that sentence.
             if not base <= self.reading.position <= base + len(self.paragraphs[self.cursor].text):
                 self.reading.position = base
-                self.word_cursor = self.sentence_cursor = 0
+            self._cursors_from_reading()
             self.reading.continuation = base
             p = self.paragraphs[self.cursor]
             if p.table_id:
@@ -1417,7 +1428,9 @@ class VoiceDocument:
                     break
                 base += len(p.text)+1
             if navigation or unit!='read' and direction!=0:self.navigation_position=(self.cursor,local)
-            if unit in ('paragraph','line') and not look:
+            if look:
+                self._cursors_from_reading()
+            elif unit in ('paragraph','line'):
                 self.word_cursor = self.sentence_cursor = 0
             if unit == 'word':
                 self.word_cursor = len(re.findall(r'\S+', self.paragraphs[self.cursor].text[:self.reading.position - sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])])) if self.paragraphs else 0

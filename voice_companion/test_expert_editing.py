@@ -54,6 +54,13 @@ class ReadingTheParagraphKeepsYourPlace(EditorCase):
                 self.assertEqual(self.texts(), ['The quick fox jumps. Over the lazy dog. A third sentence.'])
                 self.doc.process('undo')
 
+    def test_delete_word_acts_on_the_word_read_current_word_says(self):
+        self.doc.process('beginning of document')
+        for _ in range(4): self.doc.process('next word')
+        self.doc.process('read paragraph')
+        self.assertEqual(self.doc.process('read current word'), 'jumps.')
+        self.assertEqual(self.doc.process('delete word'), 'Deleted: jumps. Say undo to restore it.')
+
     def test_next_word_continues_from_where_you_were(self):
         self.doc.process('beginning of document')
         self.doc.process('next word'); self.doc.process('next word')
