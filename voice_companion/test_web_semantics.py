@@ -506,6 +506,16 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('Unlabeled, button',self.session.reading.text)
         self.assertNotIn('combobox',self.session.reading.text)
 
+    def test_a_field_marked_invalid_says_so_and_reads_its_error(self):
+        # After a failed sign up, the site marks the box and points to its error.
+        self.load('<label>Email<input type=email aria-invalid="true" aria-describedby="err" value="bob"></label><p id=err>Enter a valid email address.</p><label>Name<input aria-describedby="hint"></label><span id=hint>As on your ID card</span>')
+        said=self.session.keyboard('Quick:e')
+        self.assertTrue(said.startswith('Email, edit, bob, invalid entry.'),said)
+        self.assertIn('Enter a valid email address.',said)
+        self.assertIn('Email, edit field, invalid entry',self.session.reading.text)
+        self.session.keyboard('Escape')
+        self.assertEqual(self.session.keyboard('Quick:e'),'Name, edit. As on your ID card.')
+
     def test_enter_on_a_spin_button_lets_arrows_change_it(self):
         self.load(self.SETTINGS_PAGE)
         self.session.keyboard('Quick:f');self.session.keyboard('Quick:f')

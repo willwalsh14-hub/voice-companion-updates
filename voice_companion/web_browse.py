@@ -118,11 +118,18 @@ def describe(item,elements=None):
         role=spoken_role='edit combo box';value=str(item.get('value') or '')
         state=', '+' '.join(value.split())[:180] if value.strip() and item.get('type')!='password' else ''
     elif role in ('combobox','listbox'):state=', '+(item.get('selected_label') or 'no selection')
+    elif role=='edit' and item.get('type')!='password' and str(item.get('value') or '').strip():
+        # A box that already holds words says them, as a screen reader does.
+        state+=', '+' '.join(str(item['value']).split())[:180]
     if item.get('disabled'):state+=', unavailable'
     if item.get('readonly'):state+=', read-only'
     if item.get('required'):state+=', required'
+    if item.get('invalid'):state+=', invalid entry'
     spoken_role=ROLE_WORDS.get(spoken_role,spoken_role)
-    return ('Link '+name+state+'.') if role=='link' else name+(', '+spoken_role if spoken_role else '')+state+'.'
+    # The site's hint or error message for a control (aria-describedby) comes last.
+    hint=' '.join(str(item.get('description') or '').split())[:240]
+    hint=' '+hint+('' if hint[-1:] in '.!?' else '.') if hint and hint.casefold()!=name.casefold() else ''
+    return ('Link '+name+state+'.') if role=='link' else name+(', '+spoken_role if spoken_role else '')+state+'.'+hint
 
 def tab_index(item):
     """An element's place in Tab order. Browsers report -1 for a contenteditable
@@ -301,6 +308,7 @@ SEMANTICS = r'''
             const bookmark=e.id?{id:e.id,key:key(e),start:size(),end:size()}:null;if(bookmark)anchors.push(bookmark);
             let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:size(),end:size(),disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
             if(item){item.landmark=landmark;if(role==='list'){item.item_count=Math.max(listItems.length,...listItems.map(n=>Number(n.getAttribute('aria-setsize'))||0));item.ordered=tag==='ol';}if(role==='listitem'){item.position=Number(e.getAttribute('aria-posinset'))||siblings.indexOf(e)+1;item.set_size=Number(e.getAttribute('aria-setsize'))||siblings.length;}}
+            if(item&&(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable)){item.invalid=e.getAttribute('aria-invalid')==='true'||e.getAttribute('aria-invalid')==='spelling'||e.getAttribute('aria-invalid')==='grammar';if(e.hasAttribute('aria-describedby')||e.hasAttribute('aria-description'))item.description=String(accessibleLabel.description(e)||'').trim().slice(0,240);}
             if(item){item.tabindex=control?.combo_input_key?control.tabindex:e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
             if(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable){
               const spokenRole=type==='password'?'password field':control?.combo_edit?'edit combo box':({button:'button',textbox:'edit field',searchbox:'search field',checkbox:'checkbox',radio:'radio button',combobox:'combo box',listbox:'list box',switch:'switch',slider:'slider',spinbutton:'spin button'}[role]||'edit field');
@@ -311,6 +319,7 @@ SEMANTICS = r'''
               if(e.disabled||e.getAttribute('aria-disabled')==='true')append(', unavailable');
               if(e.readOnly||e.getAttribute('aria-readonly')==='true')append(', read-only');
               if(e.required||e.getAttribute('aria-required')==='true')append(', required');
+              if(['true','spelling','grammar'].includes(e.getAttribute('aria-invalid')))append(', invalid entry');
               if(type!=='password'&&role!=='button'&&e.value&&!['checkbox','radio','image','submit','button'].includes(type))append(', '+(tag==='select'?e.selectedOptions[0]?.text:e.value));
               if(editable)append(', '+(e.innerText||''));
               if(role==='slider'&&tag!=='input'&&(e.getAttribute('aria-valuetext')||e.getAttribute('aria-valuenow')))append(', '+(e.getAttribute('aria-valuetext')||e.getAttribute('aria-valuenow')));
