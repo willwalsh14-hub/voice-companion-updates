@@ -3,7 +3,7 @@
   "status": "Testing build",
   "date": "October 30, 2026",
   "baseline": "0.2.182-test",
-  "scope": "Adding an email account to Thunderbird works from start to finish.",
+  "scope": "Thunderbird starts and connects by itself, and adding an email account works from start to finish.",
   "sections": [
     {
       "title": "New in this version",
@@ -20,6 +20,14 @@
     {
       "title": "What works better",
       "topics": [
+        {
+          "title": "Thunderbird starts and connects",
+          "details": [
+            "Email no longer waits until you press Alt+Tab to Thunderbird and back.",
+            "If Thunderbird is slow, its window comes up for a moment. Then it goes away again.",
+            "Your keys stay in Voice Companion. This works with Thunderbird hidden or minimized."
+          ]
+        },
         {
           "title": "Adding an email account",
           "details": [
