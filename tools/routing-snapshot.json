@@ -1650,6 +1650,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | folder": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | folders": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -7213,6 +7219,15 @@
 "Hello world. Second sentence. flow"
 ]
 },
+"document | folder": {
+"said": [
+"folder"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. folder"
+]
+},
 "document | folders": {
 "said": [
 "folders"
@@ -12532,12 +12547,13 @@
 },
 "email_draft | back": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12582,12 +12598,13 @@
 },
 "email_draft | back to inbox": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12732,12 +12749,13 @@
 },
 "email_draft | cancel": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12755,12 +12773,13 @@
 },
 "email_draft | cancel draft": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12769,12 +12788,13 @@
 },
 "email_draft | cancel email": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12783,12 +12803,13 @@
 },
 "email_draft | cancel forward": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12797,12 +12818,13 @@
 },
 "email_draft | cancel forward draft": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12811,12 +12833,13 @@
 },
 "email_draft | cancel forwarding": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12825,12 +12848,13 @@
 },
 "email_draft | cancel message": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12848,12 +12872,13 @@
 },
 "email_draft | cancel new email": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12862,12 +12887,13 @@
 },
 "email_draft | cancel reply": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12876,12 +12902,13 @@
 },
 "email_draft | cancel reply draft": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12908,12 +12935,13 @@
 },
 "email_draft | cancel this draft": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12922,12 +12950,13 @@
 },
 "email_draft | cancel this email": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12936,12 +12965,13 @@
 },
 "email_draft | cancel this forward": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12950,12 +12980,13 @@
 },
 "email_draft | cancel this message": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12964,12 +12995,13 @@
 },
 "email_draft | cancel this reply": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13767,12 +13799,13 @@
 },
 "email_draft | discard": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13781,12 +13814,13 @@
 },
 "email_draft | discard draft": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13795,12 +13829,13 @@
 },
 "email_draft | discard email": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13809,12 +13844,13 @@
 },
 "email_draft | discard message": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13823,12 +13859,13 @@
 },
 "email_draft | discard this draft": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13837,12 +13874,13 @@
 },
 "email_draft | discard this email": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14319,6 +14357,15 @@
 "Hello world. flow"
 ]
 },
+"email_draft | folder": {
+"said": [
+"folder"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. folder"
+]
+},
 "email_draft | folders": {
 "said": [
 "folders"
@@ -14420,12 +14467,13 @@
 },
 "email_draft | go back": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14506,12 +14554,13 @@
 },
 "email_draft | go to inbox": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14538,12 +14587,13 @@
 },
 "email_draft | go to my inbox": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14570,12 +14620,13 @@
 },
 "email_draft | go to the inbox": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14692,12 +14743,13 @@
 },
 "email_draft | inbox": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -15392,12 +15444,13 @@
 },
 "email_draft | never mind": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -15406,12 +15459,13 @@
 },
 "email_draft | nevermind": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -17085,12 +17139,13 @@
 },
 "email_draft | return to inbox": {
 "calls": [
-"call.process('open inbox')",
-"call.pending.__bool__()"
+"call.rows.__bool__()",
+"call.view.__eq__('message')",
+"call._current_list()"
 ],
 "said": [
 "Draft canceled without saving.",
-"session handled: open inbox"
+"<mock>"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -17099,7 +17154,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 413. It has not been sent."
+"Email draft saved locally as Routing check 414. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17117,7 +17172,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 414. It has not been sent."
+"Email draft saved locally as Routing check 415. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17135,7 +17190,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 415. It has not been sent."
+"Email draft saved locally as Routing check 416. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17162,7 +17217,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 417. It has not been sent."
+"Email draft saved locally as Routing check 418. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17171,7 +17226,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 418. It has not been sent."
+"Email draft saved locally as Routing check 419. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -20539,6 +20594,12 @@
 "screen_after": "help"
 },
 "help | flow": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | folder": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -24200,8 +24261,8 @@
 "mailbox | attachments": {
 "calls": [
 "call.rows.__bool__()",
-"call.current.__bool__()",
-"call.current.__sub__(1)"
+"call.rows.__bool__()",
+"call.current.__bool__()"
 ],
 "said": [
 "The attachments of this message could not be listed. Try again."
@@ -25773,6 +25834,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | folder": {
+"calls": [
+"call.process('folder')"
+],
+"said": [
+"session handled: folder"
+],
+"screen_after": "mailbox"
+},
 "mailbox | folders": {
 "calls": [
 "call.process('folders')"
@@ -25793,9 +25863,9 @@
 },
 "mailbox | forward": {
 "calls": [
+"call.rows.__bool__()",
 "call.response_context('forward')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -25804,9 +25874,9 @@
 },
 "mailbox | forward message": {
 "calls": [
+"call.rows.__bool__()",
 "call.response_context('forward')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28159,9 +28229,9 @@
 },
 "mailbox | reply": {
 "calls": [
+"call.rows.__bool__()",
 "call.response_context('reply')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28170,9 +28240,9 @@
 },
 "mailbox | reply all": {
 "calls": [
+"call.rows.__bool__()",
 "call.response_context('reply_all')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28181,9 +28251,9 @@
 },
 "mailbox | reply to all": {
 "calls": [
+"call.rows.__bool__()",
 "call.response_context('reply_all')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28192,9 +28262,9 @@
 },
 "mailbox | reply to message": {
 "calls": [
+"call.rows.__bool__()",
 "call.response_context('reply')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -31458,6 +31528,12 @@
 "note | flow": {
 "said": [
 "flow"
+],
+"screen_after": "note"
+},
+"note | folder": {
+"said": [
+"folder"
 ],
 "screen_after": "note"
 },
@@ -36887,6 +36963,16 @@
 ],
 "said": [
 "session handled: flow"
+],
+"screen_after": "web"
+},
+"web | folder": {
+"calls": [
+"call.command('folder')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: folder"
 ],
 "screen_after": "web"
 },

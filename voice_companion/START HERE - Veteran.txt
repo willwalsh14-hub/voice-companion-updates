@@ -1039,6 +1039,7 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 - To hear how many are marked, say "What is selected", or press S.
 - To remove all marks, say "Clear selection", or press U.
 - To move marked messages to Trash, say "Delete", or press Delete. With no marks, it acts on the current message.
+- In Trash, Delete changes nothing. Companion says the message is already there.
 - To pick a folder to move them to, say "Move", or press M. To name the folder, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message, even if other messages are marked.
 Listen to the action and the names, then answer Yes or No. If a result is uncertain, check the folder before you try again.
@@ -1049,7 +1050,7 @@ Open the message first. Then say "Reply", "Reply all", or "Forward". Or press R,
 Reply all goes to the sender and everyone else on the message. Check the addresses before you send.
 For a forward, give the new address when asked. Speak your added text. Then review and send as in part 11.5.
 A forward includes the original attachments. Companion says their names when the forward starts. To leave one out, say "Remove" and its name, such as "Remove the photo". Or open the Attachments list with Control+L, move to the file, and press Delete.
-To leave the reply, say "Cancel" or "Back to inbox". If you wrote something, Companion asks whether to save it as a draft, throw it away, or keep writing.
+To leave the reply, say "Cancel" or "Back to inbox". If you wrote something, Companion asks whether to save it as a draft, throw it away, or keep writing. Then you are back at the message you were reading.
 
 12.5 Create and manage folders
 - To create a folder, say "Create folder", followed by the name, such as "Create folder Receipts". Or press Alt, 4, then 1.
