@@ -174,6 +174,26 @@ class EscapeReturnsToYourPlaceTests(CompanionCase):
         self.assertEqual(self.said, ['Draft canceled without saving.', 'Back to message.'])
         self.assertEqual((mail.folder_name, mail.current, mail.view), ('Work', 2, 'message'))
 
+    def test_closing_a_saved_draft_says_it_is_still_saved(self):
+        # Before: "Save draft", then Cancel, said "Draft canceled without saving." The draft was kept.
+        mail = companion.mail_session
+        mail.process('list messages')
+        self.assertEqual(companion.handle('new email', 'mailbox'), 'email_draft')
+        companion.handle('bob@example.com', 'email_draft')
+        companion.handle('Lunch.', 'email_draft')
+        companion.handle('See you at noon.', 'email_draft')
+        companion.handle('save draft', 'email_draft')
+        title = companion.email_draft.title
+        self.said.clear()
+        self.assertEqual(companion.handle('cancel', 'email_draft'), 'mailbox')
+        self.assertEqual(self.said[0], 'Draft closed. It is still saved as ' + title + '.')
+        self.assertTrue((self.folder / 'Email Drafts' / (title + '.eml')).exists())
+        # A new email closed with nothing kept still says so.
+        companion.handle('new email', 'mailbox')
+        self.said.clear()
+        companion.handle('cancel', 'email_draft')
+        self.assertEqual(self.said[0], 'Draft canceled without saving.')
+
     def test_canceling_a_new_email_goes_back_to_the_message_you_were_on(self):
         mail = companion.mail_session
         mail.process('go to folder work')

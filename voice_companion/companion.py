@@ -3147,10 +3147,12 @@ def close_email_draft(mode, discard, notice=None):
             speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
             return 'email_draft'
     provider = email_draft.provider
+    # A draft saved before (Save draft, or opened from the drafts list) stays saved: never "without saving".
+    kept = email_draft.title if discard and discarded and email_draft.path.exists() else None
     email_draft = None
     if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
     if notice is None:
-        notice = 'Draft canceled without saving.'
+        notice = 'Draft closed. It is still saved as ' + kept + '.' if kept else 'Draft canceled without saving.'
     speak(notice if discarded else
           'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
     finish_mail_announcement()
