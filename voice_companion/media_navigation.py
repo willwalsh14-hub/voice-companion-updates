@@ -182,9 +182,10 @@ class MediaNavigation:
         h=self.hub;before=self.view,self.item_index
         result=self.run(cmd)
         # By keyboard, the controls list opens at once. By voice, the spoken commands are said instead.
-        if self.keyboard_mode and self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith('Playing '):
+        if self.keyboard_mode and self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith(('Playing ','Loading ')):
             # The episode plays here, and its controls come up at once: no other window.
-            title=str(result).split('. Say ')[0].rstrip('.')
+            # A slow one says "Loading Rome." and gets its controls too.
+            title=str(result).split('. It starts in a moment')[0].split('. Say ')[0].rstrip('.')
             return self.show_controls(title+'. ',before)
         return result
     def show_controls(self,lead='',back=None):

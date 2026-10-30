@@ -120,3 +120,21 @@ class MediaPlayerEndKeyTests(unittest.TestCase):
         self.assertFalse(companion.task_navigation().player_menu)
         self.assertFalse(self.player.paused)
 
+
+
+class SlowEpisodeOpensTheControlsTests(ExpertMediaTestCase):
+    """Enter on an episode opens the player controls. An episode that is slow to start
+    ("Loading Rome.") must open them too, as one that starts at once does."""
+
+    def test_a_slow_episode_still_opens_the_player_controls(self):
+        player = self.hub.player
+        opened = player.open
+        def slow_open(url, title, kind):
+            opened(url, title, kind)
+            player.loading = True   # MediaPlayer: an internet address still being fetched
+        player.open = slow_open
+        self.say('Media', 'Podcasts', 'Search podcasts for history')
+        self.key('Enter')
+        said = self.key('Enter')
+        self.assertEqual(said, 'Loading Rome. Player controls. Play or pause (P), 1 of 11. Escape goes back to the episodes.')
+        self.assertEqual(companion.MEDIA_NAV.view, 'controls')
