@@ -3157,6 +3157,10 @@ def close_email_draft(mode, discard, notice=None):
         provider = chosen[0] if chosen else provider
     if mail_session is None and provider in MAIL_PROVIDERS:
         mail_session = MailSession(provider, APP, progress=mail_progress)
+    if isinstance(mail_session, MailSession) and mail_session.rows:
+        # Back where you were, as after sending: the open message, or the message in its folder.
+        speak('Back to message.' if mail_session.view == 'message' else mail_session._current_list())
+        return 'mailbox'
     if mail_session is not None:
         speak(mail_session.process('open inbox'))
         return 'mailbox'

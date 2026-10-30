@@ -391,6 +391,11 @@ class MailSession:
             value=sender_name(row) if header=='from' else row.get(header,'unavailable')
             if header=='size':
                 value=(str(value)+' bytes') if isinstance(value,(int,float)) else str(value)
+            if header=='subject':
+                # Said as Alt+4 says it: "Lunch." not "Lunch..", and never a blank.
+                value=' '.join(str(value or '').split()).rstrip('.').strip()
+                if value in ('','(no subject)'):
+                    parts.append('No subject');continue
             parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))
         boundary=self._message_boundary(number) if announce_boundary else ''
         return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'

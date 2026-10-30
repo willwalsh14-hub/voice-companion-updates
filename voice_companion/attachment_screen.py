@@ -286,7 +286,9 @@ def back(m):
         return 'email_draft'
     if RETURN_MODE == 'mailbox' and m.mail_session is not None:
         mail = m.mail_session
-        m.speak('Back to message.' if mail.view == 'message' else 'Back to ' + mail.folder_name + '.')
+        # In the list, the message you are on, as Escape from a message says it.
+        m.speak('Back to message.' if mail.view == 'message' else
+                mail._current_list() if mail.rows else 'Back to ' + mail.folder_name + '.')
         return 'mailbox'
     return 'awake'
 
