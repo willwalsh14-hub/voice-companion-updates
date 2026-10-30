@@ -3050,13 +3050,13 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Skip back
 
 - Voice: "Skip back"
-- Keyboard: J
+- Keyboard: Left
 - Status: Both
 
 ### Skip forward
 
 - Voice: "Skip forward"
-- Keyboard: L
+- Keyboard: Right
 - Status: Both
 
 ### Restart the video

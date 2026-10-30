@@ -25,15 +25,19 @@ def table(*extra):
 
 class FakeDesktop:
     def __init__(self):
-        self.list = []; self.tucks = []; self.front = 900; self.brought = []
+        self.list = []; self.tucks = []; self.front = 900; self.brought = []; self.parked = set()
 
     def windows(self, pids=None):
         return [w for pid, w in self.list if pids is None or pid in pids]
 
-    def tuck(self, handle):
-        self.tucks.append(handle)
-        self.list = [(pid, w._replace(tool=True, minimized=True) if w.handle == handle else w) for pid, w in self.list]
+    def park(self, handle):
+        # Off the taskbar and off the screen, but never minimized: a minimized Chrome stops drawing.
+        self.tucks.append(handle); self.parked.add(handle)
+        self.list = [(pid, w._replace(tool=True, minimized=False) if w.handle == handle else w) for pid, w in self.list]
         return 0
+
+    def off_screen(self, handle):
+        return handle in self.parked
 
     def foreground(self):
         return self.front
@@ -94,14 +98,21 @@ class KeeperTests(unittest.TestCase):
 
     def test_a_window_chrome_brings_up_again_is_hidden_again(self):
         self.launch()
-        self.desktop.list = [(pid, w._replace(minimized=False) if w.handle == 40 else w) for pid, w in self.desktop.list]
+        self.desktop.parked.discard(40)   # Chrome moved it back on the screen
         self.assertEqual(self.keeper.poll(), 1)
+
+    def test_a_minimized_window_is_restored_off_the_screen(self):
+        # Will, October 30, 2026: YouTube said "Something went wrong" in a minimized Chrome.
+        self.launch()
+        self.desktop.list = [(pid, w._replace(minimized=True) if w.handle == 40 else w) for pid, w in self.desktop.list]
+        self.assertEqual(self.keeper.poll(), 1)
+        self.assertFalse(dict((w.handle, w) for _, w in self.desktop.list)[40].minimized)
 
     def test_a_page_brought_to_the_front_gives_the_keyboard_back(self):
         self.launch()
         self.desktop.brought.clear()
         # YouTube's video page is brought to the front: Chrome restores its window and takes the keys.
-        self.desktop.list = [(pid, w._replace(minimized=False) if w.handle == 40 else w) for pid, w in self.desktop.list]
+        self.desktop.parked.discard(40)
         self.desktop.front = 40
         self.assertEqual(self.keeper.poll(), 1)
         self.assertEqual(self.desktop.brought, [900])

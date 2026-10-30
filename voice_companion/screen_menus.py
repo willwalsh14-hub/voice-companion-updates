@@ -270,8 +270,8 @@ MENUS = {
     'youtube': ('YouTube actions menu', [
         ('Play', [
             ('Play or pause', 'Space', 'play or pause video'),
-            ('Skip back', 'J', 'skip back'),
-            ('Skip forward', 'L', 'skip forward'),
+            ('Skip back', 'Left', 'skip back'),
+            ('Skip forward', 'Right', 'skip forward'),
             ('Restart the video', '0', 'restart video'),
             ('Next video', 'N', 'next video'),
             ('Previous video', 'P', 'previous video'),

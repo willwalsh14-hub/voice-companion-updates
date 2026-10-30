@@ -782,7 +782,16 @@ PLAYER_JS = HELPERS + r'''
   const adText=[...document.querySelectorAll('.ytp-ad-badge__text,.ytp-ad-simple-ad-badge,.ytp-ad-text.ytp-ad-preview-text,.ytp-preview-ad__text,.ytp-ad-preview-text-modern,.ytp-ad-duration-remaining')].filter(shown).map(txt).filter(Boolean);
   const ccButton=document.querySelector('.ytp-subtitles-button');
   const autoplay=document.querySelector('.ytp-autonav-toggle-button');
-  const error=[...document.querySelectorAll('.ytp-error .ytp-error-content-wrap-reason,.ytp-error-content-wrap-reason,yt-playability-error-supported-renderers #reason,#error-screen #reason')].find(e=>shown(e)&&txt(e));
+  let error=[...document.querySelectorAll('.ytp-error .ytp-error-content-wrap-reason,.ytp-error-content-wrap-reason,yt-playability-error-supported-renderers #reason,#error-screen #reason')].find(e=>shown(e)&&txt(e));
+  error=error?txt(error):'';
+  // The player's own answer for a video it will not play (a sign-in check, an age check, a removed video).
+  let playability='';
+  try{const r=call(p,'getPlayerResponse');const ps=r&&r.playabilityStatus;
+    if(ps&&ps.status&&ps.status!=='OK'){playability=ps.status;
+      const t=x=>!x?'':typeof x==='string'?x:(x.simpleText||(x.runs||[]).map(r=>r.text||'').join(''));
+      error=error||t(ps.reason)||t(((ps.errorScreen||{}).playerErrorMessageRenderer||{}).reason)||ps.status;}}catch(e){}
+  if(!error){const box=[...document.querySelectorAll('yt-playability-error-supported-renderers,.ytp-error')].find(e=>shown(e)&&txt(e));
+    if(box)error=(box.innerText||txt(box)).split('\n').map(x=>x.trim()).filter(Boolean)[0]||'';}
   const title=data.title||textOf(document,['ytd-watch-metadata h1 yt-formatted-string','ytd-watch-metadata h1','#title h1','h1.title'])||document.title.replace(/ - YouTube$/,'');
   const state=call(p,'getPlayerState');
   return {
@@ -805,7 +814,7 @@ PLAYER_JS = HELPERS + r'''
     autoplay:autoplay&&shown(autoplay)?autoplay.getAttribute('aria-checked')==='true':null,
     fullscreen:!!document.fullscreenElement||!!(p&&p.classList.contains('ytp-fullscreen')),
     chapter:textOf(document,['.ytp-chapter-title-content']),
-    error:error?txt(error):''
+    error:error,playability
   };
 }
 '''

@@ -127,20 +127,26 @@ class BackgroundChromeLiveTests(unittest.TestCase):
             self.assertTrue(self.chrome_sound_reaches_windows(), 'Headless Chrome has no active Windows audio session.')
 
     def assert_out_of_sight(self):
-        """Every window of the Chrome Voice Companion started is minimized and off the taskbar."""
+        """Every window of the Chrome Voice Companion started is off the screen and off the taskbar,
+        and not minimized: the page keeps drawing, so videos play (Will, October 30, 2026)."""
         keeper = self.backend.window_keeper
         self.assertIsNotNone(keeper, 'Guided Chrome has no window keeper on Windows')
         self.assertTrue(keeper.pids, 'The guided Chrome process was not found')
         deadline = time.monotonic() + 5
         while True:
             windows = keeper.desktop.windows(keeper.pids)
-            if windows and all(w.tool and w.minimized for w in windows):
+            if windows and all(w.tool and not w.minimized and keeper.desktop.off_screen(w.handle) for w in windows):
                 break
             if time.monotonic() > deadline:
                 self.fail('Guided Chrome windows still show: ' + repr(windows))
             time.sleep(0.2)
         foreground = keeper.desktop.foreground()
         self.assertNotIn(foreground, [w.handle for w in windows], 'Chrome kept the keyboard')
+        # The page keeps drawing while hidden. A minimized Chrome stops drawing frames, and
+        # YouTube's player then failed with "Something went wrong".
+        frames = self.backend.page.evaluate("""()=>new Promise(done=>{let n=0;const step=()=>{n++;if(n<1000)requestAnimationFrame(step);};
+            requestAnimationFrame(step);setTimeout(()=>done(n),2000);})""")
+        self.assertGreater(frames, 20, 'The hidden page drew almost no frames: ' + str(frames))
         # The page still works while hidden: it runs script and answers clicks.
         self.backend.page.click('#play')
         self.assertTrue(self.backend.page.evaluate("!document.getElementById('sound').paused"))

@@ -71,7 +71,7 @@ class YouTubeWindowKeyTests(unittest.TestCase):
 
     def test_action_keys_reach_the_screen_and_are_never_typed(self):
         self.screen()
-        keys = (('k', 0, 'K'), ('space', 0, 'Space'), ('j', 0, 'J'), ('l', 0, 'L'), ('5', 0, '5'), ('0', 0, '0'),
+        keys = (('k', 0, 'K'), ('space', 0, 'Space'), ('5', 0, '5'), ('0', 0, '0'),
                 ('comma', 0, 'comma'), ('period', 0, 'period'), ('Up', 4, 'Ctrl+Up'), ('Down', 4, 'Ctrl+Down'),
                 ('Right', 4, 'Ctrl+Right'), ('c', 0, 'C'), ('s', 0, 'S'), ('t', 0, 'T'), ('f', 4, 'Ctrl+F'),
                 ('F5', 0, 'F5'), ('F1', 0, 'F1'), ('Left', 0, 'Left'), ('Right', 0, 'Right'), ('Down', 0, 'Down'),
