@@ -11,9 +11,10 @@
         {
           "title": "YouTube in your own Chrome",
           "details": [
-            "YouTube sometimes stops a video after about a minute in Voice Companion's Chrome. It says something went wrong.",
-            "Now the video goes on in your own Chrome, from where it stopped. This needs the Voice Companion extension in Chrome.",
-            "After that, YouTube opens in your own Chrome. Your keys work the same."
+            "YouTube stops videos after about a minute in a browser a program controls. It says something went wrong.",
+            "Now YouTube always opens in your own Chrome, so videos play without stopping. This needs the Voice Companion extension in Chrome.",
+            "If Chrome is closed, Voice Companion opens it and gives your keys back. Your keys work the same.",
+            "If a video still stops, it goes on in your own Chrome, from where it stopped."
           ]
         }
       ]

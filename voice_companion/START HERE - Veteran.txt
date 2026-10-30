@@ -2239,7 +2239,7 @@ When you press Enter on a video, you hear "Loading video". Then the video plays 
 - Home starts the video again.
 - Escape goes back to the list you came from, such as your search results. The video keeps playing.
 To come back to the player, press Enter on the video that is playing, or say "Player".
-If YouTube says something went wrong, Companion loads the video again once by itself. If YouTube stops the video in Companion's Chrome, and your own Chrome has the Voice Companion extension, the video goes on in your own Chrome, from where it stopped. After that, YouTube opens in your own Chrome. If it still does not play, press Enter to try again, or choose another video.
+If YouTube says something went wrong, Companion loads the video again once by itself. YouTube stops videos after about a minute in a browser a program controls. So when your own Chrome has the Voice Companion extension, YouTube always opens in your own Chrome, and videos play without stopping. If Chrome is closed, Companion opens it and gives your keys back. If a video still stops in Companion's Chrome, it goes on in your own Chrome, from where it stopped. If it still does not play, press Enter to try again, or choose another video.
 The letter keys below also work in a YouTube list while a video plays. In the YouTube menu and the filter lists, letters move to the next name instead.
 - To play or pause, say "Play or pause video", or press Space or K.
 - To skip back, say "Skip back". To skip forward, say "Skip forward".

@@ -290,8 +290,11 @@ class YouTubeScreen:
             else:
                 try:
                     if not self.injected(web):
-                        if self.m.PREFERENCES.get('youtube_own_chrome') and web.running_browser() == 'chrome':
-                            # YouTube stopped videos in Voice Companion's Chrome before: start in your own.
+                        running = web.running_browser()
+                        if running == 'chrome' or running == 'webview2' and web._saved_browser() != 'webview2':
+                            # YouTube stops videos after about a minute in a Chrome a program drives (Will,
+                            # October 30, 2026: "I don't want playback interruptions at all"). So YouTube
+                            # always starts in your own Chrome when it has the Voice Companion extension.
                             self.link_own_chrome(url, OWN_CHROME_START)
                         web.adopt_connected_browser()
                 except Exception:

@@ -510,3 +510,33 @@ class LinkOwnChromeTests(unittest.TestCase):
             relay.connected.clear(); Chrome.state = None
             self.assertIsNone(s.link_own_chrome('https://www.youtube.com/'))   # no extension: never opened
             self.assertEqual(len(opened), 1)
+
+
+class AlwaysOwnChromeTests(unittest.TestCase):
+    """Will, October 30, 2026: "it should just do that all the way around, I don't want playback
+    interruptions at all". YouTube starts in your own Chrome whenever it has the extension."""
+
+    def go(self, running, saved=None):
+        m = Mock(PREFERENCES={}, APP=Path(tempfile.mkdtemp()), APP_WINDOW=None)
+        s = ys.YouTubeScreen(m)
+        web = Mock(injected_backend=False); web.running_browser.return_value = running
+        web._saved_browser.return_value = saved
+        web._navigate.return_value = ''
+        s.web = lambda: web
+        s.link_own_chrome = Mock(return_value=True)
+        s.lists = Mock()
+        s.go('https://www.youtube.com/')
+        return s, web
+
+    def test_youtube_starts_in_your_own_chrome(self):
+        s, web = self.go('chrome')
+        s.link_own_chrome.assert_called_once_with('https://www.youtube.com/', ys.OWN_CHROME_START)
+        web.adopt_connected_browser.assert_called_once()
+
+    def test_embedded_edge_as_the_default_gives_way_too(self):
+        s, _ = self.go('webview2')
+        s.link_own_chrome.assert_called_once()
+
+    def test_a_chosen_embedded_edge_is_kept(self):
+        s, _ = self.go('webview2', saved='webview2')
+        s.link_own_chrome.assert_not_called()
