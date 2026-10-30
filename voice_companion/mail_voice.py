@@ -249,6 +249,10 @@ class MailSession:
         self.selected.add(number)
         self.marked_ids[row['id']] = self._summary(number)
 
+    def _selected_count(self):
+        """'2 selected.' after every mark and unmark, by key or voice; 'None selected.' when none are."""
+        return (str(len(self.marked_ids)) + ' selected.') if self.marked_ids else 'None selected.'
+
     def _unmark(self, number):
         self.selected.discard(number)
         self.marked_ids.pop(self.rows[number - 1]['id'], None)
@@ -834,32 +838,34 @@ class MailSession:
                 if not self.rows:return 'No messages to select.'
                 if self.current in self.selected:
                     self._unmark(self.current)
-                    return 'Unmarked message '+str(self.current)+'.'
+                    return 'Unmarked message '+str(self.current)+'. '+self._selected_count()
                 self._mark(self.current)
-                return 'Marked message '+str(self.current)+'.'
+                return 'Marked message '+str(self.current)+'. '+self._selected_count()
             if command=='select all messages':
                 for number in range(1,len(self.rows)+1):self._mark(number)
                 return plural(len(self.rows), 'message')+' on this page selected.'
             if command in ('select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message'):
                 self._current_ids()
                 self._mark(self.current)
-                return 'Marked message ' + str(self.current) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Marked message ' + str(self.current) + '. ' + self._selected_count()
             match = re.fullmatch(r'(?:select|mark) message (' + NUMBER + r')', command)
             if match:
                 n = self._number(match[1])
                 self._mark(n)
-                return 'Selected message ' + str(n) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Marked message ' + str(n) + '. ' + self._selected_count()
             if command in ('unmark message', 'deselect message', 'unselect message'):
                 self._current_ids()
+                if self.current not in self.selected:
+                    return 'Message ' + str(self.current) + ' is not marked. ' + self._selected_count()
                 self._unmark(self.current)
-                return 'Unmarked message ' + str(self.current) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Unmarked message ' + str(self.current) + '. ' + self._selected_count()
             match = re.fullmatch(r'select messages (' + NUMBER + r') (?:through|to) (' + NUMBER + r')', command)
             if match:
                 first, last = self._number(match[1]), self._number(match[2])
                 if first > last:
                     return 'Say the first number before the last number.'
                 for n in range(first, last + 1): self._mark(n)
-                return 'Selected messages ' + str(first) + ' through ' + str(last) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Marked messages ' + str(first) + ' through ' + str(last) + '. ' + self._selected_count()
             if command in ('clear selection', 'cancel selection'):
                 self._clear_marks()
                 return 'Selection cleared.'

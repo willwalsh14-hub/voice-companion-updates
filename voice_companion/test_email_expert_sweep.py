@@ -51,6 +51,21 @@ class SummaryWordsTests(CompanionCase):
         self.assertTrue(mail.process('next message').startswith('Person 3. No subject. October 2, 2026. 3 of 4.'))
 
 
+class MarkingWordsTests(CompanionCase):
+    def test_every_way_to_mark_says_the_same_words_and_the_count(self):
+        # Before: "Selected message 2." by number, "Marked message 3." with no count from Space,
+        # and "Unmarked message 1." for a message that was never marked.
+        mail = MailSession('thunderbird', self.folder, Mailbox)
+        mail.process('list messages')
+        self.assertEqual(mail.process('unmark message'), 'Message 1 is not marked. None selected.')
+        self.assertEqual(mail.process('mark message 2'), 'Marked message 2. 1 selected.')
+        self.assertEqual(mail.process('toggle message selection'), 'Marked message 1. 2 selected.')
+        self.assertEqual(mail.process('toggle message selection'), 'Unmarked message 1. 1 selected.')
+        self.assertEqual(mail.process('select messages 3 through 4'), 'Marked messages 3 through 4. 3 selected.')
+        mail.process('go to message 2')
+        self.assertEqual(mail.process('unmark message'), 'Unmarked message 2. 2 selected.')
+
+
 class EscapeReturnsToYourPlaceTests(CompanionCase):
     def setUp(self):
         super().setUp()
