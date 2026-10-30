@@ -1,19 +1,18 @@
 {
-  "version": "0.2.178-test",
+  "version": "0.2.179-test",
   "status": "Testing build",
   "date": "October 29, 2026",
-  "baseline": "0.2.177-test",
-  "scope": "Thunderbird and Chrome now work the same in the background as with a window.",
+  "baseline": "0.2.178-test",
+  "scope": "Podcasts and the radio play again.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Chrome in the background",
+          "title": "Saved episodes play first",
           "details": [
-            "Run the browser in the background now uses the same Chrome as before. Its window is kept out of sight.",
-            "It is not on the screen, the taskbar or Alt+Tab. Your keys stay in Voice Companion.",
-            "Google search and YouTube now work in the background too."
+            "If an episode is already downloaded, Voice Companion plays the saved copy. It starts at once, even with no internet.",
+            "A slow episode no longer fails. You hear Loading, and it plays when it is ready."
           ]
         }
       ]
@@ -22,17 +21,11 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Thunderbird in the background",
+          "title": "Podcasts and radio",
           "details": [
-            "Email no longer waits until you press Alt+Tab. Mail connects on its own, even when Thunderbird is hidden.",
-            "Close Voice Companion and start it again. Mail connects on its own.",
-            "After an update, mail connects again within a few seconds."
-          ]
-        },
-        {
-          "title": "YouTube",
-          "details": [
-            "Videos no longer say something went wrong when Chrome runs in the background."
+            "Podcasts said they could not start after you used the web browser. They play again.",
+            "If the player has a problem, Voice Companion starts it fresh and tries once more.",
+            "If an episode still cannot play, you hear what to do next."
           ]
         }
       ]
