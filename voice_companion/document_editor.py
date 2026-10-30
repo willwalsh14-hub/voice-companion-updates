@@ -268,6 +268,26 @@ def closed(text):
     return text if text.endswith(('.', '!', '?')) else text + '.'
 
 
+def formatting_words(changes):
+    """'Bold. Font size 14 points.' for what a format command changed, in the words
+    "say formatting" uses. Never "bold: True"."""
+    parts = []
+    for name, value in changes.items():
+        if name in ('bold', 'italic', 'underline'):
+            parts.append(name.capitalize() if value else 'Not ' + name)
+        elif name == 'size':
+            parts.append(f'Font size {value} points')
+        elif name == 'font':
+            parts.append('Font ' + str(value))
+        elif name == 'kind':
+            parts.append('Normal text' if value == 'Normal' else str(value))
+        elif name == 'alignment':
+            parts.append('Alignment ' + ('justified' if value == 'both' else str(value)))
+        else:
+            parts.append(str(value))
+    return '. '.join(parts) + '.'
+
+
 def undo_words(text, limit=10):
     """At most `limit` words of what changed, without the closing punctuation, for "Undid typing: ..."."""
     words = ' '.join(str(text).split()).rstrip('.,;:!?')
@@ -603,6 +623,13 @@ class VoiceDocument:
             word = 'redo' if redo else 'undo'
             return ('Nothing more to ' + word + '.') if target else ('There is nothing to ' + word + '.')
         step = source[-1]
+        if redo:
+            # Land on what the redo changes, as Undo does, not where you were when you undid it.
+            changed = next((i for i, (now_p, then_p) in enumerate(zip(self.paragraphs, step.paragraphs)) if now_p != then_p), None)
+            if changed is None and len(self.paragraphs) != len(step.paragraphs):
+                changed = min(len(self.paragraphs), len(step.paragraphs))
+            if changed is not None:
+                step.cursor = changed
         now = self._snapshot(step.label)
         if not self._restore_step(step):
             return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
@@ -702,7 +729,7 @@ class VoiceDocument:
         selected_index = min(self.word_cursor, len(words)-1)
         self.changed()
         self.word_cursor = selected_index
-        return 'Formatted word ' + selected.group() + '. ' + ', '.join(f'{k}: {v}' for k,v in changes.items()) + '.'
+        return 'Formatted word ' + closed(selected.group()) + ' ' + formatting_words(changes)
 
     def use_new_document_style(self, font='', size=0, alignment='left', spacing=None):
         """Set the look of a new document before it has any text.
@@ -1775,6 +1802,9 @@ class VoiceDocument:
                 return 'Please say a font name using letters and numbers.'
             return self.format_current(font=name)
         size = re.fullmatch(r'(?:(?:set|change|use) (?:font )?size (?:to )?|make it )(.+?)(?: points?)?', command)
+        if size and command.startswith('make it ') and spoken_number(size.group(1)) is None:
+            # "Make it quick." is a sentence to write. Only "make it 14 points" is a size.
+            size = None
         if size:
             value = spoken_number(size.group(1))
             if value is None or '.' in value: return 'Please say a whole font size from 6 to 72 points.'
@@ -1894,7 +1924,7 @@ class VoiceDocument:
                     else: setattr(p,name,value)
                 p.runs = self.compress_runs(p.text, styles)
             self.changed()
-            return 'Formatted the selection. ' + ', '.join(f'{name}: {value}' for name,value in changes.items()) + '.'
+            return 'Formatted the selection. ' + formatting_words(changes)
         p = self.paragraphs[self.cursor]
         self.reconcile_runs(p)
         for name, value in changes.items():
@@ -1903,5 +1933,4 @@ class VoiceDocument:
                 for run in p.runs:
                     setattr(run, name, value)
         self.changed()
-        details = ', '.join(f'{name.replace("kind", "style")}: {value}' for name, value in changes.items())
-        return 'Formatted the current ' + ('cell' if self.table_cell() else 'paragraph') + '. ' + details + '.'
+        return 'Formatted the current ' + ('cell' if self.table_cell() else 'paragraph') + '. ' + formatting_words(changes)

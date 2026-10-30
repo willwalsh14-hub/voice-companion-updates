@@ -113,5 +113,75 @@ class NoDoubledPeriods(EditorCase):
             self.assertEqual(self.doc.process('delete word'), 'Deleted: Dear. Say undo to restore it.')
 
 
+class FormattingIsConfirmedInPlainWords(EditorCase):
+    """Before: "Formatted the current paragraph. italic: True." and "style: Heading 2.",
+    program words the user should never hear."""
+    def setUp(self):
+        super().setUp()
+        self.write('Dear Bob.')
+
+    def test_paragraph_formatting(self):
+        for command, said in (('make this italic', 'Formatted the current paragraph. Italic.'),
+                              ('remove italic', 'Formatted the current paragraph. Not italic.'),
+                              ('make this bold', 'Formatted the current paragraph. Bold.'),
+                              ('heading 2', 'Formatted the current paragraph. Heading 2.'),
+                              ('normal text', 'Formatted the current paragraph. Normal text.'),
+                              ('bulleted list', 'Formatted the current paragraph. Bulleted list.'),
+                              ('align center', 'Formatted the current paragraph. Alignment center.'),
+                              ('justify justified', 'Formatted the current paragraph. Alignment justified.'),
+                              ('set font size to 14', 'Formatted the current paragraph. Font size 14 points.'),
+                              ('change font to Arial', 'Formatted the current paragraph. Font Arial.'),
+                              ('set font Verdana size 12', 'Formatted the current paragraph. Font Verdana. Font size 12 points.')):
+            with self.subTest(command=command):
+                self.assertEqual(self.doc.process(command), said)
+
+    def test_selection_and_word_formatting(self):
+        self.doc.process('select all')
+        self.assertEqual(self.doc.process('set font size to 16'), 'Formatted the selection. Font size 16 points.')
+        self.doc.process('unselect')
+        self.doc.process('beginning of document')
+        self.assertEqual(self.doc.process('set word size 12'), 'Formatted word Dear. Font size 12 points.')
+
+
+class MakeItIsOnlyAFontSize(EditorCase):
+    """Before: dictating "Make it quick." said "Please say a whole font size" and the words were lost."""
+    def test_a_sentence_that_starts_with_make_it_is_written(self):
+        for sentence in ('Make it quick.', 'make it a good one', 'Make it happen!'):
+            with self.subTest(sentence=sentence):
+                self.assertNotIn('font size', self.doc.process(sentence))
+                self.assertIn(sentence.lower().rstrip('.!'), ' '.join(self.texts()).lower())
+
+    def test_make_it_a_size_still_sets_the_size(self):
+        self.write('Dear Bob.')
+        self.assertEqual(self.doc.process('make it 14 points'), 'Formatted the current paragraph. Font size 14 points.')
+        self.assertEqual(self.doc.process('make it twelve'), 'Formatted the current paragraph. Font size 12 points.')
+        self.assertEqual(self.doc.process('make it 100 points'), 'Choose a font size from 6 to 72 points.')
+        self.assertEqual(self.texts(), ['Dear Bob.'])
+
+
+class RedoLandsOnTheChange(EditorCase):
+    """Before: Redo of typing in paragraph 2 said "Paragraph 1 of 2" and put you in paragraph 1,
+    so the next words went to the wrong place."""
+    def test_redo_typing_in_a_later_paragraph(self):
+        self.write('Opening words.', 'Closing words.')
+        self.doc.process('beginning of document')
+        self.assertTrue(self.doc.process('undo').startswith('Undid typing: Closing words. Paragraph 2 of 2.'))
+        self.doc.process('beginning of document')
+        self.assertEqual(self.doc.process('redo'), 'Redid typing: Closing words. Paragraph 2 of 2. Closing words.')
+        self.assertEqual(self.doc.cursor, 1)
+
+    def test_redo_a_new_paragraph(self):
+        self.write('Opening words.')
+        self.doc.process('new paragraph')
+        self.doc.process('undo')
+        self.assertEqual(self.doc.process('redo'), 'Redid a new paragraph. Paragraph 2 of 2. Empty paragraph.')
+
+    def test_redo_a_deleted_last_paragraph(self):
+        self.write('Opening words.', 'Closing words.')
+        self.doc.process('delete paragraph')
+        self.doc.process('undo'); self.doc.process('beginning of document')
+        self.assertTrue(self.doc.process('redo').startswith('Redid delete paragraph. Paragraph 1 of 1.'))
+
+
 if __name__ == '__main__':
     unittest.main()
