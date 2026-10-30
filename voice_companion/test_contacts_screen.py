@@ -253,6 +253,26 @@ class ContactsScreenTests(CompanionHarness):
         self.press('Delete', mode)
         self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be deleted.')
 
+    def test_where_am_i_and_repeat_keep_your_place_and_list_words_move(self):
+        mode = self.open()
+        self.press('Down', mode)
+        for words in ('repeat', 'Say that again.', 'where am i'):
+            with self.subTest(words=words):
+                self.say(words, mode)
+                self.assertEqual(self.said(), 'Contacts. 5 contacts. Help Desk, help@work.example, 555-0111, 2 of 5.')
+        self.say('next item', mode)
+        self.assertEqual(self.said(), 'John Smith, john@example.com, 555-0100, 3 of 5.')
+        self.say('previous item', mode)
+        self.assertEqual(self.said(), 'Help Desk, help@work.example, 555-0111, 2 of 5.')
+        # In a contact's details, Where am I says them and stays there.
+        self.press('Enter', mode)
+        self.press('Down', mode)
+        self.say('Where am I?', mode)
+        self.assertEqual(self.said(), 'Contacts. Help Desk. Name: Help Desk, 2 of 5.')
+        self.assertEqual(contacts_screen.VIEW, 'details')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'Email: help@work.example, 3 of 5.')
+
     def test_a_contact_removed_in_thunderbird_meanwhile_leaves_the_list(self):
         # Deleted in Thunderbird while Contacts was open: the list is read again, so Down and Up
         # never reach a contact that is gone.

@@ -336,7 +336,10 @@ def command_here(m, raw, command):
         VIEW = 'list'
         m.speak('Contacts. ' + describe())
         return MODE
-    if command in OPEN + ('where am i', 'list contacts'):
+    if command in ('where am i', 'repeat', 'say that again', 'repeat that') and VIEW == 'details' and DETAILS and current():
+        m.speak('Contacts. ' + current().name + '. ' + details_item())      # say it, and stay in the details
+        return MODE
+    if command in OPEN + ('where am i', 'list contacts', 'repeat', 'say that again', 'repeat that'):
         VIEW = 'list'
         m.speak(summary())
         return MODE
@@ -374,7 +377,8 @@ def command_here(m, raw, command):
             edge = 'Start of list. ' if command in ('previous', 'previous item', 'home', 'first item') else 'End of list. '
         m.speak(edge + details_item())
         return MODE
-    moves = {'next': 1, 'next contact': 1, 'down': 1, 'previous': -1, 'previous contact': -1, 'up': -1}
+    moves = {'next': 1, 'next contact': 1, 'down': 1, 'next item': 1, 'previous': -1, 'previous contact': -1, 'up': -1,
+             'previous item': -1}
     ends = {'home': 0, 'first contact': 0, 'start of list': 0, 'top of list': 0, 'first item': 0,
             'end': -1, 'last contact': -1, 'end of list': -1, 'bottom of list': -1, 'last item': -1}
     if command in moves or command in ends:

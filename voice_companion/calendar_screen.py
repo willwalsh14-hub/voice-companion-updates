@@ -358,7 +358,12 @@ def command_here(m, raw, command):
                    'back to main menu', 'go to main menu'):
         reset()
         return 'awake'      # handle() says Main menu when the screen changes
-    if command in OPEN + ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'refresh', 'refresh calendar'):
+    if command in ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'say that again', 'repeat that'):
+        # Said again where you are: the day, its count, and the event you are on (not the first one).
+        words = spoken_day(DAY or today(m), today(m)) + '. ' + day_summary() + (' ' + NOTICE if NOTICE else '')
+        m.speak('Calendar. ' + (showing() + ' ' if choosing() else '') + words if command == 'where am i' else words)
+        return MODE
+    if command in OPEN + ('refresh', 'refresh calendar'):
         words = show(m, DAY or today(m), opening=command.startswith('refresh'))
         if command in OPEN + ('where am i',):
             words = 'Calendar. ' + with_showing(words)      # the screen's name first, as on Contacts
@@ -380,8 +385,10 @@ def command_here(m, raw, command):
     if command in ('tomorrow', 'yesterday'):
         m.speak(show(m, today(m) + timedelta(days=1 if command == 'tomorrow' else -1)))
         return MODE
-    moves = {'next event': 1, 'next': 1, 'down': 1, 'previous event': -1, 'previous': -1, 'up': -1}
-    ends = {'first event': 0, 'start of list': 0, 'first item': 0, 'last event': -1, 'end of list': -1, 'last item': -1}
+    moves = {'next event': 1, 'next': 1, 'down': 1, 'next item': 1, 'previous event': -1, 'previous': -1, 'up': -1,
+             'previous item': -1}
+    ends = {'first event': 0, 'start of list': 0, 'first item': 0, 'top of list': 0, 'beginning of list': 0,
+            'last event': -1, 'end of list': -1, 'last item': -1, 'bottom of list': -1}
     if command in moves or command in ends:
         if not EVENTS:
             m.speak('No events. Press Right Arrow for the next day.')
