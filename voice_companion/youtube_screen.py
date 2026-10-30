@@ -668,11 +668,13 @@ class YouTubeScreen:
             target = 0
         elif target > last:
             if old == last:
-                return 'End of list. ' + self.describe()
+                # The list said more would load; when YouTube sent none, say so, not "End of list".
+                waiting = view['kind'] == 'list' and view.get('token')
+                return (yp.NO_MORE + ' ' if waiting else 'End of list. ') + self.describe()
             target = last
         view['index'] = target
         # Near the end of a long list, the next part is fetched before it is needed.
-        if not loaded and view['kind'] == 'list' and view.get('token') and last - target < PREFETCH:
+        if not loaded and view['kind'] == 'list' and view.get('token') and not view.get('failed') and last - target < PREFETCH:
             self.more(view)
         return self.describe()
 
@@ -692,7 +694,9 @@ class YouTubeScreen:
                 try:
                     items, token = reader.next_part(view['token'], view.get('search'))
                 except YouTubeError:
+                    view['failed'] = True   # asked again only at the end of the list, not on every key
                     return False
+                view.pop('failed', None)
                 view['token'] = token
                 added = [i for i in items if yp.item_key(i) not in known]
                 if added:
@@ -700,6 +704,7 @@ class YouTubeScreen:
                     return True
                 if not token:
                     return False
+            view['failed'] = True   # three parts with nothing new: stop asking on every key
             return False
         if view.get('data'):
             return False   # YouTube sent the whole list: there is no next part

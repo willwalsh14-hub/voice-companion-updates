@@ -52,3 +52,53 @@ class EmptyListKeysTests(ExpertMediaTestCase):
         for name in ('Letter:p', 'Left', 'Right', 'Down'):
             with self.subTest(key=name):
                 self.assertEqual(self.key(name), 'No items in this list. Tab returns to the actions menu.')
+
+
+from contextlib import ExitStack
+from unittest.mock import patch
+import youtube_page as yp
+import youtube_screen as ys
+from test_youtube import NoBrowser
+
+
+class _Page:
+    url = 'https://www.youtube.com/'
+
+    def is_closed(self):
+        return False
+
+
+def _videos(first, count):
+    return [{'kind': 'video', 'id': 'v' + str(n), 'url': '', 'title': 'Video ' + str(n), 'channel': '', 'length': '',
+             'views': '', 'age': ''} for n in range(first, first + count)]
+
+
+class YouTubeNextPartFailsTests(NoBrowser):
+    """The list said "more load as you move down". When YouTube does not send the next part,
+    Down at the end must say so, not "End of list.", and arrows must not keep asking again."""
+
+    def setUp(self):
+        super().setUp()
+        self.asked = []
+        def refuse(page, token, search=False):
+            self.asked.append(token)
+            raise yp.YouTubeError(yp.NO_MORE)
+        self.stack.enter_context(patch.object(yp.YouTubePage, 'next_part', refuse))
+        self.s = ys.screen(self.app)
+        self.s.list_page = _Page()
+        self.s.push({'kind': 'list', 'name': 'home', 'title': 'Home', 'url': 'https://www.youtube.com/',
+                     'items': _videos(1, 8), 'token': 'home-2', 'data': True})
+
+    def test_the_end_of_a_list_that_could_not_load_more_says_why(self):
+        for _ in range(7):
+            self.press('Down')
+        self.assertEqual(len(self.asked), 1)   # asked once near the end, not on every key
+        self.press('Down')
+        self.assertTrue(self.said[-1].startswith(yp.NO_MORE), self.said[-1])
+        self.assertTrue(self.said[-1].endswith('8 of 8.'), self.said[-1])
+
+    def test_a_list_with_no_next_part_still_says_end_of_list(self):
+        self.s.view()['token'] = ''
+        self.press('End'); self.press('Down')
+        self.assertTrue(self.said[-1].startswith('End of list. Video 8'), self.said[-1])
+        self.assertEqual(self.asked, [])
