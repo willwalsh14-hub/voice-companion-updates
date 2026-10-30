@@ -37,8 +37,12 @@ class Lease:
 
 
 def bundled_browsers():
-    """The browsers that ship with the app (Firefox for the audio player), or None."""
+    """The browsers that ship with the installed app (Firefox for the audio player), or None.
+    Only in the installed app: run from source (and in the build's tests), Playwright's own
+    browsers are used, and the build's browser-runtime folder holds Firefox alone."""
     import sys
+    if not getattr(sys, 'frozen', False):
+        return None
     root = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'browser-runtime'
     return root if root.is_dir() else None
 

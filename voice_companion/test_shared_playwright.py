@@ -88,9 +88,10 @@ class BrowsersPathTests(unittest.TestCase):
             def stop(self): pass
 
         def body():
-            with mock.patch.object(sys, '_MEIPASS', str(root), create=True), \
+            with mock.patch.object(sys, '_MEIPASS', str(root), create=True), mock.patch.object(sys, 'frozen', True, create=True), \
                     mock.patch.dict(os.environ, {'PLAYWRIGHT_BROWSERS_PATH': ''}), \
-                    mock.patch('playwright.sync_api.sync_playwright', lambda: Driver()):
+                    mock.patch('playwright.sync_api.sync_playwright', lambda: Driver()), \
+                    mock.patch('browser_process.browser_process_environment', lambda folder: __import__('contextlib').nullcontext()):
                 lease = shared_playwright.start(root)   # the web browser, first
                 lease.stop()
         thread = threading.Thread(target=body); thread.start(); thread.join(30)
@@ -99,5 +100,13 @@ class BrowsersPathTests(unittest.TestCase):
     def test_without_bundled_browsers_nothing_is_changed(self):
         import sys
         from unittest import mock
-        with mock.patch.object(sys, '_MEIPASS', tempfile.mkdtemp(), create=True):
+        with mock.patch.object(sys, '_MEIPASS', tempfile.mkdtemp(), create=True), mock.patch.object(sys, 'frozen', True, create=True):
+            self.assertIsNone(shared_playwright.bundled_browsers())
+
+    def test_run_from_source_playwrights_own_browsers_are_used(self):
+        # The build's tests use Playwright's Chromium; its browser-runtime folder holds only Firefox.
+        root = Path(tempfile.mkdtemp()); (root / 'browser-runtime').mkdir()
+        import sys
+        from unittest import mock
+        with mock.patch.object(sys, '_MEIPASS', str(root), create=True):
             self.assertIsNone(shared_playwright.bundled_browsers())
