@@ -138,3 +138,13 @@ class SlowEpisodeOpensTheControlsTests(ExpertMediaTestCase):
         said = self.key('Enter')
         self.assertEqual(said, 'Loading Rome. Player controls. Play or pause (P), 1 of 11. Escape goes back to the episodes.')
         self.assertEqual(companion.MEDIA_NAV.view, 'controls')
+
+
+class PodcastWordingTests(ExpertMediaTestCase):
+    """The screen says podcasts everywhere. Going back from the episodes said "feeds"."""
+
+    def test_back_from_the_episodes_says_podcasts(self):
+        self.say('Media', 'Podcasts', 'Search podcasts for history')
+        self.key('Enter')
+        said = self.key('Escape')
+        self.assertEqual(said, 'Podcast 1: History Hour. Say next or previous to browse podcasts.')

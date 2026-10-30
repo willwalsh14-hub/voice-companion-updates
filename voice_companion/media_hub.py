@@ -1483,7 +1483,7 @@ class MediaHub:
                 if cmd in ('back to podcasts','back to feeds','show podcasts'):
                     self.browsing_episodes=False
                     return ('Podcast '+str(self.show_index+1)+': '+self.shows[self.show_index]['name']+
-                            '. Say next or previous to browse feeds.') if self.shows and self.show_index is not None else 'Search for podcasts first.'
+                            '. Say next or previous to browse podcasts.') if self.shows and self.show_index is not None else 'Search for podcasts first.'
             if cmd in ('search','search for','search podcast','search podcasts','find podcast','find podcasts'):
                 self.awaiting_podcast_search=True
                 return 'What podcast would you like to find? Say its name.'
