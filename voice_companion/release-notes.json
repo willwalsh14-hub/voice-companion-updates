@@ -3,30 +3,20 @@
   "status": "Testing build",
   "date": "October 30, 2026",
   "baseline": "0.2.180-test",
-  "scope": "Speech is shorter and more exact on every screen. Keys keep your place, and web pages read like a screen reader would read them.",
+  "scope": "A YouTube player with simple keys, and fewer video errors.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Web pages",
+          "title": "YouTube player",
           "details": [
-            "Tab now stops on tabs, switches and spin buttons. F finds switches and spin buttons too.",
-            "Enter picks a tab. Enter or Space turns a switch on or off.",
-            "Enter on a spin button lets the arrows change it.",
-            "A field says what is in it. It also says when the site marks it wrong, and reads the site's hint.",
-            "T says how many rows and columns a table has.",
-            "You hear Top of page or Bottom of page at the ends of a page."
-          ]
-        },
-        {
-          "title": "New ways to say things",
-          "details": [
-            "Say where am I in Help to hear where you are.",
-            "Say what mode am I in, or switch to dictation only, from any screen.",
-            "On Calendar, say schedule lunch with Bob tomorrow at noon.",
-            "In File manager, say what is selected.",
-            "In email, say read message fifteen, or what folder am I in."
+            "Press Enter on a video and you hear Loading video. Then you are in the player.",
+            "In the player, Up and Down Arrow change the volume. Left and Right Arrow skip back and forward.",
+            "Space or K plays and pauses. N plays the next video, and P the one before.",
+            "Escape goes back to your list, such as your search results. The video keeps playing.",
+            "To come back to the player, press Enter on the video that plays, or say Player.",
+            "J and L are gone. The arrow keys do the same."
           ]
         }
       ]
@@ -35,75 +25,12 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Startup, sleep and Help",
+          "title": "Video errors",
           "details": [
-            "If you wake up at a yes or no question, the question is asked again.",
-            "With the microphone off, sleep tells you to press Control+F12 to wake up.",
-            "Canceled is now said with where you are, so you hear it.",
-            "Leaving Help says Help closed.",
-            "Moving in Help says only the item. The hint is said once.",
-            "Mode and version questions work in Help.",
-            "Saying no to an update while asleep takes you back to your screen.",
-            "The transcript notice at startup says to wake Companion first.",
-            "The tutorial names all twelve courses, and its lists sound like the rest of the app."
-          ]
-        },
-        {
-          "title": "Email",
-          "details": [
-            "Subjects end with one period. A blank subject says No subject.",
-            "Canceling a reply takes you back to the message you were reading.",
-            "Closing a saved draft says it is still saved.",
-            "Delete in Trash and moving to the same folder now say nothing changed.",
-            "Marking messages says the same words by key and by voice.",
-            "An empty folder gives the same answer to every key.",
-            "Escape from attachments says the message you are on.",
-            "Spoken numbers up to one hundred work."
-          ]
-        },
-        {
-          "title": "Calendar and Contacts",
-          "details": [
-            "If an event or contact was removed somewhere else, the list is read again.",
-            "Where am I and Repeat keep your place.",
-            "Both screens know next item, top of list and bottom of list.",
-            "Y and N no longer close the Calendar lists.",
-            "Asking what is on your calendar names a calendar that cannot be read.",
-            "Email John says why if Thunderbird cannot give its contacts."
-          ]
-        },
-        {
-          "title": "Documents and files",
-          "details": [
-            "Reading a paragraph or line no longer moves your place.",
-            "Deleting a word or sentence leaves no extra spaces.",
-            "Messages no longer end with two periods.",
-            "Format changes are said in plain words, such as Italic or Heading 2.",
-            "Make it quick, and other sentences that start with make it, are written.",
-            "Redo goes to the paragraph it changes.",
-            "Find in the Document reader works with the period speech adds.",
-            "File manager says 1 item, not 1 items.",
-            "If Desktop is missing, Save As suggests Documents."
-          ]
-        },
-        {
-          "title": "Web",
-          "details": [
-            "Controls are said in the same words on the page and with quick keys.",
-            "Unnamed controls no longer say their type twice.",
-            "A new favorite saved by voice never takes the place of an old one.",
-            "List form fields and show fields open the fields list."
-          ]
-        },
-        {
-          "title": "Media",
-          "details": [
-            "Page Down and Page Up move ten videos on YouTube.",
-            "Space on the player controls keeps you on the control you chose.",
-            "Keys in an empty list say the list is empty.",
-            "If YouTube does not send more videos, you hear why and what to do.",
-            "A podcast episode that is slow to start still opens the player controls.",
-            "End in the Media player tells you how to reach the player menu."
+            "If YouTube says something went wrong, the video loads again once by itself.",
+            "If it still will not play, you hear what to do next.",
+            "If YouTube asks you to sign in to show you are not a robot, you hear that, and how to sign in.",
+            "Chrome in the background keeps its window open, out of sight, so videos keep drawing."
           ]
         }
       ]

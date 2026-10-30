@@ -350,6 +350,45 @@ class ScreenTests(LiveYouTube):
         self.assertEqual(self.say('Player.'), 'youtube')
         self.assertTrue(self.last().startswith('Player. '), self.last())
 
+    def failing_watch(self, times, reason='Something went wrong. Refresh or try again later.', status='ERROR'):
+        """The watch page, whose player says it cannot play for the first `times` loads."""
+        served = []
+        def body():
+            served.append(1)
+            html = fixtures.watch()
+            if len(served) <= times:
+                html = html.replace('</body>', '<script>addEventListener("load",()=>{const p=document.getElementById("movie_player");'
+                                    'p.getPlayerResponse=()=>({playabilityStatus:{status:"' + status + '",reason:{simpleText:"' + reason + '"}}});'
+                                    'p.playVideo=()=>{};});</script></body>')
+            return html
+        self.context.unroute('https://www.youtube.com/**')
+        fixtures.routes(self.context, {'/watch': body})
+        return served
+
+    def test_something_went_wrong_is_loaded_again_once_for_you(self):
+        served = self.failing_watch(1)
+        self.say('YouTube', 'awake'); self.say('Home.')
+        self.press('Enter')
+        self.assertTrue(self.last().startswith('Playing Never Gonna Give You Up.'), self.last())
+        self.assertEqual(len(served), 2)
+
+    def test_a_video_youtube_will_not_play_says_what_to_do(self):
+        self.failing_watch(99)
+        self.say('YouTube', 'awake'); self.say('Home.')
+        self.press('Enter')
+        self.assertEqual(self.last(), 'YouTube says: Something went wrong. Refresh or try again later. '
+                                      'Press Enter to try again, or choose another video.')
+        self.press('Enter')   # Enter again tries again; it does not just open the player
+        self.assertTrue(self.last().startswith('YouTube says: Something went wrong.'), self.last())
+
+    def test_a_sign_in_check_says_to_sign_in(self):
+        served = self.failing_watch(99, "Sign in to confirm you're not a bot", 'LOGIN_REQUIRED')
+        self.say('YouTube', 'awake'); self.say('Home.')
+        self.press('Enter')
+        self.assertEqual(self.last(), "YouTube says: Sign in to confirm you're not a bot. "
+                                      "Say sign in to sign in on Google's page, then try the video again.")
+        self.assertEqual(len(served), 1)   # not loaded again: only signing in helps
+
     def test_player_keys(self):
         self.playing()
         steps = [('K', 'Paused.'), ('Space', 'Playing.'), ('Right', 'Forward 10 seconds. 10 seconds of 3 minutes 33 seconds.'),

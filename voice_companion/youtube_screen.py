@@ -401,7 +401,7 @@ class YouTubeScreen:
         except YouTubeError:
             state = {}
         if state.get('error'):
-            return 'YouTube says: ' + state['error'].rstrip('.') + '. ' + PLAYER_KEYS
+            return self.error_words(state)
         where = ''
         if state.get('time') is not None and not state.get('live'):
             where = ' ' + yp.spoken_length(int(state.get('time') or 0)) + (
@@ -799,7 +799,7 @@ class YouTubeScreen:
             return self.open_list(url, 'Playlist: ' + item['title'], 'playlist')
         if item['kind'] == 'ad':
             return 'This is an ad. Ads open in the web browser. Say open in browser to see it.'
-        if self.has_video() and self.video.get('id') == item.get('id'):
+        if self.has_video() and self.video.get('id') == item.get('id') and not self.video_failed():
             return self.open_player()   # the video playing now: back to its player, not loaded again
         self.m.speak_status(LOADING)
         return self.play(item)
@@ -825,8 +825,12 @@ class YouTubeScreen:
         self.owner = True
         try:
             state = self.player.state()
+            if state.get('error') and state.get('playability') != 'LOGIN_REQUIRED':
+                # YouTube's own advice for "Something went wrong" is to load it again: done once, for you.
+                self.open_video_page(yp.watch_url(item['id']))
+                state = self.player.state()
             if state.get('error'):
-                return lead + 'YouTube says: ' + state['error'].rstrip('.') + '.'
+                return lead + self.error_words(state)
             if not state.get('ad', {}).get('showing') and state.get('paused') is not False:
                 self.player.play()
                 state = self.player.state()
@@ -842,6 +846,40 @@ class YouTubeScreen:
         elif state.get('paused'):
             said = lead + self.video['title'] + ' is ready, but did not start. Press Space to play it.'
         return said + self.other_media_notice()
+
+    def video_failed(self):
+        try:
+            return bool(self.player.state().get('error'))
+        except YouTubeError:
+            return True
+
+    def note_error(self, state):
+        """For a helper: youtube-errors.txt in the data folder says what YouTube answered.
+        The video's address is written, nothing about your account."""
+        try:
+            path = Path(self.m.APP) / 'youtube-errors.txt'
+            try:
+                if path.stat().st_size > 200000: path.write_text('', encoding='utf-8')
+            except OSError: pass
+            engine = ''
+            try: engine = self.engine()
+            except Exception: pass
+            line = (time.strftime('%Y-%m-%d %H:%M:%S') + ' video ' + str((self.video or {}).get('id') or state.get('id') or '') +
+                    ' | ' + str(state.get('playability') or '') + ' | ' + str(state.get('error') or '')[:300] +
+                    ' | browser ' + str(engine) + (' in the background' if getattr(__import__('web_assistant'), 'CHROME_IN_BACKGROUND', False) else '') +
+                    ' | signed in ' + str(self.signed_in) + '\n')
+            with path.open('a', encoding='utf-8') as out: out.write(line)
+        except Exception:
+            pass
+
+    def error_words(self, state):
+        """What YouTube said about a video it would not play, and what to do next."""
+        self.note_error(state)
+        said = 'YouTube says: ' + state['error'].rstrip('.') + '.'
+        if state.get('playability') == 'LOGIN_REQUIRED' or re.search(r'sign in', state['error'], re.I):
+            return said + (' Say sign in to sign in on Google\'s page, then try the video again.' if not self.signed_in else
+                           ' Say open in browser to answer it on the page.')
+        return said + ' Press Enter to try again, or choose another video.'
 
     def pause_other_media(self):
         """Radio, podcasts and media files pause when a video starts."""
@@ -1535,7 +1573,7 @@ class YouTubeScreen:
         if state.get('ended') and not before.get('ended') and not ad.get('showing'):
             news.append('The video ended.' + (' Press N for the next video.' if state.get('autoplay') is False else ''))
         if state.get('error') and state['error'] != before.get('error'):
-            news.append('YouTube says: ' + state['error'].rstrip('.') + '.')
+            news.append(self.error_words(state))
         return ' '.join(news)
 
 
