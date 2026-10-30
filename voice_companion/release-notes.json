@@ -91,7 +91,7 @@
           "details": [
             "Controls are said in the same words on the page and with quick keys.",
             "Unnamed controls no longer say their type twice.",
-            "Saving a favorite by voice never replaces another favorite.",
+            "A new favorite saved by voice never takes the place of an old one.",
             "List form fields and show fields open the fields list."
           ]
         },
