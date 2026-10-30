@@ -4314,8 +4314,11 @@ def _handle(text, mode, typed=False):
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
             # The place is the very end, as Control+End: Next word then says End of document.
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1)
-        elif command.startswith('find '):
-            term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
+        elif command=='find' or command.startswith(('find ','find,')):
+            # "Find milk." spoken: the recognizer's comma and closing period are not part of the words.
+            term=re.sub(r'^\s*find\b[\s,:]*','',text,flags=re.I).strip().rstrip('.!?,').strip()
+            if not term:speak('Please say the words to find after find.');return mode
+            position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
             if position<0:position=FILE_READER.text.casefold().find(term.casefold())
             if position<0:speak('Text not found.')
             else:FILE_READER.reading.position=position;speak(FILE_READER.reading.move('line',0))

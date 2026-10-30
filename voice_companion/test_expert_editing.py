@@ -3,7 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import companion as app
 from document_editor import VoiceDocument
+from test_document_save_as import DocumentFlowCase
 
 
 class EditorCase(unittest.TestCase):
@@ -181,6 +183,28 @@ class RedoLandsOnTheChange(EditorCase):
         self.doc.process('delete paragraph')
         self.doc.process('undo'); self.doc.process('beginning of document')
         self.assertTrue(self.doc.process('redo').startswith('Redid delete paragraph. Paragraph 1 of 1.'))
+
+
+class ReaderFindToleratesSpeech(DocumentFlowCase):
+    """Before: in the Document reader, "Find milk." said "Text not found." because of the period
+    the recognizer added."""
+    def setUp(self):
+        super().setUp()
+        from document_reader import open_document
+        path = self.elsewhere / 'notes.txt'
+        path.write_text('Shopping list.\nMilk and eggs.\n\nCall the doctor soon. Then rest.\n')
+        app.FILE_READER = open_document(path)
+
+    def test_a_spoken_period_or_question_mark_is_left_off(self):
+        for heard, line in (('Find milk.', 'Milk and eggs.'), ('find the doctor?', 'Call the doctor soon. Then rest.'),
+                            ('Find, shopping.', 'Shopping list.')):
+            with self.subTest(heard=heard):
+                app.handle(heard, 'file_reader')
+                self.assertEqual(self.last(), line)
+
+    def test_find_with_no_words_asks_for_them(self):
+        app.handle('find.', 'file_reader')
+        self.assertEqual(self.last(), 'Please say the words to find after find.')
 
 
 if __name__ == '__main__':
