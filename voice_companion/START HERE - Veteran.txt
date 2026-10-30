@@ -382,7 +382,7 @@ The tutorial is a set of spoken lessons. It waits for you between lessons. It ex
 3. Say a course name, such as "Email" or "Web browser". You can also use the arrows and Enter.
 4. Listen to the first lesson.
 5. When you are ready, say "Next lesson", or press Down Arrow.
-Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, Options, Help and updates, and File manager.
+Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager.
 
 3.4 Find, repeat, and leave a lesson
 - To hear the same lesson, say "Repeat", or press Control+R.

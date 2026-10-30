@@ -27,7 +27,8 @@ class PracticeTutorial:
         return message
 
     def start(self):
-        return self.say('Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. '
+        names=[c['name'] for c in self.courses]
+        return self.say('Audio tutorial. Courses cover '+', '.join(names[:-1])+', and '+names[-1]+'. '
                         'These are lessons. Commands given here are explained and do not change your work. '
                         'Use Up and Down to select a course and Enter to open it, or say its name. '
                         'Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. '
@@ -45,11 +46,13 @@ class PracticeTutorial:
     def _select_course(self,index):self.course_index=index
     def _select_index(self,index):self.index=index
 
-    def _item(self):
+    def _item(self,hint=True):
+        """The item as every list says it ("Email (E), 4 of 12."); the hint only when a list opens."""
+        from menu_navigation import announce_item
         names,index,_=self.menu()
         if not names:return 'No commands are documented in this course.'
         index=0 if index is None else index
-        return names[index]+'. '+str(index+1)+' of '+str(len(names))+'. Press Enter or say that one to open. '
+        return announce_item(names[index],index,len(names))+(' Press Enter or say that one to open.' if hint else '')
 
     def _open_course(self,index):
         self.course_index=index;self.lesson=self.course()['key'];self.step=0;self.level='article';self.index=0
@@ -141,7 +144,7 @@ class PracticeTutorial:
                 step=-1 if command.startswith('previous') else 1
                 target=(0 if step>0 else len(names)-1) if index is None else index+step
                 if not 0<=target<len(names):return self.say('Start of list.' if step<0 else 'End of list.'),False
-                select(target);return self.say(self._item()),False
+                select(target);return self.say(self._item(hint=False)),False
             if command in ('that one','okay','ok','confirm','confirm that','open lesson','open it'):
                 index=index or 0
                 if self.level=='courses':return self._open_course(index),False

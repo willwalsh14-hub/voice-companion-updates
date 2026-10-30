@@ -101,6 +101,41 @@ class SleepWithTheMicrophoneOffTests(KeyTestCase):
         self.assertEqual(self.said[-1], 'Going to sleep. The microphone could not start, so press Control+F12 to wake up.')
 
 
+class TutorialListWordsTests(KeyTestCase):
+    """In the tutorial's lists, Down and Up said "File manager. 12 of 12. Press Enter or say
+    that one to open. " (the hint every time, and a space at the end), while Home and End said
+    "File manager (F), 12 of 12." The opening message named 10 of the 12 courses: Contacts and
+    calendar, and YouTube, were left out."""
+
+    def test_arrows_say_items_like_home_end_and_the_main_menu(self):
+        with patch.object(companion, 'tutorial_session', None):
+            mode = self.keys('awake', 'Ctrl+T')
+            self.assertEqual(mode, 'tutorial')
+            self.keys(mode, 'Down')
+            self.assertEqual(self.said, ['Getting started (G), 1 of 12.'])
+            self.keys(mode, 'Down')
+            self.assertEqual(self.said, ['Word processor (W), 2 of 12.'])
+            self.keys(mode, 'End')
+            self.assertEqual(self.said, ['File manager (F), 12 of 12.'])
+            self.keys(mode, 'Up')
+            self.assertEqual(self.said, ['Help and updates (H), 11 of 12.'])
+            # Opening a list still says how to choose, once.
+            self.keys(mode, 'Enter', 'Ctrl+L')
+            self.assertTrue(self.said[0].startswith('Help and updates lessons. '), self.said)
+            self.assertTrue(self.said[0].endswith(', 1 of ' + str(len(companion.tutorial_session.course()['lessons'])) +
+                                                  '. Press Enter or say that one to open.'), self.said)
+            self.keys(mode, 'Down')
+            self.assertRegex(self.said[0], r'^[^.]+, 2 of \d+\.$')
+
+    def test_the_opening_message_names_every_course(self):
+        from practice_tutorial import PracticeTutorial
+        session = PracticeTutorial(companion.GUIDE)
+        names = [course['name'] for course in session.courses]
+        self.assertIn('Courses cover ' + ', '.join(names[:-1]) + ', and ' + names[-1] + '. ', session.start())
+        guide = companion.GUIDE.read_text(encoding='utf-8')
+        self.assertIn('Courses cover ' + ', '.join(names[:-1]) + ', and ' + names[-1] + '.', guide)
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""
