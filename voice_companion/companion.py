@@ -5361,7 +5361,8 @@ def return_from_update(notice=''):
         if UPDATE_RETURN_MODE == 'awake':
             MAIN_MENU_LEAD = notice
             if _HANDLE_DEPTH == 0:announce_main_menu()
-        else:speak(notice)
+        elif UPDATE_RETURN_MODE == 'sleep':speak(notice)
+        else:speak(notice + ' ' + options_return_notice(UPDATE_RETURN_MODE))   # and where you are
     return UPDATE_RETURN_MODE
 
 
@@ -5544,8 +5545,12 @@ def poll_app_updates(mode):
             return 'exit'
         elif event == 'install_failed' and mode=='update_download':
             mode=return_from_update('The update could not start. Your current app remains available.')
-    if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
-        UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
+    # Asleep, the offer waits while a question is open behind sleep; afterwards you go back,
+    # awake, to the screen you slept on.
+    asleep_at_question = mode == 'sleep' and SLEEP_RETURN_MODE in ('document_save', 'document_replace', 'document_name',
+                                                                   'exit_confirm', 'power_confirm', 'draft_leave')
+    if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not asleep_at_question and not speech_busy():
+        UPDATE_RETURN_MODE = SLEEP_RETURN_MODE if mode == 'sleep' else mode
         UPDATE_OFFER = False
         # The manual check has its answer; later automatic offers wait for the main screen.
         UPDATE_MANUAL = False

@@ -209,6 +209,40 @@ class ClosedThenMainMenuTests(KeyTestCase):
                 self.assertEqual(self.said, ['Help closed. ' + companion.MAIN_MENU_PROMPT])
 
 
+class UpdateOfferWhileAsleepTests(CompanionTestCase):
+    """Asleep in a document, an update was offered. "No" took the user to the main menu, awake,
+    with the document still open behind it. The place kept by sleep was lost."""
+
+    def setUp(self):
+        super().setUp()
+        self.service = MagicMock(); self.service.events = queue.Queue(); self.service.busy = False
+        for name, value in dict(UPDATES=self.service, UPDATE_OFFER=False, UPDATE_MANUAL=False, UPDATE_RETURN_MODE='awake',
+                                STARTUP_UPDATE_PENDING=False, MAIN_MENU_LEAD='').items():
+            p = patch.object(companion, name, value); p.start(); self.addCleanup(p.stop)
+        p = patch.object(companion, 'speech_busy', return_value=False); p.start(); self.addCleanup(p.stop)
+
+    def test_no_goes_back_to_the_document(self):
+        document = self.open_document()
+        companion.handle('Hello there.', 'document')
+        self.assertEqual(companion.handle('go to sleep', 'document'), 'sleep')
+        self.service.events.put(('available', {'version': '9.9.9-test'}))
+        self.assertEqual(companion.poll_app_updates('sleep'), 'update_offer')
+        self.said.clear()
+        self.assertEqual(companion.handle('No.', 'update_offer'), 'document')
+        self.assertEqual(self.said, ['Okay. You can keep using this version. Back to document.'])
+        self.assertIs(companion.document, document)
+
+    def test_an_offer_waits_while_a_question_is_asked_behind_sleep(self):
+        companion.SLEEP_RETURN_MODE = 'exit_confirm'
+        self.service.events.put(('available', {'version': '9.9.9-test'}))
+        self.assertEqual(companion.poll_app_updates('sleep'), 'sleep')
+        companion.SLEEP_RETURN_MODE = 'awake'
+        self.assertEqual(companion.poll_app_updates('sleep'), 'update_offer')
+        self.said.clear()
+        self.assertEqual(companion.handle('no', 'update_offer'), 'awake')
+        self.assertEqual(self.said, ['Okay. You can keep using this version. ' + companion.MAIN_MENU_PROMPT])
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""
