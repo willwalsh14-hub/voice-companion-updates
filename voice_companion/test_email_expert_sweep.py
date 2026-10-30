@@ -66,6 +66,33 @@ class MarkingWordsTests(CompanionCase):
         self.assertEqual(mail.process('unmark message'), 'Unmarked message 2. 2 selected.')
 
 
+class NothingMovedTests(CompanionCase):
+    def test_moving_to_the_folder_you_are_in_says_nothing_changed(self):
+        # Before: "1 message moved." while the message stayed where it was.
+        moved = []
+        class Recording(Mailbox):
+            def move(self, ids, source, destination): moved.append(ids)
+        mail = MailSession('thunderbird', self.folder, Recording)
+        mail.process('list messages')
+        self.assertEqual(mail.process('move to inbox'), 'This is already in Inbox. Nothing was changed.')
+        mail.process('go to folder work')
+        mail.process('select messages 1 through 2')
+        self.assertEqual(mail.process('move to work'), 'These are already in Work. Nothing was changed.')
+        self.assertIsNone(mail.pending)
+        self.assertEqual(moved, [])
+        self.assertIn('Is that right?', mail.process('move to trash'))
+
+    def test_delete_in_trash_is_refused_before_the_question(self):
+        class Thunderbird(Mailbox):
+            def is_trash(self, folder): return folder == 'trash'
+        mail = MailSession('thunderbird', self.folder, Thunderbird)
+        mail.process('go to trash')
+        self.assertEqual(mail.process('delete'), 'This is already in Trash. Nothing was changed.')
+        self.assertIsNone(mail.pending)
+        mail.process('open inbox')
+        self.assertIn('Is that right?', mail.process('delete'))
+
+
 class EscapeReturnsToYourPlaceTests(CompanionCase):
     def setUp(self):
         super().setUp()

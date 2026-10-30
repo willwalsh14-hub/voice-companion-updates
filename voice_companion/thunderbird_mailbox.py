@@ -313,6 +313,13 @@ class ThunderbirdMailbox:
     def move(self, ids, source_id, destination_id):
         call('move', messageIds=[self._message(i) for i in ids], folderId=self._folder(destination_id))
 
+    def is_trash(self, folder_id):
+        """True for the account's Trash. Thunderbird deletes for good what is deleted there."""
+        if not folder_id or folder_id in (INBOX, 'INBOX'):
+            return False
+        return any(item.get('id') == folder_id and 'trash' in (item.get('specialUse') or [])
+                   for item in call('folders', accountId=self.account_id))
+
     def trash(self, ids, source_id=None):
         call('trash', messageIds=[self._message(i) for i in ids])
 

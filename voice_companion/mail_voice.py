@@ -331,11 +331,18 @@ class MailSession:
         return self._selected_ids() if self.marked_ids else self._current_ids()
 
     def _prepare_move(self, ids, title, ident):
+        if ident == self.folder_id or self.folder_id in ('inbox', 'INBOX') and title.casefold() == 'inbox':
+            # Never "1 message moved." when it stays where it is.
+            return ('This is' if len(ids) == 1 else 'These are') + ' already in ' + self._spoken_folder(title) + '. Nothing was changed.'
         self.pending = ('move', ids, ident)
         target = ('the marked message' if ids[0] in self.marked_ids else 'this message') if len(ids) == 1 else str(len(ids)) + ' marked messages'
         return 'I heard move ' + target + ' to ' + self._spoken_folder(title) + '. Is that right? Say yes or no.'
 
     def _prepare_delete(self, ids):
+        in_trash = getattr(self.client(), 'is_trash', None)
+        if callable(in_trash) and in_trash(self.folder_id):
+            # Never "moved to Trash" when nothing moves; in Thunderbird it would be deleted for good.
+            return ('This is' if len(ids) == 1 else 'These are') + ' already in Trash. Nothing was changed.'
         self.pending = ('delete', ids, None)
         target = ('the marked message' if ids[0] in self.marked_ids else 'this message') if len(ids) == 1 else str(len(ids)) + ' marked messages'
         return 'I heard move ' + target + ' to Trash or Deleted Items. Is that right? Say yes or no.'
