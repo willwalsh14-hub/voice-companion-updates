@@ -560,9 +560,10 @@ class StarterTests(StarterCase):
 
     def test_slow_start_says_one_line_then_every_15_seconds(self):
         system, _ = self.ready_system()
-        relay = RelayWithRequests(connect_after=3)
+        relay = RelayWithRequests(connect_after=5)
         self.start(system, relay)
-        self.assertEqual(relay.waits, [2, 15, 15, 15])
+        # 2 seconds, then the two wake-ups (3 and 4 seconds), then every 15 seconds.
+        self.assertEqual(relay.waits, [2, 3, 4, 15, 15, 15])
         self.assertEqual(self.said, ['Starting Thunderbird.', 'Still starting Thunderbird.', 'Still starting Thunderbird.'])
 
     def test_no_connection_after_a_minute_says_what_to_do(self):
@@ -768,3 +769,106 @@ class AccountAddedAgainTests(unittest.TestCase):
             companion.remember_thunderbird_identity(account, 'id7', 'account7')
         saved = self.saved('will@work.example')
         self.assertEqual((saved['account_id'], saved['identity_id'], saved['address']), ('account7', 'id7', 'will@work.example'))
+
+
+class ConnectSyncTests(AccountScreenTestCase):
+    """Will, October 30, 2026: Thunderbird had added his Microsoft 365 address, but Voice Companion
+    did not list it. Each time Thunderbird connects, its new addresses are connected too."""
+    ACCOUNTS = (BIRD_WILL,)
+
+    class Relay:
+        def __init__(self, found):
+            import threading
+            self.connected = threading.Event(); self.connected.set()
+            self.pipe = object(); self.found = found; self.asked = 0
+        def request(self, method, params=None, timeout=60):
+            assert method == 'accounts'
+            self.asked += 1
+            return self.found
+
+    def run_sync(self, relay):
+        """Poll as the main loop does until Thunderbird's answer has been used."""
+        import time
+        for _ in range(200):
+            companion.poll_thunderbird_accounts()
+            if relay.asked and companion.THUNDERBIRD_SYNC.found.empty() and self.said:
+                return
+            time.sleep(0.01)
+
+    def setUp(self):
+        super().setUp()
+        companion.THUNDERBIRD_SYNC.connection = None
+        while not companion.THUNDERBIRD_SYNC.found.empty():
+            companion.THUNDERBIRD_SYNC.found.get_nowait()
+
+    def test_an_address_thunderbird_added_is_connected_and_said_once(self):
+        relay = self.Relay([
+            {'id': 'account1', 'name': 'will@yahoo.com', 'type': 'imap', 'identities': [{'id': 'id1', 'email': 'will@yahoo.com'}]},
+            {'id': 'account5', 'name': 'willwalsh@blindmast.com', 'type': 'extension:graph',
+             'identities': [{'id': 'id2', 'email': 'willwalsh@blindmast.com'}]}])
+        with patch.object(thunderbird_bridge, '_RELAY', relay), \
+                patch.object(companion, 'THUNDERBIRD_WATCH', None), patch.object(companion, 'THUNDERBIRD_SETUP', None), \
+                patch.object(companion, 'ACCOUNT_ENTRY', None):
+            self.run_sync(relay)
+            self.assertIn(('thunderbird', 'willwalsh@blindmast.com'), list(self.store.accounts()))
+            self.assertEqual(self.store.selected(), BIRD_WILL)          # the selection stays
+            self.assertEqual(self.said[-1], 'Thunderbird also has willwalsh@blindmast.com. It is connected to Voice Companion now. '
+                                            'Say switch account to use it.')
+            count = len(self.said)
+            for _ in range(5): companion.poll_thunderbird_accounts()
+            self.assertEqual(relay.asked, 1)                            # once per connection
+            self.assertEqual(len(self.said), count)
+
+    def test_nothing_is_asked_while_an_account_is_being_added(self):
+        relay = self.Relay([])
+        with patch.object(thunderbird_bridge, '_RELAY', relay), \
+                patch.object(companion, 'THUNDERBIRD_WATCH', {'watch': None, 'address': 'x@y.com'}):
+            companion.poll_thunderbird_accounts()
+        self.assertEqual(relay.asked, 0)
+
+
+class MailLogTests(AccountScreenTestCase):
+    """thunderbird-log.txt: what was said and heard while Thunderbird was busy, never a password."""
+    ACCOUNTS = (BIRD_WILL,)
+
+    def setUp(self):
+        super().setUp()
+        import speech_transcript
+        self.log = speech_transcript.Transcript(name='thunderbird-log.txt', old_name='thunderbird-log-old.txt')
+        p = patch.object(companion, 'MAIL_LOG', self.log); p.start(); self.addCleanup(p.stop)
+        self.log.start(companion.APP)
+        self.addCleanup(self.log.stop)
+
+    def text(self):
+        path = Path(companion.APP) / 'thunderbird-log.txt'
+        return path.read_text(encoding='utf-8') if path.exists() else ''
+
+    def test_only_thunderbird_work_is_written_and_passwords_never(self):
+        companion.mail_log('Main menu.')
+        self.assertEqual(self.text(), '')
+        with patch.object(companion, 'ACCOUNT_ENTRY', {'provider': 'thunderbird', 'step': 'password'}):
+            self.log.remember_private('Secret-pass-123')
+            companion.mail_log('Thunderbird needs the password.')
+            companion.mail_log('You typed Secret-pass-123 by mistake.')
+        text = self.text()
+        self.assertIn('Thunderbird needs the password.', text)
+        self.assertNotIn('Secret-pass-123', text)
+        with patch.object(companion, 'THUNDERBIRD_STARTING', True):
+            companion.mail_log('Starting Thunderbird.')
+        self.assertIn('Starting Thunderbird.', self.text())
+
+
+
+class MailLogSpeechTests(unittest.TestCase):
+    def test_what_is_spoken_while_thunderbird_is_busy_is_written(self):
+        import io, tempfile, speech_transcript
+        from contextlib import redirect_stdout
+        folder = Path(tempfile.mkdtemp())
+        log = speech_transcript.Transcript(name='thunderbird-log.txt', old_name='thunderbird-log-old.txt')
+        with patch.object(companion, 'MAIL_LOG', log), patch.object(companion, 'APP', folder), \
+                patch.object(companion, 'TEXT_MODE', True), patch.object(companion, 'APP_WINDOW', None), \
+                patch.object(companion, 'KEYBOARD_BATCH', False), patch.object(companion, 'THUNDERBIRD_STARTING', True), \
+                redirect_stdout(io.StringIO()):
+            companion.speak('Starting Thunderbird quietly.')
+        log.stop()
+        self.assertIn('Starting Thunderbird quietly.', (folder / 'thunderbird-log.txt').read_text(encoding='utf-8'))

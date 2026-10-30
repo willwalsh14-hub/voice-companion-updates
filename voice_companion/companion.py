@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.182-test'
+APP_VERSION = '0.2.183-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -610,6 +610,8 @@ def process_keyboard_batch(mode):
         for _ in range(100):
             try:command=APP_WINDOW.commands.get_nowait()
             except queue.Empty:break
+            if isinstance(command,tuple) and command and command[0] in ('account_secret','web_private_value'):
+                MAIL_LOG.remember_private(command[1].get('value') if isinstance(command[1],dict) else command[1])
             if TRANSCRIPT.enabled:
                 if isinstance(command,tuple) and command and command[0] in ('account_secret','web_private_value'):
                     TRANSCRIPT.remember_private(command[1].get('value') if isinstance(command[1],dict) else command[1])
@@ -1907,6 +1909,7 @@ def speak(text):
     if KEYBOARD_BATCH:
         KEYBOARD_BATCH_TEXT=text;return
     TRANSCRIPT.said(text)   # off unless chosen; never raises
+    mail_log(text)
     if TEXT_MODE:print('Companion:', text, flush=True)
     if APP_WINDOW is not None:
         APP_WINDOW.show(text)
@@ -2371,6 +2374,7 @@ def thunderbird_add_ready(setup):
 
 
 THUNDERBIRD_VERSION = None
+THUNDERBIRD_STARTING = False   # a mail command waits for Thunderbird to connect (thunderbird_starter)
 # The sign-in page Thunderbird handed over, so it can be opened again or in the other browser.
 THUNDERBIRD_SIGN_IN = None
 
@@ -2390,6 +2394,14 @@ def mail_relay():
 
 
 def thunderbird_starter(system=None):
+    global THUNDERBIRD_STARTING
+    try:
+        return _thunderbird_starter(system)
+    finally:
+        THUNDERBIRD_STARTING = False
+
+
+def _thunderbird_starter(system=None):
     """thunderbird_mailbox calls this when a Thunderbird account is used and the add-on is not connected.
 
     Starts Thunderbird in the background and waits, saying a short line only
@@ -2406,10 +2418,17 @@ def thunderbird_starter(system=None):
         THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
         CONFIRM_CHOICE = 'yes'
         raise MailboxError(step.message)
+    global THUNDERBIRD_STARTING
+    THUNDERBIRD_STARTING = True
+    started = time.monotonic()
+    mail_log('[thunderbird] waiting for Thunderbird to connect')
     try:
         launched = thunderbird_setup.start_in_background(system or thunderbird_setup.WindowsSystem(), addon_package(),
-                                                         relay, speak_status)
+                                                         relay, speak_status, note=mail_log)
+        mail_log('[thunderbird] ' + ('started by Voice Companion, ' if launched else '') + ('connected' if relay is not None and
+                 relay.connected.is_set() else 'not connected') + ' after %.1f seconds' % (time.monotonic() - started))
     except user_stop.Stopped as exc:
+        mail_log('[thunderbird] the wait was stopped after %.1f seconds' % (time.monotonic() - started))
         from thunderbird_mailbox import STOPPED
         raise MailboxError(STOPPED) from exc
     except thunderbird_setup.NotReady:
@@ -2485,7 +2504,25 @@ MICROPHONE_STILL_OFF = 'The microphone is off, as you left it. Press F9 to turn 
 MICROPHONE_FAILED = False
 
 
-from speech_transcript import TRANSCRIPT   # speech-transcript.txt, opt-in (Options or "start transcript")
+from speech_transcript import TRANSCRIPT, MAIL_LOG   # speech-transcript.txt, opt-in (Options or "start transcript")
+
+
+def thunderbird_busy():
+    """Thunderbird is being set up, started, signed in to, or given a new account."""
+    return bool(THUNDERBIRD_WATCH is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_SIGN_IN
+                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird' or THUNDERBIRD_STARTING)
+
+
+def mail_log(text):
+    """thunderbird-log.txt: what Voice Companion said and heard while Thunderbird was busy. Never raises."""
+    try:
+        if MAIL_LOG.folder is None:
+            MAIL_LOG.start(APP)
+        if thunderbird_busy():
+            MAIL_LOG.mode = str(TRANSCRIPT.mode or '')
+            MAIL_LOG.said(text)
+    except Exception:
+        pass
 TRANSCRIPT_START_PHRASES = ('start transcript', 'start the transcript', 'start speech transcript', 'turn on transcript',
                             'turn on the transcript', 'transcript on')
 TRANSCRIPT_STOP_PHRASES = ('stop transcript', 'stop the transcript', 'stop speech transcript', 'turn off transcript',
@@ -2651,7 +2688,8 @@ THUNDERBIRD_WINDOWS = None
 def thunderbird_signing_in():
     """An account is being added or signed in to: every Thunderbird window stays as before."""
     return bool(THUNDERBIRD_WATCH is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_SIGN_IN
-                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird')
+                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird'
+                or THUNDERBIRD_STARTING)   # a start wakes Thunderbird's window: it is not a window that needs you
 
 
 def thunderbird_desktop():
@@ -2726,8 +2764,17 @@ def start_thunderbird_quietly():
             # Thunderbird needs the update: it is asked about when email is first used, while Thunderbird is closed.
             if __import__('thunderbird_upgrade').offer_due(thunderbird_setup.WindowsSystem(), APP):
                 return
-            if thunderbird_setup.start_in_background(thunderbird_setup.WindowsSystem(), addon_package(), relay,
-                                                     lambda text: None):
+            global THUNDERBIRD_STARTING
+            THUNDERBIRD_STARTING = True
+            started = time.monotonic()
+            try:
+                launched = thunderbird_setup.start_in_background(thunderbird_setup.WindowsSystem(), addon_package(), relay,
+                                                                 lambda text: None, note=mail_log)
+                mail_log('[thunderbird] at startup: ' + ('connected' if relay is not None and relay.connected.is_set() else
+                         'not connected') + ' after %.1f seconds' % (time.monotonic() - started))
+            finally:
+                THUNDERBIRD_STARTING = False
+            if launched:
                 quiet_thunderbird(relay)
         except Exception:
             pass    # said only if mail is used and still cannot connect
@@ -3012,6 +3059,7 @@ def stop_thunderbird_watch():
     """Stop waiting, and give Thunderbird's web sign-in back to the Windows browser."""
     global THUNDERBIRD_WATCH
     waiting, THUNDERBIRD_WATCH = THUNDERBIRD_WATCH, None
+    THUNDERBIRD_SYNC.connection = None   # look at Thunderbird's addresses again: one may finish later
     if waiting is None:
         return
     waiting['watch'].stop()
@@ -3021,9 +3069,46 @@ def stop_thunderbird_watch():
         pass
 
 
+# Each time Thunderbird connects, its addresses are compared with Voice Companion's: one added in
+# Thunderbird (or added through Voice Companion while it stopped waiting) is connected too. Will,
+# October 30, 2026: a Microsoft 365 account Thunderbird had added was missing from Voice Companion.
+THUNDERBIRD_SYNC = __import__('types').SimpleNamespace(connection=None, found=queue.Queue())
+
+
+def poll_thunderbird_accounts():
+    """On the main loop: once per Thunderbird connection, save addresses Thunderbird has and
+    Voice Companion does not. Asked on a thread, so the keys never wait for it."""
+    try:
+        import thunderbird_bridge
+        relay = thunderbird_bridge.current()
+    except Exception:
+        return
+    if relay is not None and relay.connected.is_set():
+        connection = id(getattr(relay, 'pipe', None))
+        if THUNDERBIRD_SYNC.connection != connection and THUNDERBIRD_WATCH is None and THUNDERBIRD_SETUP is None \
+                and not (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird':
+            THUNDERBIRD_SYNC.connection = connection
+            def ask():
+                try: THUNDERBIRD_SYNC.found.put(relay.request('accounts', {}, timeout=20))
+                except Exception: pass
+            threading.Thread(target=ask, name='Thunderbird accounts', daemon=True).start()
+    try:
+        found = THUNDERBIRD_SYNC.found.get_nowait()
+    except queue.Empty:
+        return
+    import thunderbird_accounts as words
+    try:
+        added = words.save_identities(ProtectedStore(APP), found, select=False)
+    except Exception:
+        return
+    if added:
+        speak_status(words.also_connected_message(added))
+
+
 def poll_thunderbird_watch(mode):
     """On the main loop: read Thunderbird's page, open its sign-in page, and say when the account is ready."""
     global THUNDERBIRD_WATCH, THUNDERBIRD_SIGN_IN, mail_session, pending_send
+    poll_thunderbird_accounts()
     shown = THUNDERBIRD_WINDOWS.take_message() if THUNDERBIRD_WINDOWS is not None else None
     if shown:
         speak_status(shown)   # a Thunderbird window came up while it was out of the way
@@ -3036,6 +3121,13 @@ def poll_thunderbird_watch(mode):
         return mode
     import thunderbird_accounts as words
     address = waiting['address']
+    try:
+        from urllib.parse import urlsplit
+        detail = (' ' + (urlsplit(str(found.get('url') or '')).hostname or str(found.get('where') or '')) if event == 'sign_in' else
+                  ' ' + str({k: found.get(k) for k in ('open', 'title', 'button', 'canContinue', 'needsPassword', 'choices')}) if event == 'page' else '')
+        mail_log('[event] ' + event + detail[:600])
+    except Exception:
+        pass
     if event == 'reminder':
         speak_status(words.reminder_message(address))
         return mode
@@ -4130,6 +4222,7 @@ def _handle(text, mode, typed=False):
                 except Exception:pass
         feedback='Password input' if password_field else text
         if TEXT_MODE and not password_field:print('Heard:', feedback, flush=True)
+        if not password_field and (ACCOUNT_ENTRY or {}).get('step') != 'password':mail_log('[heard] ' + feedback)
         if APP_WINDOW is not None: APP_WINDOW.show('Heard: ' + feedback)
     command = re.sub(r'[.!?]+$', '', text.lower()).strip().replace('auto-download','auto download')
     # Recognizers add inner punctuation ("Yes, please."); compare plain phrases without it.

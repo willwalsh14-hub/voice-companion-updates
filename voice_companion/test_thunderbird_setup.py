@@ -547,3 +547,45 @@ class PromptAddOnStartTests(SetupCase):
             system, launched = self.quiet_start(folder)
         self.assertTrue(launched)
         self.assertEqual(system.background, [INSTALLED])
+
+
+class WakeTests(SetupCase):
+    """Will, October 30, 2026: Thunderbird connected only after he pressed Alt+Tab to it and back.
+    Voice Companion now does that for him while it waits, then puts Thunderbird back."""
+
+    def system(self, connect_after):
+        folder = self.profile()
+        self.add_on(folder, active=True)
+        system = FakeSystem(self.home, registered('159.0 (x64 en-US)'), {INSTALLED})
+        system.wakes, system.settled = [], []
+        system.wake_windows = lambda stage: system.wakes.append(stage) or [100 + stage]
+        system.settle_windows = lambda handles: system.settled.append(list(handles))
+        relay = FakeRelay(connect_after=connect_after)
+        notes = []
+        import user_stop
+        with mock.patch.object(user_stop, 'wait', lambda event, timeout: event.wait(timeout)):   # no real time passes
+            thunderbird_setup.start_in_background(system, self.package, relay, self.progress.append, note=notes.append)
+        return system, relay, notes
+
+    def test_a_quick_connection_wakes_nothing(self):
+        system, relay, notes = self.system(0)
+        self.assertEqual((system.wakes, system.settled, notes), ([], [], []))
+
+    def test_first_the_window_is_shown_then_brought_forward_and_put_back(self):
+        system, relay, notes = self.system(2)     # connects during the second wake-up's wait
+        self.assertEqual(system.wakes, [1, 2])
+        self.assertEqual(system.settled, [[101, 102]])
+        self.assertEqual(relay.waits, [2, 3, 4])
+        self.assertEqual(len(notes), 2)
+
+    def test_one_wake_up_can_be_enough(self):
+        system, relay, notes = self.system(1)
+        self.assertEqual(system.wakes, [1])
+        self.assertEqual(system.settled, [[101]])
+
+    def test_the_efficiency_setting_is_turned_off_with_the_prompt_start(self):
+        folder = self.profile()
+        thunderbird_setup.start_addons_promptly(folder)
+        text = (folder / 'user.js').read_text(encoding='utf-8')
+        self.assertIn('user_pref("dom.ipc.processPriorityManager.backgroundUsesEcoQoS", false);', text)
+        self.assertIn('user_pref("extensions.webextensions.background-delayed-startup", false);', text)
