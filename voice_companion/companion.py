@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.180-test'
+APP_VERSION = '0.2.181-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -708,11 +708,29 @@ def resume_from_sleep():
     # The same screen names as everywhere else ("Back to Word processor menu."), never the internal mode.
     # Asleep during a question: ask it again, so the answer is not a guess.
     question={'document_save':'Save this document? Yes or no.','document_name':'Back to naming your document.',
-              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None}.get(mode)
-    speak('I am listening. ' + (question or options_return_notice(mode)))
+              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None,
+              # Keys work behind sleep: Escape or Enter there can open these questions.
+              'exit_confirm':'Exit Voice Companion? Yes or no.',
+              'power_confirm':('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.')}.get(mode)
+    # With the microphone off or broken nothing is listening: Control+F12 woke it.
+    speak(('I am listening. ' if microphone_state() == 'on' else '') + (question or options_return_notice(mode)))
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
     return mode
+
+
+def canceled_to(mode):
+    """Say Canceled with the main menu in one message (two would cut each other off), or alone."""
+    global MAIN_MENU_LEAD
+    if mode=='awake':MAIN_MENU_LEAD='Canceled.'
+    else:speak('Canceled. '+options_return_notice(mode))
+    return mode
+
+
+def sleep_message():
+    """The same words on every screen; "Say wake up" only when the microphone can hear it."""
+    if microphone_state() == 'on':return 'Going to sleep. Say wake up when you need me.'
+    return 'Going to sleep. The microphone '+('is off' if MICROPHONE_OFF else 'could not start')+', so press Control+F12 to wake up.'
 
 
 def finish_mail_announcement():
@@ -3085,6 +3103,9 @@ def handle_mailbox_screen(text, command, mode, typed):
     response_actions = {'reply': 'reply', 'reply to message': 'reply',
                         'reply all': 'reply_all', 'reply to all': 'reply_all',
                         'forward': 'forward', 'forward message': 'forward'}
+    if command in response_actions and getattr(mail_session, 'rows', None) == [] and mail_session.view == 'folder':
+        speak(mail_session._empty_list())   # as every other key says it in an empty folder
+        return mode
     if command in response_actions:
         try:
             context = mail_session.response_context(response_actions[command])
@@ -3144,10 +3165,12 @@ def close_email_draft(mode, discard, notice=None):
             speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
             return 'email_draft'
     provider = email_draft.provider
+    # A draft saved before (Save draft, or opened from the drafts list) stays saved: never "without saving".
+    kept = email_draft.title if discard and discarded and email_draft.path.exists() else None
     email_draft = None
     if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
     if notice is None:
-        notice = 'Draft canceled without saving.'
+        notice = 'Draft closed. It is still saved as ' + kept + '.' if kept else 'Draft canceled without saving.'
     speak(notice if discarded else
           'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
     finish_mail_announcement()
@@ -3157,6 +3180,11 @@ def close_email_draft(mode, discard, notice=None):
         provider = chosen[0] if chosen else provider
     if mail_session is None and provider in MAIL_PROVIDERS:
         mail_session = MailSession(provider, APP, progress=mail_progress)
+    rows = getattr(mail_session, 'rows', None)
+    if isinstance(rows, list) and rows:
+        # Back where you were, as after sending: the open message, or the message in its folder.
+        speak('Back to message.' if mail_session.view == 'message' else mail_session._current_list())
+        return 'mailbox'
     if mail_session is not None:
         speak(mail_session.process('open inbox'))
         return 'mailbox'
@@ -3655,6 +3683,23 @@ def thunderbird_setup_answer(command, mode):
     return thunderbird_setup_step(step, mode)
 
 
+# Spoken names for the input modes, and questions about the mode and version. They work on
+# every screen, Help too, where the guide tells you to say them.
+INPUT_MODE_COMMANDS = {
+    'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
+    'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
+    'switch to command mode':'commands', 'switch to commands mode':'commands',
+    'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
+    'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
+    # "Switch to" works with every name the guide uses.
+    'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
+}
+MODE_QUESTIONS = ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
+                  'what mode is on', 'what mode is it')
+VERSION_QUESTIONS = ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
+                     'what version am i using', 'what version do i have')
+
+
 def _handle(text, mode, typed=False):
     global DOCUMENT_NAMING_ACTION, THUNDERBIRD_SIGN_IN
     global SYNTH_PICK_INDEX, VOICE_PICK_ENGINE, MAIN_MENU_INDEX, ACCOUNT_MENU_INDEX
@@ -3790,7 +3835,7 @@ def _handle(text, mode, typed=False):
             return handle(text,'awake',typed)
         if spoken_control(command)=='sleep':
             SLEEP_RETURN_MODE=mode
-            speak('Going to sleep. Say wake up to continue here.')
+            speak(sleep_message())
             return 'sleep'
         if tutorial_session is None:
             tutorial_session=PracticeTutorial(GUIDE)
@@ -3835,13 +3880,13 @@ def _handle(text, mode, typed=False):
         command=CONFIRM_CHOICE
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
-            speak('Canceled.');return EXIT_RETURN_MODE
+            return canceled_to(EXIT_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             return finish_exit(EXIT_RETURN_MODE)
         speak('Exit Voice Companion? Are you sure? Yes or no.');return mode
     if mode=='power_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
-            POWER_ACTION=None;speak('Canceled.');return POWER_RETURN_MODE
+            POWER_ACTION=None;return canceled_to(POWER_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             try:
                 if email_draft is not None:email_draft.save()
@@ -4133,12 +4178,13 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError):speak('Release notes could not open. Ask your helper to check the installation.');return mode
     if mode == 'help' and not spoken_control(command) and command not in (
             'faster', 'slower', 'speak faster', 'speak slower', 'louder', 'quieter',
-            'list voices', 'next voice', 'previous voice'):
+            'list voices', 'next voice', 'previous voice') and command not in INPUT_MODE_COMMANDS \
+            and command not in MODE_QUESTIONS + VERSION_QUESTIONS:   # the guide in Help says to use these
         if command in ('main menu', 'back to main menu'):
             returning = help_return_mode
             help_session = None
             if returning == 'awake':
-                pass
+                MAIN_MENU_LEAD = 'Help closed.'   # said with Main menu, as Escape and the tutorial do
                 return 'awake'
             return handle('main menu', returning)
         if help_session is None:
@@ -4198,8 +4244,7 @@ def _handle(text, mode, typed=False):
         speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
         return mode
     # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
-    if command in ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
-                   'what version am i using', 'what version do i have') or \
+    if command in VERSION_QUESTIONS or \
             command in ('version', 'about voice companion') and not writing_dictation(mode, typed):
         # The two things a person most needs if a key press stopped the startup announcement.
         speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
@@ -4224,7 +4269,7 @@ def _handle(text, mode, typed=False):
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
             try: MEDIA_HUB.player.control('pause')
             except Exception: pass
-        speak('Going to sleep. Say wake up when you need me.')
+        speak(sleep_message())
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
@@ -4314,8 +4359,11 @@ def _handle(text, mode, typed=False):
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
             # The place is the very end, as Control+End: Next word then says End of document.
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1)
-        elif command.startswith('find '):
-            term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
+        elif command=='find' or command.startswith(('find ','find,')):
+            # "Find milk." spoken: the recognizer's comma and closing period are not part of the words.
+            term=re.sub(r'^\s*find\b[\s,:]*','',text,flags=re.I).strip().rstrip('.!?,').strip()
+            if not term:speak('Please say the words to find after find.');return mode
+            position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
             if position<0:position=FILE_READER.text.casefold().find(term.casefold())
             if position<0:speak('Text not found.')
             else:FILE_READER.reading.position=position;speak(FILE_READER.reading.move('line',0))
@@ -4354,13 +4402,7 @@ def _handle(text, mode, typed=False):
         except (OSError, ValueError):
             speak('The user guide could not open. Ask your helper to reinstall Voice Companion.')
             return mode
-    requested_mode = {
-        'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
-        'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
-        'switch to command mode':'commands', 'switch to commands mode':'commands',
-        'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
-        'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
-    }.get(command)
+    requested_mode = INPUT_MODE_COMMANDS.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
         save_speech_settings()
@@ -4373,7 +4415,7 @@ def _handle(text, mode, typed=False):
                'commands':'Commands only. Ordinary speech will not be added as text.',
                'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
         return mode
-    if command in ('what mode', 'which mode', 'what input mode'):
+    if command in MODE_QUESTIONS:
         # The names the guide and the mode commands use, never the stored word ("mixed").
         speak('Input mode: ' + {'mixed':'Normal mode','commands':'Commands only','dictation':'Dictation only'}.get(INPUT_MODE, INPUT_MODE) + '.')
         return mode
@@ -5340,7 +5382,8 @@ def return_from_update(notice=''):
         if UPDATE_RETURN_MODE == 'awake':
             MAIN_MENU_LEAD = notice
             if _HANDLE_DEPTH == 0:announce_main_menu()
-        else:speak(notice)
+        elif UPDATE_RETURN_MODE == 'sleep':speak(notice)
+        else:speak(notice + ' ' + options_return_notice(UPDATE_RETURN_MODE))   # and where you are
     return UPDATE_RETURN_MODE
 
 
@@ -5425,7 +5468,9 @@ def announce_startup():
     retire_old_mail_accounts()
     apply_transcript()
     if PREFERENCES.get('speech_transcript', False):
-        STARTUP_NOTICES.append('The speech transcript is on. Say stop transcript to turn it off.')
+        # Companion starts asleep, when only "Wake up" is heard; with no microphone, nothing is.
+        STARTUP_NOTICES.append('The speech transcript is on. To turn it off, '+('wake Companion, then say stop transcript.' if microphone_state()=='on'
+                               else 'press Alt+O, then choose Startup and exit options.'))
     notices, STARTUP_NOTICES = STARTUP_NOTICES, None
     STARTUP_QUESTION = None
     speak(startup_speech.announcement(APP_VERSION, microphone_state(), update_result, notices, question))
@@ -5521,8 +5566,12 @@ def poll_app_updates(mode):
             return 'exit'
         elif event == 'install_failed' and mode=='update_download':
             mode=return_from_update('The update could not start. Your current app remains available.')
-    if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
-        UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
+    # Asleep, the offer waits while a question is open behind sleep; afterwards you go back,
+    # awake, to the screen you slept on.
+    asleep_at_question = mode == 'sleep' and SLEEP_RETURN_MODE in ('document_save', 'document_replace', 'document_name',
+                                                                   'exit_confirm', 'power_confirm', 'draft_leave')
+    if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not asleep_at_question and not speech_busy():
+        UPDATE_RETURN_MODE = SLEEP_RETURN_MODE if mode == 'sleep' else mode
         UPDATE_OFFER = False
         # The manual check has its answer; later automatic offers wait for the main screen.
         UPDATE_MANUAL = False

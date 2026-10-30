@@ -91,7 +91,8 @@ class UpdateTests(unittest.TestCase):
             launch.assert_not_called()
     def test_spoken_offer_no_yes_cancel_and_safe_handoff(self):
         service=Mock();service.events=queue.Queue();service.busy=False;service.canceled=threading.Event();service.download.return_value=True
-        with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'UPDATE_MANUAL',False),patch.object(companion,'UPDATE_RETURN_MODE','awake'),patch.object(companion,'speak') as speak,patch.object(companion,'speech_busy',return_value=False),patch.object(companion,'document',None),patch.object(companion,'email_draft',None),patch.object(companion,'finish_mail_announcement'):
+        # Asleep on the main menu: SLEEP_RETURN_MODE is set here, not left from another test.
+        with patch.object(companion,'UPDATES',service),patch.object(companion,'UPDATE_OFFER',False),patch.object(companion,'UPDATE_MANUAL',False),patch.object(companion,'UPDATE_RETURN_MODE','awake'),patch.object(companion,'SLEEP_RETURN_MODE','awake'),patch.object(companion,'speak') as speak,patch.object(companion,'speech_busy',return_value=False),patch.object(companion,'document',None),patch.object(companion,'email_draft',None),patch.object(companion,'finish_mail_announcement'):
             service.events.put(('available',self.release()));self.assertEqual(companion.poll_app_updates('sleep'),'update_offer')
             speak.assert_called_with('A new update is available. Would you like to install it now? Press Y or N, or use arrows or Tab and Enter. Escape cancels. You can also say yes or no.')
             self.assertEqual(companion.handle('no','update_offer'),'awake');service.download.assert_not_called()

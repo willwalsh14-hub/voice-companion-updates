@@ -140,7 +140,7 @@ class MediaNavigation:
                 return ('Delete removes a saved show, a preset, or a scheduled recording. It does nothing here.'
                         if self.focus=='items' and self.items() else 'Choose an item first.')
         state=self.state()
-        if not state:return self.announce() if key in ('Home','End','Up','Down') and not self.form else ''
+        if not state:return self.announce() if (key in ('Home','End','Up','Down','Left','Right') or key.startswith('Letter:')) and not self.form else ''
         names,index,select=state;index=index or 0
         if key in ('Home','End'):
             target=0 if key=='Home' else len(names)-1
@@ -182,9 +182,10 @@ class MediaNavigation:
         h=self.hub;before=self.view,self.item_index
         result=self.run(cmd)
         # By keyboard, the controls list opens at once. By voice, the spoken commands are said instead.
-        if self.keyboard_mode and self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith('Playing '):
+        if self.keyboard_mode and self.section=='podcast' and before[0] in ('episodes','downloads') and getattr(h.player,'kind',None)=='podcast' and str(result).startswith(('Playing ','Loading ')):
             # The episode plays here, and its controls come up at once: no other window.
-            title=str(result).split('. Say ')[0].rstrip('.')
+            # A slow one says "Loading Rome." and gets its controls too.
+            title=str(result).split('. It starts in a moment')[0].split('. Say ')[0].rstrip('.')
             return self.show_controls(title+'. ',before)
         return result
     def show_controls(self,lead='',back=None):
@@ -292,6 +293,8 @@ class MediaNavigation:
         elif cmd in ('list downloads','downloaded podcasts'):self.view='downloads';self.focus='items'
         elif cmd in ('list recordings','list radio recordings'):self.view='recordings';self.focus='items'
         elif cmd in ('list scheduled recordings','what recordings are scheduled'):self.view='scheduled';self.focus='items'
+        # A player key on the controls list (Space, Control+Left) keeps you on the control you chose.
+        elif self.view=='controls' and self.focus=='items':self.revision+=1;return result
         elif self.section=='podcast' and getattr(h,'browsing_categories',False):self.view='categories';self.focus='items'
         elif self.section=='podcast' and self.view=='categories' and h.shows and getattr(h,'shows_category',None):self.view='shows';self.focus='items'
         elif h.browsing_episodes and self.section=='podcast':self.view='episodes';self.focus='items'

@@ -115,6 +115,21 @@ class ThunderbirdEndToEndTests(unittest.TestCase):
         self.assertEqual(report['moved'], [{'ids': [24], 'folderId': 'account1://Receipts'}])
         self.assertEqual(report['deleted'], [{'ids': [23], 'skipTrash': False}])
 
+    def test_delete_inside_trash_changes_nothing_and_says_so(self):
+        # Before: Delete in Trash said "moved to Trash" while Thunderbird deleted the message for good.
+        mail_accounts.connect('thunderbird', self.folder)
+        session = MailSession('thunderbird', self.folder)
+        session.process('go to trash')
+        self.assertEqual(session.folder_name, 'Trash')
+        session.rows = session.rows or [{'id': '1', 'from': 'a@example.com', 'subject': 'Old'}]
+        session.current = 1
+        self.assertEqual(session.process('delete'), 'This is already in Trash. Nothing was changed.')
+        self.assertIsNone(session.pending)
+        mailbox = ThunderbirdMailbox(*mail_accounts.account_token('thunderbird', self.folder))
+        self.assertFalse(mailbox.is_trash('inbox'))
+        self.assertFalse(mailbox.is_trash(dict(mailbox.folders())['Receipts']))
+        self.assertEqual(self.finish()['deleted'], [])
+
     def test_inbox_screen_uses_thunderbird(self):
         mail_accounts.connect('thunderbird', self.folder)
         session = MailSession('thunderbird', self.folder)

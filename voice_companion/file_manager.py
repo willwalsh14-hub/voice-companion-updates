@@ -78,6 +78,11 @@ def location_name(path):
         return share+' on '+server if share and server else drive
     return ntpath.basename(clean) or 'Root folder'
 
+def count_items(count):
+    """'1 item' or '3 items'."""
+    return str(count)+(' item' if count==1 else ' items')
+
+
 def valid_name(name):
     name=name.strip()
     if name.endswith('.') and name not in ('.','..') and not re.search(r'[<>:"/\\|?*\x00-\x1f]',name):
@@ -348,7 +353,12 @@ class FileManager:
                 return self.refresh(path,preserve=self.location,restore_index=index)
             return self.start_job(lambda:self.backend.parent(self.location),lambda path:self.refresh(path),'Opening parent folder.')
         if cmd in ('select all','mark all','check all'):
-            self.targets();self.selected={i.path for i in self.items if not i.drive and i.filesystem};return str(len(self.selected))+' items selected.'
+            self.targets();self.selected={i.path for i in self.items if not i.drive and i.filesystem};return count_items(len(self.selected))+' selected.'
+        if cmd in ('what is selected',"what's selected",'say selection','read selection','what did i select'):
+            # As in Email and the Document reader: the selected names, in list order.
+            names=[i.name for i in self.items if i.path in self.selected]
+            if not names:return 'Nothing is selected. '+self.say_current()
+            return count_items(len(names))+' selected: '+', '.join(names)+'.'
         if cmd in ('clear selection','unselect all','unmark all','uncheck all','deselect all'):
             self.selected.clear();return 'Selection cleared.'
         match=re.fullmatch(r'(select|unselect|deselect|mark|unmark|check|uncheck)(?:\s+(.+))?',text,re.I)
@@ -363,7 +373,7 @@ class FileManager:
             return ('' if selected else 'Unselected. ')+self.say_current()
         if cmd in ('copy','copy selected','cut','cut selected'):
             paths=[i.path for i in self.targets()];cut=cmd.startswith('cut')
-            return self.start_job(lambda:self.backend.clipboard(paths,cut),lambda _:str(len(paths))+' items '+('cut. Open the destination and paste to move them.' if cut else 'copied.'),'Preparing file clipboard.',mutating=True)
+            return self.start_job(lambda:self.backend.clipboard(paths,cut),lambda _:count_items(len(paths))+' '+('cut. Open the destination and paste to move them.' if cut else 'copied.'),'Preparing file clipboard.',mutating=True)
         if cmd in ('paste','paste items'):
             if self.location is None:raise ValueError('Open a folder before pasting.')
             destination=self.location
@@ -371,7 +381,7 @@ class FileManager:
                 paths,cut=self.backend.get_clipboard();self.backend.operate('cut' if cut else 'copy',paths,destination)
                 if cut and hasattr(self.backend,'finish_cut'):self.backend.finish_cut(paths)
                 return len(paths)
-            return self.start_job(work,lambda count:self.after_change(str(count)+' items pasted.'),'Pasting files. You can say status.',mutating=True)
+            return self.start_job(work,lambda count:self.after_change(count_items(count)+' pasted.'),'Pasting files. You can say status.',mutating=True)
         if cmd in ('delete','delete selected','remove','remove selected'):
             targets=self.targets();self.pending=('delete',[i.path for i in targets]);return 'Delete '+', '.join(i.name for i in targets)+('? Windows will use the Recycle Bin where supported. Say Yes or No. Escape cancels.')
         match=re.fullmatch(r'rename(?: (?:to )?(.+))?',text,re.I)
@@ -405,5 +415,5 @@ class FileManager:
         return self.start_job(lambda:self.backend.operate(action,paths,**kwargs),lambda _:self.after_change('File action complete.'),'Working on '+str(len(paths))+(' item.' if len(paths)==1 else ' items.'),mutating=True)
     def after_change(self,message):
         self.selected.clear();self.refresh_here();return message+' Refreshing folder.'
-    def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+(' '.join(reader.warnings[:3])+'. ' if reader.warnings else '')+reader.reading.read(True)
+    def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+''.join(w.rstrip(' .')+'. ' for w in reader.warnings[:3])+reader.reading.read(True)
     def finish_pick(self,path):self.opened=path;return 'Selected '+path.name+'.'

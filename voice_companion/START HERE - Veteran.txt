@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.180-test.
+Guide version: 0.2.181-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -374,6 +374,7 @@ Help reads one whole paragraph or list item at a time. Long paragraphs are read 
 When you choose another Help item, the old speech stops first.
 To return to the smaller parts, say "Back to subsections", or press Escape.
 For the full topic list, say "Back to topics", or press Escape again. To return to your work, say "Close help", or press Escape from the topic list.
+To hear the chapter and part you are in, say "Where am I?".
 
 3.3 Start the audio tutorial
 The tutorial is a set of spoken lessons. It waits for you between lessons. It explains the commands you give, but it does not carry them out. It never sends mail or changes your files.
@@ -382,7 +383,7 @@ The tutorial is a set of spoken lessons. It waits for you between lessons. It ex
 3. Say a course name, such as "Email" or "Web browser". You can also use the arrows and Enter.
 4. Listen to the first lesson.
 5. When you are ready, say "Next lesson", or press Down Arrow.
-Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, Options, Help and updates, and File manager.
+Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager.
 
 3.4 Find, repeat, and leave a lesson
 - To hear the same lesson, say "Repeat", or press Control+R.
@@ -1039,6 +1040,7 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 - To hear how many are marked, say "What is selected", or press S.
 - To remove all marks, say "Clear selection", or press U.
 - To move marked messages to Trash, say "Delete", or press Delete. With no marks, it acts on the current message.
+- In Trash, Delete changes nothing. Companion says the message is already there.
 - To pick a folder to move them to, say "Move", or press M. To name the folder, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message, even if other messages are marked.
 Listen to the action and the names, then answer Yes or No. If a result is uncertain, check the folder before you try again.
@@ -1049,7 +1051,7 @@ Open the message first. Then say "Reply", "Reply all", or "Forward". Or press R,
 Reply all goes to the sender and everyone else on the message. Check the addresses before you send.
 For a forward, give the new address when asked. Speak your added text. Then review and send as in part 11.5.
 A forward includes the original attachments. Companion says their names when the forward starts. To leave one out, say "Remove" and its name, such as "Remove the photo". Or open the Attachments list with Control+L, move to the file, and press Delete.
-To leave the reply, say "Cancel" or "Back to inbox". If you wrote something, Companion asks whether to save it as a draft, throw it away, or keep writing.
+To leave the reply, say "Cancel" or "Back to inbox". If you wrote something, Companion asks whether to save it as a draft, throw it away, or keep writing. Then you are back at the message you were reading.
 
 12.5 Create and manage folders
 - To create a folder, say "Create folder", followed by the name, such as "Create folder Receipts". Or press Alt, 4, then 1.
@@ -1371,6 +1373,7 @@ Single letter keys move you around the page. Hold Shift with any of them to move
 A heading that is also a link, such as a search result, says so after its level. For example: "JAWS downloads, heading level 3, link".
 You can also move by voice. Say "Next heading", "Previous link", or "Next form control". To choose a heading level, say "Next heading level", followed by the number, such as "Next heading level two".
 These keys move through the page. They do not type letters until you go into a text box.
+Up Arrow on the first line says "Top of page". Down Arrow on the last line says "Bottom of page".
 
 15.5 Open links and use lists
 To open a link or use a button, move to it. Then say "Open current link" or "Activate current element", or press Enter. If it only changes the page you are on, you hear what changed, such as "Added to cart", and you stay where you were. A page dialog says "Dialog opened". When it closes, you are back on the button that opened it.
@@ -1378,7 +1381,7 @@ To find words on the page, say "Find", followed by the words, such as "Find logi
 To see a list of items on the page:
 - For links, say "List links", or press F7 or Insert+F7. Links are listed in Tab order.
 - For headings, say "List headings", or press F6 or Insert+F6. Each heading says its level.
-- For form fields, say "List fields", or press F8.
+- For form fields, say "List fields" or "List form fields", or press F8.
 Use the arrows, Home, or End to choose an item, then press Enter. A heading moves your reading place there. A link opens its address. To go back to the page, say "Close list", or press Escape.
 To find a name in a links or headings list, type its first letter. Type more letters quickly to narrow it. You can type the full name, with spaces. Backspace removes the last letter.
 Type the same first letter again to move through matching names. The search stops at the last match. Pause before you start a new name. Typing only chooses an item. Press Enter to open it.
@@ -1407,7 +1410,9 @@ How text boxes, choice boxes, and sliders act:
 - Up Arrow, Down Arrow, or Tab onto any text box makes it ready. Just start typing. This includes search, email, password, number, and multi-line boxes, and boxes with suggestions.
 - The arrow keys leave a text box at its first or last line. Tab moves on to the next control.
 - When you arrow past a choice box or slider, Companion only reads it. Its value never changes by accident.
-- To use a choice box or slider, press Enter. Tab onto it also starts using it.
+- To use a choice box, slider, or spin button, press Enter. Tab onto it also starts using it.
+- On a tab, such as Privacy on a settings page, press Enter to choose it. You stay on the tab. Its part of the page comes after it.
+- On a switch, press Enter or Space to turn it on or off.
 
 15.7 Fill in and review a form by voice
 Say "Fill out this form". Companion asks for one answer at a time. With the keyboard, use Tab to reach each field and type each answer, as in part 15.6.

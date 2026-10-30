@@ -106,6 +106,26 @@ class BrowserMenuTests(unittest.TestCase):
         self.assertIn('short name',self.run_command('a'*61)[0])
         self.assertEqual(self.session.favorites.get('News')['url'],'https://example.com/old')
 
+    def test_saving_a_favorite_by_voice_never_replaces_another_site(self):
+        """Two sites both titled "Example account": "Save favorite" on the second
+        replaced the first favorite without a word. The menu refused; voice did not."""
+        self.session.favorites.add('Example account','https://example.com/old')
+        self.session.open('https://example.com/new')
+        said=self.session.command('save favorite')
+        self.assertIn('already',said)
+        self.assertEqual(self.session.favorites.get('Example account')['url'],'https://example.com/old')
+        said=self.session.command('save favorite as Example account')
+        self.assertIn('already exists',said)
+        self.assertEqual(self.session.favorites.get('Example account')['url'],'https://example.com/old')
+        self.assertEqual(self.session.command('Save favorite as Bank.'),'Saved favorite Bank.')
+        self.assertEqual(self.session.favorites.get('Bank')['url'],'https://example.com/new')
+        # The same page saved again is not a second copy.
+        self.assertIn('already a favorite',self.session.command('save favorite as Bank'))
+
+    def test_saving_a_page_with_no_title_uses_its_site_name(self):
+        self.session.open('https://example.com/new');self.session.snapshot['title']=''
+        self.assertEqual(self.session.command('save favorite'),'Saved favorite example.com. Say list favorites to hear it.')
+
     def test_fresh_browser_menu_and_escape_obey_keep_open(self):
         for keep in (False,True):
             self.session.open('example.com');self.session.reading.position=4

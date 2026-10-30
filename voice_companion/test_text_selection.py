@@ -53,7 +53,7 @@ class SelectionTests(unittest.TestCase):
             self.assertEqual(doc.paragraphs[0].text, 'Same here, Bob. The cat saw the dog.')
             self.assertIn('Selected: cat saw the dog', doc.process('select cat through dog'))
             self.assertIn('Cut', doc.process('cut that'))
-            self.assertEqual(doc.paragraphs[0].text, 'Same here, Bob. The .')
+            self.assertEqual(doc.paragraphs[0].text, 'Same here, Bob. The.')   # cut takes one space with it, as Word does
             self.assertIn('Pasted', doc.process('paste'))
             self.assertTrue(doc.paragraphs[0].text.endswith('cat saw the dog'))
 

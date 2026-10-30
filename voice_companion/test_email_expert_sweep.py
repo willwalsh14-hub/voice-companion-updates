@@ -1,0 +1,209 @@
+"""Email as an expert screen reader user drives it (sweep, October 30, 2026).
+
+Terse, consistent speech; Escape goes back to where you were. Each test here
+failed before its fix."""
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import companion
+from mail_voice import MailSession
+from test_email_new_veteran import CompanionCase
+
+
+class Body(str):
+    attachments = []
+
+
+class Mailbox:
+    """Two folders with messages; the calls MailSession and the reply flow make."""
+    def __init__(self, *args): pass
+    def folders(self):
+        return [('Inbox', 'inbox'), ('Work', 'work'), ('Trash', 'trash')]
+    def list_messages(self, folder, cursor=None, limit=10):
+        return ([{'id': folder + str(n), 'from': 'Person %d <p%d@example.com>' % (n, n),
+                  'subject': 'Lunch on Friday.' if n == 1 else '  ' if n == 2 else '(no subject)' if n == 3 else 'Plans',
+                  'date': 'October 2, 2026'} for n in (1, 2, 3, 4)], None)
+    def read_message(self, ident, folder=None):
+        body = Body('This is message ' + ident + '.')
+        body.attachments = [{'name': 'notes.txt', 'size': 20}] if ident.endswith('2') else []
+        return body
+    def attachments(self, ident, folder=None):
+        return [{'name': 'notes.txt', 'size': 20}] if ident.endswith('2') else []
+    def response_context(self, ident, action, address, folder=None):
+        return {'recipient': 'p1@example.com', 'cc': [], 'subject': 'Re: Lunch', 'action': action,
+                'source_id': ident}
+
+
+class SummaryWordsTests(CompanionCase):
+    def test_a_subject_that_ends_in_a_period_is_said_with_one_period(self):
+        # Heard: "Person 1. Lunch on Friday.. October 2, 2026. 1 of 4."
+        mail = MailSession('thunderbird', self.folder, Mailbox)
+        self.assertEqual(mail.process('list messages'),
+                         'Inbox. Person 1. Lunch on Friday. October 2, 2026. 1 of 4.')
+
+    def test_a_blank_subject_says_no_subject_as_alt_4_does(self):
+        # Heard: "Person 2. . October 2, 2026." and "Person 3. (no subject). ..."
+        mail = MailSession('thunderbird', self.folder, Mailbox)
+        mail.process('list messages')
+        self.assertTrue(mail.process('next message').startswith('Person 2. No subject. October 2, 2026. 2 of 4.'))
+        self.assertEqual(mail.process('what is the subject'), 'No subject.')
+        self.assertTrue(mail.process('next message').startswith('Person 3. No subject. October 2, 2026. 3 of 4.'))
+
+
+class MarkingWordsTests(CompanionCase):
+    def test_every_way_to_mark_says_the_same_words_and_the_count(self):
+        # Before: "Selected message 2." by number, "Marked message 3." with no count from Space,
+        # and "Unmarked message 1." for a message that was never marked.
+        mail = MailSession('thunderbird', self.folder, Mailbox)
+        mail.process('list messages')
+        self.assertEqual(mail.process('unmark message'), 'Message 1 is not marked. None selected.')
+        self.assertEqual(mail.process('mark message 2'), 'Marked message 2. 1 selected.')
+        self.assertEqual(mail.process('toggle message selection'), 'Marked message 1. 2 selected.')
+        self.assertEqual(mail.process('toggle message selection'), 'Unmarked message 1. 1 selected.')
+        self.assertEqual(mail.process('select messages 3 through 4'), 'Marked messages 3 through 4. 3 selected.')
+        mail.process('go to message 2')
+        self.assertEqual(mail.process('unmark message'), 'Unmarked message 2. 2 selected.')
+
+
+class EverydayWordsTests(CompanionCase):
+    def test_what_folder_am_i_in_and_go_to_message_list(self):
+        # Before: "I did not understand that." and "I could not find that folder."
+        mail = MailSession('thunderbird', self.folder, Mailbox)
+        mail.process('list messages')
+        mail.process('open message')
+        self.assertEqual(mail.process('What folder am I in?'), 'You are in Inbox. A message is open.')
+        self.assertEqual(mail.process('Go to the message list.'),
+                         'Back to Inbox. Person 1. Lunch on Friday. October 2, 2026. 1 of 4.')
+        self.assertEqual(mail.view, 'folder')
+
+
+class SpokenNumberTests(CompanionCase):
+    def test_numbers_above_ten_said_as_words_reach_the_message(self):
+        # The recognizer writes "fifteen", not 15. Before: "I did not understand that." with 20 or
+        # more messages a page, and "go to message twenty" looked for a folder.
+        class Long(Mailbox):
+            def list_messages(self, folder, cursor=None, limit=10):
+                return ([{'id': str(n), 'from': 'Person %d <p%d@example.com>' % (n, n), 'subject': 'Note %d' % n,
+                          'date': 'October 2, 2026'} for n in range(1, 31)], None)
+        mail = MailSession('thunderbird', self.folder, Long)
+        mail.process('set list size to 30')
+        self.assertTrue(mail.process('Read message fifteen.').startswith('Message opened. This is message 15.'))
+        self.assertTrue(mail.process('go to message twenty-one').startswith('Person 21. Note 21.'))
+        self.assertTrue(mail.process('go to message twenty one').startswith('Person 21. Note 21.'))
+        self.assertTrue(mail.process('go to message twenty').startswith('Person 20. Note 20.'))
+        self.assertEqual(mail.process('select messages twelve through fourteen'), 'Marked messages 12 through 14. 3 selected.')
+        self.assertEqual(mail.process('mark message thirty'), 'Marked message 30. 4 selected.')
+
+
+class NothingMovedTests(CompanionCase):
+    def test_moving_to_the_folder_you_are_in_says_nothing_changed(self):
+        # Before: "1 message moved." while the message stayed where it was.
+        moved = []
+        class Recording(Mailbox):
+            def move(self, ids, source, destination): moved.append(ids)
+        mail = MailSession('thunderbird', self.folder, Recording)
+        mail.process('list messages')
+        self.assertEqual(mail.process('move to inbox'), 'This is already in Inbox. Nothing was changed.')
+        mail.process('go to folder work')
+        mail.process('select messages 1 through 2')
+        self.assertEqual(mail.process('move to work'), 'These are already in Work. Nothing was changed.')
+        self.assertIsNone(mail.pending)
+        self.assertEqual(moved, [])
+        self.assertIn('Is that right?', mail.process('move to trash'))
+
+    def test_delete_in_trash_is_refused_before_the_question(self):
+        class Thunderbird(Mailbox):
+            def is_trash(self, folder): return folder == 'trash'
+        mail = MailSession('thunderbird', self.folder, Thunderbird)
+        mail.process('go to trash')
+        self.assertEqual(mail.process('delete'), 'This is already in Trash. Nothing was changed.')
+        self.assertIsNone(mail.pending)
+        mail.process('open inbox')
+        self.assertIn('Is that right?', mail.process('delete'))
+
+
+class EmptyFolderTests(CompanionCase):
+    def test_every_message_key_in_an_empty_folder_says_the_same(self):
+        # Before: Home and End said "Empty list.", Alt+1 to Alt+6 "Empty list. No messages on this page.",
+        # L "Choose a message first." and R, A and F "Open the message first...".
+        class Empty(Mailbox):
+            def list_messages(self, folder, cursor=None, limit=10): return [], None
+        companion.mail_session = MailSession('thunderbird', self.folder, Empty)
+        companion.mail_session.process('list messages')
+        empty = companion.mail_session._empty_list()
+        for key in ('Enter', 'Home', 'End', 'Alt+1', 'Alt+6', 'L', 'R', 'A', 'F', 'I', 'Delete', 'Space', 'Ctrl+End'):
+            with self.subTest(key=key):
+                self.said.clear()
+                command = companion.navigation_key(key, 'mailbox')
+                if command:
+                    self.assertEqual(companion.handle_keyboard(command, 'mailbox'), 'mailbox')
+                self.assertEqual(self.said, [empty])
+
+
+class EscapeReturnsToYourPlaceTests(CompanionCase):
+    def setUp(self):
+        super().setUp()
+        companion.mail_session = MailSession('thunderbird', self.folder, Mailbox)
+        patch.object(companion, 'finish_mail_announcement').start()
+        self.addCleanup(patch.stopall)
+        p = patch('companion.account_token', return_value=('me@example.com', 'token'), create=True); p.start()
+
+    def press(self, key, mode):
+        command = companion.navigation_key(key, mode)
+        return companion.handle_keyboard(command, mode) if command else mode
+
+    def test_escape_from_the_attachments_list_says_the_message_you_are_on(self):
+        # Heard: "Back to Inbox." and nothing more; Escape from a message says the message.
+        companion.mail_session.process('list messages')
+        companion.mail_session.process('next message')
+        mode = self.press('L', 'mailbox')
+        self.assertEqual(mode, 'attachments')
+        self.assertEqual(self.press('Escape', mode), 'mailbox')
+        self.assertEqual(self.last(), 'Back to Inbox. Person 2. No subject. October 2, 2026. 2 of 4.')
+
+    def test_canceling_a_reply_goes_back_to_the_message_in_its_folder(self):
+        # Before: canceling a reply to a message in Work opened the Inbox at message 1.
+        mail = companion.mail_session
+        mail.process('go to folder work')
+        mail.process('next message')
+        mail.process('open message')
+        self.assertEqual(companion.handle('reply', 'mailbox'), 'email_draft')
+        self.said.clear()
+        self.assertEqual(self.press('Escape', 'email_draft'), 'mailbox')
+        self.assertEqual(self.said, ['Draft canceled without saving.', 'Back to message.'])
+        self.assertEqual((mail.folder_name, mail.current, mail.view), ('Work', 2, 'message'))
+
+    def test_closing_a_saved_draft_says_it_is_still_saved(self):
+        # Before: "Save draft", then Cancel, said "Draft canceled without saving." The draft was kept.
+        mail = companion.mail_session
+        mail.process('list messages')
+        self.assertEqual(companion.handle('new email', 'mailbox'), 'email_draft')
+        companion.handle('bob@example.com', 'email_draft')
+        companion.handle('Lunch.', 'email_draft')
+        companion.handle('See you at noon.', 'email_draft')
+        companion.handle('save draft', 'email_draft')
+        title = companion.email_draft.title
+        self.said.clear()
+        self.assertEqual(companion.handle('cancel', 'email_draft'), 'mailbox')
+        self.assertEqual(self.said[0], 'Draft closed. It is still saved as ' + title + '.')
+        self.assertTrue((self.folder / 'Email Drafts' / (title + '.eml')).exists())
+        # A new email closed with nothing kept still says so.
+        companion.handle('new email', 'mailbox')
+        self.said.clear()
+        companion.handle('cancel', 'email_draft')
+        self.assertEqual(self.said[0], 'Draft canceled without saving.')
+
+    def test_canceling_a_new_email_goes_back_to_the_message_you_were_on(self):
+        mail = companion.mail_session
+        mail.process('go to folder work')
+        mail.process('last message')
+        self.assertEqual(companion.handle('new email', 'mailbox'), 'email_draft')
+        self.said.clear()
+        self.assertEqual(companion.handle('cancel', 'email_draft'), 'mailbox')
+        self.assertEqual(self.said[-1], 'Back to Work. Person 4. Plans. October 2, 2026. 4 of 4.')
+        self.assertEqual((mail.folder_name, mail.current), ('Work', 4))
+
+
+if __name__ == '__main__':
+    unittest.main()

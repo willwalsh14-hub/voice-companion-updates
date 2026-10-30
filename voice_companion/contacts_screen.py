@@ -303,7 +303,15 @@ def command_here(m, raw, command):
         _, contact = PENDING
         if command in YES:
             PENDING = None
-            BOOK.delete(contact)
+            try:
+                BOOK.delete(contact)
+            except ValueError as exc:
+                if not thunderbird_pim.gone(exc):
+                    raise
+                VIEW = 'list'       # removed meanwhile: read the list again, so it is not said any more
+                reload(m)
+                m.speak(str(exc) + ' ' + describe())
+                return MODE
             name = contact.name
             VIEW = 'list'       # the deleted contact's details are gone
             reload(m)
@@ -328,7 +336,10 @@ def command_here(m, raw, command):
         VIEW = 'list'
         m.speak('Contacts. ' + describe())
         return MODE
-    if command in OPEN + ('where am i', 'list contacts'):
+    if command in ('where am i', 'repeat', 'say that again', 'repeat that') and VIEW == 'details' and DETAILS and current():
+        m.speak('Contacts. ' + current().name + '. ' + details_item())      # say it, and stay in the details
+        return MODE
+    if command in OPEN + ('where am i', 'list contacts', 'repeat', 'say that again', 'repeat that'):
         VIEW = 'list'
         m.speak(summary())
         return MODE
@@ -366,7 +377,8 @@ def command_here(m, raw, command):
             edge = 'Start of list. ' if command in ('previous', 'previous item', 'home', 'first item') else 'End of list. '
         m.speak(edge + details_item())
         return MODE
-    moves = {'next': 1, 'next contact': 1, 'down': 1, 'previous': -1, 'previous contact': -1, 'up': -1}
+    moves = {'next': 1, 'next contact': 1, 'down': 1, 'next item': 1, 'previous': -1, 'previous contact': -1, 'up': -1,
+             'previous item': -1}
     ends = {'home': 0, 'first contact': 0, 'start of list': 0, 'top of list': 0, 'first item': 0,
             'end': -1, 'last contact': -1, 'end of list': -1, 'bottom of list': -1, 'last item': -1}
     if command in moves or command in ends:
@@ -763,6 +775,7 @@ def email_by_name(m, command, mode):
     explicit = not command.startswith(('email ', 'e mail '))
     if name in RESERVED or name.startswith(('to ', 'list', 'draft', 'the sender')) or '@' in name or len(name.split()) > 5:
         return None     # a command word, an address, or a sentence ("write to the council about the road")
+    unread = ''         # why Thunderbird's contacts could not be read just now
     if mode == MODE and CONTACTS:
         contacts = CONTACTS
     else:
@@ -771,7 +784,11 @@ def email_by_name(m, command, mode):
         # Thunderbird's contacts not read yet (Thunderbird not started): read them now, starting it.
         if contacts_book.CACHE['at'] is None and thunderbird_pim.usable(m.APP):
             contacts = people.load()
+            unread = people.notice
     matches = contacts_book.find(contacts, name)
+    if not matches and unread and len(name.split()) <= 3:
+        m.speak(unread)     # not "No contact named John": John may be in Thunderbird, which did not answer
+        return mode
     if not matches:
         if not explicit or len(name.split()) > 3:
             return None     # maybe another command, or a sentence ("write to the council about the road")
@@ -1050,6 +1067,10 @@ def edit_answer(m, command):
     try:
         name = BOOK.update(contact, **{field: value})
     except ValueError as exc:
+        if thunderbird_pim.gone(exc):
+            reload(m)       # removed meanwhile: read the list again, so it is not said any more
+            m.speak(str(exc) + ' The change was not saved. ' + describe())
+            return MODE
         m.speak(str(exc) + ' The change was not saved.')
         return MODE
     reload(m, keep=contact.key)

@@ -16,7 +16,16 @@ NUMBER_WORDS = {'one': 1, 'first': 1, 'two': 2, 'second': 2,
                 'five': 5, 'fifth': 5, 'six': 6, 'sixth': 6,
                 'seven': 7, 'seventh': 7, 'eight': 8, 'eighth': 8,
                 'nine': 9, 'ninth': 9, 'ten': 10, 'tenth': 10}
-NUMBER = r'(?:\d+|' + '|'.join(NUMBER_WORDS) + r')'
+# A page holds up to 100 messages, and the recognizer writes numbers as words:
+# "read message fifteen", "go to message twenty-one" (sweep, October 30, 2026).
+NUMBER_WORDS.update(zip('eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'.split(), range(11, 20)))
+for _tens, _name in enumerate('twenty thirty forty fifty sixty seventy eighty ninety'.split(), 2):
+    NUMBER_WORDS[_name] = _tens * 10
+    for _one, _word in enumerate('one two three four five six seven eight nine'.split(), 1):
+        NUMBER_WORDS[_name + ' ' + _word] = NUMBER_WORDS[_name + '-' + _word] = _tens * 10 + _one
+NUMBER_WORDS.update({'one hundred': 100, 'a hundred': 100})
+# Longest first, so "twenty one" is never read as "twenty".
+NUMBER = r'(?:\d+|' + '|'.join(sorted(NUMBER_WORDS, key=len, reverse=True)) + r')'
 MAIL_SIZES = (10, 20, 30, 40, 50, 100, 1000)
 # "All": pages of 10. The arrows stop at the end of a page, as in every list.
 ALL_MESSAGES = 'All messages, 10 at a time. For more, press Page Down, or say next page.'
@@ -65,6 +74,9 @@ EVERYDAY_COMMANDS = {
     'check my mail': 'refresh messages', 'check for new mail': 'refresh messages', 'check for new email': 'refresh messages',
     'check for new messages': 'refresh messages', 'check for mail': 'refresh messages', 'refresh': 'refresh messages',
     'refresh inbox': 'refresh messages', 'refresh the inbox': 'refresh messages', 'refresh the list': 'refresh messages',
+    'what folder am i in': 'which folder', 'which folder am i in': 'which folder', 'what folder is this': 'which folder',
+    'go to message list': 'back to folder', 'go to the message list': 'back to folder',
+    'back to the message list': 'back to folder', 'back to message list': 'back to folder', 'back to the list': 'back to folder',
 }
 INBOX_WORDS = re.compile(r'(?:open|go to|back to|return to) (?:the |my )?inbox(?: folder)?')
 
@@ -249,6 +261,10 @@ class MailSession:
         self.selected.add(number)
         self.marked_ids[row['id']] = self._summary(number)
 
+    def _selected_count(self):
+        """'2 selected.' after every mark and unmark, by key or voice; 'None selected.' when none are."""
+        return (str(len(self.marked_ids)) + ' selected.') if self.marked_ids else 'None selected.'
+
     def _unmark(self, number):
         self.selected.discard(number)
         self.marked_ids.pop(self.rows[number - 1]['id'], None)
@@ -327,11 +343,23 @@ class MailSession:
         return self._selected_ids() if self.marked_ids else self._current_ids()
 
     def _prepare_move(self, ids, title, ident):
+        if ident == self.folder_id or self.folder_id in ('inbox', 'INBOX') and title.casefold() == 'inbox':
+            # Never "1 message moved." when it stays where it is.
+            return ('This is' if len(ids) == 1 else 'These are') + ' already in ' + self._spoken_folder(title) + '. Nothing was changed.'
         self.pending = ('move', ids, ident)
         target = ('the marked message' if ids[0] in self.marked_ids else 'this message') if len(ids) == 1 else str(len(ids)) + ' marked messages'
         return 'I heard move ' + target + ' to ' + self._spoken_folder(title) + '. Is that right? Say yes or no.'
 
     def _prepare_delete(self, ids):
+        in_trash = getattr(self.client(), 'is_trash', None)
+        try:
+            in_trash = callable(in_trash) and in_trash(self.folder_id)
+        except (MailboxError, AccountError, OSError):
+            in_trash = False   # the delete itself checks again, and says what went wrong
+        if in_trash:
+            # Never "moved to Trash" when nothing moves; in Thunderbird it would be deleted for good.
+            return (('This is' if len(ids) == 1 else 'These are') + ' already in Trash. ' +
+                    ('Yahoo empties Trash on its own. ' if self.provider == 'yahoo' else '') + 'Nothing was changed.')
         self.pending = ('delete', ids, None)
         target = ('the marked message' if ids[0] in self.marked_ids else 'this message') if len(ids) == 1 else str(len(ids)) + ' marked messages'
         return 'I heard move ' + target + ' to Trash or Deleted Items. Is that right? Say yes or no.'
@@ -391,6 +419,11 @@ class MailSession:
             value=sender_name(row) if header=='from' else row.get(header,'unavailable')
             if header=='size':
                 value=(str(value)+' bytes') if isinstance(value,(int,float)) else str(value)
+            if header=='subject':
+                # Said as Alt+4 says it: "Lunch." not "Lunch..", and never a blank.
+                value=' '.join(str(value or '').split()).rstrip('.').strip()
+                if value in ('','(no subject)'):
+                    parts.append('No subject');continue
             parts.append((header.capitalize()+' ' if preferences.get('email_header_names',False) else '')+str(value))
         boundary=self._message_boundary(number) if announce_boundary else ''
         return '. '.join(parts)+'. '+str(number)+' of '+str(len(self.rows))+'.'
@@ -411,7 +444,7 @@ class MailSession:
 
     def page_edge(self, bottom=False):
         """Home and End: the first or last message on this page. Already there: say so."""
-        if not self.rows:return 'Empty list.'
+        if not self.rows:return self._empty_list()
         target = len(self.rows) if bottom else 1
         if self.current == target:
             return ('End of list. ' if bottom else 'Start of list. ') + self._focus(target) + self._page_hint(bottom)
@@ -430,7 +463,7 @@ class MailSession:
             return 'Could not reach the '+('end' if bottom else 'start')+' of the list. '+str(exc)
 
     def _list_boundary(self,bottom=False):
-        if not self.rows:return 'Empty list.'
+        if not self.rows:return self._empty_list()
         if not bottom and self.page_cursor is None and self.current==1:return 'Start of list.'
         if bottom and not self.next_cursor and self.current==len(self.rows):return 'End of list.'
         if not bottom:
@@ -678,7 +711,7 @@ class MailSession:
                 if command in ('cancel', 'go back', 'back'):
                     return 'Folder choice canceled. Nothing was changed.'
                 return 'Say rename to followed by the new name, or cancel.'
-            if (not self.rows and self.view == 'folder' and command in EMPTY_LIST_COMMANDS and
+            if (not self.rows and self.view == 'folder' and (command in EMPTY_LIST_COMMANDS or header_request(command)) and
                     not (self.marked_ids and command in ('delete', 'move', 'move to folder'))):
                 # An empty folder is an empty list, the same for every key and command.
                 return self._empty_list()
@@ -829,32 +862,34 @@ class MailSession:
                 if not self.rows:return 'No messages to select.'
                 if self.current in self.selected:
                     self._unmark(self.current)
-                    return 'Unmarked message '+str(self.current)+'.'
+                    return 'Unmarked message '+str(self.current)+'. '+self._selected_count()
                 self._mark(self.current)
-                return 'Marked message '+str(self.current)+'.'
+                return 'Marked message '+str(self.current)+'. '+self._selected_count()
             if command=='select all messages':
                 for number in range(1,len(self.rows)+1):self._mark(number)
                 return plural(len(self.rows), 'message')+' on this page selected.'
             if command in ('select', 'mark', 'select message', 'mark message', 'select this message', 'mark this message'):
                 self._current_ids()
                 self._mark(self.current)
-                return 'Marked message ' + str(self.current) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Marked message ' + str(self.current) + '. ' + self._selected_count()
             match = re.fullmatch(r'(?:select|mark) message (' + NUMBER + r')', command)
             if match:
                 n = self._number(match[1])
                 self._mark(n)
-                return 'Selected message ' + str(n) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Marked message ' + str(n) + '. ' + self._selected_count()
             if command in ('unmark message', 'deselect message', 'unselect message'):
                 self._current_ids()
+                if self.current not in self.selected:
+                    return 'Message ' + str(self.current) + ' is not marked. ' + self._selected_count()
                 self._unmark(self.current)
-                return 'Unmarked message ' + str(self.current) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Unmarked message ' + str(self.current) + '. ' + self._selected_count()
             match = re.fullmatch(r'select messages (' + NUMBER + r') (?:through|to) (' + NUMBER + r')', command)
             if match:
                 first, last = self._number(match[1]), self._number(match[2])
                 if first > last:
                     return 'Say the first number before the last number.'
                 for n in range(first, last + 1): self._mark(n)
-                return 'Selected messages ' + str(first) + ' through ' + str(last) + '. ' + str(len(self.marked_ids)) + ' selected.'
+                return 'Marked messages ' + str(first) + ' through ' + str(last) + '. ' + self._selected_count()
             if command in ('clear selection', 'cancel selection'):
                 self._clear_marks()
                 return 'Selection cleared.'
