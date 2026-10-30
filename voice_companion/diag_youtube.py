@@ -2,7 +2,7 @@ import json, time
 from playwright.sync_api import sync_playwright
 import youtube_page as yp
 def note(title, text):
-    print('::warning title=' + title[:70] + '::' + str(text).replace('%', '%25').replace('\r', '').replace('\n', '%0A')[:1500], flush=True)
+    print('::warning title=' + title[:70] + '::' + str(text).encode('ascii','replace').decode().replace('%', '%25').replace('\r', '').replace('\n', '%0A')[:1500], flush=True)
 URLS = ['https://www.youtube.com/results?search_query=cats', 'https://www.youtube.com/results?search_query=cats&sp=EgIQAg%3D%3D',
         'https://www.youtube.com/', 'https://www.youtube.com/@NASA/videos', 'https://www.youtube.com/playlist?list=PL590L5WQmH8fJ54F369BLDSqIwcs-TCfs',
         'https://www.youtube.com/feed/history', 'https://www.youtube.com/feed/channels']
