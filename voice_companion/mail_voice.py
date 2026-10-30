@@ -343,9 +343,14 @@ class MailSession:
 
     def _prepare_delete(self, ids):
         in_trash = getattr(self.client(), 'is_trash', None)
-        if callable(in_trash) and in_trash(self.folder_id):
+        try:
+            in_trash = callable(in_trash) and in_trash(self.folder_id)
+        except (MailboxError, AccountError, OSError):
+            in_trash = False   # the delete itself checks again, and says what went wrong
+        if in_trash:
             # Never "moved to Trash" when nothing moves; in Thunderbird it would be deleted for good.
-            return ('This is' if len(ids) == 1 else 'These are') + ' already in Trash. Nothing was changed.'
+            return (('This is' if len(ids) == 1 else 'These are') + ' already in Trash. ' +
+                    ('Yahoo empties Trash on its own. ' if self.provider == 'yahoo' else '') + 'Nothing was changed.')
         self.pending = ('delete', ids, None)
         target = ('the marked message' if ids[0] in self.marked_ids else 'this message') if len(ids) == 1 else str(len(ids)) + ' marked messages'
         return 'I heard move ' + target + ' to Trash or Deleted Items. Is that right? Say yes or no.'
