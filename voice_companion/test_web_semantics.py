@@ -500,6 +500,12 @@ class SemanticWebTests(unittest.TestCase):
         self.assertIn('Dark mode, switch, off',self.session.reading.text)
         self.assertNotIn('not checked',self.session.reading.text)
 
+    def test_an_unlabeled_control_line_says_its_type_once(self):
+        self.load('<p>Color</p><select><option>Red</option></select><button></button>')
+        self.assertIn('Unlabeled, combo box, Red',self.session.reading.text)
+        self.assertIn('Unlabeled, button',self.session.reading.text)
+        self.assertNotIn('combobox',self.session.reading.text)
+
     def test_enter_on_a_spin_button_lets_arrows_change_it(self):
         self.load(self.SETTINGS_PAGE)
         self.session.keyboard('Quick:f');self.session.keyboard('Quick:f')

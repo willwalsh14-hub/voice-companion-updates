@@ -89,6 +89,7 @@ def heading_link(item,elements):
         if (start<=a and b<=end and b>a) or (a<=start and end<=b):return True
     return False
 
+UNLABELED_ROLE=re.compile(r'Unlabeled (?:textbox|searchbox|combobox|listbox|button|checkbox|radio|switch|slider|spinbutton|menuitem(?:checkbox|radio)?|tab|option|treeitem)')
 def describe(item,elements=None):
     """How an element is spoken. A heading that is a link says so after its level, like
     a screen reader: "JAWS downloads, heading level 3, link." (Will, October 2026)."""
@@ -96,6 +97,8 @@ def describe(item,elements=None):
     # A sentence's own period or colon is not said before ", paragraph" or the final period.
     # An ellipsis ("Add a comment...") is kept: it is how the site names the box.
     name=re.sub(r'(?<!\.)[.,;:]$','',name.rstrip()) or name
+    # A control with no name is called "Unlabeled button"; the type is said once, after it.
+    if UNLABELED_ROLE.fullmatch(name):name='Unlabeled'
     if role=='landmark':return (name+', ' if name not in ('Unnamed','Unlabeled') else '')+{'contentinfo':'content information'}.get(item.get('landmark','region'),item.get('landmark','region'))+' region.'
     if role=='list':return (name+', ' if name not in ('List','Unlabeled') else '')+('Ordered list' if item.get('ordered') else 'List')+', '+str(item.get('item_count',0))+' items.'
     if role=='listitem':return name+', list item'+(' '+str(item['position'])+' of '+str(item['set_size']) if item.get('position') and item.get('set_size',0)>0 else '')+'.'
@@ -301,7 +304,8 @@ SEMANTICS = r'''
             if(item){item.tabindex=control?.combo_input_key?control.tabindex:e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
             if(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable){
               const spokenRole=type==='password'?'password field':control?.combo_edit?'edit combo box':({button:'button',textbox:'edit field',searchbox:'search field',checkbox:'checkbox',radio:'radio button',combobox:'combo box',listbox:'list box',switch:'switch',slider:'slider',spinbutton:'spin button'}[role]||'edit field');
-              append(role==='slider'&&/\bslider$/i.test(label)?label:label+', '+spokenRole);
+              // A control with no name says "Unlabeled", then its type once.
+              append(role==='slider'&&/\bslider$/i.test(label)?label:(/^Unlabeled (?:textbox|searchbox|combobox|listbox|button|checkbox|radio|switch|slider|spinbutton)$/.test(label)?'Unlabeled':label)+', '+spokenRole);
               if(['checkbox','radio'].includes(role))append(accessibleLabel.checked(e)?', checked':', not checked');
               if(role==='switch')append(accessibleLabel.checked(e)?', on':', off');
               if(e.disabled||e.getAttribute('aria-disabled')==='true')append(', unavailable');

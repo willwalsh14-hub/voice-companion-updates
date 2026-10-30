@@ -257,3 +257,13 @@ class PageEdgeAndHeadingLineTests(unittest.TestCase):
             self.assertEqual(session.command('previous line'),'Top of page. Intro text.')
             session.keyboard('PageBottom')
             self.assertEqual(session.command('next line'),'Bottom of page. Last line')
+
+
+class UnlabeledControlTests(unittest.TestCase):
+    def test_an_unlabeled_control_says_its_type_once(self):
+        """"Unlabeled combobox, combobox, Red." said the type twice."""
+        self.assertEqual(describe({'role':'combobox','tag':'select','label':'Unlabeled combobox','selected_label':'Red'}),'Unlabeled, combobox, Red.')
+        self.assertEqual(describe({'role':'button','tag':'button','label':'Unlabeled button'}),'Unlabeled, button.')
+        self.assertEqual(describe({'role':'field','tag':'input','type':'text','label':'Unlabeled textbox'}),'Unlabeled, edit.')
+        # A real name that happens to start with the word is kept.
+        self.assertEqual(describe({'role':'button','tag':'button','label':'Unlabeled items'}),'Unlabeled items, button.')
