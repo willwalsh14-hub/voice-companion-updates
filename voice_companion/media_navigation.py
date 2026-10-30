@@ -140,7 +140,7 @@ class MediaNavigation:
                 return ('Delete removes a saved show, a preset, or a scheduled recording. It does nothing here.'
                         if self.focus=='items' and self.items() else 'Choose an item first.')
         state=self.state()
-        if not state:return self.announce() if key in ('Home','End','Up','Down') and not self.form else ''
+        if not state:return self.announce() if (key in ('Home','End','Up','Down','Left','Right') or key.startswith('Letter:')) and not self.form else ''
         names,index,select=state;index=index or 0
         if key in ('Home','End'):
             target=0 if key=='Home' else len(names)-1

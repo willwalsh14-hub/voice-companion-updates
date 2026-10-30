@@ -41,3 +41,14 @@ class PlayerControlsKeepTheirPlaceTests(ExpertMediaTestCase):
         self.assertEqual((nav.view, nav.item_index), ('controls', 1))
         # Escape still goes back to the episodes, on the one playing, as the controls said.
         self.assertEqual(self.key('Escape'), 'Greece (G), 2 of 2.')
+
+
+class EmptyListKeysTests(ExpertMediaTestCase):
+    """Every key says something. In an empty results list, a letter used to say nothing."""
+
+    def test_a_letter_in_an_empty_list_says_it_is_empty(self):
+        self.say('Media', 'Podcasts')
+        self.key('Tab')
+        for name in ('Letter:p', 'Left', 'Right', 'Down'):
+            with self.subTest(key=name):
+                self.assertEqual(self.key(name), 'No items in this list. Tab returns to the actions menu.')
