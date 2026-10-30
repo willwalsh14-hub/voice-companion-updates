@@ -219,5 +219,19 @@ class ReaderWarningsAreReadOnce(unittest.TestCase):
         self.assertIn('original image. Dear Bob.', said)
 
 
+class MissingFolderSuggestsAnother(unittest.TestCase):
+    """Before: "Your Desktop folder was not found. Say another folder, such as Desktop."."""
+    def test_the_suggestion_is_a_different_folder(self):
+        import attachment_screen
+        from unittest.mock import patch
+        with patch.object(attachment_screen, 'place', lambda key: Path('/no/such/folder/' + key)):
+            for heard, other in (('Desktop.', 'Documents'), ('documents', 'Desktop')):
+                with self.subTest(heard=heard):
+                    with self.assertRaises(attachment_screen.AttachmentError) as caught:
+                        attachment_screen.spoken_folder(heard)
+                    said = str(caught.exception)
+                    self.assertTrue(said.endswith('Say another folder, such as ' + other + '.'), said)
+
+
 if __name__ == '__main__':
     unittest.main()

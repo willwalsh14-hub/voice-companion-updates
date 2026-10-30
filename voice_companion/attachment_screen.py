@@ -168,7 +168,8 @@ def spoken_folder(value):
     if key is not None:
         folder = place(key)
         if not folder.is_dir():
-            raise AttachmentError('Your ' + PLACES[key][1] + ' folder was not found. Say another folder, such as Desktop.')
+            raise AttachmentError('Your ' + PLACES[key][1] + ' folder was not found. Say another folder, such as '
+                                  + ('Documents' if key == 'desktop' else 'Desktop') + '.')
         return folder
     path = Path(os.path.expandvars(os.path.expanduser(text)))
     if not text or not path.is_absolute():
