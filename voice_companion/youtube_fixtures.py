@@ -414,3 +414,152 @@ def routes(context, overrides=None, listed_filters=False):
         route.fulfill(status=200, content_type='text/html; charset=utf-8', body=body)
     context.route('https://www.youtube.com/**', answer)
     return served
+
+
+# ---------------------------------------------------------------- pages with YouTube's own data
+# Shaped like youtube.com since 2025: the list is in ytInitialData, drawn later by the app.
+# The drawn page here is empty on purpose, so only the data can be read, as in a browser
+# that draws little in the background. Continuations are answered at /youtubei/v1/.
+import json as _json
+
+
+def _text(value):
+    return {'simpleText': value}
+
+
+def lockup(ident, title, channel, views, age, length, kind='VIDEO'):
+    rows = [{'metadataParts': [{'text': {'content': channel}}]},
+            {'metadataParts': [{'text': {'content': views}}, {'text': {'content': age}}]}]
+    badge = {'thumbnailOverlayBadgeViewModel': {'thumbnailBadges': [{'thumbnailBadgeViewModel': {'text': length}}]}}
+    command = ({'watchEndpoint': {'videoId': ident}, 'commandMetadata': {'webCommandMetadata': {'url': '/watch?v=' + ident}}}
+               if kind == 'VIDEO' else
+               {'browseEndpoint': {'browseId': 'VL' + ident}, 'commandMetadata': {'webCommandMetadata': {'url': '/playlist?list=' + ident}}})
+    image = ({'thumbnailViewModel': {'overlays': [badge]}} if kind == 'VIDEO' else
+             {'collectionThumbnailViewModel': {'primaryThumbnail': {'thumbnailViewModel': {'overlays': [badge]}}}})
+    return {'lockupViewModel': {'contentId': ident, 'contentType': 'LOCKUP_CONTENT_TYPE_' + kind, 'contentImage': image,
+                                'metadata': {'lockupMetadataViewModel': {'title': {'content': title},
+                                             'metadata': {'contentMetadataViewModel': {'metadataRows': rows}}}},
+                                'rendererContext': {'commandContext': {'onTap': {'innertubeCommand': command}}}}}
+
+
+def video_renderer(ident, title, channel, views, age, length):
+    return {'videoRenderer': {'videoId': ident, 'title': {'runs': [{'text': title}]}, 'ownerText': {'runs': [{'text': channel}]},
+                              'viewCountText': _text(views), 'publishedTimeText': _text(age), 'lengthText': _text(length),
+                              'navigationEndpoint': {'commandMetadata': {'webCommandMetadata': {'url': '/watch?v=' + ident}},
+                                                     'watchEndpoint': {'videoId': ident}}}}
+
+
+def channel_renderer(ident, name, handle, subscribers):
+    # YouTube now puts the handle where the subscriber count was, and the count where the video count was.
+    return {'channelRenderer': {'channelId': ident, 'title': _text(name), 'subscriberCountText': _text(handle),
+                                'videoCountText': _text(subscribers),
+                                'navigationEndpoint': {'browseEndpoint': {'browseId': ident, 'canonicalBaseUrl': '/' + handle},
+                                                       'commandMetadata': {'webCommandMetadata': {'url': '/' + handle}}}}}
+
+
+def more(token):
+    return {'continuationItemRenderer': {'continuationEndpoint': {'continuationCommand': {'token': token}}}}
+
+
+def home_videos(start, count):
+    return [{'richItemRenderer': {'content': lockup('home%07d' % n, 'Home video %d' % n, 'Channel %d' % n,
+                                                    '%d views' % (n * 10), '%d day%s ago' % (n, '' if n == 1 else 's'), '%d:0%d' % (n, n % 10))}}
+            for n in range(start, start + count)]
+
+
+def data_home():
+    contents = home_videos(1, 3) + [
+        {'richSectionRenderer': {'content': {'richShelfRenderer': {'title': _text('Shorts'), 'contents': [
+            {'richItemRenderer': {'content': {'shortsLockupViewModel': {
+                'overlayMetadata': {'primaryText': {'content': 'Dog surfs'}, 'secondaryText': {'content': '3M views'}},
+                'onTap': {'innertubeCommand': {'reelWatchEndpoint': {'videoId': 'shortdata1'}}}}}}}]}}}},
+        {'richItemRenderer': {'content': {'adSlotRenderer': {'fulfillmentContent': {'fulfilledLayout': {'inFeedAdLayoutRenderer': {
+            'renderingContent': {'promotedVideoRenderer': {'title': _text('Try Brand Tea'), 'longBylineText': _text('Brand Tea')}}}}}}}}},
+        more('home-2')]
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'richGridRenderer': {'contents': contents}}}}]}}}
+
+
+def data_search():
+    section = [video_renderer('srch000001', 'Bread for beginners', 'Kitchen Basics', '1.2M views', '2 years ago', '12:01'),
+               channel_renderer('UCbread', 'Bread Channel', '@breadchannel', '45.6K subscribers'),
+               lockup('PLbread', 'Bread recipes', 'Kitchen Basics', '', '', '12 videos', kind='PLAYLIST'),
+               video_renderer('srch000002', 'Sourdough starter', 'Baker', '3K views', '1 month ago', '8:15')]
+    return {'contents': {'twoColumnSearchResultsRenderer': {'primaryContents': {'sectionListRenderer': {'contents': [
+        {'itemSectionRenderer': {'contents': section}}, more('search-2')]}}}}}
+
+
+def data_history():
+    days = [('Today', ['hist000001', 'hist000002']), ('Yesterday', ['hist000003']), ('Monday', ['hist000004', 'hist000005'])]
+    sections = [{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': _text(day)}},
+                                         'contents': [lockup(v, 'Watched ' + v[-1], 'Somebody', '5 views', '', '1:00') for v in ids]}}
+                for day, ids in days]
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'sectionListRenderer': {'contents': sections + [more('hist-2')]}}}}]}}}
+
+
+def data_channels():
+    channels = [channel_renderer('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n) for n in range(1, 4)]
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'sectionListRenderer': {'contents': [{'itemSectionRenderer': {'contents': [{'shelfRenderer': {'content': {
+            'expandedShelfContentsRenderer': {'items': channels}}}}]}}, more('ch-2')]}}}}]}}}
+
+
+def data_signed_out_library():
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'sectionListRenderer': {'contents': [{'itemSectionRenderer': {'contents': [{'backgroundPromoRenderer': {
+            'title': {'runs': [{'text': 'Keep track of what you watch'}]},
+            'bodyText': {'runs': [{'text': 'Watch history isn\'t viewable when signed out. Sign in to see it.'}]}}}]}}]}}}}]}}}
+
+
+def append(items):
+    return {'onResponseReceivedActions': [{'appendContinuationItemsAction': {'continuationItems': items}}]}
+
+
+# The continuation answers: token -> the next part.
+PARTS = {
+    'home-2': lambda: append(home_videos(4, 20) + [more('home-3')]),
+    'home-3': lambda: append(home_videos(24, 5)),
+    'search-2': lambda: {'onResponseReceivedCommands': [{'appendContinuationItemsAction': {'continuationItems': [
+        {'itemSectionRenderer': {'contents': [video_renderer('srch000003', 'Rye bread', 'Baker', '900 views', '3 days ago', '4:44')]}}]}}]},
+    'hist-2': lambda: append([{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': _text('Last week')}},
+                                                       'contents': [lockup('hist000006', 'Watched 6', 'Somebody', '5 views', '', '1:00')]}}]),
+    'ch-2': lambda: append([channel_renderer('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
+                            for n in range(4, 54)] + [more('ch-3')]),
+    'ch-3': lambda: append([channel_renderer('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
+                            for n in range(54, 61)]),
+}
+
+
+def data_page(data, signed_in=False, title='YouTube'):
+    config = {'LOGGED_IN': signed_in, 'INNERTUBE_API_KEY': 'test-key', 'INNERTUBE_CLIENT_VERSION': '2.20261029',
+              'INNERTUBE_CONTEXT_CLIENT_NAME': 1, 'INNERTUBE_CONTEXT': {'client': {'clientName': 'WEB', 'clientVersion': '2.20261029'}},
+              'SESSION_INDEX': 0}
+    return ('<!doctype html><html lang="en"><head><title>' + title + '</title></head><body><ytd-app></ytd-app><script>'
+            'window.ytcfg={d:' + _json.dumps(config) + ',get(k){return this.d[k];}};'
+            'var ytInitialData=' + _json.dumps(data) + ';</script></body></html>')
+
+
+def data_routes(context, signed_in=True, pages=None):
+    """youtube.com with data pages. Returns the continuation requests made: (path, body, headers)."""
+    from urllib.parse import urlsplit
+    pages = dict({'/': data_home, '/results': data_search, '/feed/history': data_history, '/feed/channels': data_channels},
+                 **(pages or {}))
+    asked = []
+
+    def answer(route):
+        request = route.request
+        url = urlsplit(request.url)
+        if url.path.startswith('/youtubei/v1/'):
+            body = _json.loads(request.post_data or '{}')
+            asked.append((url.path, body, dict(request.headers)))
+            part = PARTS.get(body.get('continuation'))
+            if part is None:
+                route.fulfill(status=400, content_type='application/json', body='{}')
+            else:
+                route.fulfill(status=200, content_type='application/json', body=_json.dumps(part()))
+            return
+        make = pages.get(url.path) or data_home
+        route.fulfill(status=200, content_type='text/html; charset=utf-8', body=data_page(make(), signed_in))
+    context.route('https://www.youtube.com/**', answer)
+    return asked
