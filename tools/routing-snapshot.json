@@ -484,7 +484,7 @@
 },
 "awake | audio tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -2037,7 +2037,7 @@
 },
 "awake | lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -2874,13 +2874,13 @@
 },
 "awake | open the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "awake | open tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -3076,7 +3076,7 @@
 },
 "awake | practice tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -3979,7 +3979,7 @@
 },
 "awake | start lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -3991,13 +3991,13 @@
 },
 "awake | start the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "awake | start tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -4119,13 +4119,31 @@
 ],
 "screen_after": "awake"
 },
+"awake | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "awake"
+},
 "awake | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "awake"
 },
+"awake | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "awake"
+},
 "awake | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "awake"
+},
+"awake | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -4205,7 +4223,7 @@
 },
 "awake | tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -4505,6 +4523,30 @@
 ],
 "screen_after": "awake"
 },
+"awake | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
 "awake | what notes do i have": {
 "said": [
 "You have no saved notes yet. Say Write a note to start one."
@@ -4623,6 +4665,12 @@
 "screen_after": "awake"
 },
 "awake | which mode": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | which mode am i in": {
 "said": [
 "Input mode: Normal mode."
 ],
@@ -10820,6 +10868,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
@@ -10829,7 +10886,25 @@
 "Hello world. Second sentence."
 ]
 },
+"document | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -11351,6 +11426,42 @@
 "Hello world. Second sentence."
 ]
 },
+"document | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | what notes do i have": {
 "said": [
 "what notes do i have"
@@ -11523,6 +11634,15 @@
 ]
 },
 "document | which mode": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | which mode am i in": {
 "said": [
 "Input mode: Normal mode."
 ],
@@ -17968,6 +18088,15 @@
 "Hello world."
 ]
 },
+"email_draft | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
@@ -17977,7 +18106,25 @@
 "Hello world."
 ]
 },
+"email_draft | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -18499,6 +18646,42 @@
 "Hello world."
 ]
 },
+"email_draft | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | what notes do i have": {
 "said": [
 "what notes do i have"
@@ -18671,6 +18854,15 @@
 ]
 },
 "email_draft | which mode": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | which mode am i in": {
 "said": [
 "Input mode: Normal mode."
 ],
@@ -19401,7 +19593,7 @@
 },
 "help | audio tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -19467,7 +19659,7 @@
 },
 "help | back to main menu": {
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -19911,7 +20103,7 @@
 },
 "help | command mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
@@ -19923,7 +20115,7 @@
 },
 "help | commands and dictation": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -19935,13 +20127,13 @@
 },
 "help | commands mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
 "help | commands only": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
@@ -20180,19 +20372,19 @@
 },
 "help | dictation and commands": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
 "help | dictation mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "help"
 },
 "help | dictation only": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "help"
 },
@@ -20918,7 +21110,7 @@
 },
 "help | lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -21092,7 +21284,7 @@
 },
 "help | main menu": {
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -21152,7 +21344,7 @@
 },
 "help | mixed mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -21314,7 +21506,7 @@
 },
 "help | next": {
 "said": [
-"Getting Started (G), 2 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"Getting Started (G), 2 of 32."
 ],
 "screen_after": "help"
 },
@@ -21423,7 +21615,7 @@
 },
 "help | normal mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -21734,13 +21926,13 @@
 },
 "help | open the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "help | open tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -21926,7 +22118,7 @@
 },
 "help | practice tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -22812,7 +23004,7 @@
 },
 "help | start lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -22824,13 +23016,13 @@
 },
 "help | start the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "help | start tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -22942,25 +23134,43 @@
 },
 "help | switch to command mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
 "help | switch to commands mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "help"
+},
+"help | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
 "help | switch to dictation mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "help"
+},
+"help | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "help"
 },
 "help | switch to mixed mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "help"
+},
+"help | switch to normal mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -23038,7 +23248,7 @@
 },
 "help | tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -23284,7 +23494,7 @@
 },
 "help | what input mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Input mode: Normal mode."
 ],
 "screen_after": "help"
 },
@@ -23302,7 +23512,31 @@
 },
 "help | what mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode is this": {
+"said": [
+"Input mode: Normal mode."
 ],
 "screen_after": "help"
 },
@@ -23326,31 +23560,31 @@
 },
 "help | what version": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version am i using": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version do i have": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version is it": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version is this": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
@@ -23368,13 +23602,13 @@
 },
 "help | where am i": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Help topics. About this guide (A), 1 of 32."
 ],
 "screen_after": "help"
 },
 "help | where am i now": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Help topics. About this guide (A), 1 of 32."
 ],
 "screen_after": "help"
 },
@@ -23422,7 +23656,13 @@
 },
 "help | which mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
 ],
 "screen_after": "help"
 },
@@ -23446,13 +23686,13 @@
 },
 "help | which version": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | which version is this": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
@@ -29034,13 +29274,31 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "mailbox"
+},
 "mailbox | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "mailbox"
 },
+"mailbox | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "mailbox"
+},
 "mailbox | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "mailbox"
+},
+"mailbox | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -29487,6 +29745,30 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
 "mailbox | what notes do i have": {
 "calls": [
 "call.process('what notes do i have')"
@@ -29617,6 +29899,12 @@
 "screen_after": "mailbox"
 },
 "mailbox | which mode": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | which mode am i in": {
 "said": [
 "Input mode: Normal mode."
 ],
@@ -33868,13 +34156,31 @@
 ],
 "screen_after": "note"
 },
+"note | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "note"
+},
 "note | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "note"
 },
+"note | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "note"
+},
 "note | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "note"
+},
+"note | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -34222,6 +34528,30 @@
 ],
 "screen_after": "note"
 },
+"note | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
 "note | what notes do i have": {
 "said": [
 "what notes do i have"
@@ -34337,6 +34667,12 @@
 "screen_after": "note"
 },
 "note | which mode": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | which mode am i in": {
 "said": [
 "Input mode: Normal mode."
 ],
@@ -40475,13 +40811,31 @@
 ],
 "screen_after": "web"
 },
+"web | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "web"
+},
 "web | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "web"
 },
+"web | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "web"
+},
 "web | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "web"
+},
+"web | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -40954,6 +41308,30 @@
 ],
 "screen_after": "web"
 },
+"web | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
 "web | what notes do i have": {
 "calls": [
 "call.command('what notes do i have')",
@@ -41089,6 +41467,12 @@
 "screen_after": "web"
 },
 "web | which mode": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | which mode am i in": {
 "said": [
 "Input mode: Normal mode."
 ],

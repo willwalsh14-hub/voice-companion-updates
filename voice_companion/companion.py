@@ -719,23 +719,6 @@ def resume_from_sleep():
     return mode
 
 
-# Spoken names for the input modes, and questions about the mode and version. They work on
-# every screen, Help too, where the guide tells you to say them.
-INPUT_MODE_COMMANDS = {
-    'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
-    'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
-    'switch to command mode':'commands', 'switch to commands mode':'commands',
-    'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
-    'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
-    # "Switch to" works with every name the guide uses.
-    'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
-}
-MODE_QUESTIONS = ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
-                  'what mode is on', 'what mode is it')
-VERSION_QUESTIONS = ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
-                     'what version am i using', 'what version do i have')
-
-
 def canceled_to(mode):
     """Say Canceled with the main menu in one message (two would cut each other off), or alone."""
     global MAIN_MENU_LEAD
@@ -3688,6 +3671,23 @@ def thunderbird_setup_answer(command, mode):
         speak('Thunderbird setup stopped because of a problem. Nothing else was changed. Say add account to try again.')
         return mode
     return thunderbird_setup_step(step, mode)
+
+
+# Spoken names for the input modes, and questions about the mode and version. They work on
+# every screen, Help too, where the guide tells you to say them.
+INPUT_MODE_COMMANDS = {
+    'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
+    'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
+    'switch to command mode':'commands', 'switch to commands mode':'commands',
+    'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
+    'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
+    # "Switch to" works with every name the guide uses.
+    'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
+}
+MODE_QUESTIONS = ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
+                  'what mode is on', 'what mode is it')
+VERSION_QUESTIONS = ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
+                     'what version am i using', 'what version do i have')
 
 
 def _handle(text, mode, typed=False):
