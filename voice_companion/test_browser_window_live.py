@@ -1,10 +1,12 @@
 """Guided Chrome in the background, with the real Chrome (Will, October 2026).
 
-"Run the browser in the background" starts the installed Chrome headless. These
+"Run the browser in the background" starts the installed Chrome with its window out of
+sight (not headless since October 29: Google treated headless Chrome as a robot). These
 checks use the real browser and a page served on this computer:
-- Chrome runs headless and is not muted (Playwright mutes headless Chrome by default).
+- Chrome is not headless and not muted, and its first window opens off the screen.
+- On Windows, its windows are minimized and off the taskbar, and the keyboard is not left in Chrome.
 - Sound plays: the page's audio runs and its time moves on.
-- Websites see Chrome's usual name, not HeadlessChrome.
+- Websites see Chrome's usual name, not HeadlessChrome, with nothing changed by Voice Companion.
 - Page dialogs are still caught and said, and a file can still be given to a file box.
 - "Show browser window" and "Hide browser window" start Chrome again on the same page.
 - On Windows, Chrome's sound reaches Windows: it has an active audio session.
@@ -66,6 +68,7 @@ def chrome_installed():
 
 
 @unittest.skipUnless(chrome_installed(), 'Google Chrome is not installed')
+@unittest.skipUnless(sys.platform == 'win32' or os.environ.get('DISPLAY'), 'Chrome\'s window needs a desktop')
 class BackgroundChromeLiveTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -105,20 +108,43 @@ class BackgroundChromeLiveTests(unittest.TestCase):
         self.assertTrue(found, 'Chrome\'s command line was not found')
         return found.split()
 
-    def test_runs_headless_with_sound_and_its_usual_name(self):
+    def test_runs_out_of_sight_with_sound_and_its_usual_name(self):
         self.backend.goto(self.url)
         self.assertTrue(self.backend.launched_hidden)
         arguments = self.command_line()
-        self.assertTrue(any(a.startswith('--headless') for a in arguments), arguments)
+        self.assertFalse(any(a.startswith('--headless') for a in arguments), arguments)
+        self.assertIn('--window-position=-32000,-32000', arguments)
         self.assertNotIn('--mute-audio', arguments)
         agent = self.backend.page.evaluate('navigator.userAgent')
         self.assertNotIn('Headless', agent)
+        if sys.platform == 'win32':
+            self.assert_out_of_sight()
         self.backend.page.click('#play')
         self.backend.page.wait_for_function("()=>{const a=document.getElementById('sound');return !a.paused&&a.currentTime>0.5}", timeout=15000)
         state = self.backend.page.evaluate("()=>{const a=document.getElementById('sound');return {muted:a.muted,volume:a.volume}}")
         self.assertEqual(state, {'muted': False, 'volume': 1})
         if sys.platform == 'win32':
             self.assertTrue(self.chrome_sound_reaches_windows(), 'Headless Chrome has no active Windows audio session.')
+
+    def assert_out_of_sight(self):
+        """Every window of the Chrome Voice Companion started is minimized and off the taskbar."""
+        keeper = self.backend.window_keeper
+        self.assertIsNotNone(keeper, 'Guided Chrome has no window keeper on Windows')
+        self.assertTrue(keeper.pids, 'The guided Chrome process was not found')
+        deadline = time.monotonic() + 5
+        while True:
+            windows = keeper.desktop.windows(keeper.pids)
+            if windows and all(w.tool and w.minimized for w in windows):
+                break
+            if time.monotonic() > deadline:
+                self.fail('Guided Chrome windows still show: ' + repr(windows))
+            time.sleep(0.2)
+        foreground = keeper.desktop.foreground()
+        self.assertNotIn(foreground, [w.handle for w in windows], 'Chrome kept the keyboard')
+        # The page still works while hidden: it runs script and answers clicks.
+        self.backend.page.click('#play')
+        self.assertTrue(self.backend.page.evaluate("!document.getElementById('sound').paused"))
+        self.backend.page.evaluate("document.getElementById('sound').pause()")
 
     def chrome_sound_reaches_windows(self):
         """Windows lists an active audio session for Chrome while the tone plays (no sound device: skipped)."""

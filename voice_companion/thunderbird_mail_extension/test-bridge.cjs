@@ -1200,10 +1200,48 @@ async function experimentChecks() {
   assert.ok(schema[0].functions.every(f => f.async === true && f.type === 'function'));
   assert.ok(fs.existsSync(path.join(__dirname, declared.parent.script)));
   const [major, minor] = manifest.version.split('.').map(Number);
-  // 1.2.0 checks for new mail before listing; 1.7.0 adds about() and Microsoft Graph for Thunderbird 154.
-  // A higher version replaces installed copies.
-  assert.ok(major > 1 || minor >= 7, 'the add-on version was raised so installed copies are replaced');
+  // 1.2.0 checks for new mail before listing; 1.7.0 adds about() and Microsoft Graph for Thunderbird 154;
+  // 1.7.1 tries again soon when the host could not start. A higher version replaces installed copies.
+  const patch = Number(manifest.version.split('.')[2] || 0);
+  assert.ok(major > 1 || minor > 7 || (minor === 7 && patch >= 1), 'the add-on version was raised so installed copies are replaced');
 }
+
+// Connecting to the host: after a break, try again soon, then less often; soon again once it talks.
+(() => {
+  const {api} = createFakeMessenger();
+  const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api, File, Blob, btoa, atob});
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
+  const ports = [], delays = [];
+  let refuse = false;
+  api.runtime = {getManifest: () => ({version: '1.7.1'}), connectNative(name) {
+    assert.equal(name, 'com.voicecompanion.mail');
+    if (refuse) throw new Error('host missing');
+    const listeners = {message: [], disconnect: []};
+    const port = {sent: [], postMessage(m) { this.sent.push(m); },
+      onMessage: {addListener: f => listeners.message.push(f)}, onDisconnect: {addListener: f => listeners.disconnect.push(f)},
+      drop() { listeners.disconnect.forEach(f => f()); }, say(m) { listeners.message.forEach(f => f(m)); }};
+    ports.push(port);
+    return port;
+  }};
+  const queue = [];
+  const timers = {setTimeout(f, ms) { delays.push(ms); queue.push(f); }};
+  const link = vm.runInContext('startConnection', context)(api, timers);
+  assert.equal(ports.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(ports[0].sent[0])), {protocol: 3, command: 'mail', version: '1.7.1'});
+  ports[0].drop();                       // the host was stopped for an update
+  assert.equal(link.port(), null);
+  refuse = true;                         // and cannot start while files are replaced
+  queue.shift()(); queue.shift()(); queue.shift()();
+  assert.deepEqual(delays, [2000, 4000, 8000, 16000]);
+  refuse = false;
+  queue.shift()();
+  assert.equal(ports.length, 2);
+  ports[1].say({id: 1, method: 'about', params: {}});
+  ports[1].drop();
+  assert.equal(delays[delays.length - 1], 2000, 'once the host talked, a later break is tried again soon');
+  for (let i = 0; i < 8; i++) { refuse = true; queue.shift()(); }
+  assert.equal(Math.max(...delays), 30000, 'never waits longer than 30 seconds');
+})();
 
 // Contacts and calendars (pim.js, experiment/calendar.js) have their own file.
 require('./test-pim.cjs');

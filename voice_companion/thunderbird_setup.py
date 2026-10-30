@@ -416,6 +416,34 @@ def _set_pref(text, name, value):
     return text + line + '\n'
 
 
+# Thunderbird waits to start add-ons until its main window has restored its tabs. Started
+# minimized (or off the taskbar), that can wait until the user brings the window up, so mail
+# hung until Alt+Tab (Will, October 29, 2026). With this off, the mail connection add-on starts
+# with Thunderbird. Mozilla's own setting; it changes nothing else.
+PROMPT_START = 'extensions.webextensions.background-delayed-startup'
+
+
+def start_addons_promptly(profile):
+    """Make sure the profile's user.js has PROMPT_START off. Thunderbird reads it at its next start.
+    True when it is set. Never raises: Thunderbird still starts without it."""
+    user_js = Path(profile) / 'user.js'
+    try:
+        try:
+            text = user_js.read_bytes().decode('utf-8', 'surrogateescape')
+        except FileNotFoundError:
+            text = ''
+        if read_prefs(user_js).get(PROMPT_START) is False:
+            return True
+        if not text.strip():
+            text = '// Settings for this Thunderbird profile.\n'
+        if 'connection add-on starts with Thunderbird' not in text:
+            text += '// Added by Voice Companion so its mail connection add-on starts with Thunderbird, even minimized.\n'
+        write_atomic(user_js, _set_pref(text, PROMPT_START, 'false').encode('utf-8', 'surrogateescape'))
+        return True
+    except OSError:
+        return False
+
+
 def install_addon(profile, package):
     """Place the add-on in the profile and let Thunderbird turn it on at its next start."""
     profile = Path(profile)
@@ -436,6 +464,7 @@ def install_addon(profile, package):
         text += '// Added by Voice Companion so its mail connection add-on turns on.\n'
     text = _set_pref(text, 'extensions.autoDisableScopes', auto & ~SCOPE_PROFILE)
     text = _set_pref(text, 'extensions.startupScanScopes', scan | SCOPE_PROFILE)
+    text = _set_pref(text, PROMPT_START, 'false')
     (profile / 'extensions').mkdir(exist_ok=True)
     write_atomic(addon_file(profile), data, profile)  # temporary file outside extensions: Thunderbird never sees it
     try:
@@ -504,6 +533,7 @@ def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
         launched = False
         if not running:
             refresh_addon(profile, package)
+            start_addons_promptly(profile)
             try:
                 system.launch_background(program)
             except OSError as exc:
