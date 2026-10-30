@@ -240,5 +240,23 @@ class MissingFolderSuggestsAnother(unittest.TestCase):
                     self.assertTrue(said.endswith('Say another folder, such as ' + other + '.'), said)
 
 
+class DeleteParagraphStartsAtTheNextOne(EditorCase):
+    """Before: after "delete paragraph", "delete word" removed a word in the next paragraph
+    at the place you had been in the deleted one."""
+    def test_the_next_paragraph_starts_from_its_first_word(self):
+        self.write('One two three.', 'Four five six.')
+        self.doc.process('beginning of document')
+        self.doc.process('next word'); self.doc.process('next word')
+        self.assertEqual(self.doc.process('delete paragraph'), 'Deleted paragraph: One two three. Say undo to restore it.')
+        self.assertEqual(self.doc.process('read current word'), 'Four')
+        self.doc.process('delete word')
+        self.assertEqual(self.texts(), ['five six.'])
+
+    def test_a_paragraph_without_a_period(self):
+        self.write('Shopping list', 'Milk')
+        self.doc.process('beginning of document')
+        self.assertEqual(self.doc.process('delete paragraph'), 'Deleted paragraph: Shopping list. Say undo to restore it.')
+
+
 if __name__ == '__main__':
     unittest.main()

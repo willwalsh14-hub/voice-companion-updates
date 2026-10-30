@@ -1572,8 +1572,13 @@ class VoiceDocument:
             self.checkpoint()
             removed = self.paragraphs.pop(self.cursor)
             self.cursor = min(self.cursor, max(0, len(self.paragraphs) - 1))
+            # You are at the start of the paragraph that took its place, not at the old word.
+            self.word_cursor = self.sentence_cursor = 0
+            self.navigation_position = None
+            self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
+            self.reading.position = self.reading.continuation = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
             self.changed()
-            return ('Deleted paragraph: ' + removed.text) if removed.text.strip() else 'Deleted an empty paragraph. Say undo to restore it.'
+            return ('Deleted paragraph: ' + closed(removed.text) + ' Say undo to restore it.') if removed.text.strip() else 'Deleted an empty paragraph. Say undo to restore it.'
         whole_paragraph = re.match(r'replace (?:the |current |this )?paragraph with (.+)$', text, re.I | re.S)
         if whole_paragraph:
             if not self.paragraphs:
