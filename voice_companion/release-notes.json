@@ -25,7 +25,7 @@
           "title": "Thunderbird in the background",
           "details": [
             "Email no longer waits until you press Alt+Tab. Mail connects on its own, even when Thunderbird is hidden.",
-            "When Voice Companion starts again, it finds Thunderbird again by itself.",
+            "Close Voice Companion and start it again. Mail connects on its own.",
             "After an update, mail connects again within a few seconds."
           ]
         },
