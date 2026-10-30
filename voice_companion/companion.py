@@ -3103,6 +3103,9 @@ def handle_mailbox_screen(text, command, mode, typed):
     response_actions = {'reply': 'reply', 'reply to message': 'reply',
                         'reply all': 'reply_all', 'reply to all': 'reply_all',
                         'forward': 'forward', 'forward message': 'forward'}
+    if command in response_actions and getattr(mail_session, 'rows', None) == [] and mail_session.view == 'folder':
+        speak(mail_session._empty_list())   # as every other key says it in an empty folder
+        return mode
     if command in response_actions:
         try:
             context = mail_session.response_context(response_actions[command])
@@ -3162,10 +3165,12 @@ def close_email_draft(mode, discard, notice=None):
             speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
             return 'email_draft'
     provider = email_draft.provider
+    # A draft saved before (Save draft, or opened from the drafts list) stays saved: never "without saving".
+    kept = email_draft.title if discard and discarded and email_draft.path.exists() else None
     email_draft = None
     if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
     if notice is None:
-        notice = 'Draft canceled without saving.'
+        notice = 'Draft closed. It is still saved as ' + kept + '.' if kept else 'Draft canceled without saving.'
     speak(notice if discarded else
           'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
     finish_mail_announcement()
@@ -3175,6 +3180,11 @@ def close_email_draft(mode, discard, notice=None):
         provider = chosen[0] if chosen else provider
     if mail_session is None and provider in MAIL_PROVIDERS:
         mail_session = MailSession(provider, APP, progress=mail_progress)
+    rows = getattr(mail_session, 'rows', None)
+    if isinstance(rows, list) and rows:
+        # Back where you were, as after sending: the open message, or the message in its folder.
+        speak('Back to message.' if mail_session.view == 'message' else mail_session._current_list())
+        return 'mailbox'
     if mail_session is not None:
         speak(mail_session.process('open inbox'))
         return 'mailbox'

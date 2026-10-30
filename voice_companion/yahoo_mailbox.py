@@ -639,6 +639,13 @@ class YahooMailbox:
             self._move(conn, uids, destination_id)
         return self._with(operation, retry=False)
 
+    def is_trash(self, folder_id):
+        """True for Yahoo's Trash, so Delete there is refused before the question."""
+        def operation(conn):
+            trash = self._special(conn, 'trash')
+            return bool(trash) and self._same(folder_id, trash['raw'])
+        return self._with(operation)
+
     def trash(self, ids, source_id='INBOX'):
         """Move to Trash, as Gmail does. Yahoo empties Trash later on its own."""
         uids = [self._uid(ident) for ident in ids]

@@ -1650,6 +1650,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | folder": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | folders": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -3526,6 +3532,12 @@
 "awake | return to inbox": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | rows": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
@@ -7261,6 +7273,15 @@
 "Hello world. Second sentence. flow"
 ]
 },
+"document | folder": {
+"said": [
+"folder"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. folder"
+]
+},
 "document | folders": {
 "said": [
 "folders"
@@ -9995,6 +10016,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. return to inbox"
+]
+},
+"document | rows": {
+"said": [
+"rows"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. rows"
 ]
 },
 "document | save": {
@@ -14439,6 +14469,15 @@
 "Hello world. flow"
 ]
 },
+"email_draft | folder": {
+"said": [
+"folder"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. folder"
+]
+},
 "email_draft | folders": {
 "said": [
 "folders"
@@ -17217,9 +17256,18 @@
 "Hello world."
 ]
 },
+"email_draft | rows": {
+"said": [
+"rows"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. rows"
+]
+},
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 413. It has not been sent."
+"Email draft saved locally as Routing check 415. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17237,7 +17285,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 414. It has not been sent."
+"Email draft saved locally as Routing check 416. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17255,7 +17303,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 415. It has not been sent."
+"Email draft saved locally as Routing check 417. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17282,7 +17330,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 417. It has not been sent."
+"Email draft saved locally as Routing check 419. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17291,7 +17339,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 418. It has not been sent."
+"Email draft saved locally as Routing check 420. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -20736,6 +20784,12 @@
 ],
 "screen_after": "help"
 },
+"help | folder": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | folders": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22559,6 +22613,12 @@
 "screen_after": "help"
 },
 "help | return to inbox": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | rows": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -24440,8 +24500,8 @@
 "mailbox | attachments": {
 "calls": [
 "call.rows.__bool__()",
-"call.current.__bool__()",
-"call.current.__sub__(1)"
+"call.rows.__bool__()",
+"call.current.__bool__()"
 ],
 "said": [
 "The attachments of this message could not be listed. Try again."
@@ -26013,6 +26073,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | folder": {
+"calls": [
+"call.process('folder')"
+],
+"said": [
+"session handled: folder"
+],
+"screen_after": "mailbox"
+},
 "mailbox | folders": {
 "calls": [
 "call.process('folders')"
@@ -26033,9 +26102,9 @@
 },
 "mailbox | forward": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('forward')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -26044,9 +26113,9 @@
 },
 "mailbox | forward message": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('forward')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28399,9 +28468,9 @@
 },
 "mailbox | reply": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28410,9 +28479,9 @@
 },
 "mailbox | reply all": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply_all')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28421,9 +28490,9 @@
 },
 "mailbox | reply to all": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply_all')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28432,9 +28501,9 @@
 },
 "mailbox | reply to message": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -28490,6 +28559,15 @@
 ],
 "said": [
 "session handled: return to inbox"
+],
+"screen_after": "mailbox"
+},
+"mailbox | rows": {
+"calls": [
+"call.process('rows')"
+],
+"said": [
+"session handled: rows"
 ],
 "screen_after": "mailbox"
 },
@@ -31749,6 +31827,12 @@
 ],
 "screen_after": "note"
 },
+"note | folder": {
+"said": [
+"folder"
+],
+"screen_after": "note"
+},
 "note | folders": {
 "said": [
 "folders"
@@ -33572,6 +33656,12 @@
 "note | return to inbox": {
 "said": [
 "return to inbox"
+],
+"screen_after": "note"
+},
+"note | rows": {
+"said": [
+"rows"
 ],
 "screen_after": "note"
 },
@@ -37226,6 +37316,16 @@
 ],
 "screen_after": "web"
 },
+"web | folder": {
+"calls": [
+"call.command('folder')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: folder"
+],
+"screen_after": "web"
+},
 "web | folders": {
 "calls": [
 "call.command('folders')",
@@ -39964,6 +40064,16 @@
 ],
 "said": [
 "session handled: return to inbox"
+],
+"screen_after": "web"
+},
+"web | rows": {
+"calls": [
+"call.command('rows')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: rows"
 ],
 "screen_after": "web"
 },
