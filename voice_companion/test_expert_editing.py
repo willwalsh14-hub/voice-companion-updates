@@ -258,5 +258,38 @@ class DeleteParagraphStartsAtTheNextOne(EditorCase):
         self.assertEqual(self.doc.process('delete paragraph'), 'Deleted paragraph: Shopping list. Say undo to restore it.')
 
 
+class FileManagerCountsAndSelection(unittest.TestCase):
+    """Before: "1 items copied.", and "What is selected" said "No item is named what is selected"."""
+    def setUp(self):
+        from file_manager import FileManager
+        from test_file_manager import FakeFiles, settle
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        self.disk = Path(folder.name)
+        for name in ('apple.txt', 'Banana.docx', 'cherry.txt'):
+            (self.disk / name).write_text('x')
+        self.settle = settle
+        self.fm = FileManager(FakeFiles(self.disk)); self.fm.refresh(str(self.disk)); settle(self.fm)
+
+    def run_command(self, text):
+        said = self.fm.command(text)
+        return ' '.join(part for part in (said, self.settle(self.fm)) if part)
+
+    def test_one_item_is_one_item(self):
+        self.assertIn('1 item copied.', self.run_command('copy'))
+        self.assertIn('1 item cut.', self.run_command('cut'))
+        self.assertIn('1 item pasted.', self.run_command('paste'))
+        self.assertIn('3 items copied.', (self.run_command('select all'), self.run_command('copy'))[1])
+
+    def test_what_is_selected(self):
+        for heard in ('what is selected', "What's selected?", 'say selection'):
+            with self.subTest(heard=heard):
+                self.fm.selected.clear()
+                self.assertEqual(self.fm.command(heard), 'Nothing is selected. apple.txt, file. 1 of 3.')
+        self.fm.command('toggle selection'); self.fm.command('end'); self.fm.command('toggle selection')
+        self.assertEqual(self.fm.command('what is selected'), '2 items selected: apple.txt, cherry.txt.')
+        self.fm.command('select all')
+        self.assertEqual(self.fm.command('what is selected'), '3 items selected: apple.txt, Banana.docx, cherry.txt.')
+
+
 if __name__ == '__main__':
     unittest.main()
