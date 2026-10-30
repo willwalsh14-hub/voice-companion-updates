@@ -290,7 +290,8 @@ class MediaPlayer:
                     // Before 0.2.179 that was "could not start" (Will, October 29, 2026).
                     const playing=attempt();
                     const started=await Promise.race([playing,new Promise(resolve=>{timer=setTimeout(()=>{
-                        const fetching=!a.error&&a.networkState!==3&&a.getAttribute('src');
+                        // Only an internet address still being fetched counts; a file or a broken source does not.
+                        const fetching=!a.error&&a.networkState===2&&/^https?:/i.test(a.currentSrc||a.getAttribute('src')||'');
                         if(fetching){resolve('loading');return;}
                         window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
                     if(started==='loading'){
