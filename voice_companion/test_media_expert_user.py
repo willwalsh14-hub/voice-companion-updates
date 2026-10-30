@@ -102,3 +102,21 @@ class YouTubeNextPartFailsTests(NoBrowser):
         self.press('End'); self.press('Down')
         self.assertTrue(self.said[-1].startswith('End of list. Video 8'), self.said[-1])
         self.assertEqual(self.asked, [])
+
+
+import unittest
+from test_media_player_menu import MediaPlayerMenuTests as _PlayerTests
+
+
+class MediaPlayerEndKeyTests(unittest.TestCase):
+    """While a file plays, End said nothing. Like Tab, it now says how to reach the menu."""
+    setUp, key, open_from_file_manager = _PlayerTests.setUp, _PlayerTests.key, _PlayerTests.open_from_file_manager
+
+    def test_end_while_playing_is_never_silent(self):
+        mode = self.open_from_file_manager()
+        self.said.clear()
+        self.assertEqual(self.key('End', mode), 'local_media')
+        self.assertEqual(self.said[-1:], ['Press Alt for the player menu.'])
+        self.assertFalse(companion.task_navigation().player_menu)
+        self.assertFalse(self.player.paused)
+
