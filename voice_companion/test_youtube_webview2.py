@@ -78,6 +78,8 @@ class EmbeddedScreenTests(EmbeddedEdge, base.ScreenTests):
         self.assertEqual(self.last(), 'Playing Never Gonna Give You Up.')
         screen = self.ys.SCREEN
         self.assertIsNot(screen.video_page, screen.list_page, 'The video should have its own tab.')
+        self.press('Escape')   # from the player back to the list (since 0.2.181)
+        self.assertTrue(self.last().startswith('Back to Home.'), self.last())
         self.press('Down')
         self.assertTrue(self.last().startswith('How to bake bread'), self.last())
         self.press('K')
