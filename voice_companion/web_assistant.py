@@ -282,11 +282,12 @@ STAND_IN_TARGET="()=>{let a=document.activeElement;while(a?.shadowRoot?.activeEl
 
 # Options, Web browser, "Guided Chrome window" (companion sets this from the preference).
 # False, "Show the browser window, as before", is the default: guided Chrome starts as it
-# always did. True, "Run the browser in the background": guided Chrome runs headless, with
-# no window, and opens a real window only when a page needs a person (window_need).
+# always did. True, "Run the browser in the background": guided Chrome's window is kept off
+# the screen, minimized and off the taskbar (chrome_window.py), and a real window comes up
+# only when a page needs a person (window_need). It is the same Chrome, not headless:
+# Google sends headless Chrome to its "unusual traffic" page, and YouTube would not play.
 CHROME_IN_BACKGROUND = False
-# Headless Chrome is started muted by Playwright; in the background it must still play
-# radio, podcasts and video aloud.
+# Playwright mutes only headless Chrome; this keeps radio, podcasts and video aloud either way.
 BACKGROUND_LAUNCH = {'ignore_default_args': ['--mute-audio']}
 WINDOW_SHOWN = {
     'sign-in': 'Google sign-in needs a browser window, so Chrome now shows its window.',
@@ -379,17 +380,24 @@ class BrowserBackend:
             import shared_playwright
             self.playwright = shared_playwright.start(self.folder)
             hidden = not self.headless and self.runs_hidden()
+            keeper = self._window_keeper() if hidden else None
+            if keeper is not None: keeper.before_launch()
             with browser_process_environment(self.folder):
                 if hidden:
+                    import chrome_window
                     self.context = self.playwright.chromium.launch_persistent_context(
-                        str(self.folder), headless=True, accept_downloads=False, channel='chrome', **BACKGROUND_LAUNCH)
+                        str(self.folder), headless=False, accept_downloads=False, channel='chrome',
+                        args=[chrome_window.OFF_SCREEN], **BACKGROUND_LAUNCH)
                 else:
                     self.context = self.playwright.chromium.launch_persistent_context(
                         str(self.folder), headless=self.headless, accept_downloads=False, channel='chrome')
             self.launched_hidden = hidden
-            if hidden: self._plain_identity()
             self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.set_default_timeout(10000)
+            if keeper is not None:
+                self.window_keeper = keeper
+                try: keeper.after_launch()
+                except Exception: pass   # Chrome works with its window showing; never stop it for this
         except Exception as exc:
             self.close()
             import traceback
@@ -398,26 +406,16 @@ class BrowserBackend:
             raise WebError('The guided ' + browser_name(self.browser) +
                            ' browser could not start. If Chrome is not installed, say set up Chrome.') from exc
 
-    def _plain_identity(self):
-        """Headless Chrome names itself HeadlessChrome to websites, and many then refuse the
-        page. In the background it gives its usual name, as Chrome with a window does."""
+    def _window_keeper(self):
+        """Hides guided Chrome's window on Windows ("Run the browser in the background"), or None."""
+        import sys
+        if sys.platform != 'win32':
+            return None
         try:
-            page = self.context.pages[0] if self.context.pages else self.context.new_page()
-            agent = page.evaluate('navigator.userAgent')
+            import chrome_window
+            return chrome_window.GuidedChromeWindow()
         except Exception:
-            return
-        if 'HeadlessChrome' not in str(agent):
-            return
-        plain = str(agent).replace('HeadlessChrome', 'Chrome')
-        try:
-            self.context.set_extra_http_headers({'User-Agent': plain})
-            self.context.add_init_script(
-                "(()=>{const a=" + json.dumps(plain) + ";Object.defineProperty(Navigator.prototype,'userAgent',{get:()=>a,configurable:true});"
-                "Object.defineProperty(Navigator.prototype,'appVersion',{get:()=>a.replace(/^Mozilla\\//,''),configurable:true});"
-                "const d=navigator.userAgentData;if(d&&d.brands){const b=d.brands.map(x=>({brand:x.brand.replace('HeadlessChrome','Google Chrome'),version:x.version}));"
-                "Object.defineProperty(Object.getPrototypeOf(d),'brands',{get:()=>b,configurable:true});}})();")
-        except Exception:
-            pass
+            return None
 
     def bring_window_forward(self):
         """Guided Chrome's window in front, with the keyboard. Voice Companion has the
@@ -440,6 +438,8 @@ class BrowserBackend:
             embedded=self._embedded;self._embedded=None;self.page=self.context=self.playwright=None;embedded.close();return
         context,playwright=self.context,self.playwright
         self.page=self.context=self.playwright=None
+        keeper,self.window_keeper=getattr(self,'window_keeper',None),None
+        if keeper is not None:keeper.stop()
         for action in (context.close if context else None,playwright.stop if playwright else None):
             if action:
                 try:action()

@@ -1,35 +1,19 @@
 {
-  "version": "0.2.177-test",
+  "version": "0.2.178-test",
   "status": "Testing build",
   "date": "October 29, 2026",
-  "baseline": "0.2.176-test",
-  "scope": "The newest Thunderbird with Microsoft 365, a new YouTube menu, podcast browsing, and an extension that updates itself.",
+  "baseline": "0.2.177-test",
+  "scope": "Thunderbird and Chrome now work the same in the background as with a window.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "The newest Thunderbird",
+          "title": "Chrome in the background",
           "details": [
-            "Voice Companion can move Thunderbird to the newest version with one yes. It works with Microsoft 365.",
-            "Your accounts, mail and settings stay as they are. A copy is saved first, just in case.",
-            "Say update Thunderbird at any time to hear your version."
-          ]
-        },
-        {
-          "title": "YouTube menu",
-          "details": [
-            "YouTube now opens to a menu. It has Search, Home, your lists and more.",
-            "Press Control+F, then type or say what to find. Press Enter or say confirm.",
-            "After a search, press Control+Shift+F for filters."
-          ]
-        },
-        {
-          "title": "Browse podcasts",
-          "details": [
-            "Browse podcasts now lists categories, like News, Comedy and History. Choose one to hear its top shows.",
-            "Top podcasts lists the most popular shows.",
-            "Player controls let you play, pause, skip and change the volume, all in Voice Companion."
+            "Run the browser in the background now uses the same Chrome as before. Its window is kept out of sight.",
+            "It is not on the screen, the taskbar or Alt+Tab. Your keys stay in Voice Companion.",
+            "Google search and YouTube now work in the background too."
           ]
         }
       ]
@@ -38,25 +22,17 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Sound",
+          "title": "Thunderbird in the background",
           "details": [
-            "Podcasts and the radio now play in Voice Companion. No other window opens.",
-            "They start at half volume, and remember the volume you choose.",
-            "The sound gets quieter while you press keys, so you can hear your screen reader."
+            "Email no longer waits until you press Alt+Tab. Mail connects on its own, even when Thunderbird is hidden.",
+            "Close Voice Companion and start it again. Mail connects on its own.",
+            "After an update, mail connects again within a few seconds."
           ]
         },
         {
           "title": "YouTube",
           "details": [
-            "You can now type a search. Letters no longer act as video keys while you type.",
-            "Filters work again with the filters YouTube offers now."
-          ]
-        },
-        {
-          "title": "Chrome extension",
-          "details": [
-            "The Chrome extension now asks Chrome for its updates on its own.",
-            "Testers need to choose Reload on the extension card one last time."
+            "Videos no longer say something went wrong when Chrome runs in the background."
           ]
         }
       ]

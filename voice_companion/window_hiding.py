@@ -166,9 +166,10 @@ class Win32Desktop:
         function(handle, text, size + 1)
         return text.value
 
-    def windows(self):
+    def windows(self, pids=None):
         """Thunderbird's own windows a person could see: visible and top level, with a title bar
-        or at least not a pop-up (menus and tooltips are pop-ups without one)."""
+        or at least not a pop-up (menus and tooltips are pop-ups without one).
+        pids, when given: only windows of these processes (guided Chrome, not the user's Chrome)."""
         handles = []
         self.user.EnumWindows(self.ENUM(lambda handle, _: handles.append(handle) or True), 0)
         found = []
@@ -178,6 +179,7 @@ class Win32Desktop:
                 style = self.user.GetWindowLongPtrW(handle, self.GWL_STYLE) & 0xFFFFFFFF
                 if style & self.WS_CAPTION != self.WS_CAPTION and style & self.WS_POPUP: continue
                 pid, _ = self._process(handle)
+                if pids is not None and pid not in pids: continue
                 if self._program(pid) != self.program: continue
                 kind = self._text(self.user.GetClassNameW, handle, 256)
                 title = self._text(self.user.GetWindowTextW, handle, min(self.user.GetWindowTextLengthW(handle), 1000))
@@ -228,6 +230,9 @@ class Win32Desktop:
         finally:
             if attached: self.user.AttachThreadInput(current, other, False)
         return int(self.user.GetForegroundWindow() or 0) == int(handle)
+
+    def foreground(self):
+        return int(self.user.GetForegroundWindow() or 0)
 
     def own_foreground(self):
         pid, _ = self._process(self.user.GetForegroundWindow())

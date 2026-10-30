@@ -6,6 +6,9 @@
 
 const HOST = 'com.voicecompanion.mail';
 const PROTOCOL = 3;
+// When the host cannot start (Voice Companion is being updated), try again soon, then less
+// often. The host itself waits for Voice Companion, so this is rarely needed.
+const RETRY_FIRST_MS = 2000;
 const RETRY_MS = 30000;
 const MAX_MESSAGES = 50000;      // the newest this many are kept for paging; older ones are read past
 const PAGE_SIZES = [10, 20, 30, 40, 50, 100];
@@ -721,22 +724,29 @@ MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'rea
   'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'about', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 globalThis.MailBridge = MailBridge;
 
-function startConnection(api) {
+function startConnection(api, timers = {setTimeout}) {
   const bridge = new MailBridge(api);
   let port = null;
+  let delay = RETRY_FIRST_MS;
+  const later = () => {
+    timers.setTimeout(connect, delay);
+    delay = Math.min(delay * 2, RETRY_MS);
+  };
   const connect = () => {
     try {
       port = api.runtime.connectNative(HOST);
     } catch (error) {
-      setTimeout(connect, RETRY_MS);
+      later();
       return;
     }
-    port.onMessage.addListener(async message => {
+    const current = port;
+    current.onMessage.addListener(async message => {
+      delay = RETRY_FIRST_MS;   // Voice Companion is talking: the next break is tried again soon
       const response = await bridge.handle(message);
-      try { port.postMessage(response); } catch (error) { /* reconnect below */ }
+      try { current.postMessage(response); } catch (error) { /* reconnect below */ }
     });
-    port.onDisconnect.addListener(() => { port = null; setTimeout(connect, RETRY_MS); });
-    port.postMessage({protocol: PROTOCOL, command: 'mail', version: api.runtime.getManifest().version});
+    current.onDisconnect.addListener(() => { if (port === current) port = null; later(); });
+    current.postMessage({protocol: PROTOCOL, command: 'mail', version: api.runtime.getManifest().version});
   };
   connect();
   return {bridge, port: () => port};
