@@ -6,6 +6,9 @@ QUICK_KEYS={'k':'link','h':'heading','f':'form','b':'button','x':'checkbox','c':
 # What each kind is called aloud, as in the user guide ("E: next text box").
 SPOKEN_NAMES={'edit':'text box','combobox':'choice box','graphic':'picture','form':'form control','radio':'radio button',
               'listitem':'list item','listbox':'list box','tab':'control'}
+# Role words a speech voice would run together ("menuitemcheckbox"), said as words.
+ROLE_WORDS={'spinbutton':'spin button','progressbar':'progress bar','scrollbar':'scroll bar','menuitem':'menu item',
+            'menuitemcheckbox':'menu item check box','menuitemradio':'menu item radio button','treeitem':'tree item'}
 
 def voice_browse_key(command):
     """Translate spoken browsing actions to the same actions used by keys."""
@@ -115,6 +118,7 @@ def describe(item,elements=None):
     if item.get('disabled'):state+=', unavailable'
     if item.get('readonly'):state+=', read-only'
     if item.get('required'):state+=', required'
+    spoken_role=ROLE_WORDS.get(spoken_role,spoken_role)
     return ('Link '+name+state+'.') if role=='link' else name+(', '+spoken_role if spoken_role else '')+state+'.'
 
 def tab_index(item):
@@ -158,8 +162,10 @@ class BrowseCursor:
             if level:return role=='heading' and e.get('level')==level
             if wanted=='edit' and editable_combo(e):return True
             if wanted=='button' and role in ('menuitem','menuitemradio','menuitemcheckbox'):return True
-            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider')
-            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider') and not e.get('disabled') and tab_index(e)>=0
+            # Switches and spin buttons are form controls; Tab also stops at the
+            # selected tab of a tab list, as in a browser.
+            if wanted=='form':return role in ('edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider','switch','spinbutton')
+            if wanted=='tab':return role in ('link','edit','checkbox','radio','combobox','listbox','button','menuitem','menuitemradio','menuitemcheckbox','slider','switch','spinbutton','tab') and not e.get('disabled') and tab_index(e)>=0
             return role==wanted
         if tab:
             ordered=focus_order([e for e in self.elements if match(e)],self.elements)
@@ -296,7 +302,8 @@ SEMANTICS = r'''
             if(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable){
               const spokenRole=type==='password'?'password field':control?.combo_edit?'edit combo box':({button:'button',textbox:'edit field',searchbox:'search field',checkbox:'checkbox',radio:'radio button',combobox:'combo box',listbox:'list box',switch:'switch',slider:'slider',spinbutton:'spin button'}[role]||'edit field');
               append(role==='slider'&&/\bslider$/i.test(label)?label:label+', '+spokenRole);
-              if(['checkbox','radio','switch'].includes(role))append(accessibleLabel.checked(e)?', checked':', not checked');
+              if(['checkbox','radio'].includes(role))append(accessibleLabel.checked(e)?', checked':', not checked');
+              if(role==='switch')append(accessibleLabel.checked(e)?', on':', off');
               if(e.disabled||e.getAttribute('aria-disabled')==='true')append(', unavailable');
               if(e.readOnly||e.getAttribute('aria-readonly')==='true')append(', read-only');
               if(e.required||e.getAttribute('aria-required')==='true')append(', required');

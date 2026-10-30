@@ -339,7 +339,7 @@ class SemanticWebTests(unittest.TestCase):
         self.assertTrue(any('Details' in n and 'collapsed' in n and 'pressed' in n for n in notices))
         self.assertIn('Notifications, switch, on.',notices)
         self.assertIn('Volume, slider, 25.',notices)
-        self.assertIn('Download, progressbar, 40 percent.',notices)
+        self.assertIn('Download, progress bar, 40 percent.',notices)
 
     def test_visible_nested_cross_origin_frames_keep_document_order_and_names(self):
         self.context.route('https://fixture.test/semantic-frame',lambda r:r.fulfill(content_type='text/html',body='<p>Inside frame</p><iframe title="Nested frame" src="https://other.test/nested"></iframe>'))
@@ -466,6 +466,45 @@ class SemanticWebTests(unittest.TestCase):
         self.assertEqual(self.page.locator('input[type=password]').count(),1,result)
         self.assertIn('password field',self.session.reading.text)
         self.assertIsNone(self.session.submit_pending)
+
+    SETTINGS_PAGE=('<h1>Settings</h1><div role="tablist">'
+        '<button role="tab" id=t1 aria-selected="true">General</button>'
+        '<button role="tab" id=t2 tabindex=-1 aria-selected="false" onclick="this.setAttribute(\'aria-selected\',\'true\');t1.setAttribute(\'aria-selected\',\'false\');panel.textContent=\'Privacy panel\'">Privacy</button></div>'
+        '<p id=panel>General panel</p>'
+        '<button role="switch" aria-checked="false" onclick="this.setAttribute(\'aria-checked\',this.getAttribute(\'aria-checked\')===\'true\'?\'false\':\'true\')">Dark mode</button>'
+        '<div role="spinbutton" tabindex="0" aria-label="Quantity" aria-valuenow="2" onkeydown="if(event.key===\'ArrowUp\')this.setAttribute(\'aria-valuenow\',Number(this.getAttribute(\'aria-valuenow\'))+1)"></div>'
+        '<a href="#help">Help</a>')
+
+    def test_tab_and_form_keys_reach_tabs_switches_and_spin_buttons(self):
+        # As in a browser: Tab stops at the selected tab, a switch and a spin button.
+        self.load(self.SETTINGS_PAGE)
+        self.assertEqual(self.session.keyboard('Tab'),'General, tab, selected.')
+        self.assertEqual(self.session.keyboard('Tab'),'Dark mode, switch, off.')
+        self.assertIn('Quantity, spin button',self.session.keyboard('Tab'))
+        self.assertEqual(self.session.keyboard('Tab'),'Link Help.')
+        self.session.keyboard('PageTop')
+        self.assertIn('Dark mode',self.session.keyboard('Quick:f'))
+        self.assertIn('Quantity',self.session.keyboard('Quick:f'))
+
+    def test_enter_selects_a_tab_and_turns_a_switch_on_and_off(self):
+        self.load(self.SETTINGS_PAGE)
+        self.session.keyboard('PageTop');self.session.keyboard('Read:Down');self.session.keyboard('Read:Down')
+        self.assertEqual(self.session.browse.current()['label'],'Privacy')
+        self.assertEqual(self.session.keyboard('Activate'),'Privacy, tab, selected.')
+        self.assertIn('Privacy panel',self.session.reading.text)
+        self.assertEqual(self.session.browse.current()['label'],'Privacy')
+        self.session.keyboard('Read:Down');self.session.keyboard('Read:Down')
+        self.assertEqual(self.session.keyboard('Activate'),'Dark mode, switch, on.')
+        self.assertEqual(self.session.keyboard('Space'),'Dark mode, switch, off.')
+        # The line says the same words as the quick key.
+        self.assertIn('Dark mode, switch, off',self.session.reading.text)
+        self.assertNotIn('not checked',self.session.reading.text)
+
+    def test_enter_on_a_spin_button_lets_arrows_change_it(self):
+        self.load(self.SETTINGS_PAGE)
+        self.session.keyboard('Quick:f');self.session.keyboard('Quick:f')
+        self.assertIn('Quantity',self.session.keyboard('Activate'))
+        self.assertEqual(self.session.keyboard('Slider:Up'),'3.')
 
 
 @unittest.skipUnless(sys.platform=='win32','Windows Chrome semantic checks')

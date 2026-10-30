@@ -1492,7 +1492,7 @@ class WebSession:
 
     def focus_current(self):
         item=self.browse.current() if self.browse else None
-        if item and not item.get('disabled') and kind(item)=='slider':
+        if item and not item.get('disabled') and kind(item) in ('slider','spinbutton'):
             # Tab onto a slider: its arrow keys work at once, as for a text box.
             self.slider_field=None;self.begin_slider(item)
             return self.slider_field is not None
@@ -1877,10 +1877,15 @@ class WebSession:
                     if linked:item=linked;role='link'
                     links=[e for e in self.browse.elements if kind(e)=='link' and e.get('start',0)<=item.get('start',0)<e.get('end',0)]
                     if role=='heading' and links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
-                if role=='slider' and not item.get('disabled'):return self.begin_slider(item)
+                if role in ('slider','spinbutton') and not item.get('disabled'):return self.begin_slider(item)
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
-                if role in ('checkbox','radio'):
+                if role=='tab' and not item.get('disabled'):
+                    # Selecting a tab changes its panel; stay on the tab, as a screen reader does.
+                    action=self.backend.activate(item)
+                    if isinstance(action,dict) and action.get('validation'):return action['validation']
+                    return self._refresh_at(item)
+                if role in ('checkbox','radio','switch'):
                     if hasattr(self.backend,'activate_choice'):
                         notice=self.backend.activate_choice(item)
                         if notice:return notice
