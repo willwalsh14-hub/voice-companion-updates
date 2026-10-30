@@ -740,7 +740,7 @@ def canceled_to(mode):
     """Say Canceled with the main menu in one message (two would cut each other off), or alone."""
     global MAIN_MENU_LEAD
     if mode=='awake':MAIN_MENU_LEAD='Canceled.'
-    else:speak('Canceled.')
+    else:speak('Canceled. '+options_return_notice(mode))
     return mode
 
 

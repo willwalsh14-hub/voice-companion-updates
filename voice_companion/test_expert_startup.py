@@ -199,6 +199,13 @@ class ClosedThenMainMenuTests(KeyTestCase):
         self.assertEqual(companion.handle('No.', 'power_confirm'), 'awake')
         self.assertEqual(self.said, ['Canceled. ' + companion.MAIN_MENU_PROMPT])
 
+    def test_canceling_elsewhere_says_where_you_are(self):
+        companion.handle('help', 'awake')
+        self.assertEqual(companion.handle('exit companion', 'help'), 'exit_confirm')
+        self.said.clear()
+        self.assertEqual(companion.handle('no', 'exit_confirm'), 'help')
+        self.assertEqual(self.said, ['Canceled. Back to help.'])
+
     def test_leaving_help_for_the_main_menu_says_help_closed(self):
         for how in ('Ctrl+F1', 'main menu'):
             with self.subTest(how=how):
