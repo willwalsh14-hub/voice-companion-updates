@@ -516,6 +516,12 @@ class SemanticWebTests(unittest.TestCase):
         self.session.keyboard('Escape')
         self.assertEqual(self.session.keyboard('Quick:e'),'Name, edit. As on your ID card.')
 
+    def test_table_quick_key_says_how_many_rows_and_columns(self):
+        self.load('<table><caption>Prices</caption><tr><th>Item</th><th>Cost</th></tr><tr><td>Tea</td><td>$2</td></tr><tr><td colspan=2>Sold out</td></tr></table>')
+        self.assertEqual(self.session.keyboard('Quick:t'),'Prices, table, 3 rows, 2 columns.')
+        self.load('<table><tr><td>Only</td></tr></table>')
+        self.assertEqual(self.session.keyboard('Quick:t'),'Table, 1 row, 1 column.')
+
     def test_enter_on_a_spin_button_lets_arrows_change_it(self):
         self.load(self.SETTINGS_PAGE)
         self.session.keyboard('Quick:f');self.session.keyboard('Quick:f')

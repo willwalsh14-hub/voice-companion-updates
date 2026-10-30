@@ -89,7 +89,7 @@ def heading_link(item,elements):
         if (start<=a and b<=end and b>a) or (a<=start and end<=b):return True
     return False
 
-UNLABELED_ROLE=re.compile(r'Unlabeled (?:textbox|searchbox|combobox|listbox|button|checkbox|radio|switch|slider|spinbutton|menuitem(?:checkbox|radio)?|tab|option|treeitem)')
+UNLABELED_ROLE=re.compile(r'Unlabeled (?:table|grid|textbox|searchbox|combobox|listbox|button|checkbox|radio|switch|slider|spinbutton|menuitem(?:checkbox|radio)?|tab|option|treeitem)')
 def describe(item,elements=None):
     """How an element is spoken. A heading that is a link says so after its level, like
     a screen reader: "JAWS downloads, heading level 3, link." (Will, October 2026)."""
@@ -102,6 +102,11 @@ def describe(item,elements=None):
     if role=='landmark':return (name+', ' if name not in ('Unnamed','Unlabeled') else '')+{'contentinfo':'content information'}.get(item.get('landmark','region'),item.get('landmark','region'))+' region.'
     if role=='list':return (name+', ' if name not in ('List','Unlabeled') else '')+('Ordered list' if item.get('ordered') else 'List')+', '+str(item.get('item_count',0))+' items.'
     if role=='listitem':return name+', list item'+(' '+str(item['position'])+' of '+str(item['set_size']) if item.get('position') and item.get('set_size',0)>0 else '')+'.'
+    if role=='table':
+        # As a screen reader says on arrival: how big the table is.
+        rows,columns=item.get('table_rows'),item.get('table_columns')
+        size=', '+str(rows)+(' row, ' if rows==1 else ' rows, ')+str(columns)+(' column' if columns==1 else ' columns') if rows and columns else ''
+        return ('Table' if name=='Unlabeled' else name+', table')+size+'.'
     linked=role=='heading' and heading_link(item,elements)
     if role=='heading':role+=' level '+str(item.get('level',1))
     state=', link' if linked else '';spoken_role=role
@@ -238,11 +243,12 @@ SEMANTICS = r'''
           const searchHost=['search.brave.com','www.google.com','google.com','www.bing.com','bing.com','html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'].includes(location.hostname);
           const titleSelector='.search-snippet-title,.snippet-title,.snippet-title-text,[data-testid="result-title"],.title';
           const braveResult=e=>location.hostname==='search.brave.com'&&e.matches(titleSelector)&&e.closest('a[href]');
-          const controlsByKey=new Map(controls.map(c=>[c.key,c]));const tableMaps=new Map();
+          const controlsByKey=new Map(controls.map(c=>[c.key,c]));const tableMaps=new Map(),tableSizes=new Map();
           for(const table of all(document).filter(e=>e.matches('table,[role="table"],[role="grid"]'))){
             const grid=[];const rows=all(table).filter(e=>e.matches('tr,[role="row"]') && visible(e) && !e.closest('[aria-hidden="true"],[inert]') && e.closest('table,[role="table"],[role="grid"]')===table);
             rows.forEach((row,r)=>{grid[r]??=[];let c=0;const cells=[...row.querySelectorAll('th,td,[role="cell"],[role="gridcell"],[role="columnheader"],[role="rowheader"]')].filter(e=>visible(e) && !e.closest('[aria-hidden="true"],[inert]') && e.closest('tr,[role="row"]')===row && e.closest('table,[role="table"],[role="grid"]')===table);
               cells.forEach(cell=>{while(grid[r][c])c++;const rs=Math.min(100,Math.max(1,parseInt(cell.getAttribute('rowspan')||cell.getAttribute('aria-rowspan')||1)||1));const cs=Math.min(100,Math.max(1,parseInt(cell.getAttribute('colspan')||cell.getAttribute('aria-colspan')||1)||1));tableMaps.set(cell,{table:key(table),row:r,column:c,rowspan:rs,colspan:cs,header:cell.tagName==='TH'||/header$/.test(cell.getAttribute('role')||''),scope:cell.getAttribute('scope')||(cell.getAttribute('role')==='rowheader'?'row':'')});for(let a=r;a<r+rs;a++){grid[a]??=[];for(let b=c;b<c+cs;b++)grid[a][b]=true;}c+=cs;});});
+            tableSizes.set(table,{table_rows:grid.length,table_columns:Math.max(0,...grid.map(r=>(r||[]).length))});
           }
           const urlOnly=s=>/^(?:https?:\/\/|www\.)\S+(?:\s*[›>]\s*\S+)*$|^[\w-]+(?:\.[\w-]+)+(?:[\/?]\S*)?(?:\s*[›>]\s*\S+)*$/i.test(String(s||'').trim());
           const contentTitle=e=>{
@@ -306,7 +312,7 @@ SEMANTICS = r'''
             if(role==='landmark'&&!label)label='Unnamed';
             if(['list','listitem','frame','landmark'].includes(role))newline();
             const bookmark=e.id?{id:e.id,key:key(e),start:size(),end:size()}:null;if(bookmark)anchors.push(bookmark);
-            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:size(),end:size(),disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{})};elements.push(item);}
+            let item=null;if(role && elements.length<5000){item={...(control||{}),key:key(e),role,tag,type,label,identity_label:control?.label||label,id:e.id||'',search_result:searchHost&&role==='link'&&!!(braveTitle||resultHeading),activation_key:role==='heading'?key(e.closest('a[href]')||e.querySelector('a[href]')||e):null,href:tag==='a'?e.href:(control?.href||''),level:braveResult(e)?2:parseInt(e.getAttribute('aria-level')||tag.slice(1))||1,start:size(),end:size(),disabled:!!e.disabled||e.getAttribute('aria-disabled')==='true',editable:!!editable,...(tableMaps.get(e)||{}),...(role==='table'?tableSizes.get(e)||{}:{})};elements.push(item);}
             if(item){item.landmark=landmark;if(role==='list'){item.item_count=Math.max(listItems.length,...listItems.map(n=>Number(n.getAttribute('aria-setsize'))||0));item.ordered=tag==='ol';}if(role==='listitem'){item.position=Number(e.getAttribute('aria-posinset'))||siblings.indexOf(e)+1;item.set_size=Number(e.getAttribute('aria-setsize'))||siblings.length;}}
             if(item&&(controlRoles.includes(role)||['input','select','textarea'].includes(tag)||editable)){item.invalid=e.getAttribute('aria-invalid')==='true'||e.getAttribute('aria-invalid')==='spelling'||e.getAttribute('aria-invalid')==='grammar';if(e.hasAttribute('aria-describedby')||e.hasAttribute('aria-description'))item.description=String(accessibleLabel.description(e)||'').trim().slice(0,240);}
             if(item){item.tabindex=control?.combo_input_key?control.tabindex:e.tabIndex;item.checked=accessibleLabel.checked(e);item.value_text=e.getAttribute('aria-valuetext')||'';item.value_now=e.getAttribute('aria-valuenow')??(['range','number'].includes(type)?e.value:null);for(const attr of ['expanded','selected','pressed'])if(e.hasAttribute('aria-'+attr))item[attr]=e.getAttribute('aria-'+attr)==='true';}
