@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.177-test.
+Guide version: 0.2.178-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -1980,7 +1980,7 @@ Embedded Edge needs the Microsoft WebView2 part of Windows. If it cannot start, 
 Google does not allow signing in to a Google account in embedded Edge. For a site that needs Google sign-in, say "Use Chrome", or use your own browser with the extension.
 Guided Chrome window has two choices. It only changes guided Chrome. Embedded Edge and your own browser stay the same.
 - Show the browser window, as before. This is the first choice, and how it always worked.
-- Run the browser in the background. Chrome runs with no window. Companion still reads every page to you, and sound still plays.
+- Run the browser in the background. Chrome keeps its window out of sight. It is not on the screen, the taskbar or Alt+Tab. Companion still reads every page to you, and sound still plays.
 In the background, some pages need a real window. These are a Google sign-in, a check that you are a person, a page that asks for a card or payment, and a page where you choose a file to send. Then Companion opens Chrome again with its window, on the same page. It comes to the front, and Companion tells you why. Press Alt+Tab to come back to Companion.
 - Say "Show browser window" to see Chrome's window.
 - Say "Hide browser window" to run Chrome in the background again.
