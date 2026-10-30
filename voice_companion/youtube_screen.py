@@ -71,6 +71,7 @@ KEYS = {
     'H': 'list chapters', 'Ctrl+Left': 'previous chapter', 'Ctrl+Right': 'next chapter', 'S': 'skip ad',
     'I': 'video details', 'D': 'read description', 'O': 'read comments', 'G': 'go to channel', 'X': 'up next',
     'T': 'like video', 'U': 'subscribe or unsubscribe', 'W': 'save video',
+    'Next': 'page down', 'Prior': 'page up',   # ten items at a time in a list
 }
 KEYS.update({str(n): 'jump to ' + str(n * 10) + ' percent' for n in range(1, 10)})
 
