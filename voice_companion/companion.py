@@ -3049,7 +3049,7 @@ def stop_thunderbird_watch():
     """Stop waiting, and give Thunderbird's web sign-in back to the Windows browser."""
     global THUNDERBIRD_WATCH
     waiting, THUNDERBIRD_WATCH = THUNDERBIRD_WATCH, None
-    THUNDERBIRD_SYNC['connection'] = None   # look at Thunderbird's addresses again: one may finish later
+    THUNDERBIRD_SYNC.connection = None   # look at Thunderbird's addresses again: one may finish later
     if waiting is None:
         return
     waiting['watch'].stop()
@@ -3062,7 +3062,7 @@ def stop_thunderbird_watch():
 # Each time Thunderbird connects, its addresses are compared with Voice Companion's: one added in
 # Thunderbird (or added through Voice Companion while it stopped waiting) is connected too. Will,
 # October 30, 2026: a Microsoft 365 account Thunderbird had added was missing from Voice Companion.
-THUNDERBIRD_SYNC = {'connection': None, 'found': queue.Queue()}
+THUNDERBIRD_SYNC = __import__('types').SimpleNamespace(connection=None, found=queue.Queue())
 
 
 def poll_thunderbird_accounts():
@@ -3075,15 +3075,15 @@ def poll_thunderbird_accounts():
         return
     if relay is not None and relay.connected.is_set():
         connection = id(getattr(relay, 'pipe', None))
-        if THUNDERBIRD_SYNC['connection'] != connection and THUNDERBIRD_WATCH is None and THUNDERBIRD_SETUP is None \
+        if THUNDERBIRD_SYNC.connection != connection and THUNDERBIRD_WATCH is None and THUNDERBIRD_SETUP is None \
                 and not (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird':
-            THUNDERBIRD_SYNC['connection'] = connection
+            THUNDERBIRD_SYNC.connection = connection
             def ask():
-                try: THUNDERBIRD_SYNC['found'].put(relay.request('accounts', {}, timeout=20))
+                try: THUNDERBIRD_SYNC.found.put(relay.request('accounts', {}, timeout=20))
                 except Exception: pass
             threading.Thread(target=ask, name='Thunderbird accounts', daemon=True).start()
     try:
-        found = THUNDERBIRD_SYNC['found'].get_nowait()
+        found = THUNDERBIRD_SYNC.found.get_nowait()
     except queue.Empty:
         return
     import thunderbird_accounts as words

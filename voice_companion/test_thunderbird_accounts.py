@@ -790,15 +790,15 @@ class ConnectSyncTests(AccountScreenTestCase):
         import time
         for _ in range(200):
             companion.poll_thunderbird_accounts()
-            if relay.asked and companion.THUNDERBIRD_SYNC['found'].empty() and self.said:
+            if relay.asked and companion.THUNDERBIRD_SYNC.found.empty() and self.said:
                 return
             time.sleep(0.01)
 
     def setUp(self):
         super().setUp()
-        companion.THUNDERBIRD_SYNC['connection'] = None
-        while not companion.THUNDERBIRD_SYNC['found'].empty():
-            companion.THUNDERBIRD_SYNC['found'].get_nowait()
+        companion.THUNDERBIRD_SYNC.connection = None
+        while not companion.THUNDERBIRD_SYNC.found.empty():
+            companion.THUNDERBIRD_SYNC.found.get_nowait()
 
     def test_an_address_thunderbird_added_is_connected_and_said_once(self):
         relay = self.Relay([
