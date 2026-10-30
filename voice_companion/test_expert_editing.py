@@ -1,0 +1,117 @@
+"""Word processor, Notepad, reader and File manager: what an expert screen reader user met (sweep, October 30, 2026)."""
+import tempfile
+import unittest
+from pathlib import Path
+
+from document_editor import VoiceDocument
+
+
+class EditorCase(unittest.TestCase):
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        self.doc = VoiceDocument(Path(folder.name), title='Letter')
+        self.doc.dictating = True
+
+    def write(self, *paragraphs):
+        for index, text in enumerate(paragraphs):
+            if index: self.doc.process('new paragraph')
+            self.doc.process(text)
+
+    def texts(self):
+        return [p.text for p in self.doc.paragraphs]
+
+
+class ReadingTheParagraphKeepsYourPlace(EditorCase):
+    """Reading the current line or paragraph is a look, not a move, as NVDA+Up is.
+
+    Before: "next sentence", then "read paragraph", then "delete sentence" deleted the
+    first sentence instead of the one the user had moved to."""
+    def setUp(self):
+        super().setUp()
+        self.write('The quick brown fox jumps. Over the lazy dog. A third sentence.')
+
+    def test_delete_sentence_after_reading_the_paragraph(self):
+        for look in ('read paragraph', 'read current paragraph', 'read current line', 'read line'):
+            with self.subTest(look=look):
+                self.doc.process('beginning of document')
+                self.assertEqual(self.doc.process('next sentence'), 'Over the lazy dog.')
+                self.doc.process(look)
+                self.assertEqual(self.doc.process('read current sentence'), 'Over the lazy dog.')
+                self.assertIn('Over the lazy dog', self.doc.process('delete sentence'))
+                self.assertEqual(self.texts(), ['The quick brown fox jumps. A third sentence.'])
+                self.doc.process('undo')
+
+    def test_delete_word_after_reading_the_paragraph(self):
+        for look in ('read paragraph', 'read current line'):
+            with self.subTest(look=look):
+                self.doc.process('beginning of document')
+                self.doc.process('next word'); self.assertEqual(self.doc.process('next word'), 'brown')
+                self.doc.process(look)
+                self.assertEqual(self.doc.process('read current word'), 'brown')
+                self.doc.process('delete word')
+                self.assertEqual(self.texts(), ['The quick fox jumps. Over the lazy dog. A third sentence.'])
+                self.doc.process('undo')
+
+    def test_next_word_continues_from_where_you_were(self):
+        self.doc.process('beginning of document')
+        self.doc.process('next word'); self.doc.process('next word')
+        self.doc.process('read paragraph')
+        self.assertEqual(self.doc.process('next word'), 'fox')
+
+
+class DeletingLeavesTidyText(EditorCase):
+    """Deleting a word or sentence takes one space with it, as Word does.
+
+    Before: "delete sentence" in the middle left two spaces, and "cut" at the start of a
+    paragraph left a space in front of the next word."""
+    def setUp(self):
+        super().setUp()
+        self.write('Dear Bob. Thanks for the call. See you soon.')
+        self.doc.process('beginning of document')
+
+    def test_delete_a_middle_sentence(self):
+        self.doc.process('next sentence')
+        self.doc.process('delete sentence')
+        self.assertEqual(self.texts(), ['Dear Bob. See you soon.'])
+
+    def test_delete_the_last_sentence(self):
+        self.doc.process('next sentence'); self.doc.process('next sentence')
+        self.doc.process('delete sentence')
+        self.assertEqual(self.texts(), ['Dear Bob. Thanks for the call.'])
+
+    def test_cut_the_first_sentence_then_paste_it_at_the_end(self):
+        self.doc.process('cut sentence')
+        self.assertEqual(self.texts(), ['Thanks for the call. See you soon.'])
+
+    def test_delete_a_word_by_name(self):
+        self.doc.process('delete the call')
+        self.assertEqual(self.texts(), ['Dear Bob. Thanks for. See you soon.'])
+        self.doc.process('undo')
+        self.doc.process('delete Thanks')
+        self.assertEqual(self.texts(), ['Dear Bob. for the call. See you soon.'])
+
+
+class NoDoubledPeriods(EditorCase):
+    """Before: "Deleted: Dear Bob.. Say undo to restore it." The screen reader paused twice."""
+    def setUp(self):
+        super().setUp()
+        self.write('Dear Bob. Thanks for the call.')
+        self.doc.process('beginning of document')
+
+    def test_cut_delete_paste_and_replace(self):
+        from unittest.mock import patch
+        import document_editor
+        clipboard = []
+        with patch.object(document_editor, 'copy_to_clipboard', clipboard.append), \
+             patch.object(document_editor, 'paste_from_clipboard', lambda: clipboard[-1]):
+            self.assertEqual(self.doc.process('cut sentence'), 'Cut: Dear Bob. Say undo to restore it.')
+            self.assertEqual(self.doc.process('paste'), 'Pasted: Dear Bob. Say undo to remove it.')
+            self.doc.process('undo'); self.doc.process('undo')
+            self.assertEqual(self.doc.process('delete sentence'), 'Deleted: Dear Bob. Say undo to restore it.')
+            self.doc.process('undo')
+            self.assertEqual(self.doc.process('replace Bob. with Sam.'), 'Replaced Bob. with Sam.')
+            self.assertEqual(self.doc.process('delete word'), 'Deleted: Dear. Say undo to restore it.')
+
+
+if __name__ == '__main__':
+    unittest.main()

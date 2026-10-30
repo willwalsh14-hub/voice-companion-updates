@@ -262,6 +262,12 @@ UNDO_NAMES = {'toggle bold': 'bold', 'toggle italic': 'italic', 'toggle underlin
               'paste text': 'the paste'}
 
 
+def closed(text):
+    """Text then a period, unless it already ends a sentence: "Deleted: Dear Bob." not "Bob..". """
+    text = str(text).rstrip()
+    return text if text.endswith(('.', '!', '?')) else text + '.'
+
+
 def undo_words(text, limit=10):
     """At most `limit` words of what changed, without the closing punctuation, for "Undid typing: ..."."""
     words = ' '.join(str(text).split()).rstrip('.,;:!?')
@@ -905,6 +911,21 @@ class VoiceDocument:
         self.selection = None
         self.changed()
 
+    def _with_one_space(self, selected):
+        """Whole words being deleted take one space with them, as Word does, so no double
+        space or leading space is left behind. Part of a word is deleted exactly."""
+        if selected.first_paragraph != selected.last_paragraph:
+            return selected
+        text = self.paragraphs[selected.first_paragraph].text
+        a, b = selected.first_offset, selected.last_offset
+        if a >= b or '\n' in text[a:b] or not (a == 0 or text[a-1] == ' ') or not (b == len(text) or text[b] in ' .,;:!?'):
+            return selected
+        if b < len(text) and text[b] == ' ':
+            b += 1
+        elif a > 0 and text[a-1] == ' ':
+            a -= 1
+        return TextSelection(selected.first_paragraph, a, selected.last_paragraph, b)
+
     def _apply_selection_action(self, selected, action):
         self.selection = selected
         self.cursor = selected.first_paragraph
@@ -917,14 +938,14 @@ class VoiceDocument:
             self.dictating = True
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             self.reading.position = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor]) + position[1]
-            return 'Insert ' + action.split('_')[1] + ' ' + content + '.'
+            return 'Insert ' + action.split('_')[1] + ' ' + closed(content)
         if action.startswith('replace:'):
             if self.crosses_table_cells(selected):
                 self.selection = None
                 return TABLE_SELECTION_NOTICE
             replacement = action[len('replace:'):]
             self._replace_selection(replacement)
-            return 'Replaced ' + content + ' with ' + replacement + '.'
+            return 'Replaced ' + content + ' with ' + closed(replacement)
         if action in ('select', 'find'):
             return ('Found and selected: ' if action == 'find' else 'Selected: ') + content
         if action in ('cut', 'delete') and any(p.table_id for p in self.paragraphs[selected.first_paragraph:selected.last_paragraph+1]) and selected.first_paragraph != selected.last_paragraph:
@@ -940,14 +961,15 @@ class VoiceDocument:
             self.selection = None
             self.insertion_position = (selected.first_paragraph,selected.first_offset)
             self.changed()
-            return ('Cut: ' if action == 'cut' else 'Deleted: ') + content + '. Table cells remain. Say undo to restore the text.'
+            return ('Cut: ' if action == 'cut' else 'Deleted: ') + closed(content) + ' Table cells remain. Say undo to restore the text.'
         if action in ('copy', 'cut'):
             copy_to_clipboard(content)
             if action == 'copy':
                 return 'Copied: ' + content
         if action in ('cut', 'delete'):
+            self.selection = self._with_one_space(selected)
             self._replace_selection('')
-            return ('Cut: ' if action == 'cut' else 'Deleted: ') + content + '. Say undo to restore it.'
+            return ('Cut: ' if action == 'cut' else 'Deleted: ') + closed(content) + ' Say undo to restore it.'
         style = {'bold': ('bold', True), 'underline': ('underline', True),
                  'italicize': ('italic', True), 'highlight': ('highlight', 'yellow')}[action]
         word_position = self.word_cursor
@@ -1325,14 +1347,19 @@ class VoiceDocument:
             if self.crosses_table_cells(self.selection):
                 return TABLE_SELECTION_NOTICE
             self._replace_selection(pasted)
-            return 'Pasted: ' + pasted + '. Say undo to remove it.'
+            return 'Pasted: ' + closed(pasted) + ' Say undo to remove it.'
         request = reading_request(command)
         if request == ('paragraph', 0) and self.paragraphs:
             # The shared reading cursor skips blank paragraphs, which would move the
             # editing position to a neighbour and send dictation to the wrong place.
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
-            self.reading.position = self.reading.continuation = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
-            self.word_cursor = self.sentence_cursor = 0
+            base = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
+            # Reading the paragraph is a look, not a move (as NVDA+Up is): the word and
+            # sentence you moved to stay, so "delete sentence" next acts on that sentence.
+            if not base <= self.reading.position <= base + len(self.paragraphs[self.cursor].text):
+                self.reading.position = base
+                self.word_cursor = self.sentence_cursor = 0
+            self.reading.continuation = base
             p = self.paragraphs[self.cursor]
             if p.table_id:
                 return self.describe_cell()
@@ -1346,7 +1373,11 @@ class VoiceDocument:
                 current_base = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
                 current_end = current_base+len(self.paragraphs[self.cursor].text)
                 if not current_base <= self.reading.position <= current_end: self.reading.position = current_base
+            looked_from = self.reading.position
             result = self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            # "Read current line" reads the line and leaves you where you were in it.
+            look = unit in ('paragraph', 'line') and direction == 0
+            if look: self.reading.position = looked_from
             if unit != 'read':
                 # Repeating the last word alone sounded like a move, as at the last paragraph.
                 result = edge_notice(self.reading, self.EDGE_NAME) + result
@@ -1359,7 +1390,7 @@ class VoiceDocument:
                     break
                 base += len(p.text)+1
             if navigation or unit!='read' and direction!=0:self.navigation_position=(self.cursor,local)
-            if unit in ('paragraph','line'):
+            if unit in ('paragraph','line') and not look:
                 self.word_cursor = self.sentence_cursor = 0
             if unit == 'word':
                 self.word_cursor = len(re.findall(r'\S+', self.paragraphs[self.cursor].text[:self.reading.position - sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])])) if self.paragraphs else 0
