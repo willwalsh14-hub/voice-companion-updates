@@ -650,9 +650,9 @@ class YouTubeScreen:
                 return ('Start of list. ' if to == 'first' else 'End of list. ') + self.describe()
             return self.describe()
         target = old + step
-        loaded = ''
-        if target >= len(view['items']) and view['kind'] == 'list' and view.get('url') and self.more(view):
-            loaded = 'More loaded. ' + str(len(view['items'])) + ' items now. '
+        loaded = False
+        if target >= len(view['items']) and view['kind'] == 'list' and view.get('url'):
+            loaded = self.more(view)   # said by the new count: "6 of 26"
         last = len(view['items']) - 1
         if target < 0:
             if old == 0:
@@ -666,7 +666,7 @@ class YouTubeScreen:
         # Near the end of a long list, the next part is fetched before it is needed.
         if not loaded and view['kind'] == 'list' and view.get('token') and last - target < PREFETCH:
             self.more(view)
-        return self.describe(loaded)
+        return self.describe()
 
     def page_move(self, direction):
         """Page Down and Page Up: ten items at a time. At the end of what is loaded, the next part loads."""
