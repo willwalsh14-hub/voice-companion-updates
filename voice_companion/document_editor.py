@@ -262,6 +262,32 @@ UNDO_NAMES = {'toggle bold': 'bold', 'toggle italic': 'italic', 'toggle underlin
               'paste text': 'the paste'}
 
 
+def closed(text):
+    """Text then a period, unless it already ends a sentence: "Deleted: Dear Bob." not "Bob..". """
+    text = str(text).rstrip()
+    return text if text.endswith(('.', '!', '?')) else text + '.'
+
+
+def formatting_words(changes):
+    """'Bold. Font size 14 points.' for what a format command changed, in the words
+    "say formatting" uses. Never "bold: True"."""
+    parts = []
+    for name, value in changes.items():
+        if name in ('bold', 'italic', 'underline'):
+            parts.append(name.capitalize() if value else 'Not ' + name)
+        elif name == 'size':
+            parts.append(f'Font size {value} points')
+        elif name == 'font':
+            parts.append('Font ' + str(value))
+        elif name == 'kind':
+            parts.append('Normal text' if value == 'Normal' else str(value))
+        elif name == 'alignment':
+            parts.append('Alignment ' + ('justified' if value == 'both' else str(value)))
+        else:
+            parts.append(str(value))
+    return '. '.join(parts) + '.'
+
+
 def undo_words(text, limit=10):
     """At most `limit` words of what changed, without the closing punctuation, for "Undid typing: ..."."""
     words = ' '.join(str(text).split()).rstrip('.,;:!?')
@@ -597,6 +623,13 @@ class VoiceDocument:
             word = 'redo' if redo else 'undo'
             return ('Nothing more to ' + word + '.') if target else ('There is nothing to ' + word + '.')
         step = source[-1]
+        if redo:
+            # Land on what the redo changes, as Undo does, not where you were when you undid it.
+            changed = next((i for i, (now_p, then_p) in enumerate(zip(self.paragraphs, step.paragraphs)) if now_p != then_p), None)
+            if changed is None and len(self.paragraphs) != len(step.paragraphs):
+                changed = min(len(self.paragraphs), len(step.paragraphs))
+            if changed is not None:
+                step.cursor = changed
         now = self._snapshot(step.label)
         if not self._restore_step(step):
             return 'I cannot ' + ('redo' if redo else 'undo') + ' the rename because another document has that name.'
@@ -696,7 +729,7 @@ class VoiceDocument:
         selected_index = min(self.word_cursor, len(words)-1)
         self.changed()
         self.word_cursor = selected_index
-        return 'Formatted word ' + selected.group() + '. ' + ', '.join(f'{k}: {v}' for k,v in changes.items()) + '.'
+        return 'Formatted word ' + closed(selected.group()) + ' ' + formatting_words(changes)
 
     def use_new_document_style(self, font='', size=0, alignment='left', spacing=None):
         """Set the look of a new document before it has any text.
@@ -905,6 +938,32 @@ class VoiceDocument:
         self.selection = None
         self.changed()
 
+    def _cursors_from_reading(self):
+        """Point the word and sentence that delete word and delete sentence use at the
+        reading position, the place "read current word" reads."""
+        if not self.paragraphs:
+            return
+        text = self.paragraphs[self.cursor].text
+        local = max(0, min(len(text), self.reading.position - sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])))
+        words = [m for m in re.finditer(r'\S+', text)]
+        self.word_cursor = max(0, min(len(words) - 1, sum(1 for m in words if m.end() <= local)))
+        self.sentence_cursor = len(re.findall(r'\S.*?[.!?](?=\s|$)', text[:local]))
+
+    def _with_one_space(self, selected):
+        """Whole words being deleted take one space with them, as Word does, so no double
+        space or leading space is left behind. Part of a word is deleted exactly."""
+        if selected.first_paragraph != selected.last_paragraph:
+            return selected
+        text = self.paragraphs[selected.first_paragraph].text
+        a, b = selected.first_offset, selected.last_offset
+        if a >= b or '\n' in text[a:b] or not (a == 0 or text[a-1] == ' ') or not (b == len(text) or text[b] in ' .,;:!?'):
+            return selected
+        if b < len(text) and text[b] == ' ':
+            b += 1
+        elif a > 0 and text[a-1] == ' ':
+            a -= 1
+        return TextSelection(selected.first_paragraph, a, selected.last_paragraph, b)
+
     def _apply_selection_action(self, selected, action):
         self.selection = selected
         self.cursor = selected.first_paragraph
@@ -917,14 +976,14 @@ class VoiceDocument:
             self.dictating = True
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
             self.reading.position = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor]) + position[1]
-            return 'Insert ' + action.split('_')[1] + ' ' + content + '.'
+            return 'Insert ' + action.split('_')[1] + ' ' + closed(content)
         if action.startswith('replace:'):
             if self.crosses_table_cells(selected):
                 self.selection = None
                 return TABLE_SELECTION_NOTICE
             replacement = action[len('replace:'):]
             self._replace_selection(replacement)
-            return 'Replaced ' + content + ' with ' + replacement + '.'
+            return 'Replaced ' + content + ' with ' + closed(replacement)
         if action in ('select', 'find'):
             return ('Found and selected: ' if action == 'find' else 'Selected: ') + content
         if action in ('cut', 'delete') and any(p.table_id for p in self.paragraphs[selected.first_paragraph:selected.last_paragraph+1]) and selected.first_paragraph != selected.last_paragraph:
@@ -940,14 +999,15 @@ class VoiceDocument:
             self.selection = None
             self.insertion_position = (selected.first_paragraph,selected.first_offset)
             self.changed()
-            return ('Cut: ' if action == 'cut' else 'Deleted: ') + content + '. Table cells remain. Say undo to restore the text.'
+            return ('Cut: ' if action == 'cut' else 'Deleted: ') + closed(content) + ' Table cells remain. Say undo to restore the text.'
         if action in ('copy', 'cut'):
             copy_to_clipboard(content)
             if action == 'copy':
                 return 'Copied: ' + content
         if action in ('cut', 'delete'):
+            self.selection = self._with_one_space(selected)
             self._replace_selection('')
-            return ('Cut: ' if action == 'cut' else 'Deleted: ') + content + '. Say undo to restore it.'
+            return ('Cut: ' if action == 'cut' else 'Deleted: ') + closed(content) + ' Say undo to restore it.'
         style = {'bold': ('bold', True), 'underline': ('underline', True),
                  'italicize': ('italic', True), 'highlight': ('highlight', 'yellow')}[action]
         word_position = self.word_cursor
@@ -1325,14 +1385,19 @@ class VoiceDocument:
             if self.crosses_table_cells(self.selection):
                 return TABLE_SELECTION_NOTICE
             self._replace_selection(pasted)
-            return 'Pasted: ' + pasted + '. Say undo to remove it.'
+            return 'Pasted: ' + closed(pasted) + ' Say undo to remove it.'
         request = reading_request(command)
         if request == ('paragraph', 0) and self.paragraphs:
             # The shared reading cursor skips blank paragraphs, which would move the
             # editing position to a neighbour and send dictation to the wrong place.
             self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
-            self.reading.position = self.reading.continuation = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
-            self.word_cursor = self.sentence_cursor = 0
+            base = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
+            # Reading the paragraph is a look, not a move (as NVDA+Up is): the word and
+            # sentence you moved to stay, so "delete sentence" next acts on that sentence.
+            if not base <= self.reading.position <= base + len(self.paragraphs[self.cursor].text):
+                self.reading.position = base
+            self._cursors_from_reading()
+            self.reading.continuation = base
             p = self.paragraphs[self.cursor]
             if p.table_id:
                 return self.describe_cell()
@@ -1346,7 +1411,11 @@ class VoiceDocument:
                 current_base = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
                 current_end = current_base+len(self.paragraphs[self.cursor].text)
                 if not current_base <= self.reading.position <= current_end: self.reading.position = current_base
+            looked_from = self.reading.position
             result = self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            # "Read current line" reads the line and leaves you where you were in it.
+            look = unit in ('paragraph', 'line') and direction == 0
+            if look: self.reading.position = looked_from
             if unit != 'read':
                 # Repeating the last word alone sounded like a move, as at the last paragraph.
                 result = edge_notice(self.reading, self.EDGE_NAME) + result
@@ -1359,7 +1428,9 @@ class VoiceDocument:
                     break
                 base += len(p.text)+1
             if navigation or unit!='read' and direction!=0:self.navigation_position=(self.cursor,local)
-            if unit in ('paragraph','line'):
+            if look:
+                self._cursors_from_reading()
+            elif unit in ('paragraph','line'):
                 self.word_cursor = self.sentence_cursor = 0
             if unit == 'word':
                 self.word_cursor = len(re.findall(r'\S+', self.paragraphs[self.cursor].text[:self.reading.position - sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])])) if self.paragraphs else 0
@@ -1501,8 +1572,13 @@ class VoiceDocument:
             self.checkpoint()
             removed = self.paragraphs.pop(self.cursor)
             self.cursor = min(self.cursor, max(0, len(self.paragraphs) - 1))
+            # You are at the start of the paragraph that took its place, not at the old word.
+            self.word_cursor = self.sentence_cursor = 0
+            self.navigation_position = None
+            self.reading.set_text('\n'.join(p.text for p in self.paragraphs))
+            self.reading.position = self.reading.continuation = sum(len(p.text)+1 for p in self.paragraphs[:self.cursor])
             self.changed()
-            return ('Deleted paragraph: ' + removed.text) if removed.text.strip() else 'Deleted an empty paragraph. Say undo to restore it.'
+            return ('Deleted paragraph: ' + closed(removed.text) + ' Say undo to restore it.') if removed.text.strip() else 'Deleted an empty paragraph. Say undo to restore it.'
         whole_paragraph = re.match(r'replace (?:the |current |this )?paragraph with (.+)$', text, re.I | re.S)
         if whole_paragraph:
             if not self.paragraphs:
@@ -1744,6 +1820,9 @@ class VoiceDocument:
                 return 'Please say a font name using letters and numbers.'
             return self.format_current(font=name)
         size = re.fullmatch(r'(?:(?:set|change|use) (?:font )?size (?:to )?|make it )(.+?)(?: points?)?', command)
+        if size and command.startswith('make it ') and spoken_number(size.group(1)) is None:
+            # "Make it quick." is a sentence to write. Only "make it 14 points" is a size.
+            size = None
         if size:
             value = spoken_number(size.group(1))
             if value is None or '.' in value: return 'Please say a whole font size from 6 to 72 points.'
@@ -1863,7 +1942,7 @@ class VoiceDocument:
                     else: setattr(p,name,value)
                 p.runs = self.compress_runs(p.text, styles)
             self.changed()
-            return 'Formatted the selection. ' + ', '.join(f'{name}: {value}' for name,value in changes.items()) + '.'
+            return 'Formatted the selection. ' + formatting_words(changes)
         p = self.paragraphs[self.cursor]
         self.reconcile_runs(p)
         for name, value in changes.items():
@@ -1872,5 +1951,4 @@ class VoiceDocument:
                 for run in p.runs:
                     setattr(run, name, value)
         self.changed()
-        details = ', '.join(f'{name.replace("kind", "style")}: {value}' for name, value in changes.items())
-        return 'Formatted the current ' + ('cell' if self.table_cell() else 'paragraph') + '. ' + details + '.'
+        return 'Formatted the current ' + ('cell' if self.table_cell() else 'paragraph') + '. ' + formatting_words(changes)
