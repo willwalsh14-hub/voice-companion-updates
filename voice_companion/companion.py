@@ -3085,7 +3085,7 @@ def handle_mailbox_screen(text, command, mode, typed):
     response_actions = {'reply': 'reply', 'reply to message': 'reply',
                         'reply all': 'reply_all', 'reply to all': 'reply_all',
                         'forward': 'forward', 'forward message': 'forward'}
-    if command in response_actions and isinstance(mail_session, MailSession) and not mail_session.rows and mail_session.view == 'folder':
+    if command in response_actions and getattr(mail_session, 'rows', None) == [] and mail_session.view == 'folder':
         speak(mail_session._empty_list())   # as every other key says it in an empty folder
         return mode
     if command in response_actions:
@@ -3162,7 +3162,8 @@ def close_email_draft(mode, discard, notice=None):
         provider = chosen[0] if chosen else provider
     if mail_session is None and provider in MAIL_PROVIDERS:
         mail_session = MailSession(provider, APP, progress=mail_progress)
-    if isinstance(mail_session, MailSession) and mail_session.rows:
+    rows = getattr(mail_session, 'rows', None)
+    if isinstance(rows, list) and rows:
         # Back where you were, as after sending: the open message, or the message in its folder.
         speak('Back to message.' if mail_session.view == 'message' else mail_session._current_list())
         return 'mailbox'

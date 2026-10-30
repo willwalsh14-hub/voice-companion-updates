@@ -3535,6 +3535,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | rows": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | save": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -9964,6 +9970,15 @@
 "Hello world. Second sentence. return to inbox"
 ]
 },
+"document | rows": {
+"said": [
+"rows"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. rows"
+]
+},
 "document | save": {
 "said": [
 "Saved the Word document as Routing check.docx."
@@ -12547,13 +12562,12 @@
 },
 "email_draft | back": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12598,13 +12612,12 @@
 },
 "email_draft | back to inbox": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12749,13 +12762,12 @@
 },
 "email_draft | cancel": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12773,13 +12785,12 @@
 },
 "email_draft | cancel draft": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12788,13 +12799,12 @@
 },
 "email_draft | cancel email": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12803,13 +12813,12 @@
 },
 "email_draft | cancel forward": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12818,13 +12827,12 @@
 },
 "email_draft | cancel forward draft": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12833,13 +12841,12 @@
 },
 "email_draft | cancel forwarding": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12848,13 +12855,12 @@
 },
 "email_draft | cancel message": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12872,13 +12878,12 @@
 },
 "email_draft | cancel new email": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12887,13 +12892,12 @@
 },
 "email_draft | cancel reply": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12902,13 +12906,12 @@
 },
 "email_draft | cancel reply draft": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12935,13 +12938,12 @@
 },
 "email_draft | cancel this draft": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12950,13 +12952,12 @@
 },
 "email_draft | cancel this email": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12965,13 +12966,12 @@
 },
 "email_draft | cancel this forward": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12980,13 +12980,12 @@
 },
 "email_draft | cancel this message": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -12995,13 +12994,12 @@
 },
 "email_draft | cancel this reply": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13799,13 +13797,12 @@
 },
 "email_draft | discard": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13814,13 +13811,12 @@
 },
 "email_draft | discard draft": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13829,13 +13825,12 @@
 },
 "email_draft | discard email": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13844,13 +13839,12 @@
 },
 "email_draft | discard message": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13859,13 +13853,12 @@
 },
 "email_draft | discard this draft": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -13874,13 +13867,12 @@
 },
 "email_draft | discard this email": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14467,13 +14459,12 @@
 },
 "email_draft | go back": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14554,13 +14545,12 @@
 },
 "email_draft | go to inbox": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14587,13 +14577,12 @@
 },
 "email_draft | go to my inbox": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14620,13 +14609,12 @@
 },
 "email_draft | go to the inbox": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -14743,13 +14731,12 @@
 },
 "email_draft | inbox": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -15444,13 +15431,12 @@
 },
 "email_draft | never mind": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -15459,13 +15445,12 @@
 },
 "email_draft | nevermind": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
@@ -17139,22 +17124,30 @@
 },
 "email_draft | return to inbox": {
 "calls": [
-"call.rows.__bool__()",
-"call.view.__eq__('message')",
-"call._current_list()"
+"call.process('open inbox')",
+"call.pending.__bool__()"
 ],
 "said": [
 "Draft canceled without saving.",
-"<mock>"
+"session handled: open inbox"
 ],
 "screen_after": "mailbox",
 "text": [
 "Hello world."
 ]
 },
+"email_draft | rows": {
+"said": [
+"rows"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. rows"
+]
+},
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 414. It has not been sent."
+"Email draft saved locally as Routing check 415. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17172,7 +17165,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 415. It has not been sent."
+"Email draft saved locally as Routing check 416. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17190,7 +17183,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 416. It has not been sent."
+"Email draft saved locally as Routing check 417. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17217,7 +17210,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 418. It has not been sent."
+"Email draft saved locally as Routing check 419. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17226,7 +17219,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 419. It has not been sent."
+"Email draft saved locally as Routing check 420. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -22433,6 +22426,12 @@
 ],
 "screen_after": "help"
 },
+"help | rows": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | save": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -25863,7 +25862,7 @@
 },
 "mailbox | forward": {
 "calls": [
-"call.rows.__bool__()",
+"call.rows.__eq__([])",
 "call.response_context('forward')",
 "call.response_context().__getitem__('recipient')"
 ],
@@ -25874,7 +25873,7 @@
 },
 "mailbox | forward message": {
 "calls": [
-"call.rows.__bool__()",
+"call.rows.__eq__([])",
 "call.response_context('forward')",
 "call.response_context().__getitem__('recipient')"
 ],
@@ -28229,7 +28228,7 @@
 },
 "mailbox | reply": {
 "calls": [
-"call.rows.__bool__()",
+"call.rows.__eq__([])",
 "call.response_context('reply')",
 "call.response_context().__getitem__('recipient')"
 ],
@@ -28240,7 +28239,7 @@
 },
 "mailbox | reply all": {
 "calls": [
-"call.rows.__bool__()",
+"call.rows.__eq__([])",
 "call.response_context('reply_all')",
 "call.response_context().__getitem__('recipient')"
 ],
@@ -28251,7 +28250,7 @@
 },
 "mailbox | reply to all": {
 "calls": [
-"call.rows.__bool__()",
+"call.rows.__eq__([])",
 "call.response_context('reply_all')",
 "call.response_context().__getitem__('recipient')"
 ],
@@ -28262,7 +28261,7 @@
 },
 "mailbox | reply to message": {
 "calls": [
-"call.rows.__bool__()",
+"call.rows.__eq__([])",
 "call.response_context('reply')",
 "call.response_context().__getitem__('recipient')"
 ],
@@ -28320,6 +28319,15 @@
 ],
 "said": [
 "session handled: return to inbox"
+],
+"screen_after": "mailbox"
+},
+"mailbox | rows": {
+"calls": [
+"call.process('rows')"
+],
+"said": [
+"session handled: rows"
 ],
 "screen_after": "mailbox"
 },
@@ -33360,6 +33368,12 @@
 "note | return to inbox": {
 "said": [
 "return to inbox"
+],
+"screen_after": "note"
+},
+"note | rows": {
+"said": [
+"rows"
 ],
 "screen_after": "note"
 },
@@ -39714,6 +39728,16 @@
 ],
 "said": [
 "session handled: return to inbox"
+],
+"screen_after": "web"
+},
+"web | rows": {
+"calls": [
+"call.command('rows')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: rows"
 ],
 "screen_after": "web"
 },
