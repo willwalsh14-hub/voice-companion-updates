@@ -286,6 +286,15 @@ class CalendarSourceFailingTests(CalendarHarness):
         self.assertEqual(self.said(), 'Showing Calendar, Outlook, vet@outlook.com. Today, Monday, October 26. No events. '
                                       'Calendar, Outlook, vet@outlook.com could not be read.')
 
+    def test_asking_from_another_screen_names_a_calendar_that_cannot_be_read(self):
+        # "What's on my calendar today?" must not say the day is clear when a calendar was not read.
+        self.assertEqual(app.handle("What's on my calendar today?", 'awake'), 'awake')
+        self.assertEqual(self.said(), 'Today, Monday, October 26. 2 events. Ten thirty AM to eleven AM, Doctor appointment, '
+                                      'me@gmail.com. Five PM to six PM, Soccer practice, Family. The Calendar calendar could not be read.')
+        with mock.patch.object(calendar_screen, 'events_on', return_value=([], ['Calendar'])):
+            app.handle('What do I have tomorrow?', 'awake')
+        self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. No events. The Calendar calendar could not be read.')
+
 
 class CalendarOneAccountTests(CalendarHarness):
     """One account (the usual simulated Thunderbird): nothing about choosing is said or offered."""

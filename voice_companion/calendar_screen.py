@@ -334,18 +334,20 @@ def tell_day(m, words, mode):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode
     try:
-        events, _ = events_on(day)
+        events, failed = events_on(day)
     except thunderbird_pim.PimError as exc:
         m.speak(str(exc))
         return mode
     head = spoken_day(day, today(m)) + '. '
+    # A calendar that could not be read is named, so a clear day is never said by mistake.
+    missing = (' ' + ' '.join(failed_words(name) for name in failed[:3])) if failed else ''
     if not events:
-        m.speak(head + 'No events.')
+        m.speak(head + 'No events.' + missing)
         return mode
     lines = [event.line(day) for event in events[:12]]
     more = len(events) - len(lines)
     m.speak(head + str(len(events)) + (' event. ' if len(events) == 1 else ' events. ') + '. '.join(lines) + '.' +
-            (' And ' + str(more) + ' more. Open Calendar to hear them.' if more > 0 else ''))
+            (' And ' + str(more) + ' more. Open Calendar to hear them.' if more > 0 else '') + missing)
     return mode
 
 
