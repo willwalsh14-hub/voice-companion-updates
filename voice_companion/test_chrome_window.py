@@ -97,6 +97,29 @@ class KeeperTests(unittest.TestCase):
         self.desktop.list = [(pid, w._replace(minimized=False) if w.handle == 40 else w) for pid, w in self.desktop.list]
         self.assertEqual(self.keeper.poll(), 1)
 
+    def test_a_page_brought_to_the_front_gives_the_keyboard_back(self):
+        self.launch()
+        self.desktop.brought.clear()
+        # YouTube's video page is brought to the front: Chrome restores its window and takes the keys.
+        self.desktop.list = [(pid, w._replace(minimized=False) if w.handle == 40 else w) for pid, w in self.desktop.list]
+        self.desktop.front = 40
+        self.assertEqual(self.keeper.poll(), 1)
+        self.assertEqual(self.desktop.brought, [900])
+
+    def test_a_hidden_window_with_the_keyboard_gives_it_back(self):
+        self.launch()
+        self.desktop.brought.clear()
+        self.desktop.front = 40
+        self.assertEqual(self.keeper.poll(), 0)
+        self.assertEqual(self.desktop.brought, [900])
+
+    def test_the_users_own_chrome_keeps_the_keyboard(self):
+        self.launch()
+        self.desktop.brought.clear()
+        self.desktop.front = 30
+        self.keeper.poll()
+        self.assertEqual(self.desktop.brought, [])
+
     def test_the_keyboard_is_not_moved_when_it_never_left(self):
         self.keeper.before_launch()
         self.rows = table((400, (200, 'chrome.exe')))

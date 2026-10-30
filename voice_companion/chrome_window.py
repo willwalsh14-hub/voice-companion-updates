@@ -122,11 +122,19 @@ class GuidedChromeWindow:
             pass
 
     def poll(self):
+        """Hide any guided Chrome window that shows. If one took the keyboard (a new tab or
+        window, or a page brought to the front), give the keyboard back."""
         if not self.pids:
             return 0
         count = 0
         with self.lock:
-            for window in self.desktop.windows(self.pids):
+            windows = self.desktop.windows(self.pids)
+            try:
+                foreground = self.desktop.foreground()
+            except Exception:
+                foreground = 0
+            took_keys = any(window.handle == foreground for window in windows)
+            for window in windows:
                 # A new window (a pop-up) is hidden too; one shown again by Chrome is hidden again.
                 if window.tool and window.minimized:
                     continue
@@ -134,6 +142,8 @@ class GuidedChromeWindow:
                     self.desktop.tuck(window.handle); self.tucked.add(window.handle); count += 1
                 except OSError:
                     pass
+        if took_keys:
+            self._give_back_keyboard()
         return count
 
     def _run(self):
