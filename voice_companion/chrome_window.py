@@ -6,9 +6,11 @@ Chrome headless. Google treats headless Chrome as a robot: searches went to Goog
 2026). Now the background choice runs the same Chrome as "Show the browser window",
 with a real window that is kept off the screen, minimized, off the taskbar and out of
 Alt+Tab. Websites see an ordinary Chrome; nothing about Chrome's name is changed.
+Since 0.2.181 the window is not minimized: a minimized Chrome stops drawing, and videos
+then failed ("Something went wrong"). It is moved off every screen instead.
 
-How it hides: the same way as Thunderbird's window (window_hiding.py): hide the
-window, give it the tool-window style, show it again minimized and inactive. Only the
+How it hides: as Thunderbird's window (window_hiding.py): hide the window, give it
+the tool-window style, then show it again, inactive, off every screen (Win32Desktop.park). Only the
 Chrome that Voice Companion started is touched, never the user's own Chrome: its
 browser process is the one that appeared, under Voice Companion's own Playwright
 driver, while guided Chrome started. The keyboard goes back to the window that had
@@ -136,10 +138,12 @@ class GuidedChromeWindow:
             took_keys = any(window.handle == foreground for window in windows)
             for window in windows:
                 # A new window (a pop-up) is hidden too; one shown again by Chrome is hidden again.
-                if window.tool and window.minimized:
-                    continue
+                # Parked off the screen, not minimized: a minimized Chrome stops drawing, and YouTube
+                # then said "Something went wrong" (Will, October 30, 2026).
                 try:
-                    self.desktop.tuck(window.handle); self.tucked.add(window.handle); count += 1
+                    if window.tool and not window.minimized and self.desktop.off_screen(window.handle):
+                        continue
+                    self.desktop.park(window.handle); self.tucked.add(window.handle); count += 1
                 except OSError:
                     pass
         if took_keys:

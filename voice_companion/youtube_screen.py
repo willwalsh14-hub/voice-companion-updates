@@ -18,7 +18,12 @@ combines them in its own links), else from youtube_page.FILTERS.
 Lists (Home, search results, subscriptions, history, Watch later, liked
 videos, playlists, Up next, comments, chapters) use Up and Down, Home and
 End, and Enter. Single letters control the video, as on YouTube itself
-(K, J, L, M, C, F). Alt opens the YouTube actions menu with every action.
+(K, M, C, F). Alt opens the YouTube actions menu with every action.
+
+While a video plays you are in the player (Will, October 30, 2026): Up and Down
+change the volume, Left and Right skip back and forward, Space or K plays and
+pauses, N and P go to the next and previous video. Escape goes back to the list
+you came from, and the video keeps playing.
 
 Videos play in a tab of their own, so the lists can still be browsed while a
 video plays. If the browser cannot open a second tab, the video and the lists
@@ -58,13 +63,14 @@ PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to slee
                 'what version', 'toggle audio', 'media', 'media menu', 'open media', 'radio', 'podcasts', 'media player')
 HELP = ('YouTube. The YouTube menu has Search, Home, and your own lists. Up and Down Arrow move. Enter chooses. '
         'Control+F searches: type or say your words, then press Enter. Control+Shift+F changes the filters. '
-        'On a list, Enter plays a video. Space or K plays and pauses. Left and Right Arrow, or J and L, skip back and forward. '
-        'Alt opens the actions menu. Escape goes back.')
+        'On a list, Enter plays a video and opens the player. In the player, Up and Down Arrow change the volume. '
+        'Left and Right Arrow skip back and forward. Space or K plays and pauses. N plays the next video, and P the one before. '
+        'Escape goes back to your list, and the video keeps playing. Alt opens the actions menu.')
 
 # Keys on the YouTube screen, as spoken commands (input_parity.SCREEN_KEYS uses this).
 KEYS = {
     'F1': 'help with youtube', 'Ctrl+F': 'search youtube', 'Ctrl+Shift+F': 'search filters', 'F5': 'refresh youtube',
-    'Space': 'play or pause video', 'K': 'play or pause video', 'J': 'skip back', 'L': 'skip forward',
+    'Space': 'play or pause video', 'K': 'play or pause video',
     '0': 'restart video', 'M': 'mute or unmute', 'Ctrl+Up': 'video volume up', 'Ctrl+Down': 'video volume down',
     'comma': 'slower video', 'period': 'faster video', 'C': 'captions on or off', 'R': 'read caption', 'Q': 'video quality',
     'N': 'next video', 'P': 'previous video', 'A': 'autoplay on or off', 'F': 'video full screen',
@@ -104,6 +110,8 @@ DEFAULT_CHOICE = {'upload date': 'Any time', 'type': 'Any type', 'length': 'Any 
 UNEXPECTED = ('YouTube did not answer as expected, so that could not be done. '
               'Try again, or say open in browser to use the page itself.')
 NO_VIDEO = 'No video is playing. Choose a video and press Enter.'
+PLAYER_KEYS = 'Up and Down change the volume. Left and Right skip. Escape goes back to your list.'
+LOADING = 'Loading video.'
 # "What's playing?" and F3 on this screen when nothing at all plays; not the radio hint.
 NOTHING_PLAYING = 'Nothing is playing. Choose a video and press Enter to play it.'
 SIGN_IN_NEEDED = ('You are not signed in to YouTube. To {action}, say sign in. '
@@ -369,6 +377,8 @@ class YouTubeScreen:
 
     def describe(self, lead=''):
         view = self.view()
+        if view and view['kind'] == 'player':
+            return lead + self.player_words()
         if not view:
             return lead + 'No list is open. Press Control+F to search, or Escape for the YouTube menu.'
         items = view['items']
@@ -380,6 +390,37 @@ class YouTubeScreen:
         if view['kind'] == 'menu' and items[index][1]:
             said += ' ' + spoken_key(items[index][1]) + '.'
         return said
+
+    def player_words(self):
+        """What the player says when you come to it."""
+        if not self.has_video():
+            return NO_VIDEO
+        title = (self.video or {}).get('title') or 'The video'
+        try:
+            state = self.player.state()
+        except YouTubeError:
+            state = {}
+        if state.get('error'):
+            return 'YouTube says: ' + state['error'].rstrip('.') + '. ' + PLAYER_KEYS
+        where = ''
+        if state.get('time') is not None and not state.get('live'):
+            where = ' ' + yp.spoken_length(int(state.get('time') or 0)) + (
+                ' of ' + yp.spoken_length(int(state['duration'])) if state.get('duration') else '') + '.'
+        return ('Player. ' + title + ('. Paused.' if state.get('paused') else '. Playing.') + where + ' ' + PLAYER_KEYS)
+
+    def open_player(self, lead=''):
+        """The player: keys control the video until Escape goes back to the list."""
+        problem = self.need_video()
+        if problem:
+            return lead + problem
+        self.push_player()
+        return lead + self.player_words()
+
+    def push_player(self):
+        top = self.view()
+        if top and top['kind'] == 'player':
+            return
+        self.views.append({'kind': 'player', 'name': 'player', 'title': 'Player', 'items': [], 'index': 0, 'empty': ''})
 
     def push(self, view, lead=''):
         """Show a list. A list of the same kind and name replaces the one on top."""
@@ -758,6 +799,9 @@ class YouTubeScreen:
             return self.open_list(url, 'Playlist: ' + item['title'], 'playlist')
         if item['kind'] == 'ad':
             return 'This is an ad. Ads open in the web browser. Say open in browser to see it.'
+        if self.has_video() and self.video.get('id') == item.get('id'):
+            return self.open_player()   # the video playing now: back to its player, not loaded again
+        self.m.speak_status(LOADING)
         return self.play(item)
 
     def open_list(self, url, title, name):
@@ -791,6 +835,7 @@ class YouTubeScreen:
         self.last = state
         self.video['title'] = state.get('title') or self.video['title']
         self.video['channel'] = state.get('channel') or self.video['channel']
+        self.push_player()
         said = lead + 'Playing ' + self.video['title'] + '.'
         if state.get('ad', {}).get('showing'):
             said += ' ' + self.ad_words(state, first=True)
@@ -1026,6 +1071,7 @@ class YouTubeScreen:
         if not self.played or self.played[-1]['id'] != self.video['id']:
             self.played.append(dict(self.video))
         self.last = state
+        self.push_player()
         said = lead + 'Playing ' + self.video['title'] + '.'
         if state.get('ad', {}).get('showing'):
             said += ' ' + self.ad_words(state, first=True)
@@ -1369,6 +1415,9 @@ class YouTubeScreen:
                 self.player.wait_for_player()
             except Exception:
                 pass
+        on_player = bool(self.view() and self.view()['kind'] == 'player')
+        if on_player:
+            self.views.pop()   # the list under the player loads again too, then the player is back on top
         view = self.view()
         if view and view['kind'] == 'list' and view.get('name') in yp.FEEDS:
             said = self.load(view['name'], 'YouTube. ')
@@ -1376,6 +1425,9 @@ class YouTubeScreen:
             said = self.describe('YouTube, ' + view['title'] + '. ')
         else:
             said = self.show_menu()
+        if on_player and self.has_video():
+            self.push_player()
+            said = self.player_words()
         try:
             signed = self.lists.signed_in()
         except YouTubeError:
@@ -1563,11 +1615,17 @@ def navigation_key(m, key):
     if key.startswith('Letter:'):
         m.choose_menu_letter(key[7:], MODE)
         return None
+    view = s.view()
+    if view and view['kind'] == 'player':
+        # The player: arrows control the video (Will, October 30, 2026). Letters work as on a list.
+        mapped = {'Up': 'video volume up', 'Down': 'video volume down', 'Left': 'skip back', 'Right': 'skip forward',
+                  'Enter': 'play or pause video', 'Home': 'restart video', 'Escape': 'go back'}.get(key)
+        if mapped or key in ('End', 'Next', 'Prior', 'Tab', 'ShiftTab'):
+            return mapped
     from input_parity import screen_command
     direct = screen_command(key, MODE)
     if direct:
         return direct
-    view = s.view()
     if view and view['kind'] in MENU_KINDS and key in ('Left', 'Right'):
         return 'previous' if key == 'Left' else 'next'   # as in the app's other menus
     return {'Up': 'previous', 'Down': 'next', 'Home': 'first item', 'End': 'last item', 'Enter': 'enter',
@@ -1645,6 +1703,8 @@ COMMANDS = {
     'refresh youtube': 'refresh', 'refresh': 'refresh', 'reload': 'refresh', 'load more': 'more', 'more videos': 'more',
     'open in browser': 'browser', 'show the page': 'browser', 'use the page': 'browser', 'open the page': 'browser',
     'where am i': 'where', 'what list is this': 'where',
+    'player': 'player', 'video player': 'player', 'player controls': 'player', 'open player': 'player', 'open the player': 'player',
+    'back to player': 'player', 'back to the player': 'player', 'go to player': 'player', 'go to the player': 'player',
     'page down': 'page down', 'next page': 'page down', 'page up': 'page up', 'previous page': 'page up',
     'next': 'next item', 'previous': 'previous item', 'first item': 'first', 'last item': 'last', 'start of list': 'first',
     'end of list': 'last', 'top of list': 'first', 'bottom of list': 'last', 'next item': 'next item', 'previous item': 'previous item',
@@ -1870,7 +1930,7 @@ def run(m, s, action, raw, command):
         'menu': s.show_menu, 'clear filters': s.clear_filters, 'where': s.where,
         'next item': lambda: s.move(1), 'previous item': lambda: s.move(-1), 'first': lambda: s.move(to='first'),
         'last': lambda: s.move(to='last'), 'enter': s.enter,
-        'page down': lambda: s.page_move(1), 'page up': lambda: s.page_move(-1),
+        'page down': lambda: s.page_move(1), 'page up': lambda: s.page_move(-1), 'player': s.open_player,
     }
     if action == 'play' and not s.has_video():
         # "Play" on a chosen video, before any video plays: play it, as Enter does.
@@ -1915,7 +1975,7 @@ def run(m, s, action, raw, command):
         if seconds is None or not 1 <= seconds <= 3600:
             return 'Say a time from 1 second to 1 hour, such as 30 seconds.'
         s.skip = seconds
-        return 'J, L and the arrows now skip ' + yp.spoken_length(seconds) + '.'
+        return 'Left and Right Arrow now skip ' + yp.spoken_length(seconds) + '.'
     if action == 'speed':
         try:
             from task_navigation import spoken_speed
@@ -1966,6 +2026,17 @@ def go_back(m, s):
     s.views.pop()
     if not s.views or s.view()['kind'] == 'menu':
         return s.show_menu()   # Escape from a list comes back to the YouTube menu
+    if s.view()['kind'] == 'player':
+        if not s.has_video():
+            s.views.pop()      # the video ended or closed: straight back to the list
+            return go_back_to_list(s)
+        return s.describe()    # back from chapters, comments or quality: the player again
+    return s.describe('Back to ' + s.view()['title'] + '. ')
+
+
+def go_back_to_list(s):
+    if not s.views or s.view()['kind'] == 'menu':
+        return s.show_menu()
     return s.describe('Back to ' + s.view()['title'] + '. ')
 
 

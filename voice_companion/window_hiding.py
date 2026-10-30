@@ -131,7 +131,8 @@ class Win32Desktop:
                 ('SetWindowLongPtrW', long_ptr, [w.HWND, ctypes.c_int, long_ptr]),
                 ('GetForegroundWindow', w.HWND, []), ('SetForegroundWindow', w.BOOL, [w.HWND]),
                 ('BringWindowToTop', w.BOOL, [w.HWND]), ('AttachThreadInput', w.BOOL, [w.DWORD, w.DWORD, w.BOOL]),
-                ('SetWindowPos', w.BOOL, [w.HWND, w.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.UINT])):
+                ('SetWindowPos', w.BOOL, [w.HWND, w.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.UINT]),
+                ('GetWindowRect', w.BOOL, [w.HWND, ctypes.POINTER(w.RECT)])):
             function = getattr(user, name); function.restype = result; function.argtypes = arguments
         kernel.OpenProcess.restype = w.HANDLE; kernel.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
         kernel.QueryFullProcessImageNameW.restype = w.BOOL
@@ -203,6 +204,27 @@ class Win32Desktop:
         self.user.SetWindowLongPtrW(handle, self.GWL_EXSTYLE, (before | self.WS_EX_TOOLWINDOW) & ~self.WS_EX_APPWINDOW)
         self.user.ShowWindow(handle, self.SW_SHOWMINNOACTIVE)
         return before
+
+    OFF_SCREEN = -32000
+
+    def park(self, handle):
+        """Off the taskbar and out of Alt+Tab, and off every screen, but not minimized: a
+        minimized window stops drawing, and a video in it stops (guided Chrome, October 30, 2026).
+        Returns the style to put back."""
+        before = self.style(handle)
+        self.user.ShowWindow(handle, self.SW_HIDE)
+        self.user.SetWindowLongPtrW(handle, self.GWL_EXSTYLE, (before | self.WS_EX_TOOLWINDOW) & ~self.WS_EX_APPWINDOW)
+        if self.user.IsIconic(handle):
+            self.user.ShowWindow(handle, 4)   # SW_SHOWNOACTIVATE: restored, without the keyboard
+        self.user.SetWindowPos(handle, None, self.OFF_SCREEN, self.OFF_SCREEN, 0, 0, 0x0001 | 0x0004 | 0x0010)  # no size, z-order or activation
+        self.user.ShowWindow(handle, self.SW_SHOWNA)
+        return before
+
+    def off_screen(self, handle):
+        rect = self.w.RECT()
+        if not self.user.GetWindowRect(handle, self.ctypes.byref(rect)):
+            return False
+        return rect.right <= -10000 or rect.bottom <= -10000
 
     def untuck(self, handle, style=None):
         """The window's own style again, so it is back on the taskbar and in Alt+Tab."""

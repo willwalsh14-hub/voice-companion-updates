@@ -268,6 +268,8 @@ class ScreenTests(LiveYouTube):
     def test_a_video_plays_in_its_own_tab_and_the_list_stays(self):
         screen = self.playing()
         self.assertIsNot(screen.video_page, screen.list_page)
+        self.press('Escape')   # from the player back to the list; the video plays on
+        self.assertTrue(self.last().startswith('Back to Home.'), self.last())
         self.press('Down')
         self.assertTrue(self.last().startswith('How to bake bread'))
         self.press('F3')
@@ -282,8 +284,8 @@ class ScreenTests(LiveYouTube):
         self.say('Play.')
         self.assertEqual(self.last(), 'No video is playing. Choose a video and press Enter.')   # a channel, not a video
         self.press('Up')
-        self.assertEqual(self.say('Play.'), 'youtube')
         chosen = self.ys.SCREEN.current()
+        self.assertEqual(self.say('Play.'), 'youtube')
         self.assertEqual(chosen['title'], 'Bread for beginners')
         self.assertEqual(self.ys.SCREEN.played[-1]['id'], chosen['id'])   # the saved watch page names it as it likes
         self.assertTrue(self.last().startswith('Playing '), self.last())
@@ -323,11 +325,37 @@ class ScreenTests(LiveYouTube):
         self.press('Enter')
         self.assertEqual(window.reclaim_focus.call_count, 2)   # the video's own tab
 
+    def test_enter_says_loading_then_the_player_has_the_keys_and_escape_returns_to_the_list(self):
+        # Will, October 30, 2026: "say loading video when I hit enter"; in the player, Up and Down
+        # are the volume and Left and Right skip; one Escape goes back to the results.
+        self.say('YouTube', 'awake'); self.say('Search for bread.')
+        self.said.clear()
+        self.press('Enter')
+        self.assertEqual(self.said[0], 'Loading video.')
+        self.assertTrue(self.last().startswith('Playing '), self.last())
+        self.press('Down')
+        self.assertEqual(self.last(), 'Volume 90 percent.')
+        self.press('Right')
+        self.assertTrue(self.last().startswith('Forward 10 seconds.'), self.last())
+        self.press('Escape')
+        self.assertTrue(self.last().startswith('Back to Results for bread.'), self.last())
+        self.assertTrue(self.ys.SCREEN.has_video())          # it keeps playing
+        self.press('Down')                                  # the list moves again
+        self.assertTrue(self.last().startswith('Channel: '), self.last())
+        self.press('Up'); self.said.clear()
+        self.press('Enter')                                 # the video playing now: its player, not loaded again
+        self.assertNotIn('Loading video.', self.said)
+        self.assertTrue(self.last().startswith('Player. '), self.last())
+        self.press('Escape')
+        self.assertEqual(self.say('Player.'), 'youtube')
+        self.assertTrue(self.last().startswith('Player. '), self.last())
+
     def test_player_keys(self):
         self.playing()
         steps = [('K', 'Paused.'), ('Space', 'Playing.'), ('Right', 'Forward 10 seconds. 10 seconds of 3 minutes 33 seconds.'),
                  ('Right', 'Forward 10 seconds. 20 seconds of 3 minutes 33 seconds.'),
-                 ('J', 'Back 10 seconds. 10 seconds of 3 minutes 33 seconds.'), ('Left', 'Start of the video.'),
+                 ('Left', 'Back 10 seconds. 10 seconds of 3 minutes 33 seconds.'), ('Left', 'Start of the video.'),
+                 ('Down', 'Volume 90 percent.'), ('Up', 'Volume 100 percent.'),
                  ('5', '50 percent. Now at 1 minute 46 seconds of 3 minutes 33 seconds.'), ('0', 'Start of the video.'),
                  ('period', 'Speed 1.25.'), ('comma', 'Normal speed.'), ('Ctrl+Down', 'Volume 90 percent.'),
                  ('Ctrl+Up', 'Volume 100 percent.'), ('Ctrl+Up', 'Loudest. Volume 100 percent.'), ('M', 'Sound off.'), ('M', 'Sound on.'),
@@ -340,8 +368,8 @@ class ScreenTests(LiveYouTube):
                 self.assertEqual(self.press(key), 'youtube')
                 self.assertEqual(self.last(), expected)
         self.say('skip amount 30 seconds')
-        self.assertEqual(self.last(), 'J, L and the arrows now skip 30 seconds.')
-        self.press('L')
+        self.assertEqual(self.last(), 'Left and Right Arrow now skip 30 seconds.')
+        self.press('Right')
         self.assertEqual(self.last(), 'Forward 30 seconds. 30 seconds of 3 minutes 33 seconds.')
         self.say('Forward 1 minute.')
         self.assertEqual(self.last(), 'Forward 1 minute. 1 minute 30 seconds of 3 minutes 33 seconds.')
@@ -355,7 +383,11 @@ class ScreenTests(LiveYouTube):
         self.assertEqual(self.last(), 'Chapters. Chorus. 1 minute 25 seconds, 3 of 3. Press Enter to go there.')
         self.press('Home'); self.press('Enter')
         self.assertEqual(self.last(), 'Intro. Now at 0 seconds of 3 minutes 33 seconds.')
-        self.press('Escape')
+        self.press('Escape')    # chapters, back to the player
+        self.assertTrue(self.last().startswith('Player. Never Gonna Give You Up.'), self.last())
+        self.press('Escape')    # the player, back to the list
+        self.assertTrue(self.last().startswith('Back to Home.'))
+        self.press('J'); self.press('L')   # J and L no longer do anything (Will, October 30, 2026)
         self.assertTrue(self.last().startswith('Back to Home.'))
 
     def test_details_description_comments_up_next_and_next_video(self):
@@ -485,7 +517,9 @@ class ScreenTests(LiveYouTube):
         self.assertTrue(any(url.startswith('https://accounts.google.com/') for url in [self.page.url]), self.page.url)
         # Back from Google's page, the list and the video load again with the account.
         self.assertEqual(self.say('Back to YouTube.', 'web'), 'youtube')
-        self.assertTrue(self.last().startswith('You are still signed out. YouTube. Home. 5 items.'), self.last())
+        self.assertTrue(self.last().startswith('You are still signed out. Player. Never Gonna Give You Up.'), self.last())
+        self.press('Escape')
+        self.assertTrue(self.last().startswith('Back to Home.'), self.last())
         self.assertTrue(screen.has_video())
 
     def test_search_filters_and_channels(self):
