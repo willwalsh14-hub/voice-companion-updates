@@ -83,8 +83,10 @@ COMPLETE_LIMIT = 3000
 PAGE = 10          # Page Down and Page Up move this many items
 PREFETCH = 5       # the next part is fetched when this few items are left
 MORE_WAITING = ', and more load as you move down. '
-MENU = (('Search', 'Ctrl+F', 'search prompt'), ('Home', '', 'home'), ('Subscriptions', '', 'subscriptions'),
-        ('History', '', 'history'), ('Watch later', '', 'watch_later'), ('Liked videos', '', 'liked'),
+# Subscriptions is every channel you subscribe to (Will, October 29, 2026); their newest
+# videos are their own item.
+MENU = (('Search', 'Ctrl+F', 'search prompt'), ('Home', '', 'home'), ('Subscriptions', '', 'channels'),
+        ('New from subscriptions', '', 'subscriptions'), ('History', '', 'history'), ('Watch later', '', 'watch_later'), ('Liked videos', '', 'liked'),
         ('My playlists', '', 'playlists'), ('@account', '', '@account'))
 MENU_TITLE = 'YouTube menu'
 MENU_KINDS = ('menu', 'filters', 'choices')   # lists where letters move to the next name
@@ -1615,8 +1617,9 @@ COMMANDS = {
     'sign out': 'sign out', 'sign out of youtube': 'sign out', 'log out': 'sign out',
     # lists
     'home': 'home', 'youtube home': 'home', 'home feed': 'home', 'go home': 'home', 'recommended': 'home',
-    'subscriptions': 'subscriptions', 'new from subscriptions': 'subscriptions', 'subscription videos': 'subscriptions',
-    'my subscriptions': 'channels', 'subscribed channels': 'channels', 'my channels': 'channels',
+    'subscriptions': 'channels', 'my subscriptions': 'channels', 'subscribed channels': 'channels', 'my channels': 'channels',
+    'new from subscriptions': 'subscriptions', 'subscription videos': 'subscriptions', 'new from my subscriptions': 'subscriptions',
+    'new subscription videos': 'subscriptions', 'latest from subscriptions': 'subscriptions',
     'history': 'history', 'watch history': 'history', 'my history': 'history',
     'watch later': 'watch_later', 'my watch later': 'watch_later', 'watch later list': 'watch_later',
     'liked videos': 'liked', 'my liked videos': 'liked',

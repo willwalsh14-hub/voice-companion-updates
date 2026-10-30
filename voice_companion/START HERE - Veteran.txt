@@ -2187,10 +2187,10 @@ In a document, email, or note, spoken words such as "Bigger text" are typed as t
 31.1 Open YouTube
 YouTube is in the Media menu. Companion uses the real YouTube website, but you hear simple menus and lists instead of the page.
 1. Say "YouTube". Or choose Media on the main menu, then YouTube.
-2. You hear the YouTube menu. It has Search, Home, Subscriptions, History, Watch later, Liked videos, My playlists, and Sign in or Sign out.
+2. You hear the YouTube menu. It has Search, Home, Subscriptions, New from subscriptions, History, Watch later, Liked videos, My playlists, and Sign in or Sign out.
 3. Press Down Arrow and Up Arrow to move. Or press the first letter of a name, such as H for Home.
 4. Press Enter to open the item you hear. You can also say its name, such as "Home" or "History".
-5. In a list, each video says its title, channel, length, views, and age. At the end of the list, Down Arrow loads more videos.
+5. In a list, each video says its title, channel, length, views, and age. Lists keep going: more videos load as you move down. Page Down and Page Up move ten at a time. You can also say "Next page" or "Previous page".
 6. Press Enter to play the video you hear. On a channel or playlist, Enter opens its videos.
 Live videos, Shorts, channels, playlists, and ads say what they are first.
 Escape goes back one list. From a list, Escape goes back to the YouTube menu. From the YouTube menu, Escape goes to the Media menu.
@@ -2281,7 +2281,8 @@ Your likes, subscriptions, playlists, and history come from your own YouTube acc
 - To save the video, say "Save video", or press W. Choose Watch later or a playlist, then press Enter.
 - To save it straight to Watch later, say "Save to Watch later".
 - To post a comment, say "Post comment", then your words. You hear your comment first, and it is posted only if you say Yes. Everyone can see it.
-- Your own lists are in the YouTube menu: Subscriptions, History, Watch later, Liked videos, and My playlists. You can also say their names. To hear the channels you follow, say "Subscribed channels".
+- Your own lists are in the YouTube menu. Subscriptions lists every channel you follow. New from subscriptions has their newest videos. History, Watch later, Liked videos, and My playlists are there too. You can also say their names.
+- The last item in the YouTube menu says Sign out when you are signed in, and Sign in when you are not.
 When you are signed out, Home, search, and playing still work. Account actions tell you that you need to sign in, and how.
 
 31.8 Sign in when you use embedded Edge

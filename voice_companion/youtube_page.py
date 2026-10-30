@@ -37,7 +37,7 @@ SIGN_OUT_URL = 'https://accounts.google.com/Logout?service=youtube&continue=' + 
 FEEDS = {
     'home': ('Home', '/'),
     'subscriptions': ('New from your subscriptions', '/feed/subscriptions'),
-    'channels': ('Your subscriptions', '/feed/channels'),
+    'channels': ('Subscriptions', '/feed/channels'),
     'history': ('History', '/feed/history'),
     'watch_later': ('Watch later', '/playlist?list=WL'),
     'liked': ('Liked videos', '/playlist?list=LL'),

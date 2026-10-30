@@ -154,7 +154,7 @@ class ScreenTests(DataPages):
 
     def test_every_subscribed_channel_is_listed(self):
         self.say('YouTube.', 'awake'); self.say('My subscriptions.')
-        self.assertTrue(self.last().startswith('Your subscriptions. 60 items. Channel: Channel 001.'), self.last())
+        self.assertTrue(self.last().startswith('Subscriptions. 60 items. Channel: Channel 001.'), self.last())
         self.press('End')
         self.assertTrue(self.last().startswith('Channel: Channel 060.'), self.last())
 
@@ -169,7 +169,7 @@ class ScreenTests(DataPages):
         self.say('Home.'); self.press('Escape')
         self.assertEqual(self.app.menu_state('youtube')[0][-1], 'Sign out')
         self.press('End')
-        self.assertEqual(self.last(), 'Sign out (S), 8 of 8.')
+        self.assertEqual(self.last(), 'Sign out (S), 9 of 9.')
         self.press('Enter')
         self.assertTrue(self.last().startswith('Sign out of YouTube?'), self.last())
 

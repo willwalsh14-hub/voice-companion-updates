@@ -210,20 +210,20 @@ class MenuAndSearchTests(NoBrowser):
 
     def test_youtube_opens_on_the_youtube_menu(self):
         self.assertEqual(self.app.handle('YouTube.', 'media_menu'), 'youtube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Search (S), 1 of 9. Control+F.')
         self.started.assert_not_called()   # the menu is said at once; no page loads for it
         names, index, _ = self.app.menu_state('youtube')
-        self.assertEqual(names, ['Search', 'Home', 'Subscriptions', 'History', 'Watch later', 'Liked videos',
+        self.assertEqual(names, ['Search', 'Home', 'Subscriptions', 'New from subscriptions', 'History', 'Watch later', 'Liked videos',
                                  'My playlists', 'Sign in or sign out'])   # not known yet: no page has said
         self.assertEqual(index, 0)
         self.press('Down')
-        self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'Home (H), 2 of 9.')
         self.press('Right')   # as in the other menus, Right and Left move too
-        self.assertEqual(self.said[-1], 'Subscriptions (S), 3 of 8.')
+        self.assertEqual(self.said[-1], 'Subscriptions (S), 3 of 9.')
         self.press('Home'); self.press('Up')
-        self.assertEqual(self.said[-1], 'Start of list. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'Start of list. Search (S), 1 of 9. Control+F.')
         self.press('End'); self.press('Down')
-        self.assertEqual(self.said[-1], 'End of list. Sign in or sign out (S), 8 of 8.')
+        self.assertEqual(self.said[-1], 'End of list. Sign in or sign out (S), 9 of 9.')
 
     def test_the_account_item_says_what_youtube_said_last_time(self):
         # Will, October 29: it said Sign in while he was signed in. A page's answer is kept for next time.
@@ -245,9 +245,9 @@ class MenuAndSearchTests(NoBrowser):
         self.assertIsNone(screen_key('youtube', 'h', 0, context))   # H lists chapters only on a video list
         self.assertEqual(screen_key('youtube', 'f', 4, context), 'Ctrl+F')
         self.press('Letter:h')
-        self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'Home (H), 2 of 9.')
         self.press('Letter:h')
-        self.assertEqual(self.said[-1], 'History (H), 4 of 8.')
+        self.assertEqual(self.said[-1], 'History (H), 5 of 9.')
         self.press('Letter:z')
         self.assertEqual(self.said[-1], 'No menu item starts with Z.')
 
@@ -288,7 +288,7 @@ class MenuAndSearchTests(NoBrowser):
         self.press('Enter')
         self.assertEqual(self.said[-1], ys.SEARCH_PROMPT)
         self.press('Escape')
-        self.assertEqual(self.said[-1], 'Search canceled. YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'Search canceled. YouTube menu. Search (S), 1 of 9. Control+F.')
         self.assertNotIn('task_input', self.app.app_context('youtube'))
         self.app.handle('Search YouTube.', 'youtube')
         self.assertEqual(self.said[-1], ys.SEARCH_PROMPT)
@@ -357,12 +357,12 @@ class MenuAndSearchTests(NoBrowser):
                      'items': [{'kind': 'video', 'id': 'a', 'title': 'A', 'url': '', 'channel': ''}]})
         self.assertFalse(self.app.app_context('youtube')['menu_letters'])   # letters are video keys on a list
         self.assertEqual(self.press('Escape'), 'youtube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 9.')
         self.assertEqual(self.app.handle('YouTube menu', 'youtube'), 'youtube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 9.')
         # F5 on the menu has no list to load again; it never opens Home by itself.
         self.press('F5')
-        self.assertEqual(self.said[-1], 'There is no list here to load again. Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'There is no list here to load again. Home (H), 2 of 9.')
         self.assertEqual(self.loaded, [])
 
 

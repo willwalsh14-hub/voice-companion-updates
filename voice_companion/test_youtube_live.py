@@ -233,9 +233,9 @@ class ScreenTests(LiveYouTube):
 
     def test_youtube_opens_from_the_main_menu_and_the_media_menu(self):
         self.assertEqual(self.say('YouTube.', 'awake'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 9. Control+F.')
         self.press('Down')
-        self.assertEqual(self.last(), 'Home (H), 2 of 8.')
+        self.assertEqual(self.last(), 'Home (H), 2 of 9.')
         self.assertEqual(self.press('Enter'), 'youtube')
         self.assertEqual(self.last(), 'Home. 5 items. Never Gonna Give You Up. Rick Astley. 3 minutes 33 seconds. '
                                       '1.6 billion views. 15 years ago, 1 of 5.')
@@ -248,14 +248,14 @@ class ScreenTests(LiveYouTube):
         self.assertEqual((len(names), index), (5, 0))
         # Escape goes to the YouTube menu, on Home; then to the Media menu, on YouTube.
         self.assertEqual(self.press('Escape'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube menu. Home (H), 2 of 8.')
+        self.assertEqual(self.last(), 'YouTube menu. Home (H), 2 of 9.')
         self.assertEqual(self.press('Escape'), 'media_menu')
         self.assertEqual(self.last(), 'Media menu. YouTube (Y), 4 of 4.')
         self.assertEqual(self.press('Enter', 'media_menu'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube menu. Home (H), 2 of 8.')
+        self.assertEqual(self.last(), 'YouTube menu. Home (H), 2 of 9.')
         # Signed out, the last item signs in.
         self.press('End')
-        self.assertEqual(self.last(), 'Sign in (S), 8 of 8.')
+        self.assertEqual(self.last(), 'Sign in (S), 9 of 9.')
 
     def test_end_of_the_list_loads_more_videos(self):
         self.home()
@@ -527,7 +527,7 @@ class ScreenTests(LiveYouTube):
         self.press('Escape')
         self.assertTrue(self.last().startswith('Back to Results for bread.'))
         self.press('Escape')
-        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 9. Control+F.')
         # From any screen, in one sentence.
         self.assertEqual(self.say('Play cats on YouTube', 'awake'), 'youtube')
         self.assertTrue(self.last().startswith('Results for cats.'), self.last())
@@ -598,7 +598,7 @@ class ScreenTests(LiveYouTube):
         self.assertEqual(self.app.handle_keyboard('bread', 'youtube'), 'youtube')
         self.assertTrue(self.last().startswith('Results for bread. 3 items.'), self.last())
         self.press('Escape')
-        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 9. Control+F.')
         # Said: the words come back, then Confirm searches.
         self.press('Ctrl+F')
         self.say('Bread recipes.')
@@ -619,14 +619,14 @@ class ScreenTests(LiveYouTube):
             content_type='text/html', body='<title>Signed out</title><p>You are signed out.</p>'))[-1])
         self.home()
         self.press('Escape'); self.press('End')
-        self.assertEqual(self.last(), 'Sign out (S), 8 of 8.')
+        self.assertEqual(self.last(), 'Sign out (S), 9 of 9.')
         self.press('Enter')
         self.assertEqual(self.last(), 'Sign out of YouTube? This browser is signed out of your Google account too. Say Yes or No.')
         self.say('No.')
         self.assertTrue(signed['in'])
         self.press('Enter'); self.say('Yes.')
         self.assertFalse(signed['in'])
-        self.assertEqual(self.last(), 'You are signed out of YouTube. YouTube menu. Sign in (S), 8 of 8.')
+        self.assertEqual(self.last(), 'You are signed out of YouTube. YouTube menu. Sign in (S), 9 of 9.')
 
     def test_an_empty_home_says_to_search(self):
         self.context.unroute('https://www.youtube.com/**')
@@ -668,7 +668,7 @@ class ScreenTests(LiveYouTube):
         # Back on YouTube, the lists are kept and a video plays in its own tab again.
         self.backend.start = lambda: setattr(self.backend, 'page', self.context.new_page())
         self.assertEqual(self.say('YouTube', 'awake'), 'youtube')
-        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.last(), 'YouTube menu. Search (S), 1 of 9. Control+F.')
         self.say('Home')
         self.press('Enter')
         self.assertEqual(self.last(), 'Playing Never Gonna Give You Up.')
