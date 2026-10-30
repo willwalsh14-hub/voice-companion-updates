@@ -267,3 +267,13 @@ class UnlabeledControlTests(unittest.TestCase):
         self.assertEqual(describe({'role':'field','tag':'input','type':'text','label':'Unlabeled textbox'}),'Unlabeled, edit.')
         # A real name that happens to start with the word is kept.
         self.assertEqual(describe({'role':'button','tag':'button','label':'Unlabeled items'}),'Unlabeled items, button.')
+
+
+class FieldListWordsTests(unittest.TestCase):
+    def test_everyday_names_for_the_fields_list_open_it(self):
+        """"List form fields" searched the page and said the site may have hidden its controls."""
+        from test_web_assistant import FakeBackend
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend());session._refresh()
+            for words in ('List form fields.','list form controls','show form fields','show fields'):
+                self.assertTrue(session.command(words).startswith('Found '),words)

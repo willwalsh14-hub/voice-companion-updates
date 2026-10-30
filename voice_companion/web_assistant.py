@@ -3419,7 +3419,7 @@ class WebSession:
         if command in ('fill out this form','fill out this form for me','help me fill this form',
                        'help me with this form','complete this form'):
             return self.fields(guided=True)
-        if command in ('list fields','what fields'): return self.fields()
+        if command in ('list fields','what fields','list form fields','list form controls','show fields','show form fields'): return self.fields()
         match = re.fullmatch(r'fill field (\d+) (?:with|as) (.+)', spoken, re.I)
         if match: return self.fill(match[1], match[2])
         match = re.fullmatch(r'open choice (\d+)', command)
