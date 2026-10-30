@@ -4370,6 +4370,8 @@ def _handle(text, mode, typed=False):
         'switch to command mode':'commands', 'switch to commands mode':'commands',
         'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
         'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
+        # "Switch to" works with every name the guide uses.
+        'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
     }.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
@@ -4383,7 +4385,8 @@ def _handle(text, mode, typed=False):
                'commands':'Commands only. Ordinary speech will not be added as text.',
                'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
         return mode
-    if command in ('what mode', 'which mode', 'what input mode'):
+    if command in ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
+                   'what mode is on', 'what mode is it'):
         # The names the guide and the mode commands use, never the stored word ("mixed").
         speak('Input mode: ' + {'mixed':'Normal mode','commands':'Commands only','dictation':'Dictation only'}.get(INPUT_MODE, INPUT_MODE) + '.')
         return mode

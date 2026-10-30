@@ -159,6 +159,29 @@ class HelpListWordsTests(KeyTestCase):
         self.assertEqual(self.said, ['Set up your microphone (S), 5 of 5.'])
 
 
+class InputModeWordsTests(CompanionTestCase):
+    """"Switch to dictation mode" and "Switch to command mode" worked, but "Switch to normal
+    mode" was not understood. "Which mode?" worked, but "What mode am I in?" did not."""
+
+    def test_switch_to_works_for_every_mode_name(self):
+        for words, mode, name in (('Switch to normal mode.', 'mixed', 'Normal mode.'),
+                                  ('Switch to commands only', 'commands', 'Commands only.'),
+                                  ('switch to dictation only', 'dictation', 'Dictation only.'),
+                                  ('Switch to normal mode', 'mixed', 'Normal mode.')):
+            with self.subTest(words=words):
+                self.said.clear()
+                self.assertEqual(companion.handle(words, 'awake'), 'awake')
+                self.assertEqual(companion.INPUT_MODE, mode)
+                self.assertTrue(self.said[0].startswith(name), self.said)
+
+    def test_questions_about_the_mode_say_it(self):
+        for words in ('What mode am I in?', 'What mode is this?', 'Which mode am I in?', 'What mode is on?'):
+            with self.subTest(words=words):
+                self.said.clear()
+                self.assertEqual(companion.handle(words, 'awake'), 'awake')
+                self.assertEqual(self.said, ['Input mode: Normal mode.'])
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""
