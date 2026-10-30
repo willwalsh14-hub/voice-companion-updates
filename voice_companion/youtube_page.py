@@ -46,6 +46,14 @@ FEEDS = {
 ACCOUNT_FEEDS = ('subscriptions', 'channels', 'history', 'watch_later', 'liked', 'playlists')
 
 
+NO_MORE = 'YouTube did not send the next part of this list. Press F5 to load the list again.'
+
+
+def item_key(item):
+    """What makes two list items the same item."""
+    return (item['kind'], item['id'] or item['url'] or item['title'])
+
+
 class YouTubeError(Exception):
     """A plain message for the user. Never a crash."""
 
@@ -560,10 +568,174 @@ FILTERS_JS = r'''
 }
 '''
 
+# ---------------------------------------------------------------- the page's own data
+# Since 0.2.179 lists are read from the data YouTube sends with the page (ytInitialData),
+# not from what is drawn. The drawn page holds only what has been scrolled into view, and
+# a browser in the background may draw little or nothing, so lists stopped after a few
+# videos and History came out of order (Will, October 29, 2026). The data is complete and
+# in YouTube's own order. The next part of a list is asked for the way YouTube's page asks
+# for it: its "continuation" token, sent to YouTube's own address for the page, from the
+# page, with the page's own sign-in. Reading the drawn page stays as the fallback.
+EXTRACT_JS = r"""
+const T=t=>!t?'':typeof t==='string'?t:(t.simpleText||(t.runs||[]).map(r=>r.text||'').join('')||t.content||'');
+const LABEL=t=>(t&&t.accessibility&&t.accessibility.accessibilityData&&t.accessibility.accessibilityData.label)||'';
+const URL_OF=e=>{e=e||{};const c=e.innertubeCommand||e;const m=((c.commandMetadata||{}).webCommandMetadata||{}).url;if(m)return m;
+  if(c.watchEndpoint&&c.watchEndpoint.videoId)return '/watch?v='+c.watchEndpoint.videoId+(c.watchEndpoint.playlistId?'&list='+c.watchEndpoint.playlistId:'');
+  if(c.reelWatchEndpoint&&c.reelWatchEndpoint.videoId)return '/shorts/'+c.reelWatchEndpoint.videoId;
+  if(c.browseEndpoint){const b=c.browseEndpoint;if(b.canonicalBaseUrl)return b.canonicalBaseUrl;
+    if(/^VL/.test(b.browseId||''))return '/playlist?list='+b.browseId.slice(2);if(b.browseId)return '/channel/'+b.browseId;}
+  return '';};
+const TOKEN=r=>{if(!r)return '';const e=r.continuationEndpoint||(r.button&&r.button.buttonRenderer&&r.button.buttonRenderer.command)||{};
+  if(e.continuationCommand)return e.continuationCommand.token||'';
+  for(const c of ((e.commandExecutorCommand||{}).commands||[]))if(c.continuationCommand)return c.continuationCommand.token||'';return '';};
+const SKIP=new Set(['header','topbar','sidebar','microformat','frameworkUpdates','responseContext','overlay','engagementPanels',
+  'secondaryContents','menu','thumbnail','thumbnailOverlays','onResponseReceivedEndpoints','trackingParams','loggingDirectives',
+  'secondaryResults','playerOverlays','refinements','chipCloudRenderer','feedFilterChipBarRenderer','adSlotMetadata']);
+const VIDEO=['videoRenderer','gridVideoRenderer','compactVideoRenderer','playlistVideoRenderer','playlistPanelVideoRenderer',
+  'videoWithContextRenderer','movieRenderer','compactMovieRenderer'];
+const PLAYLIST=['playlistRenderer','gridPlaylistRenderer','radioRenderer','compactRadioRenderer','compactPlaylistRenderer','gridRadioRenderer'];
+const CHANNEL=['channelRenderer','gridChannelRenderer'];
+const ADS=['adSlotRenderer','promotedVideoRenderer','searchPyvRenderer','inFeedAdLayoutRenderer','promotedSparklesWebRenderer','displayAdRenderer'];
+const firstText=(o,depth)=>{if(!o||typeof o!=='object'||depth>8)return '';for(const k of ['headline','title','videoTitle','primaryText','text']){if(o[k]){const t=T(o[k]);if(t)return t;}}
+  for(const k in o){const t=firstText(o[k],depth+1);if(t)return t;}return '';};
+const timeBadge=r=>{for(const o of (r.thumbnailOverlays||[])){const s=o.thumbnailOverlayTimeStatusRenderer;if(s)return {text:T(s.text),style:s.style||''};}return {text:'',style:''};};
+const extract=(root)=>{
+  const items=[];let token='';
+  const push=(entry)=>{items.push(Object.assign({container:'',title:'',aria:'',href:'',meta:[],rows:[],channel:'',badge:'',overlay:'',live:false,
+    subscribers:'',videos:'',count:'',collection:false,ad:false},entry));};
+  const video=(name,r)=>{
+    const time=timeBadge(r);
+    const live=(r.badges||[]).some(b=>/LIVE/.test(((b||{}).metadataBadgeRenderer||{}).style||''))||time.style==='LIVE';
+    const meta=[T(r.viewCountText)||T(r.shortViewCountText),T(r.publishedTimeText)].filter(Boolean);
+    if(!meta.length&&r.videoInfo)meta.push(T(r.videoInfo));
+    const tag='ytd-'+name.replace(/Renderer$/,'').replace(/[A-Z]/g,c=>'-'+c.toLowerCase())+'-renderer';
+    push({container:tag,title:T(r.title)||T(r.headline),aria:LABEL(r.title),href:URL_OF(r.navigationEndpoint)||(r.videoId?'/watch?v='+r.videoId:''),
+      meta,channel:T(r.ownerText)||T(r.longBylineText)||T(r.shortBylineText),badge:T(r.lengthText)||time.text,
+      overlay:time.style==='LIVE'?'LIVE':time.style==='UPCOMING'?'UPCOMING':time.style==='SHORTS'?'SHORTS':'',live});
+  };
+  const lockup=(r)=>{
+    const type=String(r.contentType||'');
+    const m=((r.metadata||{}).lockupMetadataViewModel)||{};
+    const rows=(((m.metadata||{}).contentMetadataViewModel||{}).metadataRows||[]).map(row=>(row.metadataParts||[]).map(p=>T(p.text)).filter(Boolean)).filter(x=>x.length);
+    const image=r.contentImage||{};
+    const thumb=image.thumbnailViewModel||((image.collectionThumbnailViewModel||{}).primaryThumbnail||{}).thumbnailViewModel||{};
+    let badge='',live=false;
+    for(const o of (thumb.overlays||[])){
+      for(const b of (((o.thumbnailOverlayBadgeViewModel||{}).thumbnailBadges)||[])){const v=b.thumbnailBadgeViewModel||{};badge=badge||T(v.text);
+        if(/LIVE/.test(String(v.badgeStyle||''))||/^live$/i.test(T(v.text)))live=true;}
+      for(const b of (((o.thumbnailBottomOverlayViewModel||{}).badges)||[])){const v=b.thumbnailBadgeViewModel||{};badge=badge||T(v.text);
+        if(/LIVE/.test(String(v.badgeStyle||'')))live=true;}
+    }
+    const onTap=((r.rendererContext||{}).commandContext||{}).onTap;
+    let href=URL_OF(onTap);
+    const playlist=/PLAYLIST|PODCAST|ALBUM/.test(type);
+    if(!href&&r.contentId)href=playlist?'/playlist?list='+r.contentId:'/watch?v='+r.contentId;
+    const channelType=/CHANNEL/.test(type);
+    push({container:'yt-lockup-view-model '+(channelType?'channel':playlist?'playlist':'video'),title:T(m.title),href,rows,
+      badge:playlist?'':badge,count:playlist?badge:'',collection:playlist,live});
+  };
+  const walk=(o,depth)=>{
+    if(!o||typeof o!=='object'||depth>80)return;
+    if(Array.isArray(o)){for(const x of o)walk(x,depth+1);return;}
+    for(const name of VIDEO)if(o[name]){video(name,o[name]);return;}
+    if(o.reelItemRenderer){const r=o.reelItemRenderer;push({container:'ytd-reel-item-renderer shorts',title:T(r.headline),aria:LABEL(r.headline),
+      href:r.videoId?'/shorts/'+r.videoId:URL_OF(r.navigationEndpoint),meta:[T(r.viewCountText)].filter(Boolean),overlay:'SHORTS'});return;}
+    if(o.shortsLockupViewModel){const r=o.shortsLockupViewModel,md=r.overlayMetadata||{};
+      push({container:'ytm-shorts-lockup-view-model shorts',title:T(md.primaryText),aria:r.accessibilityText||'',href:URL_OF(r.onTap)||(r.entityId?'':''),
+        meta:[T(md.secondaryText)].filter(Boolean),overlay:'SHORTS'});return;}
+    if(o.lockupViewModel){lockup(o.lockupViewModel);return;}
+    for(const name of CHANNEL)if(o[name]){const r=o[name];const a=T(r.subscriberCountText),b=T(r.videoCountText);
+      const subs=[a,b].find(t=>/subscriber/i.test(t))||'';const vids=[a,b].find(t=>/video/i.test(t))||'';
+      push({container:'ytd-channel-renderer',title:T(r.title),href:URL_OF(r.navigationEndpoint)||(r.channelId?'/channel/'+r.channelId:''),subscribers:subs,videos:vids});return;}
+    for(const name of PLAYLIST)if(o[name]){const r=o[name];let count=T(r.videoCountText)||T(r.videoCountShortText)||T(r.thumbnailText);
+      if(/^\d[\d,]*$/.test(count))count+=' videos';
+      push({container:'ytd-playlist-renderer',title:T(r.title),href:r.playlistId?'/playlist?list='+r.playlistId:URL_OF(r.navigationEndpoint),
+        channel:T(r.shortBylineText)||T(r.longBylineText),count,collection:true});return;}
+    for(const name of ADS)if(o[name]){push({container:'ytd-ad-slot-renderer',title:firstText(o[name],0),ad:true});return;}
+    if(o.continuationItemRenderer){token=TOKEN(o.continuationItemRenderer)||token;return;}
+    for(const k in o){if(SKIP.has(k))continue;walk(o[k],depth+1);}
+  };
+  walk(root,0);
+  return {items,token};
+};
+"""
+
+# Reads the page's own data. {signedIn, url, ...} with items and token, or data:false when the page has none.
+DATA_JS = r"""
+()=>{
+""" + EXTRACT_JS + r"""
+  let cfg=null;try{cfg=window.ytcfg&&typeof window.ytcfg.get==='function'?window.ytcfg:null;}catch(e){}
+  const logged=cfg?cfg.get('LOGGED_IN'):undefined;
+  const out={url:location.href,title:document.title,signedIn:typeof logged==='boolean'?logged:null,data:false,items:[],token:'',
+             consent:/^consent\./.test(location.hostname)||/consent/.test(location.pathname)};
+  let data=null;try{data=window.ytInitialData;}catch(e){}
+  if(!data||typeof data!=='object')return out;
+  // A page reached inside YouTube's own app keeps the first page's data; only data for this address counts.
+  try{const u=((data.currentVideoEndpoint||data.endpoint||{}).commandMetadata||{}).webCommandMetadata;
+      if(u&&u.url){const want=new URL(u.url,location.origin),here=new URL(location.href);
+        if(want.pathname!==here.pathname)return out;}}catch(e){}
+  const found=extract(data.contents||data);
+  out.data=true;out.items=found.items;out.token=found.token;
+  // YouTube's own words for an empty or signed-out list.
+  const words=[];const look=(o,d)=>{if(!o||typeof o!=='object'||d>40)return;if(Array.isArray(o)){o.forEach(x=>look(x,d+1));return;}
+    for(const k of ['backgroundPromoRenderer','messageRenderer','feedNudgeRenderer','emptyStateViewModel']){if(o[k]){const r=o[k];
+      words.push([T(r.title),T(r.bodyText),T(r.text),T(r.subtitle)].filter(Boolean).join(' '));}}
+    for(const k in o){if(!SKIP.has(k))look(o[k],d+1);}};
+  look(data.contents||{},0);
+  out.promo=words.join(' ').trim();
+  out.promoSignIn=/sign in/i.test(out.promo);
+  return out;
+}
+"""
+
+# The next part of a list: YouTube's page asks its own address with the continuation token.
+# A signed-in request carries the same proof of sign-in the page itself sends (SAPISIDHASH).
+MORE_JS = r"""
+async ([token,search])=>{
+""" + EXTRACT_JS + r"""
+  const cfg=window.ytcfg;
+  if(!cfg||typeof cfg.get!=='function')return {error:'no ytcfg'};
+  const headers={'Content-Type':'application/json','X-Youtube-Client-Name':String(cfg.get('INNERTUBE_CONTEXT_CLIENT_NAME')||1),
+    'X-Youtube-Client-Version':String(cfg.get('INNERTUBE_CLIENT_VERSION')||''),'X-Origin':location.origin,
+    'X-Goog-AuthUser':String(cfg.get('SESSION_INDEX')||0)};
+  const visitor=cfg.get('VISITOR_DATA');if(visitor)headers['X-Goog-Visitor-Id']=visitor;
+  if(cfg.get('DELEGATED_SESSION_ID'))headers['X-Goog-PageId']=cfg.get('DELEGATED_SESSION_ID');
+  const cookie=(name)=>{const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]*)'));return m?m[1]:'';};
+  const sapisid=cookie('SAPISID')||cookie('__Secure-3PAPISID')||cookie('__Secure-1PAPISID');
+  if(sapisid&&window.crypto&&crypto.subtle){
+    const now=Math.floor(Date.now()/1000);
+    const digest=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(now+' '+sapisid+' '+location.origin));
+    const hex=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    headers['Authorization']='SAPISIDHASH '+now+'_'+hex;
+  }
+  const key=cfg.get('INNERTUBE_API_KEY');
+  const address='/youtubei/v1/'+(search?'search':'browse')+'?prettyPrint=false'+(key?'&key='+encodeURIComponent(key):'');
+  let response;
+  try{response=await fetch(address,{method:'POST',credentials:'include',headers,
+    body:JSON.stringify({context:cfg.get('INNERTUBE_CONTEXT'),continuation:token})});}
+  catch(e){return {error:String(e)};}
+  if(!response.ok)return {error:'status '+response.status};
+  let data;try{data=await response.json();}catch(e){return {error:'not json'};}
+  const found=extract(data.onResponseReceivedActions||data.onResponseReceivedCommands||data.continuationContents||data);
+  return {items:found.items,token:found.token};
+}
+"""
+
+
+SIGNED_IN_JS = r'''
+()=>{
+  try{const v=window.ytcfg&&typeof window.ytcfg.get==='function'?window.ytcfg.get('LOGGED_IN'):undefined;if(typeof v==='boolean')return v;}catch(e){}
+  if(document.querySelector('#avatar-btn,button#avatar-btn,ytd-topbar-menu-button-renderer #avatar-btn'))return true;
+  if(document.querySelector('ytd-masthead a[href*="ServiceLogin"],#masthead a[href*="ServiceLogin"],ytd-masthead [aria-label="Sign in"],#masthead [aria-label="Sign in"]'))return false;
+  return null;
+}
+'''
+
 # True once a list, a message or the player is on the page, or it is not YouTube.
 READY_JS = r'''
 ()=>{
   if(!/youtube\.com$/.test(location.hostname))return true;
+  try{if(location.pathname!=='/watch'&&window.ytInitialData&&window.ytcfg)return true;}catch(e){}
   const page=[...document.querySelectorAll('ytd-page-manager > *')].find(e=>!e.hasAttribute('hidden'))||document;
   if(page.querySelector('ytd-rich-item-renderer,ytd-video-renderer,ytd-playlist-video-renderer,ytd-channel-renderer,ytd-grid-video-renderer,yt-lockup-view-model,ytd-reel-item-renderer,ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2'))return true;
   if(page.querySelector('ytd-background-promo-renderer,ytd-message-renderer,yt-empty-state-view-model,ytd-feed-nudge-renderer'))return true;
@@ -744,7 +916,28 @@ class YouTubePage:
             pass   # read whatever is there; read_list says what went wrong
 
     def read_list(self, which='main'):
-        """(items, page facts). Raises YouTubeError with a plain message when nothing can be read."""
+        """(items, page facts). Raises YouTubeError with a plain message when nothing can be read.
+
+        The main list comes from the page's own data when it has it (DATA_JS): every item
+        YouTube sent, in its order, and facts['token'] for the next part (next_part). The
+        drawn page is read when there is no data (and for the related videos beside a video)."""
+        if which == 'main':
+            try:
+                data = self.evaluate(DATA_JS)
+            except YouTubeError:
+                raise
+            except Exception:
+                data = None
+            if isinstance(data, dict) and data.get('consent'):
+                raise YouTubeError('YouTube asks you to accept or reject cookies first. Say open in browser to answer it. '
+                                   'Then say YouTube to come back.')
+            if isinstance(data, dict) and data.get('data') and is_youtube(data.get('url')):
+                items = self.items_from(data.get('items'))
+                if items or data.get('token') or data.get('promo'):
+                    facts = dict(data, source='data')
+                    if not items:
+                        facts['empty'] = data.get('promo') or ''
+                    return items, facts
         try:
             raw = self.evaluate(LIST_JS, which)
         except YouTubeError:
@@ -758,8 +951,15 @@ class YouTubePage:
                                'Then say YouTube to come back.')
         if not is_youtube(raw.get('url')):
             raise YouTubeError('The browser is not on YouTube now. Press F5 to load the list again.')
-        items, seen = [], set()
-        for entry in raw.get('items') or []:
+        if raw.get('signedIn') is None:
+            raw['signedIn'] = self.signed_in()
+        return self.items_from(raw.get('items')), raw
+
+    @staticmethod
+    def items_from(entries, seen=None):
+        """Plain items from what a page reader found, without repeats, in order."""
+        items, seen = [], set() if seen is None else seen
+        for entry in entries or []:
             if not isinstance(entry, dict):
                 continue
             if entry.get('fallback') and not entry.get('title') and not entry.get('aria'):
@@ -770,12 +970,25 @@ class YouTubePage:
                 item = None
             if item is None:
                 continue
-            key = (item['kind'], item['id'] or item['url'] or item['title'])
+            key = item_key(item)
             if key in seen:
                 continue
             seen.add(key)
             items.append(item)
-        return items, raw
+        return items
+
+    def next_part(self, token, search=False):
+        """The next part of a list from its continuation token: (items, next token).
+        Raises YouTubeError when YouTube does not answer."""
+        try:
+            raw = self.evaluate(MORE_JS, [token, bool(search)])
+        except YouTubeError:
+            raise
+        except Exception as exc:
+            raise YouTubeError(NO_MORE) from exc
+        if not isinstance(raw, dict) or raw.get('error'):
+            raise YouTubeError(NO_MORE)
+        return self.items_from(raw.get('items')), str(raw.get('token') or '')
 
     def load_more(self):
         """Scroll to the bottom so the site adds the next part of a long list."""
@@ -976,8 +1189,9 @@ class YouTubePage:
         return value
 
     def signed_in(self):
-        return self.evaluate("()=>document.querySelector('#avatar-btn,button#avatar-btn')?true:"
-                             "(document.querySelector('ytd-masthead a[href*=\"ServiceLogin\"],#masthead a[href*=\"ServiceLogin\"],ytd-masthead [aria-label=\"Sign in\"]')?false:null)")
+        """True, False, or None when the page does not say. YouTube's own setting (ytcfg LOGGED_IN)
+        first: the account button is drawn late, or not at all in a browser in the background."""
+        return self.evaluate(SIGNED_IN_JS)
 
     LIKE = ['like-button-view-model button', '#segmented-like-button button', 'ytd-toggle-button-renderer#like-button button',
             'button[aria-label^="like this video"]', 'button[aria-label^="Like this video"]']
