@@ -1,18 +1,20 @@
 {
-  "version": "0.2.183-test",
+  "version": "0.2.184-test",
   "status": "Testing build",
   "date": "October 30, 2026",
-  "baseline": "0.2.182-test",
-  "scope": "Thunderbird starts and connects by itself, and adding an email account works from start to finish.",
+  "baseline": "0.2.183-test",
+  "scope": "YouTube videos keep playing past the first minute.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Thunderbird record",
+          "title": "YouTube in your own Chrome",
           "details": [
-            "When you add an account, Voice Companion keeps a record of what it said and heard.",
-            "It is named thunderbird-log.txt. Passwords are never written. A helper can read it if something goes wrong."
+            "YouTube stops videos after about a minute in a browser a program controls. It says something went wrong.",
+            "Now YouTube always opens in your own Chrome, so videos play without stopping. This needs the Voice Companion extension in Chrome.",
+            "If Chrome is closed, Voice Companion opens it and gives your keys back. Your keys work the same.",
+            "If a video still stops, it goes on in your own Chrome, from where it stopped."
           ]
         }
       ]
@@ -21,19 +23,9 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Thunderbird starts and connects",
+          "title": "YouTube messages",
           "details": [
-            "Email no longer waits until you press Alt+Tab to Thunderbird and back.",
-            "If Thunderbird is slow, its window comes up for a moment. Then it goes away again.",
-            "Your keys stay in Voice Companion. This works with Thunderbird hidden or minimized."
-          ]
-        },
-        {
-          "title": "Adding an email account",
-          "details": [
-            "A sign-in window Thunderbird opens now comes to the front, and you hear what it is.",
-            "An account Thunderbird added is always connected to Voice Companion too. You hear its address once.",
-            "A work address, such as Microsoft 365, no longer says to type the password in Thunderbird."
+            "YouTube's error no longer ends with the words Learn more."
           ]
         }
       ]
