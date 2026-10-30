@@ -30,25 +30,23 @@ try:
     # First start registers the add-on; let it connect once with a normal window.
     system.launch_background(program)
     note('first start connected', relay.connected.wait(180))
-    import tkinter as tk
-    for show in (7, 4, 7, 4):
-        system.close_program(); live.wait(lambda: not system.running(), 60)
-        if system.running(): live.run(['taskkill', '/F', '/IM', 'thunderbird.exe']); live.wait(lambda: not system.running(), 30)
-        live.wait(lambda: not relay.connected.is_set(), 20)
-        root = tk.Tk(); root.title('VC stand-in'); root.geometry('300x100+10+10'); root.update(); root.focus_force(); root.update()
-        import subprocess as sp
-        info = sp.STARTUPINFO(); info.dwFlags |= sp.STARTF_USESHOWWINDOW; info.wShowWindow = show
-        started = time.monotonic()
-        sp.Popen([str(program)], startupinfo=info, close_fds=True, creationflags=sp.DETACHED_PROCESS | sp.CREATE_NEW_PROCESS_GROUP)
-        ok = False
-        while time.monotonic() - started < 90:
-            root.update()
-            if relay.connected.is_set(): ok = True; break
-            time.sleep(0.2)
-        took = time.monotonic() - started
-        import window_hiding
-        wins = window_hiding.Win32Desktop().windows()
-        note('show=%d' % show, 'connected=%s after %.1fs windows=%r' % (ok, took, wins))
-        root.destroy()
+    import tkinter as tk, window_hiding
+    desktop = window_hiding.Win32Desktop()
+    root = tk.Tk(); root.title('VC stand-in'); root.geometry('300x100+10+10'); root.update(); root.focus_force(); root.update()
+    time.sleep(3); root.update()
+    mains = [w for w in desktop.windows() if w.kind == window_hiding.MAIN_CLASS and not w.owned]
+    for w in mains: desktop.minimize(w.handle)
+    time.sleep(1); root.update(); root.focus_force(); root.update()
+    me = desktop.foreground()
+    note('before', 'fg=%s windows=%r' % (me, desktop.windows()))
+    c1 = system.wake_windows(1); time.sleep(0.5); root.update()
+    note('wake 1', 'changed=%r fg_same=%s windows=%r' % (c1, desktop.foreground() == me, desktop.windows()))
+    for w in mains: desktop.minimize(w.handle)
+    time.sleep(0.5); root.update()
+    c2 = system.wake_windows(2); time.sleep(0.5); root.update()
+    note('wake 2', 'changed=%r fg_back=%s fg=%s me=%s windows=%r' % (c2, desktop.foreground() == me, desktop.foreground(), me, desktop.windows()))
+    system.settle_windows(c1 + c2); time.sleep(0.5)
+    note('settled', '%r' % desktop.windows())
+    root.destroy()
 except Exception:
     note('crash', traceback.format_exc())
