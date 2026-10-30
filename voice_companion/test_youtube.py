@@ -214,7 +214,7 @@ class MenuAndSearchTests(NoBrowser):
         self.started.assert_not_called()   # the menu is said at once; no page loads for it
         names, index, _ = self.app.menu_state('youtube')
         self.assertEqual(names, ['Search', 'Home', 'Subscriptions', 'History', 'Watch later', 'Liked videos',
-                                 'My playlists', 'Sign in'])
+                                 'My playlists', 'Sign in or sign out'])   # not known yet: no page has said
         self.assertEqual(index, 0)
         self.press('Down')
         self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
@@ -223,7 +223,19 @@ class MenuAndSearchTests(NoBrowser):
         self.press('Home'); self.press('Up')
         self.assertEqual(self.said[-1], 'Start of list. Search (S), 1 of 8. Control+F.')
         self.press('End'); self.press('Down')
-        self.assertEqual(self.said[-1], 'End of list. Sign in (S), 8 of 8.')
+        self.assertEqual(self.said[-1], 'End of list. Sign in or sign out (S), 8 of 8.')
+
+    def test_the_account_item_says_what_youtube_said_last_time(self):
+        # Will, October 29: it said Sign in while he was signed in. A page's answer is kept for next time.
+        s = ys.screen(self.app)
+        s.signed_in = True
+        self.assertEqual((self.root / 'youtube-account.json').read_text(encoding='utf-8'), '{"signed_in": true}')
+        with patch.object(ys, 'SCREEN', None):
+            fresh = ys.screen(self.app)
+            self.assertIs(fresh.signed_in, True)
+            self.assertEqual(fresh.label({'kind': 'menu'}, ('@account', '', '@account')), 'Sign out')
+            fresh.signed_in = False
+            self.assertEqual(fresh.label({'kind': 'menu'}, ('@account', '', '@account')), 'Sign in')
 
     def test_first_letters_move_in_the_menu_and_are_not_video_keys(self):
         from input_parity import screen_key
