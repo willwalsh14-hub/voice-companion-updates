@@ -5959,7 +5959,7 @@
 },
 "document | change font to Arial": {
 "said": [
-"Formatted the current paragraph. font: Arial."
+"Formatted the current paragraph. Font Arial."
 ],
 "screen_after": "document",
 "text": [
@@ -13032,7 +13032,7 @@
 },
 "email_draft | change font to Arial": {
 "said": [
-"Formatted the current paragraph. font: Arial."
+"Formatted the current paragraph. Font Arial."
 ],
 "screen_after": "email_draft",
 "text": [
