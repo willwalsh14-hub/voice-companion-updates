@@ -2,6 +2,8 @@
 # ship.sh PR SHA VERSION : wait for checks on SHA, merge PR, wait until release VERSION is published.
 R=repos/willwalsh14-hub/voice-companion-updates
 PR=$1; SHA=$2; VER=$3
+# A version already released cannot publish again (the nightly sweep may have used it): stop at once.
+if gh api "$R/releases/tags/v$VER" --jq .tag_name >/dev/null 2>&1; then echo "VERSION $VER IS ALREADY RELEASED: raise the version"; exit 4; fi
 for i in $(seq 1 170); do
   out=$(gh api "$R/commits/$SHA/check-runs" --jq '.check_runs[] | "\(.name)|\(.status)|\(.conclusion)"')
   n=$(echo "$out" | grep -c '|completed|'); t=$(echo "$out" | grep -c .); f=$(echo "$out" | grep -c '|failure')

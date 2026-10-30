@@ -1,8 +1,8 @@
 {
-  "version": "0.2.181-test",
+  "version": "0.2.182-test",
   "status": "Testing build",
   "date": "October 30, 2026",
-  "baseline": "0.2.180-test",
+  "baseline": "0.2.181-test",
   "scope": "A YouTube player with simple keys, and fewer video errors.",
   "sections": [
     {
