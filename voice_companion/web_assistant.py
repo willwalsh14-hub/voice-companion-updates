@@ -1471,7 +1471,10 @@ class WebSession:
             column=getattr(self,'preferred_column',None)
             if column is None:column=position-starts[index]
             self.preferred_column=column
-            index=max(0,min(len(starts)-1,index+direction*(20 if key in ('Prior','Next') else 1)))
+            moved=max(0,min(len(starts)-1,index+direction*(20 if key in ('Prior','Next') else 1)))
+            # Moving past the first or last line says so, as the page keys do.
+            edge=('Top of page. ' if direction<0 else 'Bottom of page. ') if moved==index else ''
+            index=moved
             end=text.find('\n',starts[index]);end=len(text) if end<0 else end
             # Browse blocks start at their first character, so a short control
             # remains the active target after a longer paragraph.
@@ -1486,13 +1489,14 @@ class WebSession:
             if item and item.get('start',0)<=self.reading.position<item.get('end',0):
                 role=kind(item)
                 if role=='link':message='Link '+message
-                elif role=='heading':message+=' heading level '+str(item.get('level',1))+(', link' if heading_link(item,self.browse.elements) else '')+'.'
+                elif role=='heading':message=(re.sub(r'(?<!\.)[.,;:]$','',message.rstrip()) or message)+', heading level '+str(item.get('level',1))+(', link' if heading_link(item,self.browse.elements) else '')+'.'
             self.auto_focus_position()
+            if not control:message=edge+message
         return message
 
     def focus_current(self):
         item=self.browse.current() if self.browse else None
-        if item and not item.get('disabled') and kind(item)=='slider':
+        if item and not item.get('disabled') and kind(item) in ('slider','spinbutton'):
             # Tab onto a slider: its arrow keys work at once, as for a text box.
             self.slider_field=None;self.begin_slider(item)
             return self.slider_field is not None
@@ -1877,10 +1881,15 @@ class WebSession:
                     if linked:item=linked;role='link'
                     links=[e for e in self.browse.elements if kind(e)=='link' and e.get('start',0)<=item.get('start',0)<e.get('end',0)]
                     if role=='heading' and links:item=min(links,key=lambda e:e.get('end',0)-e.get('start',0));role='link'
-                if role=='slider' and not item.get('disabled'):return self.begin_slider(item)
+                if role in ('slider','spinbutton') and not item.get('disabled'):return self.begin_slider(item)
                 if role in ('edit','combobox','listbox'):
                     self.focus_current();return describe(item)
-                if role in ('checkbox','radio'):
+                if role=='tab' and not item.get('disabled'):
+                    # Selecting a tab changes its panel; stay on the tab, as a screen reader does.
+                    action=self.backend.activate(item)
+                    if isinstance(action,dict) and action.get('validation'):return action['validation']
+                    return self._refresh_at(item)
+                if role in ('checkbox','radio','switch'):
                     if hasattr(self.backend,'activate_choice'):
                         notice=self.backend.activate_choice(item)
                         if notice:return notice
@@ -3145,6 +3154,16 @@ class WebSession:
         except (WebError,ValueError) as exc: return str(exc)
         except Exception: return 'That field changed. Say list fields and try again.'
 
+    def _save_favorite(self,name,after=''):
+        """Save this page as a favorite. Another site's favorite of the same name is
+        never replaced, as in the web browser menu."""
+        name=_plain(name);existing=self.favorites.get(name)
+        if existing and existing.get('url')==self.snapshot.get('url'):return 'This page is already a favorite: '+existing['name']+'.'
+        if existing:return 'A favorite named '+existing['name']+' already exists. Say save favorite as, then another name.'
+        try:self.favorites.add(name,self.snapshot['url'])
+        except WebError as exc:return str(exc)
+        return 'Saved favorite '+name+'.'+after
+
     def list_item_name(self,item):
         return _label(item)+(' '+str(item.get('level',1)) if kind(item)=='heading' else '')
 
@@ -3270,6 +3289,7 @@ class WebSession:
             unit, direction = request
             self.reading.set_text(self.snapshot.get('text', ''))
             result=self.reading.read(direction == 'top') if unit == 'read' else self.reading.move(unit, direction)
+            if unit=='line' and self.reading.edge:result=('Bottom of page. ' if self.reading.edge=='end' else 'Top of page. ')+result
             if self.browse:self.browse.set_position(self.reading.position)
             self.auto_focus_position();self.cursor_changed()
             return result
@@ -3374,16 +3394,13 @@ class WebSession:
         if command in ('forward','go forward','next page','go to next page','go forward a page'):return self.history(1)
         if command in ('save favorite','add favorite','favorite this site'):
             if not self.snapshot: return 'Open a website first.'
-            name = _plain(self.snapshot['title'])[:60]
-            try: self.favorites.add(name, self.snapshot['url'])
-            except WebError as exc: return str(exc)
-            return 'Saved favorite ' + name + '. Say list favorites to hear it.'
+            # A page with no title is saved under its site's name.
+            name = _plain(self.snapshot.get('title') or '')[:60].strip() or (urlsplit(self.snapshot.get('url','')).hostname or '').removeprefix('www.')
+            return self._save_favorite(name, ' Say list favorites to hear it.')
         match = re.fullmatch(r'(?:save|add) favorite (?:as |called )?(.+)', _plain(spoken).rstrip('.!?,'), re.I)
         if match:
             if not self.snapshot: return 'Open a website first.'
-            try: self.favorites.add(match[1], self.snapshot['url'])
-            except WebError as exc: return str(exc)
-            return 'Saved favorite ' + _plain(match[1]) + '.'
+            return self._save_favorite(match[1])
         if command in ('list favorites','my favorites'):
             values = self.favorites.all()
             self.favorite_items=list(values.items())
@@ -3402,7 +3419,7 @@ class WebSession:
         if command in ('fill out this form','fill out this form for me','help me fill this form',
                        'help me with this form','complete this form'):
             return self.fields(guided=True)
-        if command in ('list fields','what fields'): return self.fields()
+        if command in ('list fields','what fields','list form fields','list form controls','show fields','show form fields'): return self.fields()
         match = re.fullmatch(r'fill field (\d+) (?:with|as) (.+)', spoken, re.I)
         if match: return self.fill(match[1], match[2])
         match = re.fullmatch(r'open choice (\d+)', command)
