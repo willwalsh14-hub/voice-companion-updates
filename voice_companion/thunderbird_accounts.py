@@ -151,7 +151,10 @@ def sign_in_words(address, version=None):
     domain = address.rsplit('@', 1)[-1].casefold()
     company = SIGN_IN_PROVIDERS.get(domain)
     if not company:
-        return 'Then Thunderbird asks for the password of this email account. Type it in Thunderbird, not in Voice Companion.'
+        # Any address may sign in either way: a work address on Microsoft 365 opens Microsoft's
+        # page; others ask for a password, which Voice Companion asks for in its private box.
+        return ('Then Thunderbird asks for a password or opens a sign-in page, such as Microsoft\'s for a work address. '
+                'Voice Companion tells you which.')
     where = ('in your web browser' if version is not None and version >= EXTERNAL_SIGN_IN_VERSION else
              'in a Thunderbird window' if version is not None else 'in your web browser or in a Thunderbird window')
     return 'Then ' + company + ' asks you to sign in. The sign-in page opens ' + where + '.'
@@ -179,6 +182,13 @@ def opened_message(address, opened, prefilled, copied, version=None):
                  'Fill in your name and the address, then choose Continue. ')
     return (start + fill + steps + sign_in_words(address, version) +
             ' Voice Companion tells you when the account is ready.')
+
+
+def also_connected_message(added):
+    """Addresses Thunderbird has that Voice Companion just connected by itself."""
+    names = ' and '.join(added)
+    return ('Thunderbird also has ' + names + '. ' + ('It is' if len(added) == 1 else 'They are') +
+            ' connected to Voice Companion now. Say switch account to use ' + ('it.' if len(added) == 1 else 'one.'))
 
 
 def ready_message(added, selected):

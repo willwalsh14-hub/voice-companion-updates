@@ -35,9 +35,10 @@ def _digest(text):
 
 
 class Transcript:
-    def __init__(self, limit=LIMIT):
+    def __init__(self, limit=LIMIT, name=NAME, old_name=OLD_NAME):
         self.lock = threading.RLock()
         self.limit = limit
+        self.name, self.old_name = name, old_name
         self.folder = None
         self.enabled = False
         self.mode = ''
@@ -59,7 +60,7 @@ class Transcript:
 
     @property
     def path(self):
-        return None if self.folder is None else self.folder / NAME
+        return None if self.folder is None else self.folder / self.name
 
     # Private values.
 
@@ -128,7 +129,7 @@ class Transcript:
 
     def _rotate(self):
         self._close()
-        os.replace(self.path, self.folder / OLD_NAME)
+        os.replace(self.path, self.folder / self.old_name)
 
     def _close(self):
         file, self.file = self.file, None
@@ -140,6 +141,11 @@ class Transcript:
 
 
 TRANSCRIPT = Transcript()
+# Always on, but written only while Thunderbird is being set up, started or an account added
+# (companion.thunderbird_busy). It names what went wrong when an account would not add
+# (Will, October 30, 2026: the speech transcript was off, so nothing said what happened).
+# The same private-value rules apply: passwords are never written.
+MAIL_LOG = Transcript(limit=1024 * 1024, name='thunderbird-log.txt', old_name='thunderbird-log-old.txt')
 
 
 def key_label(command):

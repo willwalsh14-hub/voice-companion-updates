@@ -173,12 +173,21 @@ class HiddenThunderbirdTests(unittest.TestCase):
         self.signing_in = True
         self.wait(0.5)
         self.assertTrue(self.desktop.taskbar(self.main))
-        # Windows a provider opens during sign-in are left exactly as Thunderbird made them.
+        # A window a provider opens during sign-in is never hidden. Since October 30, 2026 it is
+        # brought to the front and said once: it opened silently behind Voice Companion before.
         extra = self.desktop.open(hiding.DIALOG_CLASS, 'Verify it is you', owned=True)
         self.wait(5)
-        self.assertEqual(self.desktop.calls.count(('front', extra)), 0)
+        self.assertEqual(self.desktop.calls.count(('front', extra)), 1)
         self.assertNotIn(('tuck', self.main), self.desktop.calls[1:])
+        self.assertEqual(self.windows.take_message(), hiding.SIGN_IN)
         self.assertIsNone(self.windows.take_message())
+        # Microsoft's sign-in in a Thunderbird browser window: said once it has stayed up.
+        browser = self.desktop.open(hiding.MAIN_CLASS, 'Sign in to your account', owned=False)
+        self.wait(1)
+        self.assertIsNone(self.windows.take_message())
+        self.wait(3)
+        self.assertEqual(self.windows.take_message(), hiding.SIGN_IN)
+        self.desktop.close(browser)
         self.desktop.close(extra)
         self.signing_in = False
         self.wait(1)

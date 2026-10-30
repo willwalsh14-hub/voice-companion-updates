@@ -274,6 +274,7 @@ class ThunderbirdWindows:
         self.mains = set()           # the main windows found when hiding started: the only ones ever hidden
         self.waiting = 'none'        # 'none', 'attention' (a window needed the user), 'shown' (asked to show)
         self.seen = {}               # handle -> when it was first seen on screen
+        self.announced = set()       # windows already brought forward and said while signing in
         self.quiet_since = None
         self.messages = queue.Queue()
         self.lock = threading.RLock()
@@ -338,11 +339,27 @@ class ThunderbirdWindows:
             self.mains &= present | set(self.tucked)
             for handle in list(self.seen):
                 if handle not in present: self.seen.pop(handle)
+            self.announced &= present
             now = self.clock()
             if self.busy():
-                # Signing in or adding an account: everything exactly as before this option.
-                self.release(); self.seen.clear(); self.quiet_since = None
+                # Signing in or adding an account: nothing is hidden. A window Thunderbird opens for
+                # it (Microsoft's sign-in, a password box, a second check) is still brought to the
+                # front and said, once: it opened silently behind Voice Companion before
+                # (Will, October 30, 2026).
+                self.release(); self.quiet_since = None
                 if self.waiting == 'none': self.waiting = 'attention'
+                for window in windows:
+                    if window.minimized or window.handle in self.mains or window.handle in self.announced:
+                        continue
+                    first = self.seen.setdefault(window.handle, now)
+                    if window.kind in QUESTIONS or now - first >= SETTLE_SECONDS:
+                        self.announced.add(window.handle)
+                        try:
+                            in_front = self.desktop.bring_forward(window.handle)
+                        except OSError:
+                            in_front = False
+                        self.messages.put(attention_message(window.title, in_front))
+                        break
                 return
             # A window on screen that Voice Companion did not put there needs the user.
             showing = [w for w in windows if not w.minimized]
