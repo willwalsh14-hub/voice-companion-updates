@@ -237,6 +237,9 @@ class StandInThunderbirdTests(unittest.TestCase):
         self.assertFalse(self.style(self.main) & 0x80)
         dialog = self.ask('dialog Verify it is you')
         self.poll_for(3)
+        # Never hidden. Since October 30, 2026 it is also said once: it opened silently behind Voice Companion.
+        said = self.watch.take_message()
+        self.assertTrue(said and said.startswith(hiding.SIGN_IN), said)
         self.assertTrue(self.watch.messages.empty())
         self.assertFalse(self.style(dialog) & 0x80)
 
