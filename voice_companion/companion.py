@@ -3085,6 +3085,9 @@ def handle_mailbox_screen(text, command, mode, typed):
     response_actions = {'reply': 'reply', 'reply to message': 'reply',
                         'reply all': 'reply_all', 'reply to all': 'reply_all',
                         'forward': 'forward', 'forward message': 'forward'}
+    if command in response_actions and isinstance(mail_session, MailSession) and not mail_session.rows and mail_session.view == 'folder':
+        speak(mail_session._empty_list())   # as every other key says it in an empty folder
+        return mode
     if command in response_actions:
         try:
             context = mail_session.response_context(response_actions[command])

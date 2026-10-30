@@ -430,7 +430,7 @@ class MailSession:
 
     def page_edge(self, bottom=False):
         """Home and End: the first or last message on this page. Already there: say so."""
-        if not self.rows:return 'Empty list.'
+        if not self.rows:return self._empty_list()
         target = len(self.rows) if bottom else 1
         if self.current == target:
             return ('End of list. ' if bottom else 'Start of list. ') + self._focus(target) + self._page_hint(bottom)
@@ -449,7 +449,7 @@ class MailSession:
             return 'Could not reach the '+('end' if bottom else 'start')+' of the list. '+str(exc)
 
     def _list_boundary(self,bottom=False):
-        if not self.rows:return 'Empty list.'
+        if not self.rows:return self._empty_list()
         if not bottom and self.page_cursor is None and self.current==1:return 'Start of list.'
         if bottom and not self.next_cursor and self.current==len(self.rows):return 'End of list.'
         if not bottom:
@@ -697,7 +697,7 @@ class MailSession:
                 if command in ('cancel', 'go back', 'back'):
                     return 'Folder choice canceled. Nothing was changed.'
                 return 'Say rename to followed by the new name, or cancel.'
-            if (not self.rows and self.view == 'folder' and command in EMPTY_LIST_COMMANDS and
+            if (not self.rows and self.view == 'folder' and (command in EMPTY_LIST_COMMANDS or header_request(command)) and
                     not (self.marked_ids and command in ('delete', 'move', 'move to folder'))):
                 # An empty folder is an empty list, the same for every key and command.
                 return self._empty_list()

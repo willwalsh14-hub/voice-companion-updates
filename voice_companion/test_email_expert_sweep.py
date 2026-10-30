@@ -105,6 +105,24 @@ class NothingMovedTests(CompanionCase):
         self.assertIn('Is that right?', mail.process('delete'))
 
 
+class EmptyFolderTests(CompanionCase):
+    def test_every_message_key_in_an_empty_folder_says_the_same(self):
+        # Before: Home and End said "Empty list.", Alt+1 to Alt+6 "Empty list. No messages on this page.",
+        # L "Choose a message first." and R, A and F "Open the message first...".
+        class Empty(Mailbox):
+            def list_messages(self, folder, cursor=None, limit=10): return [], None
+        companion.mail_session = MailSession('thunderbird', self.folder, Empty)
+        companion.mail_session.process('list messages')
+        empty = companion.mail_session._empty_list()
+        for key in ('Enter', 'Home', 'End', 'Alt+1', 'Alt+6', 'L', 'R', 'A', 'F', 'I', 'Delete', 'Space', 'Ctrl+End'):
+            with self.subTest(key=key):
+                self.said.clear()
+                command = companion.navigation_key(key, 'mailbox')
+                if command:
+                    self.assertEqual(companion.handle_keyboard(command, 'mailbox'), 'mailbox')
+                self.assertEqual(self.said, [empty])
+
+
 class EscapeReturnsToYourPlaceTests(CompanionCase):
     def setUp(self):
         super().setUp()

@@ -226,6 +226,8 @@ def current():
 def message_items(m):
     """The files of the message that is open or highlighted, and the message they belong to."""
     mail = m.mail_session
+    if mail is not None and not mail.rows and mail.view == 'folder':
+        raise AttachmentError(mail._empty_list())   # as every other key says it in an empty folder
     if mail is None or not mail.rows or not mail.current:
         raise AttachmentError('Choose a message first.')
     row = mail.rows[mail.current - 1]
