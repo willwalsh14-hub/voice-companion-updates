@@ -56,6 +56,14 @@ pull requests. Update this file as items are finished.
 - [ ] **Will or a tester:** on a PC without WebView2 problems, check that web
       pages open in embedded Edge by default and that NVDA or JAWS do not
       fight Companion's speech in that window.
+- [ ] **Will (Thunderbird 154 and newer, branch `claude/thunderbird-154`):** on
+      his own PC with Thunderbird ESR and working accounts, use email once and say
+      yes to the update question (or say "Update Thunderbird"). Check that every
+      account still opens and sends without a new sign-in, then add the Microsoft
+      365 address with "Add Thunderbird account" and check that it says "It will
+      connect with Microsoft Graph". The update itself passed on a Windows runner
+      with real Thunderbird ESR 153.6 to Release 159 (try PR 82). A real Graph
+      sign-in, saved passwords and the Graph choice page could not be checked there.
 - [ ] Review `PRIVACY-POLICY.md` against what the app actually sends
       (OpenAI narration when the AI voice is on, Yahoo mail servers,
       station and podcast directories, GitHub for updates).
@@ -177,3 +185,21 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 ## 0.2.174: Thunderbird stand-in tests passed on a try branch but failed in the build (October 29, 2026)
 - The stand-in was a copy of sys.executable named thunderbird.exe. In the build, sys.executable is a virtual environment's python.exe, which only launches the real Python as another program, so the windows belonged to python.exe.
 - Fixed by copying sys._base_executable. Lesson: a try branch must run tests the way the build does (same Python, same order).
+
+## 0.2.176: Thunderbird add-on check failed on Windows (October 29, 2026)
+- The account setup test cleared the form with a fixed 40 ms timer, which raced the fill on a slow Windows runner.
+- The test now clears the form after the open call returns.
+## Thunderbird add account test failed only on a busy computer (found October 29, 2026)
+- experimentChecks, the Thunderbird 158 form reset case, failed when the computer was busy and passed alone.
+- Cause: Account Hub can clear its form during the add-on's last short wait. The add-on then answered "not filled in", and Voice Companion told the person to type the address. A real defect, not only a test problem.
+- Fixed by filling the form again before answering. A new test makes the reset happen during that wait every time.
+
+## Thunderbird 159 on a real Windows runner (October 29, 2026, try PR 82)
+- Windows PowerShell started from PowerShell 7 cannot load Get-AuthenticodeSignature (inherited PSModulePath). Mozilla's and Google's installers were refused with no reason. Both checks now drop PSModulePath and name their reason.
+- Thunderbird lists a Microsoft Graph account to add-ons as type "extension:graph" (prefs.js says "graph"). The fakes now use the real type.
+- GitHub keeps only 10 notices and 10 warnings per step, and job logs cannot be read from Claude's session. Try workflows report results in grouped annotations.
+
+## Podcast player without a window (October 29, 2026, branch claude/podcast-feedback)
+- The radio and podcast player's Firefox now runs headless, so no window takes the keyboard.
+- On Windows (try branch, PR 86) it showed no window, kept the focus, and played forward, three runs out of three.
+- [ ] Build computers have no sound device. A person must listen once to confirm the sound reaches the speakers. If it does not, start Firefox with a window again, minimized and off the taskbar.

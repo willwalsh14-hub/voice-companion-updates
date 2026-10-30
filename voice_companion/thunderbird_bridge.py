@@ -154,36 +154,101 @@ def connected():
     return _RELAY is not None and _RELAY.connected.is_set()
 
 
-def native_stream(first, input_stream, output_stream, pipe_endpoint=None, family='AF_PIPE'):
-    """Host side: forward between Thunderbird (stdin/stdout) and Companion's pipe."""
+# How often the host looks for Voice Companion while it is closed or starting again.
+HOST_RETRY_SECONDS = 0.5
+
+
+def native_stream(first, input_stream, output_stream, pipe_endpoint=None, family='AF_PIPE', retry=None):
+    """Host side: forward between Thunderbird (stdin/stdout) and Companion's pipe.
+
+    Thunderbird keeps this host for as long as its add-on runs. When Voice Companion is
+    closed, or starts again, the host waits for it and connects again by itself, every
+    half second. It never relies on Thunderbird to try again: Thunderbird slows its own
+    timers while its window is minimized or off the taskbar, and the user then had to
+    press Alt+Tab before mail would connect (Will, October 29, 2026).
+    The host ends only when Thunderbird closes the connection."""
     from browser_bridge_host import read_message, write_message
     from regular_browser import data_folder
     folder = data_folder()
-    pipe = Client(pipe_endpoint or address(folder) + '-mail', family=family, authkey=(folder / KEY_FILE).read_bytes())
-    write_lock = threading.Lock()
+    endpoint = pipe_endpoint or address(folder) + '-mail'
+    wait = HOST_RETRY_SECONDS if retry is None else retry
+    hello = encode({'protocol': PROTOCOL, 'command': 'mail', 'version': str(first.get('version', ''))})
+    write_lock, state_lock = threading.Lock(), threading.Lock()
+    ended = threading.Event()
+    state = {'pipe': None}
 
-    def to_thunderbird():
-        try:
-            while True:
-                message = decode(pipe.recv_bytes(MAX_FRAME))
-                with write_lock: write_message(output_stream, message)
-        except Exception:
-            # Closing stdout tells Thunderbird that this connection ended.
-            try: output_stream.close()
-            except Exception: pass
+    def open_pipe():
+        while not ended.is_set():
+            try:
+                # The key is read again each time: Voice Companion makes a new one when it starts.
+                pipe = Client(endpoint, family=family, authkey=(folder / KEY_FILE).read_bytes())
+            except Exception:
+                ended.wait(wait)
+                continue
+            try:
+                pipe.send_bytes(hello)
+                return pipe
+            except Exception:
+                try: pipe.close()
+                except Exception: pass
+                ended.wait(wait)
+        return None
 
-    threading.Thread(target=to_thunderbird, daemon=True).start()
+    def from_companion():
+        while not ended.is_set():
+            pipe = open_pipe()
+            if pipe is None:
+                return
+            with state_lock:
+                if ended.is_set():
+                    pipe.close(); return
+                state['pipe'] = pipe
+            try:
+                while True:
+                    message = decode(pipe.recv_bytes(MAX_FRAME))
+                    with write_lock: write_message(output_stream, message)
+            except (OSError, EOFError, ValueError):
+                pass   # Voice Companion closed: wait for it to start again.
+            except Exception:
+                pass
+            finally:
+                with state_lock:
+                    if state['pipe'] is pipe: state['pipe'] = None
+                try: pipe.close()
+                except Exception: pass
+            try:
+                output_stream.flush()
+            except Exception:
+                # Thunderbird is gone too: nothing left to forward to.
+                ended.set()
+
+    reader = threading.Thread(target=from_companion, daemon=True)
+    reader.start()
     try:
-        pipe.send_bytes(encode({'protocol': PROTOCOL, 'command': 'mail', 'version': str(first.get('version', ''))}))
         while True:
             try:
                 message = read_message(input_stream, max_size=MAX_FRAME)
             except (ValueError, OSError):
                 return   # Thunderbird closed or sent something invalid: end this connection.
             if message is None: return
-            pipe.send_bytes(encode(message))
+            with state_lock:
+                pipe = state['pipe']
+            if pipe is None:
+                continue   # an answer for a Voice Companion that has closed: nobody waits for it
+            try:
+                pipe.send_bytes(encode(message))
+            except Exception:
+                pass       # Voice Companion just closed; the reader connects again
     finally:
-        pipe.close()
+        ended.set()
+        with state_lock:
+            pipe, state['pipe'] = state['pipe'], None
+        if pipe is not None:
+            try: pipe.close()
+            except Exception: pass
+        # Closing stdout tells Thunderbird that this connection ended.
+        try: output_stream.close()
+        except Exception: pass
 
 
 def host_manifest(host_path):

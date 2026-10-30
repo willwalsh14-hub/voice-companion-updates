@@ -140,6 +140,19 @@ class CalendarScreenTests(CalendarHarness):
         self.assertTrue(self.said().startswith('Add meeting, Tomorrow, Tuesday, October 27, two PM to three PM,'), self.said())
         app.handle('no', 'calendar')
 
+    def test_on_calendar_schedule_or_add_any_name_with_a_day_adds_it(self):
+        mode = self.open()
+        for words, start in (('Schedule lunch with Bob tomorrow at noon.', 'Add lunch with Bob, Tomorrow, Tuesday, October 27, twelve PM to one PM,'),
+                             ('Add dinner Friday at 6 PM', 'Add dinner, Friday, October 30, six PM to seven PM,'),
+                             ('Book a haircut on Friday at 10 AM.', 'Add haircut, Friday, October 30, ten AM to eleven AM,')):
+            with self.subTest(words=words):
+                self.assertEqual(app.handle(words, mode), 'calendar')
+                self.assertTrue(self.said().startswith(start), self.said())
+                app.handle('no', mode)
+        # Without a day or time it is not an event.
+        app.handle('add Bob', mode)
+        self.assertTrue(self.said().startswith('Calendar. Say next event'), self.said())
+
     def test_delete_it_deletes_the_event(self):
         mode = self.open()
         app.handle('Delete it.', mode)
@@ -176,6 +189,24 @@ class CalendarScreenTests(CalendarHarness):
                 app.handle('add event tomorrow at 3 PM called Lunch', mode)
                 app.handle('yes', mode)
             self.assertEqual(self.said(), 'That calendar cannot be changed. Choose another calendar. The event was not saved.')
+
+    def test_an_event_removed_in_thunderbird_meanwhile_leaves_the_list(self):
+        # Deleted on the phone or in Thunderbird while Calendar was open: the day is read again,
+        # so Down and F2 never reach an event that is gone.
+        mode = self.open()
+        thunderbird_pim.delete_event('cal-google', 'e1')
+        app.handle('delete event', mode)
+        app.handle('yes', mode)
+        self.assertEqual(self.said(), 'That event is no longer in the calendar. Today, Monday, October 26. No events.')
+        self.assertEqual(calendar_screen.EVENTS, [])
+        # Editing one that is gone: the same.
+        self.press('Right', mode)
+        thunderbird_pim.delete_event('cal-google', 'e3', all_of_them=True)
+        app.handle('rename event to Dentist', mode)
+        app.handle('this one', mode)
+        self.assertEqual(self.said(), 'That event is no longer in the calendar. The change was not saved. '
+                                      'Tomorrow, Tuesday, October 27. No events.')
+        self.assertEqual(calendar_screen.EVENTS, [])
 
     def test_the_part_of_the_day_said_first_counts_for_the_time_said_next(self):
         mode = self.press('Ctrl+N', self.open())
@@ -354,6 +385,21 @@ class GoToDateTests(CalendarHarness):
 
 
 class EditEventTests(CalendarHarness):
+    def test_y_and_n_answer_only_yes_or_no_questions_not_the_lists(self):
+        # In the list of what to change, N (as in Name or Notes) must not cancel; Contacts does the same.
+        mode = self.open()
+        self.press('F2', mode)
+        for key in ('N', 'n', 'Y', 'Alt+N'):
+            with self.subTest(key=key):
+                self.assertIsNone(app.navigation_key(key, mode))
+        self.assertEqual(calendar_screen.PENDING[0], 'edit-field')
+        self.press('Escape', mode)
+        # A Yes or No question still takes them.
+        self.press('Delete', mode)
+        self.assertEqual(app.navigation_key('N', mode), 'no')
+        self.assertEqual(app.navigation_key('Y', mode), 'yes')
+        self.press('Escape', mode)
+
     def test_f2_lists_what_to_change_and_renames_with_a_question(self):
         mode = self.open()
         self.assertEqual(app.navigation_key('F2', mode), 'edit event')

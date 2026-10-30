@@ -55,15 +55,16 @@ class HelpSession:
         topic = self.topics[self.topic_index]
         return [(p['name'],p['paragraphs']) for p in topic.get('parts',[])]
 
-    def _item(self):
+    def _item(self, hint=True):
+        """The item as every list says it; how to choose only when a list opens, not on each move."""
         if self.level == 'topics':
             return (name_first('Topic ' + str(self.topic_index + 1) + ' of ' + str(len(self.topics)) +
                     ': ' + self.topics[self.topic_index]['name'] +
-                    '. Say next or previous, then that one. Say help with followed by a topic name to jump there.'))
+                    ('. Say next or previous, then that one. Say help with followed by a topic name to jump there.' if hint else '.')))
         subs = self._subtopics()
         from menu_navigation import announce_item
         return (announce_item(subs[self.subtopic_index][0],self.subtopic_index,len(subs))+
-                ' Say next or previous, then that one to read it. Say back to topics for all chapters.')
+                (' Say next or previous, then that one to read it. Say back to topics for all chapters.' if hint else ''))
 
     def start(self):
         return 'User guide. ' + self._item()
@@ -144,6 +145,16 @@ class HelpSession:
         return self._open_article(self.topics[self.topic_index]['paragraphs'],
                                   self.topics[self.topic_index]['name'])
 
+    def where(self):
+        """For "Where am I?": Help, the chapter and the part you are in."""
+        if self.level == 'topics':
+            return 'Help topics. ' + self._item(hint=False)
+        name = self.topics[self.topic_index]['name']
+        if self.level == 'subtopics':
+            return 'Help. ' + name + '. ' + self._item(hint=False)
+        subs = self._subtopics()
+        return 'Help. ' + name + (', ' + subs[self.subtopic_index][0] if subs else '') + '.'
+
     def _open_article(self, paragraphs, title):
         self.level = 'article'
         self.reading.set_text('\n\n'.join(paragraphs), reset=True)
@@ -157,6 +168,8 @@ class HelpSession:
         if command in ('close help', 'exit help', 'leave help', 'back to app'):
             self.closed = True
             return 'Help closed. Back where you were.'
+        if command in ('where am i', 'where am i now'):
+            return self.where()
         if command in ('back to topics', 'help topics', 'list help topics', 'list topics'):
             self.level = 'topics'
             return self._item()
@@ -203,7 +216,7 @@ class HelpSession:
             if not 0 <= index < length:
                 return 'That is the ' + ('first' if step < 0 else 'last') + ' item. ' + self._item()
             setattr(self, index_name, index)
-            return self._item()
+            return self._item(hint=False)
         if command in ('that one', 'okay', 'ok', 'confirm', 'confirm that', 'open topic', 'open it'):
             if self.level == 'topics': return self._open_topic()
             name, paragraphs = self._subtopics()[self.subtopic_index]
@@ -222,7 +235,7 @@ class HelpSession:
     def accepts(text):
         command=text.casefold().strip().rstrip('.!?')
         return bool(reading_request(command) or command.startswith(('help with ','help for ','go to help topic ','open help topic ')) or command in (
-            'main menu','back to main menu','close help','exit help','leave help','back to app',
+            'main menu','back to main menu','close help','exit help','leave help','back to app','where am i','where am i now',
             'back to topics','help topics','list help topics','list topics','back to email topics','email topics',
             'back to subsections','list subsections','subsections','go back','back',
             'read topic','read this topic','repeat topic','first block','last block',

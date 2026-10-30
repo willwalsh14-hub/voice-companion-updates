@@ -1,23 +1,32 @@
 {
-  "version": "0.2.175-test",
+  "version": "0.2.181-test",
   "status": "Testing build",
-  "date": "October 29, 2026",
-  "baseline": "0.2.174-test",
-  "scope": "Many fixes from a careful check of the whole app, done the way a new user would use it.",
+  "date": "October 30, 2026",
+  "baseline": "0.2.180-test",
+  "scope": "Speech is shorter and more exact on every screen. Keys keep your place, and web pages read like a screen reader would read them.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "More everyday words",
+          "title": "Web pages",
           "details": [
-            "Companion now knows more of the words people say every day.",
-            "In email, try \"Go to the trash\", \"Open the first message\", \"Read the next message\" or \"Check my email\".",
-            "To hear your plans, say \"My schedule\". To add one, say \"Add a reminder for tomorrow at 9\".",
-            "For contacts, try \"Add a new contact\" or \"Phone book\".",
-            "For the radio, try \"Listen to the radio\". For shows, try \"Open podcasts\".",
-            "To hear the version, ask \"What version is this?\"",
-            "Say \"Start the tutorial\" or \"Start lessons\" to begin the lessons."
+            "Tab now stops on tabs, switches and spin buttons. F finds switches and spin buttons too.",
+            "Enter picks a tab. Enter or Space turns a switch on or off.",
+            "Enter on a spin button lets the arrows change it.",
+            "A field says what is in it. It also says when the site marks it wrong, and reads the site's hint.",
+            "T says how many rows and columns a table has.",
+            "You hear Top of page or Bottom of page at the ends of a page."
+          ]
+        },
+        {
+          "title": "New ways to say things",
+          "details": [
+            "Say where am I in Help to hear where you are.",
+            "Say what mode am I in, or switch to dictation only, from any screen.",
+            "On Calendar, say schedule lunch with Bob tomorrow at noon.",
+            "In File manager, say what is selected.",
+            "In email, say read message fifteen, or what folder am I in."
           ]
         }
       ]
@@ -26,93 +35,75 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Starting out, Help and the tutorial",
+          "title": "Startup, sleep and Help",
           "details": [
-            "Each input mode now has the same name as in the guide. They are Normal mode, Commands only and Dictation only.",
-            "Typing \"Wake up\" goes back to the screen you were on.",
-            "If you sleep while a Yes or No question is open, waking up asks it again.",
-            "\"Help with\" a topic it does not know now says so, then reads the topic list.",
-            "\"Help with\" now finds more topics, such as the microphone, keys, time and voices.",
-            "If the microphone cannot start, F9 no longer says voice commands are on.",
-            "The startup message says to wake Companion before you start the tutorial.",
-            "Long tutorial lessons are split in better places.",
-            "The guide no longer says that Pause makes Companion quiet."
+            "If you wake up at a yes or no question, the question is asked again.",
+            "With the microphone off, sleep tells you to press Control+F12 to wake up.",
+            "Canceled is now said with where you are, so you hear it.",
+            "Leaving Help says Help closed.",
+            "Moving in Help says only the item. The hint is said once.",
+            "Mode and version questions work in Help.",
+            "Saying no to an update while asleep takes you back to your screen.",
+            "The transcript notice at startup says to wake Companion first.",
+            "The tutorial names all twelve courses, and its lists sound like the rest of the app."
           ]
         },
         {
           "title": "Email",
           "details": [
-            "Saying \"Hide Thunderbird\" no longer starts Thunderbird when it is closed.",
-            "If you change who an email goes to, your subject stays as it was.",
-            "In a reply, Companion tells you how to get back to your message, and no words are lost.",
-            "A spoken subject no longer ends with an extra period.",
-            "When the inbox does not understand you, it says so.",
-            "After you delete or move a message, you land on the next message, not back at the top.",
-            "Escape now cancels the question about which kind of email account to add. Next and Previous work there too.",
-            "An email you wrote before you set up an account can now be sent.",
-            "The All messages setting says how to reach more mail.",
-            "In Yahoo, deleting a message that is already in Trash says that nothing changed.",
-            "Plural words are right, so you hear \"1 message\", not \"1 messages\"."
+            "Subjects end with one period. A blank subject says No subject.",
+            "Canceling a reply takes you back to the message you were reading.",
+            "Closing a saved draft says it is still saved.",
+            "Delete in Trash and moving to the same folder now say nothing changed.",
+            "Marking messages says the same words by key and by voice.",
+            "An empty folder gives the same answer to every key.",
+            "Escape from attachments says the message you are on.",
+            "Spoken numbers up to one hundred work."
           ]
         },
         {
           "title": "Calendar and Contacts",
           "details": [
-            "\"Make an appointment for Friday at 10 AM\" now asks for the event's name.",
-            "Words like \"in the evening\" or \"at night\" set the right time. They are not added to the name.",
-            "If you say \"Friday evening\" and then \"7\", the event is at 7 PM.",
-            "Saying \"No\" when asked for a name now asks again. It no longer saves a name of \"No\".",
-            "Saying \"No\" when asked for a contact's email address skips it.",
-            "\"Delete it\" and \"Cancel my appointment\" now work.",
-            "\"Show my Outlook calendar\" from the main menu says Calendar first, in one message.",
-            "\"Where am I?\" on the calendar now starts with \"Calendar\".",
-            "When Thunderbird cannot save an event, Companion tells you what to do next.",
-            "A contact with only a phone number is called \"No name\".",
-            "For an event that repeats, the question now says \"only this one, tomorrow\"."
+            "If an event or contact was removed somewhere else, the list is read again.",
+            "Where am I and Repeat keep your place.",
+            "Both screens know next item, top of list and bottom of list.",
+            "Y and N no longer close the Calendar lists.",
+            "Asking what is on your calendar names a calendar that cannot be read.",
+            "Email John says why if Thunderbird cannot give its contacts."
           ]
         },
         {
-          "title": "Documents, notes and files",
+          "title": "Documents and files",
           "details": [
-            "Leaving a document that Word has open no longer closes Companion. You hear that the file could not be saved.",
-            "Enter now opens the item you choose in List documents and in the Notes list.",
-            "A save that fails no longer leaves an extra document in your list.",
-            "Say \"Open document\" and a name to open a big Word file. It opens in the Document reader.",
-            "If you press Escape in Open a document, you go back to the one you were in.",
-            "Say \"Copy\" or \"Cut\" to copy or cut the text you picked.",
-            "In File manager, you can say a new name with \"dot\", such as \"letter dot t x t\".",
-            "Saying \"dot docx\" at the end of a document name no longer adds it to the name.",
-            "Companion tells you when you reach the end or the start of a document, a note or an email.",
-            "In an empty folder, File manager keys say the folder is empty."
+            "Reading a paragraph or line no longer moves your place.",
+            "Deleting a word or sentence leaves no extra spaces.",
+            "Messages no longer end with two periods.",
+            "Format changes are said in plain words, such as Italic or Heading 2.",
+            "Make it quick, and other sentences that start with make it, are written.",
+            "Redo goes to the paragraph it changes.",
+            "Find in the Document reader works with the period speech adds.",
+            "File manager says 1 item, not 1 items.",
+            "If Desktop is missing, Save As suggests Documents."
           ]
         },
         {
           "title": "Web",
           "details": [
-            "Saying a web address letter by letter, like \"v a dot gov\", now offers to open the site.",
-            "Your favorites and web history are safe. This is true even when a scan holds the file.",
-            "When Chrome starts again, you stay signed in to websites.",
-            "With Chrome in the background, a page that needs a file box or card box tells you to show the window. Your typing is kept.",
-            "A sign-in code box is no longer mistaken for a card payment.",
-            "In Fill out this form, \"Skip\" and \"Cancel form\" work. \"Yes, please\" checks a box.",
-            "\"List favorites\" and \"Web history\" on the main menu open lists you can move through.",
-            "\"Show browser window\" says the right thing when you use your own browser.",
-            "Pages with no links say \"No links on this page.\"",
-            "Items are read without extra commas and periods."
+            "Controls are said in the same words on the page and with quick keys.",
+            "Unnamed controls no longer say their type twice.",
+            "A new favorite saved by voice never takes the place of an old one.",
+            "List form fields and show fields open the fields list."
           ]
         },
         {
-          "title": "Radio, podcasts, YouTube and the window",
+          "title": "Media",
           "details": [
-            "Saying \"Play\" on a station, episode or video you chose now plays it.",
-            "On the YouTube screen, \"Stop\" and \"Resume\" stop and resume the video.",
-            "\"What video is this?\" tells you what is playing.",
-            "\"Play the radio\" no longer starts a random station.",
-            "A broken radio file no longer stops a radio search.",
-            "Saved stations keep their capital letters.",
-            "The list of planned recordings says the day and time in words.",
-            "Pressing Tab never moves the keyboard without telling you where it went.",
-            "At the largest text on a small screen, the command box always keeps its room."
+            "Page Down and Page Up move ten videos on YouTube.",
+            "Space on the player controls keeps you on the control you chose.",
+            "Keys in an empty list say the list is empty.",
+            "If YouTube does not send more videos, you hear why and what to do.",
+            "A podcast episode that is slow to start still opens the player controls.",
+            "End in the Media player tells you how to reach the player menu."
           ]
         }
       ]

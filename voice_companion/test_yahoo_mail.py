@@ -698,6 +698,24 @@ class YahooMovingTests(YahooTestCase):
         self.assertTrue(said.exception.unchanged)
         self.assertEqual(len(self.server.folders['Trash'].messages), 2)
 
+    def test_delete_in_trash_is_refused_before_the_question(self):
+        # Before: "I heard move this message to Trash. Is that right?", and only after Yes,
+        # "This is already in Trash."
+        import tempfile
+        self.server.add('Trash', message(subject='Old'))
+        self.server.add('Inbox', message(subject='New'))
+        factory = lambda *args: YahooMailbox(ADDRESS, APP_PASSWORD, self.server.factory)
+        with patch('mail_voice.account_token', return_value=(ADDRESS, APP_PASSWORD)):
+            session = MailSession('yahoo', tempfile.mkdtemp(), factory)
+            session.process('go to trash')
+            self.assertEqual(session.folder_name, 'Trash')
+            self.assertEqual(session.process('delete'),
+                             'This is already in Trash. Yahoo empties Trash on its own. Nothing was changed.')
+            self.assertIsNone(session.pending)
+            session.process('open inbox')
+            self.assertIn('Is that right?', session.process('delete'))
+        self.assertEqual(len(self.server.folders['Trash'].messages), 1)
+
     def test_without_move_only_the_chosen_messages_are_removed(self):
         self.server.login_caps = LOGIN_CAPS.replace(' MOVE', '')
         keep = self.server.add('Inbox', message(subject='Flagged elsewhere'), flags=('\\Deleted',))

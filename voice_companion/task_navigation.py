@@ -397,10 +397,10 @@ class TaskNavigation:
                                         'Enter':'enter','Tab':'next','ShiftTab':'previous','Escape':'escape','Alt':'@player_close'}.get(key))
             # Playing: only Alt opens the menu (Will, October 2026). Enter plays or pauses like
             # Space, Home goes back to the start, and Escape leaves the player.
-            # Tab and Shift+Tab are never silent: they say that Alt opens the player menu.
+            # Tab, Shift+Tab and End are never silent: they say that Alt opens the player menu.
             return common.get(key, {'Left':'back 15 seconds','Right':'forward 15 seconds','Up':'volume up','Down':'volume down',
                                     'Enter':'play or pause','Home':'start of file','Escape':'escape','Alt':'@player_menu',
-                                    'Tab':'next','ShiftTab':'previous'}.get(key))
+                                    'Tab':'next','ShiftTab':'previous','End':'next'}.get(key))
         if self.items(mode) is not None:
             if mode == 'word_processor' and key in ('Ctrl+N','Ctrl+O','Ctrl+R','Alt+O'):
                 return {'Ctrl+N':'create a document','Ctrl+O':'@open','Ctrl+R':'@recent','Alt+O':'@options'}[key]

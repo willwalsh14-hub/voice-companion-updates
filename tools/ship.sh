@@ -8,6 +8,11 @@ for i in $(seq 1 170); do
   if [ "$f" -gt 0 ]; then echo "CHECKS FAILED $VER"; echo "$out"
     for id in $(gh api "$R/commits/$SHA/check-runs" --jq '.check_runs[]|select(.conclusion=="failure")|.id'); do gh api $R/check-runs/$id/annotations --jq '.[]|"\(.title): \(.message)"' | head -c 7000; echo; done; exit 1; fi
   if [ "$t" -ge 3 ] && [ "$n" -eq "$t" ]; then break; fi; sleep 45; done
+# A main build still publishing would be cancelled by this merge (one build per branch): wait for it.
+for i in $(seq 1 170); do
+  main=$(gh api $R/commits/main --jq .sha)
+  busy=$(gh api "$R/commits/$main/check-runs" --jq '[.check_runs[]|select(.status!="completed")]|length')
+  [ "$busy" = "0" ] && break; echo "waiting for the main build of $main"; sleep 60; done
 head=$(gh api $R/pulls/$PR --jq .head.sha); [ "$head" = "$SHA" ] || { echo "PR head moved: $head"; exit 1; }
 m=$(gh api -X PUT $R/pulls/$PR/merge -f merge_method=merge -f sha=$SHA -f commit_title="Release $VER (#$PR)" --jq .sha) || { echo "MERGE FAILED"; exit 1; }
 echo "merged $VER as $m"; sleep 90

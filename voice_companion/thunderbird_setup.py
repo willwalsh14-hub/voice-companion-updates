@@ -69,7 +69,10 @@ INSTALL_SECONDS = 10 * 60     # each way: winget, then Mozilla's installer
 PROFILE_SECONDS = 90
 CLOSE_SECONDS = 30
 WINGET_ID = 'Mozilla.Thunderbird'
+# thunderbird-latest-ssl is the newest Release (monthly, 154 and newer have Microsoft Graph); Mozilla made it
+# the default download in Thunderbird 135. thunderbird-esr-latest-ssl would be ESR: never used.
 INSTALLER_URL = 'https://download.mozilla.org/?product=thunderbird-latest-ssl&os=win64&lang=en-US'
+VERSIONS_URL = 'https://product-details.mozilla.org/1.0/thunderbird_versions.json'
 SIGNER = 'Mozilla Corporation'
 # Started in the background for a Thunderbird account (start_in_background).
 STARTING_QUIETLY = 'Starting Thunderbird.'
@@ -82,8 +85,8 @@ OPENING_SITE = ('Opening thunderbird dot net in your web browser. Ask a helper t
                 'and add your email account there. ' + AGAIN)
 NOT_OPENING_SITE = 'Okay. Nothing was opened. When Thunderbird is installed, say add account and choose Thunderbird.'
 SITE_FAILED = 'The website did not open. Ask a helper to go to thunderbird dot net and install Thunderbird. ' + AGAIN
-TOO_OLD = ('Thunderbird on this computer is too old for Voice Companion. Ask a helper to update it to version 128 or newer. '
-           'In Thunderbird, open Help, then About Thunderbird. ' + AGAIN)
+TOO_OLD = ('Thunderbird on this computer is too old for Voice Companion. It needs version 128 or newer. '
+           'To update it, say update Thunderbird. ' + AGAIN)
 NO_ACCOUNT = ('Thunderbird is installed, but no email account is set up in it yet. A helper needs to add your email account '
               'in Thunderbird. Start Thunderbird now so they can do that? Say yes or no.')
 NO_ACCOUNT_OPEN = ('Thunderbird is open, but no email account is set up in it yet. Ask a helper to add your email account '
@@ -196,18 +199,38 @@ class WindowsSystem:
                 if not block: break
                 handle.write(block)
 
+    signer_problem = ''    # why the last signature check did not say Valid, in Windows' words (for error reports)
+
     def signer(self, path):
-        """(signature status, signer subject) from Windows' own Authenticode check."""
+        """(signature status, signer subject) from Windows' own Authenticode check.
+
+        Windows PowerShell is run by its full path, without PSModulePath: started from PowerShell 7,
+        it would inherit 7's module path and fail to load Get-AuthenticodeSignature."""
         script = ('$s = Get-AuthenticodeSignature -LiteralPath $env:VC_FILE; '
-                  '"$($s.Status)|$($s.SignerCertificate.Subject)"')
+                  '"$($s.Status)|$($s.SignerCertificate.Subject)|$($s.StatusMessage)"')
+        powershell = str(Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe')
+        env = {key: value for key, value in os.environ.items() if key.upper() != 'PSMODULEPATH'}
+        env['VC_FILE'] = str(path)
         try:
-            found = subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
-                                   text=True, timeout=60, env={**os.environ, 'VC_FILE': str(path)},
-                                   creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.strip()
-        except (OSError, subprocess.SubprocessError):
+            done = subprocess.run([powershell, '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
+                                  text=True, timeout=60, env=env, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        except (OSError, subprocess.SubprocessError) as exc:
+            self.signer_problem = type(exc).__name__ + ': ' + str(exc)
             return '', ''
-        status, _, subject = found.partition('|')
+        status, _, rest = done.stdout.strip().partition('|')
+        subject, _, message = rest.rpartition('|') if rest.count('|') else (rest, '', '')
+        self.signer_problem = '' if status.strip() == 'Valid' else (message.strip() + ' ' + done.stderr.strip()).strip()[-600:]
         return status.strip(), subject.strip()
+
+    def latest_release(self):
+        """The newest Thunderbird Release version from Mozilla's product details, or None."""
+        from urllib import request
+        try:
+            with request.urlopen(VERSIONS_URL, timeout=20) as response:
+                found = json.loads(response.read(1 << 20).decode('utf-8')).get('LATEST_THUNDERBIRD_VERSION')
+        except (OSError, ValueError, AttributeError):
+            return None
+        return str(found) if found else None
 
     def sleep(self, seconds):
         time.sleep(seconds)
@@ -393,6 +416,34 @@ def _set_pref(text, name, value):
     return text + line + '\n'
 
 
+# Thunderbird waits to start add-ons until its main window has restored its tabs. Started
+# minimized (or off the taskbar), that can wait until the user brings the window up, so mail
+# hung until Alt+Tab (Will, October 29, 2026). With this off, the mail connection add-on starts
+# with Thunderbird. Mozilla's own setting; it changes nothing else.
+PROMPT_START = 'extensions.webextensions.background-delayed-startup'
+
+
+def start_addons_promptly(profile):
+    """Make sure the profile's user.js has PROMPT_START off. Thunderbird reads it at its next start.
+    True when it is set. Never raises: Thunderbird still starts without it."""
+    user_js = Path(profile) / 'user.js'
+    try:
+        try:
+            text = user_js.read_bytes().decode('utf-8', 'surrogateescape')
+        except FileNotFoundError:
+            text = ''
+        if read_prefs(user_js).get(PROMPT_START) is False:
+            return True
+        if not text.strip():
+            text = '// Settings for this Thunderbird profile.\n'
+        if 'connection add-on starts with Thunderbird' not in text:
+            text += '// Added by Voice Companion so its mail connection add-on starts with Thunderbird, even minimized.\n'
+        write_atomic(user_js, _set_pref(text, PROMPT_START, 'false').encode('utf-8', 'surrogateescape'))
+        return True
+    except OSError:
+        return False
+
+
 def install_addon(profile, package):
     """Place the add-on in the profile and let Thunderbird turn it on at its next start."""
     profile = Path(profile)
@@ -413,6 +464,7 @@ def install_addon(profile, package):
         text += '// Added by Voice Companion so its mail connection add-on turns on.\n'
     text = _set_pref(text, 'extensions.autoDisableScopes', auto & ~SCOPE_PROFILE)
     text = _set_pref(text, 'extensions.startupScanScopes', scan | SCOPE_PROFILE)
+    text = _set_pref(text, PROMPT_START, 'false')
     (profile / 'extensions').mkdir(exist_ok=True)
     write_atomic(addon_file(profile), data, profile)  # temporary file outside extensions: Thunderbird never sees it
     try:
@@ -481,6 +533,7 @@ def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
         launched = False
         if not running:
             refresh_addon(profile, package)
+            start_addons_promptly(profile)
             try:
                 system.launch_background(program)
             except OSError as exc:
@@ -502,8 +555,8 @@ def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
 
 # ---- Installing Thunderbird ---------------------------------------------------
 
-def _run(system, command, timeout, progress, every=PROGRESS_SECONDS):
-    """Run a program, saying STILL_INSTALLING every 15 seconds. Its exit code, or None if it took too long."""
+def _run(system, command, timeout, progress, every=PROGRESS_SECONDS, message=STILL_INSTALLING):
+    """Run a program, saying message every 15 seconds. Its exit code, or None if it took too long."""
     try:
         process = system.start_process(command)
     except OSError:
@@ -516,19 +569,37 @@ def _run(system, command, timeout, progress, every=PROGRESS_SECONDS):
             except OSError: pass
             return None
         if now - last >= every:
-            progress(STILL_INSTALLING); last = now
+            progress(message); last = now
         system.sleep(1)
     return process.returncode
 
 
+def signed_by_mozilla(system, path):
+    """Only Mozilla's own signed installer runs: Windows' Authenticode check, organization Mozilla Corporation."""
+    status, subject = system.signer(path)
+    try:
+        system.last_signature = (status, subject)
+    except AttributeError:
+        pass
+    return status == 'Valid' and bool(re.search(r'(?:^|,\s*)O="?' + re.escape(SIGNER) + r'"?(?:,|$)', subject))
+
+
 def install_program(system, progress):
-    """Install Thunderbird. Returns the path to thunderbird.exe, or None. Never hangs: every step has a time limit."""
+    """Install Thunderbird (the Release channel). Returns the path to thunderbird.exe, or None.
+    Never hangs: every step has a time limit."""
+    from thunderbird_upgrade import install_release, installed, is_current
     if system.has_winget():
+        # Mozilla.Thunderbird is the Release channel (Mozilla.Thunderbird.ESR would be ESR).
         _run(system, ['winget', 'install', '--id', WINGET_ID, '-e', '--silent',
                       '--accept-package-agreements', '--accept-source-agreements'], INSTALL_SECONDS, progress)
         # Success is Thunderbird being there, whatever the exit code (it may already be installed).
-        program, _ = find_program(system)
+        program, version = find_program(system)
         if program:
+            info = installed(system, program, version)
+            if is_current(info) or info.store or info.major is None:
+                return program
+            # An ESR or older copy was already there: Mozilla's Release installer, into the same folder.
+            install_release(system, info.folder, progress)   # if it fails, the older copy still works
             return program
     folder = Path(tempfile.mkdtemp(prefix='voice-companion-thunderbird-'))
     installer = folder / 'Thunderbird Setup.exe'
@@ -537,9 +608,7 @@ def install_program(system, progress):
             system.download(INSTALLER_URL, installer)
         except OSError:
             return None
-        status, subject = system.signer(installer)
-        # Only Mozilla's own signed installer runs.
-        if status != 'Valid' or not re.search(r'(?:^|,\s*)O="?' + re.escape(SIGNER) + r'"?(?:,|$)', subject):
+        if not signed_by_mozilla(system, installer):
             return None
         if _run(system, [str(installer), '/S'], INSTALL_SECONDS, progress) is None:
             return None
@@ -565,13 +634,15 @@ def _until(system, check, seconds):
 class Setup:
     """start() and answer() each return a Step: what to say, and the yes or no question now waiting."""
 
-    def __init__(self, system, package, connect, relay, progress, ready=None, adding=False):
+    def __init__(self, system, package, connect, relay, progress, ready=None, adding=False, upgrader=None):
         self.system, self.package = system, Path(package)
         self.connect, self.relay, self.progress = connect, relay, progress
         # ready(setup) -> Step: what happens once Thunderbird is connected (default: connect its accounts).
         self.ready, self.adding = ready, adding
         self.program = self.profile = None
         self.version = None    # Thunderbird's major version, when Windows records it
+        # upgrader() -> thunderbird_upgrade.Upgrade: offers the move to the Release channel (154 or newer).
+        self.upgrader, self.upgrade = upgrader, None
 
     def _step(self, message, question):
         """While adding an account, "say add account and choose Thunderbird" becomes "say add Thunderbird account"."""
@@ -624,11 +695,20 @@ class Setup:
     def start(self):
         self.program, version = find_program(self.system)
         self.version = major_version(version)
+        if self.program:
+            # The program folder's own version (application.ini) is right even when the registry lags.
+            from thunderbird_upgrade import installed
+            info = installed(self.system, self.program, version)
+            if info is not None and info.major is not None:
+                self.version = info.major
         if self._connected():
             return self._finish()
         if not self.program:
             return self._step(NOT_INSTALLED, 'install_program')
         major = self.version
+        offered = self._offer_upgrade(major is not None and major < MIN_VERSION)
+        if offered is not None:
+            return offered
         if major is not None and major < MIN_VERSION:
             return self._step(TOO_OLD, None)
         running = self.system.running()
@@ -702,7 +782,33 @@ class Setup:
             return self._step(START_FAILED, None)
         return self._wait(STARTING)
 
+    def _offer_upgrade(self, too_old):
+        """Too old for the add-on: always offer the update. Adding an account to ESR or a Thunderbird
+        before 154: offer it once (Microsoft 365 needs it), when it is due. None: go on as before."""
+        if self.upgrader is None or self.upgrade is not None or not (too_old or self.adding):
+            return None
+        try:
+            self.upgrade = self.upgrader()
+            step = self.upgrade.check() if too_old else self.upgrade.offer()
+        except Exception:
+            return None
+        return step if step is not None and step.question == 'upgrade' else None
+
+    def _after_upgrade(self, yes):
+        import thunderbird_upgrade
+        step = self.upgrade.answer('upgrade', yes)
+        updated = yes and not self.upgrade.report.get('problems') and \
+            thunderbird_upgrade.is_current(thunderbird_upgrade.installed(self.system))
+        if not (updated or not yes):
+            return step                    # it did not work: say so, and stop here
+        rest = self.start()
+        if self.version is not None and self.version < MIN_VERSION and not updated:
+            return rest
+        return Step((step.message + ' ' + rest.message).strip(), rest.question)
+
     def answer(self, question, yes):
+        if question == 'upgrade' and self.upgrade is not None:
+            return self._after_upgrade(yes)
         if question == 'install_program':
             if not yes: return self._step(NOT_INSTALLING, None)
             return self._install_everything()

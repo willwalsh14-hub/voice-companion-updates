@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const {createFakeMessenger} = require('./fake-messenger.cjs');
+const {createFakeMessenger, addMicrosoftAccounts} = require('./fake-messenger.cjs');
 
 function load(api) {
   const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api, File, Blob, btoa, atob});
@@ -155,7 +155,7 @@ function load(api) {
   assert.equal(state.setupCalls.at(-1).show, true);
 
   // The page is read and driven; a password goes in once and is never answered back.
-  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: [], addressFilled: false});
+  assert.deepEqual(await call('setupPage'), {...state.setupPage, fields: [], addressFilled: false, choices: [], noteShapes: []});
   assert.deepEqual(await call('setupContinue'), {pressed: true});
   state.setupPage.needsPassword = true;
   const filled = await bridge.handle({id: 7, method: 'fillPassword', params: {password: 'pw-123456'}});
@@ -205,8 +205,200 @@ function load(api) {
   await identityChecks();
   await outgoingServerChecks();
   await attachmentChecks();
+  await microsoftAccountChecks();
+  await aboutChecks();
+  await graphChoiceChecks();
+  await noteWordsChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+
+// ---- Thunderbird 154 and newer: Microsoft 365 through Microsoft Graph, and Exchange (EWS) ----
+
+// Will, October 2026: Thunderbird 154 added Microsoft Graph for Microsoft 365. Thunderbird 159 lists such an
+// account with type "extension:graph" (Exchange: "ews"). Everything Voice Companion does with mail must work for it too.
+async function microsoftAccountChecks() {
+  const {api, state} = createFakeMessenger();
+  addMicrosoftAccounts(state);
+  const bridge = load(api);
+  const call = async (method, params) => {
+    const answer = await bridge.handle({id: 31, method, params});
+    if (answer.error) throw Object.assign(new Error(answer.error.message), {answer});
+    return JSON.parse(JSON.stringify(answer.result));
+  };
+  // Listed as accounts, with their type, beside Gmail.
+  const accounts = await call('accounts');
+  assert.deepEqual(accounts.map(a => [a.id, a.type, a.identities[0].email]), [['account1', 'imap', 'me@gmail.com'],
+    ['account5', 'extension:graph', 'will@contoso.onmicrosoft.com'], ['account6', 'ews', 'will@work.example']]);
+  for (const [accountId, label] of [['account5', 'Graph message'], ['account6', 'Exchange message']]) {
+    // Folders by Microsoft's names; the inbox found by its kind.
+    const folders = await call('folders', {accountId});
+    assert.deepEqual(folders.map(f => f.name), ['Inbox', 'Sent Items', 'Deleted Items', 'Archive']);
+    const inbox = await call('inbox', {accountId});
+    assert.equal(inbox.id, accountId + '://Inbox');
+    assert.equal((await call('folderInfo', {folderId: inbox.id})).messagesTotal >= 1, true);
+    // Listing checks the server first, by the folder's own path.
+    const page = await call('list', {folderId: inbox.id, offset: 0, limit: 10});
+    assert.equal(page.rows[0].subject, label);
+    assert.equal(page.mailCheck, 'checked');
+    assert.deepEqual(state.mailChecks.at(-1), {accountId, path: '/Inbox', inbox: true});
+  }
+  // Reading, with the message's file.
+  const read = await call('read', {messageId: 501});
+  assert.equal(read.plain, 'Sent through Microsoft Graph');
+  assert.deepEqual(read.attachments.map(a => a.name), ['letter.pdf']);
+  const piece = await call('attachmentChunk', {messageId: 501, partName: '1.2'});
+  assert.equal(Buffer.from(piece.data, 'base64').toString(), '%PDF graph');
+  // Sending, replying and forwarding go out through the Graph account's own identity.
+  const sent = await call('send', {identityId: 'idaccount5', to: ['sam@example.com'], subject: 'Hi', html: '<p>Hi</p>', plain: 'Hi'});
+  assert.equal(sent.accountId, 'account5');
+  await call('send', {identityId: 'idaccount5', reply: {messageId: 501, type: 'replyToSender'}, html: '<p>Thanks</p>', plain: 'Thanks'});
+  assert.deepEqual([state.sent.at(-1).kind, state.sent.at(-1).messageId, state.sent.at(-1).details.identityId], ['reply', 501, 'idaccount5']);
+  await call('send', {identityId: 'idaccount5', to: ['amy@example.com'], forward: {messageId: 501}, html: '<p>See this</p>', plain: 'See this'});
+  assert.deepEqual(state.sent.at(-1).attachments.map(a => a.file.name), ['letter.pdf'], 'the forward keeps its file');
+  // Moving, deleting (to the account's own Deleted Items), and folders of its own.
+  await call('move', {messageIds: [502], folderId: 'account5://Archive'});
+  assert.equal(state.messages.find(m => m.id === 502).folderId, 'account5://Archive');
+  await call('trash', {messageIds: [501]});
+  assert.equal(state.messages.find(m => m.id === 501).folderId, 'account5://Deleted Items');
+  const made = await call('createFolder', {accountId: 'account5', name: 'Benefits'});
+  assert.equal(made.name, 'Benefits');
+  assert.equal(state.folders.find(f => f.id === made.id).accountId, 'account5');
+  // A Microsoft 365 organization that has not approved Thunderbird: the right advice for Graph,
+  // never "turn on Authenticated SMTP" (that is only for sending over SMTP).
+  state.failSendFor = {idaccount5: 'AADSTS65001: The user or administrator has not consented to use the application.'};
+  const refused = await bridge.handle({id: 32, method: 'send', params: {identityId: 'idaccount5', to: ['x@example.com'], subject: 's', html: '', plain: 'x'}});
+  assert.match(refused.error.message, /Your organization must approve Thunderbird for Microsoft 365\. Ask your IT administrator/);
+  assert.doesNotMatch(refused.error.message, /SMTP/);
+  // Over SMTP the advice stays as it was.
+  state.failSendFor = {id1: '5.7.139 SmtpClientAuthentication is disabled for the Tenant.'};
+  const smtp = await bridge.handle({id: 33, method: 'send', params: {identityId: 'id1', to: ['x@example.com'], subject: 's', html: '', plain: 'x'}});
+  assert.match(smtp.error.message, /turn on Authenticated SMTP/);
+
+  // The Experiment: a Graph account's folder is fetched from the server (never treated as local),
+  // and a Graph outgoing server (not SMTP, no host name) gives no server words instead of failing.
+  const mail = fakeMailServices();
+  const graph = {type: 'graph'};
+  const graphRoot = 'graph://will%40contoso.onmicrosoft.com@graph.microsoft.com';
+  const graphInbox = {URI: graphRoot + '/Inbox', flags: 0x1000,
+    updateFolderWithListener(win, listener) { mail.calls.push({how: 'update', uri: this.URI}); setTimeout(() => listener.OnStopRunningUrl({}, 0), 5); }};
+  graph.rootFolder = {URI: graphRoot, descendants: [graphInbox], getFolderWithFlags: () => graphInbox};
+  const getAccount = mail.MailServices.accounts.getAccount;
+  mail.MailServices.accounts.getAccount = id => (id === 'account5' ? {incomingServer: graph} : getAccount(id));
+  mail.MailServices.accounts.getIdentity = key => (key === 'idaccount5' ? {key} : null);
+  mail.MailServices.outgoingServer = {getServerByIdentity: () => ({type: 'graph', QueryInterface() { throw new Error('NS_NOINTERFACE'); }})};
+  const experiment = loadExperiment(null, fakeOAuth(), mail);
+  assert.deepEqual(plain(await experiment.getNewMail('account5', '/Inbox', true)), {checked: true, offline: false});
+  assert.deepEqual(mail.calls.at(-1), {how: 'update', uri: graphRoot + '/Inbox'});
+  assert.deepEqual(plain(await experiment.outgoingServer('idaccount5')), {host: '', port: 0, security: ''});
+}
+
+// Which Thunderbird is running, from which update channel, with which profile, and whether a
+// message is being written in it. Voice Companion uses it to update Thunderbird safely.
+async function aboutChecks() {
+  const app = {composing: 1, quits: []};
+  const api = loadExperiment(null, fakeOAuth(), fakeMailServices(), app);
+  assert.deepEqual(plain(await api.about()), {version: '155.0', channel: 'release',
+    profile: 'C:\\Users\\Will\\AppData\\Roaming\\Thunderbird\\Profiles\\abc.default-release', composing: 1});
+  app.composing = 0;
+  assert.equal((await api.about()).composing, 0);
+  // Through the add-on, and an older Experiment without it.
+  const {api: messenger, state} = createFakeMessenger();
+  const bridge = load(messenger);
+  state.userComposing = 1;
+  assert.deepEqual(plain((await bridge.handle({id: 41, method: 'about', params: {}})).result), {version: '155.0', channel: 'release',
+    profile: state.about.profile, composing: 1});
+  delete messenger.voiceCompanionSetup.about;
+  assert.deepEqual(plain((await bridge.handle({id: 42, method: 'about', params: {}})).result), {});
+  messenger.voiceCompanionSetup.about = async () => { throw new Error('broken'); };
+  assert.deepEqual(plain((await bridge.handle({id: 43, method: 'about', params: {}})).result), {});
+}
+
+// Account Hub in Thunderbird 154 and newer offers a Microsoft 365 address more than one way to
+// connect. Microsoft Graph is chosen for a new account (Mozilla's advice for Microsoft 365), once;
+// a choice the person makes afterwards is kept. The choices are read aloud.
+async function graphChoiceChecks() {
+  const radio = (text, checked) => {
+    const input = new FakeElement('input', {type: 'radio'});
+    input.checked = checked;
+    const label = new FakeElement('label', {}, [input, new FakeElement('span', {text})]);
+    label.textContent = text;
+    input.parentNode = label;
+    // Like a radio button: choosing one clears the others in its group.
+    input.click = function () { this.clicks++; for (const other of radios) other.checked = other === this; };
+    radios.push(input);
+    return label;
+  };
+  let win, radios = [];
+  const form = () => {
+    radios = [];
+    const parts = setupForm();
+    // Each radio button sits inside its label, once, as on a real page.
+    parts.splice(4, 0, radio('Exchange (EWS)', true), radio('Microsoft Graph API', false), radio('IMAP', false));
+    return parts;
+  };
+  win = fakeWindow({hub: true, form});
+  const api = loadExperiment(win);
+  await api.openAccountSetup('will@contoso.onmicrosoft.com', 'Will Walsh', false);
+  const page = plain(await api.setupPage());
+  assert.deepEqual(page.choices, [{label: 'Exchange (EWS)', checked: false}, {label: 'Microsoft Graph API', checked: true},
+    {label: 'IMAP', checked: false}]);
+  assert.equal(radios[1].clicks, 1);
+  // The person (with "show Thunderbird") picks IMAP: Voice Companion never changes it back.
+  radios[2].click();
+  await api.setupPage();
+  assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
+  assert.equal(radios[2].checked, true);
+  assert.equal(radios[1].clicks, 1);
+  // A page with no choices (Gmail): nothing about choices.
+  const gmail = loadExperiment(fakeWindow({hub: true}));
+  await gmail.openAccountSetup('will@gmail.com', '', false);
+  assert.deepEqual(plain(await gmail.setupPage()).choices, []);
+  // The add-on passes the choices on, at most six, as plain text.
+  const {api: messenger, state} = createFakeMessenger();
+  state.setupPage = {...state.setupPage, choices: [{label: 'Microsoft Graph API', checked: true}, {label: 'IMAP', checked: false}]};
+  const bridge = load(messenger);
+  assert.deepEqual(plain((await bridge.handle({id: 44, method: 'setupPage', params: {}})).result).choices,
+    [{label: 'Microsoft Graph API', checked: true}, {label: 'IMAP', checked: false}]);
+}
+
+// Thunderbird 159 on Windows (try PR 82): Account Hub's notice holds its own Show more and Show less
+// buttons, so the note was read as "Looking up configuration Show more Show less". Button words are
+// not part of what Thunderbird says.
+async function noteWordsChecks() {
+  const notice = () => new FakeElement('div', {class: 'notification-message', text: 'Looking up configuration Show more Show less'}, [
+    new FakeElement('span', {text: 'Looking up configuration'}), new FakeElement('button', {text: 'Show more'}),
+    new FakeElement('button', {text: 'Show less', visible: false})]);
+  const win = fakeWindow({hub: true, form: () => { const parts = setupForm(); parts.splice(3, 2, notice()); return parts; }});
+  const api = loadExperiment(win);
+  await api.openAccountSetup('will@outlook.com', '', false);
+  const page = plain(await api.setupPage());
+  assert.deepEqual(page.notes, ['Looking up configuration']);
+  // Its shape names the element kinds, never the words.
+  assert.deepEqual(page.noteShapes, ['div.notification-message span button button']);
+
+  // The notice exactly as Thunderbird 159 builds it (its shape, reported from Windows): a details bar whose
+  // summary holds icons, the title, and a toggle whose plain spans say Show more and Show less, then the
+  // description. Read: the title, then the description. Never the toggle.
+  const bar = (title, description) => {
+    const titleText = new FakeElement('p', {class: 'notification-title', text: title},
+      [new FakeElement('span', {class: 'localized-title', text: title}), new FakeElement('span', {class: 'raw-title'})]);
+    const toggle = new FakeElement('div', {text: 'Show more Show less'}, [new FakeElement('span', {text: 'Show more'}), new FakeElement('span', {text: 'Show less'})]);
+    const summary = new FakeElement('summary', {class: 'notification-title-container', role: 'alert', text: title + ' Show more Show less'},
+      [new FakeElement('img', {class: 'form-icon icon-warning'}), titleText, toggle]);
+    const text = new FakeElement('p', {class: 'notification-text', text: description},
+      [new FakeElement('span', {class: 'localized-description', text: description}), new FakeElement('span', {class: 'raw-description'})]);
+    return new FakeElement('details', {class: 'notification-bar info', text: title + ' Show more Show less ' + description}, [summary, text]);
+  };
+  for (const [title, description, expected] of [
+    ['Looking up configuration', '', ['Looking up configuration']],
+    ['Thunderbird failed to find the settings for your email account', 'Check the address, or set it up by hand.',
+     ['Thunderbird failed to find the settings for your email account. Check the address, or set it up by hand.']]]) {
+    const hub = fakeWindow({hub: true, form: () => { const parts = setupForm(); parts.splice(3, 2, bar(title, description)); return parts; }});
+    const experiment = loadExperiment(hub);
+    await experiment.openAccountSetup('will@outlook.com', '', false);
+    assert.deepEqual(plain(await experiment.setupPage()).notes, expected);
+  }
+}
 
 // ---- Attachments: listed, saved in pieces, attached to new mail, replies and forwards ----
 
@@ -741,14 +933,20 @@ function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app
   const context = vm.createContext({
     ChromeUtils: {importESModule: modules, generateQI: names => function QueryInterface() { return this; }},
     Services: {wm: {getMostRecentWindow: type => (type === 'mail:3pane' ? win : null),
-                    getEnumerator: type => ({hasMoreElements: () => type === 'msgcompose' && app.composing > 0})},
+                    getEnumerator: type => {
+                      let left = type === 'msgcompose' ? app.composing : 0;
+                      return {hasMoreElements: () => left > 0, getNext: () => { left--; return {}; }};
+                    }},
                io: mail.io, tm: {dispatchToMainThread: run => setTimeout(run, 0)},
                startup: {quit: how => app.quits.push(how)},
+               appinfo: {version: '155.0'},
+               prefs: {getDefaultBranch: () => ({getCharPref: (name, fallback) => (name === 'app.update.channel' ? 'release' : fallback)})},
+               dirsvc: {get: key => (key === 'ProfD' ? {path: 'C:\\Users\\Will\\AppData\\Roaming\\Thunderbird\\Profiles\\abc.default-release'} : null)},
                // Thunderbird's notifications: observers by topic, and windows opening (Services.ww).
                obs: {addObserver: (observer, topic) => app.observers.set(topic, observer),
                      removeObserver: (observer, topic) => { if (app.observers.get(topic) === observer) app.observers.delete(topic); }},
                ww: {registerNotification: observer => app.watchers.add(observer), unregisterNotification: observer => app.watchers.delete(observer)}},
-    Ci: {nsIAppStartup: {eAttemptQuit: 2}, nsISmtpServer: {}},
+    Ci: {nsIAppStartup: {eAttemptQuit: 2}, nsISmtpServer: {}, nsIFile: {}},
     setTimeout, WeakRef, Symbol, Object, URL,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);
@@ -845,7 +1043,7 @@ async function experimentChecks() {
   // The page is read: title, visible messages only, and the main button.
   assert.deepEqual(plain(await api.setupPage()), {open: true, title: 'Set up your existing email address',
     notes: ['Thunderbird failed to find the settings'], button: 'Continue', canContinue: true, needsPassword: false,
-    fields: ['text#realName', 'email'], addressFilled: true});
+    fields: ['text#realName', 'email'], addressFilled: true, choices: [], noteShapes: ['span.error-message']});
   assert.deepEqual(plain(await api.setupContinue()), {pressed: true});
   assert.equal(win.parts.at(-1).clicks, 1);
   assert.equal(win.parts.at(-2).clicks, 0, 'never Back');
@@ -892,12 +1090,10 @@ async function experimentChecks() {
   // They are filled in again, so the address is there when Voice Companion reads the page.
   win = fakeWindow({hub: true});
   api = loadExperiment(win);
-  const resetSoon = new Promise(resolve => setTimeout(() => {
-    for (const part of win.parts) if (part.localName === 'input') part.value = '';
-    resolve();
-  }, 40));
+  // The reset happens after the boxes were filled. A fixed 40 ms timer raced the fill on a slow
+  // Windows build (0.2.176) and cleared the boxes first, so "prefilled" came back false.
   assert.deepEqual(plain(await api.openAccountSetup('reset@example.org', 'Reset Name', false)), {opened: true, prefilled: true});
-  await resetSoon;
+  for (const part of win.parts) if (part.localName === 'input') part.value = '';
   const afterReset = plain(await api.setupPage());
   assert.equal(win.parts[2].value, 'reset@example.org');
   assert.equal(win.parts[1].value, 'Reset Name');
@@ -907,6 +1103,19 @@ async function experimentChecks() {
   win.parts[2].value = '';                     // the next step: nothing is filled in any more
   await api.setupPage();
   assert.equal(win.parts[2].value, '');
+
+  // The hub resets its form during Voice Companion's last short wait (seen as a test that failed only on a
+  // busy computer). The address is filled in again before the answer, so the person is never told to type it.
+  win = fakeWindow({hub: true});
+  let filledWaits = 0;
+  const tick = win.setTimeout;
+  win.setTimeout = fn => tick(() => {
+    if (win.parts && win.parts[2].value && ++filledWaits === 5) for (const part of win.parts) if (part.localName === 'input') part.value = '';
+    fn();
+  });
+  api = loadExperiment(win);
+  assert.deepEqual(plain(await api.openAccountSetup('late-reset@example.org', 'Late Reset', false)), {opened: true, prefilled: true});
+  assert.equal(win.parts[2].value, 'late-reset@example.org');
 
   // Thunderbird 158 turns Continue on only when the page sees typing: setUserInput is used
   // when present, and the email step is asked to check itself.
@@ -991,9 +1200,48 @@ async function experimentChecks() {
   assert.ok(schema[0].functions.every(f => f.async === true && f.type === 'function'));
   assert.ok(fs.existsSync(path.join(__dirname, declared.parent.script)));
   const [major, minor] = manifest.version.split('.').map(Number);
-  // 1.2.0 checks for new mail before listing; a higher version replaces installed 1.1 copies.
-  assert.ok(major > 1 || minor >= 2, 'the add-on version was raised so installed copies are replaced');
+  // 1.2.0 checks for new mail before listing; 1.7.0 adds about() and Microsoft Graph for Thunderbird 154;
+  // 1.7.1 tries again soon when the host could not start. A higher version replaces installed copies.
+  const patch = Number(manifest.version.split('.')[2] || 0);
+  assert.ok(major > 1 || minor > 7 || (minor === 7 && patch >= 1), 'the add-on version was raised so installed copies are replaced');
 }
+
+// Connecting to the host: after a break, try again soon, then less often; soon again once it talks.
+(() => {
+  const {api} = createFakeMessenger();
+  const context = vm.createContext({console, setTimeout, clearTimeout, VOICE_COMPANION_TEST: true, messenger: api, File, Blob, btoa, atob});
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8'), context);
+  const ports = [], delays = [];
+  let refuse = false;
+  api.runtime = {getManifest: () => ({version: '1.7.1'}), connectNative(name) {
+    assert.equal(name, 'com.voicecompanion.mail');
+    if (refuse) throw new Error('host missing');
+    const listeners = {message: [], disconnect: []};
+    const port = {sent: [], postMessage(m) { this.sent.push(m); },
+      onMessage: {addListener: f => listeners.message.push(f)}, onDisconnect: {addListener: f => listeners.disconnect.push(f)},
+      drop() { listeners.disconnect.forEach(f => f()); }, say(m) { listeners.message.forEach(f => f(m)); }};
+    ports.push(port);
+    return port;
+  }};
+  const queue = [];
+  const timers = {setTimeout(f, ms) { delays.push(ms); queue.push(f); }};
+  const link = vm.runInContext('startConnection', context)(api, timers);
+  assert.equal(ports.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(ports[0].sent[0])), {protocol: 3, command: 'mail', version: '1.7.1'});
+  ports[0].drop();                       // the host was stopped for an update
+  assert.equal(link.port(), null);
+  refuse = true;                         // and cannot start while files are replaced
+  queue.shift()(); queue.shift()(); queue.shift()();
+  assert.deepEqual(delays, [2000, 4000, 8000, 16000]);
+  refuse = false;
+  queue.shift()();
+  assert.equal(ports.length, 2);
+  ports[1].say({id: 1, method: 'about', params: {}});
+  ports[1].drop();
+  assert.equal(delays[delays.length - 1], 2000, 'once the host talked, a later break is tried again soon');
+  for (let i = 0; i < 8; i++) { refuse = true; queue.shift()(); }
+  assert.equal(Math.max(...delays), 30000, 'never waits longer than 30 seconds');
+})();
 
 // Contacts and calendars (pim.js, experiment/calendar.js) have their own file.
 require('./test-pim.cjs');

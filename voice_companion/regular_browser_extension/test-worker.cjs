@@ -81,7 +81,13 @@ const Model=vm.runInContext('CompanionCDP',context);
   pause:async id=>{downloadCalls.push(['pause',id]);if(!downloadItems.has(id))throw new Error('Invalid download id');downloadItems.get(id).paused=true;},
   resume:async id=>{downloadCalls.push(['resume',id]);const item=downloadItems.get(id);if(!item?.canResume)throw new Error('Download must be resumable');item.paused=false;},
   cancel:async id=>{downloadCalls.push(['cancel',id]);Object.assign(downloadItems.get(id),{state:'interrupted',error:'USER_CANCELED'});}};
- const sent=[];
+ const sent=[],updateChecks=[];let reloads=0;
+ // A store copy's manifest carries Chrome's update_url; an unpacked copy's does not.
+ const installed={version:'0.9.1',update_url:'https://clients2.google.com/service/update2/crx'};
+ runtime.getManifest=()=>({...installed});
+ runtime.requestUpdateCheck=async()=>{updateChecks.push(Date.now());return {status:'update_available',version:'0.9.2'};};
+ runtime.reload=()=>{reloads++;};
+ runtime.onUpdateAvailable={addListener:handler=>{runtime.updateAvailable=handler;}};
  runtime.connectNative=()=>{ports++;return {postMessage:message=>sent.push(message),disconnect:()=>{},onMessage:{addListener:handler=>{runtime.toPort=handler;}},onDisconnect:listenerStub()};};
  const workerContext=vm.createContext({chrome,navigator:{userAgent:'Chrome/140.0.0.0'},setInterval,clearInterval});
  workerContext.importScripts=(...names)=>{for(const name of names)vm.runInContext(fs.readFileSync(path.join(__dirname,name),'utf8'),workerContext);};
@@ -89,6 +95,23 @@ const Model=vm.runInContext('CompanionCDP',context);
  await vm.runInContext('startup()',workerContext);
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(ports,1);assert.equal(vm.runInContext('model.allTabs',workerContext),true);
+ // The first message tells Companion which version is running.
+ assert.equal(sent[0].command,'cdp');assert.equal(sent[0].version,'0.9.1');
+ // Companion asks an out-of-date store copy to check the store now; nothing is reloaded yet.
+ runtime.toPort({method:'VoiceCompanion.checkForUpdate'});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.equal(updateChecks.length,1);assert.equal(reloads,0);
+ assert.ok(!calls.some(c=>c.method==='VoiceCompanion.checkForUpdate'),'The update request reached a web page.');
+ // The Companion link keeps the worker busy, so Chrome would wait forever: reload to apply the update.
+ assert.equal(typeof runtime.updateAvailable,'function');runtime.updateAvailable({version:'0.9.2'});assert.equal(reloads,1);
+ // An unpacked copy cannot update from the store: reloading it loads the installer's new files.
+ delete installed.update_url;
+ runtime.toPort({method:'VoiceCompanion.checkForUpdate'});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.equal(updateChecks.length,1);assert.equal(reloads,2);
+ // A refused or throttled check never breaks the link.
+ installed.update_url='https://clients2.google.com/service/update2/crx';
+ runtime.requestUpdateCheck=async()=>{throw new Error('throttled');};
+ runtime.toPort({method:'VoiceCompanion.checkForUpdate'});await new Promise(resolve=>setTimeout(resolve,5));
+ assert.equal(reloads,2);assert.equal(ports,1);
  // Cancel on the "is debugging this browser" bar must stick until the user reconnects.
  const attachesBefore=attached.length;
  detached({tabId:7},'canceled_by_user');assert.equal(vm.runInContext('model.tabs.has(7)',workerContext),false);

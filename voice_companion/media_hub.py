@@ -28,6 +28,28 @@ RADIO_ROOTS = ('https://all.api.radio-browser.info','https://de1.api.radio-brows
                'https://nl1.api.radio-browser.info')
 IPRD_CATALOG = 'https://iprd-org.github.io/iprd/site_data/metadata/catalog.json'
 APPLE_API = 'https://itunes.apple.com/search'
+# Apple's free podcast charts. The first takes a category (genre) number; the second
+# is Apple's newer chart of all podcasts, used when the first does not answer. A chart
+# names each show only by its Apple number, so APPLE_LOOKUP gives each show's feed.
+APPLE_CHART = 'https://itunes.apple.com/us/rss/toppodcasts/limit={limit}{genre}/json'
+APPLE_TOP_CHART = 'https://rss.marketingtools.apple.com/api/v2/us/podcasts/top/{limit}/podcasts.json'
+APPLE_LOOKUP = 'https://itunes.apple.com/lookup'
+CHART_SIZE = 25
+TOP_PODCASTS = 'Top podcasts'
+# Apple Podcasts categories with their Apple genre numbers (podcasts.apple.com/us/genre/<number>).
+PODCAST_CATEGORIES = (('News', 1489), ('Comedy', 1303), ('True crime', 1488), ('Sports', 1545),
+                      ('History', 1487), ('Health and fitness', 1512), ('Business', 1321),
+                      ('Education', 1304), ('Religion and spirituality', 1314), ('Kids and family', 1305),
+                      ('Music', 1310), ('Society and culture', 1324), ('Technology', 1318), ('Arts', 1301),
+                      ('Science', 1533), ('TV and film', 1309))
+# Other words people use for a category.
+CATEGORY_WORDS = {'top': TOP_PODCASTS, 'top podcasts': TOP_PODCASTS, 'popular': TOP_PODCASTS, 'most popular': TOP_PODCASTS,
+                  'all': TOP_PODCASTS, 'crime': 'True crime', 'health': 'Health and fitness', 'fitness': 'Health and fitness',
+                  'religion': 'Religion and spirituality', 'spirituality': 'Religion and spirituality', 'faith': 'Religion and spirituality',
+                  'kids': 'Kids and family', 'family': 'Kids and family', 'children': 'Kids and family',
+                  'society': 'Society and culture', 'culture': 'Society and culture', 'tech': 'Technology',
+                  'tv': 'TV and film', 'television': 'TV and film', 'film': 'TV and film', 'movies': 'TV and film',
+                  'sport': 'Sports', 'business news': 'Business', 'art': 'Arts', 'politics': 'News'}
 MAX_DOWNLOAD = 500 * 1024 * 1024
 AUDIO_EXTENSIONS = ('.mp3', '.m4a', '.aac', '.ogg', '.opus')
 PODCAST_REFRESH_SECONDS = 6 * 3600
@@ -158,6 +180,75 @@ def station_request(spoken):
     return name
 
 
+# Spoken changes to the audio itself. "Louder", "faster" and "volume up" alone change
+# Companion's voice, so these always name the audio (as YouTube's say "video").
+MEDIA_LEVEL_WORDS = {}
+for _words, _change in ((('audio volume up', 'audio louder', 'louder audio', 'media volume up', 'turn the audio up'), ('volume', 0.1)),
+                        (('audio volume down', 'audio quieter', 'quieter audio', 'audio softer', 'media volume down', 'turn the audio down'), ('volume', -0.1)),
+                        (('faster audio', 'audio faster', 'speed up audio', 'speed up the audio'), ('speed', 0.25)),
+                        (('slower audio', 'audio slower', 'slow down audio', 'slow down the audio'), ('speed', -0.25)),
+                        (('normal audio speed', 'audio normal speed', 'normal speed audio'), ('speed', 0))):
+    for _word in _words:
+        MEDIA_LEVEL_WORDS[_word] = _change
+
+# "Browse podcasts" lists the categories; these name the overall chart.
+BROWSE_CATEGORIES = ('browse podcasts', 'browse podcast', 'browse podcast categories', 'browse categories',
+                     'podcast categories', 'list podcast categories', 'browse for a podcast', 'browse for podcasts')
+TOP_PODCAST_PHRASES = ('top podcasts', 'top podcast', 'top podcast chart', 'top podcast charts', 'podcast charts',
+                       'popular podcasts', 'most popular podcasts', 'browse top podcasts')
+
+
+def _category_words(text):
+    words = str(text or '').casefold().replace('&', ' and ')
+    words = ' '.join(re.sub(r'[^\w\s]', ' ', words).split())
+    return re.sub(r'^(?:the )|(?: podcasts?| category| charts?| shows?)+$', '', words).strip()
+
+
+def podcast_category(spoken):
+    """The category named in speech or typing ("True Crime.", "health", "Kids & Family"),
+    TOP_PODCASTS for the overall chart, or None when it is not a category."""
+    words = _category_words(spoken)
+    if not words:
+        return None
+    for name, _ in PODCAST_CATEGORIES:
+        if words == _category_words(name):
+            return name
+    return CATEGORY_WORDS.get(words)
+
+
+def chart_ids(answer):
+    """Apple show numbers, in chart order, from either chart's JSON. Damaged parts are skipped."""
+    feed = answer.get('feed') if isinstance(answer, dict) else None
+    if not isinstance(feed, dict):
+        return []
+    entries = feed.get('entry', feed.get('results'))
+    if isinstance(entries, dict):
+        entries = [entries]   # a chart with one show
+    found = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        number = entry.get('id')
+        if isinstance(number, dict):   # the category chart: {"attributes": {"im:id": "123"}}
+            attributes = number.get('attributes')
+            number = attributes.get('im:id') if isinstance(attributes, dict) else None
+        number = str(number or '').strip()
+        if number.isdigit() and number not in found:
+            found.append(number)
+    return found
+
+
+def _shows(results):
+    """Shows with a working feed, from Apple search or lookup results."""
+    shows = []
+    for r in results if isinstance(results, list) else []:
+        if isinstance(r, dict) and isinstance(r.get('feedUrl'), str) and _http_url(r['feedUrl']):
+            name = str(r.get('collectionName') or r.get('trackName') or '').strip() or 'Untitled podcast'
+            shows.append({'name': name, 'feed': r['feedUrl'], 'genre': str(r.get('primaryGenreName') or ''),
+                          'apple_id': str(r.get('collectionId') or '')})
+    return shows
+
+
 def _sentence(text):
     text = str(text).strip()
     return text if text.endswith(('.', '!', '?')) else text + '.'
@@ -207,6 +298,11 @@ class MediaHub:
         self.shows = []
         self.show_index = None
         self.awaiting_podcast_search = False
+        # "Browse podcasts": the list of categories, and which one is chosen.
+        self.browsing_categories = False
+        self.category_index = 0
+        # The category whose chart is in self.shows, so Escape can go back to the categories.
+        self.shows_category = None
         self.episode_index = None
         self.browsing_episodes = False
         self.download_errors = {}
@@ -581,6 +677,16 @@ class MediaHub:
         the first time a stream that had started stops, errors or stalls; else None.
         Runs on the thread that opened the player."""
         player = self.player
+        if getattr(player, 'loading', False) is True and getattr(player, 'kind', None) in ('podcast', 'local'):
+            # An episode that took long to start: say so if it cannot play after all.
+            try: sample = player.health()
+            except Exception: sample = None
+            if sample is None or not sample.get('loading'):
+                player.loading = False
+                if sample is not None and sample.get('error') is not None:
+                    title = getattr(player, 'title', None) or 'This episode'
+                    return getattr(player, 'session', None), title + ' could not play. The podcast website may be busy. Try again, or choose another episode.'
+            return None
         streaming = getattr(player, 'streaming', None)
         if not callable(streaming) or not streaming(): return None
         try: sample = player.health()
@@ -746,6 +852,8 @@ class MediaHub:
                      'genre':str(r.get('primaryGenreName') or '')} for r in (results if isinstance(results,list) else [])
                     if isinstance(r,dict) and isinstance(r.get('feedUrl'),str) and _http_url(r['feedUrl'])]
         self.show_index=0 if self.shows else None
+        self.shows_category=None
+        self.browsing_categories=False
         self.browsing_episodes=False
         self.episode_index=None
         self.episodes=[]
@@ -753,6 +861,72 @@ class MediaHub:
         if not self.shows: return 'No podcast feeds found. Try another name or category.'
         return ('Found '+_counted(len(self.shows),'podcast')+'. Podcast 1: '+self.shows[0]['name']+'. '
                 'Say next or previous to browse. Say that one to open episodes, or subscribe to save this feed.')
+
+    def podcast_categories(self):
+        """The Browse podcasts list: the overall chart first, then each category."""
+        return [TOP_PODCASTS]+[name for name,_ in PODCAST_CATEGORIES]
+
+    def category_choice(self):
+        """Say the chosen category, as the list does."""
+        names=self.podcast_categories()
+        self.category_index=max(0,min(self.category_index or 0,len(names)-1))
+        from menu_navigation import announce_item
+        return announce_item(names[self.category_index],self.category_index,len(names))
+
+    def browse_categories(self):
+        self.browsing_categories=True
+        self.browsing_episodes=False
+        return ('Browse podcasts. Choose a category to hear its top podcasts. '+self.category_choice()+
+                ' Say next or previous to move, and that one to open it.')
+
+    def _chart(self, genre):
+        """Top shows from Apple's chart, in chart order, each with its feed. Raises OSError or
+        ValueError when the chart cannot be read."""
+        url=APPLE_CHART.format(limit=CHART_SIZE,genre='/genre='+str(genre) if genre else '')
+        try: ids=chart_ids(self.fetch_json(url))
+        except (OSError,ValueError,TimeoutError):
+            if genre: raise
+            ids=[]
+        if not ids and not genre:
+            ids=chart_ids(self.fetch_json(APPLE_TOP_CHART.format(limit=CHART_SIZE)))
+        if not ids: return []
+        answer=self.fetch_json(APPLE_LOOKUP+'?'+parse.urlencode({'id':','.join(ids[:CHART_SIZE]),'entity':'podcast'}))
+        found={show['apple_id']:show for show in _shows(answer.get('results') if isinstance(answer,dict) else None)}
+        return [found[number] for number in ids if number in found]
+
+    def browse_category(self, spoken):
+        """Top podcasts in a category, or in all of Apple Podcasts. Speech that names no
+        category searches for it by name, as before."""
+        name=podcast_category(spoken)
+        if name is None: return self.search_podcasts(spoken)
+        names=self.podcast_categories()
+        self.category_index=names.index(name)
+        genre=dict(PODCAST_CATEGORIES).get(name)
+        try: shows=self._chart(genre)
+        except (OSError,ValueError,TimeoutError): shows=[]
+        if not shows and genre:
+            # The chart did not answer: Apple's search within the same category still lists its shows.
+            url=APPLE_API+'?'+parse.urlencode({'media':'podcast','entity':'podcast','limit':CHART_SIZE,
+                                               'genreId':genre,'term':name.split(' and ')[0]})
+            try:
+                answer=self.fetch_json(url)
+                shows=_shows(answer.get('results') if isinstance(answer,dict) else None)
+            except (OSError,ValueError,TimeoutError): shows=[]
+        if not shows:
+            return ('The '+name.lower().replace('tv ','TV ')+' list is not available right now. Check the internet connection, '
+                    'then try again. You can also search for a podcast by name.') if name!=TOP_PODCASTS else (
+                    'The top podcasts list is not available right now. Check the internet connection, then try again. '
+                    'You can also search for a podcast by name.')
+        self.shows=shows
+        self.show_index=0
+        self.shows_category=name
+        self.browsing_categories=False
+        self.browsing_episodes=False
+        self.episode_index=None
+        self.episodes=[]
+        self.current_feed=None
+        return (name+'. '+_counted(len(shows),'top podcast')+'. Podcast 1: '+shows[0]['name']+'. '
+                'Say next or previous to browse. Say that one to open episodes, or subscribe.')
 
     def _feed_episodes(self, show):
         if not _http_url(show['feed']): raise ValueError('The podcast feed address is invalid.')
@@ -834,6 +1008,8 @@ class MediaHub:
         subs=self.saved_subscriptions()
         self.shows=subs
         self.show_index=0 if subs else None
+        self.shows_category=None
+        self.browsing_categories=False
         self.browsing_episodes=False
         self.episode_index=None
         return ('Found '+_counted(len(subs),'subscription')+'. Subscription 1: '+subs[0]['name']+
@@ -959,13 +1135,41 @@ class MediaHub:
         i=int(number)-1
         if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
         episode=self.episodes[i]
-        try: self.player.open(episode['url'],episode['title'],'podcast')
-        except Exception: return 'This episode could not start. Try another episode.'
+        # A saved copy starts at once and needs no internet.
+        local=self.downloaded_file(episode)
+        address=local.as_uri() if local else episode['url']
+        try: self.player.open(address,episode['title'],'podcast')
+        except Exception as first:
+            self.note_failure('podcast',first)
+            # The player may be in a bad state (its browser closed or stuck): start it fresh, once.
+            try: self.player.close()
+            except Exception: pass
+            try: self.player.open(address,episode['title'],'podcast')
+            except Exception as second:
+                self.note_failure('podcast again',second)
+                return 'This episode could not start. Try again, or choose another episode.'
         self._remember(episode['url'], what='episode', show=episode.get('show',''), title=episode['title'])
         self.current_episode_index=i
         self.episode_index=i
         self.chapters=self._chapters(episode)
+        if getattr(self.player,'loading',False) is True:
+            return 'Loading '+episode['title']+'. It starts in a moment. Say pause, back 15 seconds, or next episode.'
         return 'Playing '+episode['title']+'. Say pause, back 15 seconds, or next episode.'
+
+    def note_failure(self, what, error):
+        """Why something could not play, for a helper: media-errors.txt in the data folder.
+        Only the kind of problem is written, never an address or a title."""
+        try:
+            detail=getattr(self.player,'last_start_error','') or ''
+            line=(time.strftime('%Y-%m-%d %H:%M:%S')+' '+what+': '+type(error).__name__+': '+str(error)[:200]+
+                  (' | player: '+str(detail)[:200] if detail else '')+'\n')
+            path=self._path('media-errors.txt')
+            try:
+                if path.stat().st_size>200000: path.write_text('',encoding='utf-8')
+            except OSError: pass
+            with path.open('a',encoding='utf-8') as out: out.write(line)
+        except Exception:
+            pass
 
     def _chapters(self, episode):
         url=episode.get('chapters_url','')
@@ -1008,6 +1212,11 @@ class MediaHub:
             except Exception: return 'The audio player could not respond. Try opening that audio again.'
             if action=='toggle':return 'Audio paused.' if state else 'Playing audio.'
             return {'play':'Playing audio.','pause':'Audio paused.','stop':'Audio stopped.'}[action]
+        change=MEDIA_LEVEL_WORDS.get(cmd)
+        if change:
+            # "Louder" and "faster" alone change Companion's own voice; these name the audio.
+            if not self.player.kind: return 'No audio is playing. Choose a station or episode first.'
+            return self.change_level(*change)
         match=re.fullmatch(r'(rewind|back|go back|fast forward|forward|skip ahead) (.+)',cmd)
         if match:
             amount=_interval_seconds(match[2])
@@ -1029,20 +1238,69 @@ class MediaHub:
             return self.open_podcast(index+1) if 0<=index<len(self.shows) else 'There is no '+cmd+'.'
         return None
 
-    def download_episode(self, number):
-        i=int(number)-1
-        if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
-        episode=self.episodes[i]
-        folder=self._path('Podcast Downloads'); folder.mkdir(parents=True,exist_ok=True)
+    def change_level(self, setting, step):
+        """Audio volume up or down by a tenth, or speed by a quarter (0.5 to 3)."""
+        player=self.player
+        try:
+            if setting=='volume':
+                before=getattr(player,'volume',None)
+                if step>0 and isinstance(before,(int,float)) and before>=1: return 'Loudest. Volume 100 percent.'
+                if step<0 and isinstance(before,(int,float)) and before<=0: return 'Volume 0 percent. The audio is silent.'
+                value=player.adjust('volume',step)
+                return 'Volume '+str(int(round(float(value)*100)))+' percent.'
+            if player.kind=='radio' and self.player.streaming():
+                return 'A live station always plays at normal speed.'
+            current=getattr(player,'rate',1)
+            current=float(current) if isinstance(current,(int,float)) and not isinstance(current,bool) else 1.0
+            if step==0: target=1.0
+            else:
+                target=round((current+step)*4)/4
+                if target>3: return 'Fastest speed. Speed 3.'
+                if target<.5: return 'Slowest speed. Speed 0.5.'
+            rate=player.adjust('speed',target)
+            return 'Normal speed.' if abs(float(rate)-1)<.01 else 'Speed '+('%g' % float(rate))+'.'
+        except ValueError as exc:
+            return str(exc)
+        except Exception:
+            return 'The audio player could not respond. Try opening that audio again.'
+
+    def episode_file(self, episode):
+        """Where download_episode saves an episode (it may not be there yet)."""
+        folder=self._path('Podcast Downloads')
         extension=Path(urlsplit(episode['url']).path).suffix.lower()
         if extension not in ('.mp3','.m4a','.aac','.ogg','.opus'): extension='.mp3'
-        name=episode['show']+' - '+episode['title']
+        name=episode.get('show','')+' - '+episode['title']
         stem=_safe(name)
         # Long names are cut to 90 characters; add a short URL hash so episodes that
         # differ only after the cut (Part One / Part Two) do not collide.
         if len(re.sub(r'[^\w .-]', '', name).strip(' .'))>90:
             stem=stem[:70]+'-'+hashlib.sha256(episode['url'].encode()).hexdigest()[:12]
-        target=folder/(stem+extension)
+        return folder/(stem+extension)
+
+    def downloaded_file(self, episode):
+        """The saved copy of an episode (downloaded by you or for offline listening), or None."""
+        candidates=[]
+        try:
+            manifest=self._load_as('podcast-auto-files.json',{})
+            name=(manifest.get(episode.get('feed',''),{}) or {}).get(episode.get('url'))
+            if name: candidates.append(self._path('Podcast Downloads')/Path(str(name)).name)
+        except Exception:
+            pass
+        try: candidates.append(self.episode_file(episode))
+        except Exception: pass
+        for path in candidates:
+            try:
+                if path.is_file() and path.stat().st_size>0: return path
+            except OSError:
+                continue
+        return None
+
+    def download_episode(self, number):
+        i=int(number)-1
+        if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
+        episode=self.episodes[i]
+        folder=self._path('Podcast Downloads'); folder.mkdir(parents=True,exist_ok=True)
+        target=self.episode_file(episode)
         temp=target.with_suffix(target.suffix+'.part')
         with self._lock:
             if target in self._downloads: return 'That episode is already downloading.'
@@ -1225,7 +1483,7 @@ class MediaHub:
                 if cmd in ('back to podcasts','back to feeds','show podcasts'):
                     self.browsing_episodes=False
                     return ('Podcast '+str(self.show_index+1)+': '+self.shows[self.show_index]['name']+
-                            '. Say next or previous to browse feeds.') if self.shows and self.show_index is not None else 'Search for podcasts first.'
+                            '. Say next or previous to browse podcasts.') if self.shows and self.show_index is not None else 'Search for podcasts first.'
             if cmd in ('search','search for','search podcast','search podcasts','find podcast','find podcasts'):
                 self.awaiting_podcast_search=True
                 return 'What podcast would you like to find? Say its name.'
@@ -1238,6 +1496,22 @@ class MediaHub:
                 if cmd in ('cancel','never mind','back','go back'):
                     return 'Podcast search canceled.'
                 return self.search_podcasts(text)
+            if cmd in BROWSE_CATEGORIES: return self.browse_categories()
+            if cmd in TOP_PODCAST_PHRASES: return self.browse_category(TOP_PODCASTS)
+            if self.browsing_categories:
+                names=self.podcast_categories()
+                if cmd in ('next','next category','go forward','forward','previous','previous category','go back','back'):
+                    step=-1 if cmd.startswith(('previous','go back','back')) else 1
+                    index=(self.category_index or 0)+step
+                    if not 0<=index<len(names):
+                        return 'That is the '+('last' if step>0 else 'first')+' category.'
+                    self.category_index=index
+                    return self.category_choice()+' Say that one to open it.'
+                if cmd in ('that one','confirm','confirm that','okay','ok','open','open that one','open this one','open category'):
+                    return self.browse_category(names[max(0,min(self.category_index or 0,len(names)-1))])
+                if podcast_category(text): return self.browse_category(text)
+            if cmd in ('back to categories','categories','list categories') and self.shows_category:
+                return self.browse_categories()
             if cmd in ('next','next podcast','next show','go forward','forward',
                        'previous','previous podcast','previous show','go back','back'):
                 if not self.shows: return 'Search for podcasts or list subscriptions first.'
@@ -1254,10 +1528,10 @@ class MediaHub:
             if cmd in ('subscribe','subscribe to that one','subscribe to this one','subscribe to this podcast',
                        'subscribe to selected podcast','subscribe to selected feed','subscribe to this feed'):
                 return self.subscribe(self.show_index+1) if self.shows and self.show_index is not None else 'Search for podcasts first.'
-            if cmd in ('browse podcasts','browse podcast feeds','browse feeds'):
+            if cmd in ('browse podcast feeds','browse feeds'):
                 return (name_first('Podcast '+str((self.show_index or 0)+1)+' of '+str(len(self.shows))+': '+
                         self.shows[self.show_index or 0]['name']+'. Say next or previous to browse.'
-                        if self.shows else 'Say browse podcasts category science, or search followed by a podcast name.'))
+                        if self.shows else 'Say browse podcasts to choose a category, or search followed by a podcast name.'))
         if cmd in ('search radio','find radio','find a station','find stations'):
             self.awaiting_radio_search=True
             return 'What station would you like to find? Say its name, or say cancel.'
@@ -1329,8 +1603,10 @@ class MediaHub:
         if match: return self.play_recording(match[1])
         match=re.fullmatch(r'(?:search|find) podcasts? (?:for|called|about|in category) (.+)',text,re.I)
         if match: return self.search_podcasts(match[1])
-        match=re.fullmatch(r'browse podcasts? (?:by )?category (.+)',text,re.I)
-        if match: return self.search_podcasts(match[1])
+        match=re.fullmatch(r'browse podcasts? (?:by |in )?(?:category|categories) (.+)',text,re.I)
+        if match: return self.browse_category(match[1])
+        if cmd in BROWSE_CATEGORIES: return self.browse_categories()
+        if cmd in TOP_PODCAST_PHRASES: return self.browse_category(TOP_PODCASTS)
         match=re.fullmatch(r'open podcast (\d+)',cmd)
         if match: return self.open_podcast(match[1])
         match=re.fullmatch(r'subscribe(?: to)? podcast (\d+)',cmd)
@@ -1342,6 +1618,7 @@ class MediaHub:
         if cmd in ('list podcast shows','list shows'):
             if self.shows:
                 self.browsing_episodes=False
+                self.browsing_categories=False
                 i=self.show_index or 0
                 return name_first('Podcast '+str(i+1)+' of '+str(len(self.shows))+': '+self.shows[i]['name']+'. Say next or previous, then that one to open episodes.')
             return self.subscriptions()
@@ -1375,5 +1652,5 @@ class MediaHub:
         if section == 'radio':
             return 'Say search followed by a station name, browse genre jazz, list stations, or play station followed by its number.'
         if section == 'podcast':
-            return 'Say search podcasts for a name, list podcasts, or list subscriptions.'
+            return 'Say browse podcasts to choose a category, search podcasts for a name, or list subscriptions.'
         return 'Say radio for radio stations, or podcasts for podcast shows.'

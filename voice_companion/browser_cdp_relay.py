@@ -16,6 +16,37 @@ from regular_browser import address
 
 MAX_FRAME = 16 * 1024 * 1024
 MAX_TO_EXTENSION = 1024 * 1024
+UPDATE_TOLD_FILE = 'browser-extension-update-told.txt'
+BROWSER_NAMES = {'chrome': 'Chrome', 'edge': 'Edge', 'brave': 'Brave'}
+
+
+def shipped_extension_version(manifest=None):
+    """The extension version this Voice Companion installed, or None."""
+    if manifest is None:
+        # The installed app keeps the extension beside the program, as browser_bridge_host registers it.
+        import sys
+        folder = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
+        manifest = folder / 'regular_browser_extension' / 'manifest.json'
+    try:
+        version = json.loads(Path(manifest).read_text(encoding='utf-8'))['version']
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return version if isinstance(version, str) else None
+
+
+def _version_key(text):
+    parts = text.split('.')
+    if not 1 <= len(parts) <= 4 or not all(part.isdigit() for part in parts): raise ValueError(text)
+    return tuple(int(part) for part in parts) + (0,) * (4 - len(parts))
+
+
+def extension_is_older(running, shipped):
+    """True when the running extension is older than the shipped one.
+    Copies before 0.4.3 report no version, so they count as older."""
+    if not shipped: return False
+    if not running: return True
+    try: return _version_key(running) < _version_key(shipped)
+    except (ValueError, AttributeError): return False
 
 
 def encode(message):
@@ -30,6 +61,10 @@ def decode(data):
 
 
 class BrowserRelay:
+    # Extension version state. Class defaults, so a relay is never without them.
+    extension_version = extension_outdated = None
+    update_requested = update_told = False
+
     def __init__(self, folder, pipe_endpoint=None, family='AF_PIPE'):
         from websockets.sync.server import serve
         self.folder = Path(folder); self.folder.mkdir(parents=True, exist_ok=True)
@@ -75,6 +110,8 @@ class BrowserRelay:
                 if message.get('method') == 'VoiceCompanion.ready':
                     if message.get('browser') in ('chrome','edge','brave'):self.browser=message['browser']
                     self.generation += 1
+                    # Before connected: whoever waits for the link sees this extension's version.
+                    self._check_extension_version(message.get('version'))
                     self.connected.set()
                     self._link_downloads()
                     continue
@@ -139,6 +176,41 @@ class BrowserRelay:
             # A bad report must never stop the browser link.
             pass
 
+    def _check_extension_version(self, version):
+        # Never allowed to stop the link: a failure here only means no update nudge.
+        self.extension_outdated = None
+        try:
+            self.extension_version = version if isinstance(version, str) else None
+            shipped = shipped_extension_version()
+            # extension_outdated: the newer version Companion shipped, while an older one runs.
+            self.extension_outdated = shipped if extension_is_older(self.extension_version, shipped) else None
+            if self.extension_outdated and not self.update_requested:
+                # Once per run: an update reloads the extension, and an unpacked copy may come back unchanged.
+                self.update_requested = True
+                self._send({'method': 'VoiceCompanion.checkForUpdate', 'version': shipped})
+        except Exception:
+            pass
+
+    def update_notice(self):
+        """One plain sentence the first time an older extension is seen, once for each new version."""
+        shipped = self.extension_outdated
+        if not shipped or self.update_told or not self.connected.is_set(): return ''
+        record = self.folder / UPDATE_TOLD_FILE
+        try:
+            if record.read_text(encoding='utf-8').strip() == shipped:
+                self.update_told = True
+                return ''
+        except (OSError, UnicodeError):
+            pass
+        self.update_told = True
+        try:
+            from storage import write_text_atomic
+            write_text_atomic(record, shipped)
+        except Exception:
+            pass
+        name = BROWSER_NAMES.get(self.browser, 'Chrome')
+        return f'The {name} extension is updating. {name} checks for the new version on its own; it may take a little while.'
+
     def send_extension(self, message):
         """Companion's own message to the extension, such as a download control."""
         self._send(message)
@@ -170,6 +242,13 @@ def prepare(folder):
     return _RELAY
 
 
+def extension_update_notice(relay=None):
+    """Spoken once when the Web browser opens while an older extension is linked. Never raises."""
+    relay = _RELAY if relay is None else relay
+    try: return relay.update_notice() if relay is not None else ''
+    except Exception: return ''
+
+
 def current():
     return _RELAY if _RELAY is not None and _RELAY.connected.is_set() else None
 
@@ -192,7 +271,9 @@ def native_stream(first, input_stream, output_stream):
             except Exception:pass
     threading.Thread(target=outgoing,daemon=True).start()
     try:
-        pipe.send_bytes(encode({'method':'VoiceCompanion.ready','browser':first.get('browser','chrome')}))
+        ready={'method':'VoiceCompanion.ready','browser':first.get('browser','chrome')}
+        if isinstance(first.get('version'),str):ready['version']=first['version'][:40]
+        pipe.send_bytes(encode(ready))
         while True:
             message=read_message(input_stream,max_size=MAX_FRAME)
             if message is None:return

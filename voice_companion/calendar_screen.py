@@ -240,6 +240,8 @@ def context(m, value):
 def navigation_key(m, key):
     global CHOICE
     if PENDING is not None:
+        if key.lower() in ('y', 'alt+y', 'n', 'alt+n') and PENDING[0] in ('edit-field', 'source'):
+            return None     # a list, not a Yes or No question: N (Name, Notes) must not cancel it, as on Contacts
         if key.lower() in ('y', 'alt+y'):
             return 'this one' if CHOICES[0] == 'this one' else 'yes'
         if key.lower() in ('n', 'alt+n'):
@@ -332,18 +334,20 @@ def tell_day(m, words, mode):
         m.speak(thunderbird_pim.NO_THUNDERBIRD)
         return mode
     try:
-        events, _ = events_on(day)
+        events, failed = events_on(day)
     except thunderbird_pim.PimError as exc:
         m.speak(str(exc))
         return mode
     head = spoken_day(day, today(m)) + '. '
+    # A calendar that could not be read is named, so a clear day is never said by mistake.
+    missing = (' ' + ' '.join(failed_words(name) for name in failed[:3])) if failed else ''
     if not events:
-        m.speak(head + 'No events.')
+        m.speak(head + 'No events.' + missing)
         return mode
     lines = [event.line(day) for event in events[:12]]
     more = len(events) - len(lines)
     m.speak(head + str(len(events)) + (' event. ' if len(events) == 1 else ' events. ') + '. '.join(lines) + '.' +
-            (' And ' + str(more) + ' more. Open Calendar to hear them.' if more > 0 else ''))
+            (' And ' + str(more) + ' more. Open Calendar to hear them.' if more > 0 else '') + missing)
     return mode
 
 
@@ -358,7 +362,12 @@ def command_here(m, raw, command):
                    'back to main menu', 'go to main menu'):
         reset()
         return 'awake'      # handle() says Main menu when the screen changes
-    if command in OPEN + ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'refresh', 'refresh calendar'):
+    if command in ('where am i', 'which day', 'what day is this', 'read day', 'repeat', 'say that again', 'repeat that'):
+        # Said again where you are: the day, its count, and the event you are on (not the first one).
+        words = spoken_day(DAY or today(m), today(m)) + '. ' + day_summary() + (' ' + NOTICE if NOTICE else '')
+        m.speak('Calendar. ' + (showing() + ' ' if choosing() else '') + words if command == 'where am i' else words)
+        return MODE
+    if command in OPEN + ('refresh', 'refresh calendar'):
         words = show(m, DAY or today(m), opening=command.startswith('refresh'))
         if command in OPEN + ('where am i',):
             words = 'Calendar. ' + with_showing(words)      # the screen's name first, as on Contacts
@@ -380,8 +389,10 @@ def command_here(m, raw, command):
     if command in ('tomorrow', 'yesterday'):
         m.speak(show(m, today(m) + timedelta(days=1 if command == 'tomorrow' else -1)))
         return MODE
-    moves = {'next event': 1, 'next': 1, 'down': 1, 'previous event': -1, 'previous': -1, 'up': -1}
-    ends = {'first event': 0, 'start of list': 0, 'first item': 0, 'last event': -1, 'end of list': -1, 'last item': -1}
+    moves = {'next event': 1, 'next': 1, 'down': 1, 'next item': 1, 'previous event': -1, 'previous': -1, 'up': -1,
+             'previous item': -1}
+    ends = {'first event': 0, 'start of list': 0, 'first item': 0, 'top of list': 0, 'beginning of list': 0,
+            'last event': -1, 'end of list': -1, 'last item': -1, 'bottom of list': -1}
     if command in moves or command in ends:
         if not EVENTS:
             m.speak('No events. Press Right Arrow for the next day.')
@@ -417,7 +428,7 @@ def command_here(m, raw, command):
             return MODE
         return ask_delete(m, event)
     if ADD.fullmatch(command) and command.split()[0] in ('add', 'new', 'create', 'schedule', 'make', 'book', 'put', 'set') \
-            or ADD_START.match(command):
+            or ADD_START.match(command) or said_with_a_day(m, command, raw):
         return start_adding(m, raw)
     wanted = SHOW.fullmatch(command)
     if wanted and wanted['what'] not in ('my', 'the') and (wanted['verb'] and wanted['kind'] or
@@ -435,6 +446,18 @@ def command_here(m, raw, command):
     m.speak('Calendar. Say next event, next day, today, read event, add event, edit event, or delete event. '
             'Press F1 for help, or Escape for the main menu.')
     return MODE
+
+
+NAMED_DAY = re.compile(r'\b(?:today|tomorrow|tonight|' + '|'.join(WEEKDAYS) + r')\b')
+
+
+def said_with_a_day(m, command, raw):
+    """On Calendar, "Schedule lunch with Bob tomorrow at noon" or "Add dinner Friday at 6 PM": any name
+    with a time, or a named day, adds an event. "Add the second one" is not one (no time, no day name)."""
+    if not re.match(r'(?:schedule|add|book) \w', command):
+        return False
+    found = parse_when(raw, m.CLOCK(), future=True, base=DAY)
+    return found.day is not None and (found.start is not None or found.all_day or bool(NAMED_DAY.search(command)))
 
 
 def whole_day(words, m):
@@ -797,6 +820,17 @@ def save_draft(m):
     return MODE
 
 
+def read_again(m):
+    """The day on screen read again, near the same place, after an event was found gone."""
+    global INDEX
+    keep = INDEX
+    words = show(m, DAY or today(m))
+    if EVENTS:
+        INDEX = min(keep, len(EVENTS) - 1)
+        words = spoken_day(DAY, today(m)) + '. ' + describe()
+    return words
+
+
 def not_saved(exc, words):
     """Why saving failed, and that nothing was saved, unless the reason already says so."""
     text = str(exc)
@@ -879,9 +913,9 @@ def answer(m, command):
         try:
             thunderbird_pim.delete_event(event.calendar_id, event.id, event.occurrence if one else '', all_of_them=every or not event.recurring)
         except thunderbird_pim.PimError as exc:
-            m.speak(str(exc))
+            m.speak(str(exc) + (' ' + read_again(m) if thunderbird_pim.gone(exc) else ''))
             return MODE
-        what = ('Deleted all of ' + event.name + '. ') if every else ('Deleted ' + event.name + ' on this day. ') if one else ('Deleted ' + event.name + '. ')
+        what =('Deleted all of ' + event.name + '. ') if every else ('Deleted ' + event.name + ' on this day. ') if one else ('Deleted ' + event.name + '. ')
         keep = INDEX
         words = show(m, DAY)
         if EVENTS:
@@ -1305,7 +1339,7 @@ def save_edit(m, scope):
         answer_ = thunderbird_pim.modify_event(event.calendar_id, event.id, changes,
                                                occurrence=event.occurrence if scope == 'one' else '', all_of_them=scope == 'all')
     except thunderbird_pim.PimError as exc:
-        m.speak(not_saved(exc, 'The change was not saved.'))
+        m.speak(not_saved(exc, 'The change was not saved.') + (' ' + read_again(m) if thunderbird_pim.gone(exc) else ''))
         return MODE
     ids = {event.id, str((answer_ or {}).get('id') or '') if isinstance(answer_, dict) else ''}
     words = show(m, day)

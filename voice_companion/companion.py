@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.175-test'
+APP_VERSION = '0.2.181-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -708,11 +708,29 @@ def resume_from_sleep():
     # The same screen names as everywhere else ("Back to Word processor menu."), never the internal mode.
     # Asleep during a question: ask it again, so the answer is not a guess.
     question={'document_save':'Save this document? Yes or no.','document_name':'Back to naming your document.',
-              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None}.get(mode)
-    speak('I am listening. ' + (question or options_return_notice(mode)))
+              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None,
+              # Keys work behind sleep: Escape or Enter there can open these questions.
+              'exit_confirm':'Exit Voice Companion? Yes or no.',
+              'power_confirm':('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.')}.get(mode)
+    # With the microphone off or broken nothing is listening: Control+F12 woke it.
+    speak(('I am listening. ' if microphone_state() == 'on' else '') + (question or options_return_notice(mode)))
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
     return mode
+
+
+def canceled_to(mode):
+    """Say Canceled with the main menu in one message (two would cut each other off), or alone."""
+    global MAIN_MENU_LEAD
+    if mode=='awake':MAIN_MENU_LEAD='Canceled.'
+    else:speak('Canceled. '+options_return_notice(mode))
+    return mode
+
+
+def sleep_message():
+    """The same words on every screen; "Say wake up" only when the microphone can hear it."""
+    if microphone_state() == 'on':return 'Going to sleep. Say wake up when you need me.'
+    return 'Going to sleep. The microphone '+('is off' if MICROPHONE_OFF else 'could not start')+', so press Control+F12 to wake up.'
 
 
 def finish_mail_announcement():
@@ -873,6 +891,7 @@ def clock_text_entry(mode, typed=False):
     if writing_dictation(mode, typed):return True
     if mode=='note' and typed and INPUT_MODE!='commands':return True  # Words typed into the note box.
     if mode in ('search','document_name','task_input','podcast'):return True
+    if mode=='youtube' and __import__('youtube_screen').typing(sys.modules[__name__]):return True  # the YouTube search box
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):return True
     if mode=='media' and MEDIA_NAV is not None and getattr(MEDIA_NAV,'form',None):return True
@@ -1556,16 +1575,41 @@ def audio_ducking_request(command):
     return None
 
 
+# Options, Radio and Podcasts: "Lower the volume while I use the keyboard". A screen
+# reader's speech is not heard by Companion, so radio and podcasts are lowered while
+# keys are pressed in Companion's window, and come back after this many quiet seconds.
+KEY_DUCK_SECONDS = 1.5
+
+
+def keys_lowering(now=None):
+    """True while keys are being pressed in Companion's window and Companion's own
+    radio, podcast or media file is loaded, with the option on."""
+    if not PREFERENCES.get('duck_while_keys', True) or APP_WINDOW is None or MEDIA_HUB is None:
+        return False
+    last = getattr(APP_WINDOW, 'last_navigation', 0)
+    if isinstance(last, bool) or not isinstance(last, (int, float)) or last <= 0:
+        return False
+    now = time.monotonic() if now is None else now
+    if not 0 <= now - last < KEY_DUCK_SECONDS:
+        return False
+    try:
+        return bool(getattr(MEDIA_HUB.player, 'kind', None))
+    except Exception:
+        return False
+
+
 def update_audio_ducking(active=None):
     from audio_ducking import level_factor
     enabled = bool(PREFERENCES.get('duck_audio', True))
     lowered = enabled and bool((not SPEECH_PAUSED and speech_busy()) if active is None else active)
+    keys = keys_lowering()
     factor = level_factor(PREFERENCES.get('duck_level'))
     ducker = None
     try:
         ducker = audio_ducker()
         if ducker is not None:
-            ducker.request(lowered, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
+            # Keys lower the sound the same way speech does, so it does not dip and rise between them.
+            ducker.request(lowered or keys and enabled, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
         ducker = None
@@ -1573,10 +1617,12 @@ def update_audio_ducking(active=None):
         return
     # The radio player runs in a Firefox that Companion started, so Windows session
     # ducking already lowers it. Lower it inside the page only when that is not
-    # working, so it is never lowered twice.
+    # working (or audio ducking is off and only keys lower it), so it is never lowered twice.
     session_ducking = ducker is not None and ducker.available is not False
+    if active is not None and session_ducking:
+        return   # Speech is starting: it never waits for the player page.
     try:
-        MEDIA_HUB.player.set_ducked(lowered and not session_ducking, factor)
+        MEDIA_HUB.player.set_ducked((lowered or keys) and not (session_ducking and enabled), factor)
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
@@ -2003,6 +2049,8 @@ def open_browser_menu(regular=False):
         speak('The regular browser tab could not be read. Reconnect it using the extension, then open this menu again.')
     notice=web_session.take_browser_notice()
     if not isinstance(notice,str):notice=''
+    # Said once for each new extension version, while Chrome fetches it from the store.
+    notice=(__import__('browser_cdp_relay').extension_update_notice()+' '+notice).strip()
     linked=getattr(web_session.backend,'regular',False) is True
     if not linked and getattr(web_session,'chrome_offer_declined',False) is not True:
         # Chrome chosen but not ready (or your own Chrome not linked): offer setup right here.
@@ -2352,6 +2400,12 @@ def thunderbird_starter(system=None):
     import thunderbird_setup
     from thunderbird_mailbox import NOT_CONNECTED
     relay = mail_relay()
+    offer = thunderbird_update_offer(relay)
+    if offer is not None:
+        flow, step = offer
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
+        CONFIRM_CHOICE = 'yes'
+        raise MailboxError(step.message)
     try:
         launched = thunderbird_setup.start_in_background(system or thunderbird_setup.WindowsSystem(), addon_package(),
                                                          relay, speak_status)
@@ -2374,6 +2428,50 @@ def thunderbird_starter(system=None):
 
 
 THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it closes it on exit
+
+
+def new_thunderbird_upgrade(hint=''):
+    """Moving Thunderbird to the Release channel (154 or newer), with the add-on this copy ships."""
+    import thunderbird_setup
+    import thunderbird_upgrade
+    return thunderbird_upgrade.Upgrade(thunderbird_setup.WindowsSystem(), addon_package(), mail_relay, speak_status, APP,
+                                       started=quiet_thunderbird, hint=hint)
+
+
+def thunderbird_update_offer(relay=None):
+    """(flow, step) for the one update question, at a sensible time, or None.
+
+    Only while a command runs on the main loop (never from a background check), when Thunderbird
+    email is used before Thunderbird is connected, and never while a document, email or note is
+    being written or another question or text box is waiting."""
+    if _HANDLE_DEPTH == 0 or threading.current_thread() is not threading.main_thread():
+        return None
+    if relay is not None and relay.connected.is_set():
+        return None
+    if ACCOUNT_ENTRY is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_WATCH is not None:
+        return None
+    if str(TRANSCRIPT.mode).split(',')[0] in ('document', 'email_draft', 'note') or email_draft is not None:
+        return None
+    try:
+        flow = new_thunderbird_upgrade('Say check email to open your email.')
+        step = flow.offer()
+    except Exception:
+        return None
+    return (flow, step) if step is not None else None
+
+
+def start_thunderbird_update(mode):
+    """ "Update Thunderbird": say which Thunderbird this is; ask the one question when it needs the update."""
+    global THUNDERBIRD_SETUP
+    try:
+        flow = new_thunderbird_upgrade()
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
+        return thunderbird_setup_step(flow.check(), mode)
+    except Exception:
+        THUNDERBIRD_SETUP = None
+        speak('Voice Companion could not check Thunderbird because of a problem. Nothing was changed. '
+              'Say update Thunderbird to try again.')
+        return mode
 
 # F9 (or "turn off the microphone") turns the microphone fully off: the stream is closed and
 # nothing listens, not even for "wake up". F9 turns it back on. (Control+F12 only puts
@@ -2625,6 +2723,9 @@ def start_thunderbird_quietly():
         import thunderbird_setup
         relay = mail_relay()
         try:
+            # Thunderbird needs the update: it is asked about when email is first used, while Thunderbird is closed.
+            if __import__('thunderbird_upgrade').offer_due(thunderbird_setup.WindowsSystem(), APP):
+                return
             if thunderbird_setup.start_in_background(thunderbird_setup.WindowsSystem(), addon_package(), relay,
                                                      lambda text: None):
                 quiet_thunderbird(relay)
@@ -2800,6 +2901,8 @@ def thunderbird_setup_command(command, mode):
     if command in words.HIDE_COMMANDS:
         speak(hide_thunderbird_window())
         return mode
+    if command in THUNDERBIRD_UPDATE_COMMANDS and not THUNDERBIRD_WATCH:
+        return start_thunderbird_update(mode)
     if not (command in words.CONTINUE_COMMANDS + words.READ_COMMANDS + words.SHOW_COMMANDS + words.PASSWORD_COMMANDS or sign_in):
         return None
     if sign_in:
@@ -3000,6 +3103,9 @@ def handle_mailbox_screen(text, command, mode, typed):
     response_actions = {'reply': 'reply', 'reply to message': 'reply',
                         'reply all': 'reply_all', 'reply to all': 'reply_all',
                         'forward': 'forward', 'forward message': 'forward'}
+    if command in response_actions and getattr(mail_session, 'rows', None) == [] and mail_session.view == 'folder':
+        speak(mail_session._empty_list())   # as every other key says it in an empty folder
+        return mode
     if command in response_actions:
         try:
             context = mail_session.response_context(response_actions[command])
@@ -3059,10 +3165,12 @@ def close_email_draft(mode, discard, notice=None):
             speak('I could not remove the local draft files. The draft is still open; ask your helper before trying again.')
             return 'email_draft'
     provider = email_draft.provider
+    # A draft saved before (Save draft, or opened from the drafts list) stays saved: never "without saving".
+    kept = email_draft.title if discard and discarded and email_draft.path.exists() else None
     email_draft = None
     if APP_WINDOW is not None: APP_WINDOW.clear_email_field()
     if notice is None:
-        notice = 'Draft canceled without saving.'
+        notice = 'Draft closed. It is still saved as ' + kept + '.' if kept else 'Draft canceled without saving.'
     speak(notice if discarded else
           'Draft closed without another save. A previous send attempt record remains; check your mailbox before sending again.')
     finish_mail_announcement()
@@ -3072,6 +3180,11 @@ def close_email_draft(mode, discard, notice=None):
         provider = chosen[0] if chosen else provider
     if mail_session is None and provider in MAIL_PROVIDERS:
         mail_session = MailSession(provider, APP, progress=mail_progress)
+    rows = getattr(mail_session, 'rows', None)
+    if isinstance(rows, list) and rows:
+        # Back where you were, as after sending: the open message, or the message in its folder.
+        speak('Back to message.' if mail_session.view == 'message' else mail_session._current_list())
+        return 'mailbox'
     if mail_session is not None:
         speak(mail_session.process('open inbox'))
         return 'mailbox'
@@ -3508,10 +3621,16 @@ def new_thunderbird_setup(adding=False):
     from mail_accounts import thunderbird_connect
     return thunderbird_setup.Setup(thunderbird_setup.WindowsSystem(), addon_package(),
                                    lambda: thunderbird_connect(ProtectedStore(APP)), mail_relay, speak_status,
-                                   ready=thunderbird_add_ready if adding else thunderbird_connect_ready, adding=adding)
+                                   ready=thunderbird_add_ready if adding else thunderbird_connect_ready, adding=adding,
+                                   upgrader=new_thunderbird_upgrade)
 
 
 THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok', 'do it', 'go ahead')
+# "Update Thunderbird": works wherever Thunderbird commands work, never while writing.
+THUNDERBIRD_UPDATE_COMMANDS = ('update thunderbird', 'upgrade thunderbird', 'update my thunderbird', 'upgrade my thunderbird',
+                               'update thunderbird now', 'get the new thunderbird', 'get the newest thunderbird',
+                               'check thunderbird version', 'which thunderbird do i have', 'what version of thunderbird do i have')
+THUNDERBIRD_NO = ('no', 'no thanks', 'no thank you', 'n', 'nope', 'not now', 'later', 'not yet', 'cancel', 'maybe later')
 THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
 
 
@@ -3532,12 +3651,18 @@ def thunderbird_setup_step(step, mode, lead=''):
 
 
 def thunderbird_setup_answer(command, mode):
-    """Yes starts the offered step. Anything else, except repeat, is no."""
+    """Yes starts the offered step. Anything else, except repeat, is no.
+
+    The update question is the one exception: a command that is neither yes nor no (such as
+    "check email") is not an answer. Thunderbird stays as it is and the command runs (None)."""
     global THUNDERBIRD_SETUP
     if command in THUNDERBIRD_REPEAT:
         speak(THUNDERBIRD_SETUP['message'])
         return mode
     flow, question = THUNDERBIRD_SETUP['flow'], THUNDERBIRD_SETUP['question']
+    if question == 'upgrade' and command not in THUNDERBIRD_YES + THUNDERBIRD_NO:
+        THUNDERBIRD_SETUP = None
+        return None
     if question in ('add_another', 'add_first'):
         THUNDERBIRD_SETUP = None
         if command in THUNDERBIRD_YES:
@@ -3549,9 +3674,30 @@ def thunderbird_setup_answer(command, mode):
         step = flow.answer(question, command in THUNDERBIRD_YES)
     except Exception:
         THUNDERBIRD_SETUP = None
+        if question == 'upgrade':
+            speak('The Thunderbird update stopped because of a problem. Your email accounts were not changed. '
+                  'Say update Thunderbird to try again.')
+            return mode
         speak('Thunderbird setup stopped because of a problem. Nothing else was changed. Say add account to try again.')
         return mode
     return thunderbird_setup_step(step, mode)
+
+
+# Spoken names for the input modes, and questions about the mode and version. They work on
+# every screen, Help too, where the guide tells you to say them.
+INPUT_MODE_COMMANDS = {
+    'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
+    'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
+    'switch to command mode':'commands', 'switch to commands mode':'commands',
+    'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
+    'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
+    # "Switch to" works with every name the guide uses.
+    'switch to normal mode':'mixed', 'switch to commands only':'commands', 'switch to dictation only':'dictation',
+}
+MODE_QUESTIONS = ('what mode', 'which mode', 'what input mode', 'what mode am i in', 'which mode am i in', 'what mode is this',
+                  'what mode is on', 'what mode is it')
+VERSION_QUESTIONS = ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
+                     'what version am i using', 'what version do i have')
 
 
 def _handle(text, mode, typed=False):
@@ -3585,7 +3731,9 @@ def _handle(text, mode, typed=False):
     if ACCOUNT_ENTRY is not None:
         return account_entry_step(text, command, mode)
     if THUNDERBIRD_SETUP is not None:
-        return thunderbird_setup_answer(command, mode)
+        answered = thunderbird_setup_answer(command, mode)
+        if answered is not None:
+            return answered
     if command=='toggle audio':
         video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
         if video:speak(video);return mode
@@ -3687,7 +3835,7 @@ def _handle(text, mode, typed=False):
             return handle(text,'awake',typed)
         if spoken_control(command)=='sleep':
             SLEEP_RETURN_MODE=mode
-            speak('Going to sleep. Say wake up to continue here.')
+            speak(sleep_message())
             return 'sleep'
         if tutorial_session is None:
             tutorial_session=PracticeTutorial(GUIDE)
@@ -3732,13 +3880,13 @@ def _handle(text, mode, typed=False):
         command=CONFIRM_CHOICE
     if mode=='exit_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
-            speak('Canceled.');return EXIT_RETURN_MODE
+            return canceled_to(EXIT_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             return finish_exit(EXIT_RETURN_MODE)
         speak('Exit Voice Companion? Are you sure? Yes or no.');return mode
     if mode=='power_confirm':
         if command in ('no','no thanks','cancel','main menu','back'):
-            POWER_ACTION=None;speak('Canceled.');return POWER_RETURN_MODE
+            POWER_ACTION=None;return canceled_to(POWER_RETURN_MODE)
         if command in ('yes','yes please','okay','ok','confirm','confirm that','that one'):
             try:
                 if email_draft is not None:email_draft.save()
@@ -4030,12 +4178,13 @@ def _handle(text, mode, typed=False):
         except (OSError,ValueError):speak('Release notes could not open. Ask your helper to check the installation.');return mode
     if mode == 'help' and not spoken_control(command) and command not in (
             'faster', 'slower', 'speak faster', 'speak slower', 'louder', 'quieter',
-            'list voices', 'next voice', 'previous voice'):
+            'list voices', 'next voice', 'previous voice') and command not in INPUT_MODE_COMMANDS \
+            and command not in MODE_QUESTIONS + VERSION_QUESTIONS:   # the guide in Help says to use these
         if command in ('main menu', 'back to main menu'):
             returning = help_return_mode
             help_session = None
             if returning == 'awake':
-                pass
+                MAIN_MENU_LEAD = 'Help closed.'   # said with Main menu, as Escape and the tutorial do
                 return 'awake'
             return handle('main menu', returning)
         if help_session is None:
@@ -4095,8 +4244,7 @@ def _handle(text, mode, typed=False):
         speak('Punctuation ' + PUNCTUATION_LEVEL + '.')
         return mode
     # "Version." alone in a document, email or note is text, like "Time."; a question is a command.
-    if command in ('what version', 'what version is this', 'which version', 'which version is this', 'what version is it',
-                   'what version am i using', 'what version do i have') or \
+    if command in VERSION_QUESTIONS or \
             command in ('version', 'about voice companion') and not writing_dictation(mode, typed):
         # The two things a person most needs if a key press stopped the startup announcement.
         speak('Voice Companion version ' + APP_VERSION + '. ' + __import__('startup_speech').MICROPHONE[microphone_state()])
@@ -4121,7 +4269,7 @@ def _handle(text, mode, typed=False):
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
             try: MEDIA_HUB.player.control('pause')
             except Exception: pass
-        speak('Going to sleep. Say wake up when you need me.')
+        speak(sleep_message())
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
@@ -4211,8 +4359,11 @@ def _handle(text, mode, typed=False):
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1);speak(FILE_READER.reading.move('line',0))
             # The place is the very end, as Control+End: Next word then says End of document.
             FILE_READER.reading.position=max(0,len(FILE_READER.text)-1)
-        elif command.startswith('find '):
-            term=text[5:].strip();position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
+        elif command=='find' or command.startswith(('find ','find,')):
+            # "Find milk." spoken: the recognizer's comma and closing period are not part of the words.
+            term=re.sub(r'^\s*find\b[\s,:]*','',text,flags=re.I).strip().rstrip('.!?,').strip()
+            if not term:speak('Please say the words to find after find.');return mode
+            position=FILE_READER.text.casefold().find(term.casefold(),FILE_READER.reading.position+1)
             if position<0:position=FILE_READER.text.casefold().find(term.casefold())
             if position<0:speak('Text not found.')
             else:FILE_READER.reading.position=position;speak(FILE_READER.reading.move('line',0))
@@ -4251,13 +4402,7 @@ def _handle(text, mode, typed=False):
         except (OSError, ValueError):
             speak('The user guide could not open. Ask your helper to reinstall Voice Companion.')
             return mode
-    requested_mode = {
-        'dictation mode':'dictation', 'dictation only':'dictation', 'switch to dictation mode':'dictation',
-        'commands mode':'commands', 'command mode':'commands', 'commands only':'commands',
-        'switch to command mode':'commands', 'switch to commands mode':'commands',
-        'mixed mode':'mixed', 'normal mode':'mixed', 'commands and dictation':'mixed',
-        'dictation and commands':'mixed', 'switch to mixed mode':'mixed',
-    }.get(command)
+    requested_mode = INPUT_MODE_COMMANDS.get(command)
     if requested_mode:
         INPUT_MODE = requested_mode
         save_speech_settings()
@@ -4270,7 +4415,7 @@ def _handle(text, mode, typed=False):
                'commands':'Commands only. Ordinary speech will not be added as text.',
                'dictation':'Dictation only. Speech goes into the current document, email, or focused web text field.'}[requested_mode])
         return mode
-    if command in ('what mode', 'which mode', 'what input mode'):
+    if command in MODE_QUESTIONS:
         # The names the guide and the mode commands use, never the stored word ("mixed").
         speak('Input mode: ' + {'mixed':'Normal mode','commands':'Commands only','dictation':'Dictation only'}.get(INPUT_MODE, INPUT_MODE) + '.')
         return mode
@@ -5141,7 +5286,7 @@ def _handle(text, mode, typed=False):
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',
                            'search radio','find station','find radio','browse genre','browse country','browse state','browse city',
-                           'search podcast','find podcast','browse podcasts','list podcasts','list subscriptions','refresh subscriptions',
+                           'search podcast','find podcast','browse podcasts','top podcast','podcast categories','list podcasts','list subscriptions','refresh subscriptions',
                            'check podcasts','update subscribed podcasts','auto download','automatically download',
                            'manual downloads','turn off auto downloads','set podcast ','set show ',
                            'open podcast ','subscribe to podcast ','subscribe podcast ',
@@ -5237,7 +5382,8 @@ def return_from_update(notice=''):
         if UPDATE_RETURN_MODE == 'awake':
             MAIN_MENU_LEAD = notice
             if _HANDLE_DEPTH == 0:announce_main_menu()
-        else:speak(notice)
+        elif UPDATE_RETURN_MODE == 'sleep':speak(notice)
+        else:speak(notice + ' ' + options_return_notice(UPDATE_RETURN_MODE))   # and where you are
     return UPDATE_RETURN_MODE
 
 
@@ -5322,7 +5468,9 @@ def announce_startup():
     retire_old_mail_accounts()
     apply_transcript()
     if PREFERENCES.get('speech_transcript', False):
-        STARTUP_NOTICES.append('The speech transcript is on. Say stop transcript to turn it off.')
+        # Companion starts asleep, when only "Wake up" is heard; with no microphone, nothing is.
+        STARTUP_NOTICES.append('The speech transcript is on. To turn it off, '+('wake Companion, then say stop transcript.' if microphone_state()=='on'
+                               else 'press Alt+O, then choose Startup and exit options.'))
     notices, STARTUP_NOTICES = STARTUP_NOTICES, None
     STARTUP_QUESTION = None
     speak(startup_speech.announcement(APP_VERSION, microphone_state(), update_result, notices, question))
@@ -5418,8 +5566,12 @@ def poll_app_updates(mode):
             return 'exit'
         elif event == 'install_failed' and mode=='update_download':
             mode=return_from_update('The update could not start. Your current app remains available.')
-    if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not speech_busy():
-        UPDATE_RETURN_MODE = 'awake' if mode == 'sleep' else mode
+    # Asleep, the offer waits while a question is open behind sleep; afterwards you go back,
+    # awake, to the screen you slept on.
+    asleep_at_question = mode == 'sleep' and SLEEP_RETURN_MODE in ('document_save', 'document_replace', 'document_name',
+                                                                   'exit_confirm', 'power_confirm', 'draft_leave')
+    if UPDATE_OFFER and (mode in ('sleep', 'awake') or UPDATE_MANUAL) and not asleep_at_question and not speech_busy():
+        UPDATE_RETURN_MODE = SLEEP_RETURN_MODE if mode == 'sleep' else mode
         UPDATE_OFFER = False
         # The manual check has its answer; later automatic offers wait for the main screen.
         UPDATE_MANUAL = False
@@ -5427,6 +5579,17 @@ def poll_app_updates(mode):
         speak(update_offer_question())
         return 'update_offer'
     return mode
+
+
+UPDATE_RUNNING_MESSAGE = 'Voice Companion is being updated. It will open by itself when the update is done.'
+
+
+def update_running_elsewhere():
+    """True when an update is installing and this start is not the one the update made."""
+    if '--resume-after-update' in sys.argv:
+        return False
+    from app_updates import update_running
+    return update_running(APP)
 
 
 def main():
@@ -5552,6 +5715,12 @@ def main():
                 mode = handle(heard, mode)
             if mode == 'exit':
                 break
+        return 0
+    if update_running_elsewhere():
+        # Opened again while an update installs: it would hold the files Setup must
+        # replace. The update opens Voice Companion by itself when it is done.
+        speak(UPDATE_RUNNING_MESSAGE)
+        wait_for_speech(15000)
         return 0
     # Announce readiness once, after models and microphone are initialized.
     SetLogLevel(-1)

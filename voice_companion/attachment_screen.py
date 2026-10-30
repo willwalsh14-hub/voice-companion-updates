@@ -168,7 +168,8 @@ def spoken_folder(value):
     if key is not None:
         folder = place(key)
         if not folder.is_dir():
-            raise AttachmentError('Your ' + PLACES[key][1] + ' folder was not found. Say another folder, such as Desktop.')
+            raise AttachmentError('Your ' + PLACES[key][1] + ' folder was not found. Say another folder, such as '
+                                  + ('Documents' if key == 'desktop' else 'Desktop') + '.')
         return folder
     path = Path(os.path.expandvars(os.path.expanduser(text)))
     if not text or not path.is_absolute():
@@ -226,6 +227,8 @@ def current():
 def message_items(m):
     """The files of the message that is open or highlighted, and the message they belong to."""
     mail = m.mail_session
+    if mail is not None and not mail.rows and mail.view == 'folder':
+        raise AttachmentError(mail._empty_list())   # as every other key says it in an empty folder
     if mail is None or not mail.rows or not mail.current:
         raise AttachmentError('Choose a message first.')
     row = mail.rows[mail.current - 1]
@@ -286,7 +289,9 @@ def back(m):
         return 'email_draft'
     if RETURN_MODE == 'mailbox' and m.mail_session is not None:
         mail = m.mail_session
-        m.speak('Back to message.' if mail.view == 'message' else 'Back to ' + mail.folder_name + '.')
+        # In the list, the message you are on, as Escape from a message says it.
+        m.speak('Back to message.' if mail.view == 'message' else
+                mail._current_list() if mail.rows else 'Back to ' + mail.folder_name + '.')
         return 'mailbox'
     return 'awake'
 

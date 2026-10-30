@@ -71,8 +71,9 @@ class FakeSystem:
         return FakeProcess(self)
 
     def finish_install(self):
+        # winget's Mozilla.Thunderbird and Mozilla's thunderbird-latest download are both the Release channel.
         if self.install_works:
-            self.values.update(registered()); self.files.add(INSTALLED)
+            self.values.update(registered('155.0 (x64 en-US)')); self.files.add(INSTALLED)
 
     def clock(self):
         return self.now
@@ -486,3 +487,63 @@ class CompanionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class PromptAddOnStartTests(SetupCase):
+    """Will, October 29, 2026: started minimized or off the taskbar, Thunderbird waited to start
+    its add-ons until he pressed Alt+Tab. Voice Companion now turns Mozilla's
+    "background-delayed-startup" setting off, so the mail connection starts with Thunderbird."""
+    PREF = 'user_pref("extensions.webextensions.background-delayed-startup", false);'
+
+    def quiet_start(self, folder, running=False):
+        self.add_on(folder, active=True)
+        system = FakeSystem(self.home, registered('159.0 (x64 en-US)'), {INSTALLED}, running=running)
+        relay = FakeRelay(connect_after=0)
+        launched = thunderbird_setup.start_in_background(system, self.package, relay, self.progress.append)
+        return system, launched
+
+    def test_a_quiet_start_turns_the_delay_off_and_keeps_other_settings(self):
+        folder = self.profile()
+        (folder / 'user.js').write_text('user_pref("browser.display.use_document_fonts", 0);\n', encoding='utf-8')
+        system, launched = self.quiet_start(folder)
+        self.assertTrue(launched)
+        self.assertEqual(system.background, [INSTALLED])
+        user = (folder / 'user.js').read_text(encoding='utf-8')
+        self.assertIn('user_pref("browser.display.use_document_fonts", 0);', user)
+        self.assertIn(self.PREF, user)
+        self.assertEqual(thunderbird_setup.read_prefs(folder / 'user.js')[thunderbird_setup.PROMPT_START], False)
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ['extensions', 'extensions.json', 'prefs.js', 'user.js'])
+
+    def test_the_setting_is_written_once(self):
+        folder = self.profile()
+        self.quiet_start(folder)
+        first = (folder / 'user.js').read_bytes()
+        thunderbird_setup.start_addons_promptly(folder)
+        self.assertEqual((folder / 'user.js').read_bytes(), first)
+        self.assertEqual(first.decode('utf-8').count('background-delayed-startup'), 1)
+
+    def test_a_helper_who_turned_it_on_gets_it_off_once(self):
+        folder = self.profile()
+        (folder / 'user.js').write_text('user_pref("extensions.webextensions.background-delayed-startup", true);\n', encoding='utf-8')
+        self.quiet_start(folder)
+        user = (folder / 'user.js').read_text(encoding='utf-8')
+        self.assertIn(self.PREF, user)
+        self.assertEqual(user.count('background-delayed-startup'), 1)
+
+    def test_a_running_thunderbird_is_not_touched(self):
+        folder = self.profile()
+        system, launched = self.quiet_start(folder, running=True)
+        self.assertFalse(launched)
+        self.assertFalse((folder / 'user.js').exists())
+
+    def test_installing_the_add_on_turns_the_delay_off(self):
+        folder = self.profile()
+        thunderbird_setup.install_addon(folder, self.package)
+        self.assertIn(self.PREF, (folder / 'user.js').read_text(encoding='utf-8'))
+
+    def test_an_unwritable_profile_still_starts_thunderbird(self):
+        folder = self.profile()
+        with mock.patch.object(thunderbird_setup, 'write_atomic', side_effect=PermissionError('locked')):
+            system, launched = self.quiet_start(folder)
+        self.assertTrue(launched)
+        self.assertEqual(system.background, [INSTALLED])

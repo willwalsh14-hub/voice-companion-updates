@@ -20,7 +20,7 @@ the user asks for it.
 """
 import base64
 import re
-from urllib.parse import parse_qs, quote_plus, urlsplit
+from urllib.parse import parse_qs, quote_plus, unquote, urlsplit
 
 BASE = 'https://www.youtube.com'
 HOSTS = ('youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com')
@@ -30,12 +30,14 @@ PLAYER_CHANGED = ('YouTube changed its player, so that could not be done. '
                   'Say open in browser to use the page itself.')
 NOT_LOADED = 'YouTube did not finish loading. Check your internet connection, then press F5 to try again.'
 SIGN_IN_URL = 'https://accounts.google.com/ServiceLogin?service=youtube&continue=' + quote_plus(BASE + '/')
+# Google's own sign-out page; it signs this browser out of Google, then comes back to YouTube.
+SIGN_OUT_URL = 'https://accounts.google.com/Logout?service=youtube&continue=' + quote_plus(BASE + '/')
 
 # The lists on the screen, and where they are on the site.
 FEEDS = {
     'home': ('Home', '/'),
     'subscriptions': ('New from your subscriptions', '/feed/subscriptions'),
-    'channels': ('Your subscriptions', '/feed/channels'),
+    'channels': ('Subscriptions', '/feed/channels'),
     'history': ('History', '/feed/history'),
     'watch_later': ('Watch later', '/playlist?list=WL'),
     'liked': ('Liked videos', '/playlist?list=LL'),
@@ -44,29 +46,53 @@ FEEDS = {
 ACCOUNT_FEEDS = ('subscriptions', 'channels', 'history', 'watch_later', 'liked', 'playlists')
 
 
+NO_MORE = 'YouTube did not send the next part of this list. Press F5 to load the list again.'
+
+
+def item_key(item):
+    """What makes two list items the same item."""
+    return (item['kind'], item['id'] or item['url'] or item['title'])
+
+
 class YouTubeError(Exception):
     """A plain message for the user. Never a crash."""
+
+
+class SignedOut(YouTubeError):
+    """YouTube sent the browser to Google's sign-in page instead of your list."""
 
 
 # ---------------------------------------------------------------- search filters
 # YouTube keeps search filters in the "sp" part of the address. It is a small
 # protocol-buffer message: field 1 is the sort order; field 2 holds the filters.
 # Building it here lets filters combine, and needs no clicks in the filter panel.
+#
+# These are YouTube's filters since January 2026: "Sort by" became "Prioritize"
+# (Relevance or Popularity; sorting by upload date and by rating were removed),
+# "Last hour" was removed, Shorts became a type, and the lengths are now under
+# 3 minutes, 3 to 20 minutes and over 20 minutes. When the results page lists its
+# own filters (page_filter_groups), the screen uses those; this list is the fallback.
 FILTERS = {
-    'upload date': ('Upload date', (('any', 'Any time', None), ('hour', 'Last hour', 1), ('today', 'Today', 2),
-                                    ('week', 'This week', 3), ('month', 'This month', 4), ('year', 'This year', 5))),
-    'type': ('Type', (('any', 'Any type', None), ('video', 'Videos', 1), ('channel', 'Channels', 2),
+    'upload date': ('Upload date', (('any', 'Any time', None), ('today', 'Today', 2), ('week', 'This week', 3),
+                                    ('month', 'This month', 4), ('year', 'This year', 5))),
+    'type': ('Type', (('any', 'Any type', None), ('video', 'Videos', 1), ('shorts', 'Shorts', 9), ('channel', 'Channels', 2),
                       ('playlist', 'Playlists', 3), ('movie', 'Movies', 4))),
-    'length': ('Length', (('any', 'Any length', None), ('short', 'Under 4 minutes', 1),
-                          ('medium', '4 to 20 minutes', 3), ('long', 'Over 20 minutes', 2))),
-    'features': ('Features', (('any', 'No feature', None), ('subtitles', 'Subtitles', 5), ('live', 'Live', 8),
-                              ('4k', '4K', 14), ('hd', 'HD', 4), ('creative commons', 'Creative Commons', 6),
+    'length': ('Length', (('any', 'Any length', None), ('short', 'Under 3 minutes', 1),
+                          ('medium', '3 to 20 minutes', 3), ('long', 'Over 20 minutes', 2))),
+    'features': ('Features', (('any', 'No features', None), ('live', 'Live', 8), ('4k', '4K', 14), ('hd', 'HD', 4),
+                              ('subtitles', 'Subtitles', 5), ('creative commons', 'Creative Commons', 6),
                               ('360', '360 degrees', 15), ('hdr', 'HDR', 25))),
-    'sort': ('Sort by', (('relevance', 'Relevance', 0), ('upload date', 'Upload date', 2),
-                         ('view count', 'View count', 3), ('rating', 'Rating', 1))),
+    'sort': ('Sort', (('relevance', 'Relevance', 0), ('popularity', 'Popularity', 3))),
 }
 FILTER_ORDER = ('upload date', 'type', 'length', 'features', 'sort')
 NO_FILTERS = {'upload date': 'any', 'type': 'any', 'length': 'any', 'features': 'any', 'sort': 'relevance'}
+# The names YouTube gives its filter groups on the page, and the screen's names for them.
+GROUP_NAMES = {'upload date': 'upload date', 'type': 'type', 'duration': 'length', 'length': 'length',
+               'features': 'features', 'sort by': 'sort', 'prioritize': 'sort', 'sort': 'sort'}
+# Filters YouTube took away in January 2026, and what to say instead.
+GONE = {'last hour': 'YouTube no longer has a Last hour filter. Say Today instead.',
+        'sort by date': 'YouTube no longer sorts results by upload date. To find new videos, say Today or This week.',
+        'sort by rating': 'YouTube no longer sorts results by rating. Say Sort by popularity instead.'}
 
 
 def _varint(value):
@@ -104,9 +130,60 @@ def filter_code(filters):
     return base64.b64encode(data).decode('ascii') if data else ''
 
 
-def search_url(query, filters=None):
+def _fields(data):
+    """(field number, value) for each varint or length-delimited field of a protocol-buffer message."""
+    index, out = 0, []
+    def varint():
+        nonlocal index
+        value, shift = 0, 0
+        while True:
+            byte = data[index]
+            index += 1
+            value |= (byte & 0x7f) << shift
+            shift += 7
+            if not byte & 0x80:
+                return value
+    while index < len(data):
+        key = varint()
+        number, wire = key >> 3, key & 7
+        if wire == 0:
+            out.append((number, varint()))
+        elif wire == 2:
+            size = varint()
+            out.append((number, bytes(data[index:index + size])))
+            index += size
+        else:
+            raise ValueError('unknown field type')
+    return out
+
+
+def decode_filters(code):
+    """The filters in a filter code (from filter_code, or a link on the page), as NO_FILTERS
+    shapes them. Parts this screen does not know are left out; a damaged code means no filters."""
+    filters = dict(NO_FILTERS)
+    numbers = {name: {number: key for key, _, number in FILTERS[name][1] if number} for name in FILTERS}
+    try:
+        text = sp_code(code)
+        data = base64.b64decode(text + '=' * (-len(text) % 4), altchars=b'-_' if '-' in text or '_' in text else None)
+        for number, value in _fields(data):
+            if number == 1 and isinstance(value, int):
+                filters['sort'] = numbers['sort'].get(value, 'relevance')
+            elif number == 2 and isinstance(value, bytes):
+                for inner, setting in _fields(value):
+                    name = {1: 'upload date', 2: 'type', 3: 'length'}.get(inner)
+                    if name and isinstance(setting, int):
+                        filters[name] = numbers[name].get(setting, 'any')
+                    elif setting == 1 and inner in numbers['features']:
+                        filters['features'] = numbers['features'][inner]
+    except (ValueError, IndexError, TypeError):
+        return dict(NO_FILTERS)
+    return filters
+
+
+def search_url(query, filters=None, code=None):
+    """The results address. `code` is a whole filter code from the page; else `filters` is built."""
     url = BASE + '/results?search_query=' + quote_plus(' '.join(str(query).split()))
-    code = filter_code(filters)
+    code = filter_code(filters) if code is None else code
     return url + ('&sp=' + quote_plus(code) if code else '')
 
 
@@ -115,7 +192,7 @@ def filter_label(name, key):
 
 
 def filter_summary(filters):
-    """'This week, Videos, Sorted by upload date', or '' with no filters."""
+    """'This week, Videos, sorted by popularity', or '' with no filters."""
     filters = dict(NO_FILTERS, **(filters or {}))
     parts = [filter_label(name, filters[name]) for name in ('upload date', 'type', 'length', 'features')
              if filters[name] != 'any']
@@ -126,33 +203,78 @@ def filter_summary(filters):
 
 
 def filter_request(spoken):
-    """(filter name, value) for words such as "this week", "only channels", "sort by view count"."""
+    """(filter name, value) for words such as "this week", "only channels", "sort by popularity".
+    ('gone', key) for a filter YouTube took away (see GONE); None when the words are no filter."""
     words = ' '.join(re.sub(r'[^\w\s]', ' ', str(spoken).casefold()).split())
     words = re.sub(r'^(?:filter (?:by |to )?|only show |show only |only |set |choose |use )', '', words)
     words = re.sub(r'^(?:upload date |uploaded |date |type |length |duration |feature |features )', '', words)
-    if re.fullmatch(r'(?:sort(?:ed)? by |order by )?(?:relevance|most relevant)', words):
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by |prioritize )?(?:relevance|most relevant)', words):
         return 'sort', 'relevance'
-    match = re.fullmatch(r'(?:sort(?:ed)? by |order by )(upload date|date|newest|view count|views|most viewed|rating|top rated)', words)
-    if match:
-        return 'sort', {'date': 'upload date', 'newest': 'upload date', 'views': 'view count',
-                        'most viewed': 'view count', 'top rated': 'rating'}.get(match[1], match[1])
-    table = {'last hour': ('upload date', 'hour'), 'this hour': ('upload date', 'hour'), 'today': ('upload date', 'today'),
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by |prioritize )?(?:popularity|view count|views|most viewed|most popular|popular)', words):
+        return 'sort', 'popularity'
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by )(?:upload date|date|newest|newest first|most recent)', words):
+        return 'gone', 'sort by date'
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by )(?:rating|top rated|highest rated)', words):
+        return 'gone', 'sort by rating'
+    table = {'last hour': ('gone', 'last hour'), 'this hour': ('gone', 'last hour'), 'today': ('upload date', 'today'),
              'this week': ('upload date', 'week'), 'this month': ('upload date', 'month'), 'this year': ('upload date', 'year'),
              'any time': ('upload date', 'any'), 'any date': ('upload date', 'any'),
-             'videos': ('type', 'video'), 'video': ('type', 'video'), 'channels': ('type', 'channel'), 'channel': ('type', 'channel'),
+             'videos': ('type', 'video'), 'video': ('type', 'video'), 'shorts': ('type', 'shorts'), 'youtube shorts': ('type', 'shorts'),
+             'channels': ('type', 'channel'), 'channel': ('type', 'channel'),
              'playlists': ('type', 'playlist'), 'playlist': ('type', 'playlist'), 'movies': ('type', 'movie'),
              'any type': ('type', 'any'),
-             'short videos': ('length', 'short'), 'short': ('length', 'short'), 'under 4 minutes': ('length', 'short'),
-             'under four minutes': ('length', 'short'), 'medium length': ('length', 'medium'), 'medium': ('length', 'medium'),
+             'short': ('length', 'short'), 'short videos': ('length', 'short'), 'under 3 minutes': ('length', 'short'), 'under three minutes': ('length', 'short'),
+             'under 4 minutes': ('length', 'short'), 'under four minutes': ('length', 'short'),
+             '3 to 20 minutes': ('length', 'medium'), 'three to twenty minutes': ('length', 'medium'),
              '4 to 20 minutes': ('length', 'medium'), 'four to twenty minutes': ('length', 'medium'),
+             'medium length': ('length', 'medium'), 'medium': ('length', 'medium'),
              'long videos': ('length', 'long'), 'long': ('length', 'long'), 'over 20 minutes': ('length', 'long'),
              'over twenty minutes': ('length', 'long'), 'any length': ('length', 'any'),
              'subtitles': ('features', 'subtitles'), 'with subtitles': ('features', 'subtitles'), 'captions': ('features', 'subtitles'),
              'with captions': ('features', 'subtitles'), 'closed captions': ('features', 'subtitles'),
              'live': ('features', 'live'), 'live videos': ('features', 'live'), '4k': ('features', '4k'), 'four k': ('features', '4k'),
              'hd': ('features', 'hd'), 'high definition': ('features', 'hd'), 'creative commons': ('features', 'creative commons'),
-             '360': ('features', '360'), 'hdr': ('features', 'hdr'), 'no feature': ('features', 'any')}
+             '360': ('features', '360'), 'hdr': ('features', 'hdr'), 'no feature': ('features', 'any'), 'no features': ('features', 'any')}
     return table.get(words)
+
+
+def sp_code(text):
+    """The filter code in a filter link or its "params", decoded: 'EgIIAw%253D%253D' is 'EgIIAw=='."""
+    text = str(text or '')
+    if '?' in text or text.startswith('/'):
+        text = (parse_qs(urlsplit(text).query).get('sp') or [''])[0]
+    for _ in range(3):
+        if '%' not in text:
+            break
+        text = unquote(text)
+    return text
+
+
+def page_filter_groups(raw):
+    """The filter groups the results page lists (FILTERS_JS), as the screen uses them.
+
+    Each group: name (as in FILTERS, or YouTube's own words for a new group), title, and
+    choices: label, sp (the whole filter code after choosing it, as YouTube combines it),
+    on, and disabled (YouTube does not allow it with the filters that are on)."""
+    groups = []
+    for entry in raw if isinstance(raw, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        title = ' '.join(str(entry.get('title') or '').split())
+        choices = []
+        for item in entry.get('filters') or []:
+            if not isinstance(item, dict):
+                continue
+            label = ' '.join(str(item.get('label') or '').split())
+            if not label:
+                continue
+            link = item.get('params') or item.get('url') or ''
+            disabled = bool(item.get('disabled')) or not (item.get('params') or item.get('url'))
+            choices.append({'label': label, 'sp': None if disabled else sp_code(link),
+                            'on': bool(item.get('selected')), 'disabled': disabled})
+        if title and choices:
+            groups.append({'name': GROUP_NAMES.get(title.casefold(), title.casefold()), 'title': title, 'choices': choices})
+    return groups
 
 
 # ---------------------------------------------------------------- addresses
@@ -234,6 +356,18 @@ ARIA = re.compile(r'^(?P<title>.+?) by (?P<channel>.+?) (?P<views>(?:[\d,.]+\s?[
                   r'(?P<age>(?:Streamed )?\d+ \w+ ago)(?: (?P<duration>.+?))?$')
 
 
+SHORT_AGE = {'y': 'year', 'yr': 'year', 'mo': 'month', 'w': 'week', 'wk': 'week', 'd': 'day', 'h': 'hour', 'hr': 'hour',
+             'm': 'minute', 'min': 'minute', 's': 'second', 'sec': 'second'}
+
+
+def spoken_age(text):
+    """YouTube's short ages in words: '2w ago' is '2 weeks ago', '1mo ago' is '1 month ago'."""
+    def word(match):
+        number, unit = match[1], SHORT_AGE[match[2].lower()]
+        return number + ' ' + unit + ('' if number == '1' else 's') + ' ago'
+    return re.sub(r'\b(\d+)\s?(yr|mo|wk|min|sec|hr|y|w|d|h|m|s)\s+ago\b', word, str(text or ''), flags=re.I)
+
+
 def _clean(text):
     text = ' '.join(str(text or '').replace('​', ' ').split())
     return text.strip(' •·|')
@@ -250,6 +384,10 @@ def _parts(raw):
     return parts
 
 
+def container_is_lockup(raw):
+    return 'lockup' in str(raw.get('container') or '')
+
+
 def item_from_raw(raw):
     """One list item in plain fields, from what the page reader found. None when it has no title."""
     title = _clean(raw.get('title'))
@@ -262,7 +400,14 @@ def item_from_raw(raw):
         return None
     parts = _parts(raw)
     channel = _clean(raw.get('channel'))
+    parts = [spoken_age(p) for p in parts]
     views = next((p for p in parts if VIEWS.match(p)), '')
+    if not views and container_is_lockup(raw):
+        # A channel's own video list gives the count alone ("960K"): it is the views.
+        bare = next((p for p in parts if re.fullmatch(r'[\d,.]+\s?[KMB]?', p)), '')
+        if bare:
+            parts = [p + ' views' if p == bare else p for p in parts]
+            views = bare + ' views'
     watching = next((p for p in parts if WATCHING.match(p)), '')
     age = next((p for p in parts if AGE.search(p)), '')
     if not channel:
@@ -405,10 +550,219 @@ LIST_JS = HELPERS + r'''
 }
 '''
 
+# The search filters the results page lists, as YouTube itself builds them: each filter's
+# link already combines it with the filters that are on (or, for one that is on, takes it
+# away). Read from the page's data first (the filter panel is drawn only when opened), then
+# from a drawn panel. [] when the page lists none; the screen then builds the codes itself.
+FILTERS_JS = r'''
+()=>{
+  const out=[],seen=new Set();
+  const text=t=>!t?'':typeof t==='string'?t:(t.simpleText||(t.runs||[]).map(r=>r.text||'').join('')||t.content||'');
+  const walk=(o,depth)=>{
+    if(!o||typeof o!=='object'||depth>60)return;
+    if(Array.isArray(o)){for(const x of o)walk(x,depth+1);return;}
+    const g=o.searchFilterGroupRenderer;
+    if(g&&typeof g==='object'){
+      const title=text(g.title).trim();
+      if(title&&!seen.has(title)){
+        seen.add(title);
+        out.push({title,filters:(g.filters||[]).map(f=>{
+          const r=(f&&f.searchFilterRenderer)||{},e=r.navigationEndpoint||{};
+          const url=((e.commandMetadata||{}).webCommandMetadata||{}).url||'';
+          const params=(e.searchEndpoint||{}).params||'';
+          return {label:text(r.label).trim(),url,params,selected:r.status==='FILTER_STATUS_SELECTED',disabled:r.status==='FILTER_STATUS_DISABLED'};})});
+      }
+      return;
+    }
+    for(const k in o)walk(o[k],depth+1);
+  };
+  let data=null;
+  try{data=window.ytInitialData;}catch(e){}
+  if(!data){try{const a=document.querySelector('ytd-app');data=a&&a.data&&a.data.response;}catch(e){}}
+  try{walk(data,0);}catch(e){}
+  if(!out.length){
+    for(const g of document.querySelectorAll('ytd-search-filter-group-renderer')){
+      const head=g.querySelector('#filter-group-title,h4');
+      const title=head?head.textContent.trim():'';
+      const filters=[...g.querySelectorAll('ytd-search-filter-renderer')].map(r=>{
+        const a=r.querySelector('a[href]');const label=(r.querySelector('#label')||a||r).textContent.trim();
+        return {label,url:a?a.getAttribute('href'):'',params:'',selected:r.hasAttribute('selected')||r.getAttribute('aria-selected')==='true',
+                disabled:r.hasAttribute('disabled')};});
+      if(title)out.push({title,filters});
+    }
+  }
+  return out;
+}
+'''
+
+# ---------------------------------------------------------------- the page's own data
+# Since 0.2.179 lists are read from the data YouTube sends with the page (ytInitialData),
+# not from what is drawn. The drawn page holds only what has been scrolled into view, and
+# a browser in the background may draw little or nothing, so lists stopped after a few
+# videos and History came out of order (Will, October 29, 2026). The data is complete and
+# in YouTube's own order. The next part of a list is asked for the way YouTube's page asks
+# for it: its "continuation" token, sent to YouTube's own address for the page, from the
+# page, with the page's own sign-in. Reading the drawn page stays as the fallback.
+EXTRACT_JS = r"""
+const T=t=>!t?'':typeof t==='string'?t:(t.simpleText||(t.runs||[]).map(r=>r.text||'').join('')||t.content||'');
+const LABEL=t=>(t&&t.accessibility&&t.accessibility.accessibilityData&&t.accessibility.accessibilityData.label)||'';
+const URL_OF=e=>{e=e||{};const c=e.innertubeCommand||e;const m=((c.commandMetadata||{}).webCommandMetadata||{}).url;if(m)return m;
+  if(c.watchEndpoint&&c.watchEndpoint.videoId)return '/watch?v='+c.watchEndpoint.videoId+(c.watchEndpoint.playlistId?'&list='+c.watchEndpoint.playlistId:'');
+  if(c.reelWatchEndpoint&&c.reelWatchEndpoint.videoId)return '/shorts/'+c.reelWatchEndpoint.videoId;
+  if(c.browseEndpoint){const b=c.browseEndpoint;if(b.canonicalBaseUrl)return b.canonicalBaseUrl;
+    if(/^VL/.test(b.browseId||''))return '/playlist?list='+b.browseId.slice(2);if(b.browseId)return '/channel/'+b.browseId;}
+  return '';};
+const TOKEN=r=>{if(!r)return '';const e=r.continuationEndpoint||(r.button&&r.button.buttonRenderer&&r.button.buttonRenderer.command)||{};
+  if(e.continuationCommand)return e.continuationCommand.token||'';
+  for(const c of ((e.commandExecutorCommand||{}).commands||[]))if(c.continuationCommand)return c.continuationCommand.token||'';return '';};
+const SKIP=new Set(['header','topbar','sidebar','microformat','frameworkUpdates','responseContext','overlay','engagementPanels',
+  'secondaryContents','menu','thumbnail','thumbnailOverlays','onResponseReceivedEndpoints','trackingParams','loggingDirectives',
+  'secondaryResults','playerOverlays','refinements','chipCloudRenderer','feedFilterChipBarRenderer','adSlotMetadata']);
+const VIDEO=['videoRenderer','gridVideoRenderer','compactVideoRenderer','playlistVideoRenderer','playlistPanelVideoRenderer',
+  'videoWithContextRenderer','movieRenderer','compactMovieRenderer'];
+const PLAYLIST=['playlistRenderer','gridPlaylistRenderer','radioRenderer','compactRadioRenderer','compactPlaylistRenderer','gridRadioRenderer'];
+const CHANNEL=['channelRenderer','gridChannelRenderer'];
+const ADS=['adSlotRenderer','promotedVideoRenderer','searchPyvRenderer','inFeedAdLayoutRenderer','promotedSparklesWebRenderer','displayAdRenderer'];
+const firstText=(o,depth)=>{if(!o||typeof o!=='object'||depth>8)return '';for(const k of ['headline','title','videoTitle','primaryText','text']){if(o[k]){const t=T(o[k]);if(t)return t;}}
+  for(const k in o){const t=firstText(o[k],depth+1);if(t)return t;}return '';};
+const timeBadge=r=>{for(const o of (r.thumbnailOverlays||[])){const s=o.thumbnailOverlayTimeStatusRenderer;if(s)return {text:T(s.text),style:s.style||''};}return {text:'',style:''};};
+const extract=(root)=>{
+  const items=[];let token='';
+  const push=(entry)=>{items.push(Object.assign({container:'',title:'',aria:'',href:'',meta:[],rows:[],channel:'',badge:'',overlay:'',live:false,
+    subscribers:'',videos:'',count:'',collection:false,ad:false},entry));};
+  const video=(name,r)=>{
+    const time=timeBadge(r);
+    const live=(r.badges||[]).some(b=>/LIVE/.test(((b||{}).metadataBadgeRenderer||{}).style||''))||time.style==='LIVE';
+    const meta=[T(r.viewCountText)||T(r.shortViewCountText),T(r.publishedTimeText)].filter(Boolean);
+    if(!meta.length&&r.videoInfo)meta.push(T(r.videoInfo));
+    const tag='ytd-'+name.replace(/Renderer$/,'').replace(/[A-Z]/g,c=>'-'+c.toLowerCase())+'-renderer';
+    push({container:tag,title:T(r.title)||T(r.headline),aria:LABEL(r.title),href:URL_OF(r.navigationEndpoint)||(r.videoId?'/watch?v='+r.videoId:''),
+      meta,channel:T(r.ownerText)||T(r.longBylineText)||T(r.shortBylineText),badge:T(r.lengthText)||time.text,
+      overlay:time.style==='LIVE'?'LIVE':time.style==='UPCOMING'?'UPCOMING':time.style==='SHORTS'?'SHORTS':'',live});
+  };
+  const lockup=(r)=>{
+    const type=String(r.contentType||'');
+    const m=((r.metadata||{}).lockupMetadataViewModel)||{};
+    const rows=(((m.metadata||{}).contentMetadataViewModel||{}).metadataRows||[]).map(row=>(row.metadataParts||[]).map(p=>T(p.text)).filter(Boolean)).filter(x=>x.length);
+    const image=r.contentImage||{};
+    const thumb=image.thumbnailViewModel||((image.collectionThumbnailViewModel||{}).primaryThumbnail||{}).thumbnailViewModel||{};
+    let badge='',live=false;
+    for(const o of (thumb.overlays||[])){
+      for(const b of (((o.thumbnailOverlayBadgeViewModel||{}).thumbnailBadges)||[])){const v=b.thumbnailBadgeViewModel||{};badge=badge||T(v.text);
+        if(/LIVE/.test(String(v.badgeStyle||''))||/^live$/i.test(T(v.text)))live=true;}
+      for(const b of (((o.thumbnailBottomOverlayViewModel||{}).badges)||[])){const v=b.thumbnailBadgeViewModel||{};badge=badge||T(v.text);
+        if(/LIVE/.test(String(v.badgeStyle||'')))live=true;}
+    }
+    const onTap=((r.rendererContext||{}).commandContext||{}).onTap;
+    let href=URL_OF(onTap);
+    const playlist=/PLAYLIST|PODCAST|ALBUM/.test(type);
+    if(!href&&r.contentId)href=playlist?'/playlist?list='+r.contentId:'/watch?v='+r.contentId;
+    const channelType=/CHANNEL/.test(type);
+    push({container:'yt-lockup-view-model '+(channelType?'channel':playlist?'playlist':'video'),title:T(m.title),href,rows,
+      badge:playlist?'':badge,count:playlist?badge:'',collection:playlist,live});
+  };
+  const walk=(o,depth)=>{
+    if(!o||typeof o!=='object'||depth>80)return;
+    if(Array.isArray(o)){for(const x of o)walk(x,depth+1);return;}
+    for(const name of VIDEO)if(o[name]){video(name,o[name]);return;}
+    if(o.reelItemRenderer){const r=o.reelItemRenderer;push({container:'ytd-reel-item-renderer shorts',title:T(r.headline),aria:LABEL(r.headline),
+      href:r.videoId?'/shorts/'+r.videoId:URL_OF(r.navigationEndpoint),meta:[T(r.viewCountText)].filter(Boolean),overlay:'SHORTS'});return;}
+    if(o.shortsLockupViewModel){const r=o.shortsLockupViewModel,md=r.overlayMetadata||{};
+      push({container:'ytm-shorts-lockup-view-model shorts',title:T(md.primaryText),aria:r.accessibilityText||'',href:URL_OF(r.onTap)||(r.entityId?'':''),
+        meta:[T(md.secondaryText)].filter(Boolean),overlay:'SHORTS'});return;}
+    if(o.lockupViewModel){lockup(o.lockupViewModel);return;}
+    for(const name of CHANNEL)if(o[name]){const r=o[name];const a=T(r.subscriberCountText),b=T(r.videoCountText);
+      const subs=[a,b].find(t=>/subscriber/i.test(t))||'';const vids=[a,b].find(t=>/video/i.test(t))||'';
+      push({container:'ytd-channel-renderer',title:T(r.title),href:URL_OF(r.navigationEndpoint)||(r.channelId?'/channel/'+r.channelId:''),subscribers:subs,videos:vids});return;}
+    for(const name of PLAYLIST)if(o[name]){const r=o[name];let count=T(r.videoCountText)||T(r.videoCountShortText)||T(r.thumbnailText);
+      if(/^\d[\d,]*$/.test(count))count+=' videos';
+      push({container:'ytd-playlist-renderer',title:T(r.title),href:r.playlistId?'/playlist?list='+r.playlistId:URL_OF(r.navigationEndpoint),
+        channel:T(r.shortBylineText)||T(r.longBylineText),count,collection:true});return;}
+    for(const name of ADS)if(o[name]){push({container:'ytd-ad-slot-renderer',title:firstText(o[name],0),ad:true});return;}
+    if(o.continuationItemRenderer){token=TOKEN(o.continuationItemRenderer)||token;return;}
+    for(const k in o){if(SKIP.has(k))continue;walk(o[k],depth+1);}
+  };
+  walk(root,0);
+  return {items,token};
+};
+"""
+
+# Reads the page's own data. {signedIn, url, ...} with items and token, or data:false when the page has none.
+DATA_JS = r"""
+()=>{
+""" + EXTRACT_JS + r"""
+  let cfg=null;try{cfg=window.ytcfg&&typeof window.ytcfg.get==='function'?window.ytcfg:null;}catch(e){}
+  const logged=cfg?cfg.get('LOGGED_IN'):undefined;
+  const out={url:location.href,title:document.title,signedIn:typeof logged==='boolean'?logged:null,data:false,items:[],token:'',
+             consent:/^consent\./.test(location.hostname)||/consent/.test(location.pathname)};
+  let data=null;try{data=window.ytInitialData;}catch(e){}
+  if(!data||typeof data!=='object')return out;
+  // A page reached inside YouTube's own app keeps the first page's data; only data for this address counts.
+  try{const u=((data.currentVideoEndpoint||data.endpoint||{}).commandMetadata||{}).webCommandMetadata;
+      if(u&&u.url){const want=new URL(u.url,location.origin),here=new URL(location.href);
+        if(want.pathname!==here.pathname)return out;}}catch(e){}
+  const found=extract(data.contents||data);
+  out.data=true;out.items=found.items;out.token=found.token;
+  // YouTube's own words for an empty or signed-out list.
+  const words=[];const look=(o,d)=>{if(!o||typeof o!=='object'||d>40)return;if(Array.isArray(o)){o.forEach(x=>look(x,d+1));return;}
+    for(const k of ['backgroundPromoRenderer','messageRenderer','feedNudgeRenderer','emptyStateViewModel']){if(o[k]){const r=o[k];
+      words.push([T(r.title),T(r.bodyText),T(r.text),T(r.subtitle)].filter(Boolean).join(' '));}}
+    for(const k in o){if(!SKIP.has(k))look(o[k],d+1);}};
+  look(data.contents||{},0);
+  out.promo=words.join(' ').trim();
+  out.promoSignIn=/sign in/i.test(out.promo);
+  return out;
+}
+"""
+
+# The next part of a list: YouTube's page asks its own address with the continuation token.
+# A signed-in request carries the same proof of sign-in the page itself sends (SAPISIDHASH).
+MORE_JS = r"""
+async ([token,search])=>{
+""" + EXTRACT_JS + r"""
+  const cfg=window.ytcfg;
+  if(!cfg||typeof cfg.get!=='function')return {error:'no ytcfg'};
+  const headers={'Content-Type':'application/json','X-Youtube-Client-Name':String(cfg.get('INNERTUBE_CONTEXT_CLIENT_NAME')||1),
+    'X-Youtube-Client-Version':String(cfg.get('INNERTUBE_CLIENT_VERSION')||''),'X-Origin':location.origin,
+    'X-Goog-AuthUser':String(cfg.get('SESSION_INDEX')||0)};
+  const visitor=cfg.get('VISITOR_DATA');if(visitor)headers['X-Goog-Visitor-Id']=visitor;
+  if(cfg.get('DELEGATED_SESSION_ID'))headers['X-Goog-PageId']=cfg.get('DELEGATED_SESSION_ID');
+  const cookie=(name)=>{const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]*)'));return m?m[1]:'';};
+  const sapisid=cookie('SAPISID')||cookie('__Secure-3PAPISID')||cookie('__Secure-1PAPISID');
+  if(sapisid&&window.crypto&&crypto.subtle){
+    const now=Math.floor(Date.now()/1000);
+    const digest=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(now+' '+sapisid+' '+location.origin));
+    const hex=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    headers['Authorization']='SAPISIDHASH '+now+'_'+hex;
+  }
+  const key=cfg.get('INNERTUBE_API_KEY');
+  const address='/youtubei/v1/'+(search?'search':'browse')+'?prettyPrint=false'+(key?'&key='+encodeURIComponent(key):'');
+  let response;
+  try{response=await fetch(address,{method:'POST',credentials:'include',headers,
+    body:JSON.stringify({context:cfg.get('INNERTUBE_CONTEXT'),continuation:token})});}
+  catch(e){return {error:String(e)};}
+  if(!response.ok)return {error:'status '+response.status};
+  let data;try{data=await response.json();}catch(e){return {error:'not json'};}
+  const found=extract(data.onResponseReceivedActions||data.onResponseReceivedCommands||data.continuationContents||data);
+  return {items:found.items,token:found.token};
+}
+"""
+
+
+SIGNED_IN_JS = r'''
+()=>{
+  try{const v=window.ytcfg&&typeof window.ytcfg.get==='function'?window.ytcfg.get('LOGGED_IN'):undefined;if(typeof v==='boolean')return v;}catch(e){}
+  if(document.querySelector('#avatar-btn,button#avatar-btn,ytd-topbar-menu-button-renderer #avatar-btn'))return true;
+  if(document.querySelector('ytd-masthead a[href*="ServiceLogin"],#masthead a[href*="ServiceLogin"],ytd-masthead [aria-label="Sign in"],#masthead [aria-label="Sign in"]'))return false;
+  return null;
+}
+'''
+
 # True once a list, a message or the player is on the page, or it is not YouTube.
 READY_JS = r'''
 ()=>{
   if(!/youtube\.com$/.test(location.hostname))return true;
+  try{if(location.pathname!=='/watch'&&window.ytInitialData&&window.ytcfg)return true;}catch(e){}
   const page=[...document.querySelectorAll('ytd-page-manager > *')].find(e=>!e.hasAttribute('hidden'))||document;
   if(page.querySelector('ytd-rich-item-renderer,ytd-video-renderer,ytd-playlist-video-renderer,ytd-channel-renderer,ytd-grid-video-renderer,yt-lockup-view-model,ytd-reel-item-renderer,ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2'))return true;
   if(page.querySelector('ytd-background-promo-renderer,ytd-message-renderer,yt-empty-state-view-model,ytd-feed-nudge-renderer'))return true;
@@ -589,7 +943,28 @@ class YouTubePage:
             pass   # read whatever is there; read_list says what went wrong
 
     def read_list(self, which='main'):
-        """(items, page facts). Raises YouTubeError with a plain message when nothing can be read."""
+        """(items, page facts). Raises YouTubeError with a plain message when nothing can be read.
+
+        The main list comes from the page's own data when it has it (DATA_JS): every item
+        YouTube sent, in its order, and facts['token'] for the next part (next_part). The
+        drawn page is read when there is no data (and for the related videos beside a video)."""
+        if which == 'main':
+            try:
+                data = self.evaluate(DATA_JS)
+            except YouTubeError:
+                raise
+            except Exception:
+                data = None
+            if isinstance(data, dict) and data.get('consent'):
+                raise YouTubeError('YouTube asks you to accept or reject cookies first. Say open in browser to answer it. '
+                                   'Then say YouTube to come back.')
+            if isinstance(data, dict) and data.get('data') and is_youtube(data.get('url')):
+                items = self.items_from(data.get('items'))
+                if items or data.get('token') or data.get('promo'):
+                    facts = dict(data, source='data')
+                    if not items:
+                        facts['empty'] = data.get('promo') or ''
+                    return items, facts
         try:
             raw = self.evaluate(LIST_JS, which)
         except YouTubeError:
@@ -602,9 +977,18 @@ class YouTubePage:
             raise YouTubeError('YouTube asks you to accept or reject cookies first. Say open in browser to answer it. '
                                'Then say YouTube to come back.')
         if not is_youtube(raw.get('url')):
+            if (urlsplit(str(raw.get('url') or '')).hostname or '').endswith('accounts.google.com'):
+                raise SignedOut('You are not signed in to YouTube.')
             raise YouTubeError('The browser is not on YouTube now. Press F5 to load the list again.')
-        items, seen = [], set()
-        for entry in raw.get('items') or []:
+        if raw.get('signedIn') is None:
+            raw['signedIn'] = self.signed_in()
+        return self.items_from(raw.get('items')), raw
+
+    @staticmethod
+    def items_from(entries, seen=None):
+        """Plain items from what a page reader found, without repeats, in order."""
+        items, seen = [], set() if seen is None else seen
+        for entry in entries or []:
             if not isinstance(entry, dict):
                 continue
             if entry.get('fallback') and not entry.get('title') and not entry.get('aria'):
@@ -615,12 +999,25 @@ class YouTubePage:
                 item = None
             if item is None:
                 continue
-            key = (item['kind'], item['id'] or item['url'] or item['title'])
+            key = item_key(item)
             if key in seen:
                 continue
             seen.add(key)
             items.append(item)
-        return items, raw
+        return items
+
+    def next_part(self, token, search=False):
+        """The next part of a list from its continuation token: (items, next token).
+        Raises YouTubeError when YouTube does not answer."""
+        try:
+            raw = self.evaluate(MORE_JS, [token, bool(search)])
+        except YouTubeError:
+            raise
+        except Exception as exc:
+            raise YouTubeError(NO_MORE) from exc
+        if not isinstance(raw, dict) or raw.get('error'):
+            raise YouTubeError(NO_MORE)
+        return self.items_from(raw.get('items')), str(raw.get('token') or '')
 
     def load_more(self):
         """Scroll to the bottom so the site adds the next part of a long list."""
@@ -637,6 +1034,15 @@ class YouTubePage:
             raise
         except Exception:
             return False
+
+    def read_filters(self):
+        """The filter groups the results page lists (page_filter_groups); [] when it lists none."""
+        try:
+            return page_filter_groups(self.evaluate(FILTERS_JS))
+        except YouTubeError:
+            raise
+        except Exception:
+            return []
 
     # ---------------- player
     def state(self):
@@ -812,8 +1218,9 @@ class YouTubePage:
         return value
 
     def signed_in(self):
-        return self.evaluate("()=>document.querySelector('#avatar-btn,button#avatar-btn')?true:"
-                             "(document.querySelector('ytd-masthead a[href*=\"ServiceLogin\"],#masthead a[href*=\"ServiceLogin\"],ytd-masthead [aria-label=\"Sign in\"]')?false:null)")
+        """True, False, or None when the page does not say. YouTube's own setting (ytcfg LOGGED_IN)
+        first: the account button is drawn late, or not at all in a browser in the background."""
+        return self.evaluate(SIGNED_IN_JS)
 
     LIKE = ['like-button-view-model button', '#segmented-like-button button', 'ytd-toggle-button-renderer#like-button button',
             'button[aria-label^="like this video"]', 'button[aria-label^="Like this video"]']

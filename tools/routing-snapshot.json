@@ -484,19 +484,19 @@
 },
 "awake | audio tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "awake | auto download": {
 "said": [
-"Say search podcasts for a name, list podcasts, or list subscriptions."
+"Say browse podcasts to choose a category, search podcasts for a name, or list subscriptions."
 ],
 "screen_after": "media"
 },
 "awake | automatically download": {
 "said": [
-"Say search podcasts for a name, list podcasts, or list subscriptions."
+"Say browse podcasts to choose a category, search podcasts for a name, or list subscriptions."
 ],
 "screen_after": "media"
 },
@@ -622,7 +622,7 @@
 },
 "awake | browse podcasts": {
 "said": [
-"Say browse podcasts category science, or search followed by a podcast name."
+"Browse podcasts. Choose a category to hear its top podcasts. Top podcasts (T), 1 of 17. Say next or previous to move, and that one to open it."
 ],
 "screen_after": "media"
 },
@@ -871,6 +871,12 @@
 "Checking subscribed feeds in the background."
 ],
 "screen_after": "media"
+},
+"awake | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
 },
 "awake | check updates": {
 "said": [
@@ -1644,6 +1650,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | folder": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | folders": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -1683,6 +1695,18 @@
 "awake | get more messages": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
+"awake | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "awake"
 },
@@ -1936,7 +1960,7 @@
 },
 "awake | internet radio": {
 "said": [
-"Radio menu. Search stations (S), 1 of 21. Tab switches between actions and results. Enter opens the selected item."
+"Radio menu. Search stations (S), 1 of 22. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2019,7 +2043,7 @@
 },
 "awake | lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -2166,7 +2190,7 @@
 },
 "awake | listen to podcasts": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2223,6 +2247,12 @@
 "Open and subscribe to the show first, or say list subscriptions and give its number."
 ],
 "screen_after": "media"
+},
+"awake | maybe later": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
 },
 "awake | media": {
 "said": [
@@ -2519,7 +2549,19 @@
 ],
 "screen_after": "awake"
 },
+"awake | no thank you": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | no thanks": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | nope": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -2532,6 +2574,12 @@
 "screen_after": "awake"
 },
 "awake | not now": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | not yet": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -2773,7 +2821,7 @@
 },
 "awake | open podcast": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -2832,13 +2880,13 @@
 },
 "awake | open the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "awake | open tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -2998,13 +3046,19 @@
 },
 "awake | podcast": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
+],
+"screen_after": "media"
+},
+"awake | podcast categories": {
+"said": [
+"Browse podcasts. Choose a category to hear its top podcasts. Top podcasts (T), 1 of 17. Say next or previous to move, and that one to open it."
 ],
 "screen_after": "media"
 },
 "awake | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -3016,7 +3070,7 @@
 },
 "awake | podcasts": {
 "said": [
-"Podcasts menu. Search podcasts (S), 1 of 23. Tab switches between actions and results. Enter opens the selected item."
+"Podcasts menu. Browse podcasts (B), 1 of 25. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -3028,7 +3082,7 @@
 },
 "awake | practice tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -3142,7 +3196,7 @@
 },
 "awake | radio": {
 "said": [
-"Radio menu. Search stations (S), 1 of 21. Tab switches between actions and results. Enter opens the selected item."
+"Radio menu. Search stations (S), 1 of 22. Tab switches between actions and results. Enter opens the selected item."
 ],
 "screen_after": "media"
 },
@@ -3478,6 +3532,12 @@
 "awake | return to inbox": {
 "said": [
 "Say add account to connect mail, list email accounts to hear connections, or email to open the selected inbox. Say write an email to create a draft."
+],
+"screen_after": "awake"
+},
+"awake | rows": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
 ],
 "screen_after": "awake"
 },
@@ -3931,7 +3991,7 @@
 },
 "awake | start lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -3943,13 +4003,13 @@
 },
 "awake | start the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "awake | start tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -4071,13 +4131,31 @@
 ],
 "screen_after": "awake"
 },
+"awake | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "awake"
+},
 "awake | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "awake"
 },
+"awake | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "awake"
+},
 "awake | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "awake"
+},
+"awake | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -4143,6 +4221,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | top podcast": {
+"said": [
+"The top podcasts list is not available right now. Check the internet connection, then try again. You can also search for a podcast by name."
+],
+"screen_after": "media"
+},
 "awake | turn off auto downloads": {
 "said": [
 "Open and subscribe to the show first, or say list subscriptions and give its number."
@@ -4151,7 +4235,7 @@
 },
 "awake | tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -4167,6 +4251,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
 "awake | update status": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -4179,9 +4269,39 @@
 ],
 "screen_after": "media"
 },
+"awake | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
+"awake | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
 "awake | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "awake"
+},
+"awake | upgrade": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
+},
+"awake | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "awake"
 },
@@ -4415,6 +4535,30 @@
 ],
 "screen_after": "awake"
 },
+"awake | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
+"awake | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
 "awake | what notes do i have": {
 "said": [
 "You have no saved notes yet. Say Write a note to start one."
@@ -4538,6 +4682,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "awake"
+},
 "awake | which radio source": {
 "said": [
 "Station database is all. Choices: All, Radio Browser, IPRD, or an imported RadioSure file. Say choose station database followed by its name."
@@ -4549,6 +4699,12 @@
 "Station database is all. Choices: All, Radio Browser, IPRD, or an imported RadioSure file. Say choose station database followed by its name."
 ],
 "screen_after": "media"
+},
+"awake | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "awake"
 },
 "awake | which version": {
 "said": [
@@ -5863,7 +6019,7 @@
 },
 "document | change font to Arial": {
 "said": [
-"Formatted the current paragraph. font: Arial."
+"Formatted the current paragraph. Font Arial."
 ],
 "screen_after": "document",
 "text": [
@@ -5985,6 +6141,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. check podcasts"
+]
+},
+"document | check thunderbird version": {
+"said": [
+"check thunderbird version"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. check thunderbird version"
 ]
 },
 "document | check updates": {
@@ -7108,6 +7273,15 @@
 "Hello world. Second sentence. flow"
 ]
 },
+"document | folder": {
+"said": [
+"folder"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. folder"
+]
+},
 "document | folders": {
 "said": [
 "folders"
@@ -7169,6 +7343,24 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. get more messages"
+]
+},
+"document | get the new thunderbird": {
+"said": [
+"get the new thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. get the new thunderbird"
+]
+},
+"document | get the newest thunderbird": {
+"said": [
+"get the newest thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. get the newest thunderbird"
 ]
 },
 "document | gmail": {
@@ -7945,6 +8137,15 @@
 "Hello world. Second sentence. manual downloads"
 ]
 },
+"document | maybe later": {
+"said": [
+"maybe later"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. maybe later"
+]
+},
 "document | media": {
 "said": [
 "media"
@@ -8369,6 +8570,15 @@
 "Hello world. Second sentence. no subject"
 ]
 },
+"document | no thank you": {
+"said": [
+"no thank you"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. no thank you"
+]
+},
 "document | no thanks": {
 "said": [
 "no thanks"
@@ -8376,6 +8586,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. no thanks"
+]
+},
+"document | nope": {
+"said": [
+"nope"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. nope"
 ]
 },
 "document | normal mode": {
@@ -8394,6 +8613,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. not now"
+]
+},
+"document | not yet": {
+"said": [
+"not yet"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. not yet"
 ]
 },
 "document | note": {
@@ -9076,9 +9304,18 @@
 "Hello world. Second sentence. podcast"
 ]
 },
+"document | podcast categories": {
+"said": [
+"podcast categories"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. podcast categories"
+]
+},
 "document | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -9779,6 +10016,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. return to inbox"
+]
+},
+"document | rows": {
+"said": [
+"rows"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. rows"
 ]
 },
 "document | save": {
@@ -10652,6 +10898,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
@@ -10661,7 +10916,25 @@
 "Hello world. Second sentence."
 ]
 },
+"document | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -10760,6 +11033,15 @@
 "Hello world. Second sentence. top of document"
 ]
 },
+"document | top podcast": {
+"said": [
+"top podcast"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. top podcast"
+]
+},
 "document | turn off auto downloads": {
 "said": [
 "turn off auto downloads"
@@ -10796,6 +11078,15 @@
 "Hello world. Second sentence. new line"
 ]
 },
+"document | update my thunderbird": {
+"said": [
+"update my thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. update my thunderbird"
+]
+},
 "document | update status": {
 "said": [
 "update status"
@@ -10814,6 +11105,24 @@
 "Hello world. Second sentence. update subscribed podcasts"
 ]
 },
+"document | update thunderbird": {
+"said": [
+"update thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. update thunderbird"
+]
+},
+"document | update thunderbird now": {
+"said": [
+"update thunderbird now"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. update thunderbird now"
+]
+},
 "document | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
@@ -10821,6 +11130,33 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence."
+]
+},
+"document | upgrade": {
+"said": [
+"upgrade"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. upgrade"
+]
+},
+"document | upgrade my thunderbird": {
+"said": [
+"upgrade my thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. upgrade my thunderbird"
+]
+},
+"document | upgrade thunderbird": {
+"said": [
+"upgrade thunderbird"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. upgrade thunderbird"
 ]
 },
 "document | use ai voice": {
@@ -11120,6 +11456,42 @@
 "Hello world. Second sentence."
 ]
 },
+"document | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | what notes do i have": {
 "said": [
 "what notes do i have"
@@ -11300,6 +11672,15 @@
 "Hello world. Second sentence."
 ]
 },
+"document | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | which radio source": {
 "said": [
 "which radio source"
@@ -11316,6 +11697,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. which station database"
+]
+},
+"document | which thunderbird do i have": {
+"said": [
+"which thunderbird do i have"
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. which thunderbird do i have"
 ]
 },
 "document | which version": {
@@ -12792,7 +13182,7 @@
 },
 "email_draft | change font to Arial": {
 "said": [
-"Formatted the current paragraph. font: Arial."
+"Formatted the current paragraph. Font Arial."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -12914,6 +13304,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. check podcasts"
+]
+},
+"email_draft | check thunderbird version": {
+"said": [
+"check thunderbird version"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. check thunderbird version"
 ]
 },
 "email_draft | check updates": {
@@ -14070,6 +14469,15 @@
 "Hello world. flow"
 ]
 },
+"email_draft | folder": {
+"said": [
+"folder"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. folder"
+]
+},
 "email_draft | folders": {
 "said": [
 "folders"
@@ -14131,6 +14539,24 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. get more messages"
+]
+},
+"email_draft | get the new thunderbird": {
+"said": [
+"get the new thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. get the new thunderbird"
+]
+},
+"email_draft | get the newest thunderbird": {
+"said": [
+"get the newest thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. get the newest thunderbird"
 ]
 },
 "email_draft | gmail": {
@@ -14934,6 +15360,15 @@
 "Hello world. manual downloads"
 ]
 },
+"email_draft | maybe later": {
+"said": [
+"maybe later"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. maybe later"
+]
+},
 "email_draft | media": {
 "said": [
 "media"
@@ -15368,6 +15803,15 @@
 "Hello world."
 ]
 },
+"email_draft | no thank you": {
+"said": [
+"no thank you"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. no thank you"
+]
+},
 "email_draft | no thanks": {
 "said": [
 "no thanks"
@@ -15375,6 +15819,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. no thanks"
+]
+},
+"email_draft | nope": {
+"said": [
+"nope"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. nope"
 ]
 },
 "email_draft | normal mode": {
@@ -15393,6 +15846,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. not now"
+]
+},
+"email_draft | not yet": {
+"said": [
+"not yet"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. not yet"
 ]
 },
 "email_draft | note": {
@@ -16075,9 +16537,18 @@
 "Hello world. podcast"
 ]
 },
+"email_draft | podcast categories": {
+"said": [
+"podcast categories"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. podcast categories"
+]
+},
 "email_draft | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help",
 "text": [
@@ -16785,9 +17256,18 @@
 "Hello world."
 ]
 },
+"email_draft | rows": {
+"said": [
+"rows"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. rows"
+]
+},
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 405. It has not been sent."
+"Email draft saved locally as Routing check 415. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16805,7 +17285,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 406. It has not been sent."
+"Email draft saved locally as Routing check 416. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16823,7 +17303,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 407. It has not been sent."
+"Email draft saved locally as Routing check 417. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16850,7 +17330,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 409. It has not been sent."
+"Email draft saved locally as Routing check 419. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -16859,7 +17339,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 410. It has not been sent."
+"Email draft saved locally as Routing check 420. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17656,6 +18136,15 @@
 "Hello world."
 ]
 },
+"email_draft | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
@@ -17665,7 +18154,25 @@
 "Hello world."
 ]
 },
+"email_draft | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -17764,6 +18271,15 @@
 "Hello world. top of document"
 ]
 },
+"email_draft | top podcast": {
+"said": [
+"top podcast"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. top podcast"
+]
+},
 "email_draft | turn off auto downloads": {
 "said": [
 "turn off auto downloads"
@@ -17800,6 +18316,15 @@
 "Hello world. new line"
 ]
 },
+"email_draft | update my thunderbird": {
+"said": [
+"update my thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. update my thunderbird"
+]
+},
 "email_draft | update status": {
 "said": [
 "update status"
@@ -17818,6 +18343,24 @@
 "Hello world. update subscribed podcasts"
 ]
 },
+"email_draft | update thunderbird": {
+"said": [
+"update thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. update thunderbird"
+]
+},
+"email_draft | update thunderbird now": {
+"said": [
+"update thunderbird now"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. update thunderbird now"
+]
+},
 "email_draft | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
@@ -17825,6 +18368,33 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world."
+]
+},
+"email_draft | upgrade": {
+"said": [
+"upgrade"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. upgrade"
+]
+},
+"email_draft | upgrade my thunderbird": {
+"said": [
+"upgrade my thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. upgrade my thunderbird"
+]
+},
+"email_draft | upgrade thunderbird": {
+"said": [
+"upgrade thunderbird"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. upgrade thunderbird"
 ]
 },
 "email_draft | use ai voice": {
@@ -18124,6 +18694,42 @@
 "Hello world."
 ]
 },
+"email_draft | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | what notes do i have": {
 "said": [
 "what notes do i have"
@@ -18304,6 +18910,15 @@
 "Hello world."
 ]
 },
+"email_draft | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | which radio source": {
 "said": [
 "which radio source"
@@ -18320,6 +18935,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. which station database"
+]
+},
+"email_draft | which thunderbird do i have": {
+"said": [
+"which thunderbird do i have"
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. which thunderbird do i have"
 ]
 },
 "email_draft | which version": {
@@ -19017,7 +19641,7 @@
 },
 "help | audio tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -19083,7 +19707,7 @@
 },
 "help | back to main menu": {
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -19405,6 +20029,12 @@
 ],
 "screen_after": "help"
 },
+"help | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -19521,7 +20151,7 @@
 },
 "help | command mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
@@ -19533,7 +20163,7 @@
 },
 "help | commands and dictation": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -19545,13 +20175,13 @@
 },
 "help | commands mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
 "help | commands only": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
@@ -19790,19 +20420,19 @@
 },
 "help | dictation and commands": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
 "help | dictation mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "help"
 },
 "help | dictation only": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "help"
 },
@@ -20154,6 +20784,12 @@
 ],
 "screen_after": "help"
 },
+"help | folder": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | folders": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -20193,6 +20829,18 @@
 "help | get more messages": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
+"help | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "help"
 },
@@ -20516,7 +21164,7 @@
 },
 "help | lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -20690,7 +21338,7 @@
 },
 "help | main menu": {
 "said": [
-"Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
+"Help closed. Main menu. What would you like to do? Say next or previous to move through the items, and okay, confirm, confirm that, or that one to open."
 ],
 "screen_after": "awake"
 },
@@ -20707,6 +21355,12 @@
 "screen_after": "help"
 },
 "help | manual downloads": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | maybe later": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -20744,7 +21398,7 @@
 },
 "help | mixed mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -20906,7 +21560,7 @@
 },
 "help | next": {
 "said": [
-"Getting Started (G), 2 of 32. Say next or previous, then that one. Say help with followed by a topic name to jump there."
+"Getting Started (G), 2 of 32."
 ],
 "screen_after": "help"
 },
@@ -20995,7 +21649,19 @@
 ],
 "screen_after": "help"
 },
+"help | no thank you": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | no thanks": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | nope": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -21003,11 +21669,17 @@
 },
 "help | normal mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
 "help | not now": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | not yet": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -21308,13 +21980,13 @@
 },
 "help | open the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "help | open tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -21468,6 +22140,12 @@
 ],
 "screen_after": "help"
 },
+"help | podcast categories": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | podcast help": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -21494,7 +22172,7 @@
 },
 "help | practice tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -21940,6 +22618,12 @@
 ],
 "screen_after": "help"
 },
+"help | rows": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | save": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22380,7 +23064,7 @@
 },
 "help | start lessons": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -22392,13 +23076,13 @@
 },
 "help | start the tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
 "help | start tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -22510,25 +23194,43 @@
 },
 "help | switch to command mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
 "help | switch to commands mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "help"
+},
+"help | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
 ],
 "screen_after": "help"
 },
 "help | switch to dictation mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "help"
+},
+"help | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "help"
 },
 "help | switch to mixed mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "help"
+},
+"help | switch to normal mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
 ],
 "screen_after": "help"
 },
@@ -22592,6 +23294,12 @@
 ],
 "screen_after": "help"
 },
+"help | top podcast": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | turn off auto downloads": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22600,7 +23308,7 @@
 },
 "help | tutorial": {
 "said": [
-"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Web browser, Radio, Podcasts, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
+"Audio tutorial. Courses cover Getting started, Word processor, Notepad, Email, Contacts and calendar, Web browser, Radio, Podcasts, YouTube, Options, Help and updates, and File manager. These are lessons. Commands given here are explained and do not change your work. Use Up and Down to select a course and Enter to open it, or say its name. Lessons wait for you. Say next lesson, previous lesson, repeat, lesson list, list commands, find lesson followed by a topic, or explain command followed by its words. Control stops speech. If needed, say stop talking before your next voice request. Main menu leaves the tutorial."
 ],
 "screen_after": "tutorial"
 },
@@ -22616,6 +23324,12 @@
 ],
 "screen_after": "help"
 },
+"help | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | update status": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -22628,9 +23342,39 @@
 ],
 "screen_after": "help"
 },
+"help | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
+"help | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "help"
+},
+"help | upgrade": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
+"help | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "help"
 },
@@ -22810,7 +23554,7 @@
 },
 "help | what input mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Input mode: Normal mode."
 ],
 "screen_after": "help"
 },
@@ -22828,7 +23572,31 @@
 },
 "help | what mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | what mode is this": {
+"said": [
+"Input mode: Normal mode."
 ],
 "screen_after": "help"
 },
@@ -22852,31 +23620,31 @@
 },
 "help | what version": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version am i using": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version do i have": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version is it": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | what version is this": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
@@ -22894,13 +23662,13 @@
 },
 "help | where am i": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Help topics. About this guide (A), 1 of 32."
 ],
 "screen_after": "help"
 },
 "help | where am i now": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Help topics. About this guide (A), 1 of 32."
 ],
 "screen_after": "help"
 },
@@ -22948,7 +23716,13 @@
 },
 "help | which mode": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Input mode: Normal mode."
+],
+"screen_after": "help"
+},
+"help | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
 ],
 "screen_after": "help"
 },
@@ -22964,15 +23738,21 @@
 ],
 "screen_after": "help"
 },
+"help | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "help"
+},
 "help | which version": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
 "help | which version is this": {
 "said": [
-"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+"Voice Companion version <VERSION>. The microphone is on."
 ],
 "screen_after": "help"
 },
@@ -23720,8 +24500,8 @@
 "mailbox | attachments": {
 "calls": [
 "call.rows.__bool__()",
-"call.current.__bool__()",
-"call.current.__sub__(1)"
+"call.rows.__bool__()",
+"call.current.__bool__()"
 ],
 "said": [
 "The attachments of this message could not be listed. Try again."
@@ -24289,6 +25069,12 @@
 ],
 "said": [
 "session handled: check podcasts"
+],
+"screen_after": "mailbox"
+},
+"mailbox | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "mailbox"
 },
@@ -25287,6 +26073,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | folder": {
+"calls": [
+"call.process('folder')"
+],
+"said": [
+"session handled: folder"
+],
+"screen_after": "mailbox"
+},
 "mailbox | folders": {
 "calls": [
 "call.process('folders')"
@@ -25307,9 +26102,9 @@
 },
 "mailbox | forward": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('forward')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -25318,9 +26113,9 @@
 },
 "mailbox | forward message": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('forward')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -25351,6 +26146,18 @@
 ],
 "said": [
 "session handled: get more messages"
+],
+"screen_after": "mailbox"
+},
+"mailbox | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "mailbox"
 },
@@ -26048,6 +26855,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | maybe later": {
+"calls": [
+"call.process('maybe later')"
+],
+"said": [
+"session handled: maybe later"
+],
+"screen_after": "mailbox"
+},
 "mailbox | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -26437,12 +27253,30 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | no thank you": {
+"calls": [
+"call.process('no thank you')"
+],
+"said": [
+"session handled: no thank you"
+],
+"screen_after": "mailbox"
+},
 "mailbox | no thanks": {
 "calls": [
 "call.process('no thanks')"
 ],
 "said": [
 "session handled: no thanks"
+],
+"screen_after": "mailbox"
+},
+"mailbox | nope": {
+"calls": [
+"call.process('nope')"
+],
+"said": [
+"session handled: nope"
 ],
 "screen_after": "mailbox"
 },
@@ -26458,6 +27292,15 @@
 ],
 "said": [
 "session handled: not now"
+],
+"screen_after": "mailbox"
+},
+"mailbox | not yet": {
+"calls": [
+"call.process('not yet')"
+],
+"said": [
+"session handled: not yet"
 ],
 "screen_after": "mailbox"
 },
@@ -27072,9 +27915,18 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | podcast categories": {
+"calls": [
+"call.process('podcast categories')"
+],
+"said": [
+"session handled: podcast categories"
+],
+"screen_after": "mailbox"
+},
 "mailbox | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -27616,9 +28468,9 @@
 },
 "mailbox | reply": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -27627,9 +28479,9 @@
 },
 "mailbox | reply all": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply_all')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -27638,9 +28490,9 @@
 },
 "mailbox | reply to all": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply_all')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -27649,9 +28501,9 @@
 },
 "mailbox | reply to message": {
 "calls": [
+"call.rows.__eq__([])",
 "call.response_context('reply')",
-"call.response_context().__getitem__('recipient')",
-"call.response_context().__getitem__('cc')"
+"call.response_context().__getitem__('recipient')"
 ],
 "said": [
 "Open and read a message first. If the account cannot read it, ask your helper to reconnect mail."
@@ -27707,6 +28559,15 @@
 ],
 "said": [
 "session handled: return to inbox"
+],
+"screen_after": "mailbox"
+},
+"mailbox | rows": {
+"calls": [
+"call.process('rows')"
+],
+"said": [
+"session handled: rows"
 ],
 "screen_after": "mailbox"
 },
@@ -28491,13 +29352,31 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "mailbox"
+},
 "mailbox | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "mailbox"
 },
+"mailbox | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "mailbox"
+},
 "mailbox | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "mailbox"
+},
+"mailbox | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -28584,6 +29463,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | top podcast": {
+"calls": [
+"call.process('top podcast')"
+],
+"said": [
+"session handled: top podcast"
+],
+"screen_after": "mailbox"
+},
 "mailbox | turn off auto downloads": {
 "calls": [
 "call.process('turn off auto downloads')"
@@ -28620,6 +29508,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | update status": {
 "calls": [
 "call.process('update status')"
@@ -28638,9 +29532,42 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
 "mailbox | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "mailbox"
+},
+"mailbox | upgrade": {
+"calls": [
+"call.process('upgrade')"
+],
+"said": [
+"session handled: upgrade"
+],
+"screen_after": "mailbox"
+},
+"mailbox | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "mailbox"
+},
+"mailbox | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "mailbox"
 },
@@ -28896,6 +29823,30 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
+"mailbox | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
 "mailbox | what notes do i have": {
 "calls": [
 "call.process('what notes do i have')"
@@ -29031,6 +29982,12 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "mailbox"
+},
 "mailbox | which radio source": {
 "calls": [
 "call.process('which radio source')"
@@ -29046,6 +30003,12 @@
 ],
 "said": [
 "session handled: which station database"
+],
+"screen_after": "mailbox"
+},
+"mailbox | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "mailbox"
 },
@@ -30107,6 +31070,12 @@
 ],
 "screen_after": "note"
 },
+"note | check thunderbird version": {
+"said": [
+"check thunderbird version"
+],
+"screen_after": "note"
+},
 "note | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -30858,6 +31827,12 @@
 ],
 "screen_after": "note"
 },
+"note | folder": {
+"said": [
+"folder"
+],
+"screen_after": "note"
+},
 "note | folders": {
 "said": [
 "folders"
@@ -30897,6 +31872,18 @@
 "note | get more messages": {
 "said": [
 "get more messages"
+],
+"screen_after": "note"
+},
+"note | get the new thunderbird": {
+"said": [
+"get the new thunderbird"
+],
+"screen_after": "note"
+},
+"note | get the newest thunderbird": {
+"said": [
+"get the newest thunderbird"
 ],
 "screen_after": "note"
 },
@@ -31416,6 +32403,12 @@
 ],
 "screen_after": "note"
 },
+"note | maybe later": {
+"said": [
+"maybe later"
+],
+"screen_after": "note"
+},
 "note | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -31698,9 +32691,21 @@
 ],
 "screen_after": "note"
 },
+"note | no thank you": {
+"said": [
+"no thank you"
+],
+"screen_after": "note"
+},
 "note | no thanks": {
 "said": [
 "no thanks"
+],
+"screen_after": "note"
+},
+"note | nope": {
+"said": [
+"nope"
 ],
 "screen_after": "note"
 },
@@ -31713,6 +32718,12 @@
 "note | not now": {
 "said": [
 "not now"
+],
+"screen_after": "note"
+},
+"note | not yet": {
+"said": [
+"not yet"
 ],
 "screen_after": "note"
 },
@@ -32171,9 +33182,15 @@
 ],
 "screen_after": "note"
 },
+"note | podcast categories": {
+"said": [
+"podcast categories"
+],
+"screen_after": "note"
+},
 "note | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -32639,6 +33656,12 @@
 "note | return to inbox": {
 "said": [
 "return to inbox"
+],
+"screen_after": "note"
+},
+"note | rows": {
+"said": [
+"rows"
 ],
 "screen_after": "note"
 },
@@ -33223,13 +34246,31 @@
 ],
 "screen_after": "note"
 },
+"note | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "note"
+},
 "note | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "note"
 },
+"note | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "note"
+},
 "note | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "note"
+},
+"note | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -33295,6 +34336,12 @@
 ],
 "screen_after": "note"
 },
+"note | top podcast": {
+"said": [
+"top podcast"
+],
+"screen_after": "note"
+},
 "note | turn off auto downloads": {
 "said": [
 "turn off auto downloads"
@@ -33319,6 +34366,12 @@
 ],
 "screen_after": "note"
 },
+"note | update my thunderbird": {
+"said": [
+"update my thunderbird"
+],
+"screen_after": "note"
+},
 "note | update status": {
 "said": [
 "update status"
@@ -33331,9 +34384,39 @@
 ],
 "screen_after": "note"
 },
+"note | update thunderbird": {
+"said": [
+"update thunderbird"
+],
+"screen_after": "note"
+},
+"note | update thunderbird now": {
+"said": [
+"update thunderbird now"
+],
+"screen_after": "note"
+},
 "note | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "note"
+},
+"note | upgrade": {
+"said": [
+"upgrade"
+],
+"screen_after": "note"
+},
+"note | upgrade my thunderbird": {
+"said": [
+"upgrade my thunderbird"
+],
+"screen_after": "note"
+},
+"note | upgrade thunderbird": {
+"said": [
+"upgrade thunderbird"
 ],
 "screen_after": "note"
 },
@@ -33535,6 +34618,30 @@
 ],
 "screen_after": "note"
 },
+"note | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
+"note | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
 "note | what notes do i have": {
 "said": [
 "what notes do i have"
@@ -33655,6 +34762,12 @@
 ],
 "screen_after": "note"
 },
+"note | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "note"
+},
 "note | which radio source": {
 "said": [
 "which radio source"
@@ -33664,6 +34777,12 @@
 "note | which station database": {
 "said": [
 "which station database"
+],
+"screen_after": "note"
+},
+"note | which thunderbird do i have": {
+"said": [
+"which thunderbird do i have"
 ],
 "screen_after": "note"
 },
@@ -35115,6 +36234,12 @@
 ],
 "screen_after": "web"
 },
+"web | check thunderbird version": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | check updates": {
 "said": [
 "Update checking is available in the installed app."
@@ -36191,6 +37316,16 @@
 ],
 "screen_after": "web"
 },
+"web | folder": {
+"calls": [
+"call.command('folder')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: folder"
+],
+"screen_after": "web"
+},
 "web | folders": {
 "calls": [
 "call.command('folders')",
@@ -36258,6 +37393,18 @@
 ],
 "said": [
 "session handled: get more messages"
+],
+"screen_after": "web"
+},
+"web | get the new thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
+"web | get the newest thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "web"
 },
@@ -37048,6 +38195,16 @@
 ],
 "screen_after": "web"
 },
+"web | maybe later": {
+"calls": [
+"call.command('maybe later')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: maybe later"
+],
+"screen_after": "web"
+},
 "web | media": {
 "said": [
 "Media menu. Radio (R), 1 of 4."
@@ -37478,6 +38635,16 @@
 ],
 "screen_after": "web"
 },
+"web | no thank you": {
+"calls": [
+"call.command('no thank you')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: no thank you"
+],
+"screen_after": "web"
+},
 "web | no thanks": {
 "calls": [
 "call.command('no thanks')",
@@ -37485,6 +38652,16 @@
 ],
 "said": [
 "session handled: no thanks"
+],
+"screen_after": "web"
+},
+"web | nope": {
+"calls": [
+"call.command('nope')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: nope"
 ],
 "screen_after": "web"
 },
@@ -37501,6 +38678,16 @@
 ],
 "said": [
 "session handled: not now"
+],
+"screen_after": "web"
+},
+"web | not yet": {
+"calls": [
+"call.command('not yet')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: not yet"
 ],
 "screen_after": "web"
 },
@@ -38171,9 +39358,19 @@
 ],
 "screen_after": "web"
 },
+"web | podcast categories": {
+"calls": [
+"call.command('podcast categories')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: podcast categories"
+],
+"screen_after": "web"
+},
 "web | podcast help": {
 "said": [
-"Listen To Podcasts. Find a show and play an episode (F), 1 of 3. Say next or previous, then that one to read it. Say back to topics for all chapters."
+"Listen To Podcasts. Browse or search for a show (B), 1 of 4. Say next or previous, then that one to read it. Say back to topics for all chapters."
 ],
 "screen_after": "help"
 },
@@ -38867,6 +40064,16 @@
 ],
 "said": [
 "session handled: return to inbox"
+],
+"screen_after": "web"
+},
+"web | rows": {
+"calls": [
+"call.command('rows')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: rows"
 ],
 "screen_after": "web"
 },
@@ -39714,13 +40921,31 @@
 ],
 "screen_after": "web"
 },
+"web | switch to commands only": {
+"said": [
+"Commands only. Ordinary speech will not be added as text."
+],
+"screen_after": "web"
+},
 "web | switch to dictation mode": {
 "said": [
 "Dictation only. Speech goes into the current document, email, or focused web text field."
 ],
 "screen_after": "web"
 },
+"web | switch to dictation only": {
+"said": [
+"Dictation only. Speech goes into the current document, email, or focused web text field."
+],
+"screen_after": "web"
+},
 "web | switch to mixed mode": {
+"said": [
+"Normal mode. Commands and ordinary dictation are available."
+],
+"screen_after": "web"
+},
+"web | switch to normal mode": {
 "said": [
 "Normal mode. Commands and ordinary dictation are available."
 ],
@@ -39814,6 +41039,16 @@
 ],
 "screen_after": "web"
 },
+"web | top podcast": {
+"calls": [
+"call.command('top podcast')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: top podcast"
+],
+"screen_after": "web"
+},
 "web | turn off auto downloads": {
 "calls": [
 "call.command('turn off auto downloads')",
@@ -39854,6 +41089,12 @@
 ],
 "screen_after": "web"
 },
+"web | update my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | update status": {
 "calls": [
 "call.command('update status')",
@@ -39874,9 +41115,43 @@
 ],
 "screen_after": "web"
 },
+"web | update thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
+"web | update thunderbird now": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
 "web | update voice companion": {
 "said": [
 "Update checking is available in the installed app."
+],
+"screen_after": "web"
+},
+"web | upgrade": {
+"calls": [
+"call.command('upgrade')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: upgrade"
+],
+"screen_after": "web"
+},
+"web | upgrade my thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
+],
+"screen_after": "web"
+},
+"web | upgrade thunderbird": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "web"
 },
@@ -40143,6 +41418,30 @@
 ],
 "screen_after": "web"
 },
+"web | what mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | what mode is it": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | what mode is on": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
+"web | what mode is this": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
 "web | what notes do i have": {
 "calls": [
 "call.command('what notes do i have')",
@@ -40283,6 +41582,12 @@
 ],
 "screen_after": "web"
 },
+"web | which mode am i in": {
+"said": [
+"Input mode: Normal mode."
+],
+"screen_after": "web"
+},
 "web | which radio source": {
 "calls": [
 "call.command('which radio source')",
@@ -40300,6 +41605,12 @@
 ],
 "said": [
 "session handled: which station database"
+],
+"screen_after": "web"
+},
+"web | which thunderbird do i have": {
+"said": [
+"Thunderbird is not on this computer. To install it, say add Thunderbird account."
 ],
 "screen_after": "web"
 },

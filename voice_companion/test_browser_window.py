@@ -1,8 +1,9 @@
 """Guided Chrome with or without its window (Options, Web browser, "Guided Chrome window").
 
 Will, October 2026: "Show the browser window, as before" is the default and must
-start Chrome exactly as before. "Run the browser in the background" starts it
-with no window, and a page that needs a person (Google sign-in, a check that you
+start Chrome exactly as before. "Run the browser in the background" starts the
+same Chrome with its window kept out of sight (October 29: not headless, which Google
+treats as a robot: searches hit "unusual traffic" and YouTube would not play), and a page that needs a person (Google sign-in, a check that you
 are a person, a payment) brings a real window, on the same page and place.
 
 Chrome itself is faked at Playwright's edge; the session and backend are real.
@@ -62,14 +63,43 @@ class LaunchTests(unittest.TestCase):
         self.assertIsNone(backend.context.headers)
         self.assertEqual(backend.context.scripts, [])
 
-    def test_background_starts_headless_with_sound_and_its_usual_name(self):
+    def test_background_starts_real_chrome_off_screen_with_sound_and_no_disguise(self):
         backend = self.launch(True)
-        self.assertEqual(self.driver.launches, [{'headless': True, 'accept_downloads': False, 'channel': 'chrome',
+        self.assertEqual(self.driver.launches, [{'headless': False, 'accept_downloads': False, 'channel': 'chrome',
+                                                 'args': ['--window-position=-32000,-32000'],
                                                  'ignore_default_args': ['--mute-audio']}])
         self.assertTrue(backend.launched_hidden)
-        self.assertNotIn('Headless', backend.context.headers['User-Agent'])
-        self.assertIn('Chrome/141', backend.context.headers['User-Agent'])
-        self.assertEqual(len(backend.context.scripts), 1)
+        # Nothing about Chrome's name is changed: it is an ordinary Chrome.
+        self.assertIsNone(backend.context.headers)
+        self.assertEqual(backend.context.scripts, [])
+
+    def test_background_hides_the_window_it_started_on_windows(self):
+        events = []
+
+        class Keeper:
+            def before_launch(self): events.append('before')
+            def after_launch(self): events.append('after')
+            def stop(self): events.append('stop')
+        with mock.patch.object(BrowserBackend, '_window_keeper', lambda self: Keeper()):
+            backend = self.launch(True)
+            self.assertEqual(events, ['before', 'after'])
+            backend.close()
+        self.assertEqual(events, ['before', 'after', 'stop'])
+
+    def test_a_failure_to_hide_never_stops_chrome(self):
+        class Keeper:
+            def before_launch(self): pass
+            def after_launch(self): raise OSError('no desktop')
+            def stop(self): pass
+        with mock.patch.object(BrowserBackend, '_window_keeper', lambda self: Keeper()):
+            backend = self.launch(True)
+        self.assertIsNotNone(backend.page)
+
+    def test_the_window_is_kept_hidden_only_in_the_background(self):
+        made = []
+        with mock.patch.object(BrowserBackend, '_window_keeper', lambda self: made.append(1)):
+            self.launch(False)
+        self.assertEqual(made, [])
 
     def test_a_shown_reason_starts_with_a_window_even_in_the_background(self):
         with mock.patch.object(web_assistant, 'CHROME_IN_BACKGROUND', True):

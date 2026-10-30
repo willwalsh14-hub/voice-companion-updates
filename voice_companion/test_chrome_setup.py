@@ -255,6 +255,22 @@ class InstallTests(unittest.TestCase):
                                 urlopen=lambda *a, **k: (_ for _ in ()).throw(OSError('offline')))
         self.assertFalse(offline.install_chrome(lambda m: None, threading.Event()))
 
+    def test_signature_check_does_not_inherit_powershell_7_module_path(self):
+        # Seen on a Windows runner (try PR 82): Windows PowerShell started from PowerShell 7 inherits its
+        # PSModulePath and cannot load Get-AuthenticodeSignature, so a good installer was refused.
+        self.environ['PSModulePath'] = r'C:\Program Files\PowerShell\7\Modules'
+        seen = []
+        runner = self.runner()
+
+        def run(args, **kw):
+            if args[0].endswith('powershell.exe'):
+                seen.append(dict(kw['env']))
+            return runner(args, **kw)
+        self.assertTrue(self.system(run).install_chrome(lambda m: None, threading.Event()))
+        self.assertEqual(len(seen), 1)
+        self.assertNotIn('PSModulePath', seen[0])
+        self.assertIn('VC_SIGNED_FILE', seen[0])
+
     def test_cancel_stops_before_anything_runs(self):
         canceled = threading.Event(); canceled.set()
         self.assertFalse(self.system(self.runner(), winget='winget').install_chrome(lambda m: None, canceled))

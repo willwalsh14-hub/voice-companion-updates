@@ -225,3 +225,55 @@ class EditableComboTests(unittest.TestCase):
                     app.apply_keyboard_edit(dict(source=ctx['source'],before='c',after='ca',caret=2,seq=2),'web')
                 spoken.assert_called_once_with('The page changed. Refresh it before continuing.')
 if __name__=='__main__':unittest.main()
+
+
+class PageEdgeAndHeadingLineTests(unittest.TestCase):
+    """Arrowing through a page, as a screen reader user does (sweep, October 30, 2026)."""
+    TEXT='Intro text.\nResults\nLast line'
+    def session(self,folder):
+        session=WebSession(folder,Mock())
+        snapshot={'url':'https://example.com/','title':'Example','text':self.TEXT,
+                  'elements':[dict(key='h',role='heading',tag='h2',type='',label='Results',level=2,start=12,end=19)]}
+        session.snapshot=snapshot;session.reading.set_text(self.TEXT);session.browse=BrowseCursor(snapshot)
+        return session
+
+    def test_a_heading_line_says_its_level_as_the_quick_key_does(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session=self.session(folder)
+            self.assertEqual(session.keyboard('Read:Down'),'Results, heading level 2.')
+            session.keyboard('PageTop')
+            self.assertEqual(session.keyboard('Quick:h'),'Results, heading level 2.')
+
+    def test_down_on_the_last_line_and_up_on_the_first_say_so(self):
+        """Down on the last line read it again with no sign the page had ended."""
+        with tempfile.TemporaryDirectory() as folder:
+            session=self.session(folder)
+            session.keyboard('PageBottom')
+            self.assertEqual(session.keyboard('Read:Down'),'Bottom of page. Last line')
+            self.assertEqual(session.keyboard('Read:Next'),'Bottom of page. Last line')
+            self.assertEqual(session.keyboard('Read:Up'),'Results, heading level 2.')
+            self.assertEqual(session.keyboard('Read:Up'),'Intro text.')
+            self.assertEqual(session.keyboard('Read:Up'),'Top of page. Intro text.')
+            self.assertEqual(session.command('previous line'),'Top of page. Intro text.')
+            session.keyboard('PageBottom')
+            self.assertEqual(session.command('next line'),'Bottom of page. Last line')
+
+
+class UnlabeledControlTests(unittest.TestCase):
+    def test_an_unlabeled_control_says_its_type_once(self):
+        """"Unlabeled combobox, combobox, Red." said the type twice."""
+        self.assertEqual(describe({'role':'combobox','tag':'select','label':'Unlabeled combobox','selected_label':'Red'}),'Unlabeled, combobox, Red.')
+        self.assertEqual(describe({'role':'button','tag':'button','label':'Unlabeled button'}),'Unlabeled, button.')
+        self.assertEqual(describe({'role':'field','tag':'input','type':'text','label':'Unlabeled textbox'}),'Unlabeled, edit.')
+        # A real name that happens to start with the word is kept.
+        self.assertEqual(describe({'role':'button','tag':'button','label':'Unlabeled items'}),'Unlabeled items, button.')
+
+
+class FieldListWordsTests(unittest.TestCase):
+    def test_everyday_names_for_the_fields_list_open_it(self):
+        """"List form fields" searched the page and said the site may have hidden its controls."""
+        from test_web_assistant import FakeBackend
+        with tempfile.TemporaryDirectory() as folder:
+            session=WebSession(folder,FakeBackend());session._refresh()
+            for words in ('List form fields.','list form controls','show form fields','show fields'):
+                self.assertTrue(session.command(words).startswith('Found '),words)

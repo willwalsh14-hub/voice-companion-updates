@@ -94,6 +94,10 @@ class StreamWatch:
             return None
         elif sample.get('error') is not None:
             reason = 'error'
+        elif sample.get('loading'):
+            # Still fetching the first part from a slow server: not a stall.
+            self.position, self.since = None, None
+            return None
         elif sample.get('ended'):
             reason = 'ended'   # a live station never ends by itself
         else:
@@ -110,18 +114,55 @@ class StreamWatch:
         return reason
 
 
+# Radio, podcasts and media files start at half volume, so a screen reader is
+# easy to hear over them (tester, October 2026). The user's own level is kept in
+# VOLUME_FILE and used from then on.
+DEFAULT_VOLUME = 0.5
+VOLUME_FILE = 'playback-volume.json'
+VOLUME_STEP = 0.1
+
+
+def _volume(value):
+    """A saved or spoken level as a number from 0 to 1, or None when it is not one."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value:
+        return None
+    return round(max(0.0, min(1.0, float(value))), 2)
+
+
 class MediaPlayer:
     def __init__(self, folder):
         self.folder=Path(folder)
         self.playwright=self.context=self.page=None
         self.kind=None
         self.ducked=False
+        self.volume=self._saved_volume()
+        self.rate=1.0   # playback speed; each new file or stream starts at normal speed
+        self.loading=False   # started, but still fetching: it plays as soon as enough has come
         self.start_timeout_ms=12000
         # What is loaded, for "What's playing?", and a number that changes with each
         # play, so a stream failure is reported once per play.
         self.title=self.url=None
         self.session=0
         self.failed=False
+
+    def _saved_volume(self):
+        try:
+            import json
+            saved=json.loads((self.folder/VOLUME_FILE).read_text(encoding='utf-8'))
+        except (OSError,ValueError):
+            return DEFAULT_VOLUME
+        level=_volume(saved.get('volume') if isinstance(saved,dict) else None)
+        return DEFAULT_VOLUME if level is None else level
+
+    def _save_volume(self):
+        try:
+            import json
+            from storage import write_text_atomic
+            self.folder.mkdir(parents=True,exist_ok=True)
+            write_text_atomic(self.folder/VOLUME_FILE,json.dumps({'volume':self.volume}))
+        except OSError as exc:
+            # The level still works until Companion closes.
+            print('Playback volume could not be saved:',exc,file=sys.stderr)
 
     @property
     def kind(self):
@@ -149,14 +190,43 @@ class MediaPlayer:
         try:
             import shared_playwright   # one driver per thread, shared with the web browser
             self.playwright=shared_playwright.start(self.folder)
-            self.context=self.playwright.firefox.launch_persistent_context(
-                str(self.folder/'profile'),headless=False,
-                firefox_user_prefs={'media.autoplay.default':0})
+            # The player has no window (tester, October 2026): a window had to be found with
+            # Tab or Alt+Tab, and it took the keyboard from Companion. Firefox without a window
+            # still plays sound; Companion's own screen has the controls.
+            try:
+                self.context=self._launch()
+            except Exception as first:
+                # The player's own profile may be damaged or still locked by a player that did not
+                # close. It holds nothing of yours (the volume is kept beside it), so it is set
+                # aside and the player starts once more with a new one.
+                self.last_start_error='The player could not start: '+type(first).__name__+': '+str(first)[:200]
+                if "doesn't exist" in str(first) or 'Executable' in str(first) or not self._set_profile_aside():
+                    raise   # the player's Firefox itself is missing: a new profile cannot help
+                self.context=self._launch()
             self.page=self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.goto(html.as_uri())
         except Exception:
             self.close()
             raise
+
+    def _launch(self):
+        return self.playwright.firefox.launch_persistent_context(
+            str(self.folder/'profile'),headless=True,
+            firefox_user_prefs={'media.autoplay.default':0})
+
+    def _set_profile_aside(self):
+        profile=self.folder/'profile'
+        if not profile.exists():
+            return False
+        aside=self.folder/'profile-set-aside'
+        try:
+            if aside.exists():
+                import shutil
+                shutil.rmtree(aside,ignore_errors=True)
+            profile.replace(aside)
+            return True
+        except OSError:
+            return False
 
     def close(self):
         context,driver=self.context,self.playwright
@@ -174,49 +244,73 @@ class MediaPlayer:
         self.failed=False
         if self.page.url != (self.folder/'audio-player.html').as_uri():
             self.page.goto((self.folder/'audio-player.html').as_uri())
-        result=self.page.evaluate('''async ({url,title,timeout,video,ducked}) => {
-            // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
-            window.voiceCompanionDucked=ducked;
-            window.voiceCompanionUserPaused=false;window.voiceCompanionFailed=false;
-            let a=document.getElementById('audio');
-            // After a stream that failed, its element can keep aborting the next fetch (Firefox:
-            // "The fetching process for the media resource was aborted"), so the next station failed
-            // too. A fresh element is used after any failed start, and when the kind changes.
-            if(a.tagName!==(video?'VIDEO':'AUDIO')||window.voiceCompanionFailedStart){
-                const replacement=document.createElement(video?'video':'audio');
-                replacement.id='audio';replacement.controls=true;replacement.preload='none';
-                a.pause();a.replaceWith(replacement);audio=replacement;a=replacement;
-                a.onerror=()=>document.getElementById('status').textContent='This media could not play.';
-                a.onplaying=()=>document.getElementById('status').textContent='Playing.';
-                a.onpause=()=>document.getElementById('status').textContent='Paused.';
-            }a.pause();a.src=url;
-            a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked||1);
-            document.getElementById('title').textContent=title;
-            document.getElementById('status').textContent='Loading audio.';
-            let timer;
-            try {
-                // After a stream that failed, its emptying load() can still be running. It interrupts
-                // the next play() with an AbortError, and the next station then failed to start as well.
-                // An interrupted start is tried again; any other refusal is final.
-                window.voiceCompanionStartError='';
-                const attempt=async()=>{
-                    for(let i=0;i<4;i++){
-                        try{await a.play();return true;}
-                        catch(error){window.voiceCompanionStartError=(error&&error.name||'Error')+': '+(error&&error.message||'');
-                            if(!error||error.name!=='AbortError')return false;
-                            await new Promise(resolve=>setTimeout(resolve,150));
-                            // Start the fetch again before the next try.
-                            a.src=url;a.load();}
+        # A start cut off with an AbortError is tried once more on a freshly loaded player page:
+        # on a busy computer Firefox can keep aborting the next fetch after a stream failed, even
+        # with a fresh element (the 0.2.172 and 0.2.176 publish builds stopped on this).
+        for attempt in range(2):
+            result=self.page.evaluate('''async ({url,title,timeout,video,ducked,volume}) => {
+                // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
+                window.voiceCompanionDucked=ducked;window.voiceCompanionVolume=volume;
+                window.voiceCompanionUserPaused=false;window.voiceCompanionFailed=false;
+                let a=document.getElementById('audio');
+                // After a stream that failed, its element can keep aborting the next fetch (Firefox:
+                // "The fetching process for the media resource was aborted"), so the next station failed
+                // too. A fresh element is used after any failed start, and when the kind changes.
+                if(a.tagName!==(video?'VIDEO':'AUDIO')||window.voiceCompanionFailedStart){
+                    const replacement=document.createElement(video?'video':'audio');
+                    replacement.id='audio';replacement.controls=true;replacement.preload='none';
+                    a.pause();a.replaceWith(replacement);audio=replacement;a=replacement;
+                    a.onerror=()=>document.getElementById('status').textContent='This media could not play.';
+                    a.onplaying=()=>document.getElementById('status').textContent='Playing.';
+                    a.onpause=()=>document.getElementById('status').textContent='Paused.';
+                }a.pause();a.src=url;
+                a.volume=(window.voiceCompanionVolume??1)*(window.voiceCompanionDucked||1);
+                document.getElementById('title').textContent=title;
+                document.getElementById('status').textContent='Loading audio.';
+                let timer;
+                try {
+                    // After a stream that failed, its emptying load() can still be running. It interrupts
+                    // the next play() with an AbortError, and the next station then failed to start as well.
+                    // An interrupted start is tried again; any other refusal is final.
+                    window.voiceCompanionStartError='';
+                    const attempt=async()=>{
+                        for(let i=0;i<4;i++){
+                            try{await a.play();return true;}
+                            catch(error){window.voiceCompanionStartError=(error&&error.name||'Error')+': '+(error&&error.message||'');
+                                if(!error||error.name!=='AbortError')return false;
+                                await new Promise(resolve=>setTimeout(resolve,150));
+                                // Start the fetch again before the next try.
+                                a.src=url;a.load();}
+                        }
+                        return false;
+                    };
+                    // A slow server (a long podcast episode behind a few redirects) can take longer than
+                    // the wait to send enough to play. That is not a failure: when the time is up and the
+                    // player is still fetching with no error, it plays as soon as it can ('loading').
+                    // Before 0.2.179 that was "could not start" (Will, October 29, 2026).
+                    const playing=attempt();
+                    const started=await Promise.race([playing,new Promise(resolve=>{timer=setTimeout(()=>{
+                        // Only an internet address still being fetched counts; a file or a broken source does not.
+                        const fetching=!a.error&&a.networkState===2&&/^https?:/i.test(a.currentSrc||a.getAttribute('src')||'');
+                        if(fetching){resolve('loading');return;}
+                        window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
+                    if(started==='loading'){
+                        window.voiceCompanionLoading=true;
+                        playing.then(ok=>{window.voiceCompanionLoading=false;if(!ok){window.voiceCompanionFailed=true;
+                            document.getElementById('status').textContent='This audio could not start.';}});
+                        return 'loading';
                     }
-                    return false;
-                };
-                const started=await Promise.race([attempt(),new Promise(resolve=>{timer=setTimeout(()=>{window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
-                window.voiceCompanionFailedStart=!started;
-                if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
-                return started;
-            } finally {clearTimeout(timer);}
-        }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov'),
-              'ducked':getattr(self,'duck_factor',0) if self.ducked else 0})
+                    window.voiceCompanionFailedStart=!started;
+                    if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
+                    return started;
+                } finally {clearTimeout(timer);}
+            }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov'),
+                  'ducked':getattr(self,'duck_factor',0) if self.ducked else 0,'volume':self.volume})
+            if result or attempt:break
+            try:error=self.page.evaluate('window.voiceCompanionStartError||""')
+            except Exception:error=''
+            if not str(error).startswith('AbortError'):break
+            self.page.goto((self.folder/'audio-player.html').as_uri())
         if not result:
             self.kind=None
             # Why, for the log and for test failures; the user hears the plain message.
@@ -224,6 +318,8 @@ class MediaPlayer:
             except Exception:self.last_start_error=''
             raise OSError('This audio format could not start in the player.')
         self.kind=kind
+        self.loading=result=='loading'   # still fetching: plays as soon as enough has come
+        self.rate=1.0
         self.title,self.url=title,url
         self.session+=1
 
@@ -236,8 +332,8 @@ class MediaPlayer:
         if not self.page or self.page.is_closed() or not self.kind:
             return None
         return self.page.evaluate("""() => {const a=document.getElementById('audio');
-            return {paused:a.paused,ended:a.ended,error:a.error?a.error.code:null,position:a.currentTime,
-                    user_paused:!!window.voiceCompanionUserPaused};}""")
+            return {paused:a.paused,ended:a.ended,error:a.error?a.error.code:(window.voiceCompanionFailed?-1:null),position:a.currentTime,
+                    user_paused:!!window.voiceCompanionUserPaused,loading:!!window.voiceCompanionLoading};}""")
 
     def mark_failed(self):
         """The stream stopped by itself: stop it, so Play loads it again."""
@@ -255,14 +351,21 @@ class MediaPlayer:
             raise ValueError('Unknown playback setting.')
         if setting=='speed' and not .5<=value<=3:
             raise ValueError('Choose a playback speed from 0.5 to 3.')
-        return self.page.evaluate('''({setting,value})=>{
+        if setting=='volume':
+            # A change by an amount: the level is kept here and saved for next time.
+            value=_volume(self.volume+value)
+            if value is None:raise ValueError('Unknown playback setting.')
+        result=self.page.evaluate('''({setting,value})=>{
             const a=document.getElementById('audio');
             if(setting==='volume'){
-                const volume=Math.max(0,Math.min(1,(window.voiceCompanionVolume??1)+value));
-                window.voiceCompanionVolume=volume;a.volume=volume*(window.voiceCompanionDucked||1);return volume;
+                window.voiceCompanionVolume=value;a.volume=value*(window.voiceCompanionDucked||1);return value;
             }
             a.playbackRate=value;return a.playbackRate;
         }''',{'setting':setting,'value':value})
+        if setting=='volume' and _volume(result) is not None:
+            self.volume=_volume(result);self._save_volume()
+        if setting=='speed' and isinstance(result,(int,float)):self.rate=float(result)
+        return result
 
     def status(self):
         if not self.page or self.page.is_closed() or not self.kind:
@@ -281,10 +384,10 @@ class MediaPlayer:
         if not self.page or self.page.is_closed() or not self.kind:
             self.ducked=False
             return
-        self.page.evaluate('''({ducked,factor}) => {
+        self.page.evaluate('''({ducked,factor,volume}) => {
             window.voiceCompanionDucked=ducked?factor:0;
-            document.getElementById('audio').volume=(window.voiceCompanionVolume??1)*(ducked?factor:1);
-        }''',{'ducked':ducked,'factor':factor})
+            document.getElementById('audio').volume=(window.voiceCompanionVolume??volume)*(ducked?factor:1);
+        }''',{'ducked':ducked,'factor':factor,'volume':self.volume})
         self.ducked=ducked;self.duck_factor=factor
 
     def control(self, action, seconds=15, position=None):

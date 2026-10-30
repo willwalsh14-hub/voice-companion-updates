@@ -118,6 +118,90 @@ def search(query, sp=''):
     return page(body, title=query + ' - YouTube', script='<script>window.searchFilter=' + repr(sp) + ';</script>')
 
 
+# YouTube's search filters since January 2026, as the results page lists them in ytInitialData:
+# a "Search filters" dialog with groups. Each filter's link already combines it with the filters
+# that are on; the link of a filter that is on takes it away. Features may be combined; the
+# other groups hold one choice. Type Channels disables the Duration choices, as on YouTube.
+# The codes here are made up on purpose ("t=shorts;d=week"), so the tests show that the screen
+# uses the page's own links and names, and never builds codes when the page lists its filters.
+FILTER_GROUPS = (('Type', 't', (('videos', 'Videos'), ('shorts', 'Shorts'), ('channels', 'Channels'), ('playlists', 'Playlists'),
+                                ('movies', 'Movies'))),
+                 ('Duration', 'l', (('under3', 'Under 3 minutes'), ('3to20', '3 - 20 minutes'), ('over20', 'Over 20 minutes'))),
+                 ('Upload date', 'd', (('today', 'Today'), ('week', 'This week'), ('month', 'This month'), ('year', 'This year'))),
+                 ('Features', 'f', (('live', 'Live'), ('4k', '4K'), ('hd', 'HD'), ('cc', 'Subtitles/CC'), ('vr180', 'VR180'))),
+                 ('Prioritize', 's', (('relevance', 'Relevance'), ('popularity', 'Popularity'))))
+
+
+def filter_state(sp):
+    import base64
+    try:
+        text = base64.urlsafe_b64decode(sp.encode() + b'=' * (-len(sp) % 4)).decode()
+    except Exception:
+        return {}
+    state = {}
+    for part in filter(None, text.split(';')):
+        key, _, value = part.partition('=')
+        state[key] = value.split(',') if key == 'f' else value
+    return state
+
+
+def filter_sp(state):
+    import base64
+    text = ';'.join(k + '=' + (','.join(v) if isinstance(v, list) else v) for k, v in sorted(state.items()) if v)
+    return base64.urlsafe_b64encode(text.encode()).decode().rstrip('=') if text else ''
+
+
+def filter_data(query, sp):
+    """window.ytInitialData for a results page, with the filter dialog as YouTube lists it."""
+    import json
+    from urllib.parse import quote, quote_plus
+    state = filter_state(sp)
+    groups = []
+    for title, key, choices in FILTER_GROUPS:
+        filters = []
+        for value, label in choices:
+            on = value in state.get(key, []) if key == 'f' else state.get(key) == value
+            after = {k: (list(v) if isinstance(v, list) else v) for k, v in state.items()}
+            if key == 'f':
+                after['f'] = [x for x in after.get('f', []) if x != value] if on else after.get('f', []) + [value]
+            else:
+                after[key] = '' if on else value
+            if key == 's' and value == 'relevance':
+                after['s'] = ''
+            code = filter_sp(after)
+            renderer = {'label': {'simpleText': label}, 'tooltip': ('Remove ' if on else 'Search for ') + label}
+            if key == 'l' and state.get('t') == 'channels':
+                renderer['status'] = 'FILTER_STATUS_DISABLED'
+            else:
+                url = '/results?search_query=' + quote_plus(query) + ('&sp=' + quote(quote(code, safe=''), safe='') if code else '')
+                renderer['navigationEndpoint'] = {'commandMetadata': {'webCommandMetadata': {'url': url}},
+                                                  'searchEndpoint': {'query': query, 'params': quote(code, safe='')}}
+                if on:
+                    renderer['status'] = 'FILTER_STATUS_SELECTED'
+            filters.append({'searchFilterRenderer': renderer})
+        groups.append({'searchFilterGroupRenderer': {'title': {'simpleText': title}, 'filters': filters}})
+    data = {'contents': {'twoColumnSearchResultsRenderer': {'primaryContents': {}}},
+            'header': {'searchHeaderRenderer': {'searchFilterButton': {'buttonRenderer': {'text': {'runs': [{'text': 'Filters'}]},
+                'command': {'openPopupAction': {'popup': {'searchFilterOptionsDialogRenderer': {
+                    'title': {'runs': [{'text': 'Search filters'}]}, 'groups': groups}}}}}}}}}
+    return '<script>var ytInitialData = ' + json.dumps(data) + ';</script>'
+
+
+def search_listing_filters(query, sp=''):
+    """Results whose page lists its own filters (YouTube since 2025). Movies finds nothing."""
+    state = filter_state(sp)
+    if state.get('t') == 'movies':
+        body = ('<ytd-search><div id="contents"><ytd-background-promo-renderer><div id="title">No results found</div>'
+                '<div id="body">Try different keywords or remove search filters</div></ytd-background-promo-renderer></div></ytd-search>')
+    else:
+        items = [CHANNEL] if state.get('t') == 'channels' else [
+            video_renderer('vid00000010', 'Bread for beginners', 'Kitchen Basics', '1,234 views', '3 weeks ago', '12:00'),
+            video_renderer('vid00000011', 'Quick bread', 'Fast Food', '90 views', '1 day ago', '2:10')]
+        body = ('<ytd-search><div id="contents"><ytd-section-list-renderer><ytd-item-section-renderer><div id="contents">' +
+                ''.join(items) + '</div></ytd-item-section-renderer></ytd-section-list-renderer></div></ytd-search>')
+    return page(body, title=query + ' - YouTube', script=filter_data(query, sp) + '<script>window.searchFilter=' + repr(sp) + ';</script>')
+
+
 def no_results(query):
     return page('<ytd-search><div id="contents"><ytd-background-promo-renderer><div id="title">No results found</div>'
                 '<div id="body">Try different keywords or remove search filters</div></ytd-background-promo-renderer></div></ytd-search>',
@@ -300,9 +384,10 @@ def watch(chapters=True, signed_in=True, comments_off=False):
     return page(body, signed_in, title='Never Gonna Give You Up - YouTube', script=script)
 
 
-def routes(context, overrides=None):
+def routes(context, overrides=None, listed_filters=False):
     """Serve the saved pages for https://www.youtube.com/ in a Playwright context.
-    overrides maps a path start (such as '/feed/history') to the page to serve."""
+    overrides maps a path start (such as '/feed/history') to the page to serve.
+    listed_filters: results pages list their own filters, as YouTube's do now."""
     from urllib.parse import parse_qs, urlsplit
     overrides = dict(overrides or {})
     served = []
@@ -317,7 +402,7 @@ def routes(context, overrides=None):
                 body = value() if callable(value) else value
         if body is None:
             if url.path == '/results':
-                body = search(query.get('search_query', [''])[0], query.get('sp', [''])[0])
+                body = (search_listing_filters if listed_filters else search)(query.get('search_query', [''])[0], query.get('sp', [''])[0])
             elif url.path == '/watch':
                 body = watch()
             elif url.path == '/feed/history':
@@ -329,3 +414,152 @@ def routes(context, overrides=None):
         route.fulfill(status=200, content_type='text/html; charset=utf-8', body=body)
     context.route('https://www.youtube.com/**', answer)
     return served
+
+
+# ---------------------------------------------------------------- pages with YouTube's own data
+# Shaped like youtube.com since 2025: the list is in ytInitialData, drawn later by the app.
+# The drawn page here is empty on purpose, so only the data can be read, as in a browser
+# that draws little in the background. Continuations are answered at /youtubei/v1/.
+import json as _json
+
+
+def d_text(value):
+    return {'simpleText': value}
+
+
+def d_lockup(ident, title, channel, views, age, length, kind='VIDEO'):
+    rows = [{'metadataParts': [{'text': {'content': channel}}]},
+            {'metadataParts': [{'text': {'content': views}}, {'text': {'content': age}}]}]
+    badge = {'thumbnailOverlayBadgeViewModel': {'thumbnailBadges': [{'thumbnailBadgeViewModel': {'text': length}}]}}
+    command = ({'watchEndpoint': {'videoId': ident}, 'commandMetadata': {'webCommandMetadata': {'url': '/watch?v=' + ident}}}
+               if kind == 'VIDEO' else
+               {'browseEndpoint': {'browseId': 'VL' + ident}, 'commandMetadata': {'webCommandMetadata': {'url': '/playlist?list=' + ident}}})
+    image = ({'thumbnailViewModel': {'overlays': [badge]}} if kind == 'VIDEO' else
+             {'collectionThumbnailViewModel': {'primaryThumbnail': {'thumbnailViewModel': {'overlays': [badge]}}}})
+    return {'lockupViewModel': {'contentId': ident, 'contentType': 'LOCKUP_CONTENT_TYPE_' + kind, 'contentImage': image,
+                                'metadata': {'lockupMetadataViewModel': {'title': {'content': title},
+                                             'metadata': {'contentMetadataViewModel': {'metadataRows': rows}}}},
+                                'rendererContext': {'commandContext': {'onTap': {'innertubeCommand': command}}}}}
+
+
+def d_video(ident, title, channel, views, age, length):
+    return {'videoRenderer': {'videoId': ident, 'title': {'runs': [{'text': title}]}, 'ownerText': {'runs': [{'text': channel}]},
+                              'viewCountText': d_text(views), 'publishedTimeText': d_text(age), 'lengthText': d_text(length),
+                              'navigationEndpoint': {'commandMetadata': {'webCommandMetadata': {'url': '/watch?v=' + ident}},
+                                                     'watchEndpoint': {'videoId': ident}}}}
+
+
+def d_channel(ident, name, handle, subscribers):
+    # YouTube now puts the handle where the subscriber count was, and the count where the video count was.
+    return {'channelRenderer': {'channelId': ident, 'title': d_text(name), 'subscriberCountText': d_text(handle),
+                                'videoCountText': d_text(subscribers),
+                                'navigationEndpoint': {'browseEndpoint': {'browseId': ident, 'canonicalBaseUrl': '/' + handle},
+                                                       'commandMetadata': {'webCommandMetadata': {'url': '/' + handle}}}}}
+
+
+def d_more(token):
+    return {'continuationItemRenderer': {'continuationEndpoint': {'continuationCommand': {'token': token}}}}
+
+
+def d_home_videos(start, count):
+    return [{'richItemRenderer': {'content': d_lockup('home%07d' % n, 'Home video %d' % n, 'Channel %d' % n,
+                                                    '%d views' % (n * 10), '%d day%s ago' % (n, '' if n == 1 else 's'), '%d:0%d' % (n, n % 10))}}
+            for n in range(start, start + count)]
+
+
+def data_home():
+    contents = d_home_videos(1, 3) + [
+        {'richSectionRenderer': {'content': {'richShelfRenderer': {'title': d_text('Shorts'), 'contents': [
+            {'richItemRenderer': {'content': {'shortsLockupViewModel': {
+                'overlayMetadata': {'primaryText': {'content': 'Dog surfs'}, 'secondaryText': {'content': '3M views'}},
+                'onTap': {'innertubeCommand': {'reelWatchEndpoint': {'videoId': 'shortdata1'}}}}}}}]}}}},
+        {'richItemRenderer': {'content': {'adSlotRenderer': {'fulfillmentContent': {'fulfilledLayout': {'inFeedAdLayoutRenderer': {
+            'renderingContent': {'promotedVideoRenderer': {'title': d_text('Try Brand Tea'), 'longBylineText': d_text('Brand Tea')}}}}}}}}},
+        d_more('home-2')]
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'richGridRenderer': {'contents': contents}}}}]}}}
+
+
+def data_search():
+    section = [d_video('srch000001', 'Bread for beginners', 'Kitchen Basics', '1.2M views', '2 years ago', '12:01'),
+               d_channel('UCbread', 'Bread Channel', '@breadchannel', '45.6K subscribers'),
+               d_lockup('PLbread', 'Bread recipes', 'Kitchen Basics', '', '', '12 videos', kind='PLAYLIST'),
+               d_video('srch000002', 'Sourdough starter', 'Baker', '3K views', '1 month ago', '8:15')]
+    return {'contents': {'twoColumnSearchResultsRenderer': {'primaryContents': {'sectionListRenderer': {'contents': [
+        {'itemSectionRenderer': {'contents': section}}, d_more('search-2')]}}}}}
+
+
+def data_history():
+    days = [('Today', ['hist000001', 'hist000002']), ('Yesterday', ['hist000003']), ('Monday', ['hist000004', 'hist000005'])]
+    sections = [{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': d_text(day)}},
+                                         'contents': [d_lockup(v, 'Watched ' + v[-1], 'Somebody', '5 views', '', '1:00') for v in ids]}}
+                for day, ids in days]
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'sectionListRenderer': {'contents': sections + [d_more('hist-2')]}}}}]}}}
+
+
+def data_channels():
+    channels = [d_channel('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n) for n in range(1, 4)]
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'sectionListRenderer': {'contents': [{'itemSectionRenderer': {'contents': [{'shelfRenderer': {'content': {
+            'expandedShelfContentsRenderer': {'items': channels}}}}]}}, d_more('ch-2')]}}}}]}}}
+
+
+def data_signed_out_library():
+    return {'contents': {'twoColumnBrowseResultsRenderer': {'tabs': [{'tabRenderer': {'selected': True, 'content': {
+        'sectionListRenderer': {'contents': [{'itemSectionRenderer': {'contents': [{'backgroundPromoRenderer': {
+            'title': {'runs': [{'text': 'Keep track of what you watch'}]},
+            'bodyText': {'runs': [{'text': 'Watch history isn\'t viewable when signed out. Sign in to see it.'}]}}}]}}]}}}}]}}}
+
+
+def d_append(items):
+    return {'onResponseReceivedActions': [{'appendContinuationItemsAction': {'continuationItems': items}}]}
+
+
+# The continuation answers: token -> the next part.
+PARTS = {
+    'home-2': lambda: d_append(d_home_videos(4, 20) + [d_more('home-3')]),
+    'home-3': lambda: d_append(d_home_videos(24, 5)),
+    'search-2': lambda: {'onResponseReceivedCommands': [{'appendContinuationItemsAction': {'continuationItems': [
+        {'itemSectionRenderer': {'contents': [d_video('srch000003', 'Rye bread', 'Baker', '900 views', '3 days ago', '4:44')]}}]}}]},
+    'hist-2': lambda: d_append([{'itemSectionRenderer': {'header': {'itemSectionHeaderRenderer': {'title': d_text('Last week')}},
+                                                       'contents': [d_lockup('hist000006', 'Watched 6', 'Somebody', '5 views', '', '1:00')]}}]),
+    'ch-2': lambda: d_append([d_channel('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
+                            for n in range(4, 54)] + [d_more('ch-3')]),
+    'ch-3': lambda: d_append([d_channel('UC%03d' % n, 'Channel %03d' % n, '@channel%03d' % n, '%d subscribers' % n)
+                            for n in range(54, 61)]),
+}
+
+
+def data_page(data, signed_in=False, title='YouTube'):
+    config = {'LOGGED_IN': signed_in, 'INNERTUBE_API_KEY': 'test-key', 'INNERTUBE_CLIENT_VERSION': '2.20261029',
+              'INNERTUBE_CONTEXT_CLIENT_NAME': 1, 'INNERTUBE_CONTEXT': {'client': {'clientName': 'WEB', 'clientVersion': '2.20261029'}},
+              'SESSION_INDEX': 0}
+    return ('<!doctype html><html lang="en"><head><title>' + title + '</title></head><body><ytd-app></ytd-app><script>'
+            'window.ytcfg={d:' + _json.dumps(config) + ',get(k){return this.d[k];}};'
+            'var ytInitialData=' + _json.dumps(data) + ';</script></body></html>')
+
+
+def data_routes(context, signed_in=True, pages=None):
+    """youtube.com with data pages. Returns the continuation requests made: (path, body, headers)."""
+    from urllib.parse import urlsplit
+    pages = dict({'/': data_home, '/results': data_search, '/feed/history': data_history, '/feed/channels': data_channels},
+                 **(pages or {}))
+    asked = []
+
+    def answer(route):
+        request = route.request
+        url = urlsplit(request.url)
+        if url.path.startswith('/youtubei/v1/'):
+            body = _json.loads(request.post_data or '{}')
+            asked.append((url.path, body, dict(request.headers)))
+            part = PARTS.get(body.get('continuation'))
+            if part is None:
+                route.fulfill(status=400, content_type='application/json', body='{}')
+            else:
+                route.fulfill(status=200, content_type='application/json', body=_json.dumps(part()))
+            return
+        make = pages.get(url.path) or data_home
+        route.fulfill(status=200, content_type='text/html; charset=utf-8', body=data_page(make(), signed_in))
+    context.route('https://www.youtube.com/**', answer)
+    return asked
