@@ -677,6 +677,16 @@ class MediaHub:
         the first time a stream that had started stops, errors or stalls; else None.
         Runs on the thread that opened the player."""
         player = self.player
+        if getattr(player, 'loading', False) is True and getattr(player, 'kind', None) in ('podcast', 'local'):
+            # An episode that took long to start: say so if it cannot play after all.
+            try: sample = player.health()
+            except Exception: sample = None
+            if sample is None or not sample.get('loading'):
+                player.loading = False
+                if sample is not None and sample.get('error') is not None:
+                    title = getattr(player, 'title', None) or 'This episode'
+                    return getattr(player, 'session', None), title + ' could not play. The podcast website may be busy. Try again, or choose another episode.'
+            return None
         streaming = getattr(player, 'streaming', None)
         if not callable(streaming) or not streaming(): return None
         try: sample = player.health()
@@ -1125,13 +1135,41 @@ class MediaHub:
         i=int(number)-1
         if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
         episode=self.episodes[i]
-        try: self.player.open(episode['url'],episode['title'],'podcast')
-        except Exception: return 'This episode could not start. Try another episode.'
+        # A saved copy starts at once and needs no internet.
+        local=self.downloaded_file(episode)
+        address=local.as_uri() if local else episode['url']
+        try: self.player.open(address,episode['title'],'podcast')
+        except Exception as first:
+            self.note_failure('podcast',first)
+            # The player may be in a bad state (its browser closed or stuck): start it fresh, once.
+            try: self.player.close()
+            except Exception: pass
+            try: self.player.open(address,episode['title'],'podcast')
+            except Exception as second:
+                self.note_failure('podcast again',second)
+                return 'This episode could not start. Try again, or choose another episode.'
         self._remember(episode['url'], what='episode', show=episode.get('show',''), title=episode['title'])
         self.current_episode_index=i
         self.episode_index=i
         self.chapters=self._chapters(episode)
+        if getattr(self.player,'loading',False) is True:
+            return 'Loading '+episode['title']+'. It starts in a moment. Say pause, back 15 seconds, or next episode.'
         return 'Playing '+episode['title']+'. Say pause, back 15 seconds, or next episode.'
+
+    def note_failure(self, what, error):
+        """Why something could not play, for a helper: media-errors.txt in the data folder.
+        Only the kind of problem is written, never an address or a title."""
+        try:
+            detail=getattr(self.player,'last_start_error','') or ''
+            line=(time.strftime('%Y-%m-%d %H:%M:%S')+' '+what+': '+type(error).__name__+': '+str(error)[:200]+
+                  (' | player: '+str(detail)[:200] if detail else '')+'\n')
+            path=self._path('media-errors.txt')
+            try:
+                if path.stat().st_size>200000: path.write_text('',encoding='utf-8')
+            except OSError: pass
+            with path.open('a',encoding='utf-8') as out: out.write(line)
+        except Exception:
+            pass
 
     def _chapters(self, episode):
         url=episode.get('chapters_url','')
@@ -1226,20 +1264,43 @@ class MediaHub:
         except Exception:
             return 'The audio player could not respond. Try opening that audio again.'
 
-    def download_episode(self, number):
-        i=int(number)-1
-        if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
-        episode=self.episodes[i]
-        folder=self._path('Podcast Downloads'); folder.mkdir(parents=True,exist_ok=True)
+    def episode_file(self, episode):
+        """Where download_episode saves an episode (it may not be there yet)."""
+        folder=self._path('Podcast Downloads')
         extension=Path(urlsplit(episode['url']).path).suffix.lower()
         if extension not in ('.mp3','.m4a','.aac','.ogg','.opus'): extension='.mp3'
-        name=episode['show']+' - '+episode['title']
+        name=episode.get('show','')+' - '+episode['title']
         stem=_safe(name)
         # Long names are cut to 90 characters; add a short URL hash so episodes that
         # differ only after the cut (Part One / Part Two) do not collide.
         if len(re.sub(r'[^\w .-]', '', name).strip(' .'))>90:
             stem=stem[:70]+'-'+hashlib.sha256(episode['url'].encode()).hexdigest()[:12]
-        target=folder/(stem+extension)
+        return folder/(stem+extension)
+
+    def downloaded_file(self, episode):
+        """The saved copy of an episode (downloaded by you or for offline listening), or None."""
+        candidates=[]
+        try:
+            manifest=self._load_as('podcast-auto-files.json',{})
+            name=(manifest.get(episode.get('feed',''),{}) or {}).get(episode.get('url'))
+            if name: candidates.append(self._path('Podcast Downloads')/Path(str(name)).name)
+        except Exception:
+            pass
+        try: candidates.append(self.episode_file(episode))
+        except Exception: pass
+        for path in candidates:
+            try:
+                if path.is_file() and path.stat().st_size>0: return path
+            except OSError:
+                continue
+        return None
+
+    def download_episode(self, number):
+        i=int(number)-1
+        if not 0<=i<len(self.episodes): return 'That episode number is unavailable.'
+        episode=self.episodes[i]
+        folder=self._path('Podcast Downloads'); folder.mkdir(parents=True,exist_ok=True)
+        target=self.episode_file(episode)
         temp=target.with_suffix(target.suffix+'.part')
         with self._lock:
             if target in self._downloads: return 'That episode is already downloading.'
