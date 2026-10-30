@@ -112,6 +112,24 @@ class CalendarSourceTests(CalendarHarness):
                                       'Ten thirty AM to eleven AM, Doctor appointment, me@gmail.com, 1 of 3.')
         self.assertEqual([e.title for e in calendar_screen.EVENTS], ['Doctor appointment', 'Team call', 'Soccer practice'])
 
+    def test_where_am_i_and_repeat_keep_your_place_and_list_words_move(self):
+        mode = self.open()
+        self.press('Down', mode)
+        app.handle('Where am I?', mode)
+        self.assertEqual(self.said(), 'Calendar. Showing all calendars. Today, Monday, October 26. 3 events. '
+                                      'Two PM to three PM, Team call, Calendar, 2 of 3.')
+        for words in ('repeat', 'Say that again.', 'what day is this'):
+            with self.subTest(words=words):
+                app.handle(words, mode)
+                self.assertEqual(self.said(), 'Today, Monday, October 26. 3 events. Two PM to three PM, Team call, Calendar, 2 of 3.')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'Five PM to six PM, Soccer practice, Family, 3 of 3.')
+        # The words every other list understands.
+        for words, place in (('previous item', 2), ('top of list', 1), ('next item', 2), ('bottom of list', 3)):
+            with self.subTest(words=words):
+                app.handle(words, mode)
+                self.assertTrue(self.said().endswith(str(place) + ' of 3.'), self.said())
+
     def test_control_l_chooses_with_the_arrows_and_enter_and_it_is_kept(self):
         mode = self.open()
         self.assertEqual(app.navigation_key('Ctrl+L', mode), 'choose calendar')
@@ -267,6 +285,15 @@ class CalendarSourceFailingTests(CalendarHarness):
         app.handle('show Outlook calendar', mode)
         self.assertEqual(self.said(), 'Showing Calendar, Outlook, vet@outlook.com. Today, Monday, October 26. No events. '
                                       'Calendar, Outlook, vet@outlook.com could not be read.')
+
+    def test_asking_from_another_screen_names_a_calendar_that_cannot_be_read(self):
+        # "What's on my calendar today?" must not say the day is clear when a calendar was not read.
+        self.assertEqual(app.handle("What's on my calendar today?", 'awake'), 'awake')
+        self.assertEqual(self.said(), 'Today, Monday, October 26. 2 events. Ten thirty AM to eleven AM, Doctor appointment, '
+                                      'me@gmail.com. Five PM to six PM, Soccer practice, Family. The Calendar calendar could not be read.')
+        with mock.patch.object(calendar_screen, 'events_on', return_value=([], ['Calendar'])):
+            app.handle('What do I have tomorrow?', 'awake')
+        self.assertEqual(self.said(), 'Tomorrow, Tuesday, October 27. No events. The Calendar calendar could not be read.')
 
 
 class CalendarOneAccountTests(CalendarHarness):

@@ -253,6 +253,42 @@ class ContactsScreenTests(CompanionHarness):
         self.press('Delete', mode)
         self.assertEqual(self.said(), 'Help Desk is in a Thunderbird address book that cannot be changed, so it cannot be deleted.')
 
+    def test_where_am_i_and_repeat_keep_your_place_and_list_words_move(self):
+        mode = self.open()
+        self.press('Down', mode)
+        for words in ('repeat', 'Say that again.', 'where am i'):
+            with self.subTest(words=words):
+                self.say(words, mode)
+                self.assertEqual(self.said(), 'Contacts. 5 contacts. Help Desk, help@work.example, 555-0111, 2 of 5.')
+        self.say('next item', mode)
+        self.assertEqual(self.said(), 'John Smith, john@example.com, 555-0100, 3 of 5.')
+        self.say('previous item', mode)
+        self.assertEqual(self.said(), 'Help Desk, help@work.example, 555-0111, 2 of 5.')
+        # In a contact's details, Where am I says them and stays there.
+        self.press('Enter', mode)
+        self.press('Down', mode)
+        self.say('Where am I?', mode)
+        self.assertEqual(self.said(), 'Contacts. Help Desk. Name: Help Desk, 2 of 5.')
+        self.assertEqual(contacts_screen.VIEW, 'details')
+        self.press('Down', mode)
+        self.assertEqual(self.said(), 'Email: help@work.example, 3 of 5.')
+
+    def test_a_contact_removed_in_thunderbird_meanwhile_leaves_the_list(self):
+        # Deleted in Thunderbird while Contacts was open: the list is read again, so Down and Up
+        # never reach a contact that is gone.
+        mode = self.open()
+        self.press('Letter:j', mode)
+        contacts_screen.BOOK.delete(contacts_screen.current())
+        self.press('Delete', mode); self.press('Up', mode); self.press('Enter', mode)
+        self.assertEqual(self.said(), 'That contact is no longer in Thunderbird. Mary Jones, mary@example.com, 3 of 4.')
+        self.assertNotIn('John Smith', [c.name for c in contacts_screen.CONTACTS])
+        # Editing one that is gone: the same.
+        contacts_screen.BOOK.delete(contacts_screen.current())
+        self.say('rename contact to Mary Smith', mode)
+        self.say('yes', mode)
+        self.assertEqual(self.said(), 'That contact is no longer in Thunderbird. The change was not saved. Plumber, 555-0199, 3 of 3.')
+        self.assertNotIn('Mary Jones', [c.name for c in contacts_screen.CONTACTS])
+
     def test_f2_edits_a_contact_with_a_question(self):
         mode = self.open()
         self.press('Letter:j', mode)
@@ -342,6 +378,17 @@ class ContactsScreenTests(CompanionHarness):
     def test_escape_goes_to_the_main_menu(self):
         mode = self.open()
         self.assertEqual(self.press('Escape', mode), 'awake')
+
+    def test_email_by_name_says_why_when_thunderbird_contacts_cannot_be_read(self):
+        # Not "No contact named John": John may be in Thunderbird, which did not answer.
+        reason = 'Thunderbird did not let Voice Companion read its address books. Close Thunderbird, then try again.'
+        with mock.patch.object(thunderbird_pim, 'contacts', side_effect=thunderbird_pim.PimError(reason)):
+            for words in ('Email John.', 'Send an email to John Smith'):
+                with self.subTest(words=words):
+                    contacts_book.CACHE['at'] = None
+                    self.assertEqual(app.handle(words, 'awake'), 'awake')
+                    self.assertEqual(self.said(), reason)
+                    self.assertIsNone(app.email_draft)
 
     def test_email_a_contact_by_name_from_the_main_menu(self):
         mode = app.handle('Email John.', 'awake')
