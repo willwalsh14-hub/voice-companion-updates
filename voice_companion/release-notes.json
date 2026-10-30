@@ -1,26 +1,32 @@
 {
-  "version": "0.2.180-test",
+  "version": "0.2.181-test",
   "status": "Testing build",
-  "date": "October 29, 2026",
-  "baseline": "0.2.179-test",
-  "scope": "YouTube lists are complete and in order, and your account is shown correctly.",
+  "date": "October 30, 2026",
+  "baseline": "0.2.180-test",
+  "scope": "Speech is shorter and more exact on every screen. Keys keep your place, and web pages read like a screen reader would read them.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Long YouTube lists",
+          "title": "Web pages",
           "details": [
-            "Search results, Home, History and other lists keep going. More videos load as you move down.",
-            "Page Down and Page Up move ten at a time. You can also say next page or previous page.",
-            "Filters work the same way. Every page of filtered results loads too."
+            "Tab now stops on tabs, switches and spin buttons. F finds switches and spin buttons too.",
+            "Enter picks a tab. Enter or Space turns a switch on or off.",
+            "Enter on a spin button lets the arrows change it.",
+            "A field says what is in it. It also says when the site marks it wrong, and reads the site's hint.",
+            "T says how many rows and columns a table has.",
+            "You hear Top of page or Bottom of page at the ends of a page."
           ]
         },
         {
-          "title": "Subscriptions",
+          "title": "New ways to say things",
           "details": [
-            "Subscriptions now lists every channel you follow.",
-            "New from subscriptions has their newest videos."
+            "Say where am I in Help to hear where you are.",
+            "Say what mode am I in, or switch to dictation only, from any screen.",
+            "On Calendar, say schedule lunch with Bob tomorrow at noon.",
+            "In File manager, say what is selected.",
+            "In email, say read message fifteen, or what folder am I in."
           ]
         }
       ]
@@ -29,12 +35,75 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "YouTube",
+          "title": "Startup, sleep and Help",
           "details": [
-            "History is in the right order again, newest first.",
-            "The menu says Sign out when you are signed in, and Sign in when you are not.",
-            "Short ages are said in words, such as 2 weeks ago.",
-            "Lists work the same with Chrome in the background."
+            "If you wake up at a yes or no question, the question is asked again.",
+            "With the microphone off, sleep tells you to press Control+F12 to wake up.",
+            "Canceled is now said with where you are, so you hear it.",
+            "Leaving Help says Help closed.",
+            "Moving in Help says only the item. The hint is said once.",
+            "Mode and version questions work in Help.",
+            "Saying no to an update while asleep takes you back to your screen.",
+            "The transcript notice at startup says to wake Companion first.",
+            "The tutorial names all twelve courses, and its lists sound like the rest of the app."
+          ]
+        },
+        {
+          "title": "Email",
+          "details": [
+            "Subjects end with one period. A blank subject says No subject.",
+            "Canceling a reply takes you back to the message you were reading.",
+            "Closing a saved draft says it is still saved.",
+            "Delete in Trash and moving to the same folder now say nothing changed.",
+            "Marking messages says the same words by key and by voice.",
+            "An empty folder gives the same answer to every key.",
+            "Escape from attachments says the message you are on.",
+            "Spoken numbers up to one hundred work."
+          ]
+        },
+        {
+          "title": "Calendar and Contacts",
+          "details": [
+            "If an event or contact was removed somewhere else, the list is read again.",
+            "Where am I and Repeat keep your place.",
+            "Both screens know next item, top of list and bottom of list.",
+            "Y and N no longer close the Calendar lists.",
+            "Asking what is on your calendar names a calendar that cannot be read.",
+            "Email John says why if Thunderbird cannot give its contacts."
+          ]
+        },
+        {
+          "title": "Documents and files",
+          "details": [
+            "Reading a paragraph or line no longer moves your place.",
+            "Deleting a word or sentence leaves no extra spaces.",
+            "Messages no longer end with two periods.",
+            "Format changes are said in plain words, such as Italic or Heading 2.",
+            "Make it quick, and other sentences that start with make it, are written.",
+            "Redo goes to the paragraph it changes.",
+            "Find in the Document reader works with the period speech adds.",
+            "File manager says 1 item, not 1 items.",
+            "If Desktop is missing, Save As suggests Documents."
+          ]
+        },
+        {
+          "title": "Web",
+          "details": [
+            "Controls are said in the same words on the page and with quick keys.",
+            "Unnamed controls no longer say their type twice.",
+            "Saving a favorite by voice never replaces another favorite.",
+            "List form fields and show fields open the fields list."
+          ]
+        },
+        {
+          "title": "Media",
+          "details": [
+            "Page Down and Page Up move ten videos on YouTube.",
+            "Space on the player controls keeps you on the control you chose.",
+            "Keys in an empty list say the list is empty.",
+            "If YouTube does not send more videos, you hear why and what to do.",
+            "A podcast episode that is slow to start still opens the player controls.",
+            "End in the Media player tells you how to reach the player menu."
           ]
         }
       ]
