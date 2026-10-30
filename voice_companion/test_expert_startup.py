@@ -136,6 +136,29 @@ class TutorialListWordsTests(KeyTestCase):
         self.assertIn('Courses cover ' + ', '.join(names[:-1]) + ', and ' + names[-1] + '.', guide)
 
 
+class HelpListWordsTests(KeyTestCase):
+    """In Help, each Down and Up said the item and then "Say next or previous, then that one.
+    Say help with followed by a topic name to jump there." again. Home and End said only the
+    item. The hint is now said when a list opens, and each move says only the item."""
+
+    def test_moves_say_the_item_and_opening_a_list_says_how_to_choose(self):
+        mode = self.keys('awake', 'F1')
+        self.assertEqual(mode, 'help')
+        self.assertTrue(self.said[0].endswith('1 of 32. Say next or previous, then that one. Say help with followed by '
+                                              'a topic name to jump there.'), self.said)
+        self.keys(mode, 'Down')
+        self.assertEqual(self.said, ['Getting Started (G), 2 of 32.'])
+        companion.handle('next', mode)
+        self.assertEqual(self.said[-1], 'Using Voice Commands (U), 3 of 32.')
+        self.keys(mode, 'Up', 'Enter')
+        self.assertTrue(self.said[0].startswith('Getting Started. Install Voice Companion (I), 1 of 5. Say next or previous'),
+                        self.said)
+        self.keys(mode, 'Down')
+        self.assertEqual(self.said, ['Open the app and wake it (O), 2 of 5.'])
+        self.keys(mode, 'End')
+        self.assertEqual(self.said, ['Set up your microphone (S), 5 of 5.'])
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""

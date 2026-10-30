@@ -55,15 +55,16 @@ class HelpSession:
         topic = self.topics[self.topic_index]
         return [(p['name'],p['paragraphs']) for p in topic.get('parts',[])]
 
-    def _item(self):
+    def _item(self, hint=True):
+        """The item as every list says it; how to choose only when a list opens, not on each move."""
         if self.level == 'topics':
             return (name_first('Topic ' + str(self.topic_index + 1) + ' of ' + str(len(self.topics)) +
                     ': ' + self.topics[self.topic_index]['name'] +
-                    '. Say next or previous, then that one. Say help with followed by a topic name to jump there.'))
+                    ('. Say next or previous, then that one. Say help with followed by a topic name to jump there.' if hint else '.')))
         subs = self._subtopics()
         from menu_navigation import announce_item
         return (announce_item(subs[self.subtopic_index][0],self.subtopic_index,len(subs))+
-                ' Say next or previous, then that one to read it. Say back to topics for all chapters.')
+                (' Say next or previous, then that one to read it. Say back to topics for all chapters.' if hint else ''))
 
     def start(self):
         return 'User guide. ' + self._item()
@@ -203,7 +204,7 @@ class HelpSession:
             if not 0 <= index < length:
                 return 'That is the ' + ('first' if step < 0 else 'last') + ' item. ' + self._item()
             setattr(self, index_name, index)
-            return self._item()
+            return self._item(hint=False)
         if command in ('that one', 'okay', 'ok', 'confirm', 'confirm that', 'open topic', 'open it'):
             if self.level == 'topics': return self._open_topic()
             name, paragraphs = self._subtopics()[self.subtopic_index]
