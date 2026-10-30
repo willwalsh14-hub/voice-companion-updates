@@ -112,6 +112,12 @@ UNEXPECTED = ('YouTube did not answer as expected, so that could not be done. '
 NO_VIDEO = 'No video is playing. Choose a video and press Enter.'
 PLAYER_KEYS = 'Up and Down change the volume. Left and Right skip. Escape goes back to your list.'
 LOADING = 'Loading video.'
+OWN_CHROME_OPENING = 'YouTube stopped the video in Voice Companion\'s Chrome. Opening your own Chrome to play it there.'
+OWN_CHROME_MOVED = 'YouTube stopped the video in Voice Companion\'s Chrome, so it plays in your own Chrome now, from where it stopped. '
+OWN_CHROME_NOT_LINKED = 'Your own Chrome opened, but the Voice Companion extension did not link it.'
+OWN_CHROME_FAILED = 'The video could not move to your own Chrome.'
+OWN_CHROME_SECONDS = 20
+OWN_CHROME_START = 'Opening YouTube in your own Chrome.'
 # "What's playing?" and F3 on this screen when nothing at all plays; not the radio hint.
 NOTHING_PLAYING = 'Nothing is playing. Choose a video and press Enter to play it.'
 SIGN_IN_NEEDED = ('You are not signed in to YouTube. To {action}, say sign in. '
@@ -284,6 +290,9 @@ class YouTubeScreen:
             else:
                 try:
                     if not self.injected(web):
+                        if self.m.PREFERENCES.get('youtube_own_chrome') and web.running_browser() == 'chrome':
+                            # YouTube stopped videos in Voice Companion's Chrome before: start in your own.
+                            self.link_own_chrome(url, OWN_CHROME_START)
                         web.adopt_connected_browser()
                 except Exception:
                     pass
@@ -830,7 +839,8 @@ class YouTubeScreen:
                 self.open_video_page(yp.watch_url(item['id']))
                 state = self.player.state()
             if state.get('error'):
-                return lead + self.error_words(state)
+                moved = self.own_chrome_rescue(state)
+                return lead + (moved or self.error_words(state))
             if not state.get('ad', {}).get('showing') and state.get('paused') is not False:
                 self.player.play()
                 state = self.player.state()
@@ -875,7 +885,7 @@ class YouTubeScreen:
     def error_words(self, state):
         """What YouTube said about a video it would not play, and what to do next."""
         self.note_error(state)
-        said = 'YouTube says: ' + state['error'].rstrip('.') + '.'
+        said = 'YouTube says: ' + re.sub(r'\s*Learn more\.?$', '', state['error']).rstrip('.') + '.'
         if state.get('playability') == 'LOGIN_REQUIRED' or re.search(r'sign in', state['error'], re.I):
             return said + (' Say sign in to sign in on Google\'s page, then try the video again.' if not self.signed_in else
                            ' Say open in browser to answer it on the page.')
@@ -1573,8 +1583,101 @@ class YouTubeScreen:
         if state.get('ended') and not before.get('ended') and not ad.get('showing'):
             news.append('The video ended.' + (' Press N for the next video.' if state.get('autoplay') is False else ''))
         if state.get('error') and state['error'] != before.get('error'):
-            news.append(self.error_words(state))
+            moved = self.own_chrome_rescue(state, before.get('time'))
+            news.append(moved if moved else self.error_words(state))
         return ' '.join(news)
+
+    # ------------------------------------------------------------ your own Chrome
+    def own_chrome_rescue(self, state, at=None):
+        """Will, October 30, 2026: in Voice Companion's Chrome, videos played for about a minute and then
+        YouTube said "Something went wrong"; the same video played in his own Chrome. YouTube does not
+        keep playing for a browser a program drives. When that happens, the video goes on in your own
+        Chrome, linked by the Voice Companion extension, from where it stopped. Returns what to say, or ''."""
+        if state.get('playability') == 'LOGIN_REQUIRED' or not self.video or self.engine() != 'chrome':
+            return ''
+        self.note_error(state)
+        try:
+            import browser_cdp_relay
+            import chrome_setup
+        except Exception:
+            return ''
+        at = int(at or state.get('time') or 0)
+        linked = self.link_own_chrome(yp.watch_url(self.video['id']) + ('&t=' + str(at) + 's' if at else ''), OWN_CHROME_OPENING)
+        if linked is None:
+            return ''
+        if linked is not True:
+            return linked + ' ' + self.error_words(state)
+        resume = dict(self.video, kind='video')
+        web = self.web()
+        self.close_pages()
+        self.list_page = self.video_page = None
+        self.single_tab = False
+        try:
+            if not web.adopt_connected_browser():
+                return self.error_words(state)
+            view = next((v for v in reversed(self.views) if v['kind'] == 'list' and v.get('url')), None)
+            self.go(view['url'] if view else yp.feed_url('home'))
+            said = self.play(resume, OWN_CHROME_MOVED)
+            if at:
+                try:
+                    self.player.seek(at)
+                except YouTubeError:
+                    pass
+        except Exception:
+            return OWN_CHROME_FAILED + ' ' + self.error_words(state)
+        self.keep_keyboard()
+        self.remember_own_chrome()
+        return said
+
+    def link_own_chrome(self, address, announce=''):
+        """Your own Chrome, linked by the Voice Companion extension: True when it is linked now,
+        None when it cannot be (no extension, not Windows), or words saying what went wrong."""
+        try:
+            import browser_cdp_relay
+            import chrome_setup
+        except Exception:
+            return None
+        relay = browser_cdp_relay.current()
+        if relay is None:
+            return None
+        if relay.connected.is_set():
+            return True
+        system = chrome_setup.WindowsChrome()
+        try:
+            ready = system.supported() and system.extension_state() == 'enabled'
+        except Exception:
+            ready = False
+        if not ready:
+            return None
+        if announce:
+            self.m.speak_status(announce)
+        if not system.open_chrome(address):
+            return None
+        import user_stop
+        try:
+            user_stop.wait(relay.connected, OWN_CHROME_SECONDS)
+        except user_stop.Stopped:
+            return 'Stopped waiting for your own Chrome.'
+        self.keep_keyboard()
+        return True if relay.connected.is_set() else OWN_CHROME_NOT_LINKED
+
+    def keep_keyboard(self):
+        window = getattr(self.m, 'APP_WINDOW', None)
+        if window is not None and hasattr(window, 'reclaim_focus'):
+            try:
+                window.reclaim_focus()
+            except Exception:
+                pass
+
+    def remember_own_chrome(self):
+        """Next time, YouTube starts in your own Chrome when it is open."""
+        try:
+            self.m.PREFERENCES['youtube_own_chrome'] = True
+            save = getattr(self.m, 'save_preferences', None)
+            if callable(save):
+                save()
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------- hooks from companion.py

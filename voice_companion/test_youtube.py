@@ -424,3 +424,89 @@ class FilterTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class OwnChromeRescueTests(unittest.TestCase):
+    """Will, October 30, 2026: videos played about a minute in Voice Companion's Chrome, then YouTube said
+    "Something went wrong". The same video played in his own Chrome, so the video moves there."""
+
+    def screen(self, linked=True, engine='chrome'):
+        root = Path(tempfile.mkdtemp())
+        m = Mock(PREFERENCES={}, APP=root, APP_WINDOW=None)
+        s = ys.YouTubeScreen(m)
+        s.video = {'id': 'vid1', 'title': 'Mr. Ghost', 'channel': 'Radio', 'live': False}
+        s.views = [{'kind': 'menu', 'name': 'menu', 'title': 'YouTube menu', 'items': [], 'index': 0},
+                   {'kind': 'list', 'name': 'search', 'title': 'Results for ghost', 'url': 'https://www.youtube.com/results?search_query=ghost',
+                    'items': [], 'index': 0}]
+        web = Mock(); web.adopt_connected_browser.return_value = True
+        s.web = lambda: web
+        s.engine = lambda: engine
+        s.link_own_chrome = Mock(return_value=linked)
+        s.close_pages = Mock(); s.go = Mock(return_value='')
+        s.play = Mock(return_value=ys.OWN_CHROME_MOVED + 'Playing Mr. Ghost.')
+        s.player = Mock()
+        return s, m
+
+    STATE = {'error': 'Something went wrong. Refresh or try again later. Learn more', 'playability': '', 'time': 65}
+
+    def test_a_video_youtube_stops_goes_on_in_your_own_chrome_from_where_it_stopped(self):
+        s, m = self.screen()
+        said = s.own_chrome_rescue(dict(self.STATE), at=64)
+        self.assertEqual(said, ys.OWN_CHROME_MOVED + 'Playing Mr. Ghost.')
+        self.assertIn('vid1', s.link_own_chrome.call_args[0][0])
+        self.assertIn('&t=64s', s.link_own_chrome.call_args[0][0])
+        s.go.assert_called_once_with('https://www.youtube.com/results?search_query=ghost')   # the results come too
+        s.player.seek.assert_called_once_with(64)
+        self.assertIs(m.PREFERENCES['youtube_own_chrome'], True)   # next time YouTube starts there
+
+    def test_without_the_extension_youtubes_words_are_said(self):
+        s, m = self.screen(linked=None)
+        self.assertEqual(s.own_chrome_rescue(dict(self.STATE)), '')
+        self.assertEqual(s.error_words(dict(self.STATE)), 'YouTube says: Something went wrong. Refresh or try again later. '
+                                                         'Press Enter to try again, or choose another video.')
+
+    def test_a_sign_in_check_or_your_own_chrome_is_never_moved(self):
+        s, _ = self.screen()
+        self.assertEqual(s.own_chrome_rescue(dict(self.STATE, playability='LOGIN_REQUIRED')), '')
+        s, _ = self.screen(engine='regular')
+        self.assertEqual(s.own_chrome_rescue(dict(self.STATE)), '')
+        s.link_own_chrome.assert_not_called()
+
+    def test_your_own_chrome_that_does_not_link_says_so(self):
+        s, _ = self.screen(linked=ys.OWN_CHROME_NOT_LINKED)
+        said = s.own_chrome_rescue(dict(self.STATE))
+        self.assertTrue(said.startswith(ys.OWN_CHROME_NOT_LINKED + ' YouTube says: Something went wrong.'), said)
+
+
+class LinkOwnChromeTests(unittest.TestCase):
+    def screen(self):
+        m = Mock(PREFERENCES={}, APP=Path(tempfile.mkdtemp()), APP_WINDOW=None)
+        return ys.YouTubeScreen(m), m
+
+    def test_linking(self):
+        import threading
+        import browser_cdp_relay
+        import chrome_setup
+        s, m = self.screen()
+        relay = Mock(); relay.connected = threading.Event()
+        with patch.object(browser_cdp_relay, 'current', lambda: None):
+            self.assertIsNone(s.link_own_chrome('https://www.youtube.com/'))
+        relay.connected.set()
+        with patch.object(browser_cdp_relay, 'current', lambda: relay):
+            self.assertIs(s.link_own_chrome('https://www.youtube.com/'), True)   # already linked: nothing opens
+        relay.connected.clear()
+        opened = []
+
+        class Chrome:
+            state = 'enabled'
+            def supported(self): return True
+            def extension_state(self): return self.state
+            def open_chrome(self, address):
+                opened.append(address); relay.connected.set(); return True
+        with patch.object(browser_cdp_relay, 'current', lambda: relay), patch.object(chrome_setup, 'WindowsChrome', Chrome):
+            self.assertIs(s.link_own_chrome('https://www.youtube.com/watch?v=x', 'Opening.'), True)
+            self.assertEqual(opened, ['https://www.youtube.com/watch?v=x'])
+            m.speak_status.assert_called_with('Opening.')
+            relay.connected.clear(); Chrome.state = None
+            self.assertIsNone(s.link_own_chrome('https://www.youtube.com/'))   # no extension: never opened
+            self.assertEqual(len(opened), 1)
