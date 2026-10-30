@@ -708,7 +708,10 @@ def resume_from_sleep():
     # The same screen names as everywhere else ("Back to Word processor menu."), never the internal mode.
     # Asleep during a question: ask it again, so the answer is not a guess.
     question={'document_save':'Save this document? Yes or no.','document_name':'Back to naming your document.',
-              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None}.get(mode)
+              'document_replace':'Replace '+str(SAVE_AS_TITLE)+'.docx? Yes or no.' if SAVE_AS_TITLE else None,
+              # Keys work behind sleep: Escape or Enter there can open these questions.
+              'exit_confirm':'Exit Voice Companion? Yes or no.',
+              'power_confirm':('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.')}.get(mode)
     speak('I am listening. ' + (question or options_return_notice(mode)))
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
@@ -5425,7 +5428,9 @@ def announce_startup():
     retire_old_mail_accounts()
     apply_transcript()
     if PREFERENCES.get('speech_transcript', False):
-        STARTUP_NOTICES.append('The speech transcript is on. Say stop transcript to turn it off.')
+        # Companion starts asleep, when only "Wake up" is heard; with no microphone, nothing is.
+        STARTUP_NOTICES.append('The speech transcript is on. To turn it off, '+('wake Companion, then say stop transcript.' if microphone_state()=='on'
+                               else 'press Alt+O, then choose Startup and exit options.'))
     notices, STARTUP_NOTICES = STARTUP_NOTICES, None
     STARTUP_QUESTION = None
     speak(startup_speech.announcement(APP_VERSION, microphone_state(), update_result, notices, question))
