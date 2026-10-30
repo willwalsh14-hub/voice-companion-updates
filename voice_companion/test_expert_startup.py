@@ -71,6 +71,36 @@ class WakeDuringExitOrPowerQuestionTests(KeyTestCase):
                 companion.handle('no', 'power_confirm')
 
 
+class SleepWithTheMicrophoneOffTests(KeyTestCase):
+    """With the microphone off (F9), Control+F12 said "Going to sleep. Say wake up when you
+    need me." Nothing can hear "Wake up" then. Waking with Control+F12 said "I am listening.",
+    which was not true. The tutorial also said its own words: "Say wake up to continue here."."""
+
+    def test_sleep_and_wake_say_only_what_is_true_with_the_microphone_off(self):
+        companion.MICROPHONE_OFF = True
+        companion.SLEEP_RETURN_MODE = 'awake'
+        self.open_document()
+        mode = self.keys('document', 'Ctrl+F12')
+        self.assertEqual(mode, 'sleep')
+        self.assertEqual(self.said, ['Going to sleep. The microphone is off, so press Control+F12 to wake up.'])
+        mode = self.keys(mode, 'Ctrl+F12')
+        self.assertEqual(mode, 'document')
+        self.assertEqual(self.said, ['Back to document.'])
+
+    def test_with_the_microphone_on_the_words_are_the_same_on_every_screen(self):
+        for screen in ('awake', 'tutorial'):
+            with self.subTest(screen=screen):
+                with patch.object(companion, 'tutorial_session', None):
+                    self.assertEqual(companion.handle('Go to sleep.', screen), 'sleep')
+                self.assertEqual(self.said[-1], 'Going to sleep. Say wake up when you need me.')
+        companion.MICROPHONE_OFF = True
+        self.assertEqual(companion.handle('go to sleep', 'tutorial'), 'sleep')
+        self.assertEqual(self.said[-1], 'Going to sleep. The microphone is off, so press Control+F12 to wake up.')
+        companion.MICROPHONE_OFF = False; companion.MICROPHONE_FAILED = True
+        self.assertEqual(companion.handle('go to sleep', 'awake'), 'sleep')
+        self.assertEqual(self.said[-1], 'Going to sleep. The microphone could not start, so press Control+F12 to wake up.')
+
+
 class TranscriptStartupNoticeTests(CompanionTestCase):
     """With the transcript on, startup said "Say stop transcript to turn it off." But the app
     starts asleep, when only "Wake up" is heard, and with the microphone off nothing is heard."""

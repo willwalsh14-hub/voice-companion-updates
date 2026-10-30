@@ -712,10 +712,17 @@ def resume_from_sleep():
               # Keys work behind sleep: Escape or Enter there can open these questions.
               'exit_confirm':'Exit Voice Companion? Yes or no.',
               'power_confirm':('Restart the computer? Yes or no.' if POWER_ACTION=='restart' else 'Shut down the computer? Yes or no.')}.get(mode)
-    speak('I am listening. ' + (question or options_return_notice(mode)))
+    # With the microphone off or broken nothing is listening: Control+F12 woke it.
+    speak(('I am listening. ' if microphone_state() == 'on' else '') + (question or options_return_notice(mode)))
     if mode == 'email_draft': focus_email_entry()
     sync_app_context(mode,True)
     return mode
+
+
+def sleep_message():
+    """The same words on every screen; "Say wake up" only when the microphone can hear it."""
+    if microphone_state() == 'on':return 'Going to sleep. Say wake up when you need me.'
+    return 'Going to sleep. The microphone '+('is off' if MICROPHONE_OFF else 'could not start')+', so press Control+F12 to wake up.'
 
 
 def finish_mail_announcement():
@@ -3793,7 +3800,7 @@ def _handle(text, mode, typed=False):
             return handle(text,'awake',typed)
         if spoken_control(command)=='sleep':
             SLEEP_RETURN_MODE=mode
-            speak('Going to sleep. Say wake up to continue here.')
+            speak(sleep_message())
             return 'sleep'
         if tutorial_session is None:
             tutorial_session=PracticeTutorial(GUIDE)
@@ -4227,7 +4234,7 @@ def _handle(text, mode, typed=False):
         if MEDIA_HUB is not None and MEDIA_HUB.player.kind:
             try: MEDIA_HUB.player.control('pause')
             except Exception: pass
-        speak('Going to sleep. Say wake up when you need me.')
+        speak(sleep_message())
         return 'sleep'
     global FILE_MANAGER,FILE_READER
     if command in ('file manager','open file manager','manage files','browse files'):
