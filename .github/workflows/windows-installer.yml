@@ -1,148 +1,21 @@
 name: Build and publish Windows installer
 on:
-  workflow_dispatch:
   pull_request:
     branches: [main]
-    paths:
-      - 'voice_companion/**'
-      - '.github/workflows/windows-installer.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'voice_companion/**'
-      - '.github/workflows/windows-installer.yml'
-permissions:
-  contents: write
-  # Signs in to the Chrome Web Store without a stored key. Google accepts only
-  # main of this repository (tools/chrome-store-publishing.md).
-  id-token: write
-concurrency:
-  group: voice-companion-release-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 jobs:
   installer:
     runs-on: windows-2022
-    timeout-minutes: 120
-    env:
-      GH_TOKEN: ${{ github.token }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-      - name: Check the browser extension version was raised
-        if: github.event_name == 'pull_request'
-        run: |
-          # The Chrome Web Store refuses a changed extension without a higher version.
-          git fetch --no-tags --depth=1 origin main
-          python ./tools/extension_version_guard.py --base FETCH_HEAD
-      - name: Check experimental regular-browser message handling
-        run: node ./voice_companion/regular_browser_extension/test-worker.cjs
-      - name: Check Thunderbird mail add-on
+      - name: Podcast playback diagnostics (try branch only)
         shell: pwsh
+        working-directory: voice_companion
         run: |
-          # A failure names itself in an annotation: the logs cannot always be read.
-          $output = node ./voice_companion/thunderbird_mail_extension/test-bridge.cjs 2>&1 | Out-String
-          $code = $LASTEXITCODE
-          Write-Output $output
-          if ($code) {
-            $clean = $output -replace '%','%25' -replace "`r",'' -replace "`n",'%0A'
-            if ($clean.Length -gt 3500) { $clean = $clean.Substring(0, 1200) + '%0A...%0A' + $clean.Substring($clean.Length - 2300) }
-            Write-Output ('::error title=Thunderbird mail add-on checks failed::' + $clean)
-            exit $code
-          }
-      - name: Install installer compiler
-        shell: pwsh
-        run: |
-          choco install innosetup --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
-      - name: Restore pinned eSpeak runtime and corresponding source
-        shell: pwsh
-        run: |
-          python ./voice_companion/prepare_espeak.py ./voice_companion/espeak
-          if ($LASTEXITCODE -ne 0) { throw 'eSpeak preparation failed.' }
-          $source = './voice_companion/espeak/espeak-ng-1.52.0-source.tar.gz'
-          Invoke-WebRequest 'https://github.com/willwalsh14-hub/voice-companion-updates/releases/download/v0.2.77-test/espeak-ng-1.52.0-source.tar.gz' -OutFile $source
-          if ((Get-FileHash $source -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'bb4338102ff3b49a81423da8a1a158b420124b055b60fa76cfb4b18677130a23') { throw 'The eSpeak source checksum differs from the verified source.' }
-          if (-not (Test-Path './voice_companion/espeak/COPYING')) { throw 'The eSpeak distribution license is missing.' }
-      - name: Build and test complete installer
-        shell: powershell
-        run: |
-          $env:VOICE_COMPANION_BUILD_PYTHON = (Get-Command python.exe).Source
-          $webviewRoots = @("${env:ProgramFiles(x86)}\Microsoft\EdgeWebView\Application", "$env:LOCALAPPDATA\Microsoft\EdgeWebView\Application")
-          if (-not ($webviewRoots | Where-Object { Test-Path -LiteralPath $_ })) {
-            $bootstrapper = Join-Path $env:RUNNER_TEMP 'MicrosoftEdgeWebview2Setup.exe'
-            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $bootstrapper
-            $signature = Get-AuthenticodeSignature -LiteralPath $bootstrapper
-            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') { throw 'The WebView2 Runtime installer signature is invalid.' }
-            $runtimeInstall = Start-Process -FilePath $bootstrapper -ArgumentList '/silent','/install' -WindowStyle Hidden -Wait -PassThru
-            if ($runtimeInstall.ExitCode -ne 0) { throw 'The WebView2 Runtime could not be installed for testing.' }
-          }
-          # Hosted runners already include Chrome. Reuse it rather than
-          # downloading a moving installer through a stale package checksum.
-          $chromeCandidates = @(
-            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
-          )
-          if (-not ($chromeCandidates | Where-Object { Test-Path -LiteralPath $_ })) {
-            choco install googlechrome --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { throw 'Verified Chrome installation for browser checks failed.' }
-          }
-          $env:VOICE_COMPANION_REQUIRE_BROWSER_CHANNELS = '1'
-          & ./voice_companion/build-windows.ps1 -Parakeet -NoPublish -Unattended
-      - name: Preserve checked installer before publishing
-        uses: actions/upload-artifact@v6
-        with:
-          name: checked-windows-installer
-          path: |
-            voice_companion/VoiceCompanion-Setup.exe
-            voice_companion/VoiceCompanion-Build-Passed.json
-          compression-level: 0
-          retention-days: 7
-          if-no-files-found: error
-      - name: Audit public websites and live radio and podcast streams
-        shell: pwsh
-        run: |
-          $python = Join-Path $env:LOCALAPPDATA 'VCBuild\py312\Scripts\python.exe'
-          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $PWD 'voice_companion/browser-runtime'
-          & $python -u ./voice_companion/consumer_site_audit.py --output ./voice_companion/VoiceCompanion-Consumer-Site-Audit.txt
-          if ($LASTEXITCODE -ne 0) { throw 'A loaded public website failed its consumer navigation checks. Read the site audit report.' }
-      - name: Audit synthesized speech recognition and command routing
-        shell: pwsh
-        run: |
-          $python = Join-Path $env:LOCALAPPDATA 'VCBuild\py312\Scripts\python.exe'
-          & $python -u ./voice_companion/consumer_voice_audit.py
-          if ($LASTEXITCODE -ne 0) { throw 'A recognized synthetic speech command failed its routing check. Read the voice audit report.' }
-      - name: Publish verified installer and update feed
-        if: github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: |
-          & python -u ./voice_companion/publish_release.py --setup ./voice_companion/VoiceCompanion-Setup.exe --gh gh
-          if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. Read the progress log.' }
-      - name: Send the browser extension to the Chrome Web Store
-        # Uploads only a higher extension version, then submits it for review; Chrome updates users on its own.
-        # Its annotation says what happened. It never fails the release, which is already public.
-        if: github.ref == 'refs/heads/main'
-        continue-on-error: true
-        shell: pwsh
-        env:
-          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
-          CWS_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
-          CWS_SERVICE_ACCOUNT: ${{ vars.CWS_SERVICE_ACCOUNT }}
-          CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
-        run: python -u ./tools/chrome_store_publish.py --extension ./voice_companion/regular_browser_extension
-      - name: Save build and publishing logs
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: installer-build-logs
-          path: |
-            voice_companion/VoiceCompanion-*.txt
-            voice_companion/VoiceCompanion-Build-Passed.json
-            voice_companion/VoiceCompanion-Published.json
-            voice_companion/security-dependency-audit.json
-          retention-days: 7
-          if-no-files-found: warn
+          python -m pip install --disable-pip-version-check -q -r requirements.txt
+          python -m playwright install firefox
+          python -u diag_podcast.py
+          throw 'Diagnostic finished. See the annotations.'
