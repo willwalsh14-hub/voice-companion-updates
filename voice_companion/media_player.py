@@ -94,6 +94,10 @@ class StreamWatch:
             return None
         elif sample.get('error') is not None:
             reason = 'error'
+        elif sample.get('loading'):
+            # Still fetching the first part from a slow server: not a stall.
+            self.position, self.since = None, None
+            return None
         elif sample.get('ended'):
             reason = 'ended'   # a live station never ends by itself
         else:
@@ -133,6 +137,7 @@ class MediaPlayer:
         self.ducked=False
         self.volume=self._saved_volume()
         self.rate=1.0   # playback speed; each new file or stream starts at normal speed
+        self.loading=False   # started, but still fetching: it plays as soon as enough has come
         self.start_timeout_ms=12000
         # What is loaded, for "What's playing?", and a number that changes with each
         # play, so a stream failure is reported once per play.
@@ -188,14 +193,40 @@ class MediaPlayer:
             # The player has no window (tester, October 2026): a window had to be found with
             # Tab or Alt+Tab, and it took the keyboard from Companion. Firefox without a window
             # still plays sound; Companion's own screen has the controls.
-            self.context=self.playwright.firefox.launch_persistent_context(
-                str(self.folder/'profile'),headless=True,
-                firefox_user_prefs={'media.autoplay.default':0})
+            try:
+                self.context=self._launch()
+            except Exception as first:
+                # The player's own profile may be damaged or still locked by a player that did not
+                # close. It holds nothing of yours (the volume is kept beside it), so it is set
+                # aside and the player starts once more with a new one.
+                self.last_start_error='The player could not start: '+type(first).__name__+': '+str(first)[:200]
+                if not self._set_profile_aside():
+                    raise
+                self.context=self._launch()
             self.page=self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.goto(html.as_uri())
         except Exception:
             self.close()
             raise
+
+    def _launch(self):
+        return self.playwright.firefox.launch_persistent_context(
+            str(self.folder/'profile'),headless=True,
+            firefox_user_prefs={'media.autoplay.default':0})
+
+    def _set_profile_aside(self):
+        profile=self.folder/'profile'
+        if not profile.exists():
+            return False
+        aside=self.folder/'profile-set-aside'
+        try:
+            if aside.exists():
+                import shutil
+                shutil.rmtree(aside,ignore_errors=True)
+            profile.replace(aside)
+            return True
+        except OSError:
+            return False
 
     def close(self):
         context,driver=self.context,self.playwright
@@ -253,7 +284,21 @@ class MediaPlayer:
                         }
                         return false;
                     };
-                    const started=await Promise.race([attempt(),new Promise(resolve=>{timer=setTimeout(()=>{window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
+                    // A slow server (a long podcast episode behind a few redirects) can take longer than
+                    // the wait to send enough to play. That is not a failure: when the time is up and the
+                    // player is still fetching with no error, it plays as soon as it can ('loading').
+                    // Before 0.2.179 that was "could not start" (Will, October 29, 2026).
+                    const playing=attempt();
+                    const started=await Promise.race([playing,new Promise(resolve=>{timer=setTimeout(()=>{
+                        const fetching=!a.error&&a.networkState!==3&&a.getAttribute('src');
+                        if(fetching){resolve('loading');return;}
+                        window.voiceCompanionStartError=window.voiceCompanionStartError||'timed out';resolve(false);},timeout)})]);
+                    if(started==='loading'){
+                        window.voiceCompanionLoading=true;
+                        playing.then(ok=>{window.voiceCompanionLoading=false;if(!ok){window.voiceCompanionFailed=true;
+                            document.getElementById('status').textContent='This audio could not start.';}});
+                        return 'loading';
+                    }
                     window.voiceCompanionFailedStart=!started;
                     if(!started){a.pause();a.removeAttribute('src');a.load();document.getElementById('status').textContent='This audio could not start.';}
                     return started;
@@ -272,6 +317,7 @@ class MediaPlayer:
             except Exception:self.last_start_error=''
             raise OSError('This audio format could not start in the player.')
         self.kind=kind
+        self.loading=result=='loading'   # still fetching: plays as soon as enough has come
         self.rate=1.0
         self.title,self.url=title,url
         self.session+=1
@@ -285,8 +331,8 @@ class MediaPlayer:
         if not self.page or self.page.is_closed() or not self.kind:
             return None
         return self.page.evaluate("""() => {const a=document.getElementById('audio');
-            return {paused:a.paused,ended:a.ended,error:a.error?a.error.code:null,position:a.currentTime,
-                    user_paused:!!window.voiceCompanionUserPaused};}""")
+            return {paused:a.paused,ended:a.ended,error:a.error?a.error.code:(window.voiceCompanionFailed?-1:null),position:a.currentTime,
+                    user_paused:!!window.voiceCompanionUserPaused,loading:!!window.voiceCompanionLoading};}""")
 
     def mark_failed(self):
         """The stream stopped by itself: stop it, so Play loads it again."""
