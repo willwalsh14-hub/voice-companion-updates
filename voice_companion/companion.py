@@ -2424,7 +2424,7 @@ def _thunderbird_starter(system=None):
     mail_log('[thunderbird] waiting for Thunderbird to connect')
     try:
         launched = thunderbird_setup.start_in_background(system or thunderbird_setup.WindowsSystem(), addon_package(),
-                                                         relay, speak_status)
+                                                         relay, speak_status, note=mail_log)
         mail_log('[thunderbird] ' + ('started by Voice Companion, ' if launched else '') + ('connected' if relay is not None and
                  relay.connected.is_set() else 'not connected') + ' after %.1f seconds' % (time.monotonic() - started))
     except user_stop.Stopped as exc:
@@ -2688,7 +2688,8 @@ THUNDERBIRD_WINDOWS = None
 def thunderbird_signing_in():
     """An account is being added or signed in to: every Thunderbird window stays as before."""
     return bool(THUNDERBIRD_WATCH is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_SIGN_IN
-                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird')
+                or (ACCOUNT_ENTRY or {}).get('provider') == 'thunderbird'
+                or THUNDERBIRD_STARTING)   # a start wakes Thunderbird's window: it is not a window that needs you
 
 
 def thunderbird_desktop():
@@ -2763,8 +2764,17 @@ def start_thunderbird_quietly():
             # Thunderbird needs the update: it is asked about when email is first used, while Thunderbird is closed.
             if __import__('thunderbird_upgrade').offer_due(thunderbird_setup.WindowsSystem(), APP):
                 return
-            if thunderbird_setup.start_in_background(thunderbird_setup.WindowsSystem(), addon_package(), relay,
-                                                     lambda text: None):
+            global THUNDERBIRD_STARTING
+            THUNDERBIRD_STARTING = True
+            started = time.monotonic()
+            try:
+                launched = thunderbird_setup.start_in_background(thunderbird_setup.WindowsSystem(), addon_package(), relay,
+                                                                 lambda text: None, note=mail_log)
+                mail_log('[thunderbird] at startup: ' + ('connected' if relay is not None and relay.connected.is_set() else
+                         'not connected') + ' after %.1f seconds' % (time.monotonic() - started))
+            finally:
+                THUNDERBIRD_STARTING = False
+            if launched:
                 quiet_thunderbird(relay)
         except Exception:
             pass    # said only if mail is used and still cannot connect

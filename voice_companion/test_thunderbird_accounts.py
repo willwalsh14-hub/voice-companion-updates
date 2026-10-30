@@ -560,9 +560,10 @@ class StarterTests(StarterCase):
 
     def test_slow_start_says_one_line_then_every_15_seconds(self):
         system, _ = self.ready_system()
-        relay = RelayWithRequests(connect_after=3)
+        relay = RelayWithRequests(connect_after=5)
         self.start(system, relay)
-        self.assertEqual(relay.waits, [2, 15, 15, 15])
+        # 2 seconds, then the two wake-ups (3 and 4 seconds), then every 15 seconds.
+        self.assertEqual(relay.waits, [2, 3, 4, 15, 15, 15])
         self.assertEqual(self.said, ['Starting Thunderbird.', 'Still starting Thunderbird.', 'Still starting Thunderbird.'])
 
     def test_no_connection_after_a_minute_says_what_to_do(self):

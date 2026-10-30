@@ -168,6 +168,37 @@ class WindowsSystem:
         subprocess.Popen([str(path)], startupinfo=info, close_fds=True,
                          creationflags=getattr(subprocess, 'DETACHED_PROCESS', 0) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0))
 
+    def wake_windows(self, stage):
+        """See wake(). Returns the handles of the windows shown, to minimize again later."""
+        import window_hiding
+        desktop = window_hiding.Win32Desktop()
+        mains = [w for w in desktop.windows() if w.kind == window_hiding.MAIN_CLASS and not w.owned]
+        changed = []
+        if stage == 1:
+            for window in mains:
+                if window.minimized:
+                    desktop.user.ShowWindow(window.handle, 4)   # SW_SHOWNOACTIVATE: on screen, no keyboard
+                    changed.append(window.handle)
+            return changed
+        if mains:
+            before = desktop.foreground()
+            target = mains[0].handle
+            if desktop.user.IsIconic(target):
+                changed.append(target)
+            desktop.bring_forward(target)
+            import time
+            time.sleep(0.4)
+            if before:
+                desktop.bring_forward(before)
+        return changed
+
+    def settle_windows(self, handles):
+        import window_hiding
+        desktop = window_hiding.Win32Desktop()
+        for handle in handles:
+            if desktop.exists(handle):
+                desktop.minimize(handle)
+
     def close_program(self):
         """Ask Thunderbird to close, as the window's close button does (no force)."""
         try:
@@ -423,22 +454,32 @@ def _set_pref(text, name, value):
 PROMPT_START = 'extensions.webextensions.background-delayed-startup'
 
 
+# Windows 11 runs a program whose windows are all minimized in "efficiency mode", and Thunderbird
+# puts its background parts there itself. The mail connection add-on is such a part, so it could
+# wait until Thunderbird came to the front (Will, October 30, 2026). Mozilla's own setting.
+NO_ECO = 'dom.ipc.processPriorityManager.backgroundUsesEcoQoS'
+PROMPT_PREFS = ((PROMPT_START, 'false'), (NO_ECO, 'false'))
+
+
 def start_addons_promptly(profile):
-    """Make sure the profile's user.js has PROMPT_START off. Thunderbird reads it at its next start.
-    True when it is set. Never raises: Thunderbird still starts without it."""
+    """Make sure the profile's user.js has PROMPT_PREFS. Thunderbird reads them at its next start.
+    True when they are set. Never raises: Thunderbird still starts without them."""
     user_js = Path(profile) / 'user.js'
     try:
         try:
             text = user_js.read_bytes().decode('utf-8', 'surrogateescape')
         except FileNotFoundError:
             text = ''
-        if read_prefs(user_js).get(PROMPT_START) is False:
+        current = read_prefs(user_js)
+        if all(current.get(name) is False for name, _ in PROMPT_PREFS):
             return True
         if not text.strip():
             text = '// Settings for this Thunderbird profile.\n'
         if 'connection add-on starts with Thunderbird' not in text:
             text += '// Added by Voice Companion so its mail connection add-on starts with Thunderbird, even minimized.\n'
-        write_atomic(user_js, _set_pref(text, PROMPT_START, 'false').encode('utf-8', 'surrogateescape'))
+        for name, value in PROMPT_PREFS:
+            text = _set_pref(text, name, value)
+        write_atomic(user_js, text.encode('utf-8', 'surrogateescape'))
         return True
     except OSError:
         return False
@@ -464,7 +505,8 @@ def install_addon(profile, package):
         text += '// Added by Voice Companion so its mail connection add-on turns on.\n'
     text = _set_pref(text, 'extensions.autoDisableScopes', auto & ~SCOPE_PROFILE)
     text = _set_pref(text, 'extensions.startupScanScopes', scan | SCOPE_PROFILE)
-    text = _set_pref(text, PROMPT_START, 'false')
+    for name, value in PROMPT_PREFS:
+        text = _set_pref(text, name, value)
     (profile / 'extensions').mkdir(exist_ok=True)
     write_atomic(addon_file(profile), data, profile)  # temporary file outside extensions: Thunderbird never sees it
     try:
@@ -506,7 +548,32 @@ class NotReady(Exception):
     """Thunderbird needs a step the user must agree to; Setup.start() explains it and asks."""
 
 
-def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
+# The two wake-ups while waiting for the connection: after 2 seconds, then after this many more.
+WAKE_SECONDS = (3, 4)
+
+
+def wake(system, stage, note=None):
+    """Stage 1: show Thunderbird's minimized windows without the keyboard. Stage 2: bring its
+    main window to the front, then give the keyboard back. Returns the windows it changed."""
+    try:
+        changed = system.wake_windows(stage)
+    except Exception as exc:
+        changed = []
+        if note: note('[thunderbird] wake-up %d failed: %s' % (stage, exc))
+        return changed
+    if note: note('[thunderbird] not connected yet; wake-up %d changed %d window(s)' % (stage, len(changed)))
+    return changed
+
+
+def settle(system, handles, note=None):
+    """Put the windows a wake-up showed back the way they were (minimized)."""
+    try:
+        system.settle_windows(handles)
+    except Exception as exc:
+        if note: note('[thunderbird] could not put the windows back: %s' % exc)
+
+
+def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS, note=None):
     """Connect Thunderbird's add-on without asking. Returns True when Voice Companion started Thunderbird.
 
     Says nothing when it connects within two seconds; then one short line, and
@@ -540,17 +607,32 @@ def start_in_background(system, package, relay, progress, limit=WAIT_SECONDS):
                 raise NotReady('start') from exc
             launched = True
     import user_stop   # Escape or closing Companion stops this wait (user_stop.Stopped)
-    if user_stop.wait(relay.connected, NOTICE_SECONDS):
-        return launched
-    progress(STARTING_QUIETLY if launched else WAITING_QUIETLY)
-    waited = NOTICE_SECONDS
-    while waited < limit:
-        if user_stop.wait(relay.connected, PROGRESS_SECONDS):
+    woken = []
+    try:
+        if user_stop.wait(relay.connected, NOTICE_SECONDS):
             return launched
-        waited += PROGRESS_SECONDS
-        if waited < limit:
-            progress(STILL_STARTING)
-    return launched
+        progress(STARTING_QUIETLY if launched else WAITING_QUIETLY)
+        # Will, October 30, 2026: on his computer the connection came only after he pressed Alt+Tab to
+        # Thunderbird and back, in both window choices. Windows lets a program with no window on
+        # screen run slowly. So Voice Companion does the same, for him: first Thunderbird's window is
+        # shown without the keyboard; if that is not enough, it comes to the front for a moment and
+        # the keyboard comes straight back. Then it goes back out of the way.
+        waited = NOTICE_SECONDS
+        for stage, wait_for in ((1, WAKE_SECONDS[0]), (2, WAKE_SECONDS[1])):
+            woken += wake(system, stage, note)
+            if user_stop.wait(relay.connected, wait_for):
+                return launched
+            waited += wait_for
+        while waited < limit:
+            if user_stop.wait(relay.connected, PROGRESS_SECONDS):
+                return launched
+            waited += PROGRESS_SECONDS
+            if waited < limit:
+                progress(STILL_STARTING)
+        return launched
+    finally:
+        if woken:
+            settle(system, woken, note)
 
 
 # ---- Installing Thunderbird ---------------------------------------------------
