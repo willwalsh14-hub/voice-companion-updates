@@ -63,6 +63,15 @@ class SpokenWordTests(unittest.TestCase):
         self.assertEqual(yp.spoken_item(item), 'Cats. Pets. 3 minutes 5 seconds. 1,234 views. 2 days ago')
         self.assertIsNone(yp.item_from_raw({'container': 'link', 'href': '/watch?v=x'}))   # no name: left out, no crash
 
+    def test_youtubes_short_ages_and_a_bare_count_are_said_in_words(self):
+        # Real youtube.com, October 2026: a channel's videos say "960K" and "2w ago".
+        item = yp.item_from_raw({'container': 'yt-lockup-view-model video', 'title': 'Moon base', 'href': '/watch?v=abc',
+                                 'rows': [['960K', '2w ago']], 'badge': '9:01'})
+        self.assertEqual(yp.spoken_item(item), 'Moon base. 9 minutes 1 second. 960 thousand views. 2 weeks ago')
+        self.assertEqual([yp.spoken_age(t) for t in ('1mo ago', '9y ago', '3d ago', '1h ago', 'Streamed 5h ago')],
+                         ['1 month ago', '9 years ago', '3 days ago', '1 hour ago', 'Streamed 5 hours ago'])
+        self.assertEqual(yp.spoken_age('2 weeks ago'), '2 weeks ago')
+
     def test_chapters_written_in_a_description(self):
         self.assertEqual(yp.chapters_from_description('Hello\n0:00 Intro\n1:10 - Part one\n12:30 The end'),
                          [{'title': 'Intro', 'time': 0}, {'title': 'Part one', 'time': 70}, {'title': 'The end', 'time': 750}])
@@ -210,20 +219,32 @@ class MenuAndSearchTests(NoBrowser):
 
     def test_youtube_opens_on_the_youtube_menu(self):
         self.assertEqual(self.app.handle('YouTube.', 'media_menu'), 'youtube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Search (S), 1 of 9. Control+F.')
         self.started.assert_not_called()   # the menu is said at once; no page loads for it
         names, index, _ = self.app.menu_state('youtube')
-        self.assertEqual(names, ['Search', 'Home', 'Subscriptions', 'History', 'Watch later', 'Liked videos',
-                                 'My playlists', 'Sign in'])
+        self.assertEqual(names, ['Search', 'Home', 'Subscriptions', 'New from subscriptions', 'History', 'Watch later', 'Liked videos',
+                                 'My playlists', 'Sign in or sign out'])   # not known yet: no page has said
         self.assertEqual(index, 0)
         self.press('Down')
-        self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'Home (H), 2 of 9.')
         self.press('Right')   # as in the other menus, Right and Left move too
-        self.assertEqual(self.said[-1], 'Subscriptions (S), 3 of 8.')
+        self.assertEqual(self.said[-1], 'Subscriptions (S), 3 of 9.')
         self.press('Home'); self.press('Up')
-        self.assertEqual(self.said[-1], 'Start of list. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'Start of list. Search (S), 1 of 9. Control+F.')
         self.press('End'); self.press('Down')
-        self.assertEqual(self.said[-1], 'End of list. Sign in (S), 8 of 8.')
+        self.assertEqual(self.said[-1], 'End of list. Sign in or sign out (S), 9 of 9.')
+
+    def test_the_account_item_says_what_youtube_said_last_time(self):
+        # Will, October 29: it said Sign in while he was signed in. A page's answer is kept for next time.
+        s = ys.screen(self.app)
+        s.signed_in = True
+        self.assertEqual((self.root / 'youtube-account.json').read_text(encoding='utf-8'), '{"signed_in": true}')
+        with patch.object(ys, 'SCREEN', None):
+            fresh = ys.screen(self.app)
+            self.assertIs(fresh.signed_in, True)
+            self.assertEqual(fresh.label({'kind': 'menu'}, ('@account', '', '@account')), 'Sign out')
+            fresh.signed_in = False
+            self.assertEqual(fresh.label({'kind': 'menu'}, ('@account', '', '@account')), 'Sign in')
 
     def test_first_letters_move_in_the_menu_and_are_not_video_keys(self):
         from input_parity import screen_key
@@ -233,9 +254,9 @@ class MenuAndSearchTests(NoBrowser):
         self.assertIsNone(screen_key('youtube', 'h', 0, context))   # H lists chapters only on a video list
         self.assertEqual(screen_key('youtube', 'f', 4, context), 'Ctrl+F')
         self.press('Letter:h')
-        self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'Home (H), 2 of 9.')
         self.press('Letter:h')
-        self.assertEqual(self.said[-1], 'History (H), 4 of 8.')
+        self.assertEqual(self.said[-1], 'History (H), 5 of 9.')
         self.press('Letter:z')
         self.assertEqual(self.said[-1], 'No menu item starts with Z.')
 
@@ -244,7 +265,7 @@ class MenuAndSearchTests(NoBrowser):
         self.press('Down'); self.press('Enter')
         self.assertEqual(self.loaded, ['home'])
         for name, feed in (('Watch later', 'watch_later'), ('My playlists', 'playlists'), ('Liked videos', 'liked'),
-                           ('History', 'history'), ('Subscriptions', 'subscriptions')):
+                           ('History', 'history'), ('Subscriptions', 'channels'), ('New from subscriptions', 'subscriptions')):
             with self.subTest(name=name):
                 self.assertEqual(self.app.handle(name, 'youtube'), 'youtube')
                 self.assertEqual(self.loaded[-1], feed)
@@ -276,7 +297,7 @@ class MenuAndSearchTests(NoBrowser):
         self.press('Enter')
         self.assertEqual(self.said[-1], ys.SEARCH_PROMPT)
         self.press('Escape')
-        self.assertEqual(self.said[-1], 'Search canceled. YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'Search canceled. YouTube menu. Search (S), 1 of 9. Control+F.')
         self.assertNotIn('task_input', self.app.app_context('youtube'))
         self.app.handle('Search YouTube.', 'youtube')
         self.assertEqual(self.said[-1], ys.SEARCH_PROMPT)
@@ -345,12 +366,12 @@ class MenuAndSearchTests(NoBrowser):
                      'items': [{'kind': 'video', 'id': 'a', 'title': 'A', 'url': '', 'channel': ''}]})
         self.assertFalse(self.app.app_context('youtube')['menu_letters'])   # letters are video keys on a list
         self.assertEqual(self.press('Escape'), 'youtube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 9.')
         self.assertEqual(self.app.handle('YouTube menu', 'youtube'), 'youtube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Home (H), 2 of 9.')
         # F5 on the menu has no list to load again; it never opens Home by itself.
         self.press('F5')
-        self.assertEqual(self.said[-1], 'There is no list here to load again. Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'There is no list here to load again. Home (H), 2 of 9.')
         self.assertEqual(self.loaded, [])
 
 

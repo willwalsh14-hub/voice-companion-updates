@@ -1,18 +1,26 @@
 {
-  "version": "0.2.179-test",
+  "version": "0.2.180-test",
   "status": "Testing build",
   "date": "October 29, 2026",
-  "baseline": "0.2.178-test",
-  "scope": "Podcasts and the radio play again.",
+  "baseline": "0.2.179-test",
+  "scope": "YouTube lists are complete and in order, and your account is shown correctly.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Saved episodes play first",
+          "title": "Long YouTube lists",
           "details": [
-            "If an episode is already downloaded, Voice Companion plays the saved copy. It starts at once, even with no internet.",
-            "A slow episode no longer fails. You hear Loading, and it plays when it is ready."
+            "Search results, Home, History and other lists keep going. More videos load as you move down.",
+            "Page Down and Page Up move ten at a time. You can also say next page or previous page.",
+            "Filters work the same way. Every page of filtered results loads too."
+          ]
+        },
+        {
+          "title": "Subscriptions",
+          "details": [
+            "Subscriptions now lists every channel you follow.",
+            "New from subscriptions has their newest videos."
           ]
         }
       ]
@@ -21,11 +29,12 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Podcasts and radio",
+          "title": "YouTube",
           "details": [
-            "Podcasts said they could not start after you used the web browser. They play again.",
-            "If the player has a problem, Voice Companion starts it fresh and tries once more.",
-            "If an episode still cannot play, you hear what to do next."
+            "History is in the right order again, newest first.",
+            "The menu says Sign out when you are signed in, and Sign in when you are not.",
+            "Short ages are said in words, such as 2 weeks ago.",
+            "Lists work the same with Chrome in the background."
           ]
         }
       ]

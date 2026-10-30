@@ -56,7 +56,7 @@ def run(source, args):
     groups = ([[m] for m in sorted(p.stem for p in source.glob('test_*.py'))] + [['smoke_tests']]
               if args.each else [release_modules(source)])
     if args.live:
-        groups.append(['test_web_live', 'test_consumer_web', 'test_web_semantics', 'test_web_fixes', 'test_web_modes_live', 'test_web_history', 'test_web_fields', 'test_web_media_live', 'test_browser_window_live', 'test_youtube_live'])
+        groups.append(['test_web_live', 'test_consumer_web', 'test_web_semantics', 'test_web_fixes', 'test_web_modes_live', 'test_web_history', 'test_web_fields', 'test_web_media_live', 'test_browser_window_live', 'test_youtube_live', 'test_youtube_data_live'])
     for modules in groups:
         result = subprocess.run([sys.executable, '-m', 'unittest', '-q', *modules], cwd=source, env=env,
                                 capture_output=True, text=True, timeout=3600)

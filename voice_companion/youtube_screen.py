@@ -34,6 +34,7 @@ companion module.
 """
 import re
 import time
+from pathlib import Path
 
 import youtube_page as yp
 from menu_navigation import announce_item, spoken_key
@@ -76,8 +77,16 @@ KEYS.update({str(n): 'jump to ' + str(n * 10) + ' percent' for n in range(1, 10)
 HOME_EMPTY = ('YouTube shows no Home videos yet. It picks them from what you watch. '
               'Press Control+F to search, or say search for, and your words, such as search for jazz.')
 # The YouTube menu: (name, key, action). '@account' is Sign in or Sign out.
-MENU = (('Search', 'Ctrl+F', 'search prompt'), ('Home', '', 'home'), ('Subscriptions', '', 'subscriptions'),
-        ('History', '', 'history'), ('Watch later', '', 'watch_later'), ('Liked videos', '', 'liked'),
+# Lists read whole when they open (every subscribed channel); others load part by part.
+COMPLETE_LISTS = ('channels',)
+COMPLETE_LIMIT = 3000
+PAGE = 10          # Page Down and Page Up move this many items
+PREFETCH = 5       # the next part is fetched when this few items are left
+MORE_WAITING = ', and more load as you move down. '
+# Subscriptions is every channel you subscribe to (Will, October 29, 2026); their newest
+# videos are their own item.
+MENU = (('Search', 'Ctrl+F', 'search prompt'), ('Home', '', 'home'), ('Subscriptions', '', 'channels'),
+        ('New from subscriptions', '', 'subscriptions'), ('History', '', 'history'), ('Watch later', '', 'watch_later'), ('Liked videos', '', 'liked'),
         ('My playlists', '', 'playlists'), ('@account', '', '@account'))
 MENU_TITLE = 'YouTube menu'
 MENU_KINDS = ('menu', 'filters', 'choices')   # lists where letters move to the next name
@@ -164,7 +173,8 @@ class YouTubeScreen:
         self.spoken = None        # spoken search words that wait for "confirm" or Enter
         self.entry = None         # (stamp, text) for the command box: the window shows text there once
         self.hinted = False       # the filter key was said after a search
-        self.signed_in = None     # True or False once a page said so; None before
+        # True or False once a page said so; remembered from the last time, until a page says again.
+        self._signed_in = self.saved_sign_in()
         self.skip = 10
         self.list_page = None
         self.video_page = None
@@ -178,6 +188,49 @@ class YouTubeScreen:
         self.opened_window = False  # a browser window or tab opened; the keyboard comes back to Companion
         self.lists = yp.YouTubePage(lambda: self.list_page)
         self.player = yp.YouTubePage(lambda: self.video_page)
+
+    # ------------------------------------------------------------ signed in or not
+    ACCOUNT_FILE = 'youtube-account.json'
+
+    def saved_sign_in(self):
+        try:
+            import json
+            value = json.loads((Path(self.m.APP) / self.ACCOUNT_FILE).read_text(encoding='utf-8')).get('signed_in')
+        except Exception:
+            return None
+        return value if isinstance(value, bool) else None
+
+    @property
+    def signed_in(self):
+        return self._signed_in
+
+    @signed_in.setter
+    def signed_in(self, value):
+        value = value if isinstance(value, bool) else None
+        changed = value != self._signed_in
+        self._signed_in = value
+        if value is None or not changed:
+            return
+        try:
+            import json
+            from storage import write_text_atomic
+            write_text_atomic(Path(self.m.APP) / self.ACCOUNT_FILE, json.dumps({'signed_in': value}))
+        except Exception:
+            pass   # known again from the next page
+
+    def check_signed_in(self):
+        """Ask the page whether you are signed in. Loads Home first when no YouTube page is open."""
+        page = self.list_page if self.alive(self.list_page) else self.video_page if self.alive(self.video_page) else None
+        try:
+            if page is None or not yp.is_youtube(page.url):
+                self.go(yp.feed_url('home'))
+                page = self.list_page
+            signed = yp.YouTubePage(lambda: page).signed_in()
+        except YouTubeError:
+            return self.signed_in
+        if signed is not None:
+            self.signed_in = signed
+        return self.signed_in
 
     # ------------------------------------------------------------ the browser
     def web(self):
@@ -295,7 +348,7 @@ class YouTubeScreen:
             return yp.spoken_item(item)
         if kind == 'menu':
             if item[0] == '@account':
-                return 'Sign out' if self.signed_in else 'Sign in'
+                return {True: 'Sign out', False: 'Sign in'}.get(self.signed_in, 'Sign in or sign out')
             return item[0]
         if kind == 'comments':
             return yp.spoken_comment(item)
@@ -338,7 +391,7 @@ class YouTubeScreen:
         count = len(view.get('items') or [])
         intro = view['title'] + '. '
         if view['kind'] == 'list' and count:
-            intro += str(count) + (' item. ' if count == 1 else ' items. ')
+            intro += str(count) + (' item' if count == 1 else ' items') + (MORE_WAITING if view.get('token') else '. ')
         return self.describe(lead + intro)
 
     # ------------------------------------------------------------ the YouTube menu
@@ -354,6 +407,13 @@ class YouTubeScreen:
 
     def show_menu(self, lead=''):
         self.to_menu()
+        if self.alive(self.list_page):
+            try:
+                signed = self.lists.signed_in()   # Sign in or Sign out, as the page says now
+                if signed is not None:
+                    self.signed_in = signed
+            except Exception:
+                pass
         return self.describe(lead + MENU_TITLE + '. ')
 
     def menu_choice(self, item):
@@ -361,6 +421,8 @@ class YouTubeScreen:
         if action == 'search prompt':
             return self.ask_search()
         if action == '@account':
+            if self.engine() != 'webview2':
+                self.check_signed_in()   # what the page says now, not what was known before
             return self.sign_out() if self.signed_in else self.sign_in()
         self.m.speak_status('Loading ' + yp.FEEDS[action][0] + '.')
         return self.load(action)
@@ -375,9 +437,15 @@ class YouTubeScreen:
             return self.ask_switch('library')
         title, _ = yp.FEEDS[name]
         notice = self.go(yp.feed_url(name))
-        items, facts = self.lists.read_list()
+        try:
+            items, facts = self.lists.read_list()
+        except yp.SignedOut:
+            # Signed out, YouTube sends your own lists to Google's sign-in page.
+            self.signed_in = False
+            return notice + SIGN_IN_NEEDED.format(action='see ' + title.lower())
         self.note_signed(facts)
-        view = {'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': items}
+        view = {'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': items,
+                'token': facts.get('token') or '', 'data': facts.get('source') == 'data'}
         if not items:
             if facts.get('promoSignIn') or name in yp.ACCOUNT_FEEDS and facts.get('signedIn') is False:
                 return notice + SIGN_IN_NEEDED.format(action='see ' + title.lower())
@@ -388,6 +456,10 @@ class YouTubeScreen:
                 view['empty'] = title + ' is empty.'
             else:
                 return notice + yp.CHANGED
+        if name in COMPLETE_LISTS:
+            # Your subscribed channels: every one, so the list is whole and first letters find any channel.
+            while view['token'] and len(view['items']) < COMPLETE_LIMIT and self.more(view):
+                pass
         self.to_menu()
         return self.push(view, notice + lead)
 
@@ -458,7 +530,8 @@ class YouTubeScreen:
         # New results replace any list, so Escape goes back to the YouTube menu.
         self.to_menu()
         title = 'Results for ' + query + ('. Filters: ' + summary if summary else '')
-        said = self.push({'kind': 'list', 'name': 'search', 'title': title, 'url': url, 'items': items}, notice)
+        said = self.push({'kind': 'list', 'name': 'search', 'title': title, 'url': url, 'items': items,
+                          'token': facts.get('token') or '', 'search': True, 'data': facts.get('source') == 'data'}, notice)
         if not self.hinted:
             self.hinted = True
             said += FILTER_KEY_HINT
@@ -576,22 +649,59 @@ class YouTubeScreen:
         if not view or not view['items']:
             return self.describe()
         old = view['index']
-        count = len(view['items'])
         if to is not None:
-            view['index'] = 0 if to == 'first' else count - 1
+            if to == 'last' and view['kind'] == 'list' and view.get('token') and old == len(view['items']) - 1:
+                return self.move(1)   # End again at the end of what is loaded: the next part
+            view['index'] = 0 if to == 'first' else len(view['items']) - 1
             if view['index'] == old:
                 return ('Start of list. ' if to == 'first' else 'End of list. ') + self.describe()
             return self.describe()
-        new = old + step
-        if new >= count and view['kind'] == 'list' and view.get('url') and self.more(view):
-            new = min(new, len(view['items']) - 1)
-        if not 0 <= new < len(view['items']):
-            return ('Start of list. ' if step < 0 else 'End of list. ') + self.describe()
-        view['index'] = new
+        target = old + step
+        loaded = False
+        if target >= len(view['items']) and view['kind'] == 'list' and view.get('url'):
+            loaded = self.more(view)   # said by the new count: "6 of 26"
+        last = len(view['items']) - 1
+        if target < 0:
+            if old == 0:
+                return 'Start of list. ' + self.describe()
+            target = 0
+        elif target > last:
+            if old == last:
+                return 'End of list. ' + self.describe()
+            target = last
+        view['index'] = target
+        # Near the end of a long list, the next part is fetched before it is needed.
+        if not loaded and view['kind'] == 'list' and view.get('token') and last - target < PREFETCH:
+            self.more(view)
         return self.describe()
 
+    def page_move(self, direction):
+        """Page Down and Page Up: ten items at a time. At the end of what is loaded, the next part loads."""
+        return self.move(PAGE * direction)
+
     def more(self, view):
-        """At the end of a long list, ask the site for more. True when more came."""
+        """At the end of a long list, ask YouTube for its next part. True when more came."""
+        if view.get('token'):
+            page = self.list_page if self.alive(self.list_page) else self.video_page if self.alive(self.video_page) else None
+            if page is None or not yp.is_youtube(getattr(page, 'url', '')):
+                return False
+            reader = yp.YouTubePage(lambda: page)
+            known = {yp.item_key(i) for i in view['items']}
+            for _ in range(3):   # a part may hold only items already listed (or only ads)
+                try:
+                    items, token = reader.next_part(view['token'], view.get('search'))
+                except YouTubeError:
+                    return False
+                view['token'] = token
+                added = [i for i in items if yp.item_key(i) not in known]
+                if added:
+                    view['items'].extend(added)
+                    return True
+                if not token:
+                    return False
+            return False
+        if view.get('data'):
+            return False   # YouTube sent the whole list: there is no next part
         page = self.list_page
         if not self.alive(page) or not yp.same_address(page.url, view['url']):
             return False   # the tab shows another list now; its videos must not join this one
@@ -601,8 +711,8 @@ class YouTubeScreen:
             items, _ = self.lists.read_list()
         except YouTubeError:
             return False
-        known = {(i['kind'], i['id'] or i['url'] or i['title']) for i in view['items']}
-        added = [i for i in items if (i['kind'], i['id'] or i['url'] or i['title']) not in known]
+        known = {yp.item_key(i) for i in view['items']}
+        added = [i for i in items if yp.item_key(i) not in known]
         view['items'].extend(added)
         return bool(added)
 
@@ -649,7 +759,8 @@ class YouTubeScreen:
         items, facts = self.lists.read_list()
         if not items:
             return notice + (title + ' has no videos to show.' if facts.get('empty') else yp.CHANGED)
-        return self.push({'kind': 'list', 'name': name, 'title': title, 'url': url, 'items': items}, notice)
+        return self.push({'kind': 'list', 'name': name, 'title': title, 'url': url, 'items': items,
+                          'token': facts.get('token') or '', 'data': facts.get('source') == 'data'}, notice)
 
     # ------------------------------------------------------------ playing
     def play(self, item, lead=''):
@@ -1454,7 +1565,7 @@ def navigation_key(m, key):
     if view and view['kind'] in MENU_KINDS and key in ('Left', 'Right'):
         return 'previous' if key == 'Left' else 'next'   # as in the app's other menus
     return {'Up': 'previous', 'Down': 'next', 'Home': 'first item', 'End': 'last item', 'Enter': 'enter',
-            'Escape': 'go back', 'Left': 'skip back', 'Right': 'skip forward'}.get(key)
+            'Escape': 'go back', 'Left': 'skip back', 'Right': 'skip forward', 'Next': 'page down', 'Prior': 'page up'}.get(key)
 
 
 def open_screen(m, mode, lead=''):
@@ -1513,8 +1624,9 @@ COMMANDS = {
     'sign out': 'sign out', 'sign out of youtube': 'sign out', 'log out': 'sign out',
     # lists
     'home': 'home', 'youtube home': 'home', 'home feed': 'home', 'go home': 'home', 'recommended': 'home',
-    'subscriptions': 'subscriptions', 'new from subscriptions': 'subscriptions', 'subscription videos': 'subscriptions',
-    'my subscriptions': 'channels', 'subscribed channels': 'channels', 'my channels': 'channels',
+    'subscriptions': 'channels', 'my subscriptions': 'channels', 'subscribed channels': 'channels', 'my channels': 'channels',
+    'new from subscriptions': 'subscriptions', 'subscription videos': 'subscriptions', 'new from my subscriptions': 'subscriptions',
+    'new subscription videos': 'subscriptions', 'latest from subscriptions': 'subscriptions',
     'history': 'history', 'watch history': 'history', 'my history': 'history',
     'watch later': 'watch_later', 'my watch later': 'watch_later', 'watch later list': 'watch_later',
     'liked videos': 'liked', 'my liked videos': 'liked',
@@ -1527,6 +1639,7 @@ COMMANDS = {
     'refresh youtube': 'refresh', 'refresh': 'refresh', 'reload': 'refresh', 'load more': 'more', 'more videos': 'more',
     'open in browser': 'browser', 'show the page': 'browser', 'use the page': 'browser', 'open the page': 'browser',
     'where am i': 'where', 'what list is this': 'where',
+    'page down': 'page down', 'next page': 'page down', 'page up': 'page up', 'previous page': 'page up',
     'next': 'next item', 'previous': 'previous item', 'first item': 'first', 'last item': 'last', 'start of list': 'first',
     'end of list': 'last', 'top of list': 'first', 'bottom of list': 'last', 'next item': 'next item', 'previous item': 'previous item',
     'enter': 'enter', 'that one': 'enter', 'play that one': 'enter', 'open': 'enter', 'open it': 'enter', 'play it': 'enter',
@@ -1751,6 +1864,7 @@ def run(m, s, action, raw, command):
         'menu': s.show_menu, 'clear filters': s.clear_filters, 'where': s.where,
         'next item': lambda: s.move(1), 'previous item': lambda: s.move(-1), 'first': lambda: s.move(to='first'),
         'last': lambda: s.move(to='last'), 'enter': s.enter,
+        'page down': lambda: s.page_move(1), 'page up': lambda: s.page_move(-1),
     }
     if action == 'play' and not s.has_video():
         # "Play" on a chosen video, before any video plays: play it, as Enter does.

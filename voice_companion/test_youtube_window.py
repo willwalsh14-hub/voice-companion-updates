@@ -238,9 +238,9 @@ class YouTubeSearchCustomerTests(unittest.TestCase):
 
     def test_type_a_search_and_press_enter(self):
         self.say('YouTube')
-        self.assertEqual(self.said[-1], 'YouTube menu. Search (S), 1 of 8. Control+F.')
+        self.assertEqual(self.said[-1], 'YouTube menu. Search (S), 1 of 9. Control+F.')
         self.keys(('h', 0))
-        self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'Home (H), 2 of 9.')
         self.keys(('f', 4))
         self.assertEqual(self.said[-1], self.ys.SEARCH_PROMPT)
         self.type('kjl fm cats')
@@ -273,7 +273,7 @@ class YouTubeSearchCustomerTests(unittest.TestCase):
         self.assertTrue(self.said[-1].startswith('Search canceled. YouTube menu.'), self.said[-1])
         self.assertEqual(self.box(), '')
         self.keys(('h', 0))
-        self.assertEqual(self.said[-1], 'Home (H), 2 of 8.')
+        self.assertEqual(self.said[-1], 'Home (H), 2 of 9.')
 
 
 if __name__ == '__main__':

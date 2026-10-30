@@ -225,7 +225,7 @@ $audioResult = Invoke-UnitTests 'Audio player checks' @('-q','test_consumer_audi
 if ($audioResult -ne 0) { throw 'The audio player checks failed.' }
 # Page checks run in Playwright's Chromium (prepared above for the extension checks).
 $env:PLAYWRIGHT_BROWSERS_PATH = $extensionTestRuntime
-$liveResult = Invoke-UnitTests 'Real browser checks' @('-v','test_web_live','test_consumer_web','test_web_semantics','test_web_modes_live','test_web_history','test_web_fields','test_web_media_live','test_browser_window_live','test_youtube_live')
+$liveResult = Invoke-UnitTests 'Real browser checks' @('-v','test_web_live','test_consumer_web','test_web_semantics','test_web_modes_live','test_web_history','test_web_fields','test_web_media_live','test_browser_window_live','test_youtube_live','test_youtube_data_live')
 if ($liveResult -ne 0) { throw 'The real browser page and application keyboard accessibility checks failed.' }
 $env:PLAYWRIGHT_BROWSERS_PATH = $browserRuntime
 Remove-Item Env:VOICE_COMPANION_REQUIRE_WEB_TESTS
@@ -443,14 +443,14 @@ if ($LASTEXITCODE -ne 0) { throw 'The installed native browser connection failed
 & $python (Join-Path $PSScriptRoot 'check_extension_browser.py') $installedFolder $extensionTestRuntime
 if ($LASTEXITCODE -ne 0) { throw 'The installed extension did not preserve the standard browser navigation and forms.' }
 $installedVersion = & $installedDiagnostics --version
-if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.179-test$')) {
+if ($LASTEXITCODE -ne 0 -or -not (($installedVersion -join ' ') -match '^Voice Companion 0\.2\.180-test$')) {
   throw 'The installed program is not the current Voice Companion build.'
 }
 & $installedDiagnostics --refresh-guides
 if ($LASTEXITCODE -ne 0) { throw 'The installed documentation did not copy and verify in Documents.' }
 & $installedDiagnostics --check-runtime
 if ($LASTEXITCODE -ne 0) { throw 'The installed program is missing a runtime component.' }
-Write-Output 'INSTALL PASSED. Voice Companion 0.2.179-test is installed. Use the desktop icon or Start menu.'
+Write-Output 'INSTALL PASSED. Voice Companion 0.2.180-test is installed. Use the desktop icon or Start menu.'
 if ($Unattended) {
   & (Join-Path $PSScriptRoot 'test-update-audio.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Updater microphone release checks failed.' }
@@ -489,7 +489,7 @@ Write-Output "COPY THIS INSTALLER TO OTHER COMPUTERS: $portableSetup"
 Write-Output 'The temporary runnable EXEs have been removed to avoid confusing them with Setup.'
 
 # Record exactly the installer that passed all packaged and installed checks.
-@{ version = '0.2.179-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
+@{ version = '0.2.180-test'; sha256 = (Get-FileHash -LiteralPath $portableSetup -Algorithm SHA256).Hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $portableSetup).Length } |
   ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding UTF8
 if (-not $NoPublish) {
   Invoke-BuildPublishing
