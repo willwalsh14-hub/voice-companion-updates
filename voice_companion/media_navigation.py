@@ -292,6 +292,8 @@ class MediaNavigation:
         elif cmd in ('list downloads','downloaded podcasts'):self.view='downloads';self.focus='items'
         elif cmd in ('list recordings','list radio recordings'):self.view='recordings';self.focus='items'
         elif cmd in ('list scheduled recordings','what recordings are scheduled'):self.view='scheduled';self.focus='items'
+        # A player key on the controls list (Space, Control+Left) keeps you on the control you chose.
+        elif self.view=='controls' and self.focus=='items':self.revision+=1;return result
         elif self.section=='podcast' and getattr(h,'browsing_categories',False):self.view='categories';self.focus='items'
         elif self.section=='podcast' and self.view=='categories' and h.shows and getattr(h,'shows_category',None):self.view='shows';self.focus='items'
         elif h.browsing_episodes and self.section=='podcast':self.view='episodes';self.focus='items'
