@@ -207,5 +207,17 @@ class ReaderFindToleratesSpeech(DocumentFlowCase):
         self.assertEqual(self.last(), 'Please say the words to find after find.')
 
 
+class ReaderWarningsAreReadOnce(unittest.TestCase):
+    """Before: a scanned PDF said "...check against the original image.. " with a doubled period."""
+    def test_no_doubled_period(self):
+        from document_reader import DocumentReader
+        from file_manager import FileManager
+        reader = DocumentReader('scan.pdf', 'Dear Bob.')
+        reader.warnings = ['Page 1: offline OCR text.', '3 OCR lines on page 1 have low confidence. Check against the original image.']
+        said = FileManager.__new__(FileManager).finish_open(reader)
+        self.assertNotIn('..', said)
+        self.assertIn('original image. Dear Bob.', said)
+
+
 if __name__ == '__main__':
     unittest.main()

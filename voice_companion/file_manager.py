@@ -405,5 +405,5 @@ class FileManager:
         return self.start_job(lambda:self.backend.operate(action,paths,**kwargs),lambda _:self.after_change('File action complete.'),'Working on '+str(len(paths))+(' item.' if len(paths)==1 else ' items.'),mutating=True)
     def after_change(self,message):
         self.selected.clear();self.refresh_here();return message+' Refreshing folder.'
-    def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+(' '.join(reader.warnings[:3])+'. ' if reader.warnings else '')+reader.reading.read(True)
+    def finish_open(self,reader):self.opened=reader;return 'Opened '+reader.title+'. Read-only document. '+''.join(w.rstrip(' .')+'. ' for w in reader.warnings[:3])+reader.reading.read(True)
     def finish_pick(self,path):self.opened=path;return 'Selected '+path.name+'.'
