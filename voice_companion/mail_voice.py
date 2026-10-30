@@ -65,6 +65,9 @@ EVERYDAY_COMMANDS = {
     'check my mail': 'refresh messages', 'check for new mail': 'refresh messages', 'check for new email': 'refresh messages',
     'check for new messages': 'refresh messages', 'check for mail': 'refresh messages', 'refresh': 'refresh messages',
     'refresh inbox': 'refresh messages', 'refresh the inbox': 'refresh messages', 'refresh the list': 'refresh messages',
+    'what folder am i in': 'which folder', 'which folder am i in': 'which folder', 'what folder is this': 'which folder',
+    'go to message list': 'back to folder', 'go to the message list': 'back to folder',
+    'back to the message list': 'back to folder', 'back to message list': 'back to folder', 'back to the list': 'back to folder',
 }
 INBOX_WORDS = re.compile(r'(?:open|go to|back to|return to) (?:the |my )?inbox(?: folder)?')
 

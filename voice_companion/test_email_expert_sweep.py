@@ -66,6 +66,18 @@ class MarkingWordsTests(CompanionCase):
         self.assertEqual(mail.process('unmark message'), 'Unmarked message 2. 2 selected.')
 
 
+class EverydayWordsTests(CompanionCase):
+    def test_what_folder_am_i_in_and_go_to_message_list(self):
+        # Before: "I did not understand that." and "I could not find that folder."
+        mail = MailSession('thunderbird', self.folder, Mailbox)
+        mail.process('list messages')
+        mail.process('open message')
+        self.assertEqual(mail.process('What folder am I in?'), 'You are in Inbox. A message is open.')
+        self.assertEqual(mail.process('Go to the message list.'),
+                         'Back to Inbox. Person 1. Lunch on Friday. October 2, 2026. 1 of 4.')
+        self.assertEqual(mail.view, 'folder')
+
+
 class NothingMovedTests(CompanionCase):
     def test_moving_to_the_folder_you_are_in_says_nothing_changed(self):
         # Before: "1 message moved." while the message stayed where it was.
