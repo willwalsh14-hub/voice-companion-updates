@@ -775,6 +775,7 @@ def email_by_name(m, command, mode):
     explicit = not command.startswith(('email ', 'e mail '))
     if name in RESERVED or name.startswith(('to ', 'list', 'draft', 'the sender')) or '@' in name or len(name.split()) > 5:
         return None     # a command word, an address, or a sentence ("write to the council about the road")
+    unread = ''         # why Thunderbird's contacts could not be read just now
     if mode == MODE and CONTACTS:
         contacts = CONTACTS
     else:
@@ -783,7 +784,11 @@ def email_by_name(m, command, mode):
         # Thunderbird's contacts not read yet (Thunderbird not started): read them now, starting it.
         if contacts_book.CACHE['at'] is None and thunderbird_pim.usable(m.APP):
             contacts = people.load()
+            unread = people.notice
     matches = contacts_book.find(contacts, name)
+    if not matches and unread and len(name.split()) <= 3:
+        m.speak(unread)     # not "No contact named John": John may be in Thunderbird, which did not answer
+        return mode
     if not matches:
         if not explicit or len(name.split()) > 3:
             return None     # maybe another command, or a sentence ("write to the council about the road")

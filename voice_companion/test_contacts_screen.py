@@ -379,6 +379,17 @@ class ContactsScreenTests(CompanionHarness):
         mode = self.open()
         self.assertEqual(self.press('Escape', mode), 'awake')
 
+    def test_email_by_name_says_why_when_thunderbird_contacts_cannot_be_read(self):
+        # Not "No contact named John": John may be in Thunderbird, which did not answer.
+        reason = 'Thunderbird did not let Voice Companion read its address books. Close Thunderbird, then try again.'
+        with mock.patch.object(thunderbird_pim, 'contacts', side_effect=thunderbird_pim.PimError(reason)):
+            for words in ('Email John.', 'Send an email to John Smith'):
+                with self.subTest(words=words):
+                    contacts_book.CACHE['at'] = None
+                    self.assertEqual(app.handle(words, 'awake'), 'awake')
+                    self.assertEqual(self.said(), reason)
+                    self.assertIsNone(app.email_draft)
+
     def test_email_a_contact_by_name_from_the_main_menu(self):
         mode = app.handle('Email John.', 'awake')
         self.assertEqual((mode, app.email_draft.recipient, app.email_draft.compose_step), ('email_draft', 'john@example.com', 'subject'))
