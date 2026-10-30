@@ -37,7 +37,10 @@ class ConsumerAudioTests(unittest.TestCase):
             self.player.open(path.as_uri(),'Local fixture','local')
             self.assertEqual(self.player.kind,'local')
             self.assertFalse(self.player.status()['paused'])
-            self.assertAlmostEqual(self.player.adjust('volume',-.4),.6)
+            # Media starts at half volume (tester, October 2026); the level the user picks is kept.
+            self.assertEqual(self.page.evaluate("document.getElementById('audio').volume"),.5)
+            self.assertAlmostEqual(self.player.adjust('volume',.1),.6)
+            self.assertEqual(MediaPlayer(self.folder).volume,.6)
             self.player.set_ducked(True)
             self.assertAlmostEqual(self.page.evaluate("document.getElementById('audio').volume"),.108)
             self.player.set_ducked(False)
@@ -114,8 +117,8 @@ class ConsumerAudioTests(unittest.TestCase):
         self.hub.stations=[{'name':'Fixture station','url':'https://audio.consumer.test/valid'}];self.hub.station_index=0
         nav=MediaNavigation(self.hub,'radio');nav.keyboard('Enter')
         self.assertEqual(self.player.kind,'radio');self.assertFalse(self.page.locator('#audio').evaluate('(a)=>a.paused'))
-        self.player.set_ducked(True);self.assertAlmostEqual(self.page.locator('#audio').evaluate('(a)=>a.volume'),.18)
-        self.player.set_ducked(False);self.assertEqual(self.page.locator('#audio').evaluate('(a)=>a.volume'),1)
+        self.player.set_ducked(True);self.assertAlmostEqual(self.page.locator('#audio').evaluate('(a)=>a.volume'),.09)
+        self.player.set_ducked(False);self.assertEqual(self.page.locator('#audio').evaluate('(a)=>a.volume'),.5)
         nav.command('pause');self.assertTrue(self.page.locator('#audio').evaluate('(a)=>a.paused'))
         nav.command('resume');self.assertFalse(self.page.locator('#audio').evaluate('(a)=>a.paused'))
         nav.command('stop');self.assertTrue(self.page.locator('#audio').evaluate('(a)=>a.paused'))

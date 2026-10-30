@@ -27,7 +27,7 @@
         "name": "setupPage",
         "type": "function",
         "async": true,
-        "description": "The add account page's title, messages and main button. Resolves to {open, title, notes, button, canContinue, needsPassword}.",
+        "description": "The add account page's title, messages, main button, and the ways it offers to connect. Resolves to {open, title, notes, button, canContinue, needsPassword, fields, addressFilled, choices}.",
         "parameters": []
       },
       {
@@ -125,6 +125,13 @@
             "type": "string"
           }
         ]
+      },
+      {
+        "name": "about",
+        "type": "function",
+        "async": true,
+        "description": "Thunderbird's version, update channel (release or esr), profile folder, and how many messages are being written. Resolves to {version, channel, profile, composing}. Changes nothing.",
+        "parameters": []
       }
     ]
   }

@@ -71,8 +71,9 @@ class FakeSystem:
         return FakeProcess(self)
 
     def finish_install(self):
+        # winget's Mozilla.Thunderbird and Mozilla's thunderbird-latest download are both the Release channel.
         if self.install_works:
-            self.values.update(registered()); self.files.add(INSTALLED)
+            self.values.update(registered('155.0 (x64 en-US)')); self.files.add(INSTALLED)
 
     def clock(self):
         return self.now

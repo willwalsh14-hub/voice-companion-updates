@@ -441,14 +441,19 @@ class MailBridge {
 
   async setupPage() {
     const closed = {open: false, title: '', notes: [], button: '', canContinue: false, needsPassword: false, fields: [],
-      addressFilled: false};
+      addressFilled: false, choices: [], noteShapes: []};
     const setup = this.setup();
     if (!setup) return closed;
     try {
       const page = await setup.setupPage();
       return {open: Boolean(page.open), title: String(page.title || ''), notes: (page.notes || []).map(String).slice(0, 5),
         button: String(page.button || ''), canContinue: Boolean(page.canContinue), needsPassword: Boolean(page.needsPassword),
-        fields: (page.fields || []).map(String).slice(0, 12), addressFilled: Boolean(page.addressFilled)};
+        fields: (page.fields || []).map(String).slice(0, 12), addressFilled: Boolean(page.addressFilled),
+        // How the account connects, when Thunderbird offers a choice (Microsoft Graph, Exchange, IMAP).
+        choices: (page.choices || []).slice(0, 6).map(choice => ({label: String(choice && choice.label || '').slice(0, 80),
+          checked: Boolean(choice && choice.checked)})),
+        // How each notice is built (element kinds only), for error reports.
+        noteShapes: (page.noteShapes || []).slice(0, 5).map(item => String(item).slice(0, 400))};
     } catch (error) {
       return closed;
     }
@@ -574,14 +579,14 @@ class MailBridge {
         // same address may be tried once. A sign-in or other refusal is not retried.
         const reach = /timed out|timeout|refused|could not connect|unable to connect|connection|network/i.test(String(error && error.message || ''));
         if (!(reach && index + 1 < choices.length && copy)) {
-          throw MailBridge.fail('send', MailBridge.sendFailure(failure) + await this.serverWords(identity.id) + ' ' + (copy
+          throw MailBridge.fail('send', MailBridge.sendFailure(failure, account.type) + await this.serverWords(identity.id) + ' ' + (copy
             ? 'Your message is saved in Drafts in Thunderbird.'
             : 'Your message is still open in Thunderbird.'));
         }
         spare = copy;
       }
     }
-    throw MailBridge.fail('send', MailBridge.sendFailure(failure));
+    throw MailBridge.fail('send', MailBridge.sendFailure(failure, choices.length ? choices[choices.length - 1].account.type : ''));
   }
 
   // A compose window for this identity, minimized and filled in.
@@ -627,6 +632,20 @@ class MailBridge {
     }
   }
 
+  // Which Thunderbird this is: {version, channel, profile, composing}, or {} from an older Experiment.
+  // Voice Companion uses it to update Thunderbird safely and to check the same profile came back.
+  async about() {
+    const setup = this.api.voiceCompanionSetup;
+    if (!setup || typeof setup.about !== 'function') return {};
+    try {
+      const found = await setup.about() || {};
+      return {version: String(found.version || ''), channel: String(found.channel || ''), profile: String(found.profile || ''),
+        composing: Number.isInteger(found.composing) && found.composing > 0 ? found.composing : 0};
+    } catch (error) {
+      return {};
+    }
+  }
+
   // Voice Companion is closing and started Thunderbird: close Thunderbird too.
   async quit() {
     const setup = this.api.voiceCompanionSetup;
@@ -648,11 +667,23 @@ class MailBridge {
   }
 
   // Why sending failed, in plain words, from Thunderbird's error text (never the text itself).
-  static sendFailure(error) {
+  // An account type without the "extension:" Thunderbird puts before types added by its own modules:
+  // Thunderbird 159 lists a Microsoft Graph account as "extension:graph".
+  static baseType(type) {
+    return String(type || '').toLowerCase().replace(/^extension:/, '');
+  }
+
+  // type: the account's type. Microsoft Graph and Exchange ("ews") accounts do not send over SMTP.
+  static sendFailure(error, type = '') {
     const text = String(error && error.message || '');
+    const microsoft = MailBridge.MICROSOFT_TYPES.includes(MailBridge.baseType(type));
+    // Microsoft 365 through Graph or Exchange: the organization must approve Thunderbird for its mailboxes.
+    if (microsoft && /admin(istrator)? (approval|consent)|AADSTS65001|AADSTS90094|consent/i.test(text)) {
+      return 'Your organization must approve Thunderbird for Microsoft 365. Ask your IT administrator to allow Thunderbird.';
+    }
     // Microsoft 365: the organization has turned off sending from mail programs (SMTP AUTH),
     // or an administrator must approve Thunderbird. Only the organization can change this.
-    if (/SmtpClientAuthentication|5\.7\.139|admin(istrator)? (approval|consent)|AADSTS65001|AADSTS90094/i.test(text)) {
+    if (!microsoft && /SmtpClientAuthentication|5\.7\.139|admin(istrator)? (approval|consent)|AADSTS65001|AADSTS90094/i.test(text)) {
       return 'Your organization does not allow sending from mail programs like Thunderbird. ' +
         'Ask your IT administrator to turn on Authenticated SMTP for your mailbox.';
     }
@@ -677,16 +708,17 @@ class MailBridge {
   }
 }
 
+MailBridge.MICROSOFT_TYPES = ['graph', 'ews'];   // Thunderbird's Microsoft Graph and Exchange accounts
 MailBridge.MAIL_CHECK_MS = 15000;   // longest wait for Thunderbird's check for new mail
 MailBridge.LIST_KEEP_MS = 120000;   // how long a folder's list is reused for its later pages
 MailBridge.CHUNK = 1024 * 1024;              // largest piece of an attachment sent to Voice Companion
 MailBridge.MAX_UPLOAD = 60 * 1024 * 1024;    // largest file Voice Companion may attach
 MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dropped after this long
-MailBridge.READ_ONLY = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
+MailBridge.READ_ONLY = ['about', 'accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
   'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
-  'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
+  'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'about', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api) {

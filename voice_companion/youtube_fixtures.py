@@ -118,6 +118,90 @@ def search(query, sp=''):
     return page(body, title=query + ' - YouTube', script='<script>window.searchFilter=' + repr(sp) + ';</script>')
 
 
+# YouTube's search filters since January 2026, as the results page lists them in ytInitialData:
+# a "Search filters" dialog with groups. Each filter's link already combines it with the filters
+# that are on; the link of a filter that is on takes it away. Features may be combined; the
+# other groups hold one choice. Type Channels disables the Duration choices, as on YouTube.
+# The codes here are made up on purpose ("t=shorts;d=week"), so the tests show that the screen
+# uses the page's own links and names, and never builds codes when the page lists its filters.
+FILTER_GROUPS = (('Type', 't', (('videos', 'Videos'), ('shorts', 'Shorts'), ('channels', 'Channels'), ('playlists', 'Playlists'),
+                                ('movies', 'Movies'))),
+                 ('Duration', 'l', (('under3', 'Under 3 minutes'), ('3to20', '3 - 20 minutes'), ('over20', 'Over 20 minutes'))),
+                 ('Upload date', 'd', (('today', 'Today'), ('week', 'This week'), ('month', 'This month'), ('year', 'This year'))),
+                 ('Features', 'f', (('live', 'Live'), ('4k', '4K'), ('hd', 'HD'), ('cc', 'Subtitles/CC'), ('vr180', 'VR180'))),
+                 ('Prioritize', 's', (('relevance', 'Relevance'), ('popularity', 'Popularity'))))
+
+
+def filter_state(sp):
+    import base64
+    try:
+        text = base64.urlsafe_b64decode(sp.encode() + b'=' * (-len(sp) % 4)).decode()
+    except Exception:
+        return {}
+    state = {}
+    for part in filter(None, text.split(';')):
+        key, _, value = part.partition('=')
+        state[key] = value.split(',') if key == 'f' else value
+    return state
+
+
+def filter_sp(state):
+    import base64
+    text = ';'.join(k + '=' + (','.join(v) if isinstance(v, list) else v) for k, v in sorted(state.items()) if v)
+    return base64.urlsafe_b64encode(text.encode()).decode().rstrip('=') if text else ''
+
+
+def filter_data(query, sp):
+    """window.ytInitialData for a results page, with the filter dialog as YouTube lists it."""
+    import json
+    from urllib.parse import quote, quote_plus
+    state = filter_state(sp)
+    groups = []
+    for title, key, choices in FILTER_GROUPS:
+        filters = []
+        for value, label in choices:
+            on = value in state.get(key, []) if key == 'f' else state.get(key) == value
+            after = {k: (list(v) if isinstance(v, list) else v) for k, v in state.items()}
+            if key == 'f':
+                after['f'] = [x for x in after.get('f', []) if x != value] if on else after.get('f', []) + [value]
+            else:
+                after[key] = '' if on else value
+            if key == 's' and value == 'relevance':
+                after['s'] = ''
+            code = filter_sp(after)
+            renderer = {'label': {'simpleText': label}, 'tooltip': ('Remove ' if on else 'Search for ') + label}
+            if key == 'l' and state.get('t') == 'channels':
+                renderer['status'] = 'FILTER_STATUS_DISABLED'
+            else:
+                url = '/results?search_query=' + quote_plus(query) + ('&sp=' + quote(quote(code, safe=''), safe='') if code else '')
+                renderer['navigationEndpoint'] = {'commandMetadata': {'webCommandMetadata': {'url': url}},
+                                                  'searchEndpoint': {'query': query, 'params': quote(code, safe='')}}
+                if on:
+                    renderer['status'] = 'FILTER_STATUS_SELECTED'
+            filters.append({'searchFilterRenderer': renderer})
+        groups.append({'searchFilterGroupRenderer': {'title': {'simpleText': title}, 'filters': filters}})
+    data = {'contents': {'twoColumnSearchResultsRenderer': {'primaryContents': {}}},
+            'header': {'searchHeaderRenderer': {'searchFilterButton': {'buttonRenderer': {'text': {'runs': [{'text': 'Filters'}]},
+                'command': {'openPopupAction': {'popup': {'searchFilterOptionsDialogRenderer': {
+                    'title': {'runs': [{'text': 'Search filters'}]}, 'groups': groups}}}}}}}}}
+    return '<script>var ytInitialData = ' + json.dumps(data) + ';</script>'
+
+
+def search_listing_filters(query, sp=''):
+    """Results whose page lists its own filters (YouTube since 2025). Movies finds nothing."""
+    state = filter_state(sp)
+    if state.get('t') == 'movies':
+        body = ('<ytd-search><div id="contents"><ytd-background-promo-renderer><div id="title">No results found</div>'
+                '<div id="body">Try different keywords or remove search filters</div></ytd-background-promo-renderer></div></ytd-search>')
+    else:
+        items = [CHANNEL] if state.get('t') == 'channels' else [
+            video_renderer('vid00000010', 'Bread for beginners', 'Kitchen Basics', '1,234 views', '3 weeks ago', '12:00'),
+            video_renderer('vid00000011', 'Quick bread', 'Fast Food', '90 views', '1 day ago', '2:10')]
+        body = ('<ytd-search><div id="contents"><ytd-section-list-renderer><ytd-item-section-renderer><div id="contents">' +
+                ''.join(items) + '</div></ytd-item-section-renderer></ytd-section-list-renderer></div></ytd-search>')
+    return page(body, title=query + ' - YouTube', script=filter_data(query, sp) + '<script>window.searchFilter=' + repr(sp) + ';</script>')
+
+
 def no_results(query):
     return page('<ytd-search><div id="contents"><ytd-background-promo-renderer><div id="title">No results found</div>'
                 '<div id="body">Try different keywords or remove search filters</div></ytd-background-promo-renderer></div></ytd-search>',
@@ -300,9 +384,10 @@ def watch(chapters=True, signed_in=True, comments_off=False):
     return page(body, signed_in, title='Never Gonna Give You Up - YouTube', script=script)
 
 
-def routes(context, overrides=None):
+def routes(context, overrides=None, listed_filters=False):
     """Serve the saved pages for https://www.youtube.com/ in a Playwright context.
-    overrides maps a path start (such as '/feed/history') to the page to serve."""
+    overrides maps a path start (such as '/feed/history') to the page to serve.
+    listed_filters: results pages list their own filters, as YouTube's do now."""
     from urllib.parse import parse_qs, urlsplit
     overrides = dict(overrides or {})
     served = []
@@ -317,7 +402,7 @@ def routes(context, overrides=None):
                 body = value() if callable(value) else value
         if body is None:
             if url.path == '/results':
-                body = search(query.get('search_query', [''])[0], query.get('sp', [''])[0])
+                body = (search_listing_filters if listed_filters else search)(query.get('search_query', [''])[0], query.get('sp', [''])[0])
             elif url.path == '/watch':
                 body = watch()
             elif url.path == '/feed/history':

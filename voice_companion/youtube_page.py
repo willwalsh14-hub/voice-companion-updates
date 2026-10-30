@@ -20,7 +20,7 @@ the user asks for it.
 """
 import base64
 import re
-from urllib.parse import parse_qs, quote_plus, urlsplit
+from urllib.parse import parse_qs, quote_plus, unquote, urlsplit
 
 BASE = 'https://www.youtube.com'
 HOSTS = ('youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com')
@@ -30,6 +30,8 @@ PLAYER_CHANGED = ('YouTube changed its player, so that could not be done. '
                   'Say open in browser to use the page itself.')
 NOT_LOADED = 'YouTube did not finish loading. Check your internet connection, then press F5 to try again.'
 SIGN_IN_URL = 'https://accounts.google.com/ServiceLogin?service=youtube&continue=' + quote_plus(BASE + '/')
+# Google's own sign-out page; it signs this browser out of Google, then comes back to YouTube.
+SIGN_OUT_URL = 'https://accounts.google.com/Logout?service=youtube&continue=' + quote_plus(BASE + '/')
 
 # The lists on the screen, and where they are on the site.
 FEEDS = {
@@ -52,21 +54,33 @@ class YouTubeError(Exception):
 # YouTube keeps search filters in the "sp" part of the address. It is a small
 # protocol-buffer message: field 1 is the sort order; field 2 holds the filters.
 # Building it here lets filters combine, and needs no clicks in the filter panel.
+#
+# These are YouTube's filters since January 2026: "Sort by" became "Prioritize"
+# (Relevance or Popularity; sorting by upload date and by rating were removed),
+# "Last hour" was removed, Shorts became a type, and the lengths are now under
+# 3 minutes, 3 to 20 minutes and over 20 minutes. When the results page lists its
+# own filters (page_filter_groups), the screen uses those; this list is the fallback.
 FILTERS = {
-    'upload date': ('Upload date', (('any', 'Any time', None), ('hour', 'Last hour', 1), ('today', 'Today', 2),
-                                    ('week', 'This week', 3), ('month', 'This month', 4), ('year', 'This year', 5))),
-    'type': ('Type', (('any', 'Any type', None), ('video', 'Videos', 1), ('channel', 'Channels', 2),
+    'upload date': ('Upload date', (('any', 'Any time', None), ('today', 'Today', 2), ('week', 'This week', 3),
+                                    ('month', 'This month', 4), ('year', 'This year', 5))),
+    'type': ('Type', (('any', 'Any type', None), ('video', 'Videos', 1), ('shorts', 'Shorts', 9), ('channel', 'Channels', 2),
                       ('playlist', 'Playlists', 3), ('movie', 'Movies', 4))),
-    'length': ('Length', (('any', 'Any length', None), ('short', 'Under 4 minutes', 1),
-                          ('medium', '4 to 20 minutes', 3), ('long', 'Over 20 minutes', 2))),
-    'features': ('Features', (('any', 'No feature', None), ('subtitles', 'Subtitles', 5), ('live', 'Live', 8),
-                              ('4k', '4K', 14), ('hd', 'HD', 4), ('creative commons', 'Creative Commons', 6),
+    'length': ('Length', (('any', 'Any length', None), ('short', 'Under 3 minutes', 1),
+                          ('medium', '3 to 20 minutes', 3), ('long', 'Over 20 minutes', 2))),
+    'features': ('Features', (('any', 'No features', None), ('live', 'Live', 8), ('4k', '4K', 14), ('hd', 'HD', 4),
+                              ('subtitles', 'Subtitles', 5), ('creative commons', 'Creative Commons', 6),
                               ('360', '360 degrees', 15), ('hdr', 'HDR', 25))),
-    'sort': ('Sort by', (('relevance', 'Relevance', 0), ('upload date', 'Upload date', 2),
-                         ('view count', 'View count', 3), ('rating', 'Rating', 1))),
+    'sort': ('Sort', (('relevance', 'Relevance', 0), ('popularity', 'Popularity', 3))),
 }
 FILTER_ORDER = ('upload date', 'type', 'length', 'features', 'sort')
 NO_FILTERS = {'upload date': 'any', 'type': 'any', 'length': 'any', 'features': 'any', 'sort': 'relevance'}
+# The names YouTube gives its filter groups on the page, and the screen's names for them.
+GROUP_NAMES = {'upload date': 'upload date', 'type': 'type', 'duration': 'length', 'length': 'length',
+               'features': 'features', 'sort by': 'sort', 'prioritize': 'sort', 'sort': 'sort'}
+# Filters YouTube took away in January 2026, and what to say instead.
+GONE = {'last hour': 'YouTube no longer has a Last hour filter. Say Today instead.',
+        'sort by date': 'YouTube no longer sorts results by upload date. To find new videos, say Today or This week.',
+        'sort by rating': 'YouTube no longer sorts results by rating. Say Sort by popularity instead.'}
 
 
 def _varint(value):
@@ -104,9 +118,60 @@ def filter_code(filters):
     return base64.b64encode(data).decode('ascii') if data else ''
 
 
-def search_url(query, filters=None):
+def _fields(data):
+    """(field number, value) for each varint or length-delimited field of a protocol-buffer message."""
+    index, out = 0, []
+    def varint():
+        nonlocal index
+        value, shift = 0, 0
+        while True:
+            byte = data[index]
+            index += 1
+            value |= (byte & 0x7f) << shift
+            shift += 7
+            if not byte & 0x80:
+                return value
+    while index < len(data):
+        key = varint()
+        number, wire = key >> 3, key & 7
+        if wire == 0:
+            out.append((number, varint()))
+        elif wire == 2:
+            size = varint()
+            out.append((number, bytes(data[index:index + size])))
+            index += size
+        else:
+            raise ValueError('unknown field type')
+    return out
+
+
+def decode_filters(code):
+    """The filters in a filter code (from filter_code, or a link on the page), as NO_FILTERS
+    shapes them. Parts this screen does not know are left out; a damaged code means no filters."""
+    filters = dict(NO_FILTERS)
+    numbers = {name: {number: key for key, _, number in FILTERS[name][1] if number} for name in FILTERS}
+    try:
+        text = sp_code(code)
+        data = base64.b64decode(text + '=' * (-len(text) % 4), altchars=b'-_' if '-' in text or '_' in text else None)
+        for number, value in _fields(data):
+            if number == 1 and isinstance(value, int):
+                filters['sort'] = numbers['sort'].get(value, 'relevance')
+            elif number == 2 and isinstance(value, bytes):
+                for inner, setting in _fields(value):
+                    name = {1: 'upload date', 2: 'type', 3: 'length'}.get(inner)
+                    if name and isinstance(setting, int):
+                        filters[name] = numbers[name].get(setting, 'any')
+                    elif setting == 1 and inner in numbers['features']:
+                        filters['features'] = numbers['features'][inner]
+    except (ValueError, IndexError, TypeError):
+        return dict(NO_FILTERS)
+    return filters
+
+
+def search_url(query, filters=None, code=None):
+    """The results address. `code` is a whole filter code from the page; else `filters` is built."""
     url = BASE + '/results?search_query=' + quote_plus(' '.join(str(query).split()))
-    code = filter_code(filters)
+    code = filter_code(filters) if code is None else code
     return url + ('&sp=' + quote_plus(code) if code else '')
 
 
@@ -115,7 +180,7 @@ def filter_label(name, key):
 
 
 def filter_summary(filters):
-    """'This week, Videos, Sorted by upload date', or '' with no filters."""
+    """'This week, Videos, sorted by popularity', or '' with no filters."""
     filters = dict(NO_FILTERS, **(filters or {}))
     parts = [filter_label(name, filters[name]) for name in ('upload date', 'type', 'length', 'features')
              if filters[name] != 'any']
@@ -126,33 +191,78 @@ def filter_summary(filters):
 
 
 def filter_request(spoken):
-    """(filter name, value) for words such as "this week", "only channels", "sort by view count"."""
+    """(filter name, value) for words such as "this week", "only channels", "sort by popularity".
+    ('gone', key) for a filter YouTube took away (see GONE); None when the words are no filter."""
     words = ' '.join(re.sub(r'[^\w\s]', ' ', str(spoken).casefold()).split())
     words = re.sub(r'^(?:filter (?:by |to )?|only show |show only |only |set |choose |use )', '', words)
     words = re.sub(r'^(?:upload date |uploaded |date |type |length |duration |feature |features )', '', words)
-    if re.fullmatch(r'(?:sort(?:ed)? by |order by )?(?:relevance|most relevant)', words):
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by |prioritize )?(?:relevance|most relevant)', words):
         return 'sort', 'relevance'
-    match = re.fullmatch(r'(?:sort(?:ed)? by |order by )(upload date|date|newest|view count|views|most viewed|rating|top rated)', words)
-    if match:
-        return 'sort', {'date': 'upload date', 'newest': 'upload date', 'views': 'view count',
-                        'most viewed': 'view count', 'top rated': 'rating'}.get(match[1], match[1])
-    table = {'last hour': ('upload date', 'hour'), 'this hour': ('upload date', 'hour'), 'today': ('upload date', 'today'),
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by |prioritize )?(?:popularity|view count|views|most viewed|most popular|popular)', words):
+        return 'sort', 'popularity'
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by )(?:upload date|date|newest|newest first|most recent)', words):
+        return 'gone', 'sort by date'
+    if re.fullmatch(r'(?:sort(?:ed)? by |order by )(?:rating|top rated|highest rated)', words):
+        return 'gone', 'sort by rating'
+    table = {'last hour': ('gone', 'last hour'), 'this hour': ('gone', 'last hour'), 'today': ('upload date', 'today'),
              'this week': ('upload date', 'week'), 'this month': ('upload date', 'month'), 'this year': ('upload date', 'year'),
              'any time': ('upload date', 'any'), 'any date': ('upload date', 'any'),
-             'videos': ('type', 'video'), 'video': ('type', 'video'), 'channels': ('type', 'channel'), 'channel': ('type', 'channel'),
+             'videos': ('type', 'video'), 'video': ('type', 'video'), 'shorts': ('type', 'shorts'), 'youtube shorts': ('type', 'shorts'),
+             'channels': ('type', 'channel'), 'channel': ('type', 'channel'),
              'playlists': ('type', 'playlist'), 'playlist': ('type', 'playlist'), 'movies': ('type', 'movie'),
              'any type': ('type', 'any'),
-             'short videos': ('length', 'short'), 'short': ('length', 'short'), 'under 4 minutes': ('length', 'short'),
-             'under four minutes': ('length', 'short'), 'medium length': ('length', 'medium'), 'medium': ('length', 'medium'),
+             'short': ('length', 'short'), 'short videos': ('length', 'short'), 'under 3 minutes': ('length', 'short'), 'under three minutes': ('length', 'short'),
+             'under 4 minutes': ('length', 'short'), 'under four minutes': ('length', 'short'),
+             '3 to 20 minutes': ('length', 'medium'), 'three to twenty minutes': ('length', 'medium'),
              '4 to 20 minutes': ('length', 'medium'), 'four to twenty minutes': ('length', 'medium'),
+             'medium length': ('length', 'medium'), 'medium': ('length', 'medium'),
              'long videos': ('length', 'long'), 'long': ('length', 'long'), 'over 20 minutes': ('length', 'long'),
              'over twenty minutes': ('length', 'long'), 'any length': ('length', 'any'),
              'subtitles': ('features', 'subtitles'), 'with subtitles': ('features', 'subtitles'), 'captions': ('features', 'subtitles'),
              'with captions': ('features', 'subtitles'), 'closed captions': ('features', 'subtitles'),
              'live': ('features', 'live'), 'live videos': ('features', 'live'), '4k': ('features', '4k'), 'four k': ('features', '4k'),
              'hd': ('features', 'hd'), 'high definition': ('features', 'hd'), 'creative commons': ('features', 'creative commons'),
-             '360': ('features', '360'), 'hdr': ('features', 'hdr'), 'no feature': ('features', 'any')}
+             '360': ('features', '360'), 'hdr': ('features', 'hdr'), 'no feature': ('features', 'any'), 'no features': ('features', 'any')}
     return table.get(words)
+
+
+def sp_code(text):
+    """The filter code in a filter link or its "params", decoded: 'EgIIAw%253D%253D' is 'EgIIAw=='."""
+    text = str(text or '')
+    if '?' in text or text.startswith('/'):
+        text = (parse_qs(urlsplit(text).query).get('sp') or [''])[0]
+    for _ in range(3):
+        if '%' not in text:
+            break
+        text = unquote(text)
+    return text
+
+
+def page_filter_groups(raw):
+    """The filter groups the results page lists (FILTERS_JS), as the screen uses them.
+
+    Each group: name (as in FILTERS, or YouTube's own words for a new group), title, and
+    choices: label, sp (the whole filter code after choosing it, as YouTube combines it),
+    on, and disabled (YouTube does not allow it with the filters that are on)."""
+    groups = []
+    for entry in raw if isinstance(raw, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        title = ' '.join(str(entry.get('title') or '').split())
+        choices = []
+        for item in entry.get('filters') or []:
+            if not isinstance(item, dict):
+                continue
+            label = ' '.join(str(item.get('label') or '').split())
+            if not label:
+                continue
+            link = item.get('params') or item.get('url') or ''
+            disabled = bool(item.get('disabled')) or not (item.get('params') or item.get('url'))
+            choices.append({'label': label, 'sp': None if disabled else sp_code(link),
+                            'on': bool(item.get('selected')), 'disabled': disabled})
+        if title and choices:
+            groups.append({'name': GROUP_NAMES.get(title.casefold(), title.casefold()), 'title': title, 'choices': choices})
+    return groups
 
 
 # ---------------------------------------------------------------- addresses
@@ -405,6 +515,51 @@ LIST_JS = HELPERS + r'''
 }
 '''
 
+# The search filters the results page lists, as YouTube itself builds them: each filter's
+# link already combines it with the filters that are on (or, for one that is on, takes it
+# away). Read from the page's data first (the filter panel is drawn only when opened), then
+# from a drawn panel. [] when the page lists none; the screen then builds the codes itself.
+FILTERS_JS = r'''
+()=>{
+  const out=[],seen=new Set();
+  const text=t=>!t?'':typeof t==='string'?t:(t.simpleText||(t.runs||[]).map(r=>r.text||'').join('')||t.content||'');
+  const walk=(o,depth)=>{
+    if(!o||typeof o!=='object'||depth>60)return;
+    if(Array.isArray(o)){for(const x of o)walk(x,depth+1);return;}
+    const g=o.searchFilterGroupRenderer;
+    if(g&&typeof g==='object'){
+      const title=text(g.title).trim();
+      if(title&&!seen.has(title)){
+        seen.add(title);
+        out.push({title,filters:(g.filters||[]).map(f=>{
+          const r=(f&&f.searchFilterRenderer)||{},e=r.navigationEndpoint||{};
+          const url=((e.commandMetadata||{}).webCommandMetadata||{}).url||'';
+          const params=(e.searchEndpoint||{}).params||'';
+          return {label:text(r.label).trim(),url,params,selected:r.status==='FILTER_STATUS_SELECTED',disabled:r.status==='FILTER_STATUS_DISABLED'};})});
+      }
+      return;
+    }
+    for(const k in o)walk(o[k],depth+1);
+  };
+  let data=null;
+  try{data=window.ytInitialData;}catch(e){}
+  if(!data){try{const a=document.querySelector('ytd-app');data=a&&a.data&&a.data.response;}catch(e){}}
+  try{walk(data,0);}catch(e){}
+  if(!out.length){
+    for(const g of document.querySelectorAll('ytd-search-filter-group-renderer')){
+      const head=g.querySelector('#filter-group-title,h4');
+      const title=head?head.textContent.trim():'';
+      const filters=[...g.querySelectorAll('ytd-search-filter-renderer')].map(r=>{
+        const a=r.querySelector('a[href]');const label=(r.querySelector('#label')||a||r).textContent.trim();
+        return {label,url:a?a.getAttribute('href'):'',params:'',selected:r.hasAttribute('selected')||r.getAttribute('aria-selected')==='true',
+                disabled:r.hasAttribute('disabled')};});
+      if(title)out.push({title,filters});
+    }
+  }
+  return out;
+}
+'''
+
 # True once a list, a message or the player is on the page, or it is not YouTube.
 READY_JS = r'''
 ()=>{
@@ -637,6 +792,15 @@ class YouTubePage:
             raise
         except Exception:
             return False
+
+    def read_filters(self):
+        """The filter groups the results page lists (page_filter_groups); [] when it lists none."""
+        try:
+            return page_filter_groups(self.evaluate(FILTERS_JS))
+        except YouTubeError:
+            raise
+        except Exception:
+            return []
 
     # ---------------- player
     def state(self):

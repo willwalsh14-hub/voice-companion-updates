@@ -23,13 +23,14 @@ async function ensureConnection() {
       if(connection!==port)return;
       // Download controls come from Companion, never from a page.
       if(message?.method==='VoiceCompanion.downloadControl'){void mirror?.control(message.params);return;}
+      if(message?.method==='VoiceCompanion.checkForUpdate'){void checkForUpdate();return;}
       void current.command(message);
     });
     port.onDisconnect.addListener(()=>{void chrome.runtime.lastError;if(connection!==port)return;connection=null;model=null;mirror?.stop();if(downloads===mirror)downloads=null;void current.detachAll();});
     // Register every normal tab before exposing the connection to the driver.
     const tabs=await chrome.tabs.query({});
     for(const tab of tabs.filter(eligible))if(!declined.has(tab.id))current.remember(tab);
-    port.postMessage({protocol:2,command:'cdp',browser:/Edg\//.test(navigator.userAgent)?'edge':navigator.brave?'brave':'chrome'});
+    port.postMessage({protocol:2,command:'cdp',browser:/Edg\//.test(navigator.userAgent)?'edge':navigator.brave?'brave':'chrome',version:chrome.runtime.getManifest?.().version||''});
     void mirror?.sync().catch(()=>{});
   } finally {busy=false;}
 }
@@ -41,6 +42,15 @@ async function run(command) {
   if(model)for(const tab of (await chrome.tabs.query({})).filter(eligible))await model.created(tab).catch(()=>{});
   return run('status');
 }
+// Companion asks when it ships a newer version than this one. Store copies ask the store now;
+// an unpacked copy has no store, and reloading it loads the installer's new files.
+async function checkForUpdate(){
+  if(!chrome.runtime.getManifest?.().update_url){chrome.runtime.reload();return;}
+  try{await chrome.runtime.requestUpdateCheck();}catch(_){}
+}
+// Chrome installs an update only when the worker is idle, and the Companion link keeps it busy.
+// Reloading applies it now; the link comes back on its own.
+chrome.runtime.onUpdateAvailable?.addListener(()=>chrome.runtime.reload());
 // Kept as a test entry point; production linking never requires a tab action.
 async function connectTab(tab){await ensureConnection();if(model&&eligible(tab))await model.created(tab);}
 async function startup(){const saved=await chrome.storage.local.get('enabled');enabled=saved.enabled!==false;await chrome.alarms.create('companion-reconnect',{periodInMinutes:0.5});await ensureConnection();}

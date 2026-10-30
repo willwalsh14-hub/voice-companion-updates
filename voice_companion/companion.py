@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.176-test'
+APP_VERSION = '0.2.177-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -873,6 +873,7 @@ def clock_text_entry(mode, typed=False):
     if writing_dictation(mode, typed):return True
     if mode=='note' and typed and INPUT_MODE!='commands':return True  # Words typed into the note box.
     if mode in ('search','document_name','task_input','podcast'):return True
+    if mode=='youtube' and __import__('youtube_screen').typing(sys.modules[__name__]):return True  # the YouTube search box
     manager=globals().get('FILE_MANAGER')
     if mode=='files' and manager and manager.pending and manager.pending[0] in ('rename','search','search all'):return True
     if mode=='media' and MEDIA_NAV is not None and getattr(MEDIA_NAV,'form',None):return True
@@ -1556,16 +1557,41 @@ def audio_ducking_request(command):
     return None
 
 
+# Options, Radio and Podcasts: "Lower the volume while I use the keyboard". A screen
+# reader's speech is not heard by Companion, so radio and podcasts are lowered while
+# keys are pressed in Companion's window, and come back after this many quiet seconds.
+KEY_DUCK_SECONDS = 1.5
+
+
+def keys_lowering(now=None):
+    """True while keys are being pressed in Companion's window and Companion's own
+    radio, podcast or media file is loaded, with the option on."""
+    if not PREFERENCES.get('duck_while_keys', True) or APP_WINDOW is None or MEDIA_HUB is None:
+        return False
+    last = getattr(APP_WINDOW, 'last_navigation', 0)
+    if isinstance(last, bool) or not isinstance(last, (int, float)) or last <= 0:
+        return False
+    now = time.monotonic() if now is None else now
+    if not 0 <= now - last < KEY_DUCK_SECONDS:
+        return False
+    try:
+        return bool(getattr(MEDIA_HUB.player, 'kind', None))
+    except Exception:
+        return False
+
+
 def update_audio_ducking(active=None):
     from audio_ducking import level_factor
     enabled = bool(PREFERENCES.get('duck_audio', True))
     lowered = enabled and bool((not SPEECH_PAUSED and speech_busy()) if active is None else active)
+    keys = keys_lowering()
     factor = level_factor(PREFERENCES.get('duck_level'))
     ducker = None
     try:
         ducker = audio_ducker()
         if ducker is not None:
-            ducker.request(lowered, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
+            # Keys lower the sound the same way speech does, so it does not dip and rise between them.
+            ducker.request(lowered or keys and enabled, factor, enabled and bool(PREFERENCES.get('duck_other_apps', False)))
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
         ducker = None
@@ -1573,10 +1599,12 @@ def update_audio_ducking(active=None):
         return
     # The radio player runs in a Firefox that Companion started, so Windows session
     # ducking already lowers it. Lower it inside the page only when that is not
-    # working, so it is never lowered twice.
+    # working (or audio ducking is off and only keys lower it), so it is never lowered twice.
     session_ducking = ducker is not None and ducker.available is not False
+    if active is not None and session_ducking:
+        return   # Speech is starting: it never waits for the player page.
     try:
-        MEDIA_HUB.player.set_ducked(lowered and not session_ducking, factor)
+        MEDIA_HUB.player.set_ducked((lowered or keys) and not (session_ducking and enabled), factor)
     except Exception as exc:
         print('Audio ducking unavailable:', exc, file=sys.stderr)
 
@@ -2003,6 +2031,8 @@ def open_browser_menu(regular=False):
         speak('The regular browser tab could not be read. Reconnect it using the extension, then open this menu again.')
     notice=web_session.take_browser_notice()
     if not isinstance(notice,str):notice=''
+    # Said once for each new extension version, while Chrome fetches it from the store.
+    notice=(__import__('browser_cdp_relay').extension_update_notice()+' '+notice).strip()
     linked=getattr(web_session.backend,'regular',False) is True
     if not linked and getattr(web_session,'chrome_offer_declined',False) is not True:
         # Chrome chosen but not ready (or your own Chrome not linked): offer setup right here.
@@ -2352,6 +2382,12 @@ def thunderbird_starter(system=None):
     import thunderbird_setup
     from thunderbird_mailbox import NOT_CONNECTED
     relay = mail_relay()
+    offer = thunderbird_update_offer(relay)
+    if offer is not None:
+        flow, step = offer
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': step.question, 'message': step.message}
+        CONFIRM_CHOICE = 'yes'
+        raise MailboxError(step.message)
     try:
         launched = thunderbird_setup.start_in_background(system or thunderbird_setup.WindowsSystem(), addon_package(),
                                                          relay, speak_status)
@@ -2374,6 +2410,50 @@ def thunderbird_starter(system=None):
 
 
 THUNDERBIRD_STARTED = False   # Voice Companion started Thunderbird, so it closes it on exit
+
+
+def new_thunderbird_upgrade(hint=''):
+    """Moving Thunderbird to the Release channel (154 or newer), with the add-on this copy ships."""
+    import thunderbird_setup
+    import thunderbird_upgrade
+    return thunderbird_upgrade.Upgrade(thunderbird_setup.WindowsSystem(), addon_package(), mail_relay, speak_status, APP,
+                                       started=quiet_thunderbird, hint=hint)
+
+
+def thunderbird_update_offer(relay=None):
+    """(flow, step) for the one update question, at a sensible time, or None.
+
+    Only while a command runs on the main loop (never from a background check), when Thunderbird
+    email is used before Thunderbird is connected, and never while a document, email or note is
+    being written or another question or text box is waiting."""
+    if _HANDLE_DEPTH == 0 or threading.current_thread() is not threading.main_thread():
+        return None
+    if relay is not None and relay.connected.is_set():
+        return None
+    if ACCOUNT_ENTRY is not None or THUNDERBIRD_SETUP is not None or THUNDERBIRD_WATCH is not None:
+        return None
+    if str(TRANSCRIPT.mode).split(',')[0] in ('document', 'email_draft', 'note') or email_draft is not None:
+        return None
+    try:
+        flow = new_thunderbird_upgrade('Say check email to open your email.')
+        step = flow.offer()
+    except Exception:
+        return None
+    return (flow, step) if step is not None else None
+
+
+def start_thunderbird_update(mode):
+    """ "Update Thunderbird": say which Thunderbird this is; ask the one question when it needs the update."""
+    global THUNDERBIRD_SETUP
+    try:
+        flow = new_thunderbird_upgrade()
+        THUNDERBIRD_SETUP = {'flow': flow, 'question': None, 'message': ''}
+        return thunderbird_setup_step(flow.check(), mode)
+    except Exception:
+        THUNDERBIRD_SETUP = None
+        speak('Voice Companion could not check Thunderbird because of a problem. Nothing was changed. '
+              'Say update Thunderbird to try again.')
+        return mode
 
 # F9 (or "turn off the microphone") turns the microphone fully off: the stream is closed and
 # nothing listens, not even for "wake up". F9 turns it back on. (Control+F12 only puts
@@ -2625,6 +2705,9 @@ def start_thunderbird_quietly():
         import thunderbird_setup
         relay = mail_relay()
         try:
+            # Thunderbird needs the update: it is asked about when email is first used, while Thunderbird is closed.
+            if __import__('thunderbird_upgrade').offer_due(thunderbird_setup.WindowsSystem(), APP):
+                return
             if thunderbird_setup.start_in_background(thunderbird_setup.WindowsSystem(), addon_package(), relay,
                                                      lambda text: None):
                 quiet_thunderbird(relay)
@@ -2800,6 +2883,8 @@ def thunderbird_setup_command(command, mode):
     if command in words.HIDE_COMMANDS:
         speak(hide_thunderbird_window())
         return mode
+    if command in THUNDERBIRD_UPDATE_COMMANDS and not THUNDERBIRD_WATCH:
+        return start_thunderbird_update(mode)
     if not (command in words.CONTINUE_COMMANDS + words.READ_COMMANDS + words.SHOW_COMMANDS + words.PASSWORD_COMMANDS or sign_in):
         return None
     if sign_in:
@@ -3508,10 +3593,16 @@ def new_thunderbird_setup(adding=False):
     from mail_accounts import thunderbird_connect
     return thunderbird_setup.Setup(thunderbird_setup.WindowsSystem(), addon_package(),
                                    lambda: thunderbird_connect(ProtectedStore(APP)), mail_relay, speak_status,
-                                   ready=thunderbird_add_ready if adding else thunderbird_connect_ready, adding=adding)
+                                   ready=thunderbird_add_ready if adding else thunderbird_connect_ready, adding=adding,
+                                   upgrader=new_thunderbird_upgrade)
 
 
 THUNDERBIRD_YES = ('yes', 'yes please', 'y', 'yeah', 'yep', 'sure', 'okay', 'ok', 'do it', 'go ahead')
+# "Update Thunderbird": works wherever Thunderbird commands work, never while writing.
+THUNDERBIRD_UPDATE_COMMANDS = ('update thunderbird', 'upgrade thunderbird', 'update my thunderbird', 'upgrade my thunderbird',
+                               'update thunderbird now', 'get the new thunderbird', 'get the newest thunderbird',
+                               'check thunderbird version', 'which thunderbird do i have', 'what version of thunderbird do i have')
+THUNDERBIRD_NO = ('no', 'no thanks', 'no thank you', 'n', 'nope', 'not now', 'later', 'not yet', 'cancel', 'maybe later')
 THUNDERBIRD_REPEAT = ('repeat', 'say that again', 'what', 'what now', 'what do i do', 'help', 'repeat that')
 
 
@@ -3532,12 +3623,18 @@ def thunderbird_setup_step(step, mode, lead=''):
 
 
 def thunderbird_setup_answer(command, mode):
-    """Yes starts the offered step. Anything else, except repeat, is no."""
+    """Yes starts the offered step. Anything else, except repeat, is no.
+
+    The update question is the one exception: a command that is neither yes nor no (such as
+    "check email") is not an answer. Thunderbird stays as it is and the command runs (None)."""
     global THUNDERBIRD_SETUP
     if command in THUNDERBIRD_REPEAT:
         speak(THUNDERBIRD_SETUP['message'])
         return mode
     flow, question = THUNDERBIRD_SETUP['flow'], THUNDERBIRD_SETUP['question']
+    if question == 'upgrade' and command not in THUNDERBIRD_YES + THUNDERBIRD_NO:
+        THUNDERBIRD_SETUP = None
+        return None
     if question in ('add_another', 'add_first'):
         THUNDERBIRD_SETUP = None
         if command in THUNDERBIRD_YES:
@@ -3549,6 +3646,10 @@ def thunderbird_setup_answer(command, mode):
         step = flow.answer(question, command in THUNDERBIRD_YES)
     except Exception:
         THUNDERBIRD_SETUP = None
+        if question == 'upgrade':
+            speak('The Thunderbird update stopped because of a problem. Your email accounts were not changed. '
+                  'Say update Thunderbird to try again.')
+            return mode
         speak('Thunderbird setup stopped because of a problem. Nothing else was changed. Say add account to try again.')
         return mode
     return thunderbird_setup_step(step, mode)
@@ -3585,7 +3686,9 @@ def _handle(text, mode, typed=False):
     if ACCOUNT_ENTRY is not None:
         return account_entry_step(text, command, mode)
     if THUNDERBIRD_SETUP is not None:
-        return thunderbird_setup_answer(command, mode)
+        answered = thunderbird_setup_answer(command, mode)
+        if answered is not None:
+            return answered
     if command=='toggle audio':
         video=__import__('youtube_screen').toggle_audio(sys.modules[__name__])  # Control+P while a YouTube video plays
         if video:speak(video);return mode
@@ -5141,7 +5244,7 @@ def _handle(text, mode, typed=False):
     if command.startswith(('choose station database','set station database','use station database','switch to station database',
                            'choose radio source','set radio source','use radio source','switch to radio source',
                            'search radio','find station','find radio','browse genre','browse country','browse state','browse city',
-                           'search podcast','find podcast','browse podcasts','list podcasts','list subscriptions','refresh subscriptions',
+                           'search podcast','find podcast','browse podcasts','top podcast','podcast categories','list podcasts','list subscriptions','refresh subscriptions',
                            'check podcasts','update subscribed podcasts','auto download','automatically download',
                            'manual downloads','turn off auto downloads','set podcast ','set show ',
                            'open podcast ','subscribe to podcast ','subscribe podcast ',

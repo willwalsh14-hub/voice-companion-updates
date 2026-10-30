@@ -5,10 +5,20 @@ Chrome, or your own browser linked with the extension) and shows it as a
 simple screen, like Radio and Podcasts. The page is read and driven only by
 youtube_page.py.
 
+Opening YouTube lands on the YouTube menu (Search, Home, Subscriptions,
+History, Watch later, Liked videos, My playlists, Sign in or Sign out), like
+the app's other menus: arrows, Enter, first letters, and Escape back to the
+Media menu (Will, October 2026). Escape from a list comes back to this menu.
+
+Search asks for words in the command box. Typed words search at once; spoken
+words are said back and wait for "confirm" or Enter, as a new document's name
+does. Filters come from the results page itself when it lists them (YouTube
+combines them in its own links), else from youtube_page.FILTERS.
+
 Lists (Home, search results, subscriptions, history, Watch later, liked
 videos, playlists, Up next, comments, chapters) use Up and Down, Home and
 End, and Enter. Single letters control the video, as on YouTube itself
-(K, J, L, M, C, F). Alt opens the YouTube menu with every action.
+(K, J, L, M, C, F). Alt opens the YouTube actions menu with every action.
 
 Videos play in a tab of their own, so the lists can still be browsed while a
 video plays. If the browser cannot open a second tab, the video and the lists
@@ -26,7 +36,7 @@ import re
 import time
 
 import youtube_page as yp
-from menu_navigation import announce_item
+from menu_navigation import announce_item, spoken_key
 from youtube_page import YouTubeError
 
 MODE = 'youtube'
@@ -45,13 +55,14 @@ NO = ('no', 'no thanks', 'cancel', 'escape', 'go back', 'back', 'not now', 'neve
 PASS_THROUGH = ('help', 'options', 'open options', 'exit companion', 'go to sleep',
                 'wake up', 'user guide', 'open user guide', 'manual', 'open manual', 'release notes', 'what mode',
                 'what version', 'toggle audio', 'media', 'media menu', 'open media', 'radio', 'podcasts', 'media player')
-HELP = ('YouTube. Up and Down Arrow move through the list. Enter plays a video or opens a channel or playlist. '
-        'Space or K plays and pauses. Left and Right Arrow, or J and L, skip back and forward. '
-        'Control+F searches. Alt opens the YouTube menu with every action. Escape goes back.')
+HELP = ('YouTube. The YouTube menu has Search, Home, and your own lists. Up and Down Arrow move. Enter chooses. '
+        'Control+F searches: type or say your words, then press Enter. Control+Shift+F changes the filters. '
+        'On a list, Enter plays a video. Space or K plays and pauses. Left and Right Arrow, or J and L, skip back and forward. '
+        'Alt opens the actions menu. Escape goes back.')
 
 # Keys on the YouTube screen, as spoken commands (input_parity.SCREEN_KEYS uses this).
 KEYS = {
-    'F1': 'help with youtube', 'Ctrl+F': 'search youtube', 'F5': 'refresh youtube',
+    'F1': 'help with youtube', 'Ctrl+F': 'search youtube', 'Ctrl+Shift+F': 'search filters', 'F5': 'refresh youtube',
     'Space': 'play or pause video', 'K': 'play or pause video', 'J': 'skip back', 'L': 'skip forward',
     '0': 'restart video', 'M': 'mute or unmute', 'Ctrl+Up': 'video volume up', 'Ctrl+Down': 'video volume down',
     'comma': 'slower video', 'period': 'faster video', 'C': 'captions on or off', 'R': 'read caption', 'Q': 'video quality',
@@ -63,7 +74,23 @@ KEYS = {
 KEYS.update({str(n): 'jump to ' + str(n * 10) + ' percent' for n in range(1, 10)})
 
 HOME_EMPTY = ('YouTube shows no Home videos yet. It picks them from what you watch. '
-              'Say search for, and your words, such as search for jazz.')
+              'Press Control+F to search, or say search for, and your words, such as search for jazz.')
+# The YouTube menu: (name, key, action). '@account' is Sign in or Sign out.
+MENU = (('Search', 'Ctrl+F', 'search prompt'), ('Home', '', 'home'), ('Subscriptions', '', 'subscriptions'),
+        ('History', '', 'history'), ('Watch later', '', 'watch_later'), ('Liked videos', '', 'liked'),
+        ('My playlists', '', 'playlists'), ('@account', '', '@account'))
+MENU_TITLE = 'YouTube menu'
+MENU_KINDS = ('menu', 'filters', 'choices')   # lists where letters move to the next name
+SEARCH_PROMPT = 'Search YouTube. Say or type what to search for, then press Enter or say confirm. Escape cancels.'
+SEARCH_LABEL = 'YouTube search; type, then press Enter. Escape cancels:'
+SEARCH_FIRST = 'Say or type what to search for first. Escape cancels.'
+CONFIRM = ('confirm', 'confirm that', 'okay', 'ok', 'yes', 'yes please', 'search now', 'go ahead')
+CANCEL = ('cancel', 'cancel search', 'escape', 'never mind', 'go back', 'back')
+# "Search YouTube" with no words: open YouTube and ask for them.
+ASK = ('search youtube', 'youtube search', 'search on youtube', 'search in youtube')
+FILTER_KEY_HINT = ' Press Control+Shift+F for filters.'
+DEFAULT_CHOICE = {'upload date': 'Any time', 'type': 'Any type', 'length': 'Any length', 'features': 'No features',
+                  'sort': 'Relevance'}
 UNEXPECTED = ('YouTube did not answer as expected, so that could not be done. '
               'Try again, or say open in browser to use the page itself.')
 NO_VIDEO = 'No video is playing. Choose a video and press Enter.'
@@ -130,8 +157,14 @@ class YouTubeScreen:
         self.choice = 'no'
         self.video = None         # the video loaded in the player: id, title, channel, url, live
         self.played = []          # videos played this session, for Previous video
-        self.filters = dict(yp.NO_FILTERS)
+        self.sp = ''              # the search filter code in use ('' for none); see youtube_page.filter_code
+        self.page_groups = []     # the filters the last results page listed (youtube_page.page_filter_groups)
         self.query = ''
+        self.asking = False       # the search box is open: typed and spoken words are search words
+        self.spoken = None        # spoken search words that wait for "confirm" or Enter
+        self.entry = None         # (stamp, text) for the command box: the window shows text there once
+        self.hinted = False       # the filter key was said after a search
+        self.signed_in = None     # True or False once a page said so; None before
         self.skip = 10
         self.list_page = None
         self.video_page = None
@@ -260,16 +293,20 @@ class YouTubeScreen:
         kind = view['kind']
         if kind == 'list':
             return yp.spoken_item(item)
+        if kind == 'menu':
+            if item[0] == '@account':
+                return 'Sign out' if self.signed_in else 'Sign in'
+            return item[0]
         if kind == 'comments':
             return yp.spoken_comment(item)
         if kind == 'chapters':
             return item['title'] + '. ' + yp.spoken_length(item['time'])
         if kind == 'filters':
-            if item == 'words':
-                return 'Search words: ' + (self.query or 'none yet')
-            if item == 'run':
-                return 'Search now'
-            return yp.FILTERS[item][0] + ': ' + yp.filter_label(item, self.filters[item])
+            if item == 'clear':
+                return 'Clear filters'
+            return item['title'] + ': ' + ', '.join(c['label'] for c in item['choices'] if c['on'])
+        if kind == 'choices':
+            return item['label'] + (', on' if item['on'] else '') + (', not offered with the filters that are on' if item['disabled'] else '')
         if kind == 'quality':
             return yp.quality_name(item) + (', current' if item == view.get('current') else '')
         if kind == 'save':
@@ -279,13 +316,16 @@ class YouTubeScreen:
     def describe(self, lead=''):
         view = self.view()
         if not view:
-            return lead + 'No list is open. Say search for, and your words, or press Alt for the YouTube menu.'
+            return lead + 'No list is open. Press Control+F to search, or Escape for the YouTube menu.'
         items = view['items']
         if not items:
             return lead + (view.get('empty') or 'This list is empty.')
         index = max(0, min(view['index'], len(items) - 1))
         view['index'] = index
-        return lead + announce_item(self.label(view, items[index]), index, len(items), hotkey=False)
+        said = lead + announce_item(self.label(view, items[index]), index, len(items), hotkey=view['kind'] in MENU_KINDS)
+        if view['kind'] == 'menu' and items[index][1]:
+            said += ' ' + spoken_key(items[index][1]) + '.'
+        return said
 
     def push(self, view, lead=''):
         """Show a list. A list of the same kind and name replaces the one on top."""
@@ -301,6 +341,34 @@ class YouTubeScreen:
             intro += str(count) + (' item. ' if count == 1 else ' items. ')
         return self.describe(lead + intro)
 
+    # ------------------------------------------------------------ the YouTube menu
+    def ensure_menu(self):
+        if not self.views or self.views[0]['kind'] != 'menu':
+            self.views.insert(0, {'kind': 'menu', 'name': 'menu', 'title': MENU_TITLE, 'items': list(MENU), 'index': 0,
+                                  'empty': ''})
+
+    def to_menu(self):
+        """Close every list over the YouTube menu, before Home, a library list or new results open."""
+        self.ensure_menu()
+        del self.views[1:]
+
+    def show_menu(self, lead=''):
+        self.to_menu()
+        return self.describe(lead + MENU_TITLE + '. ')
+
+    def menu_choice(self, item):
+        action = item[2]
+        if action == 'search prompt':
+            return self.ask_search()
+        if action == '@account':
+            return self.sign_out() if self.signed_in else self.sign_in()
+        self.m.speak_status('Loading ' + yp.FEEDS[action][0] + '.')
+        return self.load(action)
+
+    def note_signed(self, facts):
+        if isinstance(facts, dict) and facts.get('signedIn') is not None:
+            self.signed_in = bool(facts['signedIn'])
+
     def load(self, name, lead=''):
         """Open Home, a library list or search results."""
         if name in yp.ACCOUNT_FEEDS and self.engine() == 'webview2':
@@ -308,56 +376,200 @@ class YouTubeScreen:
         title, _ = yp.FEEDS[name]
         notice = self.go(yp.feed_url(name))
         items, facts = self.lists.read_list()
+        self.note_signed(facts)
+        view = {'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': items}
         if not items:
             if facts.get('promoSignIn') or name in yp.ACCOUNT_FEEDS and facts.get('signedIn') is False:
                 return notice + SIGN_IN_NEEDED.format(action='see ' + title.lower())
             if name == 'home' and (facts.get('empty') or facts.get('promo')):
                 # Signed out with no watch history, YouTube shows no Home videos, only a hint to search.
-                return notice + self.push({'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': [],
-                                           'empty': HOME_EMPTY}, lead)
-            if facts.get('empty') and name != 'home':
-                return notice + self.push({'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': [],
-                                           'empty': title + ' is empty.'}, lead)
-            return notice + yp.CHANGED
-        return self.push({'kind': 'list', 'name': name, 'title': title, 'url': yp.feed_url(name), 'items': items}, notice + lead)
+                view['empty'] = HOME_EMPTY
+            elif facts.get('empty') and name != 'home':
+                view['empty'] = title + ' is empty.'
+            else:
+                return notice + yp.CHANGED
+        self.to_menu()
+        return self.push(view, notice + lead)
+
+    # ------------------------------------------------------------ search
+    def set_entry(self, text):
+        self.entry = (time.monotonic_ns(), text)
+
+    def ask_search(self):
+        """Control+F, Search in the menu, or "Search YouTube": the command box takes the words."""
+        self.asking, self.spoken = True, None
+        self.set_entry('')
+        return SEARCH_PROMPT
+
+    def end_asking(self):
+        self.asking, self.spoken = False, None
+        self.set_entry('')
+
+    def search_answer(self, raw, command, typed):
+        """Words while the search box is open. Typed words search at once. Spoken words are said
+        back and wait, so a misheard word never searches by itself; "confirm" or Enter searches."""
+        if raw == '@youtube:search:cancel' or command in CANCEL:
+            self.end_asking()
+            view = self.view()
+            if not view or view['kind'] == 'menu':
+                return self.show_menu('Search canceled. ')
+            return self.describe('Search canceled. ' + view['title'] + '. ')
+        if raw == '@youtube:search:enter' or not typed and command in CONFIRM:
+            if not self.spoken:
+                return SEARCH_FIRST
+            words = self.spoken
+            self.end_asking()
+            self.m.speak_status('Searching YouTube.')
+            return self.search(words)
+        words = ' '.join(raw.split())
+        if not typed:
+            words = re.sub(r'^(?:search youtube for|search for)\s+', '', words, flags=re.I).strip().rstrip('.!?,;:').strip()
+        if not words:
+            return SEARCH_FIRST
+        if typed:
+            self.end_asking()
+            self.m.speak_status('Searching YouTube.')
+            return self.search(words)
+        self.spoken = words
+        self.set_entry(words)
+        return words + '. Press Enter or say confirm to search.'
 
     def search(self, query=None):
         query = ' '.join(str(self.query if query is None else query).split()).strip(' .')
         if not query:
-            return self.open_filters()
+            return self.ask_search()
         self.query = query
-        url = yp.search_url(query, self.filters)
+        url = yp.search_url(query, code=self.sp)
         notice = self.go(url)
         items, facts = self.lists.read_list()
-        summary = yp.filter_summary(self.filters)
-        title = 'Results for ' + query + ('. Filters: ' + summary if summary else '')
+        self.note_signed(facts)
+        try:
+            self.page_groups = self.lists.read_filters()
+        except YouTubeError:
+            self.page_groups = []
+        summary = self.filter_summary()
         if not items:
-            if facts.get('empty') or facts.get('app'):
-                if facts.get('empty'):
-                    return notice + 'No results for ' + query + '.' + (' Try fewer filters. Say clear filters.' if summary else ' Try other words.')
+            if facts.get('empty'):
+                if summary:
+                    return notice + ('No results for ' + query + ' with these filters: ' + summary +
+                                     '. Say clear filters, or press Control+Shift+F to change them.')
+                return notice + 'No results for ' + query + '. Try other words.'
             return notice + yp.CHANGED
-        # Replace earlier results, so Escape goes back to where you searched from.
-        while self.view() and self.view().get('name') in ('search', 'filters'):
-            self.views.pop()
-        return self.push({'kind': 'list', 'name': 'search', 'title': title, 'url': url, 'items': items}, notice)
+        # New results replace any list, so Escape goes back to the YouTube menu.
+        self.to_menu()
+        title = 'Results for ' + query + ('. Filters: ' + summary if summary else '')
+        said = self.push({'kind': 'list', 'name': 'search', 'title': title, 'url': url, 'items': items}, notice)
+        if not self.hinted:
+            self.hinted = True
+            said += FILTER_KEY_HINT
+        return said
+
+    # ------------------------------------------------------------ search filters
+    def filter_groups(self):
+        """The filter groups to offer: the ones the results page listed, or the screen's own."""
+        if self.page_groups:
+            known = [g for name in yp.FILTER_ORDER for g in self.page_groups if g['name'] == name]
+            groups = known + [g for g in self.page_groups if g not in known]
+            shaped = []
+            for group in groups:
+                choices = [dict(c) for c in group['choices']]
+                default = DEFAULT_CHOICE.get(group['name'], 'Any')
+                if not any(c['label'].casefold() == default.casefold() for c in choices):
+                    # YouTube takes a filter away with the link of the filter that is on.
+                    on = next((c for c in choices if c['on']), None)
+                    choices.insert(0, {'label': default, 'sp': on['sp'] if on else self.sp, 'on': on is None, 'disabled': False})
+                elif not any(c['on'] for c in choices):
+                    for c in choices:
+                        c['on'] = c['label'].casefold() == default.casefold()
+                title = yp.FILTERS[group['name']][0] if group['name'] in yp.FILTERS else group['title']
+                shaped.append({'name': group['name'], 'title': title, 'choices': choices})
+            return shaped
+        filters = yp.decode_filters(self.sp)
+        return [{'name': name, 'title': yp.FILTERS[name][0],
+                 'choices': [{'label': label, 'key': key, 'on': filters[name] == key, 'disabled': False}
+                             for key, label, _ in yp.FILTERS[name][1]]} for name in yp.FILTER_ORDER]
+
+    def filter_summary(self):
+        """'This week, Videos, sorted by popularity': the filters that are on, or ''."""
+        if not self.page_groups:
+            return yp.filter_summary(yp.decode_filters(self.sp))
+        parts = []
+        for group in self.filter_groups():
+            for choice in group['choices']:
+                if not choice['on'] or choice['label'].casefold() == DEFAULT_CHOICE.get(group['name'], 'Any').casefold():
+                    continue
+                parts.append('sorted by ' + choice['label'].lower() if group['name'] == 'sort' else choice['label'])
+        text = ', '.join(parts)
+        return text[:1].upper() + text[1:]
 
     def open_filters(self):
-        self.push({'kind': 'filters', 'name': 'filters', 'title': 'Search', 'items': ['words', *yp.FILTER_ORDER, 'run']})
-        view = self.view()
-        return ('Search. ' + self.describe() + ' Press Enter to type your search words. '
-                'Left and Right Arrow change a filter. Escape goes back.' if view else '')
+        if not self.query:
+            return 'Search for something first. Then press Control+Shift+F for filters.'
+        summary = self.filter_summary()
+        self.push({'kind': 'filters', 'name': 'filters', 'title': 'Filters', 'items': self.filter_groups() + ['clear']})
+        return self.describe('Filters. ' + ('On now: ' + summary + '. ' if summary else 'No filters are on. '))
 
-    def change_filter(self, step):
-        view = self.view()
-        item = view['items'][view['index']]
-        if item not in yp.FILTERS:
-            return 'Left and Right Arrow change a filter. ' + self.describe()
-        keys = [key for key, _, _ in yp.FILTERS[item][1]]
-        index = keys.index(self.filters[item]) + step
-        if not 0 <= index < len(keys):
-            return ('First choice. ' if index < 0 else 'Last choice. ') + self.label(view, item) + '.'
-        self.filters[item] = keys[index]
-        return yp.filter_label(item, keys[index]) + '.'
+    def open_choices(self, group):
+        choices = group['choices']
+        index = next((i for i, c in enumerate(choices) if c['on']), 0)
+        self.push({'kind': 'choices', 'name': 'choices', 'title': group['title'], 'items': choices, 'index': index,
+                   'group': group['name']})
+        return self.describe(group['title'] + '. ')
+
+    def choose_filter(self, group_name, choice):
+        if choice['disabled']:
+            return (choice['label'] + ' is not offered with the filters that are on. '
+                    'Choose another, or say clear filters.')
+        if choice['on']:
+            return choice['label'] + ' is already chosen.'
+        if 'sp' in choice:
+            self.sp = choice['sp'] or ''
+        else:
+            filters = yp.decode_filters(self.sp)
+            filters[group_name] = choice['key']
+            self.sp = yp.filter_code(filters)
+        if not self.query:
+            label = yp.FILTERS[group_name][0] if group_name in yp.FILTERS else group_name
+            return label + ': ' + choice['label'] + '. Now press Control+F, or say search for, and your words.'
+        self.m.speak_status('Searching YouTube.')
+        said = self.search()
+        self.refresh_filter_lists()
+        return said
+
+    def refresh_filter_lists(self):
+        """After a search that found nothing, the filter lists stay open: show them as they are now,
+        so the next choice combines with the filters that are on, not the ones before."""
+        groups = None
+        for view in self.views:
+            if view['kind'] not in ('filters', 'choices'):
+                continue
+            groups = groups if groups is not None else self.filter_groups()
+            if view['kind'] == 'filters':
+                view['items'] = groups + ['clear']
+            else:
+                group = next((g for g in groups if g['name'] == view.get('group')), None)
+                if group is not None:
+                    view['items'] = group['choices']
+
+    def spoken_filter(self, name, key):
+        """A filter said aloud, such as "This week": the page's own link when it lists one."""
+        if name == 'gone':
+            return yp.GONE[key]
+        label = yp.filter_label(name, key)
+        for group in self.filter_groups() if self.page_groups else []:
+            if group['name'] == name:
+                choice = next((c for c in group['choices'] if c['label'].casefold() == label.casefold()), None)
+                if choice is not None:
+                    return self.choose_filter(name, choice)
+        return self.choose_filter(name, {'label': label, 'key': key, 'on': yp.decode_filters(self.sp)[name] == key,
+                                         'disabled': False})
+
+    def clear_filters(self):
+        self.sp = ''
+        if not self.query:
+            return 'Filters cleared.'
+        self.m.speak_status('Searching YouTube.')
+        return self.search()
 
     def move(self, step=None, to=None):
         view = self.view()
@@ -404,16 +616,16 @@ class YouTubeScreen:
         view = self.view()
         item = self.current()
         if item is None:
-            if view and view['kind'] == 'filters':
-                return self.search()
             return self.describe()
         kind = view['kind']
+        if kind == 'menu':
+            return self.menu_choice(item)
         if kind == 'filters':
-            if item == 'words':
-                return self.m.task_navigation().action('search youtube for {value}', MODE)
-            if item == 'run':
-                return self.search()
-            return self.change_filter(1)
+            if item == 'clear':
+                return self.clear_filters() if self.sp else 'No filters are on. ' + self.describe()
+            return self.open_choices(item)
+        if kind == 'choices':
+            return self.choose_filter(view['group'], item)
         if kind == 'chapters':
             return self.seek_to(item['time'], item['title'] + '.')
         if kind == 'quality':
@@ -945,6 +1157,8 @@ class YouTubeScreen:
                 action, 'Nothing changed.') + ' ' + self.where()
         if action == 'switch':
             return self.switch_to_chrome()
+        if action == 'sign out':
+            return self.finish_sign_out()
         problem = self.need_video()
         if problem:
             return problem
@@ -1007,6 +1221,26 @@ class YouTubeScreen:
         return ('@web', 'Google sign-in page. Type your own email and password. Voice Companion does not save them. '
                 'When you are done, say back to YouTube. ' + result)
 
+    def sign_out(self):
+        if self.engine() == 'webview2':
+            return 'You are not signed in. Embedded Edge always uses YouTube signed out.'
+        if self.signed_in is False:
+            return 'You are not signed in to YouTube. To sign in, say sign in.'
+        return self.ask(('sign out', None), 'Sign out of YouTube? This browser is signed out of your Google account too. '
+                                            'Say Yes or No.')
+
+    def finish_sign_out(self):
+        """Google's own sign-out page, then Home again to check."""
+        self.go(yp.SIGN_OUT_URL)
+        self.go(yp.feed_url('home'))
+        try:
+            self.signed_in = self.lists.signed_in()
+        except YouTubeError:
+            self.signed_in = None
+        if self.signed_in:
+            return 'YouTube did not sign you out. Say open in browser to sign out on the page.'
+        return 'You are signed out of YouTube. ' + self.where()
+
     def after_sign_in(self):
         """Back from Google's page: load the list and the video again, so they use your account."""
         self.signing_in = False
@@ -1020,16 +1254,17 @@ class YouTubeScreen:
                 pass
         view = self.view()
         if view and view['kind'] == 'list' and view.get('name') in yp.FEEDS:
-            self.views.pop()
             said = self.load(view['name'], 'YouTube. ')
-        elif view:
+        elif view and view['kind'] != 'menu':
             said = self.describe('YouTube, ' + view['title'] + '. ')
         else:
-            said = self.load('home', 'YouTube. ')
+            said = self.show_menu()
         try:
             signed = self.lists.signed_in()
         except YouTubeError:
             signed = None
+        if signed is not None:
+            self.signed_in = signed
         return ('You are signed in. ' if signed else 'You are still signed out. ' if signed is False else '') + said
 
     # ------------------------------------------------------------ leaving and the browser view
@@ -1085,6 +1320,8 @@ class YouTubeScreen:
             playing = ' Playing ' + self.video['title'] + '.' if self.owner else ''
         if not view:
             return ('YouTube.' + playing).strip()
+        if view['kind'] == 'menu':
+            return self.describe(MENU_TITLE + '. ').rstrip() + playing
         return self.describe('YouTube, ' + view['title'] + '. ').rstrip() + playing
 
     # ------------------------------------------------------------ news while a video plays
@@ -1135,18 +1372,31 @@ class YouTubeScreen:
 
 # ---------------------------------------------------------------- hooks from companion.py
 def context(m, value):
-    """app_context: list keys stay with the screen; letters are actions, not first letters."""
-    value['menu_letters'] = False
+    """app_context: on a video list, letters are actions; in the YouTube menu and the filter
+    lists they move to the next name; while the search box is open they are typed there."""
     s = screen(m)
+    view = s.view()
+    value['menu_letters'] = bool(view and view['kind'] in MENU_KINDS and s.pending is None and not s.asking)
     if s.pending is not None:
         value['confirmation'] = s.choice
+    if s.asking:
+        value['task_input'] = True
+        value['naming_label'] = SEARCH_LABEL
+    if s.entry is not None:
+        value['entry_request'] = s.entry
     return value
+
+
+def typing(m):
+    """True while the YouTube search box is open: words there are search words, not requests."""
+    s = SCREEN
+    return s is not None and s.m is m and s.asking
 
 
 def menu_state(m):
     s = screen(m)
     view = s.view()
-    if s.pending is not None or not view or not view['items']:
+    if s.pending is not None or s.asking or not view or not view['items']:
         return None
     labels = s.labels(view)
     def select(index):
@@ -1182,13 +1432,27 @@ def navigation_key(m, key):
         if key == 'Escape':
             return 'no'
         return None
+    if s.asking:
+        # The search box: typed letters stay in the box (the window keeps them there).
+        if key == 'Enter':
+            return '@youtube:search:enter'
+        if key == 'Escape':
+            return '@youtube:search:cancel'
+        if key == 'F1':
+            return 'help with youtube'
+        if key in ('Up', 'Down', 'Left', 'Right', 'Home', 'End', 'Tab', 'ShiftTab'):
+            m.speak('Type what to search for, then press Enter. Escape cancels.')
+        return None
+    if key.startswith('Letter:'):
+        m.choose_menu_letter(key[7:], MODE)
+        return None
     from input_parity import screen_command
     direct = screen_command(key, MODE)
     if direct:
         return direct
     view = s.view()
-    if view and view['kind'] == 'filters' and key in ('Left', 'Right'):
-        return '@youtube:filter:' + ('-1' if key == 'Left' else '1')
+    if view and view['kind'] in MENU_KINDS and key in ('Left', 'Right'):
+        return 'previous' if key == 'Left' else 'next'   # as in the app's other menus
     return {'Up': 'previous', 'Down': 'next', 'Home': 'first item', 'End': 'last item', 'Enter': 'enter',
             'Escape': 'go back', 'Left': 'skip back', 'Right': 'skip forward'}.get(key)
 
@@ -1199,9 +1463,11 @@ def open_screen(m, mode, lead=''):
         s.return_mode = 'media_menu' if mode in ('media_menu', 'awake', 'media') else mode
     if getattr(s, 'signing_in', False):
         return s.after_sign_in()
-    if s.views:
+    s.end_asking()
+    if mode == 'web' and len(s.views) > 1:
+        # Back from the page itself ("open in browser"): the list you were on.
         return s.describe('YouTube, ' + s.view()['title'] + '. ')
-    return s.load('home', lead or 'YouTube. ')
+    return s.show_menu(lead)
 
 
 COMMANDS = {
@@ -1244,6 +1510,7 @@ COMMANDS = {
     'save to watch later': 'watch later save', 'add to watch later': 'watch later save',
     'comment': 'comment prompt', 'add a comment': 'comment prompt', 'post a comment': 'comment prompt', 'write a comment': 'comment prompt',
     'sign in': 'sign in', 'sign in to youtube': 'sign in', 'log in': 'sign in',
+    'sign out': 'sign out', 'sign out of youtube': 'sign out', 'log out': 'sign out',
     # lists
     'home': 'home', 'youtube home': 'home', 'home feed': 'home', 'go home': 'home', 'recommended': 'home',
     'subscriptions': 'subscriptions', 'new from subscriptions': 'subscriptions', 'subscription videos': 'subscriptions',
@@ -1252,8 +1519,11 @@ COMMANDS = {
     'watch later': 'watch_later', 'my watch later': 'watch_later', 'watch later list': 'watch_later',
     'liked videos': 'liked', 'my liked videos': 'liked',
     'playlists': 'playlists', 'my playlists': 'playlists', 'your playlists': 'playlists',
-    'search youtube': 'search form', 'search': 'search form', 'search filters': 'search form', 'filters': 'search form',
-    'clear filters': 'clear filters', 'remove filters': 'clear filters',
+    'search youtube': 'search prompt', 'search': 'search prompt', 'youtube search': 'search prompt',
+    'search on youtube': 'search prompt', 'search for a video': 'search prompt', 'find a video': 'search prompt',
+    'search filters': 'filters', 'filters': 'filters', 'filter': 'filters', 'show filters': 'filters', 'change filters': 'filters',
+    'clear filters': 'clear filters', 'remove filters': 'clear filters', 'no filters': 'clear filters',
+    'youtube menu': 'menu', 'back to youtube menu': 'menu', 'go to youtube menu': 'menu', 'open youtube menu': 'menu',
     'refresh youtube': 'refresh', 'refresh': 'refresh', 'reload': 'refresh', 'load more': 'more', 'more videos': 'more',
     'open in browser': 'browser', 'show the page': 'browser', 'use the page': 'browser', 'open the page': 'browser',
     'where am i': 'where', 'what list is this': 'where',
@@ -1307,15 +1577,20 @@ def _handle(m, text, mode, typed=False):
         if mode == 'web' and getattr(m.web_session, 'keyboard_field', None):
             return None
         match = SEARCH.fullmatch(command)
+        ask = command in ASK and mode not in ('web', 'browser_menu')
         # On a web page and the Web browser menu, "YouTube" alone may be a link or a favorite's name.
-        if command in (OPEN_ON_WEB if mode in ('web', 'browser_menu') else OPEN) or match and mode != 'web':
+        if command in (OPEN_ON_WEB if mode in ('web', 'browser_menu') else OPEN) or match and mode != 'web' or ask:
             try:
                 if match:
                     s.return_mode = 'media_menu' if mode in ('media_menu', 'awake') else mode
+                    s.end_asking()
+                    s.ensure_menu()
                     m.speak_status('Searching YouTube.')
                     m.speak(s.search(match[1] or match[2]))
+                elif ask:
+                    open_screen(m, mode)
+                    m.speak(s.ask_search())
                 else:
-                    m.speak_status('Opening YouTube.')
                     m.speak(open_screen(m, mode))
             except Exception as exc:
                 m.speak(str(exc) if isinstance(exc, YouTubeError) else UNEXPECTED)
@@ -1330,7 +1605,7 @@ def _handle(m, text, mode, typed=False):
             return mode
         return None
     try:
-        return here(m, s, raw, command)
+        return here(m, s, raw, command, typed)
     except YouTubeError as exc:
         m.speak(str(exc))
         return MODE
@@ -1343,7 +1618,7 @@ def _handle(m, text, mode, typed=False):
         return MODE
 
 
-def here(m, s, raw, command):
+def here(m, s, raw, command, typed=False):
     if s.pending is not None:
         if command in YES:
             result = s.answer(True)
@@ -1358,11 +1633,20 @@ def here(m, s, raw, command):
             return special(m, s, result)
         m.speak(result)
         return MODE
+    if s.asking:
+        # The search box: every word is a search word, except help, Companion's voice and the main menu.
+        if command in ('help', 'help with youtube', 'youtube help', 'what mode') or m.speech_control(raw) or m.spoken_control(raw):
+            return None   # help, Companion's voice, sleep and exit work here, as in the document name box
+        if command in ('main menu', 'back to main menu'):
+            s.end_asking()
+            return 'awake'
+        m.speak(s.search_answer(raw, command, typed))
+        return MODE
+    if raw.startswith('@youtube:search:'):
+        m.speak(s.describe())   # the box closed before this key arrived
+        return MODE
     if command.startswith('help with youtube') or command in ('youtube help', 'help with this screen'):
         return None
-    if raw.startswith('@youtube:filter:'):
-        m.speak(s.change_filter(int(raw.rsplit(':', 1)[1])))
-        return MODE
     if command in ('stop', 'resume') and s.has_video():
         # As with radio: while a video is loaded, "Stop" and "Resume" mean the video,
         # not Companion's voice ("Stop talking" still silences the voice).
@@ -1463,7 +1747,8 @@ def run(m, s, action, raw, command):
         'description': lambda: s.details('description'), 'comments': s.comments, 'channel': s.channel, 'up next': s.up_next,
         'like': s.like, 'unlike': s.unlike, 'subscription': s.subscription, 'subscribe': lambda: s.subscription(True),
         'unsubscribe': lambda: s.subscription(False), 'save': s.save_list, 'watch later save': s.watch_later,
-        'sign in': s.sign_in, 'search form': s.open_filters, 'where': s.where,
+        'sign in': s.sign_in, 'sign out': s.sign_out, 'search prompt': s.ask_search, 'filters': s.open_filters,
+        'menu': s.show_menu, 'clear filters': s.clear_filters, 'where': s.where,
         'next item': lambda: s.move(1), 'previous item': lambda: s.move(-1), 'first': lambda: s.move(to='first'),
         'last': lambda: s.move(to='last'), 'enter': s.enter,
     }
@@ -1482,6 +1767,8 @@ def run(m, s, action, raw, command):
         if view and view.get('name') == 'related':
             s.views.pop()
             return s.up_next()
+        if view and view['kind'] in MENU_KINDS:
+            return 'There is no list here to load again. ' + s.describe()
         if not view or view['kind'] != 'list' or not view.get('url'):
             return s.load('home')
         if view.get('name') in yp.FEEDS:
@@ -1498,14 +1785,7 @@ def run(m, s, action, raw, command):
         m.speak_status('Searching YouTube.')
         return s.search(raw)
     if action == 'filter':
-        name, value = yp.filter_request(raw)
-        s.filters[name] = value
-        if s.query:
-            return s.search()
-        return yp.FILTERS[name][0] + ': ' + yp.filter_label(name, value) + '. Now say search for, and your words.'
-    if action == 'clear filters':
-        s.filters = dict(yp.NO_FILTERS)
-        return s.search() if s.query else 'Filters cleared.'
+        return s.spoken_filter(*yp.filter_request(raw))
     if action == 'seek':
         return s.skip_by(int(raw))
     if action == 'seek to':
@@ -1561,16 +1841,19 @@ def go_back(m, s):
     view = s.view()
     if view and view['kind'] == 'save' and s.has_video():
         s.player.close_dialog()
-    if len(s.views) <= 1:
+    if not view or view['kind'] == 'menu':
         return '@mode:' + leave(m, s)
     s.views.pop()
+    if not s.views or s.view()['kind'] == 'menu':
+        return s.show_menu()   # Escape from a list comes back to the YouTube menu
     return s.describe('Back to ' + s.view()['title'] + '. ')
 
 
 def leave(m, s):
-    """Escape on the first list: back to the Media menu (or where YouTube was opened from).
+    """Escape on the YouTube menu: back to the Media menu (or where YouTube was opened from).
     The video keeps playing, like radio; going to the main menu stops it."""
     s.pending = None
+    s.end_asking()
     target = s.return_mode or 'media_menu'
     if target == 'media_menu':
         return m.task_navigation().enter('media_menu', 'Media menu', 3)

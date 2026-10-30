@@ -110,18 +110,54 @@ class StreamWatch:
         return reason
 
 
+# Radio, podcasts and media files start at half volume, so a screen reader is
+# easy to hear over them (tester, October 2026). The user's own level is kept in
+# VOLUME_FILE and used from then on.
+DEFAULT_VOLUME = 0.5
+VOLUME_FILE = 'playback-volume.json'
+VOLUME_STEP = 0.1
+
+
+def _volume(value):
+    """A saved or spoken level as a number from 0 to 1, or None when it is not one."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value:
+        return None
+    return round(max(0.0, min(1.0, float(value))), 2)
+
+
 class MediaPlayer:
     def __init__(self, folder):
         self.folder=Path(folder)
         self.playwright=self.context=self.page=None
         self.kind=None
         self.ducked=False
+        self.volume=self._saved_volume()
+        self.rate=1.0   # playback speed; each new file or stream starts at normal speed
         self.start_timeout_ms=12000
         # What is loaded, for "What's playing?", and a number that changes with each
         # play, so a stream failure is reported once per play.
         self.title=self.url=None
         self.session=0
         self.failed=False
+
+    def _saved_volume(self):
+        try:
+            import json
+            saved=json.loads((self.folder/VOLUME_FILE).read_text(encoding='utf-8'))
+        except (OSError,ValueError):
+            return DEFAULT_VOLUME
+        level=_volume(saved.get('volume') if isinstance(saved,dict) else None)
+        return DEFAULT_VOLUME if level is None else level
+
+    def _save_volume(self):
+        try:
+            import json
+            from storage import write_text_atomic
+            self.folder.mkdir(parents=True,exist_ok=True)
+            write_text_atomic(self.folder/VOLUME_FILE,json.dumps({'volume':self.volume}))
+        except OSError as exc:
+            # The level still works until Companion closes.
+            print('Playback volume could not be saved:',exc,file=sys.stderr)
 
     @property
     def kind(self):
@@ -149,8 +185,11 @@ class MediaPlayer:
         try:
             import shared_playwright   # one driver per thread, shared with the web browser
             self.playwright=shared_playwright.start(self.folder)
+            # The player has no window (tester, October 2026): a window had to be found with
+            # Tab or Alt+Tab, and it took the keyboard from Companion. Firefox without a window
+            # still plays sound; Companion's own screen has the controls.
             self.context=self.playwright.firefox.launch_persistent_context(
-                str(self.folder/'profile'),headless=False,
+                str(self.folder/'profile'),headless=True,
                 firefox_user_prefs={'media.autoplay.default':0})
             self.page=self.context.pages[0] if self.context.pages else self.context.new_page()
             self.page.goto(html.as_uri())
@@ -178,9 +217,9 @@ class MediaPlayer:
         # on a busy computer Firefox can keep aborting the next fetch after a stream failed, even
         # with a fresh element (the 0.2.172 and 0.2.176 publish builds stopped on this).
         for attempt in range(2):
-            result=self.page.evaluate('''async ({url,title,timeout,video,ducked}) => {
+            result=self.page.evaluate('''async ({url,title,timeout,video,ducked,volume}) => {
                 // The lowered level is what Companion knows now; an older one may be left from a stream that stopped.
-                window.voiceCompanionDucked=ducked;
+                window.voiceCompanionDucked=ducked;window.voiceCompanionVolume=volume;
                 window.voiceCompanionUserPaused=false;window.voiceCompanionFailed=false;
                 let a=document.getElementById('audio');
                 // After a stream that failed, its element can keep aborting the next fetch (Firefox:
@@ -220,7 +259,7 @@ class MediaPlayer:
                     return started;
                 } finally {clearTimeout(timer);}
             }''',{'url':url,'title':title,'timeout':self.start_timeout_ms,'video':kind=='local' and Path(url.split('?',1)[0]).suffix.lower() in ('.mp4','.m4v','.webm','.ogv','.mov'),
-                  'ducked':getattr(self,'duck_factor',0) if self.ducked else 0})
+                  'ducked':getattr(self,'duck_factor',0) if self.ducked else 0,'volume':self.volume})
             if result or attempt:break
             try:error=self.page.evaluate('window.voiceCompanionStartError||""')
             except Exception:error=''
@@ -233,6 +272,7 @@ class MediaPlayer:
             except Exception:self.last_start_error=''
             raise OSError('This audio format could not start in the player.')
         self.kind=kind
+        self.rate=1.0
         self.title,self.url=title,url
         self.session+=1
 
@@ -264,14 +304,21 @@ class MediaPlayer:
             raise ValueError('Unknown playback setting.')
         if setting=='speed' and not .5<=value<=3:
             raise ValueError('Choose a playback speed from 0.5 to 3.')
-        return self.page.evaluate('''({setting,value})=>{
+        if setting=='volume':
+            # A change by an amount: the level is kept here and saved for next time.
+            value=_volume(self.volume+value)
+            if value is None:raise ValueError('Unknown playback setting.')
+        result=self.page.evaluate('''({setting,value})=>{
             const a=document.getElementById('audio');
             if(setting==='volume'){
-                const volume=Math.max(0,Math.min(1,(window.voiceCompanionVolume??1)+value));
-                window.voiceCompanionVolume=volume;a.volume=volume*(window.voiceCompanionDucked||1);return volume;
+                window.voiceCompanionVolume=value;a.volume=value*(window.voiceCompanionDucked||1);return value;
             }
             a.playbackRate=value;return a.playbackRate;
         }''',{'setting':setting,'value':value})
+        if setting=='volume' and _volume(result) is not None:
+            self.volume=_volume(result);self._save_volume()
+        if setting=='speed' and isinstance(result,(int,float)):self.rate=float(result)
+        return result
 
     def status(self):
         if not self.page or self.page.is_closed() or not self.kind:
@@ -290,10 +337,10 @@ class MediaPlayer:
         if not self.page or self.page.is_closed() or not self.kind:
             self.ducked=False
             return
-        self.page.evaluate('''({ducked,factor}) => {
+        self.page.evaluate('''({ducked,factor,volume}) => {
             window.voiceCompanionDucked=ducked?factor:0;
-            document.getElementById('audio').volume=(window.voiceCompanionVolume??1)*(ducked?factor:1);
-        }''',{'ducked':ducked,'factor':factor})
+            document.getElementById('audio').volume=(window.voiceCompanionVolume??volume)*(ducked?factor:1);
+        }''',{'ducked':ducked,'factor':factor,'volume':self.volume})
         self.ducked=ducked;self.duck_factor=factor
 
     def control(self, action, seconds=15, position=None):
