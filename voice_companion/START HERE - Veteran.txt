@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.182-test.
+Guide version: 0.2.183-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -2149,6 +2149,7 @@ A transcript is a text file of everything Companion says. It also lists each key
 - Passwords and other private boxes are never written. The file shows Hidden in their place.
 - When the file gets large, Companion starts a new one. It keeps one older file, named speech-transcript-old.txt.
 - While the transcript is on, Companion says so each time it starts.
+Thunderbird has its own record, always on. While Thunderbird starts, or while you add an email account, Companion writes what it said and heard to thunderbird-log.txt in the same folder. Passwords are never written. If adding an account goes wrong, your helper can read it.
 
 30. LARGE TEXT AND COLORS
 

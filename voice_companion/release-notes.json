@@ -1,22 +1,18 @@
 {
-  "version": "0.2.182-test",
+  "version": "0.2.183-test",
   "status": "Testing build",
   "date": "October 30, 2026",
-  "baseline": "0.2.181-test",
-  "scope": "A YouTube player with simple keys, and fewer video errors.",
+  "baseline": "0.2.182-test",
+  "scope": "Adding an email account to Thunderbird works from start to finish.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "YouTube player",
+          "title": "Thunderbird record",
           "details": [
-            "Press Enter on a video and you hear Loading video. Then you are in the player.",
-            "In the player, Up and Down Arrow change the volume. Left and Right Arrow skip back and forward.",
-            "Space or K plays and pauses. N plays the next video, and P the one before.",
-            "Escape goes back to your list, such as your search results. The video keeps playing.",
-            "To come back to the player, press Enter on the video that plays, or say Player.",
-            "J and L are gone. The arrow keys do the same."
+            "When you add an account, Voice Companion keeps a record of what it said and heard.",
+            "It is named thunderbird-log.txt. Passwords are never written. A helper can read it if something goes wrong."
           ]
         }
       ]
@@ -25,12 +21,11 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Video errors",
+          "title": "Adding an email account",
           "details": [
-            "If YouTube says something went wrong, the video loads again once by itself.",
-            "If it still will not play, you hear what to do next.",
-            "If YouTube asks you to sign in to show you are not a robot, you hear that, and how to sign in.",
-            "Chrome in the background keeps its window open, out of sight, so videos keep drawing."
+            "A sign-in window Thunderbird opens now comes to the front, and you hear what it is.",
+            "An account Thunderbird added is always connected to Voice Companion too. You hear its address once.",
+            "A work address, such as Microsoft 365, no longer says to type the password in Thunderbird."
           ]
         }
       ]
