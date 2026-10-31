@@ -275,3 +275,15 @@ class SettingNotSavedTests(CompanionTestCase):
                 self.assertEqual(len(self.said), 1, self.said)
                 self.assertIn(words, self.said[0])
                 self.assertTrue(self.said[0].endswith(companion.NOT_SAVED), self.said)
+
+
+class OptionsSaveFailureWordsTests(unittest.TestCase):
+    def test_file_and_program_errors_are_said_in_plain_words(self):
+        """Before: "Settings were not saved: [Errno 13] Permission denied: 'C:\\Users\\...\\preferences.writing'"."""
+        say = companion.options_save_failure
+        self.assertEqual(say(ValueError('Voice pitch must be from minus ten to ten.')),
+                         'Settings were not saved: Voice pitch must be from minus ten to ten.')
+        message = say(PermissionError(13, 'Permission denied', r'C:\Users\will\AppData\preferences.writing'))
+        self.assertEqual(message, 'Settings were not saved, because a settings file could not be written. Check that the disk has space, then save again.')
+        for problem in (KeyError('name'), AttributeError("'list' object has no attribute 'get'"), ValueError('')):
+            self.assertEqual(say(problem), 'Settings were not saved because of a problem. Save again, or ask your helper to check Voice Companion.')

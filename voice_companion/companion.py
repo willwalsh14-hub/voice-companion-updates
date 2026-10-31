@@ -1265,6 +1265,17 @@ def save_options(values,mode):
     speak('Options saved. '+take_window_option_notice()+options_return_notice(mode))
     return mode
 
+def options_save_failure(exc):
+    """What Options says when saving failed. A setting's own reason ("Voice pitch must be
+    from minus ten to ten.") is said as it is; a file or program error is said in plain
+    words, never as an error number and a file path."""
+    if isinstance(exc, ValueError) and str(exc).strip():
+        return 'Settings were not saved: ' + str(exc).strip()
+    if isinstance(exc, OSError):
+        return 'Settings were not saved, because a settings file could not be written. Check that the disk has space, then save again.'
+    return 'Settings were not saved because of a problem. Save again, or ask your helper to check Voice Companion.'
+
+
 def apply_document_defaults(document):
     from app_settings import apply_document_defaults as apply
     apply(sys.modules[__name__],document)
@@ -6063,7 +6074,7 @@ def main():
                         try:
                             mode=save_options(values,mode)
                         except Exception as exc:
-                            SETTINGS_PANEL.failed('Settings were not saved: '+str(exc))
+                            SETTINGS_PANEL.failed(options_save_failure(exc))
                     elif kind=='action':
                         mode=settings_action(values,SETTINGS_RETURN_MODE)
                     elif kind=='preview':
