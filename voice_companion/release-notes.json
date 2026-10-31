@@ -46,7 +46,7 @@
             "After a move or delete stops partway, you hear to list the folder again. Keys no longer act on a message that is gone.",
             "After a folder change, the Inbox is listed again.",
             "A damaged or locked draft says what is wrong, not to list your drafts.",
-            "If Thunderbird's connection file cannot be updated, Thunderbird restarts only once, and you hear why."
+            "If the link to Thunderbird cannot be updated, Thunderbird restarts just once. You hear why."
           ]
         },
         {
@@ -57,7 +57,7 @@
             "A failed read keeps the address book you chose.",
             "A failed delete says that nothing was deleted and what to try.",
             "Email John Smith finds John when Thunderbird is slow to answer.",
-            "A damaged answer from Thunderbird no longer stops Contacts or Calendar."
+            "A bad reply from Thunderbird no longer stops Contacts. It no longer stops Calendar."
           ]
         },
         {
@@ -74,13 +74,13 @@
         {
           "title": "Web",
           "details": [
-            "A damaged favorites or history file no longer stops the browser.",
+            "A bad list of favorites or history no longer stops the browser.",
             "If favorites cannot be saved, you hear that nothing changed and to try again.",
             "Download history is no longer lost when its file is busy.",
             "A page that will not load says why: no internet, no such website, too slow, or a security problem.",
             "Spoken web commands that fail say to press F5 and try again, instead of closing the app.",
             "Pages with no title or blank fields no longer leave gaps in what you hear.",
-            "The regular browser extension no longer gets stuck on Checking browser connection."
+            "The browser add-on no longer gets stuck when it checks the link."
           ]
         },
         {
