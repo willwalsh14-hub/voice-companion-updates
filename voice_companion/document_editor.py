@@ -268,6 +268,29 @@ def closed(text):
     return text if text.endswith(('.', '!', '?')) else text + '.'
 
 
+def heading_level(paragraph):
+    """1 to 6 for a heading paragraph, else 0."""
+    match = re.fullmatch(r'Heading ([1-6])', str(getattr(paragraph, 'kind', '') or ''))
+    return int(match[1]) if match else 0
+
+
+def heading_words(paragraph):
+    """'Heading level 1. ' before a heading's words; '' for any other paragraph."""
+    level = heading_level(paragraph)
+    return f'Heading level {level}. ' if level else ''
+
+
+def heading_spans(paragraphs):
+    """(start, end, level) of each heading in the text the window shows (paragraphs joined by new lines)."""
+    spans, start = [], 0
+    for p in paragraphs:
+        level = heading_level(p)
+        if level:
+            spans.append((start, start + len(p.text), level))
+        start += len(p.text) + 1
+    return spans
+
+
 def formatting_words(changes):
     """'Bold. Font size 14 points.' for what a format command changed, in the words
     "say formatting" uses. Never "bold: True"."""
@@ -280,7 +303,8 @@ def formatting_words(changes):
         elif name == 'font':
             parts.append('Font ' + str(value))
         elif name == 'kind':
-            parts.append('Normal text' if value == 'Normal' else str(value))
+            level = re.fullmatch(r'Heading ([1-6])', str(value))
+            parts.append('Normal text' if value == 'Normal' else f'Heading level {level[1]}' if level else str(value))
         elif name == 'alignment':
             parts.append('Alignment ' + ('justified' if value == 'both' else str(value)))
         else:
@@ -1330,7 +1354,7 @@ class VoiceDocument:
             line = p.text[start:end].strip('\n')
             self.selection = TextSelection(self.cursor, start, self.cursor, end)
             self._apply_selection_action(self.selection, 'delete')
-            return 'Deleted line: ' + (line or 'blank line') + '. Say undo to restore it.'
+            return 'Deleted line: ' + closed(line or 'blank line') + ' Say undo to restore it.'
         if command == 'delete current word':
             command = 'delete word'
         if command in ('copy', 'cut') and self.selection and self.selected_text():
@@ -1401,7 +1425,7 @@ class VoiceDocument:
             p = self.paragraphs[self.cursor]
             if p.table_id:
                 return self.describe_cell()
-            return p.text.strip() or 'Empty paragraph.'
+            return heading_words(p) + (p.text.strip() or ('Empty heading.' if heading_level(p) else 'Empty paragraph.'))
         if request:
             if not any(p.text.strip() for p in self.paragraphs):
                 return self.EMPTY_NOTICE   # as every other command says it
@@ -1481,7 +1505,10 @@ class VoiceDocument:
             p = self.paragraphs[self.cursor]
             if p.table_id:
                 return self.describe_cell()
-            return (f'Paragraph {self.cursor + 1} of {len(self.paragraphs)}. ' if command=='where am i' else '')+(p.text or 'Empty paragraph.')
+            # Headings say their level first, as screen readers do (Will, October 30, 2026).
+            # Other formatting is said only when asked (say formatting, Insert+F).
+            return ((f'Paragraph {self.cursor + 1} of {len(self.paragraphs)}. ' if command=='where am i' else '') +
+                    heading_words(p) + (p.text or ('Empty heading.' if heading_level(p) else 'Empty paragraph.')))
         if command in ('read sentence', 'read current sentence', 'next sentence', 'previous sentence'):
             if not self.paragraphs:
                 return 'The document is empty.'

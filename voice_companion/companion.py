@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.186-test'
+APP_VERSION = '0.2.187-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -456,6 +456,9 @@ def app_context(mode):
     if editor is not None:
         if logical=='document':context['document_table']=bool(editor.table_cell())
         source=str(id(editor));context.update(source=source,text=document_text(editor),readonly=False,ack=EDIT_ACK.get(source,0))
+        # Where the headings are, so the arrows say "Heading level 1" on them (Will, October 30, 2026).
+        from document_editor import heading_spans
+        context['document_headings']=heading_spans(editor.paragraphs)
         position=editor.navigation_position or editor.insertion_position or (editor.cursor,len(editor.paragraphs[editor.cursor].text) if editor.paragraphs else 0)
         context['caret']=absolute(editor,position)
         if editor.selection:
@@ -3581,7 +3584,10 @@ def choose_mail_account(index, mode):
             return mode
         pending_send = None
         mail_session = MailSession(provider, APP, progress=mail_progress)
-        speak('Switched to ' + words.label((provider, address)) + '. ' + mail_session.process('open inbox'))
+        # Said at once, before the inbox loads (Thunderbird checks the server first), so the
+        # switch is heard without waiting (Will, October 30, 2026).
+        speak('Switched to ' + words.label((provider, address)) + '.')
+        speak(mail_session.process('open inbox'))
         return 'mailbox'
     # Folders: this account's folder list. Escape there comes back to the accounts.
     FOLDER_ACCOUNT_RETURN = picker['origin']
@@ -3626,7 +3632,8 @@ def switch_mail_account(provider, address, mode):
     from account_picker import label
     if mode == 'mailbox':
         mail_session = MailSession(provider, APP, progress=mail_progress)
-        speak('Switched to ' + label((provider, address)) + '. ' + mail_session.process('open inbox'))
+        speak('Switched to ' + label((provider, address)) + '.')   # at once, before the inbox loads
+        speak(mail_session.process('open inbox'))
     else:
         speak('Switched to ' + label((provider, address)) + '.')
     return mode

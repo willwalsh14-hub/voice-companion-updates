@@ -279,7 +279,8 @@ class SwitchAccountTests(AccountScreenTestCase):
         self.assertEqual(self.key('End', 'awake'), 'awake')
         self.assertEqual(self.key('Enter', 'awake'), 'mailbox')
         self.assertEqual(self.store.selected(), YAHOO)
-        self.assertIn('Switched to Yahoo, sam@yahoo.com', self.said[-1])
+        # Said at once, before "Getting messages" and the inbox.
+        self.assertLess(self.said.index('Switched to Yahoo, sam@yahoo.com.'), self.said.index('Getting messages from Inbox. Please wait.'))
         self.assertIn('For sam@yahoo.com in inbox', ' '.join(self.said))
 
     def test_email_menu_switch_and_remove_items(self):

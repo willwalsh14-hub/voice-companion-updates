@@ -72,13 +72,13 @@ class NativeSettingsTests(unittest.TestCase):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.session.values['punctuation']='none'
         self.u.PostMessageW(categories,0x100,0x0D,0)
-        self.wait(lambda:any('Verbosity, high' in notice for notice in self.notices))
+        self.wait(lambda:any('Verbosity, combo box, high' in notice for notice in self.notices))
         choice=self.u.GetDlgItem(hwnd,200)
         self.u.PostMessageW(choice,0x100,9,0)
-        self.wait(lambda:any('Spoken punctuation, none' in notice for notice in self.notices))
+        self.wait(lambda:any('Spoken punctuation, combo box, none' in notice for notice in self.notices))
         before=len(self.notices)
         self.panel.command('previous setting')
-        self.wait(lambda:len(self.notices)>before and 'Verbosity, high' in self.notices[-1])
+        self.wait(lambda:len(self.notices)>before and 'Verbosity, combo box, high' in self.notices[-1])
     def test_category_arrows_choose_enter_opens_then_checkbox_and_enter_save(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x28,0) # Choose only; Enter opens.
@@ -94,7 +94,7 @@ class NativeSettingsTests(unittest.TestCase):
         before=bool(self.u.SendMessageW(checkbox,0xF0,0,0))
         # Queue real keystrokes so IsDialogMessage handles checkbox activation.
         self.u.PostMessageW(checkbox,0x100,0x20,0);self.u.PostMessageW(checkbox,0x101,0x20,0)
-        self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before and self.notices[-1]==('off' if before else 'on'))
+        self.wait(lambda:bool(self.u.SendMessageW(checkbox,0xF0,0,0))!=before and self.notices[-1]==('not checked' if before else 'checked'))
         self.u.PostMessageW(checkbox,0x100,0x0D,0)
         self.wait(lambda:len(self.saved)==1)
         self.assertTrue(self.panel.closed.wait(5))
@@ -125,7 +125,7 @@ class NativeSettingsTests(unittest.TestCase):
     def test_combo_arrow_changes_value_and_enter_saves(self):
         hwnd=self.open_panel()
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,100),0x100,0x0D,0)
-        self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
+        self.wait(lambda:any('Verbosity, combo box, high' in message for message in self.notices))
         combo=self.u.GetDlgItem(hwnd,200)
         self.u.PostMessageW(combo,0x100,0x28,0)
         self.wait(lambda:self.session.values['verbosity']=='medium' and self.notices[-1]=='medium')
@@ -137,13 +137,13 @@ class NativeSettingsTests(unittest.TestCase):
     def test_enter_opens_category_and_focus_is_spoken(self):
         hwnd=self.open_panel();categories=self.u.GetDlgItem(hwnd,100)
         self.u.PostMessageW(categories,0x100,0x0D,0)
-        self.wait(lambda:any('Verbosity, high' in message for message in self.notices))
+        self.wait(lambda:any('Verbosity, combo box, high' in message for message in self.notices))
         self.assertTrue(any(message.startswith('Verbosity options dialog.') for message in self.notices))
 
     def test_text_entry_is_self_voicing_and_password_is_hidden(self):
         hwnd=self.open_panel();self.panel.command('documents')
         self.wait(lambda:self.session.category==CATEGORIES.index('Word processor options'))
-        self.wait(lambda:any('Font for new documents, Calibri' in message for message in self.notices))
+        self.wait(lambda:any('Font for new documents, combo box, Calibri' in message for message in self.notices))
         # The font is a list: a first letter moves to the next matching font.
         fonts=self.u.GetDlgItem(hwnd,200)
         self.u.PostMessageW(fonts,0x100,ord('T'),0)
@@ -168,7 +168,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.panel.command('synthesizer')
         self.wait(lambda:self.session.category==2)
         for _ in range(3):self.panel.command('next setting')
-        self.wait(lambda:any('AI API key; blank keeps the saved key. Hidden.' in message for message in self.notices))
+        self.wait(lambda:any('AI API key; blank keeps the saved key, password edit, hidden.' in message for message in self.notices))
         password=self.u.GetDlgItem(hwnd,204)
         self.assertTrue(password)
         before=len(self.notices)
@@ -198,11 +198,11 @@ class NativeSettingsTests(unittest.TestCase):
         # One step at a time: wait for each step to be spoken before the next, or the
         # commands queue up faster than the dialog answers and skip past the button.
         for _ in range(20):
-            if any('Add an email account. Button.' in n for n in self.notices):break
+            if any('Add an email account, button.' in n for n in self.notices):break
             before=len(self.notices);self.panel.command('next setting')
             until=time.monotonic()+3
             while len(self.notices)==before and time.monotonic()<until:time.sleep(.02)
-        self.wait(lambda:any('Add an email account. Button.' in n for n in self.notices))
+        self.wait(lambda:any('Add an email account, button.' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,205),0x100,0x0D,0)
         self.assertTrue(self.panel.closed.wait(5),self.notices)
         self.assertEqual(actions,['add_account']);self.assertFalse(self.saved)
@@ -216,7 +216,7 @@ class NativeSettingsTests(unittest.TestCase):
         self.u.PostMessageW(headers,0x100,0x20,0)
         self.wait(lambda:self.session.values['email_header_order']=='subject, date')
         self.panel.command('next setting');self.panel.command('next setting');self.panel.command('next setting')
-        self.wait(lambda:any('Move down. Button.' in n for n in self.notices))
+        self.wait(lambda:any('Move down, button.' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,302),0x100,0x0D,0)
         self.wait(lambda:any('From, disabled, 2 of 4' in n for n in self.notices))
         self.u.PostMessageW(self.u.GetDlgItem(hwnd,302),0x100,0x1B,0)

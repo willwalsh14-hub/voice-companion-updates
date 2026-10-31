@@ -148,6 +148,18 @@
 ],
 "screen_after": "awake"
 },
+"awake | Heading 1": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Heading level two.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | Hello there.": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -220,6 +232,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | Next heading": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | No, thanks.": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -250,6 +268,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | Previous heading": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
@@ -257,6 +281,12 @@
 "screen_after": "awake"
 },
 "awake | Read event": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Read paragraph.": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -328,6 +358,12 @@
 ],
 "screen_after": "awake"
 },
+"awake | The heading of the letter is short.": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
 "awake | The status of the order is late.": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
@@ -359,6 +395,12 @@
 "screen_after": "awake"
 },
 "awake | Today": {
+"said": [
+"I did not understand that. You are on the main menu. Press F1 for help."
+],
+"screen_after": "awake"
+},
+"awake | Toggle bold": {
 "said": [
 "I did not understand that. You are on the main menu. Press F1 for help."
 ],
@@ -5189,6 +5231,24 @@
 "Hello world. Second sentence. Go to October 30"
 ]
 },
+"document | Heading 1": {
+"said": [
+"Formatted the current paragraph. Heading level 1."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
+"document | Heading level two.": {
+"said": [
+"Formatted the current paragraph. Heading level 2."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | Hello there.": {
 "said": [
 "Hello there."
@@ -5297,6 +5357,15 @@
 "Hello world. Second sentence. Next event"
 ]
 },
+"document | Next heading": {
+"said": [
+"No more headings."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | No, thanks.": {
 "said": [
 "No, thanks."
@@ -5342,6 +5411,15 @@
 "Hello world. Second sentence. Please meet me today."
 ]
 },
+"document | Previous heading": {
+"said": [
+"No previous headings."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
+]
+},
 "document | Rate this product five stars.": {
 "said": [
 "Rate this product five stars."
@@ -5358,6 +5436,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Read event"
+]
+},
+"document | Read paragraph.": {
+"said": [
+"Hello world. Second sentence."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Read receipt on or off": {
@@ -5459,6 +5546,15 @@
 "Hello world. Second sentence. The date of the party is Friday."
 ]
 },
+"document | The heading of the letter is short.": {
+"said": [
+"The heading of the letter is short."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence. The heading of the letter is short."
+]
+},
 "document | The status of the order is late.": {
 "said": [
 "The status of the order is late."
@@ -5511,6 +5607,15 @@
 "screen_after": "document",
 "text": [
 "Hello world. Second sentence. Today"
+]
+},
+"document | Toggle bold": {
+"said": [
+"Formatted the current paragraph. Bold."
+],
+"screen_after": "document",
+"text": [
+"Hello world. Second sentence."
 ]
 },
 "document | Tomorrow.": {
@@ -6960,7 +7065,7 @@
 },
 "document | delete line": {
 "said": [
-"Deleted line: Hello world. Second sentence.. Say undo to restore it."
+"Deleted line: Hello world. Second sentence. Say undo to restore it."
 ],
 "screen_after": "document",
 "text": [
@@ -12455,6 +12560,24 @@
 "Hello world. Go to October 30"
 ]
 },
+"email_draft | Heading 1": {
+"said": [
+"Formatted the current paragraph. Heading level 1."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
+"email_draft | Heading level two.": {
+"said": [
+"Formatted the current paragraph. Heading level 2."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | Hello there.": {
 "said": [
 "Hello there."
@@ -12563,6 +12686,15 @@
 "Hello world. Next event"
 ]
 },
+"email_draft | Next heading": {
+"said": [
+"No more headings."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | No, thanks.": {
 "said": [
 "No, thanks."
@@ -12608,6 +12740,15 @@
 "Hello world. Please meet me today."
 ]
 },
+"email_draft | Previous heading": {
+"said": [
+"No previous headings."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
+]
+},
 "email_draft | Rate this product five stars.": {
 "said": [
 "Rate this product five stars."
@@ -12624,6 +12765,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Read event"
+]
+},
+"email_draft | Read paragraph.": {
+"said": [
+"Hello world."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Read receipt on or off": {
@@ -12725,6 +12875,15 @@
 "Hello world. The date of the party is Friday."
 ]
 },
+"email_draft | The heading of the letter is short.": {
+"said": [
+"The heading of the letter is short."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world. The heading of the letter is short."
+]
+},
 "email_draft | The status of the order is late.": {
 "said": [
 "The status of the order is late."
@@ -12777,6 +12936,15 @@
 "screen_after": "email_draft",
 "text": [
 "Hello world. Today"
+]
+},
+"email_draft | Toggle bold": {
+"said": [
+"Formatted the current paragraph. Bold."
+],
+"screen_after": "email_draft",
+"text": [
+"Hello world."
 ]
 },
 "email_draft | Tomorrow.": {
@@ -14313,7 +14481,7 @@
 },
 "email_draft | delete line": {
 "said": [
-"Deleted line: Hello world.. Say undo to restore it."
+"Deleted line: Hello world. Say undo to restore it."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17771,7 +17939,7 @@
 },
 "email_draft | save": {
 "said": [
-"Email draft saved locally as Routing check 434. It has not been sent."
+"Email draft saved locally as Routing check 438. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17789,7 +17957,7 @@
 },
 "email_draft | save document": {
 "said": [
-"Email draft saved locally as Routing check 435. It has not been sent."
+"Email draft saved locally as Routing check 439. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17807,7 +17975,7 @@
 },
 "email_draft | save draft": {
 "said": [
-"Email draft saved locally as Routing check 436. It has not been sent."
+"Email draft saved locally as Routing check 440. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17834,7 +18002,7 @@
 },
 "email_draft | save it": {
 "said": [
-"Email draft saved locally as Routing check 438. It has not been sent."
+"Email draft saved locally as Routing check 442. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -17843,7 +18011,7 @@
 },
 "email_draft | save my document": {
 "said": [
-"Email draft saved locally as Routing check 439. It has not been sent."
+"Email draft saved locally as Routing check 443. It has not been sent."
 ],
 "screen_after": "email_draft",
 "text": [
@@ -19813,6 +19981,18 @@
 ],
 "screen_after": "help"
 },
+"help | Heading 1": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Heading level two.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | Hello there.": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -19885,6 +20065,12 @@
 ],
 "screen_after": "help"
 },
+"help | Next heading": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | No, thanks.": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -19915,6 +20101,12 @@
 ],
 "screen_after": "help"
 },
+"help | Previous heading": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
@@ -19922,6 +20114,12 @@
 "screen_after": "help"
 },
 "help | Read event": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Read paragraph.": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -19993,6 +20191,12 @@
 ],
 "screen_after": "help"
 },
+"help | The heading of the letter is short.": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
 "help | The status of the order is late.": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
@@ -20024,6 +20228,12 @@
 "screen_after": "help"
 },
 "help | Today": {
+"said": [
+"I did not understand that. Say next to hear a topic, or press Escape to leave Help."
+],
+"screen_after": "help"
+},
+"help | Toggle bold": {
 "said": [
 "I did not understand that. Say next to hear a topic, or press Escape to leave Help."
 ],
@@ -24716,6 +24926,24 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Heading 1": {
+"calls": [
+"call.process('Heading 1')"
+],
+"said": [
+"session handled: Heading 1"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Heading level two.": {
+"calls": [
+"call.process('Heading level two.')"
+],
+"said": [
+"session handled: Heading level two."
+],
+"screen_after": "mailbox"
+},
 "mailbox | Hello there.": {
 "calls": [
 "call.process('Hello there.')"
@@ -24818,6 +25046,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Next heading": {
+"calls": [
+"call.process('Next heading')"
+],
+"said": [
+"session handled: Next heading"
+],
+"screen_after": "mailbox"
+},
 "mailbox | No, thanks.": {
 "calls": [
 "call.process('No, thanks.')"
@@ -24860,6 +25097,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | Previous heading": {
+"calls": [
+"call.process('Previous heading')"
+],
+"said": [
+"session handled: Previous heading"
+],
+"screen_after": "mailbox"
+},
 "mailbox | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
@@ -24872,6 +25118,15 @@
 ],
 "said": [
 "session handled: Read event"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Read paragraph.": {
+"calls": [
+"call.process('Read paragraph.')"
+],
+"said": [
+"session handled: Read paragraph."
 ],
 "screen_after": "mailbox"
 },
@@ -24968,6 +25223,15 @@
 ],
 "screen_after": "mailbox"
 },
+"mailbox | The heading of the letter is short.": {
+"calls": [
+"call.process('The heading of the letter is short.')"
+],
+"said": [
+"session handled: The heading of the letter is short."
+],
+"screen_after": "mailbox"
+},
 "mailbox | The status of the order is late.": {
 "calls": [
 "call.process('The status of the order is late.')"
@@ -25016,6 +25280,15 @@
 ],
 "said": [
 "session handled: Today"
+],
+"screen_after": "mailbox"
+},
+"mailbox | Toggle bold": {
+"calls": [
+"call.process('Toggle bold')"
+],
+"said": [
+"session handled: Toggle bold"
 ],
 "screen_after": "mailbox"
 },
@@ -31169,6 +31442,18 @@
 ],
 "screen_after": "note"
 },
+"note | Heading 1": {
+"said": [
+"Heading 1"
+],
+"screen_after": "note"
+},
+"note | Heading level two.": {
+"said": [
+"Heading level two."
+],
+"screen_after": "note"
+},
 "note | Hello there.": {
 "said": [
 "Hello there."
@@ -31241,6 +31526,12 @@
 ],
 "screen_after": "note"
 },
+"note | Next heading": {
+"said": [
+"Next heading"
+],
+"screen_after": "note"
+},
 "note | No, thanks.": {
 "said": [
 "No, thanks."
@@ -31271,6 +31562,12 @@
 ],
 "screen_after": "note"
 },
+"note | Previous heading": {
+"said": [
+"Previous heading"
+],
+"screen_after": "note"
+},
 "note | Rate this product five stars.": {
 "said": [
 "Rate this product five stars."
@@ -31280,6 +31577,12 @@
 "note | Read event": {
 "said": [
 "Read event"
+],
+"screen_after": "note"
+},
+"note | Read paragraph.": {
+"said": [
+"There is no text to read."
 ],
 "screen_after": "note"
 },
@@ -31349,6 +31652,12 @@
 ],
 "screen_after": "note"
 },
+"note | The heading of the letter is short.": {
+"said": [
+"The heading of the letter is short."
+],
+"screen_after": "note"
+},
 "note | The status of the order is late.": {
 "said": [
 "The status of the order is late."
@@ -31382,6 +31691,12 @@
 "note | Today": {
 "said": [
 "Today"
+],
+"screen_after": "note"
+},
+"note | Toggle bold": {
+"said": [
+"Toggle bold"
 ],
 "screen_after": "note"
 },
@@ -36091,6 +36406,26 @@
 ],
 "screen_after": "web"
 },
+"web | Heading 1": {
+"calls": [
+"call.command('Heading 1')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Heading 1"
+],
+"screen_after": "web"
+},
+"web | Heading level two.": {
+"calls": [
+"call.command('Heading level two.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Heading level two."
+],
+"screen_after": "web"
+},
 "web | Hello there.": {
 "calls": [
 "call.command('Hello there.')",
@@ -36203,6 +36538,16 @@
 ],
 "screen_after": "web"
 },
+"web | Next heading": {
+"calls": [
+"call.command('Next heading')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Next heading"
+],
+"screen_after": "web"
+},
 "web | No, thanks.": {
 "calls": [
 "call.command('No, thanks.')",
@@ -36249,6 +36594,16 @@
 ],
 "screen_after": "web"
 },
+"web | Previous heading": {
+"calls": [
+"call.command('Previous heading')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Previous heading"
+],
+"screen_after": "web"
+},
 "web | Rate this product five stars.": {
 "said": [
 "Voice rate must be a whole number from minus ten to ten."
@@ -36262,6 +36617,16 @@
 ],
 "said": [
 "session handled: Read event"
+],
+"screen_after": "web"
+},
+"web | Read paragraph.": {
+"calls": [
+"call.command('Read paragraph.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Read paragraph."
 ],
 "screen_after": "web"
 },
@@ -36367,6 +36732,16 @@
 ],
 "screen_after": "web"
 },
+"web | The heading of the letter is short.": {
+"calls": [
+"call.command('The heading of the letter is short.')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: The heading of the letter is short."
+],
+"screen_after": "web"
+},
 "web | The status of the order is late.": {
 "calls": [
 "call.command('The status of the order is late.')",
@@ -36420,6 +36795,16 @@
 ],
 "said": [
 "session handled: Today"
+],
+"screen_after": "web"
+},
+"web | Toggle bold": {
+"calls": [
+"call.command('Toggle bold')",
+"call.page_revision.__ne__(<mock>)"
+],
+"said": [
+"session handled: Toggle bold"
 ],
 "screen_after": "web"
 },

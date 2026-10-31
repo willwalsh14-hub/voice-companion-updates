@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.186-test.
+Guide version: 0.2.187-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -700,13 +700,16 @@ To change just the current word:
 - Say "Bold word", "Italic word", or "Underline word". "Remove bold from word" turns bold off.
 - To change its size, say "Set word size to", a number, and "points", such as "Set word size to 14 points".
 - To change its font, say "Set word font to", followed by the font name, such as "Set word font to Arial".
-To hear the text settings, say "Say font" or "Read formatting", or press Insert+F. To hear one setting, say "Say font name", "Say size", "Say bold", "Say italic", or "Say underline".
+Companion does not say bold, fonts, or other text settings as you move. Only headings are said. To hear the text settings, say "Say font" or "Read formatting", or press Insert+F. To hear one setting, say "Say font name", "Say size", "Say bold", "Say italic", or "Say underline".
 If selected text has more than one setting, Companion says the setting is mixed.
 
 8.4 Use headings and align text
 A heading names a part of your document. Heading levels run from 1 to 6. Level 1 is the main heading. A higher number makes a smaller heading.
 - To make a heading, say "Heading", followed by a level number, such as "Heading 1". Or press Control+Alt and the number, such as Control+Alt+1.
 - "Make this a heading" uses level 1.
+- You hear the level when you make a heading, such as "Heading level 1".
+- When you move onto a heading with the arrows, or by voice, you hear its level first. For example: "Heading level 2. Plans".
+- Press Enter at the end of a heading, and the next line is normal text.
 - To remove the heading style, say "Normal text", or press Control+Shift+N.
 - To place a paragraph on the page, say "Align left", "Align center", "Align right", or "Align justified". Or press Control+L, Control+E, Control+R, or Control+J.
 - Justified text lines up with both page edges.
@@ -1886,6 +1889,12 @@ To open Options, say "Options", or press Alt+O.
 4. Type in a text box when needed.
 5. Press Enter in a setting, or choose OK, to save. You hear Options saved. Options closes and takes you back to your last task, and names it, such as Main menu.
 To leave without saving, choose Cancel, or press Escape.
+Each setting says what kind of control it is, then its value:
+- A check box says checked or not checked. Press Space to change it.
+- A combo box says its choice, and where it is in the list, such as "2 of 3". Use Up Arrow and Down Arrow to change it.
+- An edit combo box, such as the font, lets you type a choice or pick one with the arrows.
+- An edit box says what is in it, or blank. Type to change it. A password edit box says hidden.
+- A button says button. Press Enter or Space to use it.
 By voice, say "Next", "Previous", and "Okay" to open a category, or say its name. To change a setting, say "Set", the setting name, "to", and the value. For example, say "Set Speech rate to 4".
 Each button in Options also has its own spoken command, such as "Add account" or "Check for updates". You can say it from outside Options too.
 To go back to the categories without saving, say "Cancel" or "Back", or press Escape. To leave Options, say "Close settings".

@@ -63,6 +63,9 @@ def replace_keyboard_text(doc,before,after,caret,selection=None):
         for index,piece in enumerate(pieces):
             p=copy.deepcopy(first if index==0 or index<len(pieces)-1 else last)
             p.text=(prefix if index==0 else '')+piece+(suffix if index==len(pieces)-1 else '')
+            # Enter at the end of a heading starts normal text, as in Word; Enter inside one
+            # keeps both halves headings.
+            if index>0 and p.kind.startswith('Heading') and not (index==len(pieces)-1 and suffix):p.kind='Normal'
             styles=(prefix_styles if index==0 else [])+[inherited]*len(piece)+(suffix_styles if index==len(pieces)-1 else [])
             p.runs=doc.compress_runs(p.text,styles);created.append(p)
         doc.paragraphs[i:j+1]=created
@@ -73,6 +76,14 @@ def replace_keyboard_text(doc,before,after,caret,selection=None):
     if selection and selection[0]!=selection[1]:
         a=doc._location(selection[0]);b=doc._location(selection[1]);doc.selection=TextSelection(a[0],a[1],b[0],b[1])
     else:doc.selection=None
+
+def heading_notice(headings,caret,notice):
+    """'Heading level 1. Plans' when the caret's line is in a heading; other lines as they are.
+    Only headings are said while moving; bold, fonts and the rest wait for Insert+F (Will, October 30, 2026)."""
+    for start,end,level in headings or ():
+        if start<=caret<=end:
+            return 'Heading level '+str(level)+'. '+(notice if notice and notice!='Blank.' else 'Empty heading.')
+    return notice
 
 def paragraph_destination(text,caret,direction):
     """Ctrl+arrows skip separator-only lines and retain paragraph-start behavior."""

@@ -1,37 +1,28 @@
 {
-  "version": "0.2.186-test",
+  "version": "0.2.187-test",
   "status": "Testing build",
   "date": "October 30, 2026",
-  "baseline": "0.2.184-test",
-  "scope": "Email says and changes read, unread, flags and importance.",
+  "baseline": "0.2.186-test",
+  "scope": "Documents say headings, and Options say what kind of control each setting is.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Message status in Thunderbird",
+          "title": "Headings in documents",
           "details": [
-            "Each message says its status first: unread, flagged, replied, forwarded, or high or low importance.",
-            "A message you have read says nothing more. You can turn this off in Email options.",
-            "To mark a message read or unread, press Q. Or say Mark as read, or Mark as unread.",
-            "To flag a message, press X, or say Flag. Press X again, or say Remove flag, to take it off.",
-            "Say Message status to hear all of it. If messages are marked, Q and X change all of them.",
-            "Opening a message marks it read, as in Thunderbird."
+            "When you move onto a heading, you hear its level first, such as Heading level 1.",
+            "This works with the arrows, and when you say Next paragraph, Next heading, or Read paragraph.",
+            "When you make a heading, you hear its level.",
+            "Bold, fonts, and other text settings are not said as you move. Press Insert+F, or say Read formatting, to hear them."
           ]
         },
         {
-          "title": "Importance and read receipts",
+          "title": "Options say each kind of control",
           "details": [
-            "While you write, press Control+Shift+I to change the importance. Or say High importance, Low importance, or Normal importance.",
-            "Press Control+Shift+T, or say Request a read receipt, to ask the person to tell you when they open it.",
-            "The review says them before you send. They are also in the draft menu."
-          ]
-        },
-        {
-          "title": "Play and pause in YouTube",
-          "details": [
-            "Space or Enter plays and pauses a video.",
-            "K no longer plays or pauses. It did the same thing as Space."
+            "Each setting says what it is: check box, combo box, edit, or button.",
+            "A check box says checked or not checked.",
+            "A combo box says its choice and where it is in the list, such as 2 of 3."
           ]
         }
       ]
@@ -40,9 +31,16 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "Email menu",
+          "title": "Documents",
           "details": [
-            "Press Alt in email. The Select group now has Mark as read, Flag, and Message status."
+            "Press Enter at the end of a heading, and the next line is normal text, as in Word.",
+            "Delete line no longer says two periods."
+          ]
+        },
+        {
+          "title": "Switching email accounts",
+          "details": [
+            "You hear Switched to and the account at once. Then the inbox loads."
           ]
         }
       ]
