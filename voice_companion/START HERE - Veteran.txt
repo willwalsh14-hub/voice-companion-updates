@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.187-test.
+Guide version: 0.2.188-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -919,6 +919,7 @@ While Companion waits, you can say:
 - "Enter Thunderbird password" to open the private password box.
 - "Show Thunderbird" to bring Thunderbird to the front.
 - "Stop waiting for Thunderbird" to stop. Nothing is removed.
+Companion keeps its connection in Thunderbird up to date by itself. After a Companion update, Thunderbird may restart once. You hear "Updating the Voice Companion connection in Thunderbird". Then you hear when it is done. Thunderbird never restarts while you write a message. If you opened Thunderbird yourself, it waits until you are back in Companion.
 If Thunderbird already has the address, Companion connects it at once.
 Companion waits up to 15 minutes. If you finish in Thunderbird later, say "Add account" and choose Thunderbird. Companion connects every new address it finds.
 
@@ -1215,7 +1216,7 @@ If your account is in Thunderbird but its contacts are missing, a helper can add
 3. Type your email address, then choose Continue.
 4. Sign in if asked. Choose the address books to add.
 Then say "Refresh contacts" in Companion.
-If you hear that the Voice Companion connection must be updated, close Thunderbird. Then open Contacts again.
+If you hear that the Voice Companion connection must be updated, wait a moment. Companion updates it by itself. Then open Contacts again.
 
 13.8 Choose which address book you see
 This part is for people with two or more email accounts in Thunderbird, such as Gmail and Outlook. With one account, you always see all your contacts, and this choice is not offered.
