@@ -1857,6 +1857,7 @@ class WebSession:
             except Exception as exc:
                 return load_failure(exc,'The page reload did not finish. Wait a moment, then press F5 again, or return to the browser menu.')
         try:self._sync_browser_tab()
+        except WebError as exc:return str(exc)   # its own reason, such as "Open a normal website tab"
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         if not self.snapshot:return 'Open a website first.'
         if self.browse is None:self.browse=BrowseCursor(self.snapshot)
@@ -3263,6 +3264,7 @@ class WebSession:
 
     def _command(self, spoken):
         try:self._sync_browser_tab()
+        except WebError as exc:return str(exc)   # its own reason, such as "Open a normal website tab"
         except Exception:return 'The browser connection is not ready. Keep Voice Companion open; it will reconnect automatically.'
         command = _plain(spoken).rstrip('.!?').lower()
         if self.list_focus in ('fields','favorites') and command in ('cancel','go back','close list','back to page','escape','no','no thanks'):

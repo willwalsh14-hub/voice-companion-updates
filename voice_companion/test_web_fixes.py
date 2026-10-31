@@ -292,5 +292,22 @@ class WebCommandSafetyTests(unittest.TestCase):
         self.assertIn('Links list', session.command('list links'))
 
 
+class BrowserLinkReasonTests(unittest.TestCase):
+    """When the regular browser had no website tab, every key and command said "Keep
+    Voice Companion open; it will reconnect automatically." Waiting never helped."""
+    def test_the_link_reason_is_said_by_key_and_by_voice(self):
+        from unittest.mock import patch
+        from web_assistant import WebError
+        folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
+        session = WebSession(folder.name, FakeBackend())
+        session.open('example.com')
+        reason = 'Open a normal website tab in your browser. It will link automatically.'
+        with patch.object(WebSession, '_sync_browser_tab', side_effect=WebError(reason)):
+            self.assertEqual(session.command('list links'), reason)
+            self.assertEqual(session.keyboard('Quick:h'), reason)
+        with patch.object(WebSession, '_sync_browser_tab', side_effect=OSError('pipe closed')):
+            self.assertIn('reconnect automatically', session.command('list links'))
+
+
 if __name__ == '__main__':
     unittest.main()
