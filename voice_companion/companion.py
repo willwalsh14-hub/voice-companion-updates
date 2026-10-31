@@ -3165,7 +3165,7 @@ def poll_thunderbird_accounts():
 
 # An older Voice Companion connection in Thunderbird is replaced by itself (Will, October 30, 2026):
 # Thunderbird restarts once, when nothing is waiting on it and no message is being written.
-ADDON_REFRESH = __import__('types').SimpleNamespace(connection=None, retry_at=0.0, thread=None, results=queue.Queue())
+ADDON_REFRESH = __import__('types').SimpleNamespace(connection=None, retry_at=0.0, thread=None, results=queue.Queue(), stopped=False)
 ADDON_RETRY_SECONDS = 60
 
 
@@ -3180,9 +3180,16 @@ def poll_thunderbird_addon(system=None):
         speak_status(thunderbird_setup.ADDON_UPDATED)
     elif result == 'not started':
         speak_status(thunderbird_setup.ADDON_UPDATE_SLOW)
+    elif result == 'not closed':
+        speak_status(thunderbird_setup.ADDON_NOT_CLOSED)
+    elif result in ('not replaced', 'failed'):
+        speak_status(thunderbird_setup.ADDON_NOT_UPDATED)
     elif result == 'composing':
         ADDON_REFRESH.connection = None; ADDON_REFRESH.retry_at = time.monotonic() + ADDON_RETRY_SECONDS
-    if ADDON_REFRESH.thread is not None and ADDON_REFRESH.thread.is_alive():
+    if result in ('not started', 'not replaced', 'failed'):
+        # Thunderbird restarts once: a new connection with the old add-on must not restart it again and again.
+        ADDON_REFRESH.stopped = True
+    if getattr(ADDON_REFRESH, 'stopped', False) or ADDON_REFRESH.thread is not None and ADDON_REFRESH.thread.is_alive():
         return
     try:
         import thunderbird_bridge

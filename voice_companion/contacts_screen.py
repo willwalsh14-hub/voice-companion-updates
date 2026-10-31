@@ -109,6 +109,9 @@ def reload(m, keep=None):
 def choose_sources(m):
     """The address books from Thunderbird, and the contacts on this computer as one more; which are shown."""
     global SOURCES, SOURCE, SOURCE_NOTICE
+    if BOOK.unread:
+        # Thunderbird did not answer this time: its address books are not gone, and the one chosen is kept.
+        return
     items = [dict(b) for b in BOOK.books]
     if BOOK.local_contacts():
         items.append({'id': contacts_book.LOCAL_ID, 'name': 'Saved on this computer'})
@@ -307,7 +310,11 @@ def command_here(m, raw, command):
                 BOOK.delete(contact)
             except ValueError as exc:
                 if not thunderbird_pim.gone(exc):
-                    raise
+                    text = str(exc)
+                    if not thunderbird_pim.unsure(exc) and 'not deleted' not in text:
+                        text += ' ' + contact.name + ' was not deleted.'
+                    m.speak(text)
+                    return MODE
                 VIEW = 'list'       # removed meanwhile: read the list again, so it is not said any more
                 reload(m)
                 m.speak(str(exc) + ' ' + describe())
@@ -533,6 +540,9 @@ def choice_names():
 def start_choosing(m, first=None, lead=''):
     """Control+L: the list of address books to show, on the one shown now."""
     global PENDING, CHOICE, CHOICES, VIEW
+    if not choosing() and BOOK is not None and BOOK.unread:
+        m.speak(BOOK.notice)    # not "one email account": Thunderbird could not be read
+        return MODE
     if not choosing():
         m.speak('You have one email account in Thunderbird, so all your contacts are shown.')
         return MODE
@@ -781,6 +791,8 @@ def email_by_name(m, command, mode):
     else:
         people = book(m)
         contacts = people.cached()
+        if people.unread:
+            unread = people.notice
         # Thunderbird's contacts not read yet (Thunderbird not started): read them now, starting it.
         if contacts_book.CACHE['at'] is None and thunderbird_pim.usable(m.APP):
             contacts = people.load()
@@ -885,7 +897,7 @@ def add_step(m, step, value):
     try:
         where = saved_words(BOOK.add(details['name'], details.get('email', ''), phone, book_id=book_id, here=here))
     except ValueError as exc:
-        m.speak(str(exc) + ' The contact was not saved.')
+        m.speak(str(exc) + ('' if thunderbird_pim.unsure(exc) else ' The contact was not saved.'))
         return MODE
     reload(m)
     m.speak(after_adding(details['name'], details.get('email', ''), where, note))
@@ -1071,7 +1083,7 @@ def edit_answer(m, command):
             reload(m)       # removed meanwhile: read the list again, so it is not said any more
             m.speak(str(exc) + ' The change was not saved. ' + describe())
             return MODE
-        m.speak(str(exc) + ' The change was not saved.')
+        m.speak(str(exc) + ('' if thunderbird_pim.unsure(exc) else ' The change was not saved.'))
         return MODE
     reload(m, keep=contact.key)
     email = value if field == 'email' else (contact.emails[0] if contact.emails else '')

@@ -28,6 +28,10 @@ class ThunderbirdUnavailable(OSError):
     """Thunderbird or its Voice Companion add-on is not connected right now."""
 
 
+class NoAnswer(ThunderbirdUnavailable):
+    """Thunderbird got the request but did not answer in time. It may still do what was asked."""
+
+
 class ThunderbirdError(Exception):
     """Thunderbird answered, but could not do what was asked."""
 
@@ -117,7 +121,9 @@ class MailRelay:
                 answered = user_stop.wait(waiter['event'], step)
                 waited += step
                 if not answered and waited < timeout and progress: progress()
-            if not answered or waiter['answer'] is None:
+            if not answered:
+                raise NoAnswer('Thunderbird did not answer.')
+            if waiter['answer'] is None:
                 raise ThunderbirdUnavailable('Thunderbird did not answer.')
         finally:
             self.pending.pop(ident, None)

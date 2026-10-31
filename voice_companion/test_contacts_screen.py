@@ -216,6 +216,19 @@ class ContactsScreenTests(CompanionHarness):
         pat = contacts_screen.current()
         self.assertEqual((pat.source, pat.emails, pat.book), ('thunderbird', ['pat@example.com'], 'me@gmail.com'))
 
+    def test_a_slow_thunderbird_is_never_called_not_saved_or_saved_twice(self):
+        # Thunderbird got the new contact but answered too late. It saved it, so "The contact was
+        # not saved." was wrong, and nothing is saved on this computer as well.
+        from test_calendar_screen import slow_thunderbird
+        mode = self.press('Ctrl+N', self.open())
+        mode = app.handle('Pat Doe.', mode)
+        mode = app.handle('pat at example dot com.', mode)
+        with slow_thunderbird('addContact'):
+            mode = self.press('Enter', mode)
+        self.assertEqual((mode, self.said()), ('contacts', thunderbird_pim.UNSURE))
+        self.assertIsNone(AddressBook(self.root, 'me@gmail.com').get('Pat Doe'))
+        self.assertIn('Pat Doe', [c.name for c in contacts_screen.BOOK.load()])
+
     def test_adding_needs_a_name_and_an_email_or_phone_and_escape_cancels(self):
         mode = self.press('Ctrl+N', self.open())
         mode = app.handle('Sam', mode)
@@ -229,6 +242,42 @@ class ContactsScreenTests(CompanionHarness):
         mode = self.press('Escape', mode)
         self.assertEqual((mode, self.said()), ('contacts', 'Canceled. Back to contacts.'))
         self.assertNotIn('Sam', [c.name for c in contacts_screen.CONTACTS])
+
+    def test_a_change_thunderbird_could_not_make_says_so_and_what_to_do(self):
+        # Thunderbird's general answer ("could not complete that request") said neither that nothing
+        # changed nor what to do next.
+        from mailbox_access import MailboxError
+        real = thunderbird_mailbox.call
+
+        def failing(method, **params):
+            if method in ('deleteContact', 'updateContact', 'addContact'):
+                raise MailboxError('Thunderbird could not complete that request.')
+            return real(method, **params)
+        mode = self.open()
+        self.press('Letter:p', mode)
+        with mock.patch.object(thunderbird_mailbox, 'call', failing):
+            self.press('Delete', mode)
+            mode = app.handle('yes', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'Plumber was not deleted.')
+            self.assertEqual(contacts_screen.current().name, 'Plumber')
+            mode = self.press('Ctrl+N', mode)
+            mode = app.handle('Pat Doe', mode)
+            mode = app.handle('skip', mode)
+            mode = app.handle('555-0100', mode)
+            self.assertEqual(self.said(), 'Thunderbird could not complete that request. Close Thunderbird, then try again. '
+                                          'The contact was not saved.')
+
+    def test_damaged_answers_from_thunderbird_never_stop_the_screen(self):
+        # An answer with missing or wrong parts (an add-on from another version, a damaged profile).
+        damaged = {'contacts': [{'id': 'c1', 'name': 'Bo Lee', 'emails': 'bo@example.com', 'phones': None, 'bookId': 'b'},
+                                'not a contact', {'id': 'c2', 'emails': [None, 'kim@example.com']}],
+                   'books': None, 'failed': 0, 'failedBooks': 'b'}
+        with mock.patch.object(thunderbird_mailbox, 'call', lambda method, **params: damaged):
+            mode = self.open()
+        self.assertEqual(mode, 'contacts')
+        self.assertEqual([(c.name, c.emails) for c in contacts_screen.CONTACTS],
+                         [('Bo Lee', ['bo@example.com']), ('kim@example.com', ['kim@example.com'])])
 
     def test_delete_asks_first_and_read_only_books_are_protected(self):
         mode = self.open()
@@ -389,6 +438,22 @@ class ContactsScreenTests(CompanionHarness):
                     self.assertEqual(app.handle(words, 'awake'), 'awake')
                     self.assertEqual(self.said(), reason)
                     self.assertIsNone(app.email_draft)
+
+    def test_email_by_name_uses_the_last_list_when_thunderbird_does_not_answer(self):
+        # The list read a while ago is old, and Thunderbird is slow this time. Before, "Email John
+        # Smith" said "No contact named John Smith", though he is in Thunderbird.
+        import time
+        app.handle('Email John.', 'awake')
+        app.email_draft = None
+        contacts_book.CACHE['at'] = time.monotonic() - contacts_book.KEEP_SECONDS - 1
+        reason = 'Thunderbird did not answer in time. Wait a minute, then try again.'
+        with mock.patch.object(thunderbird_pim, 'contacts', side_effect=thunderbird_pim.PimError(reason)):
+            mode = app.handle('Send an email to John Smith', 'awake')
+            self.assertEqual((mode, app.email_draft.recipient), ('email_draft', 'john@example.com'))
+            app.email_draft = None
+            # A name that is not in the old list: the reason, not "No contact named".
+            app.handle('Email Zelda.', 'awake')
+            self.assertEqual(self.said(), reason)
 
     def test_email_a_contact_by_name_from_the_main_menu(self):
         mode = app.handle('Email John.', 'awake')

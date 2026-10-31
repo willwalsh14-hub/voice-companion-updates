@@ -24,7 +24,16 @@ NEXT_STEPS = {
     'Thunderbird could not save the event.': 'Close Thunderbird, then try again.',
     'Thunderbird could not save the change.': 'Close Thunderbird, then try again.',
     'Thunderbird could not delete the event.': 'Close Thunderbird, then try again.',
+    # The add-on's answer when Thunderbird itself failed in a way it does not name.
+    'Thunderbird could not complete that request.': 'Close Thunderbird, then try again.',
 }
+
+
+# Requests that change something. When Thunderbird got one but did not answer in time, it may still
+# make the change, so "not saved" would be wrong and trying again at once could add it twice.
+CHANGING = ('addContact', 'updateContact', 'deleteContact', 'addEvent', 'deleteEvent', 'modifyEvent')
+UNSURE = ('Thunderbird did not answer in time, so it may still make the change. '
+          'Wait a minute. Then check if it worked before you try again.')
 
 
 class PimError(Exception):
@@ -35,6 +44,12 @@ def gone(exc):
     """True when the contact or event was removed meanwhile (in Thunderbird, on a phone), so the
     list on screen must be read again: "That event is no longer in the calendar."."""
     return 'is no longer in' in str(exc)
+
+
+def unsure(exc):
+    """True when Thunderbird may have made the change after all (it did not answer in time),
+    so the screen must not say it was not saved."""
+    return str(exc) == UNSURE
 
 
 def connected():
@@ -63,9 +78,16 @@ def call(method, **params):
         return thunderbird_mailbox.call(method, **params)
     except MailboxError as exc:
         text = str(exc)
+        if text == thunderbird_mailbox.NO_ANSWER and method in CHANGING:
+            raise PimError(UNSURE) from exc
         if text in NEXT_STEPS:
             text += ' ' + NEXT_STEPS[text]
         raise PimError(UPDATE_NEEDED if text == UNSUPPORTED else text) from exc
+
+
+def lists(value):
+    """A part of an answer that should be a list, or [] when it is missing or damaged."""
+    return list(value) if isinstance(value, (list, tuple)) else []
 
 
 def contacts():
@@ -73,7 +95,7 @@ def contacts():
     answer = call('contacts')
     if not isinstance(answer, dict) or not isinstance(answer.get('contacts'), list):
         raise PimError('Thunderbird sent contacts Voice Companion could not read. Try again.')
-    return answer
+    return dict(answer, books=lists(answer.get('books')), failedBooks=lists(answer.get('failedBooks')))
 
 
 def add_contact(name, email='', phone='', book_id=''):
@@ -101,7 +123,7 @@ def events(start_ms, end_ms):
     answer = call('events', start=int(start_ms), end=int(end_ms))
     if not isinstance(answer, dict) or not isinstance(answer.get('events'), list):
         raise PimError('Thunderbird sent events Voice Companion could not read. Try again.')
-    return answer
+    return dict(answer, failed=lists(answer.get('failed')))
 
 
 def add_event(calendar_id, title, start, end, all_day=False, location='', notes=''):
