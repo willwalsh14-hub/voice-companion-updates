@@ -180,3 +180,57 @@ class CapitalPreferenceTests(unittest.TestCase):
                 self.assertEqual(companion.handle('capital letters '+value,mode),mode)
                 self.assertEqual(worker.capital_letters,value)
                 self.assertEqual(json.loads((Path(folder)/'preferences.json').read_text())['capital_letters'],value)
+
+
+class DamagedFilesOptionsTests(unittest.TestCase):
+    """Options (Alt+O) opens and saves even when a saved file is damaged. Before, a
+    podcast entry without a name, a radio file of the wrong shape, or an AI voice
+    file Windows could not unlock stopped the whole app."""
+    def snapshot(self,folder,load=None):
+        import app_settings
+        with patch.object(companion,'APP',Path(folder)),patch.object(companion,'TEXT_MODE',True),\
+             patch('ai_voice_settings.load',side_effect=load) if load else patch.object(companion,'TEXT_MODE',True):
+            return app_settings.snapshot(companion)
+
+    def test_damaged_podcast_entries_are_left_out_of_options(self):
+        with tempfile.TemporaryDirectory() as folder:
+            good={'name':'Good Show','feed':'https://example.com/good.xml','download_limit':3}
+            (Path(folder)/'podcast-subscriptions.json').write_text(json.dumps([{'feed':'https://example.com/x.xml'},'junk',good]))
+            values,context=self.snapshot(folder)
+            self.assertEqual(list(context['podcast_feeds']),['1. Good Show'])
+            self.assertEqual(context['podcast_limits'],{'1. Good Show':3})
+            self.assertEqual(values['podcast_feed'],'1. Good Show')
+
+    def test_podcast_file_of_the_wrong_shape_opens_options(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder)/'podcast-subscriptions.json').write_text(json.dumps({'name':'x'}))
+            values,context=self.snapshot(folder)
+            self.assertEqual(context['podcast_feeds'],{})
+
+    def test_radio_file_of_the_wrong_shape_reads_as_all_stations(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder)/'radio-preferences.json').write_text(json.dumps(['radio-browser']))
+            values,_=self.snapshot(folder)
+            self.assertEqual(values['radio_source'],'all')
+
+    def test_ai_voice_file_that_cannot_be_read_opens_options(self):
+        with tempfile.TemporaryDirectory() as folder:
+            values,_=self.snapshot(folder,load=RuntimeError('The data is invalid.'))
+            self.assertFalse(values['ai_consent'])
+
+    def test_damaged_podcast_entry_does_not_stop_saving_a_download_limit(self):
+        import app_settings
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'podcast-subscriptions.json'
+            good={'name':'Good Show','feed':'https://example.com/good.xml','download_limit':'manual'}
+            path.write_text(json.dumps(['junk',good]))
+            media=Mock()
+            media._save.side_effect=lambda name,data:path.write_text(json.dumps(data))
+            with patch.object(companion,'APP',Path(folder)),patch.object(companion,'TEXT_MODE',True),\
+                 patch.object(companion,'PREFERENCES',dict(DEFAULTS)),patch.object(companion,'media',return_value=media),\
+                 patch.object(companion,'mail_session',None),patch.object(companion,'web_session',None),\
+                 patch.object(companion,'save_speech_settings'),patch.object(companion,'apply_transcript'):
+                values,_=app_settings.snapshot(companion)
+                values['podcast_limit']='5'
+                app_settings.apply_settings(companion,values)
+            self.assertEqual(json.loads(path.read_text()),['junk',{**good,'download_limit':5}])
