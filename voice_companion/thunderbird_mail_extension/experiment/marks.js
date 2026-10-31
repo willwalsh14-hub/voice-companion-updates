@@ -20,9 +20,13 @@
  */
 'use strict';
 
-var { ExtensionCommon } = ChromeUtils.importESModule('resource://gre/modules/ExtensionCommon.sys.mjs');
+// Thunderbird loads every Experiment script of this add-on into one shared scope, so a name
+// used again here (implementation.js has mailServices and succeeded) would stop this file from
+// loading at all. Everything is kept inside this function; only voiceCompanionMarks is shared.
+var voiceCompanionMarks = (() => {
+const { ExtensionCommon } = ChromeUtils.importESModule('resource://gre/modules/ExtensionCommon.sys.mjs');
 // An Experiment's scope has no window timers; Gecko's own timer module has them.
-var { setTimeout, clearTimeout } = ChromeUtils.importESModule('resource://gre/modules/Timer.sys.mjs');
+const { setTimeout, clearTimeout } = ChromeUtils.importESModule('resource://gre/modules/Timer.sys.mjs');
 
 function mailServices() {
   return ChromeUtils.importESModule('resource:///modules/MailServices.sys.mjs').MailServices;
@@ -330,7 +334,7 @@ function receiptAnswer(id, send) {
   }
 }
 
-var voiceCompanionMarks = class extends ExtensionCommon.ExtensionAPI {
+return class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     pendingReceipts.clear();
   }
@@ -369,3 +373,4 @@ var voiceCompanionMarks = class extends ExtensionCommon.ExtensionAPI {
     };
   }
 };
+})();
