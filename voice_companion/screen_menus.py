@@ -34,10 +34,9 @@ MENUS = {
             ('Select all messages', 'Ctrl+A', 'select all messages'),
             ('Clear selection', 'U', 'clear selection'),
             ('What is selected', 'S', 'what is selected'),
-            ('Copy sender address', 'C', 'copy sender address'),
-            ('Email the sender', 'E', 'new email to sender'),
             ('Mark as read or unread', 'Q', 'mark as read or unread'),
             ('Flag or unflag', 'X', 'flag or unflag'),
+            ('Important or not important (Gmail)', 'H', 'mark important or not important'),
             ('Message status', '', 'message status')]),
         ('Go to folder', [
             ('Inbox', '', 'go to inbox'),
@@ -54,6 +53,8 @@ MENUS = {
             ('Delete empty folder', '', 'delete folder'),
             ('List folders', '', 'list folders')]),
         ('Drafts and contacts', [
+            ('Copy sender address', 'C', 'copy sender address'),
+            ('Email the sender', 'E', 'new email to sender'),
             ('Email drafts', 'D', 'open email draft'),
             ('List contacts', 'P', 'list contacts'),
             ('Add contact', '', 'add contact {value}')]),

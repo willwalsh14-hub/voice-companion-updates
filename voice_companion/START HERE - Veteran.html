@@ -928,6 +928,7 @@ main:focus{outline:none}
 <li>To hear both, say "Importance".</li>
 </ul>
 <p>The review says high or low importance, and the read receipt, when you set them. Some people's email does not send read receipts.</p>
+<p>High importance shows in Outlook and most other email programs. Gmail does not show it, so when you send from Gmail, your copy in Sent Mail gets Gmail's Important marker.</p>
 <p>Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead.</p>
 <p>When the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.</p>
 <p>If Companion says the result is uncertain, check your sent mail and ask the person before you try again.</p>
@@ -1016,10 +1017,22 @@ main:focus{outline:none}
 <li>To hear the status, say "Message status".</li>
 <li>If messages are marked, these change every marked message.</li>
 <li>Opening a message marks it read, as in Thunderbird.</li>
-<li>These marks are kept on your mail server. Your phone and the web show them too. A flag shows as a star in Gmail and Yahoo Mail.</li>
+<li>In Gmail, marking a message read marks its whole conversation read. Opening it does too. This is what the Gmail website does.</li>
+<li>These marks are kept on your mail server. Your phone and the web show them right away. A flag shows as a star in Gmail and Yahoo Mail.</li>
+<li>Companion waits for your email service to take each change. If it does not, Companion tells you. Check your internet connection, then try again.</li>
 <li>A POP account keeps mail only on this computer. Its marks stay here. Companion tells you once.</li>
 </ul>
-<p>You hear importance, but you cannot change it on a message you got. The person who sent it chose it. It is part of the message, so every device shows the same importance.</p>
+<p>Gmail has its own Important marker:</p>
+<ul>
+<li>To mark a Gmail message important, say "Mark as important", or press <kbd>H</kbd>. To take it off, say "Remove important", or press <kbd>H</kbd> again.</li>
+<li>Your phone and the Gmail website show it too.</li>
+<li>Other email accounts show the importance the sender chose. You cannot change that on a message you got.</li>
+</ul>
+<p>Some messages ask for a read receipt:</p>
+<ul>
+<li>When you open one, Companion asks "Send it? Say yes or no." Then it reads the message.</li>
+<li>If Thunderbird is set to always or never send receipts, Companion does that and does not ask.</li>
+</ul>
 <p>Listen to the action and the names, then answer Yes or No. If a result is uncertain, check the folder before you try again.</p>
 <p>Inside an open message, <kbd>Control+A</kbd> selects text to copy. It does not mark other messages.</p>
 <h3 id="part-12-4">12.4 Reply or forward</h3>
@@ -1068,6 +1081,7 @@ main:focus{outline:none}
 <li>I: to hear the sender, subject, and date, say "Message details", or press <kbd>I</kbd>.</li>
 <li>Q: to mark a message read or unread, say "Mark as read or unread", or press <kbd>Q</kbd>.</li>
 <li>X: to flag a message or take the flag off, say "Flag or unflag", or press <kbd>X</kbd>.</li>
+<li>H: to mark a Gmail message important or not, say "Mark important or not important", or press <kbd>H</kbd>.</li>
 <li><kbd>Alt+1</kbd> to <kbd>Alt+6</kbd>: to hear From, To, CC, Subject, the date sent, or how many files are attached. See part 12.1.</li>
 <li>C: to copy the sender's address, say "Copy sender address", or press <kbd>C</kbd>.</li>
 <li>E: to email the sender, say "New email to sender", or press <kbd>E</kbd>.</li>

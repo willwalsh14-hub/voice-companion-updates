@@ -37,7 +37,7 @@ class MailBridge {
     }
     // Anything that changes mail or folders makes the kept list out of date.
     // Marking changes the kept list itself (keepMarks), so it is kept.
-    if (!MailBridge.READ_ONLY.includes(message.method) && message.method !== 'mark') this.listCache = null;
+    if (!MailBridge.READ_ONLY.includes(message.method) && !MailBridge.KEEPS_LIST.includes(message.method)) this.listCache = null;
     try {
       const result = await this[message.method](message.params || {});
       return {id, result: result === undefined ? null : result};
@@ -186,12 +186,19 @@ class MailBridge {
     if (!ids.length || !setup || typeof setup.messageStatus !== 'function') return {};
     try {
       const found = await setup.messageStatus(ids);
+      // Gmail's Important marker, for Gmail messages only.
+      let important = {};
+      const marks = this.api.voiceCompanionMarks;
+      if (marks && typeof marks.isImportant === 'function') {
+        try { important = await marks.isImportant(ids) || {}; } catch (error) { important = {}; }
+      }
       const status = {};
       for (const id of ids) {
         const item = found && found[String(id)];
         if (!item) continue;
         status[id] = {replied: item.replied === true, forwarded: item.forwarded === true,
           priority: MailBridge.PRIORITIES.includes(item.priority) ? item.priority : ''};
+        if (typeof important[String(id)] === 'boolean') status[id].important = important[String(id)];
       }
       return status;
     } catch (error) {
@@ -201,12 +208,31 @@ class MailBridge {
 
   // Mark messages read or unread, flagged or not, as Thunderbird's own Mark menu does.
   // The kept list is changed to match, so the next page says the new state.
-  async mark({ids, read, flagged}) {
+  async mark({ids, read, flagged, conversation = true}) {
     if (!Array.isArray(ids) || !ids.length || !ids.every(Number.isInteger)) throw MailBridge.fail('message', 'Choose a message first.');
     const changes = {};
     if (typeof read === 'boolean') changes.read = read;
     if (typeof flagged === 'boolean') changes.flagged = flagged;
     if (!Object.keys(changes).length) throw MailBridge.fail('mark', 'Nothing to change.');
+    // Will, October 31, 2026: a read mark stayed in Thunderbird and never reached Gmail. The
+    // Experiment marks, then waits for the IMAP server's own answer (one retry), and for Gmail
+    // takes in the whole conversation when marking read, as Gmail's website does.
+    const marks = this.api.voiceCompanionMarks;
+    if (marks && typeof marks.mark === 'function') {
+      const result = await marks.mark(ids, 'read' in changes ? changes.read : null, 'flagged' in changes ? changes.flagged : null,
+        conversation !== false);
+      if (!result || !result.changed) {
+        throw MailBridge.fail('mark', 'Thunderbird could not change that message. It may have been moved or deleted. Say list messages to refresh.');
+      }
+      const others = Array.isArray(result.conversationIds) ? result.conversationIds.filter(Number.isInteger) : [];
+      this.keepMarks(ids, changes);
+      if (others.length) this.keepMarks(others, {read: true});
+      const answer = {changed: result.changed, missing: result.missing || 0, server: result.server || 'sent'};
+      if (result.conversation) answer.conversation = result.conversation;
+      if (others.length) answer.conversationIds = others;
+      if (result.server === 'local') answer.thisComputerOnly = true;
+      return answer;
+    }
     const done = [];
     for (const id of ids) {
       try {
@@ -262,10 +288,86 @@ class MailBridge {
     // The message's files, said when it is read. null: Thunderbird could not list them.
     let attachments = null;
     try { attachments = await this.listFiles(messageId); } catch (error) { attachments = null; }
-    // Opening a message marks it read, as it does in Thunderbird.
-    let read = false;
-    try { await this.api.messages.update(messageId, {read: true}); read = true; this.keepMarks([messageId], {read: true}); } catch (error) { read = false; }
-    return {html, plain, attachments, read};
+    // Opening a message marks it read, as it does in Thunderbird, and in Gmail the whole
+    // conversation, as Gmail's website does when a conversation is opened.
+    let read = false, server = '', others = [], result = null;
+    const marks = this.api.voiceCompanionMarks;
+    try {
+      if (marks && typeof marks.mark === 'function') {
+        result = await marks.mark([messageId], true, null, true);
+        read = Boolean(result && result.changed);
+        server = result && result.server || '';
+      } else {
+        await this.api.messages.update(messageId, {read: true});
+        read = true;
+      }
+      if (read) this.keepMarks([messageId], {read: true});
+      if (read && result && Array.isArray(result.conversationIds)) {
+        others = result.conversationIds.filter(Number.isInteger);
+        this.keepMarks(others, {read: true});
+      }
+    } catch (error) { read = false; }
+    const answer = {html, plain, attachments, read};
+    if (others.length) answer.conversationIds = others;
+    if (server === 'failed') answer.readNotConfirmed = true;
+    const receipt = await this.receipt(messageId);
+    if (receipt) answer.receipt = receipt;
+    return answer;
+  }
+
+  // A read receipt the message asks for, through Thunderbird's own receipt sender and its
+  // settings: '' (none asked, or already handled), 'handled' (sent or not, as the settings
+  // say), or 'ask' (the settings say to ask: Voice Companion asks, then calls receiptAnswer).
+  async receipt(messageId) {
+    const marks = this.api.voiceCompanionMarks;
+    if (!marks || typeof marks.needsReceipt !== 'function') return '';
+    try {
+      const due = await marks.needsReceipt(messageId);
+      if (due !== 'yes' && due !== 'maybe') return '';
+      if (due === 'maybe') {
+        // Only Thunderbird's copy of the whole message can say; a very large one is left alone.
+        const header = await this.api.messages.get(messageId);
+        if (header && header.size > MailBridge.RECEIPT_CHECK_BYTES) return '';
+      }
+      const headers = MailBridge.headerBlock(await this.api.messages.getRaw(messageId));
+      if (!/^(?:disposition-notification-to|return-receipt-to)[ \t]*:/im.test(headers)) return '';
+      const result = await marks.receipt(messageId, headers);
+      return result && (result.state === 'ask' || result.state === 'handled') ? result.state : '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  async receiptAnswer({messageId, send}) {
+    if (!Number.isInteger(messageId)) throw MailBridge.fail('message', 'That message is not available.');
+    const marks = this.api.voiceCompanionMarks;
+    if (!marks || typeof marks.receiptAnswer !== 'function') return {done: false};
+    const result = await marks.receiptAnswer(messageId, send === true);
+    return {done: Boolean(result && result.done)};
+  }
+
+  // The header lines of a raw message (text up to the first empty line), for the receipt sender.
+  static headerBlock(raw) {
+    const text = typeof raw === 'string' ? raw : '';
+    const end = text.search(/\r?\n\r?\n/);
+    return (end < 0 ? text : text.slice(0, end)).slice(0, 256 * 1024) + '\r\n';
+  }
+
+  // Gmail's own Important marker on a message you got: on or off. Other accounts cannot change it.
+  async important({messageId, on}) {
+    if (!Number.isInteger(messageId)) throw MailBridge.fail('message', 'Choose a message first.');
+    const marks = this.api.voiceCompanionMarks;
+    if (!marks || typeof marks.important !== 'function') {
+      throw MailBridge.fail('important', 'Thunderbird needs the newer Voice Companion add-on for this. Restart Thunderbird, then try again.');
+    }
+    const result = await marks.important(messageId, on === true) || {};
+    if (result.done) {
+      const kept = this.listCache;
+      if (kept) for (const item of kept.headers) if (item.id === messageId) item.important = on === true;
+      return {done: true, already: result.already === true};
+    }
+    const words = MailBridge.IMPORTANT_REASONS[result.reason] || MailBridge.IMPORTANT_REASONS.failed;
+    throw MailBridge.fail('important', words);
   }
 
   async context({messageId}) {
@@ -654,8 +756,15 @@ class MailBridge {
         await this.closeCompose(tab);
         // The safety copy kept from a failed try is not needed now.
         if (spare) { try { await this.api.messages.delete(spare, false); } catch (error) { /* stays in Drafts */ } }
-        return {headerMessageId: sent && sent.headerMessageId || '', identityId: identity.id, accountId: account.id,
+        const answer = {headerMessageId: sent && sent.headerMessageId || '', identityId: identity.id, accountId: account.id,
           tried: index + 1};
+        // High importance: the people it went to see it from the message itself. Gmail ignores
+        // that for its own copy, so its Sent Mail copy also gets Gmail's Important marker.
+        if ((priority === 'high' || priority === 'highest') && answer.headerMessageId) {
+          const marked = await this.sentImportant(account.id, answer.headerMessageId);
+          if (marked !== null) answer.sentImportant = marked;
+        }
+        return answer;
       } catch (error) {
         failure = error;
         const copy = await this.saveDraftAndClose(tab);
@@ -671,6 +780,21 @@ class MailBridge {
       }
     }
     throw MailBridge.fail('send', MailBridge.sendFailure(failure, choices.length ? choices[choices.length - 1].account.type : ''));
+  }
+
+  // 'done', 'failed' or 'pending' for a Gmail account (waits up to SENT_IMPORTANT_MS; Gmail's Sent
+  // copy usually arrives within seconds, and the marking goes on after that), null for others.
+  async sentImportant(accountId, headerMessageId) {
+    const marks = this.api.voiceCompanionMarks;
+    if (!marks || typeof marks.sentImportant !== 'function') return null;
+    const work = Promise.resolve(marks.sentImportant(accountId, headerMessageId)).catch(() => ({done: false, reason: 'failed'}));
+    let timer = null;
+    const slow = new Promise(resolve => { timer = setTimeout(() => resolve('slow'), MailBridge.SENT_IMPORTANT_MS); });
+    const result = await Promise.race([work, slow]);
+    clearTimeout(timer);
+    if (result === 'slow') return 'pending';   // still going: Gmail's copy was not there yet
+    if (result && result.reason === 'notGmail') return null;
+    return result && result.done ? 'done' : 'failed';
   }
 
   // A compose window for this identity, minimized and filled in.
@@ -806,11 +930,24 @@ MailBridge.UPLOAD_KEEP_MS = 10 * 60 * 1000;  // an unfinished file to send is dr
 MailBridge.LOCAL_ACCOUNT_TYPES = ['pop3', 'none', 'rss'];
 MailBridge.PRIORITIES = ['highest', 'high', 'normal', 'low', 'lowest'];
 MailBridge.ALREADY_IN_TRASH = 'This is already in Trash. Deleting it there would remove it for good, so nothing was changed.';
+MailBridge.SENT_IMPORTANT_MS = 12000;
+MailBridge.RECEIPT_CHECK_BYTES = 5 * 1024 * 1024;   // largest message read whole to look for a receipt request
+// Changes that update the kept list themselves, so it is kept.
+MailBridge.KEEPS_LIST = ['mark', 'important', 'receiptAnswer'];
+MailBridge.IMPORTANT_REASONS = {
+  notGmail: 'Only Gmail accounts have an Important marker you can change. Others show the importance the sender chose.',
+  noFolder: 'Gmail did not show its Important label to Thunderbird. In Gmail settings, under Labels, turn on Show in IMAP for Important, then try again.',
+  inImportant: 'Open this message from your Inbox or another folder to change it.',
+  offline: 'Thunderbird is offline, so Gmail could not be changed. Try again when you are online.',
+  missing: 'Thunderbird could not find that message. It may have been moved or deleted. Say list messages to refresh.',
+  failed: 'Gmail did not take the change. Check your internet connection, then try again.',
+};
 MailBridge.READ_ONLY = ['about', 'accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'setupPage', 'captureSignIn', 'takeSignIn', 'background',
   'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
 MailBridge.METHODS = ['accounts', 'folders', 'inbox', 'folderInfo', 'list', 'read', 'context', 'move', 'trash',
   'createFolder', 'renameFolder', 'moveFolder', 'deleteFolder', 'mark', 'send', 'openAccountSetup', 'setupPage', 'setupContinue', 'fillPassword', 'showSetup',
-  'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'about', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel'];
+  'captureSignIn', 'takeSignIn', 'minimize', 'background', 'quit', 'about', 'attachments', 'attachmentChunk', 'uploadStart', 'uploadChunk', 'uploadCancel',
+  'important', 'receiptAnswer'];
 globalThis.MailBridge = MailBridge;
 
 function startConnection(api, timers = {setTimeout}) {

@@ -79,6 +79,28 @@ STATUS_PHRASES = {
     ('flagged', None): ('flag or unflag', 'flag or unflag message', 'toggle flag', 'toggle the flag'),
 }
 STATUS_CHANGES = {phrase: key for key, phrases in STATUS_PHRASES.items() for phrase in phrases}
+# Gmail's own Important marker (Will, October 31, 2026). H is its key (input_parity.SCREEN_KEYS).
+IMPORTANT_PHRASES = {
+    True: ('mark important', 'mark as important', 'mark it important', 'mark it as important', 'mark this as important',
+           'mark message as important', 'mark this message as important', 'mark email as important', 'make it important',
+           'make this important', 'add important', 'important marker on'),
+    False: ('mark not important', 'mark as not important', 'mark it not important', 'mark it as not important',
+            'mark this as not important', 'mark message as not important', 'mark as unimportant', 'remove important',
+            'remove the important marker', 'not important', 'make it not important', 'important marker off'),
+    None: ('mark important or not important', 'important or not important', 'toggle important', 'toggle importance marker'),
+}
+IMPORTANT_CHANGES = {phrase: value for value, phrases in IMPORTANT_PHRASES.items() for phrase in phrases}
+IMPORTANT_NEEDS_GMAIL = ('Only Gmail accounts have an Important marker you can change. '
+                         'Others show the importance the sender chose.')
+# After a change, when the mail server did not confirm it (add-on 1.9.0).
+MARK_NOT_CONFIRMED = ('Your email provider did not confirm the change, so your phone and the web may not show it yet. '
+                      'Check your internet connection, then try again.')
+MARK_OFFLINE = 'Thunderbird is offline. It sends the change when it is back online.'
+READ_NOT_CONFIRMED = 'Your email provider did not confirm it as read yet. '
+RECEIPT_QUESTION = 'The sender asked for a read receipt. Send it? Say yes or no.'
+RECEIPT_SENT = 'Read receipt sent. '
+RECEIPT_NOT_SENT = 'No read receipt sent. '
+RECEIPT_FAILED = 'Thunderbird could not send the read receipt. '
 STATUS_QUESTIONS = ('message status', 'what is the status', "what's the status", 'read the status', 'read status',
                     'is it read', 'is this read', 'is it unread', 'is it flagged', 'is this flagged', 'status')
 MARK_NEEDS_THUNDERBIRD = ('This account cannot mark messages in Voice Companion yet. '
@@ -106,6 +128,8 @@ def status_words(row, full=False):
             words.append(name)
     if row.get('priority') in IMPORTANCE_WORDS:
         words.append(IMPORTANCE_WORDS[row['priority']])
+    if row.get('important') is True:
+        words.append('important')
     if full and not row.get('flagged'):
         words.append('not flagged')
     text = ', '.join(words)
@@ -502,7 +526,13 @@ class MailSession:
         # Yahoo marks in the folder that is open; Thunderbird finds the folder on its own.
         where = {'folder_id': self.folder_id} if self.provider == 'yahoo' else {}
         result = marker(ids, **{name: value}, **where)
+        # Gmail: marking read takes in the rest of the conversation, as Gmail's website does.
+        others = set(result.get('conversation_ids') or []) if name == 'read' and value else set()
         for number, row in enumerate(self.rows, 1):
+            if row['id'] in others and row['id'] not in ids:
+                row['unread'] = False
+                if row['id'] in self.marked_ids:
+                    self.marked_ids[row['id']] = self._summary(number)
             if row['id'] in ids:
                 if name == 'read':
                     row['unread'] = not value
@@ -525,7 +555,40 @@ class MailSession:
         if result.get('this_computer_only') and not self.told_this_computer_only:
             self.told_this_computer_only = True
             said += ' ' + MARK_THIS_COMPUTER_ONLY
+        if result.get('server') == 'failed':
+            said += ' ' + MARK_NOT_CONFIRMED
+        elif result.get('server') == 'offline':
+            said += ' ' + MARK_OFFLINE
         return said
+
+    def change_important(self, value):
+        """Gmail's Important marker on the message you are on: on, off, or turned over (None)."""
+        if not self.rows or not self.current:
+            return 'Open a message first.' if self.rows else 'Empty list. No messages on this page.'
+        changer = getattr(self.client(), 'important', None)
+        if changer is None:
+            return IMPORTANT_NEEDS_GMAIL
+        row = self.rows[self.current - 1]
+        if value is None:
+            value = not row.get('important')
+        result = changer(row['id'], value)
+        row['important'] = value
+        if row['id'] in self.marked_ids:
+            self.marked_ids[row['id']] = self._summary(self.current)
+        if result.get('already'):
+            return 'Already marked important.' if value else 'Already not marked important.'
+        return 'Marked important.' if value else 'Not marked important now.'
+
+    def answer_receipt(self, send):
+        """Yes or no to a read receipt the open message asked for; then the message is read."""
+        _, message_id = self.pending
+        self.pending = None
+        try:
+            done = self.client().receipt_answer(message_id, send)
+        except MailboxError:
+            done = False
+        said = (RECEIPT_SENT if send else RECEIPT_NOT_SENT) if done else (RECEIPT_FAILED if send else RECEIPT_NOT_SENT)
+        return said + self._next_body()
 
     def _message_boundary(self,number):
         first=number==1 and self.page_cursor is None
@@ -625,6 +688,13 @@ class MailSession:
             row['unread'] = False   # marked read on the server, as when it is opened in Thunderbird or Yahoo Mail
             if row['id'] in self.marked_ids:
                 self.marked_ids[row['id']] = self._summary(number)
+            # Gmail: the rest of its conversation is marked read too, as Gmail's website does.
+            others = set(getattr(body, 'conversation_ids', None) or [])
+            for other_number, other in enumerate(self.rows, 1):
+                if other['id'] in others:
+                    other['unread'] = False
+                    if other['id'] in self.marked_ids:
+                        self.marked_ids[other['id']] = self._summary(other_number)
         self.current = number
         self.view = 'message'
         found = getattr(body, 'attachments', None)
@@ -640,7 +710,12 @@ class MailSession:
         self.reading.set_text(self.body_text, reset=True)
         # Only "Message opened." before the words (Will, October 2026). From, To, CC, Subject
         # and Date have their own keys and questions (header()); the files are still named first.
-        return 'Message opened. ' + self._attachment_note() + self._next_body()
+        opened = 'Message opened. ' + (READ_NOT_CONFIRMED if getattr(body, 'read_not_confirmed', False) else '')
+        if getattr(body, 'receipt', '') == 'ask':
+            # Asked before the words, as Thunderbird asks at the top of the message.
+            self.pending = ('receipt', row['id'])
+            return opened + self._attachment_note() + RECEIPT_QUESTION
+        return opened + self._attachment_note() + self._next_body()
 
     def header(self, name):
         """One line of the message's header, said on its own: From, To, CC, Subject, Date sent, or the files."""
@@ -769,6 +844,13 @@ class MailSession:
             return (ALL_MESSAGES if self.all_messages else
                     str(self.list_size) + ' messages at a time.') + ' Say set to 20, set list to 1000, or set to all.'
         open_selection = ('that one', 'okay', 'ok', 'confirm', 'confirm that')
+        if self.pending and self.pending[0] == 'receipt':
+            if command in ('yes', 'yes please', 'okay', 'ok', 'send it', 'send receipt', 'send read receipt'):
+                return self.answer_receipt(True)
+            if command in ('no', 'no thanks', 'cancel', 'do not send', "don't send it", 'skip'):
+                return self.answer_receipt(False)
+            # Anything else leaves the receipt undecided; Thunderbird asks again next time it is opened.
+            self.pending = None
         if self.pending and command in open_selection and command not in ('okay', 'ok'):
             return 'An action is waiting for confirmation. Say yes or no first.'
         if self.pending and command in ('no', 'no thanks', 'cancel'):
@@ -832,6 +914,8 @@ class MailSession:
                 return self.message_status()
             if command in STATUS_CHANGES and self.rows:
                 return self.change_status(*STATUS_CHANGES[command])
+            if command in IMPORTANT_CHANGES:
+                return self.change_important(IMPORTANT_CHANGES[command])
             if command in ('message details','who is this from','read message details') and (self.view == 'message' or self.rows and self.current):
                 # In the list this repeats the summary of the message you are on.
                 from mail_attachments import summary

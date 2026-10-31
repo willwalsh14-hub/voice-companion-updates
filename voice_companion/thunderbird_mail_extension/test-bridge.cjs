@@ -1327,3 +1327,5 @@ async function experimentChecks() {
 
 // Contacts and calendars (pim.js, experiment/calendar.js) have their own file.
 require('./test-pim.cjs');
+// Read, unread, flags, Gmail's Important marker and read receipts (experiment/marks.js) have their own file.
+require('./test-marks.cjs');
