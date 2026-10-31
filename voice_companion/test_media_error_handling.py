@@ -102,6 +102,38 @@ class MediaErrorTests(unittest.TestCase):
         self.assertIn('The episode download did not finish.', self.notices[-1])
         self.assertEqual(list((Path(self.temp.name) / 'Podcast Downloads').glob('*')), [])
 
+    # A directory that answers with something other than a station list.
+    def test_a_directory_reply_that_is_not_a_station_list_is_said_plainly(self):
+        for reply in ({'error': 'rate limited'}, 'busy', None, 7):
+            self.hub.fetch_json = lambda url, reply=reply: reply
+            answer = self.hub.command('search jazz', section='radio')
+            self.assertIn('The live directory is unavailable.', answer, reply)
+            self.assertIn('No matching stations.', answer, reply)
+
+    def test_damaged_station_entries_are_skipped(self):
+        self.hub.fetch_json = lambda url: [
+            'WGN', None, 5, {'name': 12, 'url': 'https://radio.example/12'},
+            {'name': 'No address', 'url': None, 'url_resolved': 3},
+            {'name': ['list'], 'url': 'https://radio.example/list'},
+            {'name': 'Jazz 24', 'url': 'https://radio.example/jazz', 'country': None, 'tags': 5}]
+        answer = self.hub.command('search jazz', section='radio')
+        self.assertIn('Station 1: ', answer)
+        names = [station['name'] for station in self.hub.stations]
+        self.assertIn('Jazz 24', names)
+        self.assertTrue(all(isinstance(name, str) for name in names), names)
+        self.assertNotIn('No address', names)
+
+    def test_a_damaged_iprd_catalog_is_refused_plainly(self):
+        self.hub.fetch_json = lambda url: {'stations': [
+            {'name': None, 'genres': 5, 'streams': 'https://radio.example/a'},
+            {'name': 'Good', 'genres': None, 'streams': [{'url': 'https://radio.example/good', 'format': None}]},
+            {'name': 7, 'genres': ['jazz', 3], 'streams': [None, {'url': 'https://radio.example/seven'}]}]}
+        answer = self.hub.command('refresh stations', section='radio')
+        self.assertIn('IPRD station catalog refreshed with 2 stations.', answer)
+        saved = self.hub._stations_file('radio-iprd-stations.json')
+        self.assertTrue(all(isinstance(entry['name'], str) and isinstance(entry['tags'], str) for entry in saved), saved)
+        self.assertIn('Good', [entry['name'] for entry in saved])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -456,7 +456,10 @@ class MediaHub:
         errors=[]
         for root in RADIO_ROOTS:
             try:
-                return self.fetch_json(root+'/json/stations/search?'+parse.urlencode(query))
+                found=self.fetch_json(root+'/json/stations/search?'+parse.urlencode(query))
+                # A busy mirror can answer with an error object instead of a station list.
+                if not isinstance(found,list): raise ValueError('The station directory reply was not a station list.')
+                return found
             except (OSError,ValueError,TimeoutError) as exc:
                 errors.append(str(exc))
         raise OSError('Radio Browser mirrors are unavailable.')
@@ -485,13 +488,18 @@ class MediaHub:
         if not isinstance(catalog,dict) or not isinstance(catalog.get('stations'),list):
             raise ValueError('The IPRD catalog format was not recognized.')
         normalized=[]
+        def text(value): return str(value).strip() if isinstance(value,(str,int,float)) and not isinstance(value,bool) else ''
         for item in catalog['stations']:
             if not isinstance(item,dict): continue
-            for stream in item.get('streams',[]):
-                if not isinstance(stream,dict) or not _http_url(stream.get('url','')): continue
-                normalized.append({'name':item.get('name',''),'url':stream['url'],
-                    'country':item.get('country',''),'tags':', '.join(item.get('genres',[])),
-                    'codec':stream.get('format',''),'source':'IPRD'})
+            streams=item.get('streams')
+            genres=item.get('genres')
+            for stream in streams if isinstance(streams,list) else []:
+                if not isinstance(stream,dict) or not isinstance(stream.get('url'),str) or not _http_url(stream['url']): continue
+                if not text(item.get('name')): break
+                normalized.append({'name':text(item.get('name')),'url':stream['url'],
+                    'country':text(item.get('country')),
+                    'tags':', '.join(text(genre) for genre in genres if text(genre)) if isinstance(genres,list) else '',
+                    'codec':text(stream.get('format')),'source':'IPRD'})
                 break
         if not normalized: raise ValueError('The IPRD catalog contained no usable streams.')
         self._save('radio-iprd-stations.json',normalized[:100000])
@@ -566,15 +574,19 @@ class MediaHub:
         self.stations = []
         self.station_index = None
         self.station_choices = []
+        def text(value): return value if isinstance(value,str) else ''
         for entry in list(online or []) + local:
-            stream = entry.get('url_resolved') or entry.get('url','')
-            identity = (entry.get('name','').casefold(),stream.rstrip('/').casefold())
-            if not entry.get('name') or not _http_url(stream) or identity in seen or not self._usable({**entry,'url':stream}): continue
+            # A damaged entry (not a station, or a name that is not text) is skipped.
+            if not isinstance(entry,dict): continue
+            stream = text(entry.get('url_resolved')) or text(entry.get('url'))
+            name = text(entry.get('name')).strip()
+            identity = (name.casefold(),stream.rstrip('/').casefold())
+            if not name or not _http_url(stream) or identity in seen or not self._usable({**entry,'url':stream}): continue
             seen.add(identity)
-            self.stations.append({'name':entry['name'], 'url':stream, 'country':entry.get('country',''),
-                                  'state':entry.get('state',''), 'tags':entry.get('tags',''),
-                                  'codec':entry.get('codec',''), 'hls':bool(entry.get('hls')),
-                                  'uuid':entry.get('stationuuid',''), 'source':entry.get('source','Radio Browser')})
+            self.stations.append({'name':name, 'url':stream, 'country':text(entry.get('country')),
+                                  'state':text(entry.get('state')), 'tags':text(entry.get('tags')),
+                                  'codec':text(entry.get('codec')), 'hls':bool(entry.get('hls')),
+                                  'uuid':text(entry.get('stationuuid')), 'source':text(entry.get('source')) or 'Radio Browser'})
             if len(self.stations)>=30: break
         if not self.stations: return online_error + 'No matching stations. Try another name or genre.'
         self.station_index = 0
