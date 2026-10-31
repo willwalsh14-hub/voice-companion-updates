@@ -255,5 +255,45 @@ class NoteUndoTests(CompanionCase):
         self.assertNotIn('undo', ' '.join(companion.note_buffer))
 
 
+
+class DocumentNameTests(unittest.TestCase):
+    def test_changing_only_capitals_renames_the_same_document_and_undo_puts_it_back(self):
+        import tempfile
+        from pathlib import Path
+        from document_editor import VoiceDocument
+        with tempfile.TemporaryDirectory() as folder:
+            doc = VoiceDocument(Path(folder), title='budget')
+            doc.append_text('Rent is due.')
+            doc.save()
+            self.assertEqual(doc.process('rename document to Budget'), 'Document named Budget.docx.')
+            self.assertEqual(sorted(p.name for p in Path(folder).glob('*.docx')), ['Budget.docx'])
+            doc.process('undo')
+            self.assertEqual(sorted(p.name for p in Path(folder).glob('*.docx')), ['budget.docx'])
+            again = VoiceDocument.open_existing(Path(folder), 'budget')
+            self.assertIn('Rent is due.', ' '.join(p.text for p in again.paragraphs))
+
+
+
+class RecentListTests(CompanionCase):
+    def test_recent_documents_drop_files_that_are_gone(self):
+        import json
+        kept = self.folder / 'Kept.docx'; kept.write_bytes(b'x')
+        saved = self.folder / 'recent-documents.json'
+        saved.write_text(json.dumps([str(kept), str(self.folder / 'Gone.docx'), str(self.folder / 'Lost.docx')]), encoding='utf-8')
+        nav = companion.task_navigation()
+        self.assertEqual(nav.action('@recent', 'word_processor'), 'recent_documents')
+        self.assertIn('2 files are gone, so they were removed from the list.', self.last())
+        self.assertIn('Kept.docx', self.last())
+        self.assertEqual(json.loads(saved.read_text(encoding='utf-8')), [str(kept)])
+
+    def test_reader_recent_with_every_file_gone(self):
+        import json
+        saved = self.folder / 'recent-reader.json'
+        saved.write_text(json.dumps([str(self.folder / 'Gone.pdf')]), encoding='utf-8')
+        nav = companion.task_navigation()
+        self.assertEqual(nav.action('@reader_recent', 'reader_menu'), 'reader_menu')
+        self.assertEqual(self.last(), '1 file is gone, so it was removed from the list. No recent documents yet. Choose Open a document.')
+
+
 if __name__ == '__main__':
     unittest.main()

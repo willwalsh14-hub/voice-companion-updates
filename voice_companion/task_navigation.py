@@ -92,6 +92,33 @@ def spoken_speed(text):
         raise ValueError('Say a number from 0.5 to 3, such as 1.5.') from None
 
 
+def prune_missing(paths, saved):
+    """The recent files that are still there, and how many are gone. The saved list drops the gone
+    ones, so they are not offered again (Will, October 31, 2026)."""
+    kept = []
+    for p in paths:
+        try:
+            if Path(p).is_file(): kept.append(p)
+        except (OSError, ValueError):
+            pass
+    gone = len(paths) - len(kept)
+    if gone and Path(saved).exists():
+        try:
+            from storage import write_text_atomic
+            write_text_atomic(saved, json.dumps(kept))
+        except OSError:
+            pass
+    return kept, gone
+
+
+def gone_words(gone):
+    if not gone:
+        return ''
+    if gone == 1:
+        return '1 file is gone, so it was removed from the list. '
+    return str(gone) + ' files are gone, so they were removed from the list. '
+
+
 class TaskNavigation:
     def __init__(self, app):
         self.app = app
@@ -312,19 +339,19 @@ class TaskNavigation:
         if command == '@open': return self.pick('document', mode)
         if command == '@reader_open': return self.pick('reader')
         if command == '@reader_recent':
-            self.reader_recent = self.reader_list()
+            self.reader_recent, gone = prune_missing(self.reader_list(), m.APP/'recent-reader.json')
             if not self.reader_recent:
-                m.speak('No recent documents yet. Choose Open a document.'); return mode
-            return self.enter('reader_recent', 'Recent documents')
+                m.speak(gone_words(gone)+'No recent documents yet. Choose Open a document.'); return mode
+            return self.enter('reader_recent', 'Recent documents'+('. '+gone_words(gone).rstrip('. ') if gone else ''))
         if command.startswith('@reader_file:'): return self.read_file(command[len('@reader_file:'):])
         if command == '@media_open': return self.pick('media')
         if command == '@recent':
             try: self.recent = json.loads((m.APP/'recent-documents.json').read_text(encoding='utf-8'))[:20]
             except (OSError, ValueError, TypeError): self.recent = []
+            self.recent, gone = prune_missing([p for p in self.recent if isinstance(p,str)], m.APP/'recent-documents.json')
             if not self.recent:
                 self.recent = [str(p) for p in sorted(m.documents_folder().glob('*.docx'), key=lambda p:p.stat().st_mtime, reverse=True)[:20]]
-            self.recent=[p for p in self.recent if isinstance(p,str)]
-            return self.enter('recent_documents', 'Recent documents')
+            return self.enter('recent_documents', 'Recent documents'+('. '+gone_words(gone).rstrip('. ') if gone else ''))
         if command.startswith('@recent:'):
             self.reader_return='recent_documents'
             return self.open_document(command[8:])
