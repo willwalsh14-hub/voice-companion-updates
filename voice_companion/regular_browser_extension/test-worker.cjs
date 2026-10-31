@@ -155,5 +155,12 @@ const Model=vm.runInContext('CompanionCDP',context);
  await vm.runInContext('disconnect()',workerContext);assert.equal(vm.runInContext('downloads',workerContext),null);
  downloadListeners.created({...item,id:43});assert.ok(!sent.some(m=>m.params?.id===43));
  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'manifest.json'),'utf8'));assert.ok(manifest.permissions.includes('downloads'));
+ // The popup's first status line: if the worker cannot answer, it must not stay on "Checking" or read "undefined".
+ for(const answer of [()=>Promise.reject(new Error('Could not establish connection.')),()=>Promise.resolve({ok:false,error:'Open Voice Companion. The browser will reconnect automatically.'})]){
+   const status={textContent:'Checking browser connection.'};
+   const popup=vm.createContext({document:{querySelectorAll:()=>[],getElementById:()=>status},chrome:{runtime:{sendMessage:answer}}});
+   vm.runInContext(fs.readFileSync(path.join(__dirname,'popup.js'),'utf8'),popup);await new Promise(resolve=>setTimeout(resolve,5));
+   assert.match(status.textContent,/^(The browser connection stopped|Open Voice Companion)/);
+ }
  process.stdout.write('Browser startup, persistent pause, retry, tabs, CDP routing, frame and download checks passed.\n');
 })().catch(error=>{process.stderr.write(error.stack+'\n');process.exitCode=1;});
