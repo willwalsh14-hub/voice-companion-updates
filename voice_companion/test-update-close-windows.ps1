@@ -14,6 +14,15 @@ function Start-Hidden([string]$file, [string]$arguments) {
   [void]$started.Add($process)
   return $process
 }
+# The close step appends to its log while this test reads it. Get-Content then fails with
+# "being used by another process" and stopped the test (main build of 0.2.185, October 30, 2026).
+# Read with sharing, and treat a busy file as not ready yet.
+function Read-Shared([string]$path) {
+  try {
+    $stream = [IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)
+    try { return (New-Object IO.StreamReader($stream)).ReadToEnd() } finally { $stream.Dispose() }
+  } catch { return '' }
+}
 function Wait-Until([scriptblock]$condition, [int]$seconds, [string]$message) {
   $deadline = (Get-Date).AddSeconds($seconds)
   while (-not (& $condition)) { if ((Get-Date) -gt $deadline) { throw $message }; Start-Sleep -Milliseconds 200 }
@@ -72,7 +81,7 @@ public static class Launcher {
     if (-not $process.HasExited) {
       $listed = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $process.Id)
       throw ('Voice Companion stand-in ' + $process.Id + ' must be closed. Folder: ' + $folder + '. Listed as: ' + $listed.ExecutablePath +
-             '. Close log: ' + $(if (Test-Path $script:CloseLogFile) { Get-Content -LiteralPath $script:CloseLogFile -Raw }))
+             '. Close log: ' + $(if (Test-Path $script:CloseLogFile) { Read-Shared $script:CloseLogFile }))
     }
   }
   $holder.Refresh(); Assert (-not $holder.HasExited) 'The user''s program must never be closed.'
@@ -118,7 +127,7 @@ public static class Launcher {
   $parent = Start-Hidden (Join-Path $folder 'VoiceCompanion.exe') ('"' + (Join-Path $system 'WindowsPowerShell\v1.0\powershell.exe') + '" "-NoProfile -ExecutionPolicy Bypass -File \"' + (Join-Path $PSScriptRoot 'close-companion.ps1') + '\" -InstallFolder \"' + $folder + '\" -LogFile \"' + $closeLog + '\" -GentleSeconds 1 -ForceSeconds 2 -BlockedSeconds 5"')
   Wait-Until { $parent.Refresh(); $parent.HasExited } 60 'The app stand-in that started the update must be closed by it.'
   Wait-Until { $host3.Refresh(); $host3.HasExited } 30 'The browser host must be closed.'
-  Wait-Until { (Test-Path $closeLog) -and ((Get-Content -LiteralPath $closeLog -Raw) -match 'All Voice Companion files are free') } 60 ('The close step must finish its own work after closing the app that started it: ' + $(if (Test-Path $closeLog) { Get-Content -LiteralPath $closeLog -Raw }))
+  Wait-Until { (Test-Path $closeLog) -and ((Read-Shared $closeLog) -match 'All Voice Companion files are free') } 60 ('The close step must finish its own work after closing the app that started it: ' + $(if (Test-Path $closeLog) { Read-Shared $closeLog }))
   Write-Output 'PASS: real processes closed by folder, children first, the user''s programs and similar folders untouched, a held file named by Restart Manager, Setup''s exit code and reason, manifests paused and restored, and the update never closing itself.'
 } finally {
   foreach ($process in $started) { try { if (-not $process.HasExited) { $process.Kill() } } catch {} }

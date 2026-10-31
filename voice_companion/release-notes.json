@@ -2,7 +2,7 @@
   "version": "0.2.186-test",
   "status": "Testing build",
   "date": "October 30, 2026",
-  "baseline": "0.2.185-test",
+  "baseline": "0.2.184-test",
   "scope": "Email says and changes read, unread, flags and importance.",
   "sections": [
     {
@@ -25,6 +25,13 @@
             "While you write, press Control+Shift+I to change the importance. Or say High importance, Low importance, or Normal importance.",
             "Press Control+Shift+T, or say Request a read receipt, to ask the person to tell you when they open it.",
             "The review says them before you send. They are also in the draft menu."
+          ]
+        },
+        {
+          "title": "Play and pause in YouTube",
+          "details": [
+            "Space or Enter plays and pauses a video.",
+            "K no longer plays or pauses. It did the same thing as Space."
           ]
         }
       ]

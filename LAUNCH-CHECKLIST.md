@@ -203,3 +203,8 @@ Problems found in the October 2026 review. All fixed in 0.2.153-test, with tests
 - The radio and podcast player's Firefox now runs headless, so no window takes the keyboard.
 - On Windows (try branch, PR 86) it showed no window, kept the focus, and played forward, three runs out of three.
 - [ ] Build computers have no sound device. A person must listen once to confirm the sound reaches the speakers. If it does not, start Firefox with a window again, minimized and off the taskbar.
+
+## 0.2.185: update close test failed in the main build after passing on the pull request (October 30, 2026)
+- Cause: `test-update-close-windows.ps1` read the close log with `Get-Content` while the close step was still appending to it. Windows refused the read ("being used by another process"), and the error ended the test.
+- Fix: `Read-Shared` opens the log with read and write sharing. A busy file counts as "not ready yet", and the wait goes on.
+- 0.2.185 was merged but not published. 0.2.186 carries its changes.
