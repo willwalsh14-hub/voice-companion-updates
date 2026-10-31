@@ -29,6 +29,10 @@
  *    same as when a person opens that folder, so Voice Companion lists the newest
  *    mail. Thunderbird's add-on interface has no way to ask for this.
  *
+ *  - messageStatus: whether messages were replied to or forwarded, and their importance,
+ *    from Thunderbird's own message list. The add-on interface gives read, flagged and
+ *    junk, but not these. Read only.
+ *
  * It never reads or changes accounts, passwords or settings, and it logs nothing.
  */
 'use strict';
@@ -477,6 +481,27 @@ function keepPromptsInView(on) {
   return {watching: Boolean(promptWatch)};
 }
 
+// Thunderbird's importance numbers (nsMsgPriority), as the add-on interface names them when sending.
+const PRIORITY_NAMES = {6: 'highest', 5: 'high', 4: 'normal', 3: 'low', 2: 'lowest'};
+const MAX_STATUS = 100;   // the largest page of messages Voice Companion lists at once
+
+function messageStatus(extension, ids) {
+  const found = {};
+  if (!Array.isArray(ids)) return found;
+  const flags = Ci.nsMsgMessageFlags;
+  for (const id of ids.slice(0, MAX_STATUS)) {
+    let header = null;
+    try { header = extension.messageManager.get(id); } catch (error) { header = null; }
+    if (!header) continue;
+    found[String(id)] = {
+      replied: Boolean(header.flags & flags.Replied),
+      forwarded: Boolean(header.flags & flags.Forwarded),
+      priority: PRIORITY_NAMES[header.priority] || '',
+    };
+  }
+  return found;
+}
+
 var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     armedUntil = 0; captured = null; pending = null; graphChosen = false;
@@ -580,6 +605,10 @@ var voiceCompanionSetup = class extends ExtensionCommon.ExtensionAPI {
 
         async about() {
           try { return about(); } catch (error) { return {version: '', channel: '', profile: '', composing: 0}; }
+        },
+
+        async messageStatus(ids) {
+          try { return messageStatus(context.extension, ids); } catch (error) { return {}; }
         },
 
         async getNewMail(accountId, path, inbox) {

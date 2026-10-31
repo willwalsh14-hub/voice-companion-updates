@@ -47,8 +47,52 @@ function load(api) {
   assert.equal(last.next, null);
   await assert.rejects(call('list', {folderId: inbox.id, offset: 0, limit: 7}), /Invalid message page/);
 
+  // Each row says flagged, junk, replied, forwarded and importance (Will, October 30, 2026).
+  const byId = Object.fromEntries(first.rows.map(r => [r.id, r]));
+  assert.deepEqual([byId[25].replied, byId[25].forwarded, byId[25].priority, byId[25].flagged], [true, false, 'high', false]);
+  assert.deepEqual([byId[24].replied, byId[24].forwarded, byId[24].priority], [false, true, 'normal']);
+  assert.equal(byId[23].flagged, true);
+  assert.equal(byId[22].priority, 'lowest');
+  assert.equal(byId[21].junk, false);
+  // An older Experiment: rows still list, without replied, forwarded or importance.
+  state.noStatus = true;
+  const plainRows = await call('list', {folderId: inbox.id, offset: 0, limit: 10});
+  assert.equal(plainRows.rows.length, 10);
+  assert.equal(plainRows.rows[0].replied, undefined);
+  assert.equal(plainRows.rows[0].unread, true);
+  state.noStatus = false;
+
+  // Marking read, unread, flagged and not flagged; the kept list says the new state at once.
+  const secondPage = await call('list', {folderId: inbox.id, offset: 10, limit: 10});   // kept for paging
+  assert.equal(secondPage.rows[0].id, 15);
+  assert.equal(secondPage.rows[0].unread, true);
+  const queriesBefore = state.queries;
+  assert.deepEqual(await call('mark', {ids: [15, 23], read: true}), {changed: 2, missing: 0});
+  assert.equal(state.messages[14].read, true);
+  assert.equal(state.messages[22].read, true);
+  const afterMark = await call('list', {folderId: inbox.id, offset: 10, limit: 10});
+  assert.equal(state.queries, queriesBefore, 'marking keeps the list, so the page is not read again');
+  assert.equal(afterMark.rows[0].unread, false, 'the kept list says the new state');
+  state.messages[14].read = false;
+  await call('mark', {ids: [25], read: false});
+  assert.equal(state.messages[24].read, false);
+  await call('mark', {ids: [25], flagged: true});
+  assert.equal(state.messages[24].flagged, true);
+  await call('mark', {ids: [25], flagged: false});
+  assert.equal(state.messages[24].flagged, false);
+  assert.deepEqual(await call('mark', {ids: [25, 999], read: true}), {changed: 1, missing: 1});
+  await assert.rejects(call('mark', {ids: [999], read: true}), /could not change that message/);
+  await assert.rejects(call('mark', {ids: [], read: true}), /Choose a message first/);
+  await assert.rejects(call('mark', {ids: [25]}), /Nothing to change/);
+  await assert.rejects(call('mark', {ids: ['25'], read: true}), /Choose a message first/);
+  state.messages[24].read = false;
+
   // Reading prefers both HTML and plain text when present.
-  assert.deepEqual(await call('read', {messageId: 25}), {html: state.messages[24].html, plain: 'Plain text of message 25', attachments: []});
+  assert.deepEqual(await call('read', {messageId: 25}), {html: state.messages[24].html, plain: 'Plain text of message 25', attachments: [], read: true});
+  // Opening a message marks it read, as Thunderbird does.
+  state.messages[24].read = false;
+  await call('read', {messageId: 25});
+  assert.equal(state.messages[24].read, true);
   const listParts = api.messages.listInlineTextParts;
   delete api.messages.listInlineTextParts;
   assert.equal((await call('read', {messageId: 3})).plain, 'Plain text of message 3');
@@ -85,6 +129,16 @@ function load(api) {
   assert.equal(message.current.body, '<html><body><p>Hi Sam</p></body></html>');
   assert.equal(message.options.mode, 'sendNow');
   assert.deepEqual(JSON.parse(JSON.stringify(state.minimized.at(-1))), {windowId: message.windowId, info: {state: 'minimized'}});
+
+  // Importance and a read receipt reach Thunderbird's compose window; without them nothing is set.
+  assert.equal(message.current.priority, undefined);
+  assert.equal(message.current.returnReceipt, undefined);
+  await call('send', {identityId: 'id1', to: ['sam@example.com'], subject: 'Urgent', html: '<p>Hi</p>', plain: 'Hi',
+    priority: 'high', returnReceipt: true});
+  assert.equal(state.sent.at(-1).current.priority, 'high');
+  assert.equal(state.sent.at(-1).current.returnReceipt, true);
+  await call('send', {identityId: 'id1', to: ['sam@example.com'], subject: 'Odd', html: '<p>Hi</p>', plain: 'Hi', priority: 'urgent!'});
+  assert.equal(state.sent.at(-1).current.priority, undefined, 'an unknown importance is not passed on');
 
   // Thunderbird closed its compose window itself: nothing else is closed.
   assert.deepEqual(state.openCompose, []); assert.deepEqual(state.closedByAddon, []);
@@ -207,6 +261,7 @@ function load(api) {
   await attachmentChecks();
   await microsoftAccountChecks();
   await aboutChecks();
+  await statusChecks();
   await graphChoiceChecks();
   await noteWordsChecks();
   process.stdout.write('Thunderbird mail add-on checks passed.\n');
@@ -290,6 +345,22 @@ async function microsoftAccountChecks() {
   assert.deepEqual(plain(await experiment.getNewMail('account5', '/Inbox', true)), {checked: true, offline: false});
   assert.deepEqual(mail.calls.at(-1), {how: 'update', uri: graphRoot + '/Inbox'});
   assert.deepEqual(plain(await experiment.outgoingServer('idaccount5')), {host: '', port: 0, security: ''});
+}
+
+// Replied, forwarded and importance from Thunderbird's own message list (nsIMsgDBHdr).
+async function statusChecks() {
+  const headers = {1: {flags: 0x1 | 0x2, priority: 6}, 2: {flags: 0x1000, priority: 4}, 3: {flags: 0, priority: 0},
+    4: {flags: 0x2 | 0x1000, priority: 2}};
+  const extension = {messageManager: {get: id => { if (id === 5) throw new Error('gone'); return headers[id] || null; }}};
+  const api = loadExperiment(null, fakeOAuth(), fakeMailServices(), {composing: 0, quits: [], extension});
+  assert.deepEqual(plain(await api.messageStatus([1, 2, 3, 4, 5, 6])), {
+    1: {replied: true, forwarded: false, priority: 'highest'},
+    2: {replied: false, forwarded: true, priority: 'normal'},
+    3: {replied: false, forwarded: false, priority: ''},
+    4: {replied: true, forwarded: true, priority: 'lowest'}});
+  assert.deepEqual(plain(await api.messageStatus('not a list')), {});
+  // No add-on context (should never happen): nothing, not an error.
+  assert.deepEqual(plain(await loadExperiment(null).messageStatus([1])), {});
 }
 
 // Which Thunderbird is running, from which update channel, with which profile, and whether a
@@ -946,13 +1017,13 @@ function loadExperiment(win, oauth = fakeOAuth(), mail = fakeMailServices(), app
                obs: {addObserver: (observer, topic) => app.observers.set(topic, observer),
                      removeObserver: (observer, topic) => { if (app.observers.get(topic) === observer) app.observers.delete(topic); }},
                ww: {registerNotification: observer => app.watchers.add(observer), unregisterNotification: observer => app.watchers.delete(observer)}},
-    Ci: {nsIAppStartup: {eAttemptQuit: 2}, nsISmtpServer: {}, nsIFile: {}},
+    Ci: {nsIAppStartup: {eAttemptQuit: 2}, nsISmtpServer: {}, nsIFile: {}, nsMsgMessageFlags: {Read: 0x1, Replied: 0x2, Marked: 0x4, Forwarded: 0x1000}},
     setTimeout, WeakRef, Symbol, Object, URL,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'experiment', 'implementation.js'), 'utf8'), context);
   const Api = vm.runInContext('voiceCompanionSetup', context);
   const instance = new Api();
-  const api = instance.getAPI({}).voiceCompanionSetup;
+  const api = instance.getAPI({extension: app.extension}).voiceCompanionSetup;
   api.shutdown = () => instance.onShutdown();
   return api;
 }
@@ -1201,9 +1272,9 @@ async function experimentChecks() {
   assert.ok(fs.existsSync(path.join(__dirname, declared.parent.script)));
   const [major, minor] = manifest.version.split('.').map(Number);
   // 1.2.0 checks for new mail before listing; 1.7.0 adds about() and Microsoft Graph for Thunderbird 154;
-  // 1.7.1 tries again soon when the host could not start. A higher version replaces installed copies.
-  const patch = Number(manifest.version.split('.')[2] || 0);
-  assert.ok(major > 1 || minor > 7 || (minor === 7 && patch >= 1), 'the add-on version was raised so installed copies are replaced');
+  // 1.7.1 tries again soon when the host could not start; 1.8.0 says and changes read, flagged,
+  // replied, forwarded and importance. A higher version replaces installed copies.
+  assert.ok(major > 1 || minor >= 8, 'the add-on version was raised so installed copies are replaced');
 }
 
 // Connecting to the host: after a break, try again soon, then less often; soon again once it talks.

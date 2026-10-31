@@ -12,13 +12,18 @@ SCREEN_KEYS = {
     'email_draft': {'Ctrl+S': 'save draft', 'Ctrl+R': 'read email draft', 'F1': 'help with writing email',
                     'Ctrl+B': 'toggle bold', 'Ctrl+I': 'toggle italic', 'Ctrl+U': 'toggle underline',
                     'Ctrl+K': 'list contacts', 'Ctrl+O': 'attach a file', 'Ctrl+L': 'list attachments',
-                    'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo'},
+                    'Ctrl+Z': 'undo', 'Ctrl+Y': 'redo',
+                    # Importance turns normal, high, low; T for Tracking, as Outlook names read receipts.
+                    'Ctrl+Shift+I': 'change importance', 'Ctrl+Shift+T': 'read receipt on or off'},
     # Email: one letter per action, no modifiers (Will, October 2026). Letters act in the
     # message list and in an open message; K and B stay for links and buttons in a message.
     'mailbox': {'N': 'new email', 'R': 'reply', 'A': 'reply all', 'F': 'forward', 'M': 'move',
                 'G': 'go to folder', 'W': 'which folder', 'I': 'message details',
                 'C': 'copy sender address', 'E': 'new email to sender', 'D': 'open email draft',
                 'P': 'list contacts', 'U': 'clear selection', 'S': 'what is selected', 'L': 'list attachments',
+                # Read or unread, and flagged (Will, October 30, 2026). M and S, Thunderbird's own
+                # keys, already move and say the selection here.
+                'Q': 'mark as read or unread', 'X': 'flag or unflag',
                 'Next': 'next messages', 'Prior': 'previous messages',
                 'F1': 'help with email', 'F7': 'list links', 'F8': 'list buttons'},
     'file_reader': {'Ctrl+F': 'find {value}', 'Ctrl+R': 'read document', 'F1': 'help with document reader'},

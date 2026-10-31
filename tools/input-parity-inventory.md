@@ -7,10 +7,10 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 735
-- Already had both ways: 577
-- Gaps found: 158
-- Gaps fixed (Added): 150
+- Actions inventoried: 745
+- Already had both ways: 582
+- Gaps found: 163
+- Gaps fixed (Added): 155
 - Not applicable (N/A, with reason): 8
 
 ## Main menu
@@ -1321,6 +1321,12 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
 - Status: Both
 
+### Say read, unread, flagged and importance
+
+- Voice: "Set Say read, unread, flagged and importance to ..."
+- Keyboard: Alt+O, arrows to Email options, Tab to the field, arrows or Space, Enter to save
+- Status: Both
+
 ### Add an email account
 
 - Voice: "Add account"
@@ -1955,6 +1961,24 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: E
 - Status: Both
 
+### Mark as read or unread
+
+- Voice: "Mark as read or unread"
+- Keyboard: Q
+- Status: Both
+
+### Flag or unflag
+
+- Voice: "Flag or unflag"
+- Keyboard: X
+- Status: Both
+
+### Message status
+
+- Voice: "Message status"
+- Keyboard: Alt, 2, 9
+- Status: Added: Alt menu path
+
 ## Alt menu, Email: Go to folder
 
 ### Inbox
@@ -2352,6 +2376,44 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Voice: "Redo"
 - Keyboard: Ctrl+Y
 - Status: Both
+
+## Alt menu, Email draft: Importance and read receipt
+
+### Change importance
+
+- Voice: "Change importance"
+- Keyboard: Ctrl+Shift+I
+- Status: Both
+
+### High importance
+
+- Voice: "High importance"
+- Keyboard: Alt, 7, 2
+- Status: Added: Alt menu path
+
+### Normal importance
+
+- Voice: "Normal importance"
+- Keyboard: Alt, 7, 3
+- Status: Added: Alt menu path
+
+### Low importance
+
+- Voice: "Low importance"
+- Keyboard: Alt, 7, 4
+- Status: Added: Alt menu path
+
+### Read receipt on or off
+
+- Voice: "Read receipt on or off"
+- Keyboard: Ctrl+Shift+T
+- Status: Both
+
+### Importance and receipt now
+
+- Voice: "Importance"
+- Keyboard: Alt, 7, 6
+- Status: Added: Alt menu path
 
 ## Alt menu, Note: Notepad
 

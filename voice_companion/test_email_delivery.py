@@ -1,4 +1,7 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from email import policy
 from email.parser import BytesParser
 from email.message import EmailMessage
@@ -279,3 +282,70 @@ class DeliveryTests(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+
+class ImportanceAndReceiptTests(unittest.TestCase):
+    """Will, October 30, 2026: set importance and ask for a read receipt while writing."""
+    def draft(self, folder):
+        from email_draft import VoiceEmail
+        draft = VoiceEmail(Path(folder), recipient='sam@example.com', subject='Lunch', provider='yahoo')
+        draft.paragraphs = [Paragraph('See you at noon.')]
+        return draft
+
+    def test_commands_change_and_say_the_choice(self):
+        with tempfile.TemporaryDirectory() as folder:
+            draft = self.draft(folder)
+            self.assertEqual(draft.process('Importance'), 'Normal importance. No read receipt.')
+            self.assertEqual(draft.process('change importance'), 'High importance.')
+            self.assertEqual(draft.process('change importance'), 'Low importance.')
+            self.assertEqual(draft.process('change importance'), 'Normal importance.')
+            self.assertEqual(draft.process('High importance.'), 'High importance.')
+            self.assertEqual(draft.process('read receipt on or off'),
+                             'Read receipt on. The person is asked to tell you when they open it.')
+            self.assertEqual(draft.process('Read receipt.'), 'Read receipt on. The person is asked to tell you when they open it.')
+            # A sentence that only mentions importance is part of the message.
+            draft.compose_step = 'body'
+            draft.process('This is of high importance.')
+            self.assertIn('This is of high importance.', ' '.join(p.text for p in draft.paragraphs))
+            self.assertEqual(draft.importance, 'high')
+            # In the To and Subject boxes the commands still work, never becoming an address.
+            draft.compose_step = 'recipient'
+            self.assertEqual(draft.process('Low importance'), 'Low importance.')
+            self.assertEqual(draft.recipient, 'sam@example.com')
+            self.assertEqual(draft.process('No read receipt.'), 'No read receipt.')
+
+    def test_saved_and_reopened_with_the_draft(self):
+        from email_draft import VoiceEmail
+        with tempfile.TemporaryDirectory() as folder:
+            draft = self.draft(folder)
+            before = draft.send_hash()
+            draft.process('high importance'); draft.process('request a read receipt')
+            self.assertNotEqual(draft.send_hash(), before, 'a change after the review needs a new review')
+            again = VoiceEmail.open_existing(Path(folder), draft.title)
+            self.assertEqual((again.importance, again.read_receipt), ('high', True))
+            # Damaged values open as normal importance and no receipt.
+            state = json.loads(draft.state_path.read_text(encoding='utf-8'))
+            state.update(importance='urgent!!', read_receipt='yes')
+            draft.state_path.write_text(json.dumps(state), encoding='utf-8')
+            damaged = VoiceEmail.open_existing(Path(folder), draft.title)
+            self.assertEqual((damaged.importance, damaged.read_receipt), ('', False))
+
+    def test_old_drafts_keep_their_send_fingerprint(self):
+        with tempfile.TemporaryDirectory() as folder:
+            draft = self.draft(folder)
+            content = [draft.provider, draft.recipient, draft.subject, draft.cc, draft.bcc, draft.response_context,
+                       [__import__('dataclasses').asdict(p) for p in draft.paragraphs]]
+            import hashlib
+            self.assertEqual(draft.send_hash(), hashlib.sha256(json.dumps(content, ensure_ascii=False).encode('utf-8')).hexdigest())
+
+    def test_yahoo_message_carries_importance_and_receipt(self):
+        with tempfile.TemporaryDirectory() as folder:
+            draft = self.draft(folder)
+            plain = yahoo_message(draft)
+            self.assertIsNone(plain['X-Priority']); self.assertIsNone(plain['Disposition-Notification-To'])
+            draft.importance = 'high'; draft.read_receipt = True
+            message = yahoo_message(draft)
+            self.assertEqual((message['X-Priority'], message['Importance']), ('2 (High)', 'High'))
+            self.assertEqual(message['Disposition-Notification-To'], 'me@yahoo.com')
+            draft.importance = 'low'
+            self.assertEqual(yahoo_message(draft)['X-Priority'], '4 (Low)')

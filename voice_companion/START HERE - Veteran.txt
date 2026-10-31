@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.185-test.
+Guide version: 0.2.186-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -928,7 +928,7 @@ Companion waits up to 15 minutes. If you finish in Thunderbird later, say "Add a
 4. Speak the message in short parts. Listen back before you send.
 With the keyboard, type an address in the To box and press Enter. Then go on to the subject and the message.
 To speak an email address, say "at" for @ and "dot" for each period. For example, say "sam at example dot com" for sam@example.com. Say "underscore" for _ and "dash" for -.
-Press Alt to open the email draft menu. It has Message, Fields, Format, Contacts and help, Attachments, and Undo and redo. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.
+Press Alt to open the email draft menu. It has Message, Fields, Format, Contacts and help, Attachments, Undo and redo, and Importance and read receipt. Message has Send, Save draft, Read draft, Save and close, and Discard draft. While the menu is open, the keys you press choose items. They are not added to the message.
 
 11.2 Change To, CC, BCC, or Subject
 A message has these parts:
@@ -974,6 +974,11 @@ A draft with nothing written closes without the question. Throwing a draft away 
 2. Listen to the sending account, addresses, subject, and message.
 3. If something is wrong, say "Cancel send", or press Alt+N. Fix it, then start the review again.
 4. Say "Yes", or press Alt+Y, only when the review is right.
+Before you send, you can set how important the message is, and ask for a read receipt:
+- To change the importance, say "Change importance", or press Control+Shift+I. Each press goes to the next one: normal, high, then low. You can also say "High importance", "Low importance", or "Normal importance".
+- To ask the person to tell you when they open it, say "Read receipt on or off", or press Control+Shift+T. Press it again to take it off. You can also say "Request a read receipt" or "No read receipt".
+- To hear both, say "Importance".
+The review says high or low importance, and the read receipt, when you set them. Some people's email does not send read receipts.
 Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead.
 When the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.
 If Companion says the result is uncertain, check your sent mail and ask the person before you try again.
@@ -1007,6 +1012,7 @@ A saved draft keeps its attached files. When you open it again, they are still t
 2. Listen to the sender, subject, and date of the selected message.
 3. To hear another message, say "Next message" or "Previous message", or press Down Arrow or Up Arrow.
 4. To read it, say "That one" or "Open current message", or press Enter. Companion says "Message opened." Then it reads the message.
+Before the sender, you hear the message's status when it has one: unread, flagged, replied, forwarded, or high or low importance. A message you have read says nothing more. To turn this off, open Email options and clear "Say read, unread, flagged and importance".
 To open a message by number, say "Read message" or "Open message", followed by its number, such as "Read message 1" or "Open message 1".
 To repeat the sender, subject, and date, say "Message details", or press I. To hear one part of the header, use these keys or questions. They work in the message list and in an open message:
 - Alt+1: who it is from. Say "Who is it from?" or "Who sent this?"
@@ -1043,6 +1049,13 @@ To open a folder by name, say "Go to folder", "Open folder", or "Go to", followe
 - In Trash, Delete changes nothing. Companion says the message is already there.
 - To pick a folder to move them to, say "Move", or press M. To name the folder, say "Move to", followed by its name, such as "Move to Saved".
 "Delete message" and "Move message" act on the current message, even if other messages are marked.
+Read, unread, and flags work for accounts in Thunderbird:
+- To mark a message read or unread, say "Mark as read or unread", "Mark as read", or "Mark as unread". Or press Q. Each press of Q changes it.
+- To flag a message, say "Flag or unflag", or "Flag". Or press X. To take the flag off, say "Remove flag", or press X again.
+- To hear the status, say "Message status".
+- If messages are marked, these change every marked message.
+- Opening a message marks it read, as in Thunderbird.
+You hear importance, but you cannot change it on a message you got. The person who sent it chose it.
 Listen to the action and the names, then answer Yes or No. If a result is uncertain, check the folder before you try again.
 Inside an open message, Control+A selects text to copy. It does not mark other messages.
 
@@ -1085,6 +1098,8 @@ Email letter keys work in the message list and in an open message:
 - G: to choose a folder, say "Go to folder", or press G.
 - W: to hear the folder name, say "Which folder", or press W.
 - I: to hear the sender, subject, and date, say "Message details", or press I.
+- Q: to mark a message read or unread, say "Mark as read or unread", or press Q.
+- X: to flag a message or take the flag off, say "Flag or unflag", or press X.
 - Alt+1 to Alt+6: to hear From, To, CC, Subject, the date sent, or how many files are attached. See part 12.1.
 - C: to copy the sender's address, say "Copy sender address", or press C.
 - E: to email the sender, say "New email to sender", or press E.

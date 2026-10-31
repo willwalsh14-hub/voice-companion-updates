@@ -127,6 +127,21 @@
         ]
       },
       {
+        "name": "messageStatus",
+        "type": "function",
+        "async": true,
+        "description": "Whether each message was replied to or forwarded, and its importance. Resolves to {id: {replied, forwarded, priority}}. Changes nothing.",
+        "parameters": [
+          {
+            "name": "ids",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      {
         "name": "about",
         "type": "function",
         "async": true,

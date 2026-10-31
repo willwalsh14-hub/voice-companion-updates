@@ -51,7 +51,7 @@ from menu_navigation import boundary_notice, bounded_index, next_match, menu_lab
 APP = Path(os.getenv('VOICE_COMPANION_DATA_DIR') or
            (Path(os.getenv('LOCALAPPDATA', str(Path.home()))) / 'VoiceCompanion'))
 DEFAULT_APP = APP
-APP_VERSION = '0.2.185-test'
+APP_VERSION = '0.2.186-test'
 POWER_COMMANDS={'restart computer':'restart','restart the computer':'restart','restart windows':'restart','reboot computer':'restart','shut down computer':'shutdown','shut down the computer':'shutdown','shutdown computer':'shutdown','shut down windows':'shutdown','turn off computer':'shutdown','turn off the computer':'shutdown'}
 POWER_COMMANDS.update(dict.fromkeys(('shut off the computer','shut off computer','turn the computer off','turn computer off','shut the computer down','shut computer down'), 'shutdown'))
 POWER_COMMANDS.update(dict.fromkeys(('reboot the damn thing','reboot the computer','reboot','restart','restart the damn thing'), 'restart'))
@@ -5044,6 +5044,12 @@ def _handle(text, mode, typed=False):
                     speak(missing_message(gone) + ' The draft is saved.')
                     return mode
                 attached = (' With ' + count_words(len(files)) + ': ' + names(files) + '.' if files else '')
+                # Said only when set, so an everyday review stays as short as before.
+                from email_draft import importance_words
+                if getattr(email_draft, 'importance', '') in ('high', 'low'):
+                    attached += ' ' + importance_words(email_draft.importance) + '.'
+                if getattr(email_draft, 'read_receipt', False) is True:
+                    attached += ' With a read receipt.'
                 import account_picker
                 speak('Review before sending. From ' + account_picker.label((provider, address)) + '. To ' + recipient +
                       copied + '. ' + sentence('Subject ' + (subject or 'no subject')) + attached + ' ' +

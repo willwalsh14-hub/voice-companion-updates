@@ -40,6 +40,62 @@ class MailboxTests(unittest.TestCase):
             self.assertIn('No messages on this page', session.process('yes'))
             self.assertEqual(session.rows, [])
 
+    def test_marking_read_needs_an_account_that_can_mark(self):
+        import tempfile
+        class FakeClient:   # like the Yahoo mailbox: no mark()
+            def __init__(self, *args): pass
+            def list_messages(self, folder, cursor=None, limit=10):
+                return ([{'id': 'a', 'from': 'a@example.com', 'subject': 'Mail', 'unread': True}], None)
+        with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('a@example.com', 'token')):
+            session = MailSession('yahoo', folder, FakeClient)
+            self.assertIn('Unread. Sender name unavailable. Mail.', session.process('list messages'))
+            import mail_voice
+            self.assertEqual(session.process('mark as read'), mail_voice.MARK_NEEDS_THUNDERBIRD)
+            self.assertEqual(session.process('flag'), mail_voice.MARK_NEEDS_THUNDERBIRD)
+            self.assertTrue(session.rows[0]['unread'])
+            self.assertEqual(session.process('message status'), 'Unread, not flagged.')
+
+    def test_status_commands_in_an_empty_folder_say_the_list_is_empty(self):
+        import tempfile
+        class FakeClient:
+            def __init__(self, *args): pass
+            def list_messages(self, folder, cursor=None, limit=10): return ([], None)
+            def mark(self, ids, **change): raise AssertionError('nothing to mark')
+        with tempfile.TemporaryDirectory() as folder, patch('mail_voice.account_token', return_value=('a@example.com', 'token')):
+            session = MailSession('thunderbird', folder, FakeClient)
+            session.process('list messages')
+            for command in ('mark as read', 'flag or unflag', 'message status'):
+                self.assertEqual(session.process(command), session._empty_list())
+
+    def test_status_words_name_every_state(self):
+        from mail_voice import status_words
+        self.assertEqual(status_words({}), '')
+        self.assertEqual(status_words({}, full=True), 'Read, not flagged')
+        self.assertEqual(status_words({'unread': True, 'flagged': True, 'replied': True, 'forwarded': True, 'priority': 'highest'}),
+                         'Unread, flagged, replied, forwarded, highest importance')
+        self.assertEqual(status_words({'priority': 'normal'}), '')
+        self.assertEqual(status_words({'priority': 'low'}), 'Low importance')
+
+    def test_the_new_email_option_comes_after_the_old_ones(self):
+        # New options go last: the Windows Options tests reach the header list by its place.
+        from settings_model import fields
+        keys = [f.key for f in fields('Email options', {'accounts': ()})]
+        self.assertEqual(keys[:6], ['email_format', 'email_account', 'email_list_size', 'email_header_names',
+                                    'email_header_order', 'thunderbird_window'])
+        self.assertIn('email_status_words', keys[6:])
+
+    def test_status_keys_and_menu(self):
+        from input_parity import SCREEN_KEYS
+        self.assertEqual(SCREEN_KEYS['mailbox']['Q'], 'mark as read or unread')
+        self.assertEqual(SCREEN_KEYS['mailbox']['X'], 'flag or unflag')
+        self.assertEqual(SCREEN_KEYS['email_draft']['Ctrl+Shift+I'], 'change importance')
+        self.assertEqual(SCREEN_KEYS['email_draft']['Ctrl+Shift+T'], 'read receipt on or off')
+        from screen_menus import MENUS
+        items = [item for _, group in MENUS['mailbox'][1] for item in group]
+        self.assertEqual(MENUS['mailbox'][1][1][0], 'Select')
+        self.assertIn(('Mark as read or unread', 'Q', 'mark as read or unread'), items)
+        self.assertIn(('Flag or unflag', 'X', 'flag or unflag'), items)
+
     def test_email_list_size_defaults_to_ten_and_persists_options(self):
         import tempfile
         class FakeClient:
