@@ -110,5 +110,45 @@ class SavedWordsReachTheDisk(DocumentFlowCase):
         self.assertEqual(events[events.index('replace Letter.writing.docx') - 1], 'fsync')
 
 
+class DocumentsFromTheOldFolder(unittest.TestCase):
+    """Before October 19, 2026, documents were kept in the app's own folder. They are copied to
+    Documents, Voice Companion once. A document deleted or renamed after that must stay gone."""
+    def setUp(self):
+        import os, tempfile
+        from contextlib import ExitStack
+        self.stack = ExitStack(); self.addCleanup(self.stack.close)
+        self.root = Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
+        environment = {k: v for k, v in os.environ.items() if k != 'VOICE_COMPANION_DATA_DIR'}
+        self.stack.enter_context(patch.dict(os.environ, environment, clear=True))
+        app_folder = self.root / 'AppData'
+        self.stack.enter_context(patch.object(app, 'APP', app_folder))
+        self.stack.enter_context(patch.object(app, 'DEFAULT_APP', app_folder))
+        self.stack.enter_context(patch.object(app.os, 'name', 'posix'))
+        self.stack.enter_context(patch.object(Path, 'home', return_value=self.root / 'Home'))
+        self.legacy = app_folder / 'Documents'; self.legacy.mkdir(parents=True)
+        (self.legacy / 'Letter.docx').write_bytes(b'old letter')
+        (self.legacy / 'List.docx').write_bytes(b'old list')
+
+    def test_old_documents_are_copied_once(self):
+        folder = app.documents_folder()
+        self.assertEqual(folder, self.root / 'Home' / 'Documents' / 'Voice Companion')
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ['Letter.docx', 'List.docx'])
+        (folder / 'Letter.docx').unlink()           # deleted in File manager, or renamed
+        self.assertEqual(sorted(p.name for p in app.documents_folder().iterdir()), ['List.docx'])
+        self.assertTrue((self.legacy / 'Letter.docx').exists())   # the old copy is never removed
+
+    def test_a_copy_that_fails_does_not_stop_the_app_and_is_tried_again(self):
+        import shutil
+        real = shutil.copy2
+        def copy(source, target, *a, **k):
+            if Path(source).name == 'List.docx': raise PermissionError(13, 'in use')
+            return real(source, target, *a, **k)
+        with patch('shutil.copy2', side_effect=copy):
+            folder = app.documents_folder()
+        self.assertFalse(any(folder.glob('*.docx')))   # no half-moved folder
+        self.assertEqual(sorted(p.name for p in app.documents_folder().iterdir()), ['Letter.docx', 'List.docx'])
+        self.assertEqual((folder / 'Letter.docx').read_bytes(), b'old letter')
+
+
 if __name__ == '__main__':
     unittest.main()

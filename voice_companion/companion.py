@@ -70,12 +70,19 @@ def documents_folder():
             pass
     target = folder / 'Voice Companion'
     legacy = APP / 'Documents'
-    if legacy.exists() and legacy.resolve() != target.resolve():
-        target.mkdir(parents=True, exist_ok=True)
-        for old in legacy.glob('*.docx'):
-            destination = target / old.name
-            if not destination.exists():
-                shutil.copy2(old, destination)
+    # Documents from before October 19, 2026 are copied once, when the new folder is made.
+    # Copying on every call brought back documents the person had deleted or renamed.
+    # They are copied to a side folder first, so a failed copy leaves no half-filled folder
+    # and is tried again next time. The old copies are never removed.
+    if legacy.exists() and not target.exists() and legacy.resolve() != target.resolve():
+        moving = folder / 'Voice Companion.moving'
+        try:
+            moving.mkdir(parents=True, exist_ok=True)
+            for old in legacy.glob('*.docx'):
+                shutil.copy2(old, moving / old.name)
+            os.replace(moving, target)
+        except OSError as error:
+            print('Old documents could not be copied yet:', error, file=sys.stderr)
     return target
 
 def document_format_command(command):
