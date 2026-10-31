@@ -118,6 +118,8 @@ OWN_CHROME_NOT_LINKED = 'Your own Chrome opened, but the Voice Companion extensi
 OWN_CHROME_FAILED = 'The video could not move to your own Chrome.'
 OWN_CHROME_SECONDS = 20
 OWN_CHROME_START = 'Opening YouTube in your own Chrome.'
+OWN_CHROME_NEEDED = ('YouTube stops videos and shows ads in Voice Companion\'s Chrome, because it is not signed in. '
+                     'To play videos in your own Chrome, signed in to your account, say set up Chrome.')
 # "What's playing?" and F3 on this screen when nothing at all plays; not the radio hint.
 NOTHING_PLAYING = 'Nothing is playing. Choose a video and press Enter to play it.'
 SIGN_IN_NEEDED = ('You are not signed in to YouTube. To {action}, say sign in. '
@@ -885,9 +887,10 @@ class YouTubeScreen:
         except Exception:
             pass
 
-    def error_words(self, state):
+    def error_words(self, state, noted=False):
         """What YouTube said about a video it would not play, and what to do next."""
-        self.note_error(state)
+        if not noted:
+            self.note_error(state)
         said = 'YouTube says: ' + re.sub(r'\s*Learn more\.?$', '', state['error']).rstrip('.') + '.'
         if state.get('playability') == 'LOGIN_REQUIRED' or re.search(r'sign in', state['error'], re.I):
             return said + (' Say sign in to sign in on Google\'s page, then try the video again.' if not self.signed_in else
@@ -1613,9 +1616,10 @@ class YouTubeScreen:
         at = int(at or state.get('time') or 0)
         linked = self.link_own_chrome(yp.watch_url(self.video['id']) + ('&t=' + str(at) + 's' if at else ''), OWN_CHROME_OPENING)
         if linked is None:
-            return ''
+            # No extension in your own Chrome: say how to get videos that keep playing.
+            return self.error_words(state, noted=True) + ' ' + OWN_CHROME_NEEDED
         if linked is not True:
-            return linked + ' ' + self.error_words(state)
+            return linked + ' ' + self.error_words(state, noted=True)
         resume = dict(self.video, kind='video')
         web = self.web()
         self.close_pages()
@@ -1646,7 +1650,9 @@ class YouTubeScreen:
             import chrome_setup
         except Exception:
             return None
-        relay = browser_cdp_relay.current()
+        # Will, October 31, 2026: ads played and the video stopped after a minute, because this
+        # asked current(), which is None until your Chrome is linked, so your Chrome never opened.
+        relay = browser_cdp_relay.prepared()
         if relay is None:
             return None
         if relay.connected.is_set():

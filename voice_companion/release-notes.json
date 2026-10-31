@@ -1,19 +1,18 @@
 {
-  "version": "0.2.191-test",
+  "version": "0.2.192-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.190-test",
-  "scope": "Read, unread and flags match on every device.",
+  "baseline": "0.2.191-test",
+  "scope": "YouTube plays in your own Chrome, with no stops.",
   "sections": [
     {
       "title": "New in this version",
       "topics": [
         {
-          "title": "Marks in Yahoo Mail",
+          "title": "Help when YouTube stops",
           "details": [
-            "A Yahoo account can now mark mail read or unread, and flag it. Press Q or X, as in Thunderbird.",
-            "A flag shows as a star in Yahoo Mail.",
-            "Opening a Yahoo message marks it read, as Yahoo Mail does."
+            "If your own Chrome does not have the Voice Companion extension, Companion now tells you.",
+            "Say set up Chrome to add it. Then videos play in your own Chrome."
           ]
         }
       ]
@@ -22,17 +21,12 @@
       "title": "What works better",
       "topics": [
         {
-          "title": "The same on every device",
+          "title": "YouTube in your own Chrome",
           "details": [
-            "Read, unread and flags are kept on your mail server. Your phone and the web show the same marks.",
-            "A POP account keeps mail only on this computer. Companion tells you once that its marks stay here.",
-            "Importance is part of each message, so every device shows the same importance."
-          ]
-        },
-        {
-          "title": "Thunderbird",
-          "details": [
-            "Thunderbird closes and opens again one time to get this change."
+            "YouTube now opens in your own Chrome, even when Chrome is closed.",
+            "Before, it played in Voice Companion's Chrome. There you were signed out, so ads played.",
+            "Videos also stopped after a minute or so. YouTube said something went wrong.",
+            "In your own Chrome you are signed in. If you have YouTube Premium, ads do not play."
           ]
         }
       ]

@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.191-test.
+Guide version: 0.2.192-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -2277,7 +2277,7 @@ When you press Enter on a video, you hear "Loading video". Then the video plays 
 - Home starts the video again.
 - Escape goes back to the list you came from, such as your search results. The video keeps playing.
 To come back to the player, press Enter on the video that is playing, or say "Player".
-If YouTube says something went wrong, Companion loads the video again once by itself. YouTube stops videos after about a minute in a browser a program controls. So when your own Chrome has the Voice Companion extension, YouTube always opens in your own Chrome, and videos play without stopping. If Chrome is closed, Companion opens it and gives your keys back. If a video still stops in Companion's Chrome, it goes on in your own Chrome, from where it stopped. If it still does not play, press Enter to try again, or choose another video.
+If YouTube says something went wrong, Companion loads the video again once by itself. YouTube stops videos after about a minute in a browser a program controls. So when your own Chrome has the Voice Companion extension, YouTube always opens in your own Chrome, and videos play without stopping. If Chrome is closed, Companion opens it and gives your keys back. If a video still stops in Companion's Chrome, it goes on in your own Chrome, from where it stopped. If your own Chrome does not have the extension yet, Companion says so. Say "Set up Chrome" to add it. In your own Chrome, you are signed in to your account. So if you have YouTube Premium, ads do not play. If it still does not play, press Enter to try again, or choose another video.
 The letter keys below also work in a YouTube list while a video plays. In the YouTube menu and the filter lists, letters move to the next name instead.
 - To play or pause, say "Play or pause video", or press Space.
 - To skip back, say "Skip back". To skip forward, say "Skip forward".
