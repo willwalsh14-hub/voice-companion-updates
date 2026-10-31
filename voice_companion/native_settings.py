@@ -27,7 +27,7 @@ def control_words(field,value,index=None,count=None):
     role=ROLES.get(field.kind,'')
     if field.kind=='check':return field.label+', check box, '+check_words(value)+'.'
     if field.kind=='action':return field.label+', button.'
-    if field.kind=='password':return field.label+', password edit, '+('hidden' if value else 'blank')+'.'
+    if field.kind=='password':return field.label+', password edit, hidden.'   # never says whether one is typed
     if field.kind=='choice':
         if not getattr(field,'choices',()):return field.label+', combo box, unavailable.'
         where=', '+str(index+1)+' of '+str(count) if index is not None and count and 0<=index<count else ''
