@@ -244,6 +244,10 @@ async function experimentChecks() {
   setTimeout(() => tb.message(tb.sentMail, {messageId: 'sent1@gmail.com'}), 3);   // Gmail files it a moment later
   assert.deepEqual(plain(await marks.sentImportant('account1', '<sent1@gmail.com>')), {done: true});
   assert.deepEqual(tb.copies.at(-1), {from: 'gmail/[Gmail]/Sent Mail', to: 'gmail/[Gmail]/Important', ids: ['sent1@gmail.com']});
+  // Thunderbird may not tag Gmail's Sent Mail as its Sent folder: it is found by its Gmail name.
+  tb.sentMail.flags = 0;
+  tb.message(tb.sentMail, {messageId: 'sent2@gmail.com'});
+  assert.deepEqual(plain(await marks.sentImportant('account1', 'sent2@gmail.com')), {done: true});
   assert.equal((await marks.sentImportant('account2', 'x@y')).reason, 'notGmail');
   assert.equal((await marks.sentImportant('account9', 'x@y')).reason, 'missing');
   assert.equal((await marks.sentImportant('account1', 'never@gmail.com')).reason, 'notFound');

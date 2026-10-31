@@ -198,6 +198,7 @@ class FakeGmail:
                 state['box'] = box
                 state['readonly'] = command == 'EXAMINE'
                 state['seen_count'] = len(box.uids)
+                state['known'] = {uid: self._flags(box, uid, m) for uid, m in box.uids}
                 return ['* FLAGS (\\Answered \\Flagged \\Draft \\Deleted \\Seen $Forwarded $MDNSent Junk NonJunk)\r\n',
                         '* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Draft \\Deleted \\Seen $Forwarded $MDNSent Junk NonJunk \\*)] Flags permitted.\r\n',
                         '* OK [UIDVALIDITY 7] UIDs valid.\r\n',
@@ -227,7 +228,9 @@ class FakeGmail:
                 if self.refuse_stores > 0:
                     self.refuse_stores -= 1
                     return [], 'NO [UNAVAILABLE] Temporary failure, try again'
-                return self._store(box, args, command == 'UID STORE'), 'OK STORE completed'
+                lines = self._store(box, args, command == 'UID STORE')
+                state.setdefault('known', {}).update({uid: self._flags(box, uid, m) for uid, m in box.uids})
+                return lines, 'OK STORE completed'
             if command in ('COPY', 'UID COPY'):
                 return self._copy(box, args, command == 'UID COPY')
             if command in ('EXPUNGE', 'UID EXPUNGE'):
@@ -240,11 +243,21 @@ class FakeGmail:
             return [], 'OK %s completed' % command
 
     def _exists(self, state):
+        """What changed in the open folder since this connection last heard, as Gmail tells every
+        connected program: new mail (EXISTS), and read or flags changed by another device (FETCH)."""
         box = state.get('box')
+        lines = []
         if box and len(box.uids) != state.get('seen_count'):
             state['seen_count'] = len(box.uids)
-            return ['* %d EXISTS\r\n' % len(box.uids)]
-        return []
+            lines.append('* %d EXISTS\r\n' % len(box.uids))
+        if box:
+            known = state.setdefault('known', {})
+            for index, (uid, message) in enumerate(box.uids, 1):
+                now = self._flags(box, uid, message)
+                if uid in known and known[uid] != now:
+                    lines.append('* %d FETCH (UID %d FLAGS %s)\r\n' % (index, uid, now))
+                known[uid] = now
+        return lines
 
     def _list(self, command, args):
         pattern = unquote(args.split(' ', 1)[1] if ' ' in args else '*').strip()

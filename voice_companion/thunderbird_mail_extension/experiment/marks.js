@@ -38,6 +38,7 @@ const SENT_FOLDER = 0x00000200;                      // nsMsgFolderFlags.SentMai
 const SERVER_WAIT_MS = 30000, RETRY_WAIT_MS = 1500;
 const CONVERSATION_LIMIT = 500, CONVERSATION_MS = 3000;
 const IMPORTANT = /^\[(?:gmail|google mail)\]\/important$/i;
+const SENT_MAIL = /^\[(?:gmail|google mail)\]\/sent mail$/i;
 
 // Thunderbird reports success as 0 (NS_OK); failures have the top bit set.
 const succeeded = status => (Number(status) >>> 0) < 0x80000000;
@@ -175,16 +176,21 @@ async function mark(extension, ids, read, flagged, wholeConversation) {
 
 // ---- Gmail's Important marker ---------------------------------------------------------
 
-function importantFolder(server) {
+// A Gmail folder by its name on the server ("[Gmail]/Important").
+function gmailFolder(server, pattern) {
   const root = server && server.rootFolder;
   if (!root) return null;
   for (const folder of root.descendants || []) {
     const imap = imapFolder(folder);
     let name = '';
     try { name = imap ? String(imap.onlineName || '') : ''; } catch (error) { name = ''; }
-    if (IMPORTANT.test(name)) return folder;
+    if (pattern.test(name)) return folder;
   }
   return null;
+}
+
+function importantFolder(server) {
+  return gmailFolder(server, IMPORTANT);
 }
 
 function copyIn(folder, messageId) {
@@ -256,7 +262,10 @@ async function sentImportant(accountId, headerMessageId) {
   let gmail = false;
   try { gmail = server.QueryInterface(Ci.nsIImapIncomingServer).isGMailServer; } catch (error) { gmail = false; }
   if (!gmail) return {done: false, reason: 'notGmail'};
-  const sent = root.getFolderWithFlags(SENT_FOLDER);
+  // Thunderbird marks the Sent folder it knows; Gmail's own is found by its name if not.
+  let sent = null;
+  try { sent = root.getFolderWithFlags(SENT_FOLDER); } catch (error) { sent = null; }
+  if (!sent || !SENT_MAIL.test(String((imapFolder(sent) || {}).onlineName || ''))) sent = gmailFolder(server, SENT_MAIL) || sent;
   const target = importantFolder(server);
   if (!sent || !target) return {done: false, reason: 'noFolder'};
   const messageId = String(headerMessageId || '').replace(/^<|>$/g, '');
