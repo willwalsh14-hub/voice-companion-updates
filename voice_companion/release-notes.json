@@ -1,8 +1,8 @@
 {
-  "version": "0.2.192-test",
+  "version": "0.2.193-test",
   "status": "Testing build",
   "date": "October 31, 2026",
-  "baseline": "0.2.191-test",
+  "baseline": "0.2.192-test",
   "scope": "YouTube plays in your own Chrome, with no stops.",
   "sections": [
     {

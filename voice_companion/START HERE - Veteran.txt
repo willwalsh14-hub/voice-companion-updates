@@ -1,6 +1,6 @@
 VOICE COMPANION USER GUIDE
 
-Guide version: 0.2.192-test.
+Guide version: 0.2.193-test.
 Voice Companion is a talking app for Windows. It speaks its own menus and messages. You can use your voice, your keyboard, or both. You do not need Microsoft Word or a screen reader to use it.
 This guide has numbered chapters. Each chapter has short numbered parts. Each part starts with the task, then tells you what to say or which key to press.
 Spoken commands are in quotation marks, such as "Help". Keys are written the way they are labeled, such as Control+F1 or Down Arrow. A plus sign means hold the first key, then press the next one.
@@ -990,6 +990,7 @@ Before you send, you can set how important the message is, and ask for a read re
 - To ask the person to tell you when they open it, say "Read receipt on or off", or press Control+Shift+T. Press it again to take it off. You can also say "Request a read receipt" or "No read receipt".
 - To hear both, say "Importance".
 The review says high or low importance, and the read receipt, when you set them. Some people's email does not send read receipts.
+High importance shows in Outlook and most other email programs. Gmail does not show it, so when you send from Gmail, your copy in Sent Mail gets Gmail's Important marker.
 Nothing is sent before the review and confirmation. If no account is connected, Companion saves a draft instead.
 When the email service accepts the message, Companion says it was sent. Check delivery with your helper during early tests.
 If Companion says the result is uncertain, check your sent mail and ask the person before you try again.
@@ -1066,9 +1067,17 @@ Read, unread, and flags work for Thunderbird and Yahoo accounts:
 - To hear the status, say "Message status".
 - If messages are marked, these change every marked message.
 - Opening a message marks it read, as in Thunderbird.
-- These marks are kept on your mail server. Your phone and the web show them too. A flag shows as a star in Gmail and Yahoo Mail.
+- In Gmail, marking a message read marks its whole conversation read. Opening it does too. This is what the Gmail website does.
+- These marks are kept on your mail server. Your phone and the web show them right away. A flag shows as a star in Gmail and Yahoo Mail.
+- Companion waits for your email service to take each change. If it does not, Companion tells you. Check your internet connection, then try again.
 - A POP account keeps mail only on this computer. Its marks stay here. Companion tells you once.
-You hear importance, but you cannot change it on a message you got. The person who sent it chose it. It is part of the message, so every device shows the same importance.
+Gmail has its own Important marker:
+- To mark a Gmail message important, say "Mark as important", or press H. To take it off, say "Remove important", or press H again.
+- Your phone and the Gmail website show it too.
+- Other email accounts show the importance the sender chose. You cannot change that on a message you got.
+Some messages ask for a read receipt:
+- When you open one, Companion asks "Send it? Say yes or no." Then it reads the message.
+- If Thunderbird is set to always or never send receipts, Companion does that and does not ask.
 Listen to the action and the names, then answer Yes or No. If a result is uncertain, check the folder before you try again.
 Inside an open message, Control+A selects text to copy. It does not mark other messages.
 
@@ -1113,6 +1122,7 @@ Email letter keys work in the message list and in an open message:
 - I: to hear the sender, subject, and date, say "Message details", or press I.
 - Q: to mark a message read or unread, say "Mark as read or unread", or press Q.
 - X: to flag a message or take the flag off, say "Flag or unflag", or press X.
+- H: to mark a Gmail message important or not, say "Mark important or not important", or press H.
 - Alt+1 to Alt+6: to hear From, To, CC, Subject, the date sent, or how many files are attached. See part 12.1.
 - C: to copy the sender's address, say "Copy sender address", or press C.
 - E: to email the sender, say "New email to sender", or press E.

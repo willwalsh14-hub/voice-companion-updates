@@ -7,8 +7,8 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Counts
 
-- Actions inventoried: 748
-- Already had both ways: 584
+- Actions inventoried: 749
+- Already had both ways: 585
 - Gaps found: 164
 - Gaps fixed (Added): 156
 - Not applicable (N/A, with reason): 8
@@ -1949,18 +1949,6 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: S
 - Status: Both
 
-### Copy sender address
-
-- Voice: "Copy sender address"
-- Keyboard: C
-- Status: Both
-
-### Email the sender
-
-- Voice: "New email to sender"
-- Keyboard: E
-- Status: Both
-
 ### Mark as read or unread
 
 - Voice: "Mark as read or unread"
@@ -1973,10 +1961,16 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 - Keyboard: X
 - Status: Both
 
+### Important or not important (Gmail)
+
+- Voice: "Mark important or not important"
+- Keyboard: H
+- Status: Both
+
 ### Message status
 
 - Voice: "Message status"
-- Keyboard: Alt, 2, 9
+- Keyboard: Alt, 2, 8
 - Status: Added: Alt menu path
 
 ## Alt menu, Email: Go to folder
@@ -2057,6 +2051,18 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 
 ## Alt menu, Email: Drafts and contacts
 
+### Copy sender address
+
+- Voice: "Copy sender address"
+- Keyboard: C
+- Status: Both
+
+### Email the sender
+
+- Voice: "New email to sender"
+- Keyboard: E
+- Status: Both
+
 ### Email drafts
 
 - Voice: "Open email draft"
@@ -2072,7 +2078,7 @@ The command box (Alt+T, type the command, Enter) also works everywhere but is no
 ### Add contact
 
 - Voice: "Add contact ..."
-- Keyboard: Alt, 5, 3
+- Keyboard: Alt, 5, 5
 - Status: Added: Alt menu path
 
 ## Alt menu, Email: Accounts
